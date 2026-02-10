@@ -170,21 +170,18 @@ quadrantChart
 | ID | Goal | Time Horizon | How We Measure It |
 |----|------|-------------|-------------------|
 | G-1 | Deliver a reliable Markdown-to-OSCAL conversion pipeline with schema validation and traceability | 6 months | 100% schema validation pass rate; >95% extraction accuracy on golden-file test suite |
-| G-2 | Expand ingestion to PDF and DOCX formats with reasonable structural fidelity | 9 months | >80% extraction accuracy on well-structured PDF/DOCX test suite |
-| G-3 | Support the full OSCAL Control layer (Catalog + Profile) with baseline selection and tailoring | 12 months | Profile generation and resolution integration working end-to-end |
-| G-4 | Establish FORGE as the standard open-source policy-to-OSCAL tool | 18 months | 50+ GitHub stars; 5+ organizations actively using FORGE; community contributions |
-| G-5 | Extend to OSCAL Implementation layer (Component Definition + SSP templates) | 24 months | Documentary component generation with control-implementation narratives |
+| G-2 | Support the full OSCAL Control layer (Catalog + Profile) with baseline selection, tailoring, and multi-format output (JSON/XML/YAML) | 9 months | Profile generation working end-to-end; multi-format round-trip verified |
+| G-3 | Establish FORGE as the standard open-source policy-to-OSCAL tool | 15 months | 50+ GitHub stars; 5+ organizations actively using FORGE; community contributions |
+| G-4 | Extend to OSCAL Implementation layer (Component Definition + SSP templates) | 18 months | Documentary component generation with control-implementation narratives |
 
 ### Goal Dependency Map :green_circle: `@llm-autonomous`
 
 ```mermaid
 graph TD
-    G1["G-1: Markdown-to-OSCAL Pipeline"] --> G2["G-2: PDF/DOCX Ingestion"]
-    G1 --> G3["G-3: Full Control Layer (Catalog + Profile)"]
-    G2 --> G4["G-4: Community Adoption"]
+    G1["G-1: Markdown-to-OSCAL Pipeline"] --> G2["G-2: Full Control Layer + Multi-Format"]
+    G2 --> G3["G-3: Community Adoption"]
+    G2 --> G4["G-4: Implementation Layer"]
     G3 --> G4
-    G3 --> G5["G-5: Implementation Layer"]
-    G4 --> G5
 ```
 
 ---
@@ -218,15 +215,14 @@ gantt
         Component Definition generation   :p1d, after p1b, 30d
         JSON output & traceability        :p1e, after p1c, 30d
 
-    section Phase 2 — Format Expansion
-        PDF ingestion                     :p2a, after p1e, 60d
-        DOCX ingestion                    :p2b, after p1e, 45d
-        XML & YAML output                 :p2c, after p1e, 30d
-        Profile generation                :p2d, after p1e, 45d
+    section Phase 2 — Control Layer & Multi-Format
+        XML & YAML output                 :p2a, after p1e, 30d
+        Round-trip verification           :p2b, after p2a, 15d
+        Profile generation & tailoring    :p2c, after p2b, 45d
 
     section Phase 3 — Ecosystem
-        oscal-cli integration             :p3a, after p2d, 30d
-        Community examples & docs         :p3b, after p2a, 60d
+        oscal-cli integration             :p3a, after p2c, 30d
+        Community examples & docs         :p3b, after p2c, 60d
         Assessment Plan scaffolding       :p3c, after p3a, 60d
         SSP template generation           :p3d, after p3c, 60d
 ```
@@ -236,14 +232,14 @@ gantt
 | Phase | Theme | Key Outcomes | Target Date | Exit Criteria |
 |-------|-------|-------------|-------------|---------------|
 | Phase 1 | Foundation | Users can convert Markdown policies to validated OSCAL Catalogs and Component Definitions (JSON) with full traceability | 2026-08-01 | All Must Have requirements (M-1 through M-11) passing; golden-file test suite >95% accuracy; `cargo test` green |
-| Phase 2 | Format Expansion | Users can ingest PDF/DOCX; export to XML/YAML; generate Profiles for baseline selection | 2026-12-01 | PDF/DOCX extraction >80% accuracy on test suite; multi-format round-trip verified; Profile generation working |
-| Phase 3 | Ecosystem | FORGE integrates with NIST oscal-cli for Profile Resolution; generates Assessment Plan scaffolding and SSP templates; community adoption established | 2027-06-01 | oscal-cli integration tested; community examples published; 5+ organizations using FORGE |
+| Phase 2 | Control Layer & Multi-Format | Users can export to XML/YAML; generate Profiles for baseline selection and tailoring; normative/advisory tagging and parameter extraction working | 2026-10-31 | Multi-format round-trip verified; Profile generation with tailoring working; v0.2.0 tagged |
+| Phase 3 | Ecosystem | FORGE integrates with NIST oscal-cli for Profile Resolution; generates Assessment Plan scaffolding and SSP templates; community adoption established | 2027-04-01 | oscal-cli integration tested; community examples published; 5+ organizations using FORGE |
 
 ### PRD Mapping :green_circle: `@llm-autonomous`
 
 | PRD | Title | Phase | Strategic Goal | Status |
 |-----|-------|-------|----------------|--------|
-| 001-prd-forge-policy-to-oscal | Policy-to-OSCAL Core Conversion | Phase 1, Phase 2 | G-1, G-2, G-3 | Draft |
+| 001-prd-forge-policy-to-oscal | Policy-to-OSCAL Core Conversion | Phase 1, Phase 2 | G-1, G-2 | Draft |
 
 ---
 
@@ -262,10 +258,9 @@ gantt
 | ID | Risk | Likelihood | Impact | Mitigation |
 |----|------|------------|--------|------------|
 | R-1 | OSCAL adoption remains niche; insufficient market demand for dedicated conversion tooling | Med | High | Open-source model reduces downside; tool value persists even for small user base; monitor OSCAL community growth |
-| R-2 | PDF extraction quality is too low for real-world policies without ML/AI assistance | High | High | Phase 1 focuses on Markdown (highest fidelity); PDF support is Phase 2 with explicit quality thresholds; future ML enhancement planned |
-| R-3 | Competing tool emerges with broader OSCAL lifecycle support before FORGE reaches Phase 3 | Low | Med | Focus on conversion pipeline excellence (document → OSCAL) rather than full lifecycle; composability with other tools reduces competition risk |
-| R-4 | Policy documents are too varied in structure for deterministic parsing to achieve target accuracy | Med | Med | Start with well-structured documents; provide user correction mechanisms; future NLP/AI enhancement for ambiguous cases |
-| R-5 | Single-maintainer / small team cannot sustain community momentum | Med | Med | MIT license lowers contribution barrier; clear documentation and contribution guidelines from Phase 1 |
+| R-2 | Competing tool emerges with broader OSCAL lifecycle support before FORGE reaches Phase 3 | Low | Med | Focus on conversion pipeline excellence (Markdown → OSCAL) rather than full lifecycle; composability with other tools reduces competition risk |
+| R-3 | Policy documents are too varied in structure for deterministic parsing to achieve target accuracy | Med | Med | Start with well-structured Markdown documents; provide user correction mechanisms; users can pre-convert PDF/DOCX with external tools |
+| R-4 | Single-maintainer / small team cannot sustain community momentum | Med | Med | MIT license lowers contribution barrier; clear documentation and contribution guidelines from Phase 1 |
 
 ---
 
@@ -294,8 +289,8 @@ gantt
 | Milestone | Users | Throughput | Data Volume | Timeline |
 |-----------|-------|------------|-------------|----------|
 | Phase 1 (Foundation) | 10-50 early adopters | Single document conversion <30s | Individual policy documents (1-100 pages) | 2026-08-01 |
-| Phase 2 (Format Expansion) | 50-200 users | Batch conversion of 10+ documents | Policy libraries (10-50 documents) | 2026-12-01 |
-| Phase 3 (Ecosystem) | 200-1000+ users | CI/CD pipeline integration | Organizational policy catalogs with cross-references | 2027-06-01 |
+| Phase 2 (Control Layer & Multi-Format) | 50-200 users | Batch conversion of 10+ documents | Policy libraries (10-50 documents) | 2026-10-31 |
+| Phase 3 (Ecosystem) | 200-1000+ users | CI/CD pipeline integration | Organizational policy catalogs with cross-references | 2027-04-01 |
 
 ---
 
@@ -337,7 +332,6 @@ gantt
 | Adoption | Monthly unique clones | 0 | 100 (6mo) / 500 (18mo) | GitHub traffic |
 | Quality | Schema validation pass rate | N/A | 100% | Automated test suite |
 | Quality | Extraction accuracy (Markdown) | N/A | >95% | Golden-file regression tests |
-| Quality | Extraction accuracy (PDF) | N/A | >80% | Golden-file regression tests |
 | Engagement | Community issues and PRs | 0 | 10 issues / 3 PRs (6mo) | GitHub API |
 | Satisfaction | User feedback (GitHub discussions, issues) | N/A | Net positive sentiment | Manual review |
 
@@ -379,6 +373,7 @@ gantt
 |---------|------|--------|---------|
 | 0.1 | 2026-02-10 | LLM (Claude) | Initial draft from OSCAL research and PRD |
 | 0.2 | 2026-02-10 | Brian Luby | Reviewed all sections; marked Ready for Review |
+| 0.3 | 2026-02-10 | Brian Luby | Constrained to Markdown-only input; removed PDF/DOCX ingestion from scope; renumbered strategic goals G-2→G-4; compressed timeline by ~2 months |
 
 ---
 
@@ -391,6 +386,7 @@ gantt
 | 2026-02-10 | CLI-first, no GUI in initial phases | Composability with existing toolchains (CI/CD, oscal-cli, scripts); faster development cycle; serves primary persona | Web UI (broader audience but higher development cost and slower iteration) |
 | 2026-02-10 | Open source (MIT license) | Builds trust in compliance/security community; lowers contribution barrier; aligns with OSCAL's open ecosystem | Proprietary (limits adoption and trust); copyleft (may deter enterprise contributors) |
 | 2026-02-10 | Support both catalog-first and component-first conversion strategies | Organizations vary: some treat policies as authoritative requirements, others map to external frameworks | Single strategy (too limiting for diverse user needs) |
+| 2026-02-10 | Constrain to Markdown-only input; no PDF/DOCX ingestion | Mature external converters (pandoc, markitdown, etc.) handle PDF/DOCX→Markdown; building ingestion for binary formats adds high complexity and risk with marginal value | Build PDF/DOCX ingestion in-house (high risk, high effort, lower accuracy than specialized tools) |
 
 ---
 

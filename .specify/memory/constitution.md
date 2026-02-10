@@ -724,4 +724,54 @@ All pull requests MUST verify constitution compliance:
 - Constitution violations MUST be fixed or justified before merge
 - Use CLAUDE.md for tactical development guidance (this constitution defines strategic principles)
 
-**Version**: 3.1.1 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
+**Version**: 3.2.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
+
+---
+
+## Architecture Decision Records
+
+### ADR-001: Markdown-Only Input Constraint
+
+**Status:** Accepted
+**Date:** 2026-02-10
+**Deciders:** Brian Luby
+
+#### Context
+
+FORGE's original product roadmap included Phase 2 work items (WI-26 through WI-33) for PDF and DOCX ingestion, comprising 8 sprints of development effort. Risk RR-1 rated PDF extraction crate insufficiency as **High Likelihood / High Impact**, making it the single riskiest line item on the roadmap.
+
+During roadmap review, the following observations emerged:
+
+1. **PDF structural reconstruction is unreliable.** Heuristic heading detection from font size/weight/position is fragile across real-world policy documents. Extraction accuracy targets (>80%) were optimistic given the state of Rust PDF crates.
+2. **DOCX parsing adds format-specific complexity** with limited additional value beyond what existing converters already provide.
+3. **Mature external converters exist.** Tools like [pandoc](https://pandoc.org/), [markitdown](https://github.com/microsoft/markitdown), and numerous PDF-to-Markdown utilities handle binary format conversion as their core competency.
+4. **Building ingestion for binary formats diverts effort** from FORGE's core value proposition: the Markdown-to-OSCAL conversion pipeline, OSCAL model generation, and validation.
+
+#### Decision
+
+FORGE will accept **Markdown as the sole input format**. Users who need to convert PDF or DOCX policy documents will use external tools to produce Markdown first, then feed the Markdown into FORGE.
+
+#### Consequences
+
+**Positive:**
+- Eliminates 8 sprints (~2 months) of high-risk development (PDF/DOCX parsing)
+- Removes the highest-rated risk on the roadmap (RR-1)
+- Compresses the overall timeline by ~2 months (Phase 2: 18 → 10 sprints)
+- Focuses engineering effort on OSCAL correctness, validation, and Profile generation
+- Aligns with Product Principle P-4 (CLI-first, composable): users compose FORGE with external converters in their pipeline
+
+**Negative:**
+- Users must run an extra pre-processing step for non-Markdown policies
+- FORGE cannot guarantee extraction quality of upstream converters
+- Potential friction for users unfamiliar with Markdown conversion tools
+
+**Neutral:**
+- Documentation should recommend specific external converters and provide example pipelines (e.g., `pandoc policy.pdf -t markdown | forge convert --strategy catalog`)
+- Future reconsideration is possible if a high-quality Rust PDF parsing crate emerges, but this is not planned
+
+#### Traceability
+
+- **Vision Goals affected:** Removed old G-2 (PDF/DOCX Ingestion); renumbered G-3→G-2, G-4→G-3, G-5→G-4
+- **Roadmap items removed:** WI-26 through WI-33, MS-5 (PDF/DOCX Ingestion), RR-1
+- **Theme updated:** T-4 renamed from "Format Expansion" to "Output Format Expansion" (XML/YAML output only)
+- **Documents updated:** `docs/FORGE_PRODUCT_VISION.md`, `docs/FORGE_PRODUCT_ROADMAP.md`
