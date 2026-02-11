@@ -49,10 +49,10 @@
 ## Summary
 
 ### Decision 🔴 `@human-required`
-> Extend the existing WI-30 Profile builder with an immutable transform pipeline that appends a `modify` section containing `set-parameters` entries from `--set-param` CLI flags, using clap's `number_of_values(2)` for argument parsing and deterministic alphabetical ordering of parameter entries.
+> Extend the existing WI-30 Profile builder with an immutable transform pipeline that appends a `modify` section containing `set-parameters` entries from `--set-param` CLI flags, using clap 4 derive-style `num_args = 2` for argument parsing and deterministic alphabetical ordering of parameter entries.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> WI-31 adds parameter tailoring to Profile generation by extending the WI-30 builder with a `build_modify_section` function that takes `--set-param` pairs and produces an OSCAL `modify.set-parameters` array. Use clap derive macros with `number_of_values(2)` for the `--set-param` flag. When no `--set-param` flags are provided, the `modify` section MUST be omitted entirely. Do NOT validate param IDs against the source catalog — that is WI-32's responsibility. Do NOT implement `alter` directives or the `merge` section.
+> WI-31 adds parameter tailoring to Profile generation by extending the WI-30 builder with a `build_modify_section` function that takes `--set-param` pairs and produces an OSCAL `modify.set-parameters` array. Use clap derive macros with `num_args = 2` and `ArgAction::Append` for the `--set-param` flag. When no `--set-param` flags are provided, the `modify` section MUST be omitted entirely. Do NOT validate param IDs against the source catalog — that is WI-32's responsibility. Do NOT implement `alter` directives or the `merge` section.
 
 ---
 
