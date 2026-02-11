@@ -3,7 +3,7 @@
 > **Document Type:** Product Roadmap
 > **Audience:** LLM agents, human reviewers, leadership stakeholders, engineering leads
 > **Status:** Draft
-> **Last Updated:** 2026-02-10 <!-- @auto -->
+> **Last Updated:** 2026-02-11 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Parent Vision:** docs/FORGE_PRODUCT_VISION.md <!-- @auto -->
 
@@ -186,8 +186,8 @@ gantt
 |----|-----------|--------|-------|-----------|---------|------|--------|---------------|
 | WI-1 | Project scaffolding: clap CLI, module structure, error types, CI setup | S-1 (Mar 3) | T-1 | MS-1 | — | XS | Not Started | — |
 | WI-2 | Markdown ingestion: file reading, format detection | S-2 (Mar 10) | T-1 | MS-1 | M-1 | XS | Not Started | — |
-| WI-3 | Markdown structural extraction: headings, section hierarchy | S-3 (Mar 17) | T-1 | MS-1 | M-1 | S | Not Started | WI-4 |
-| WI-4 | Markdown clause extraction: numbered lists, bullets, tables | S-4 (Mar 24) | T-1 | MS-1 | M-1 | S | Not Started | WI-3 |
+| WI-3 | Markdown structural extraction: headings, section hierarchy | S-3 (Mar 17) | T-1 | MS-1 | M-1 | S | Done | WI-4 |
+| WI-4 | Markdown clause extraction: numbered lists, bullets, tables, paragraphs | S-4 (Mar 24) | T-1 | MS-1 | M-1 | S | In Review | WI-3 |
 | WI-5 | Internal domain model: PolicyDocument, PolicySection, PolicyRequirement structs | S-5 (Mar 31) | T-1 | MS-1 | M-1 | S | Not Started | — |
 | WI-6 | Requirement atomization: compound statement splitting | S-6 (Apr 7) | T-1 | MS-1 | M-2 | S | Not Started | WI-8 |
 | WI-7 | Deterministic UUID v5 generation with content-based stability | S-7 (Apr 14) | T-1 | MS-1 | M-8 | S | Not Started | WI-8 |
@@ -276,17 +276,20 @@ gantt
 - Spike: evaluate `pulldown-cmark` vs `comrak` for Markdown parsing
 - **Deliverable:** `forge convert policy.md` reads file and prints raw structure to stdout
 
-#### Sprint 3 (Mar 17–21): Structural Extraction — Headings
+#### Sprint 3 (Mar 17–21): Structural Extraction — Headings ✅ DONE
 - Parse Markdown headings (H1–H6) into hierarchical section tree
 - Preserve heading depth, title text, and source line numbers
 - Build `PolicySection` structs with parent-child relationships
 - **Deliverable:** Section hierarchy extracted and printed as debug output
+- **Status:** Complete (PR #5 merged 2026-02-10) — 87 tests passing, event-based parsing with pulldown-cmark
 
-#### Sprint 4 (Mar 24–28): Structural Extraction — Clauses & Tables
+#### Sprint 4 (Mar 24–28): Structural Extraction — Clauses & Tables 🔄 IN REVIEW
 - Extract numbered lists, bullet lists, and tables from within sections
+- Extract standalone paragraphs (not inside lists or tables)
 - Map list items to candidate policy requirements
 - Preserve table structure for tabular policy content
-- **Deliverable:** All structural elements (headings, lists, tables) extracted from test fixtures
+- **Deliverable:** All structural elements (headings, lists, tables, paragraphs) extracted from test fixtures
+- **Status:** In Review (PR #6 pending merge) — 92 tests passing (87 unit + 5 doc), GFM table support, paragraph extraction added, all SEC-1 through SEC-7 requirements met
 
 #### Sprint 5 (Mar 31–Apr 4): Internal Domain Model
 - Implement `PolicyDocument`, `PolicySection`, `PolicyRequirement` structs
@@ -723,7 +726,7 @@ graph LR
 
 | Milestone | Target Date | Status | On Track? | Blockers |
 |-----------|-------------|--------|-----------|----------|
-| MS-1: Markdown → Domain Model | 2026-04-24 | 0 of 8 work items done | :white_check_mark: Not Started | None |
+| MS-1: Markdown → Domain Model | 2026-04-24 | 2 of 8 work items done | :construction: In Progress | None |
 | MS-2: First Valid Catalog | 2026-06-05 | 0 of 5 work items done | :white_check_mark: Not Started | None |
 | MS-3: Component Def + Traceability | 2026-07-03 | 0 of 5 work items done | :white_check_mark: Not Started | None |
 | MS-4: Phase 1 Release (v0.1.0) | 2026-08-21 | 0 of 7 work items done | :white_check_mark: Not Started | None |
@@ -735,7 +738,7 @@ graph LR
 
 | Theme | Work Items Total | Done | In Progress | Blocked | Not Started | Health |
 |-------|-----------------|------|-------------|---------|-------------|--------|
-| T-1: Core Pipeline | 8 | 0 | 0 | 0 | 8 | :white_check_mark: Not Started |
+| T-1: Core Pipeline | 8 | 1 | 1 | 0 | 6 | :construction: In Progress |
 | T-2: OSCAL Generation | 10 | 0 | 0 | 0 | 10 | :white_check_mark: Not Started |
 | T-3: Validation & Quality | 7 | 0 | 0 | 0 | 7 | :white_check_mark: Not Started |
 | T-4: Output Format Expansion | 4 | 0 | 0 | 0 | 4 | :white_check_mark: Not Started |
@@ -808,6 +811,7 @@ xychart-beta
 |---------|------|--------|---------|
 | 0.1 | 2026-02-10 | LLM (Claude) | Initial draft with 58 work items across 3 phases in 1-week sprints |
 | 0.2 | 2026-02-10 | Brian Luby | Constrained to Markdown-only input (ADR-001); removed PDF/DOCX work items (old WI-26–WI-33) and MS-5; renumbered to 50 work items; compressed Phase 2 from 18→10 sprints; overall timeline reduced by ~2 months |
+| 0.3 | 2026-02-11 | LLM (Claude) | Status update: WI-3 (heading extraction) complete (PR #5 merged); WI-4 (clause/table/paragraph extraction) in review (PR #6 pending merge); MS-1 progress: 2 of 8 items done; T-1 pipeline progressing on schedule |
 
 ---
 
