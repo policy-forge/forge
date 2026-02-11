@@ -1,13 +1,20 @@
-//! Markdown structural extraction — headings.
+//! Markdown structural extraction — headings, clauses, tables, paragraphs.
 //!
-//! Parses Markdown content to extract heading elements (H1-H6) into a
-//! hierarchical `Vec<SectionNode>` tree using pulldown-cmark's event-based
-//! parser with a stack-based single-pass O(n) algorithm.
+//! Parses Markdown content to extract structural elements using pulldown-cmark's
+//! event-based parser with stack-based single-pass O(n) algorithms.
+
+pub mod clauses;
 
 use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
 use serde::Serialize;
 
 use crate::ForgeError;
+
+// Re-export clause types for convenient access via `forge::parse::*`
+pub use clauses::{
+    ExtractedContent, ExtractedListItem, ExtractedParagraph, ExtractedTable, ListType,
+    extract_clauses,
+};
 
 /// A node in the section hierarchy tree, representing one Markdown heading
 /// and its associated content.
@@ -227,7 +234,7 @@ fn heading_level_to_u8(level: HeadingLevel) -> u8 {
 ///
 /// Line 1 starts at byte 0. Each subsequent line starts at the byte
 /// after a `\n` character.
-fn build_line_starts(content: &str) -> Vec<usize> {
+pub(crate) fn build_line_starts(content: &str) -> Vec<usize> {
     let mut starts = vec![0]; // Line 1 starts at byte 0
     for (i, byte) in content.bytes().enumerate() {
         if byte == b'\n' {
@@ -240,7 +247,7 @@ fn build_line_starts(content: &str) -> Vec<usize> {
 /// Convert a byte offset to a 1-based line number using the line-starts table.
 ///
 /// Uses binary search (`partition_point`) for O(log n) lookup.
-fn offset_to_line(offset: usize, line_starts: &[usize]) -> usize {
+pub(crate) fn offset_to_line(offset: usize, line_starts: &[usize]) -> usize {
     line_starts.partition_point(|&start| start <= offset)
 }
 

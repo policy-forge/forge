@@ -2,11 +2,13 @@
 /target/
 **/*.rs.bk
 Cargo.lock
+*.log
 
 # === Build artifacts ===
 *.pdb
 *.dSYM/
 *.dwarf
+*.bak
 
 # === Testing ===
 **/mutants.out*/
