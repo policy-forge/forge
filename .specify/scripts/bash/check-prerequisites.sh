@@ -91,9 +91,18 @@ check_feature_branch "$CURRENT_BRANCH" "$HAS_GIT" || exit 1
 # If paths-only mode, output paths and exit (support JSON + paths-only combined)
 if $PATHS_ONLY; then
     if $JSON_MODE; then
-        # Minimal JSON paths payload (no validation performed)
-        printf '{"REPO_ROOT":"%s","BRANCH":"%s","FEATURE_DIR":"%s","FEATURE_SPEC":"%s","IMPL_PLAN":"%s","TASKS":"%s"}\n' \
-            "$REPO_ROOT" "$CURRENT_BRANCH" "$FEATURE_DIR" "$FEATURE_SPEC" "$IMPL_PLAN" "$TASKS"
+        # Minimal JSON paths payload (no validation performed) - use jq for proper JSON escaping
+        jq -n \
+            --arg repo_root "$REPO_ROOT" \
+            --arg branch "$CURRENT_BRANCH" \
+            --arg feature_dir "$FEATURE_DIR" \
+            --arg feature_spec "$FEATURE_SPEC" \
+            --arg impl_plan "$IMPL_PLAN" \
+            --arg tasks "$TASKS" \
+            --arg prd "$PRD" \
+            --arg ard "$ARD" \
+            --arg sec "$SEC" \
+            '{REPO_ROOT: $repo_root, BRANCH: $branch, FEATURE_DIR: $feature_dir, FEATURE_SPEC: $feature_spec, IMPL_PLAN: $impl_plan, TASKS: $tasks, PRD: $prd, ARD: $ard, SEC: $sec}'
     else
         echo "REPO_ROOT: $REPO_ROOT"
         echo "BRANCH: $CURRENT_BRANCH"
@@ -149,15 +158,22 @@ fi
 
 # Output results
 if $JSON_MODE; then
-    # Build JSON array of documents
+    # Build JSON array of documents using jq for proper escaping
     if [[ ${#docs[@]} -eq 0 ]]; then
-        json_docs="[]"
+        json_docs_array='[]'
     else
-        json_docs=$(printf '"%s",' "${docs[@]}")
-        json_docs="[${json_docs%,}]"
+        # Use jq to safely build JSON array from docs
+        json_docs_array=$(printf '%s\n' "${docs[@]}" | jq -R . | jq -s .)
     fi
     
-    printf '{"FEATURE_DIR":"%s","AVAILABLE_DOCS":%s}\n' "$FEATURE_DIR" "$json_docs"
+    # Use jq for proper JSON escaping of path variables
+    jq -n \
+        --arg feature_dir "$FEATURE_DIR" \
+        --argjson available_docs "$json_docs_array" \
+        --arg prd "$PRD" \
+        --arg ard "$ARD" \
+        --arg sec "$SEC" \
+        '{FEATURE_DIR: $feature_dir, AVAILABLE_DOCS: $available_docs, PRD: $prd, ARD: $ard, SEC: $sec}'
 else
     # Text output
     echo "FEATURE_DIR:$FEATURE_DIR"

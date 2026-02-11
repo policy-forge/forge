@@ -83,6 +83,45 @@ check_feature_branch() {
 
 get_feature_dir() { echo "$1/specs/$2"; }
 
+# Resolve formal workflow artifacts (PRD/AR/SEC), preferring feature-local files
+# and falling back to docs/<TYPE>/<prefix>-*.md when present.
+resolve_formal_doc_path() {
+    local repo_root="$1"
+    local feature_dir="$2"
+    local local_filename="$3" # prd.md | ar.md | sec.md
+    local docs_subdir="$4"    # PRD | AR | SEC
+    local feature_basename
+    feature_basename="$(basename "$feature_dir")"
+
+    local local_path="$feature_dir/$local_filename"
+    if [[ -f "$local_path" ]]; then
+        echo "$local_path"
+        return
+    fi
+
+    if [[ "$feature_basename" =~ ^([0-9]{3})- ]]; then
+        local prefix="${BASH_REMATCH[1]}"
+        local docs_dir="$repo_root/docs/$docs_subdir"
+        if [[ -d "$docs_dir" ]]; then
+            local matches=()
+            local doc
+            shopt -s nullglob
+            for doc in "$docs_dir"/"$prefix"-*.md; do
+                [[ -f "$doc" ]] && matches+=("$doc")
+            done
+            shopt -u nullglob
+
+            if [[ ${#matches[@]} -gt 0 ]]; then
+                printf '%s\n' "${matches[@]}" | sort | head -n 1
+                return
+            fi
+        fi
+    fi
+
+    # Return feature-local default even when missing; callers may still test existence.
+    echo "$local_path"
+}
+
 # Find feature directory by numeric prefix instead of exact branch match
 # This allows multiple branches to work on the same spec (e.g., 004-fix-bug, 004-add-feature)
 find_feature_dir_by_prefix() {
@@ -136,6 +175,13 @@ get_feature_paths() {
     # Use prefix-based lookup to support multiple branches per spec
     local feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch")
 
+    local prd_path
+    local ard_path
+    local sec_path
+    prd_path="$(resolve_formal_doc_path "$repo_root" "$feature_dir" "prd.md" "PRD")"
+    ard_path="$(resolve_formal_doc_path "$repo_root" "$feature_dir" "ar.md" "AR")"
+    sec_path="$(resolve_formal_doc_path "$repo_root" "$feature_dir" "sec.md" "SEC")"
+
     cat <<EOF
 REPO_ROOT='$repo_root'
 CURRENT_BRANCH='$current_branch'
@@ -148,9 +194,9 @@ RESEARCH='$feature_dir/research.md'
 DATA_MODEL='$feature_dir/data-model.md'
 QUICKSTART='$feature_dir/quickstart.md'
 CONTRACTS_DIR='$feature_dir/contracts'
-PRD='$feature_dir/prd.md'
-ARD='$feature_dir/ar.md'
-SEC='$feature_dir/sec.md'
+PRD='$prd_path'
+ARD='$ard_path'
+SEC='$sec_path'
 EOF
 }
 
@@ -199,4 +245,3 @@ read_config_value() {
         echo "$default_value"
     fi
 }
-

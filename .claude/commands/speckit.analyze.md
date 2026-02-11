@@ -24,19 +24,26 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 ### 1. Initialize Analysis Context
 
-Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` once from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS. Derive absolute paths:
+Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` once from repo root and parse JSON for `FEATURE_DIR`, `AVAILABLE_DOCS`, `PRD`, `ARD`, and `SEC`. Always parse the `PRD`/`ARD`/`SEC` fields from the JSON; then, in later steps, check whether the referenced paths actually exist or fall back to `AVAILABLE_DOCS`/feature-local defaults as described below. Derive absolute paths:
 
 - SPEC = FEATURE_DIR/spec.md
 - PLAN = FEATURE_DIR/plan.md
 - TASKS = FEATURE_DIR/tasks.md
-- PRD = FEATURE_DIR/prd.md (optional — formal workflow)
-- AR = FEATURE_DIR/ar.md (optional — formal workflow)
-- SEC = FEATURE_DIR/sec.md (optional — formal workflow)
+- PRD = `PRD` path from JSON (check existence; if missing, try FEATURE_DIR/prd.md or check AVAILABLE_DOCS)
+- AR = `ARD` path from JSON (check existence; if missing, try FEATURE_DIR/ar.md or check AVAILABLE_DOCS)
+- SEC = `SEC` path from JSON (check existence; if missing, try FEATURE_DIR/sec.md or check AVAILABLE_DOCS)
 
 Abort with an error message if any required file (spec.md or prd.md, plan.md, tasks.md) is missing (instruct the user to run missing prerequisite command). At least one requirements document (spec.md or prd.md) must exist.
 For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 ### 2. Load Artifacts (Progressive Disclosure)
+
+Artifact reuse rules:
+
+- If an artifact was already loaded earlier in this conversation and has not changed (same path and newer content not detected), reuse prior extracted context instead of re-reading the full file.
+- Re-read a full artifact only when required (file changed, first access, or missing sections needed for a finding).
+- Prefer targeted section reads over whole-file reads.
+- Avoid repetitive "I already loaded X, now re-loading Y" narration; keep load reporting minimal.
 
 Load only the minimal necessary context from each artifact:
 

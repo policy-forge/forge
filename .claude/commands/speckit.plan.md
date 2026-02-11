@@ -22,12 +22,21 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 1. **Setup**: Run `.specify/scripts/bash/setup-plan.sh --json` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load context**: Read FEATURE_SPEC and `.specify/memory/constitution.md`. Load IMPL_PLAN template (already copied). Also check for formal workflow artifacts in FEATURE_DIR:
-   - If `prd.md` exists: Read it as enriched requirements source (MoSCoW requirements, prioritized user stories, technical constraints). Use alongside or in preference to spec.md for requirements extraction.
-   - If `ar.md` exists: Read it for architecture decisions, component design, and technical constraints. Incorporate selected option and implementation guardrails into the plan.
-   - If `sec.md` exists: Read it for security requirements (SEC-* IDs), trust boundaries, and data classifications. Incorporate security tasks into the plan.
+2. **Artifact reuse and token discipline**:
+   - If an artifact was already loaded earlier in this conversation and has not changed (same path and newer content not detected), reuse prior extracted context instead of re-reading the full file.
+   - Re-read a full artifact only when required (file changed, first access, or current phase needs sections not yet extracted).
+   - Prefer targeted section reads over whole-file reads.
+   - Keep status updates concise; avoid repetitive "re-confirm/re-load" narration for unchanged artifacts.
 
-3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
+3. **Load context**: Read FEATURE_SPEC and `.specify/memory/constitution.md`. Load IMPL_PLAN template (already copied). Also discover formal workflow artifacts using this precedence:
+   - PRD: `SPECS_DIR/prd.md`, then `docs/PRD/<feature-prefix>-*.md`
+   - AR: `SPECS_DIR/ar.md`, then `docs/AR/<feature-prefix>-*.md`
+   - SEC: `SPECS_DIR/sec.md`, then `docs/SEC/<feature-prefix>-*.md`
+   - If PRD exists: Read it as enriched requirements source (MoSCoW requirements, prioritized user stories, technical constraints). Use alongside or in preference to spec.md for requirements extraction.
+   - If AR exists: Read it for architecture decisions, component design, and technical constraints. Incorporate selected option and implementation guardrails into the plan.
+   - If SEC exists: Read it for security requirements (SEC-* IDs), trust boundaries, and data classifications. Incorporate security tasks into the plan.
+
+4. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
    - Fill Constitution Check section from constitution
    - Evaluate gates (ERROR if violations unjustified)
@@ -36,7 +45,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Phase 1: Update agent context by running the agent script
    - Re-evaluate Constitution Check post-design
 
-4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
+5. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
 
 ## Phases
 

@@ -29,7 +29,18 @@ Execution steps:
    - If JSON parsing fails, abort and instruct user to re-run `/speckit.specify` or verify feature branch environment.
    - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. Load the requirements document. Check if `prd.md` exists in FEATURE_DIR — if so, use it as the primary requirements document (it contains richer MoSCoW requirements and prioritized user stories). Otherwise, fall back to FEATURE_SPEC (spec.md). If both exist, load both and clarify across them. Perform a structured ambiguity & coverage scan using this taxonomy. For each category, mark status: Clear / Partial / Missing. Produce an internal coverage map used for prioritization (do not output raw map unless no questions will be asked).
+2. Load requirements documents with quiet fallback (do not frame missing optional files as errors):
+   - Always load `FEATURE_SPEC` (`spec.md`) first if present.
+   - Then discover PRD candidates in this order and load any that exist:
+     1) `FEATURE_DIR/prd.md`
+     2) PRD path(s) explicitly referenced inside `spec.md` (if any)
+     3) `docs/PRD/<feature-prefix>-*.md` where `<feature-prefix>` is the numeric prefix from the feature directory/branch (e.g., `003`)
+   - If multiple PRD candidates exist, prefer the closest/most feature-specific source (feature dir > explicit reference > docs fallback), but you may still use multiple as supporting context.
+   - Also load AR/SEC documents when explicitly referenced by `spec.md` or discoverable via `docs/AR/<feature-prefix>-*.md` and `docs/SEC/<feature-prefix>-*.md`.
+   - Only emit an error if neither `spec.md` nor any PRD candidate can be found.
+   - When reporting what was loaded, use neutral wording like "Loaded requirements sources: ..."; do not output "No prd.md in the feature dir" style messages.
+
+   Perform a structured ambiguity & coverage scan using this taxonomy. For each category, mark status: Clear / Partial / Missing. Produce an internal coverage map used for prioritization (do not output raw map unless no questions will be asked).
 
    Functional Scope & Behavior:
    - Core user goals & success criteria

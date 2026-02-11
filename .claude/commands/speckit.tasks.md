@@ -21,14 +21,24 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root and parse `FEATURE_DIR`, `AVAILABLE_DOCS`, `PRD`, `ARD`, and `SEC` (absolute paths). The script always outputs `PRD`, `ARD`, and `SEC` fields, but the files may not exist yet. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load design documents**: Read from FEATURE_DIR:
+2. **Artifact reuse and token discipline**:
+   - If an artifact was already loaded earlier in this conversation and has not changed (same path and newer content not detected), reuse prior extracted context instead of re-reading the full file.
+   - Re-read a full artifact only when required (file changed, first access, or missing sections needed for task mapping).
+   - Prefer targeted section reads over whole-file reads.
+   - Keep status updates concise; do not repeatedly announce re-loading unchanged artifacts.
+
+3. **Load design documents**:
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
-   - **Optional**: prd.md (MoSCoW requirements, prioritized user stories — if present, use as primary requirements source alongside spec.md), ar.md (architecture decisions, component design), sec.md (security requirements with SEC-* IDs), data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
+   - **Optional**:
+     - PRD: Check if the `PRD` path from the script exists; if not, try `FEATURE_DIR/prd.md`, then check `AVAILABLE_DOCS` for `prd.md`, then try `docs/PRD/<feature-prefix>-*.md`
+     - AR: Check if the `ARD` path from the script exists; if not, try `FEATURE_DIR/ar.md`, then check `AVAILABLE_DOCS` for `ar.md`, then try `docs/AR/<feature-prefix>-*.md`
+     - SEC: Check if the `SEC` path from the script exists; if not, try `FEATURE_DIR/sec.md`, then check `AVAILABLE_DOCS` for `sec.md`, then try `docs/SEC/<feature-prefix>-*.md`
+     - data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
    - Note: Not all projects have all documents. Generate tasks based on what's available.
 
-3. **Execute task generation workflow**:
+4. **Execute task generation workflow**:
    - Load plan.md and extract tech stack, libraries, project structure
    - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
    - If prd.md exists: Use as primary requirements source — extract MoSCoW requirements (M-1, S-1, etc.) and prioritized user stories. Prefer prd.md user stories over spec.md when both exist.
@@ -42,7 +52,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Create parallel execution examples per user story
    - Validate task completeness (each user story has all needed tasks, independently testable)
 
-4. **Generate tasks.md**: Use `.specify/templates/tasks-template.md` as structure, fill with:
+5. **Generate tasks.md**: Use `.specify/templates/tasks-template.md` as structure, fill with:
    - Correct feature name from plan.md
    - Phase 1: Setup tasks (project initialization)
    - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
@@ -55,7 +65,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Parallel execution examples per story
    - Implementation strategy section (MVP first, incremental delivery)
 
-5. **Report**: Output path to generated tasks.md and summary:
+6. **Report**: Output path to generated tasks.md and summary:
    - Total task count
    - Task count per user story
    - Parallel opportunities identified

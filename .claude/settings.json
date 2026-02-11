@@ -16,6 +16,7 @@
       "Bash(cargo build:*)",
       "Bash(cargo test:*)",
       "Bash(cargo clippy:*)",
+      "Bash(cargo doc:*)",
       "Bash(rustc --version)",
       "Bash(rustc --print:*)",
       "Bash(rustup show:*)",
