@@ -327,7 +327,7 @@ sequenceDiagram
 ```rust
 /// A node in the section hierarchy tree, representing one Markdown heading
 /// and its associated content.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SectionNode {
     /// Heading title text (e.g., "Access Control" from "## Access Control")
     pub title: String,

@@ -169,9 +169,9 @@ flowchart TD
 
 | Library | Version | License | Purpose | Security Check |
 |---------|---------|---------|---------|----------------|
-| pulldown-cmark | latest stable | MIT | Markdown event-based parsing (already added in WI-2) | ✅ Approved — pure Rust, no unsafe, well-maintained |
+| pulldown-cmark | 0.13.x | MIT | Markdown event-based parsing (new dependency for WI-3) | ✅ Approved — pure Rust, no unsafe, well-maintained |
 
-No new dependencies are introduced by this WI. pulldown-cmark was added in WI-2.
+pulldown-cmark is a new dependency introduced by this WI (added to Cargo.toml in Phase 1 setup).
 
 ### Supply Chain Checklist
 
@@ -361,8 +361,8 @@ No open questions for this work item.
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-4 | AC-4 | Unit | tests/parse_sections_test.rs |
-| SEC-2 | M-1 | EC-1 | Unit | tests/parse_sections_test.rs |
+| SEC-1 | M-4 | AC-4 | Unit | src/parse/mod.rs |
+| SEC-2 | M-1 | EC-1 | Unit | src/parse/mod.rs |
 | SEC-3 | — | — | Code Review | src/parse/mod.rs |
 | SEC-4 | — | — | Code Review | src/parse/mod.rs |
 

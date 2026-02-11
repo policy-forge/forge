@@ -46,6 +46,8 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 ## Active Technologies
 - Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x (002-markdown-ingestion)
 - Filesystem (read-only) (002-markdown-ingestion)
+- Rust edition 2024, stable 1.93.0 + pulldown-cmark 0.13.x (new), clap 4, thiserror 2.0.18, serde 1.x, serde_json 1.x, sha2 0.10.x (existing) (003-structural-extraction-headings)
+- N/A — in-memory processing only (003-structural-extraction-headings)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x
