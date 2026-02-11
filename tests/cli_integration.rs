@@ -1,14 +1,12 @@
 use std::process::Command;
 
-fn cargo_bin() -> Command {
-    let mut cmd = Command::new(env!("CARGO"));
-    cmd.args(["run", "--quiet", "--"]);
-    cmd
+fn forge_bin() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_forge"))
 }
 
 #[test]
 fn help_shows_convert_and_validate() {
-    let output = cargo_bin().arg("--help").output().expect("Failed to execute process");
+    let output = forge_bin().arg("--help").output().expect("Failed to execute process");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(output.status.success(), "Expected success, got: {stdout}");
@@ -18,22 +16,23 @@ fn help_shows_convert_and_validate() {
 
 #[test]
 fn no_args_shows_help() {
-    let output = cargo_bin().output().expect("Failed to execute process");
+    let output = forge_bin().output().expect("Failed to execute process");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     let combined = format!("{stdout}{stderr}");
 
-    // With arg_required_else_help, clap prints help to stdout and exits with code 0 or 2
+    // With arg_required_else_help, clap prints help and exits with code 2
     assert!(
         combined.contains("convert") || combined.contains("Usage"),
         "No-args output should show help or usage:\n{combined}"
     );
+    assert_eq!(output.status.code(), Some(2), "Expected exit code 2 for no-args help display");
 }
 
 #[test]
 fn convert_without_args_shows_error() {
-    let output = cargo_bin().arg("convert").output().expect("Failed to execute process");
+    let output = forge_bin().arg("convert").output().expect("Failed to execute process");
 
     assert!(!output.status.success(), "Expected failure for 'convert' without arguments");
 
@@ -49,7 +48,7 @@ fn convert_without_args_shows_error() {
 
 #[test]
 fn unknown_subcommand_shows_error() {
-    let output = cargo_bin().arg("unknown-command").output().expect("Failed to execute process");
+    let output = forge_bin().arg("unknown-command").output().expect("Failed to execute process");
 
     assert!(!output.status.success(), "Expected failure for unknown subcommand");
 

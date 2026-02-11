@@ -91,18 +91,20 @@ mod tests {
     #[test]
     fn parse_convert_subcommand() {
         let cli = Cli::try_parse_from(["forge", "convert", "test.md"]).unwrap();
-        assert!(matches!(cli.command, Commands::Convert { .. }));
         if let Commands::Convert { input, .. } = cli.command {
             assert_eq!(input, PathBuf::from("test.md"));
+        } else {
+            panic!("Expected Convert command");
         }
     }
 
     #[test]
     fn parse_validate_subcommand() {
         let cli = Cli::try_parse_from(["forge", "validate", "artifact.json"]).unwrap();
-        assert!(matches!(cli.command, Commands::Validate { .. }));
         if let Commands::Validate { input } = cli.command {
             assert_eq!(input, PathBuf::from("artifact.json"));
+        } else {
+            panic!("Expected Validate command");
         }
     }
 

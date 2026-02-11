@@ -41,13 +41,13 @@ jobs:
         run: cargo test
 
       - name: Install cargo-audit
-        run: cargo install cargo-audit
+        run: cargo install cargo-audit --locked
 
       - name: Security audit
         run: cargo audit
 
       - name: Install cargo-deny
-        run: cargo install cargo-deny
+        run: cargo install cargo-deny --locked
 
       - name: License and advisory check
         run: cargo deny check

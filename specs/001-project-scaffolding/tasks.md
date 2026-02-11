@@ -26,7 +26,7 @@
 - [x] T001 Initialize Cargo project with `cargo init --name forge` producing `Cargo.toml` and `src/main.rs`
 - [x] T002 Add dependencies to `Cargo.toml`: `clap` (4.x, features = ["derive"]) and `thiserror` (latest stable) using `cargo add`
 - [x] T003 Run `cargo audit` to verify added dependencies have no advisories per constitution principle VII mandatory pre-addition check
-- [x] T004 [P] Create `.rustfmt.toml` with the project’s Rust formatting configuration (for this repo, `edition = "2024"`).
+- [x] T004 [P] Create `.rustfmt.toml` with project formatting configuration (edition = "2024", max_width = 100, use_small_heuristics = "Max")
 - [x] T005 [P] Configure clippy lints in `Cargo.toml` under `[lints.clippy]`: all = warn, pedantic = warn; and `[lints.rust]`: unsafe_code = warn
 - [x] T006 [P] Create `deny.toml` with license policy (allow list: MIT, Apache-2.0, BSD-3-Clause) and advisory policy (deny all advisories) per constitution principle XI
 
