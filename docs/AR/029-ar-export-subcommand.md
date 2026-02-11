@@ -326,7 +326,7 @@ sequenceDiagram
 
 ```rust
 use clap::{Args, Subcommand, ValueEnum};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Supported OSCAL serialization formats
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -355,7 +355,10 @@ pub struct ExportArgs {
     pub verbose: bool,
 }
 
-/// Detect the format of an OSCAL artifact from its file extension
+/// Detect the format of an OSCAL artifact from its file extension.
+///
+/// Detection is strictly extension-based. If the extension is missing or
+/// unrecognized, an error is returned with the list of supported extensions.
 pub fn detect_format(path: &Path) -> Result<OscalFormat, ForgeError> {
     match path.extension().and_then(|e| e.to_str()) {
         Some("json") => Ok(OscalFormat::Json),
@@ -435,7 +438,7 @@ When deserializing, try each OSCAL model type:
 
 **Added by this Architecture:**
 - `forge export` is a separate subcommand from `forge convert` -- they must not share argument parsing
-- Format detection is extension-based; content sniffing is a Should Have fallback (PRD S-1)
+- Format detection is strictly extension-based; content sniffing is out of scope for MVP
 - Same-format conversion (e.g., JSON to JSON) performs a full round-trip for normalization (PRD S-3)
 - Output validation is mandatory -- skip validation only with an explicit flag (not implemented in MVP)
 

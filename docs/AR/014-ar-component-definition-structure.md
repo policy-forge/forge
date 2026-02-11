@@ -345,13 +345,14 @@ pub fn build_component_definition(
 
     // 2. Generate documentary component
     let component_uuid = generate_component_uuid(document);
+    let title = document.metadata.title.clone();
     let component = serde_json::json!({
         "uuid": component_uuid.to_string(),
         "type": "policy",
-        "title": document.metadata.title,
+        "title": title,
         "description": format!(
             "Documentary component representing the {} policy document.",
-            document.metadata.title
+            title
         ),
         "control-implementations": []
     });
@@ -380,6 +381,7 @@ pub fn build_component_definition(
             );
         }
     }
+
     Ok(comp_def)
 }
 

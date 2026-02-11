@@ -147,7 +147,7 @@ graph TD
 |--------|--------|-------|
 | Semantic equivalence | ✅ Good | Same serde Serialize impl produces both JSON and YAML; structural identity guaranteed |
 | Simplicity | ✅ Good | Single function call; zero model changes; ~10 lines of new code |
-| Correctness | ✅ Good | serde_yaml produces YAML 1.2 compliant output |
+| Correctness | ✅ Good | serde_yaml produces broadly compatible YAML output via serde; round-trip tests verify correctness |
 | Maintainability | ✅ Good | New model types automatically serialize to YAML via derive |
 
 **Pros:**
@@ -158,7 +158,7 @@ graph TD
 
 **Cons:**
 - Limited control over YAML output style (indentation, quoting, multiline strings)
-- serde_yaml uses YAML 1.2 by default, which may differ from OSCAL community YAML examples in style (not content)
+- serde_yaml output style may differ from OSCAL community YAML examples in formatting (not content); YAML spec compliance depends on the pinned serde_yaml version
 - If serde_yaml becomes unmaintained, must switch to serde_yml fork
 
 ---

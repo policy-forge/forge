@@ -372,7 +372,6 @@ pub fn serialize_catalog_to_xml(
 /// Generic dispatch for any OSCAL artifact to XML
 pub fn serialize_to_xml(
     artifact: &OscalArtifact,
-    format: OutputFormat,
 ) -> Result<String, ForgeError> {
     match artifact {
         OscalArtifact::Catalog(c) => serialize_catalog_to_xml(c),

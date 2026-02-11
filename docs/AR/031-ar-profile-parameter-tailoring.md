@@ -49,10 +49,10 @@
 ## Summary
 
 ### Decision 🔴 `@human-required`
-> Extend the existing WI-30 Profile builder with an immutable transform pipeline that appends a `modify` section containing `set-parameters` entries from `--set-param` CLI flags, using clap 4 derive-style `num_args = 2` for argument parsing and deterministic alphabetical ordering of parameter entries.
+> Extend the existing WI-30 Profile builder with an immutable transform pipeline that appends a `modify` section containing `set-parameters` entries from `--set-param` CLI flags, using clap 4 derive-style `num_args = 2` with `ArgAction::Append` for argument parsing and deterministic alphabetical ordering of parameter entries.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> WI-31 adds parameter tailoring to Profile generation by extending the WI-30 builder with a `build_modify_section` function that takes `--set-param` pairs and produces an OSCAL `modify.set-parameters` array. Use clap derive macros with `num_args = 2` and `ArgAction::Append` for the `--set-param` flag. When no `--set-param` flags are provided, the `modify` section MUST be omitted entirely. Do NOT validate param IDs against the source catalog — that is WI-32's responsibility. Do NOT implement `alter` directives or the `merge` section.
+> WI-31 adds parameter tailoring to Profile generation by extending the WI-30 builder with a `build_modify_section` function that takes `--set-param` pairs and produces an OSCAL `modify.set-parameters` array. Use clap 4 derive macros with `num_args = 2` and `ArgAction::Append` for the `--set-param` flag. When no `--set-param` flags are provided, the `modify` section MUST be omitted entirely. Do NOT validate param IDs against the source catalog — that is WI-32's responsibility. Do NOT implement `alter` directives or the `merge` section.
 
 ---
 
@@ -323,12 +323,26 @@ sequenceDiagram
 ### Interface Definitions 🟡 `@human-review`
 
 ```rust
-/// CLI argument for --set-param (repeatable, two values per occurrence)
+/// CLI argument for --set-param (repeatable, two values per occurrence).
+///
+/// clap parses each `--set-param <id> <value>` occurrence as two contiguous
+/// elements in a flattened Vec<String>. The caller MUST convert the flattened
+/// Vec into `Vec<(String, String)>` pairs before passing to `build_modify_section`.
 #[derive(Parser)]
 struct ProfileArgs {
     /// Set parameter value: --set-param <param-id> <value>
+    /// Can be repeated: --set-param prm1 "60 days" --set-param prm2 "quarterly"
     #[arg(long = "set-param", num_args = 2, action = clap::ArgAction::Append)]
     set_params: Vec<String>, // Flattened pairs: [id1, val1, id2, val2, ...]
+}
+
+/// Convert the flattened CLI Vec<String> into typed pairs.
+/// Panics if set_params has an odd length (should not happen with num_args = 2).
+fn parse_set_param_pairs(set_params: &[String]) -> Vec<(String, String)> {
+    set_params
+        .chunks_exact(2)
+        .map(|chunk| (chunk[0].clone(), chunk[1].clone()))
+        .collect()
 }
 
 /// Build the modify section from --set-param pairs.
@@ -443,7 +457,7 @@ graph TD
 
 ### Negative
 - Slightly more code than a direct JSON mutation approach (one additional function)
-- The flattened `Vec<String>` for clap arguments requires manual pairing logic
+- The flattened `Vec<String>` from clap requires an explicit `parse_set_param_pairs` conversion step before calling `build_modify_section`
 
 ### Risks & Mitigations
 
