@@ -180,8 +180,10 @@ pub struct ExtractedContent {
 ///
 /// # Panics
 ///
-/// Will panic if a list item is encountered outside of a list context
-/// (should never happen with well-formed pulldown-cmark events).
+/// This function does not intentionally panic. A list item encountered
+/// outside of a list context is treated as invalid and is ignored (no
+/// list item is emitted); this should never happen with well-formed
+/// pulldown-cmark events.
 ///
 /// # Algorithm (AR-004)
 ///
@@ -290,6 +292,25 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
                     item_text.push(' '); // T018: SoftBreak → space
                 }
             }
+            Event::HardBreak if !item_stack.is_empty() && exclude_depth == 0 => {
+                if let Some((item_text, _)) = item_stack.last_mut() {
+                    item_text.push(' '); // T018: HardBreak → space
+                }
+            }
+            Event::End(TagEnd::Paragraph) if !item_stack.is_empty() && exclude_depth == 0 => {
+                if let Some((item_text, _)) = item_stack.last_mut() {
+                    // Add space between paragraphs if text doesn't already end with whitespace
+                    let last_is_whitespace = item_text
+                        .chars()
+                        .rev()
+                        .next()
+                        .map(|ch| ch.is_whitespace())
+                        .unwrap_or(false);
+                    if !last_is_whitespace {
+                        item_text.push(' '); // T018: Paragraph boundary → space
+                    }
+                }
+            }
 
             // T028: Table extraction — track table/head/row/cell events
             Event::Start(Tag::Table(_)) => {
@@ -302,8 +323,8 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
             }
             Event::End(TagEnd::Table) => {
                 tables.push(ExtractedTable {
-                    headers: table_headers.clone(),
-                    rows: table_rows.clone(),
+                    headers: std::mem::take(&mut table_headers),
+                    rows: std::mem::take(&mut table_rows),
                     source_line: current_table_source_line,
                 });
                 in_table = false;
@@ -316,8 +337,7 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
                 current_row.clear();
             }
             Event::End(TagEnd::TableRow) => {
-                table_rows.push(current_row.clone());
-                current_row.clear();
+                table_rows.push(std::mem::take(&mut current_row));
             }
             Event::Start(Tag::TableCell) => {
                 current_cell.clear();
@@ -360,7 +380,10 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
         }
     }
 
-    // Sort all items by source_line to maintain document order
+    // Sort items by source_line to maintain document order.
+    // Necessary because nested items complete (and are pushed) before their parent items.
+    // When End(Item) events fire, deeply nested children are finalized first, which can
+    // reorder the list_items vector. Sorting by source_line restores original document order.
     list_items.sort_by_key(|item| item.source_line);
 
     Ok(ExtractedContent { list_items, tables, paragraphs })

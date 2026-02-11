@@ -119,7 +119,7 @@ A policy document has paragraph text within sections that provides context for t
 
 ### Key Entities
 
-- **Extracted List Item**: Represents a single list item from the document. Attributes: full text content (all text paragraphs within the list item concatenated, excluding non-text blocks such as code blocks and blockquotes), source line number (1-based), nesting depth (0-based, where 0 is top-level), and list type (ordered or unordered).
+- **Extracted List Item**: Represents a single list item from the document. Attributes: full-text content (all text paragraphs within the list item concatenated, excluding non-text blocks such as code blocks and blockquotes), source line number (1-based), nesting depth (0-based, where 0 is top-level), and list type (ordered or unordered).
 - **Extracted Table**: Represents a complete table from the document. Attributes: column headers (list of strings), data rows (each row is a list of cell strings), and source line number (1-based).
 - **Extracted Paragraph**: Represents a standalone paragraph block (not inside list items or tables). Attributes: text content (inline formatting stripped), source line number (1-based). *(AR-004; S-2)*
 - **Extracted Content**: The collection of all extracted elements from a document, containing zero or more list items, zero or more tables, and zero or more paragraphs.

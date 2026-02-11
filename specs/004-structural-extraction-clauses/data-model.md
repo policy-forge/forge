@@ -29,7 +29,7 @@ Represents a single list item extracted from the document.
 
 | Field           | Type       | Description                                                                 |
 |-----------------|------------|-----------------------------------------------------------------------------|
-| `text`          | `String`   | Full text content (all text paragraphs concatenated, excluding code blocks and blockquotes). Inline formatting stripped to plain text. *(SEC-3)* |
+| `text`          | `String`   | Full-text content (all text paragraphs concatenated, excluding code blocks and blockquotes). Inline formatting stripped to plain text. *(SEC-3)* |
 | `source_line`   | `usize`    | 1-based line number of the list item in the original document. *(M-4, SEC-5)* |
 | `nesting_depth` | `u8`       | 0-based nesting depth. 0 = top-level. Saturates at 255 for deeply nested lists. *(M-5, SEC-4)* |
 | `list_type`     | `ListType` | Whether the item belongs to an ordered or unordered list. *(M-1, M-2)* |

@@ -14,7 +14,7 @@ Extract ordered list items, unordered list items, GFM tables, and standalone par
 **Storage**: N/A — in-memory processing only
 **Testing**: `cargo test` (unit tests in `#[cfg(test)]` module within `src/parse/clauses.rs`)
 **Target Platform**: Local CLI (macOS, Linux)
-**Project Type**: Single Rust binary crate
+**Project Type**: Rust crate with binary (`src/main.rs`) and library (`src/lib.rs`) targets
 **Performance Goals**: O(n) single-pass extraction over pulldown-cmark events *(SEC-5)*
 **Constraints**: No regex for structural extraction *(SEC-6)*; `u8` nesting depth with saturation *(SEC-4)*; `Options::ENABLE_TABLES` required *(SEC-7)*
 **Scale/Scope**: Single Markdown documents up to 1MB (bounded by WI-2 ingestion)
@@ -27,7 +27,7 @@ Extract ordered list items, unordered list items, GFM tables, and standalone par
 |-----------|--------|-------|
 | I. Crate-First Architecture | ⚠️ Accepted deviation | New module (`parse/clauses.rs`) within existing `forge` crate, not a standalone crate. Justified: small scope (~150-200 lines), same `parse` module boundary as WI-3, no independent reuse case. |
 | II. Rust-First | ✅ Pass | Pure Rust, no FFI, no unsafe |
-| III. Contract-First | ✅ Pass | API contract defined in `specs/004/contracts/api.rs` before implementation |
+| III. Contract-First | ✅ Pass | API contract defined in `specs/004-structural-extraction-clauses/contracts/api.rs` before implementation |
 | IV. Test-First (TDD) | ✅ Pass | Failing tests written before each implementation step |
 | V. Complete Implementation | ✅ Pass | All tasks must complete before merge |
 | VI. Performance-First | ✅ Pass | O(n) single-pass algorithm *(SEC-5)* |

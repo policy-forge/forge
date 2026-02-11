@@ -1,5 +1,10 @@
 // Contract: Structural Extraction — Clauses & Tables (WI-4)
 //
+// ⚠️  SPECIFICATION-ONLY FILE — NOT COMPILED
+// This file is documentation of the API contract. The actual implementation
+// resides in src/parse/clauses.rs. The `use crate::ForgeError;` import and
+// `todo!()` placeholder are intentional per contract-first development.
+//
 // This file defines the PUBLIC API contract for the clause/table extraction
 // module. Types and function signatures defined here BEFORE implementation.
 // Naming follows AR-004 Interface Definitions.
@@ -9,7 +14,7 @@
 // Security: SEC-004 requirements traced inline
 
 use serde::Serialize;
-use crate::ForgeError;
+use crate::ForgeError;  // ⚠️ Note: This is spec-only; won't compile standalone
 
 // ── Types ──────────────────────────────────────────────────────────────
 
