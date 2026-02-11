@@ -49,7 +49,7 @@ This PRD covers **WI-1: Project Scaffolding** from the FORGE Product Roadmap (Sp
 - Setting up a `clap`-based CLI with `convert` and `validate` subcommand stubs
 - Establishing the module structure: `cli/`, `ingest/`, `parse/`, `model/`, `oscal/`, `validate/`, `export/`
 - Defining error types using `thiserror`
-- Configuring CI pipeline: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`
+- Configuring CI pipeline: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`, `cargo audit`, `cargo deny check`
 - Ensuring `forge --help` prints usage information
 
 **Out of Scope:**
@@ -111,7 +111,7 @@ A developer pushes code and the CI pipeline validates formatting, linting, and t
 
 **Why this priority**: The constitution mandates quality gates (formatting, linting, testing) as non-negotiable. Establishing them in the first sprint prevents technical debt accumulation.
 
-**Independent Test**: Run `cargo fmt --check && cargo clippy -- -D warnings && cargo test` and verify all pass with zero warnings.
+**Independent Test**: Run `cargo fmt --check && cargo clippy -- -D warnings && cargo test && cargo audit && cargo deny check` and verify all pass with zero warnings.
 
 **Acceptance Scenarios**:
 1. **Given** the project source code, **When** running `cargo fmt --check`, **Then** no formatting violations are reported.
@@ -175,8 +175,8 @@ N/A — No state transitions in this work item.
 - [ ] **M-2:** The CLI shall use `clap` (v4.x) with `convert` and `validate` subcommand definitions.
 - [ ] **M-3:** Running `forge --help` shall print usage text listing available subcommands and global options.
 - [ ] **M-4:** The module structure shall include the following top-level modules: `cli`, `ingest`, `parse`, `model`, `oscal`, `validate`, `export`.
-- [ ] **M-5:** Error types shall be defined using `thiserror` with at least variants for I/O errors, parse errors, and validation errors.
-- [ ] **M-6:** The CI pipeline shall enforce `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test` with all checks passing.
+- [ ] **M-5:** Error types shall be defined using `thiserror` with at least variants for I/O errors, parse errors, validation errors, and configuration errors.
+- [ ] **M-6:** The CI pipeline shall enforce `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`, `cargo audit`, and `cargo deny check` with all checks passing.
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
 - [ ] **S-1:** The CLI shall include `--verbose` and `--quiet` global flags for controlling output verbosity.
@@ -261,7 +261,7 @@ enum ForgeError {
 | AC-2 | M-2, M-3 | US-1 | Built `forge` binary | Running `forge --help` | Usage text shows `convert` and `validate` subcommands |
 | AC-3 | M-4 | US-1 | Project source tree | Inspecting `src/` directory | Modules `cli`, `ingest`, `parse`, `model`, `oscal`, `validate`, `export` exist |
 | AC-4 | M-5 | US-3 | Error type module | Compiling and using error variants | Errors propagate with `?` and display descriptive messages |
-| AC-5 | M-6 | US-2 | Project source code | Running `cargo fmt --check && cargo clippy -- -D warnings && cargo test` | All checks pass with zero violations |
+| AC-5 | M-6 | US-2 | Project source code | Running `cargo fmt --check && cargo clippy -- -D warnings && cargo test && cargo audit && cargo deny check` | All checks pass with zero violations |
 
 ### Edge Cases 🟢 `@llm-autonomous`
 - [ ] **EC-1:** (M-2) When running `forge` with no subcommand, then help text is displayed (not a panic or empty output).
