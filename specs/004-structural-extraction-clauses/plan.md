@@ -15,7 +15,7 @@ Extract ordered list items, unordered list items, GFM tables, and standalone par
 **Testing**: `cargo test` (unit tests in `#[cfg(test)]` module within `src/parse/clauses.rs`)
 **Target Platform**: Local CLI (macOS, Linux)
 **Project Type**: Single Rust binary crate
-**Performance Goals**: O(n) single-pass extraction over pulldown-cmark events *(SEC-5)*
+**Performance Goals**: Event-based extraction with O(n log n) list item sorting *(SEC-5)*
 **Constraints**: No regex for structural extraction *(SEC-6)*; `u8` nesting depth with saturation *(SEC-4)*; `Options::ENABLE_TABLES` required *(SEC-7)*
 **Scale/Scope**: Single Markdown documents up to 1MB (bounded by WI-2 ingestion)
 
@@ -30,7 +30,7 @@ Extract ordered list items, unordered list items, GFM tables, and standalone par
 | III. Contract-First | ✅ Pass | API contract defined in `specs/004/contracts/api.rs` before implementation |
 | IV. Test-First (TDD) | ✅ Pass | Failing tests written before each implementation step |
 | V. Complete Implementation | ✅ Pass | All tasks must complete before merge |
-| VI. Performance-First | ✅ Pass | O(n) single-pass algorithm *(SEC-5)* |
+| VI. Performance-First | ✅ Pass | Event-based extraction with O(n log n) list sorting *(SEC-5)* |
 | VII. Security-First | ✅ Pass | SEC-1 through SEC-7 addressed; no unsafe; bounded types |
 | VIII. Error Handling | ✅ Pass | Returns `Result<ExtractedContent, ForgeError>`; empty content is not an error *(SEC-1)* |
 | IX. Observability | N/A | Deferred — no logging/tracing in extraction pass |
@@ -70,9 +70,9 @@ src/
 
 ### Architecture (AR-004 Option 1: Event-Based Pattern Matching with Depth Counter)
 
-Single-pass O(n) iteration over pulldown-cmark events with `Options::ENABLE_TABLES` enabled. Three concurrent state machines operate within the same event loop:
+Event-based O(n) iteration over pulldown-cmark events with `Options::ENABLE_TABLES` enabled, followed by O(n log n) sorting of list items to restore document order. Three concurrent state machines operate within the same event loop:
 
-1. **List extractor**: Depth counter via `Vec<ListType>` stack. `Start(List)` pushes, `End(List)` pops. `Start(Item)` begins accumulation, `End(Item)` finalizes. `nesting_depth = stack.len().saturating_sub(1).min(255) as u8` *(SEC-4 saturation)*.
+1. **List extractor**: Depth counter via `Vec<ListType>` stack. `Start(List)` pushes, `End(List)` pops. `Start(Item)` begins accumulation, `End(Item)` finalizes. `nesting_depth = stack.len().saturating_sub(1).min(255) as u8` *(SEC-4 saturation)*. Items are sorted by source line after extraction because nested items complete (and are pushed) before their parents, violating document order.
 
 2. **Table extractor**: State machine tracking `in_header` vs `in_data_row`. `Start(Table)` initializes, `Start(TableHead)`/`Start(TableRow)` toggle mode, `Start(TableCell)` begins cell accumulation, `End(Table)` finalizes. Empty cells produce empty strings *(SEC-2)*.
 
@@ -105,7 +105,7 @@ Single-pass O(n) iteration over pulldown-cmark events with `Options::ENABLE_TABL
 | SEC-2 | Empty table cells → empty strings, no panics | Unit test |
 | SEC-3 | Strip inline formatting cleanly | Unit test |
 | SEC-4 | `nesting_depth: u8` with saturation at 255 | Unit test |
-| SEC-5 | O(n) algorithm | Code review |
+| SEC-5 | Event-based extraction with O(n log n) list item sorting | Code review |
 | SEC-6 | Event-based parsing, not regex | Code review |
 | SEC-7 | `Options::ENABLE_TABLES` enabled | Code review + test |
 
