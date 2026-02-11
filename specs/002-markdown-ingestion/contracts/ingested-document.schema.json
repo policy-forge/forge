@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge/ingested-document",
+  "title": "IngestedDocument",
+  "description": "Output of FORGE's Markdown ingestion step. Represents a file read from the filesystem with line-level traceability and content fingerprinting.",
+  "type": "object",
+  "required": ["source_path", "fingerprint", "lines"],
+  "additionalProperties": false,
+  "properties": {
+    "source_path": {
+      "type": "string",
+      "description": "Canonical absolute path to the source Markdown file."
+    },
+    "fingerprint": {
+      "type": "string",
+      "description": "SHA-256 hex digest of the raw file content.",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "lines": {
+      "type": "array",
+      "description": "Ordered list of source lines. Empty array for 0-byte files.",
+      "items": {
+        "$ref": "#/$defs/SourceLine"
+      }
+    }
+  },
+  "$defs": {
+    "SourceLine": {
+      "type": "object",
+      "required": ["number", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "1-based line number in the source file.",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string",
+          "description": "Text content of the line without trailing newline. May be empty for blank lines."
+        }
+      }
+    }
+  }
+}

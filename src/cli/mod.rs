@@ -45,6 +45,10 @@ pub enum Commands {
         /// Output file path
         #[arg(long)]
         output: Option<PathBuf>,
+
+        /// Maximum file size in MB
+        #[arg(long, default_value = "10")]
+        max_size: u64,
     },
 
     /// Validate an OSCAL artifact against schemas
@@ -75,8 +79,8 @@ pub enum OutputFormat {
 /// Returns `ForgeError` if the subcommand handler fails.
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     match &cli.command {
-        Commands::Convert { input, strategy, format, output } => {
-            convert::execute(input, strategy.as_ref(), format, output.as_deref())
+        Commands::Convert { input, strategy, format, output, max_size } => {
+            convert::execute(input, strategy.as_ref(), format, output.as_deref(), *max_size)
         }
         Commands::Validate { input } => validate::execute(input),
     }
@@ -123,7 +127,7 @@ mod tests {
         ])
         .unwrap();
 
-        if let Commands::Convert { input, strategy, format, output } = cli.command {
+        if let Commands::Convert { input, strategy, format, output, .. } = cli.command {
             assert_eq!(input, PathBuf::from("test.md"));
             assert!(matches!(strategy, Some(Strategy::Catalog)));
             assert!(matches!(format, OutputFormat::Json));
