@@ -9,7 +9,7 @@ Establish the FORGE project foundation: a single-crate Rust CLI with clap 4.x de
 
 ## Technical Context
 
-**Language/Version**: Rust latest stable (edition 2021)
+**Language/Version**: Rust latest stable (edition 2024)
 **Primary Dependencies**: clap 4.x (CLI framework, derive macros), thiserror (error type derivation)
 **Storage**: N/A — no data persistence in this work item
 **Testing**: `cargo test` (unit tests in `#[cfg(test)]` modules, integration tests in `tests/`)
