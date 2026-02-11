@@ -86,16 +86,18 @@ fn convert_valid_md_outputs_json() {
     let json: serde_json::Value = serde_json::from_str(&stdout)
         .unwrap_or_else(|e| panic!("Stdout is not valid JSON: {e}\nOutput: {stdout}"));
 
+    let doc = &json["document"];
+
     // source_path is a string
-    assert!(json["source_path"].is_string(), "source_path should be a string");
+    assert!(doc["source_path"].is_string(), "source_path should be a string");
 
     // fingerprint is a 64-char hex string
-    let fingerprint = json["fingerprint"].as_str().unwrap();
+    let fingerprint = doc["fingerprint"].as_str().unwrap();
     assert_eq!(fingerprint.len(), 64, "fingerprint should be 64 chars");
     assert!(fingerprint.chars().all(|c| c.is_ascii_hexdigit()), "fingerprint should be hex");
 
     // lines is an array with correct count
-    let lines = json["lines"].as_array().unwrap();
+    let lines = doc["lines"].as_array().unwrap();
     assert_eq!(lines.len(), 3, "Expected 3 lines");
     assert_eq!(lines[0]["number"], 1);
     assert_eq!(lines[0]["text"], "# Title");
@@ -103,6 +105,13 @@ fn convert_valid_md_outputs_json() {
     assert_eq!(lines[1]["text"], "");
     assert_eq!(lines[2]["number"], 3);
     assert_eq!(lines[2]["text"], "Some content.");
+
+    // sections are included in output
+    let sections = json["sections"].as_array().unwrap();
+    assert_eq!(sections.len(), 1, "Expected 1 section");
+    assert_eq!(sections[0]["title"], "Title");
+    assert_eq!(sections[0]["heading_level"], 1);
+    assert_eq!(sections[0]["body_text"], "Some content.");
 }
 
 // --- US2 integration tests ---
@@ -199,7 +208,7 @@ fn convert_oversized_file_with_max_size_override_succeeds() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let json: serde_json::Value =
         serde_json::from_str(&stdout).unwrap_or_else(|e| panic!("Stdout is not valid JSON: {e}"));
-    assert!(json["fingerprint"].is_string());
+    assert!(json["document"]["fingerprint"].is_string());
 }
 
 #[test]

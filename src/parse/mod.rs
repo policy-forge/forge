@@ -5,6 +5,7 @@
 //! parser with a stack-based single-pass O(n) algorithm.
 
 use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
+use serde::Serialize;
 
 use crate::ForgeError;
 
@@ -27,7 +28,7 @@ use crate::ForgeError;
 /// assert_eq!(node.heading_level, 2);
 /// assert_eq!(node.source_line, 10);
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct SectionNode {
     /// Heading title text (e.g., "Access Control" from `## Access Control`).
     /// May be empty for headings with no text content.
@@ -142,6 +143,14 @@ pub fn extract_sections(content: &str) -> Result<Vec<SectionNode>, ForgeError> {
             Event::SoftBreak | Event::HardBreak if !in_heading => {
                 if let Some((_, node)) = stack.last_mut() {
                     node.body_text.get_or_insert_with(String::new).push('\n');
+                }
+            }
+            Event::End(TagEnd::Paragraph | TagEnd::Item | TagEnd::List(_)) if !in_heading => {
+                if let Some((_, node)) = stack.last_mut() {
+                    let body = node.body_text.get_or_insert_with(String::new);
+                    if !body.is_empty() && !body.ends_with('\n') {
+                        body.push('\n');
+                    }
                 }
             }
             _ => {}
@@ -469,6 +478,8 @@ mod tests {
         let body = sections[0].body_text.as_deref().unwrap();
         assert!(body.contains("First paragraph."), "body: {body:?}");
         assert!(body.contains("Second paragraph."), "body: {body:?}");
+        // Verify paragraphs are separated (not merged)
+        assert!(!body.contains("paragraph.Second"), "paragraphs should not merge: {body:?}");
     }
 
     // ── T025: heading with no body has body_text None (S-1 scenario 2)

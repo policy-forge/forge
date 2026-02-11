@@ -28,7 +28,7 @@ forge validate artifact.json
 
 ## Architecture
 
-```
+```text
 src/
 ├── cli/           # CLI dispatch (clap 4) — convert and validate subcommands
 ├── error.rs       # ForgeError enum (thiserror)

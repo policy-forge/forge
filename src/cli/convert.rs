@@ -1,9 +1,17 @@
 use std::path::Path;
 
+use serde::Serialize;
+
 use crate::ForgeError;
 use crate::cli::{OutputFormat, Strategy};
 use crate::ingest;
 use crate::parse;
+
+#[derive(Serialize)]
+struct ConvertOutput<'a> {
+    document: &'a ingest::IngestedDocument,
+    sections: Vec<parse::SectionNode>,
+}
 
 /// Execute the convert subcommand.
 ///
@@ -23,11 +31,18 @@ pub fn execute(
     let doc = ingest::ingest_file(input, max_size_bytes)?;
 
     // Reconstruct content from ingested lines for section extraction
-    let content: String = doc.lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n");
+    let mut content = String::new();
+    for (i, line) in doc.lines.iter().enumerate() {
+        if i > 0 {
+            content.push('\n');
+        }
+        content.push_str(&line.text);
+    }
     let sections = parse::extract_sections(&content)?;
 
-    let json = serde_json::to_string_pretty(&doc).map_err(|e| ForgeError::Parse(e.to_string()))?;
+    let output = ConvertOutput { document: &doc, sections };
+    let json =
+        serde_json::to_string_pretty(&output).map_err(|e| ForgeError::Parse(e.to_string()))?;
     println!("{json}");
-    eprintln!("Extracted {} section(s) from {}", sections.len(), input.display());
     Ok(())
 }
