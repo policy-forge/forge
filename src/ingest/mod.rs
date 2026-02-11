@@ -66,11 +66,10 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
     }
 
     let bytes = std::fs::read(path)?;
-
-    let content = String::from_utf8(bytes.clone())
-        .map_err(|_| ForgeError::InvalidEncoding { path: path.to_path_buf() })?;
-
     let fingerprint = format!("{:x}", Sha256::digest(&bytes));
+
+    let content = String::from_utf8(bytes)
+        .map_err(|_| ForgeError::InvalidEncoding { path: path.to_path_buf() })?;
 
     let lines: Vec<SourceLine> = content
         .lines()

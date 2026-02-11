@@ -16,7 +16,9 @@ pub fn execute(
     _output: Option<&Path>,
     max_size: u64,
 ) -> Result<(), ForgeError> {
-    let max_size_bytes = max_size * 1024 * 1024;
+    let max_size_bytes = max_size
+        .checked_mul(1024 * 1024)
+        .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))?;
     let doc = ingest::ingest_file(input, max_size_bytes)?;
     let json = serde_json::to_string_pretty(&doc).map_err(|e| ForgeError::Parse(e.to_string()))?;
     println!("{json}");
