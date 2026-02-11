@@ -360,17 +360,26 @@ pub fn build_component_definition(
     let back_matter = generate_back_matter(&document.citations)?;
 
     // 4. Assemble component-definition root
-    let comp_def = serde_json::json!({
+    let mut comp_def = serde_json::json!({
         "component-definition": {
             "uuid": Uuid::new_v4().to_string(),
             "metadata": metadata,
-            "components": [component],
-            "back-matter": {
-                "resources": back_matter.0
-            }
+            "components": [component]
         }
     });
 
+    // Only include back-matter if there are resources
+    if !back_matter.0.is_empty() {
+        if let Some(obj) = comp_def
+            .get_mut("component-definition")
+            .and_then(|v| v.as_object_mut())
+        {
+            obj.insert(
+                "back-matter".to_string(),
+                serde_json::json!({ "resources": back_matter.0 }),
+            );
+        }
+    }
     Ok(comp_def)
 }
 
