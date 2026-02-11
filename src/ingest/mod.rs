@@ -31,20 +31,26 @@ pub struct IngestedDocument {
     pub lines: Vec<SourceLine>,
 }
 
-/// Read a Markdown file, validate it, and produce an [`IngestedDocument`].
+/// Ingests a Markdown file: validates extension, size, and UTF-8 encoding, then returns a canonicalized document with a SHA-256 fingerprint and 1-based source lines.
 ///
-/// # Arguments
-///
-/// * `path` - Path to the Markdown file (`.md` or `.markdown`, case-insensitive).
-/// * `max_size_bytes` - Maximum allowed file size in bytes.
+/// On success returns an `IngestedDocument` containing the canonical `source_path`, a lowercase hex SHA-256 `fingerprint` of the raw file bytes, and `lines` where each `SourceLine` has a 1-based `number` and the line `text` (no trailing newline).
 ///
 /// # Errors
 ///
-/// Returns [`ForgeError::UnsupportedFormat`] if the file extension is not `.md` or `.markdown`.
-/// Returns [`ForgeError::NotAFile`] if the path is not a regular file.
-/// Returns [`ForgeError::FileTooLarge`] if the file exceeds `max_size_bytes`.
-/// Returns [`ForgeError::InvalidEncoding`] if the file is not valid UTF-8.
-/// Returns [`ForgeError::Io`] for filesystem errors (not found, permission denied).
+/// - [`ForgeError::UnsupportedFormat`] if the file extension is not `.md` or `.markdown` (case-insensitive).
+/// - [`ForgeError::NotAFile`] if `path` does not refer to a regular file.
+/// - [`ForgeError::FileTooLarge`] if the file size exceeds `max_size_bytes`.
+/// - [`ForgeError::InvalidEncoding`] if the file bytes are not valid UTF-8.
+/// - [`ForgeError::Io`] for filesystem I/O errors (e.g., not found, permission denied, or failure to canonicalize).
+///
+/// # Examples
+///
+/// ```
+/// use std::path::Path;
+/// // `example.md` should exist for this example to run in a real environment.
+/// let doc = ingest_file(Path::new("example.md"), 10_000).unwrap();
+/// assert!(!doc.fingerprint.is_empty());
+/// ```
 pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument, ForgeError> {
     // Extension validation (must execute before any file I/O)
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
@@ -90,6 +96,19 @@ mod tests {
     use std::io::Write;
     use tempfile::TempDir;
 
+    /// Creates a file named `name` containing `content` inside the given temporary directory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use tempfile::tempdir;
+    /// use std::fs;
+    /// let dir = tempdir().unwrap();
+    /// let path = create_temp_md(&dir, "example.md", "# Hello\n");
+    /// assert!(path.exists());
+    /// let txt = fs::read_to_string(path).unwrap();
+    /// assert_eq!(txt, "# Hello\n");
+    /// ```
     fn create_temp_md(dir: &TempDir, name: &str, content: &str) -> PathBuf {
         let path = dir.path().join(name);
         let mut file = fs::File::create(&path).unwrap();

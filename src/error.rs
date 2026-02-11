@@ -3,6 +3,18 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 #[allow(clippy::cast_precision_loss)] // Precision loss is acceptable for human-readable file sizes
+/// Format a byte count into a compact human-readable string using KB or MB with one decimal place.
+///
+/// Values less than 1,048,576 bytes are rendered in kilobytes (KB); values greater than or
+/// equal to 1,048,576 bytes are rendered in megabytes (MB). The output includes one digit
+/// after the decimal point (e.g., `15.0MB`, `512.0KB`).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(format_size(15_728_640), "15.0MB"); // 15 * 1_048_576
+/// assert_eq!(format_size(524_288), "512.0KB");  // 512 * 1024
+/// ```
 fn format_size(bytes: u64) -> String {
     if bytes < 1_048_576 {
         format!("{:.1}KB", bytes as f64 / 1024.0)
@@ -128,6 +140,17 @@ mod tests {
 
     #[test]
     fn io_error_from_conversion() {
+        /// Produces a `ForgeError::Io` representing a permission-denied I/O error.
+        ///
+        /// The returned error wraps an `std::io::Error` with kind `PermissionDenied` and message
+        /// `"access denied"`.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// let err = produce_io_error().unwrap_err();
+        /// assert_eq!(err.to_string(), "I/O error: access denied");
+        /// ```
         fn produce_io_error() -> Result<(), ForgeError> {
             let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
             Err(io_err)?

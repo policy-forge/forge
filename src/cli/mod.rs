@@ -72,11 +72,22 @@ pub enum OutputFormat {
     Yaml,
 }
 
-/// Execute the CLI command, dispatching to the appropriate subcommand handler.
+/// Dispatches the top-level CLI to the selected subcommand handler.
+///
+/// For the current `Cli` command, forwards parsed arguments to the corresponding
+/// subcommand implementation (`convert` or `validate`) and returns its result.
+///
+/// # Examples
+///
+/// ```
+/// use clap::Parser;
+/// let cli = Cli::parse_from(&["forge", "validate", "artifact.json"]);
+/// execute(&cli).unwrap();
+/// ```
 ///
 /// # Errors
 ///
-/// Returns `ForgeError` if the subcommand handler fails.
+/// Returns `ForgeError` if the selected subcommand handler fails.
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     match &cli.command {
         Commands::Convert { input, strategy, format, output, max_size } => {
@@ -112,6 +123,32 @@ mod tests {
         }
     }
 
+    /// Ensures the CLI correctly parses the `convert` subcommand when all options are provided.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let cli = Cli::try_parse_from([
+    ///     "forge",
+    ///     "convert",
+    ///     "test.md",
+    ///     "--strategy",
+    ///     "catalog",
+    ///     "--format",
+    ///     "json",
+    ///     "--output",
+    ///     "out.json",
+    /// ]).unwrap();
+    ///
+    /// if let Commands::Convert { input, strategy, format, output, .. } = cli.command {
+    ///     assert_eq!(input, PathBuf::from("test.md"));
+    ///     assert!(matches!(strategy, Some(Strategy::Catalog)));
+    ///     assert!(matches!(format, OutputFormat::Json));
+    ///     assert_eq!(output, Some(PathBuf::from("out.json")));
+    /// } else {
+    ///     panic!("Expected Convert command");
+    /// }
+    /// ```
     #[test]
     fn parse_convert_with_all_options() {
         let cli = Cli::try_parse_from([

@@ -4,10 +4,42 @@ use std::process::Command;
 
 use tempfile::TempDir;
 
+/// Create a `Command` preconfigured to execute the compiled `forge` binary.
+
+///
+
+/// # Examples
+
+///
+
+/// ```no_run
+
+/// let mut cmd = forge_bin();
+
+/// cmd.arg("--help");
+
+/// // `no_run` prevents executing the binary during doc tests.
+
+/// ```
 fn forge_bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_forge"))
 }
 
+/// Creates a file named `name` inside the given `TempDir` with the provided `content` and returns its path.
+///
+/// Panics if creating or writing the file fails.
+///
+/// # Examples
+///
+/// ```
+/// use tempfile::TempDir;
+/// use std::fs;
+///
+/// let dir = TempDir::new().unwrap();
+/// let path = create_temp_md(&dir, "policy.md", "# Title\n\nSome content.");
+/// let read = fs::read_to_string(path).unwrap();
+/// assert!(read.contains("Some content."));
+/// ```
 fn create_temp_md(dir: &TempDir, name: &str, content: &str) -> std::path::PathBuf {
     let path = dir.path().join(name);
     let mut file = fs::File::create(&path).unwrap();
@@ -144,6 +176,22 @@ fn convert_nonexistent_file_shows_not_found_error() {
     );
 }
 
+/// Verifies that running `forge convert` on a directory path fails and reports that the target is not a regular file.
+///
+/// # Examples
+///
+/// ```
+/// use tempfile::TempDir;
+/// use std::fs;
+/// // create a directory path and invoke the binary (helper `forge_bin()` assumed available in tests)
+/// let dir = TempDir::new().unwrap();
+/// let dir_path = dir.path().join("subdir.md");
+/// fs::create_dir(&dir_path).unwrap();
+/// let output = forge_bin().arg("convert").arg(&dir_path).output().unwrap();
+/// assert!(!output.status.success());
+/// let stderr = String::from_utf8_lossy(&output.stderr);
+/// assert!(stderr.contains("not a regular file"));
+/// ```
 #[test]
 fn convert_directory_shows_not_a_file_error() {
     let dir = TempDir::new().unwrap();
@@ -179,6 +227,33 @@ fn convert_oversized_file_shows_size_error() {
     assert!(stderr.contains("max-size"), "stderr should mention --max-size:\n{stderr}");
 }
 
+/// Verifies that converting an oversized Markdown file succeeds when a larger `--max-size` is provided.
+///
+/// Creates an ~11 MB Markdown file, runs `forge convert <path> --max-size 20`, and asserts the process
+/// exits successfully and the output JSON contains a `fingerprint` string.
+///
+/// # Examples
+///
+/// ```
+/// // Creates a large file, runs the CLI with an increased max size, and checks for a fingerprint.
+/// let dir = tempfile::TempDir::new().unwrap();
+/// let path = dir.path().join("big.md");
+/// let content = "x".repeat(11 * 1024 * 1024);
+/// std::fs::write(&path, &content).unwrap();
+///
+/// let output = forge_bin()
+///     .arg("convert")
+///     .arg(&path)
+///     .arg("--max-size")
+///     .arg("20")
+///     .output()
+///     .expect("Failed to execute process");
+///
+/// assert!(output.status.success());
+/// let stdout = String::from_utf8_lossy(&output.stdout);
+/// let json: serde_json::Value = serde_json::from_str(&stdout).unwrap();
+/// assert!(json["fingerprint"].is_string());
+/// ```
 #[test]
 fn convert_oversized_file_with_max_size_override_succeeds() {
     let dir = TempDir::new().unwrap();

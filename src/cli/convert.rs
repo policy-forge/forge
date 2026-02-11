@@ -4,11 +4,28 @@ use crate::ForgeError;
 use crate::cli::{OutputFormat, Strategy};
 use crate::ingest;
 
-/// Execute the convert subcommand.
+/// Convert an input file into a pretty-printed JSON document and write it to stdout.
+///
+/// The `input` file is ingested (subject to `max_size`) and the resulting document is
+/// serialized to pretty JSON and printed to standard output.
+///
+/// # Parameters
+///
+/// - `input`: path to the file to convert.
+/// - `_strategy`, `_format`, `_output`: currently unused and ignored by this implementation.
+/// - `max_size`: maximum allowed input size in megabytes; values are converted to bytes.
 ///
 /// # Errors
 ///
-/// Returns `ForgeError` if the conversion fails.
+/// Returns `ForgeError` if ingestion fails or if the document cannot be serialized to JSON.
+///
+/// # Examples
+///
+/// ```no_run
+/// use std::path::Path;
+/// // `execute` will ingest `example.bin` with a 10 MB limit and print JSON to stdout.
+/// let _ = crate::cli::convert::execute(Path::new("example.bin"), None, &crate::cli::OutputFormat::Json, None, 10);
+/// ```
 pub fn execute(
     input: &Path,
     _strategy: Option<&Strategy>,
