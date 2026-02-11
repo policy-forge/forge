@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo --version)",
+      "Bash(cargo -V)",
+      "Bash(cargo --list)",
+      "Bash(cargo help:*)",
+      "Bash(cargo locate-project:*)",
+      "Bash(cargo pkgid:*)",
+      "Bash(cargo read-manifest:*)",
+      "Bash(cargo verify-project:*)",
+      "Bash(cargo metadata:*)",
+      "Bash(cargo tree:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(rustc --version)",
+      "Bash(rustc --print:*)",
+      "Bash(rustup show:*)",
+      "Bash(rustup which:*)"
+    ]
+  }
+}
