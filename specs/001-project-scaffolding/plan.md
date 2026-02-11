@@ -5,7 +5,7 @@
 
 ## Summary
 
-Establish the FORGE project foundation: a single-crate Rust CLI with clap 4.x derive macros for CLI argument parsing, thiserror for structured error types, a flat module hierarchy mirroring the conversion pipeline stages (`cli`, `ingest`, `parse`, `model`, `oscal`, `validate`, `export`), and a CI pipeline enforcing formatting, linting, and testing quality gates. All subcommands are stubs only — no business logic is implemented in this work item.
+Establish the FORGE project foundation: a single-crate Rust CLI with clap 4.x derive macros for CLI argument parsing, thiserror for structured error types, a flat module hierarchy mirroring the conversion pipeline stages (`cli`, `ingest`, `parse`, `model`, `oscal`, `validate`, `export`), and a CI pipeline enforcing formatting, linting, testing, and dependency security quality gates. All subcommands are stubs only — no business logic is implemented in this work item.
 
 ## Technical Context
 

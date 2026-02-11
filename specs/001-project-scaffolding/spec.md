@@ -25,17 +25,19 @@ A developer or end user runs the FORGE CLI for the first time to understand what
 
 ### User Story 2 - CI Quality Gates Enforce Standards (Priority: P1)
 
-A developer pushes code to the repository and the CI pipeline automatically validates that the code meets formatting, linting, and testing standards before it can be merged. This ensures code quality is enforced consistently from the very first sprint.
+A developer pushes code to the repository and the CI pipeline automatically validates that the code meets formatting, linting, testing, and dependency security standards before it can be merged. This ensures code quality and supply-chain safety are enforced consistently from the very first sprint.
 
 **Why this priority**: Quality gates are non-negotiable per the project constitution. Establishing them in the first sprint prevents technical debt from accumulating and ensures every subsequent contribution meets the same standards.
 
-**Independent Test**: Run the full quality gate suite (formatting check, linter with warnings as errors, and test suite) and verify all pass with zero violations.
+**Independent Test**: Run the full quality gate suite (formatting check, linter with warnings as errors, test suite, dependency security audit, and license/advisory policy check) and verify all pass with zero violations.
 
 **Acceptance Scenarios**:
 
 1. **Given** the project source code, **When** running the formatting check, **Then** no formatting violations are reported.
 2. **Given** the project source code, **When** running the linter with warnings treated as errors, **Then** no warnings or errors are reported.
 3. **Given** the project with initial tests, **When** running the test suite, **Then** all tests pass.
+4. **Given** the project dependencies, **When** running the dependency security audit, **Then** no known vulnerabilities are reported.
+5. **Given** the project dependencies, **When** running the license and advisory policy check, **Then** all policies pass.
 
 ---
 
@@ -84,7 +86,7 @@ A developer working on a future feature (e.g., markdown ingestion, OSCAL generat
 - **FR-003**: Running `forge --help` MUST print usage text listing all available subcommands and their descriptions.
 - **FR-004**: The project MUST include a module hierarchy with the following top-level modules: `cli`, `ingest`, `parse`, `model`, `oscal`, `validate`, `export`.
 - **FR-005**: The project MUST define standardized error types covering at least I/O errors, parse errors, validation errors, and configuration errors, each producing descriptive display messages.
-- **FR-006**: The CI pipeline MUST enforce formatting checks, linting with all warnings treated as errors, and a passing test suite on every code push.
+- **FR-006**: The CI pipeline MUST enforce formatting checks, linting with all warnings treated as errors, a passing test suite, dependency security auditing, and license/advisory policy compliance on every code push.
 - **FR-007**: The `convert` subcommand MUST define placeholder arguments for input file, conversion strategy, output format, and output path to establish the CLI interface early.
 - **FR-008**: The CLI SHOULD include global flags for controlling output verbosity (verbose and quiet modes).
 - **FR-009**: The CLI SHOULD include a version flag displaying the project version.
@@ -100,8 +102,8 @@ A developer working on a future feature (e.g., markdown ingestion, OSCAL generat
 ### Measurable Outcomes
 
 - **SC-001**: The project compiles with zero errors, producing a functional binary.
-- **SC-002**: Running the binary with the help flag displays usage text listing `convert` and `validate` subcommands within 1 second.
-- **SC-003**: All CI quality gates (formatting, linting, testing) pass with zero violations on every code push.
+- **SC-002**: Running the binary with the help flag displays usage text listing `convert` and `validate` subcommands within 500ms.
+- **SC-003**: All CI quality gates (formatting, linting, testing, dependency security auditing, license/advisory compliance) pass with zero violations on every code push.
 - **SC-004**: Error messages produced by each error variant are descriptive enough for a user to understand what went wrong without consulting source code.
 - **SC-005**: All seven pipeline-stage modules exist and compile successfully as part of the project build.
 - **SC-006**: A developer can add new code to any pipeline-stage module without needing to restructure the project.
