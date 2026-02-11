@@ -49,7 +49,7 @@
 ## Summary
 
 ### Decision 🔴 `@human-required`
-> Implement `forge export` as a new clap subcommand that orchestrates a generic deserialize-reserialize pipeline through the internal OSCAL model. Format detection is file-extension-based with content-sniffing fallback. Output validation reuses the existing WI-19/WI-20 schema validation infrastructure.
+> Implement `forge export` as a new clap subcommand that orchestrates a generic deserialize-reserialize pipeline through the internal OSCAL model. Format detection is strictly file-extension-based. Output validation reuses the existing WI-19/WI-20 schema validation infrastructure.
 
 ### TL;DR for Agents 🟡 `@human-review`
 > `forge export <input> --format <json|xml|yaml> [--output <path>]` is a thin CLI layer that: (1) detects input format from file extension, (2) deserializes via the appropriate backend (serde_json, quick-xml, serde_yaml), (3) re-serializes to the target format via the appropriate backend, (4) validates the output, (5) writes to stdout or file. Use a single `export_artifact()` function with a generic deserialize-then-reserialize pattern through the shared internal model -- do NOT write 9 separate format-pair conversion functions. The export subcommand is separate from `forge convert` (which operates on source policy documents, not OSCAL artifacts).
