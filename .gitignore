@@ -2,6 +2,7 @@
 /target/
 **/*.rs.bk
 Cargo.lock
+*.log
 
 # === Build artifacts ===
 *.pdb
