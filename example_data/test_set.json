@@ -1,0 +1,361 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-02-07",
+    "description": "Golden policy search test query set for validating SIRA's hybrid search pipeline (BM25 + vector with RRF). Contains 50 queries across 3 types targeting 25 vendor-neutral security policies.",
+    "policy_count": 25,
+    "query_count": 50
+  },
+  "queries": [
+    {
+      "id": "GP-EM-01",
+      "query": "acceptable use of IT equipment and company resources",
+      "type": "exact_match",
+      "expected_top1": "POL-01",
+      "expected_top5": ["POL-01"]
+    },
+    {
+      "id": "GP-EM-02",
+      "query": "IT risk assessment methodology and risk treatment",
+      "type": "exact_match",
+      "expected_top1": "POL-02",
+      "expected_top5": ["POL-02"]
+    },
+    {
+      "id": "GP-EM-03",
+      "query": "information security management system program objectives",
+      "type": "exact_match",
+      "expected_top1": "POL-03",
+      "expected_top5": ["POL-03"]
+    },
+    {
+      "id": "GP-EM-04",
+      "query": "CISO role and information security organization structure",
+      "type": "exact_match",
+      "expected_top1": "POL-04",
+      "expected_top5": ["POL-04"]
+    },
+    {
+      "id": "GP-EM-05",
+      "query": "software licensing compliance and copyright protection",
+      "type": "exact_match",
+      "expected_top1": "POL-05",
+      "expected_top5": ["POL-05"]
+    },
+    {
+      "id": "GP-EM-06",
+      "query": "asset inventory management and hardware lifecycle disposal",
+      "type": "exact_match",
+      "expected_top1": "POL-06",
+      "expected_top5": ["POL-06"]
+    },
+    {
+      "id": "GP-EM-07",
+      "query": "mobile device management MDM and BYOD security",
+      "type": "exact_match",
+      "expected_top1": "POL-07",
+      "expected_top5": ["POL-07"]
+    },
+    {
+      "id": "GP-EM-08",
+      "query": "information classification levels confidential internal public",
+      "type": "exact_match",
+      "expected_top1": "POL-08",
+      "expected_top5": ["POL-08"]
+    },
+    {
+      "id": "GP-EM-09",
+      "query": "information exchange data transfer and media disposal",
+      "type": "exact_match",
+      "expected_top1": "POL-09",
+      "expected_top5": ["POL-09", "POL-08"]
+    },
+    {
+      "id": "GP-EM-10",
+      "query": "third-party vendor security assessment and SLA requirements",
+      "type": "exact_match",
+      "expected_top1": "POL-10",
+      "expected_top5": ["POL-10"]
+    },
+    {
+      "id": "GP-EM-11",
+      "query": "security awareness training and phishing simulation",
+      "type": "exact_match",
+      "expected_top1": "POL-11",
+      "expected_top5": ["POL-11"]
+    },
+    {
+      "id": "GP-EM-12",
+      "query": "network firewall configuration and wireless security SSID",
+      "type": "exact_match",
+      "expected_top1": "POL-12",
+      "expected_top5": ["POL-12"]
+    },
+    {
+      "id": "GP-EM-13",
+      "query": "cloud computing security governance IaaS PaaS SaaS",
+      "type": "exact_match",
+      "expected_top1": "POL-13",
+      "expected_top5": ["POL-13"]
+    },
+    {
+      "id": "GP-EM-14",
+      "query": "data center physical security access control and CCTV",
+      "type": "exact_match",
+      "expected_top1": "POL-14",
+      "expected_top5": ["POL-14"]
+    },
+    {
+      "id": "GP-EM-15",
+      "query": "system acquisition configuration hardening and acceptance testing",
+      "type": "exact_match",
+      "expected_top1": "POL-15",
+      "expected_top5": ["POL-15"]
+    },
+    {
+      "id": "GP-EM-16",
+      "query": "change management CAB authorization and rollback procedures",
+      "type": "exact_match",
+      "expected_top1": "POL-16",
+      "expected_top5": ["POL-16"]
+    },
+    {
+      "id": "GP-EM-17",
+      "query": "encryption key management AES RSA TLS certificate rotation",
+      "type": "exact_match",
+      "expected_top1": "POL-17",
+      "expected_top5": ["POL-17"]
+    },
+    {
+      "id": "GP-EM-18",
+      "query": "vulnerability scanning patch management and CVSS scoring",
+      "type": "exact_match",
+      "expected_top1": "POL-18",
+      "expected_top5": ["POL-18"]
+    },
+    {
+      "id": "GP-EM-19",
+      "query": "secure software development lifecycle SDLC and OWASP coding",
+      "type": "exact_match",
+      "expected_top1": "POL-19",
+      "expected_top5": ["POL-19"]
+    },
+    {
+      "id": "GP-EM-20",
+      "query": "backup schedule RPO RTO and business continuity plan",
+      "type": "exact_match",
+      "expected_top1": "POL-20",
+      "expected_top5": ["POL-20"]
+    },
+    {
+      "id": "GP-SE-01",
+      "query": "What rules govern how employees use company computers and internet?",
+      "type": "semantic",
+      "expected_top1": "POL-01",
+      "expected_top5": ["POL-01"]
+    },
+    {
+      "id": "GP-SE-02",
+      "query": "How does the organization identify and evaluate threats to information systems?",
+      "type": "semantic",
+      "expected_top1": "POL-02",
+      "expected_top5": ["POL-02", "POL-03"]
+    },
+    {
+      "id": "GP-SE-03",
+      "query": "What are the consequences for violating security policies?",
+      "type": "semantic",
+      "expected_top1": "POL-03",
+      "expected_top5": ["POL-03", "POL-01"]
+    },
+    {
+      "id": "GP-SE-04",
+      "query": "Who is responsible for overseeing the security program and reporting to the board?",
+      "type": "semantic",
+      "expected_top1": "POL-04",
+      "expected_top5": ["POL-04", "POL-03"]
+    },
+    {
+      "id": "GP-SE-05",
+      "query": "Can employees install personal software on work computers?",
+      "type": "semantic",
+      "expected_top1": "POL-05",
+      "expected_top5": ["POL-05", "POL-01"]
+    },
+    {
+      "id": "GP-SE-06",
+      "query": "What happens to company equipment when an employee leaves the organization?",
+      "type": "semantic",
+      "expected_top1": "POL-06",
+      "expected_top5": ["POL-06"]
+    },
+    {
+      "id": "GP-SE-07",
+      "query": "What security controls apply to personal smartphones used for work?",
+      "type": "semantic",
+      "expected_top1": "POL-07",
+      "expected_top5": ["POL-07", "POL-01"]
+    },
+    {
+      "id": "GP-SE-08",
+      "query": "How should employees label and handle sensitive documents?",
+      "type": "semantic",
+      "expected_top1": "POL-08",
+      "expected_top5": ["POL-08", "POL-09"]
+    },
+    {
+      "id": "GP-SE-09",
+      "query": "What precautions are required when sending confidential data by email?",
+      "type": "semantic",
+      "expected_top1": "POL-09",
+      "expected_top5": ["POL-09", "POL-01"]
+    },
+    {
+      "id": "GP-SE-10",
+      "query": "How are external vendors evaluated before being granted access to our systems?",
+      "type": "semantic",
+      "expected_top1": "POL-10",
+      "expected_top5": ["POL-10"]
+    },
+    {
+      "id": "GP-SE-11",
+      "query": "What training must new employees complete about cybersecurity?",
+      "type": "semantic",
+      "expected_top1": "POL-11",
+      "expected_top5": ["POL-11"]
+    },
+    {
+      "id": "GP-SE-12",
+      "query": "How should the corporate network be segmented to isolate sensitive systems?",
+      "type": "semantic",
+      "expected_top1": "POL-12",
+      "expected_top5": ["POL-12"]
+    },
+    {
+      "id": "GP-SE-13",
+      "query": "What are the requirements for storing data in third-party cloud services?",
+      "type": "semantic",
+      "expected_top1": "POL-13",
+      "expected_top5": ["POL-13", "POL-10"]
+    },
+    {
+      "id": "GP-SE-14",
+      "query": "How is physical access to server rooms controlled and monitored?",
+      "type": "semantic",
+      "expected_top1": "POL-14",
+      "expected_top5": ["POL-14"]
+    },
+    {
+      "id": "GP-SE-15",
+      "query": "What steps are required before deploying new hardware into production?",
+      "type": "semantic",
+      "expected_top1": "POL-15",
+      "expected_top5": ["POL-15", "POL-16"]
+    },
+    {
+      "id": "GP-SE-16",
+      "query": "Who must approve changes to production systems before deployment?",
+      "type": "semantic",
+      "expected_top1": "POL-16",
+      "expected_top5": ["POL-16", "POL-19"]
+    },
+    {
+      "id": "GP-SE-17",
+      "query": "What happens when a critical security vulnerability is discovered in our software?",
+      "type": "semantic",
+      "expected_top1": "POL-18",
+      "expected_top5": ["POL-18", "POL-23"]
+    },
+    {
+      "id": "GP-SE-18",
+      "query": "What logging and monitoring is required for production applications?",
+      "type": "semantic",
+      "expected_top1": "POL-21",
+      "expected_top5": ["POL-21", "POL-19"]
+    },
+    {
+      "id": "GP-SE-19",
+      "query": "Can employees use ChatGPT or other AI tools with company data?",
+      "type": "semantic",
+      "expected_top1": "POL-22",
+      "expected_top5": ["POL-22"]
+    },
+    {
+      "id": "GP-SE-20",
+      "query": "Where should employees store their work passwords and API keys?",
+      "type": "semantic",
+      "expected_top1": "POL-25",
+      "expected_top5": ["POL-25", "POL-01"]
+    },
+    {
+      "id": "GP-CX-01",
+      "query": "How should backup data stored in the cloud be encrypted?",
+      "type": "complex",
+      "expected_top1": "POL-20",
+      "expected_top5": ["POL-20", "POL-17", "POL-13"]
+    },
+    {
+      "id": "GP-CX-02",
+      "query": "What are the notification requirements when a data breach affects customer personal information?",
+      "type": "complex",
+      "expected_top1": "POL-23",
+      "expected_top5": ["POL-23", "POL-24", "POL-09"]
+    },
+    {
+      "id": "GP-CX-03",
+      "query": "How should code review and vulnerability scanning be integrated into the development pipeline?",
+      "type": "complex",
+      "expected_top1": "POL-19",
+      "expected_top5": ["POL-19", "POL-18"]
+    },
+    {
+      "id": "GP-CX-04",
+      "query": "What controls protect sensitive data when a mobile device is lost while traveling?",
+      "type": "complex",
+      "expected_top1": "POL-07",
+      "expected_top5": ["POL-07", "POL-09", "POL-17"]
+    },
+    {
+      "id": "GP-CX-05",
+      "query": "How do crisis communication and incident response work together during a security breach?",
+      "type": "complex",
+      "expected_top1": "POL-24",
+      "expected_top5": ["POL-24", "POL-23"]
+    },
+    {
+      "id": "GP-CX-06",
+      "query": "What are the security requirements for using AI-generated code in production applications?",
+      "type": "complex",
+      "expected_top1": "POL-22",
+      "expected_top5": ["POL-22", "POL-19"]
+    },
+    {
+      "id": "GP-CX-07",
+      "query": "How should audit logs from cloud environments be collected and retained in the SIEM?",
+      "type": "complex",
+      "expected_top1": "POL-21",
+      "expected_top5": ["POL-21", "POL-13"]
+    },
+    {
+      "id": "GP-CX-08",
+      "query": "What risk assessment is needed before granting a third-party vendor access to the corporate network?",
+      "type": "complex",
+      "expected_top1": "POL-10",
+      "expected_top5": ["POL-10", "POL-02", "POL-12"]
+    },
+    {
+      "id": "GP-CX-09",
+      "query": "How should the organization recover from a disaster that destroys the primary data center?",
+      "type": "complex",
+      "expected_top1": "POL-20",
+      "expected_top5": ["POL-20", "POL-14"]
+    },
+    {
+      "id": "GP-CX-10",
+      "query": "What change management and testing steps are required before applying patches to fix critical vulnerabilities?",
+      "type": "complex",
+      "expected_top1": "POL-16",
+      "expected_top5": ["POL-16", "POL-18", "POL-15"]
+    }
+  ]
+}
