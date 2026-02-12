@@ -300,12 +300,8 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
             Event::End(TagEnd::Paragraph) if !item_stack.is_empty() && exclude_depth == 0 => {
                 if let Some((item_text, _)) = item_stack.last_mut() {
                     // Add space between paragraphs if text doesn't already end with whitespace
-                    let last_is_whitespace = item_text
-                        .chars()
-                        .rev()
-                        .next()
-                        .map(|ch| ch.is_whitespace())
-                        .unwrap_or(false);
+                    let last_is_whitespace =
+                        item_text.chars().next_back().is_some_and(char::is_whitespace);
                     if !last_is_whitespace {
                         item_text.push(' '); // T018: Paragraph boundary → space
                     }

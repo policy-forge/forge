@@ -3,12 +3,16 @@
 //! Parses Markdown content to extract structural elements using pulldown-cmark's
 //! event-based parser with stack-based single-pass O(n) algorithms.
 
+pub mod atomize;
 pub mod clauses;
 
 use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
 use serde::Serialize;
 
 use crate::ForgeError;
+
+// Re-export atomize types for convenient access via `forge::parse::*`
+pub use atomize::{AtomizationResult, atomize_document, atomize_requirement, preliminary_id};
 
 // Re-export clause types for convenient access via `forge::parse::*`
 pub use clauses::{
