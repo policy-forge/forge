@@ -359,7 +359,7 @@ Based on this review, the implementation MUST satisfy:
 
 | ID | Finding | Severity | Category | Recommendation | Status |
 |----|---------|----------|----------|----------------|--------|
-| F1 | YAML frontmatter region should be bounded to prevent parsing excessively large YAML blocks | Low | Availability | Consider limiting frontmatter parsing to the first 4KB of content (well above typical frontmatter size) to bound serde_yaml processing time | Open |
+| F1 | YAML frontmatter region should be bounded to prevent parsing excessively large YAML blocks | Low | Availability | Consider limiting frontmatter parsing to the first 4KB of content (well above typical frontmatter size) to bound serde_yaml processing time | Deferred — Low priority; policy frontmatter is typically 5-10 lines. serde_yaml handles common attack vectors. Will revisit if processing untrusted input becomes a requirement. |
 
 ### Positive Observations 🟢 `@llm-autonomous`
 
@@ -403,12 +403,12 @@ No open questions for this work item.
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-4 | AC-3, EC-4 | Unit | tests/model_test.rs |
-| SEC-2 | M-1 | EC-3 | Unit | tests/model_test.rs |
-| SEC-3 | M-4 | EC-1 | Unit | tests/model_test.rs |
-| SEC-4 | M-6 | AC-4 | Unit | tests/model_test.rs |
-| SEC-5 | M-5 | AC-1, AC-5 | Unit | tests/model_test.rs |
-| SEC-6 | — | — | Code Review | src/model/mod.rs |
+| SEC-1 | M-4 | AC-3, EC-4 | Unit | src/model/frontmatter.rs (inline #[cfg(test)]) |
+| SEC-2 | M-1 | EC-3 | Unit | src/model/mod.rs (inline #[cfg(test)]) |
+| SEC-3 | M-4 | EC-1 | Unit | src/model/frontmatter.rs, src/model/assemble.rs (inline #[cfg(test)]) |
+| SEC-4 | M-6 | AC-4 | Unit | src/model/assemble.rs (inline #[cfg(test)]) |
+| SEC-5 | M-5 | AC-1, AC-5 | Unit | src/model/assemble.rs (inline #[cfg(test)]) |
+| SEC-6 | — | — | Code Review | src/model/frontmatter.rs |
 | SEC-7 | — | — | Code Review | src/model/mod.rs |
 
 ---

@@ -4,11 +4,10 @@
 //! end-to-end, verifying the full pipeline from PolicyDocument input
 //! to atomized PolicyDocument output.
 
-use forge::model::{PolicyDocument, PolicySection};
 use forge::parse::{atomize_document, atomize_requirement};
 
 mod common;
-use common::make_req;
+use common::{make_doc, make_req, make_section};
 
 // ===================================================================
 // T014: Integration tests for atomize_document
@@ -17,39 +16,39 @@ use common::make_req;
 #[test]
 fn document_with_compound_and_atomic_increases_count() {
     // AC-8: document with 1 compound + 1 atomic → total count increases
-    let doc = PolicyDocument {
-        title: "Integration Test Policy".to_string(),
-        sections: vec![PolicySection {
-            heading: "Access Control".to_string(),
-            requirements: vec![
+    let doc = make_doc(
+        "Integration Test Policy",
+        vec![make_section(
+            "Access Control",
+            vec![
                 make_req("Systems must enforce MFA and must require complex passwords", 10),
                 make_req("All systems must enforce MFA", 20),
             ],
-        }],
-    };
+        )],
+    );
 
-    let original_count = doc.total_requirement_count();
+    let original_count = doc.total_requirements();
     assert_eq!(original_count, 2);
 
     let result = atomize_document(&doc).unwrap();
 
     // 2 from compound + 1 atomic = 3 total
-    assert_eq!(result.total_requirement_count(), 3);
-    assert!(result.total_requirement_count() > original_count);
+    assert_eq!(result.total_requirements(), 3);
+    assert!(result.total_requirements() > original_count);
 }
 
 #[test]
 fn split_requirements_have_sequential_atom_index_and_shared_source_line() {
-    let doc = PolicyDocument {
-        title: "Test".to_string(),
-        sections: vec![PolicySection {
-            heading: "S1".to_string(),
-            requirements: vec![make_req(
+    let doc = make_doc(
+        "Test",
+        vec![make_section(
+            "S1",
+            vec![make_req(
                 "All employees must complete security training and must acknowledge the acceptable use policy or must request a waiver",
                 42,
             )],
-        }],
-    };
+        )],
+    );
 
     let result = atomize_document(&doc).unwrap();
     let reqs = &result.sections[0].requirements;
@@ -64,13 +63,10 @@ fn split_requirements_have_sequential_atom_index_and_shared_source_line() {
 
 #[test]
 fn atomic_requirement_preserved_unchanged_in_document() {
-    let doc = PolicyDocument {
-        title: "Test".to_string(),
-        sections: vec![PolicySection {
-            heading: "S1".to_string(),
-            requirements: vec![make_req("Passwords must be at least 12 characters", 5)],
-        }],
-    };
+    let doc = make_doc(
+        "Test",
+        vec![make_section("S1", vec![make_req("Passwords must be at least 12 characters", 5)])],
+    );
 
     let result = atomize_document(&doc).unwrap();
     let reqs = &result.sections[0].requirements;
@@ -85,26 +81,23 @@ fn atomic_requirement_preserved_unchanged_in_document() {
 #[test]
 fn empty_document_returned_unchanged_ec8() {
     // EC-8: empty document
-    let doc = PolicyDocument { title: "Empty".to_string(), sections: vec![] };
+    let doc = make_doc("Empty", vec![]);
 
     let result = atomize_document(&doc).unwrap();
-    assert_eq!(result.title, "Empty");
+    assert_eq!(result.metadata.title, "Empty");
     assert!(result.sections.is_empty());
-    assert_eq!(result.total_requirement_count(), 0);
+    assert_eq!(result.total_requirements(), 0);
 }
 
 #[test]
 fn document_with_empty_sections() {
-    let doc = PolicyDocument {
-        title: "Test".to_string(),
-        sections: vec![
-            PolicySection { heading: "S1".to_string(), requirements: vec![] },
-            PolicySection {
-                heading: "S2".to_string(),
-                requirements: vec![make_req("Systems must enforce MFA", 1)],
-            },
+    let doc = make_doc(
+        "Test",
+        vec![
+            make_section("S1", vec![]),
+            make_section("S2", vec![make_req("Systems must enforce MFA", 1)]),
         ],
-    };
+    );
 
     let result = atomize_document(&doc).unwrap();
     assert_eq!(result.sections.len(), 2);
@@ -124,23 +117,24 @@ fn atomize_requirement_preserves_text_byte_for_byte() {
 
 #[test]
 fn all_stable_ids_are_64_char_hex_in_document() {
-    let doc = PolicyDocument {
-        title: "Test".to_string(),
-        sections: vec![PolicySection {
-            heading: "S1".to_string(),
-            requirements: vec![
+    let doc = make_doc(
+        "Test",
+        vec![make_section(
+            "S1",
+            vec![
                 make_req("Systems must enforce MFA and must require passwords", 1),
                 make_req("All systems must enforce MFA", 2),
             ],
-        }],
-    };
+        )],
+    );
 
     let result = atomize_document(&doc).unwrap();
     for section in &result.sections {
         for req in &section.requirements {
-            assert_eq!(req.stable_id.len(), 64, "ID length mismatch for: {}", req.text);
+            let id = req.stable_id.as_deref().expect("stable_id should be set after atomization");
+            assert_eq!(id.len(), 64, "ID length mismatch for: {}", req.text);
             assert!(
-                req.stable_id.chars().all(|c| c.is_ascii_hexdigit()),
+                id.chars().all(|c| c.is_ascii_hexdigit()),
                 "Non-hex char in ID for: {}",
                 req.text
             );
@@ -150,32 +144,29 @@ fn all_stable_ids_are_64_char_hex_in_document() {
 
 #[test]
 fn multi_section_document_atomization() {
-    let doc = PolicyDocument {
-        title: "Full Policy".to_string(),
-        sections: vec![
-            PolicySection {
-                heading: "Authentication".to_string(),
-                requirements: vec![
+    let doc = make_doc(
+        "Full Policy",
+        vec![
+            make_section(
+                "Authentication",
+                vec![
                     make_req("Systems must enforce MFA and must require complex passwords", 1),
                     make_req("All accounts must have unique passwords", 2),
                 ],
-            },
-            PolicySection {
-                heading: "Authorization".to_string(),
-                requirements: vec![make_req(
-                    "Access must be role-based and must follow least privilege",
-                    10,
-                )],
-            },
-            PolicySection {
-                heading: "Audit".to_string(),
-                requirements: vec![make_req(
+            ),
+            make_section(
+                "Authorization",
+                vec![make_req("Access must be role-based and must follow least privilege", 10)],
+            ),
+            make_section(
+                "Audit",
+                vec![make_req(
                     "The organization shall log all access and shall retain logs for 90 days",
                     20,
                 )],
-            },
+            ),
         ],
-    };
+    );
 
     let result = atomize_document(&doc).unwrap();
 
@@ -186,5 +177,5 @@ fn multi_section_document_atomization() {
     // Section 3: 1 compound → 2
     assert_eq!(result.sections[2].requirements.len(), 2);
     // Total: 7
-    assert_eq!(result.total_requirement_count(), 7);
+    assert_eq!(result.total_requirements(), 7);
 }

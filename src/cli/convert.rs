@@ -11,6 +11,7 @@ use crate::parse;
 struct ConvertOutput<'a> {
     document: &'a ingest::IngestedDocument,
     sections: Vec<parse::SectionNode>,
+    policy_document: crate::model::PolicyDocument,
 }
 
 /// Execute the convert subcommand.
@@ -31,18 +32,19 @@ pub fn execute(
     let doc = ingest::ingest_file(input, max_size_bytes)?;
 
     // Reconstruct content from ingested lines for section extraction
-    let mut content = String::new();
-    for (i, line) in doc.lines.iter().enumerate() {
-        if i > 0 {
-            content.push('\n');
-        }
-        content.push_str(&line.text);
-    }
+    let content = doc.reconstruct_content();
     let sections = parse::extract_sections(&content)?;
+    let clauses = parse::extract_clauses(&content)?;
 
-    let output = ConvertOutput { document: &doc, sections };
+    let policy_doc = crate::model::assemble_document(&doc, &sections, &clauses)?;
+
+    let section_count = policy_doc.sections.len();
+    let req_count = policy_doc.total_requirements();
+
+    let output = ConvertOutput { document: &doc, sections, policy_document: policy_doc };
     let json =
         serde_json::to_string_pretty(&output).map_err(|e| ForgeError::Parse(e.to_string()))?;
     println!("{json}");
+    eprintln!("Assembled: {section_count} sections, {req_count} requirements");
     Ok(())
 }

@@ -402,8 +402,13 @@ pub struct PolicyRequirement {
 /// - ExtractedContent provides list items, tables, paragraphs
 ///
 /// # Errors
-/// Returns `ForgeError::Parse` if frontmatter is present but cannot be parsed
-/// (warning emitted, falls back to defaults).
+/// Returns `ForgeError::Parse` if section tree structure is invalid or
+/// data inconsistency prevents assembly.
+///
+/// Does NOT error on:
+/// - Malformed YAML frontmatter (warns to stderr, uses fallback metadata)
+/// - Empty document (returns Ok with empty sections)
+/// - Missing frontmatter (uses heading/filename fallback)
 pub fn assemble_document(
     ingested: &IngestedDocument,
     sections: Vec<SectionNode>,

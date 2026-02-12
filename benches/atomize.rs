@@ -1,15 +1,18 @@
 //! Criterion benchmarks for the atomization pipeline.
 
+use std::path::PathBuf;
+
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use forge::model::{PolicyDocument, PolicyRequirement, PolicySection};
+use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 use forge::parse::{atomize_document, atomize_requirement, preliminary_id};
 
 // NOTE: mirrors tests/common/mod.rs — kept local since benches cannot import test modules
 fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
     PolicyRequirement {
-        stable_id: String::new(),
+        stable_id: None,
         text: text.to_string(),
         source_line,
+        nesting_depth: 0,
         atom_index: 0,
         parent_text: None,
     }
@@ -39,8 +42,23 @@ fn bench_atomize_document_100(c: &mut Criterion) {
         requirements.push(make_req("All systems must enforce MFA", i + 1));
     }
     let doc = PolicyDocument {
-        title: "Benchmark Policy".to_string(),
-        sections: vec![PolicySection { heading: "Controls".to_string(), requirements }],
+        id: "bench".to_string(),
+        metadata: DocumentMetadata {
+            title: "Benchmark Policy".to_string(),
+            version: "0.0.0".to_string(),
+            author: None,
+            date: None,
+            source_path: PathBuf::from("bench.md"),
+            content_hash: None,
+        },
+        sections: vec![PolicySection {
+            title: "Controls".to_string(),
+            heading_level: 1,
+            source_line: 1,
+            body_text: None,
+            children: vec![],
+            requirements,
+        }],
     };
     c.bench_function("atomize_document/100_mixed_requirements", |b| {
         b.iter(|| atomize_document(black_box(&doc)).unwrap());
