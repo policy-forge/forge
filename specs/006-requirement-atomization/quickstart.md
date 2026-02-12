@@ -529,11 +529,11 @@ Once all tests pass (GREEN), refactor for clarity and performance:
 2. **Simplify complex functions**: Break down long functions into smaller helpers
 3. **Add logging**: Use `log::debug!` for FR-011 summary metrics
 4. **Optimize regex**: Ensure `SPLIT_PATTERN` is compiled once (already done with `Lazy`)
-5. **Handle warnings**: Use `log::warn!` for EC-9 (max splits) and subject extraction failures
+5. **Handle warnings**: Use `tracing::warn!` for EC-9 (max splits) and subject extraction failures
 
 **Example logging**:
 ```rust
-use log::{debug, warn};
+use tracing::{debug, warn};
 
 pub fn atomize_document(document: PolicyDocument) -> Result<PolicyDocument, ForgeError> {
     let total_reqs = document.total_requirement_count();

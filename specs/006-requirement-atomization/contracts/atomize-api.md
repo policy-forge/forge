@@ -41,7 +41,7 @@ pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, For
 
 **Examples**:
 ```rust
-use forge::models::PolicyDocument;
+use forge::model::PolicyDocument;
 use forge::parse::atomize::atomize_document;
 
 // Given a PolicyDocument with 1 compound requirement
@@ -111,7 +111,7 @@ pub fn atomize_requirement(requirement: &PolicyRequirement) -> Result<Atomizatio
 
 **Examples**:
 ```rust
-use forge::models::PolicyRequirement;
+use forge::model::PolicyRequirement;
 use forge::parse::atomize::atomize_requirement;
 
 // Example 1: Compound statement
