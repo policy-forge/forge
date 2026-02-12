@@ -1,8 +1,9 @@
 //! Criterion benchmarks for the atomization pipeline.
 
+use std::hint::black_box;
 use std::path::PathBuf;
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 use forge::parse::{atomize_document, atomize_requirement, preliminary_id};
 

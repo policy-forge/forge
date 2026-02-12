@@ -335,7 +335,7 @@ mod tests {
         // Two sections: first owns [1, 10), second owns [10, MAX)
         // Items only in the second section's range
         let nodes = vec![section("First", 1, 1), section("Second", 1, 10)];
-        let items = vec![list_item("Belongs to second only", 15, 0)];
+        let items = [list_item("Belongs to second only", 15, 0)];
         let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
 
         let result = map_sections(&nodes, &item_refs);
@@ -352,7 +352,7 @@ mod tests {
     fn list_items_associated_with_correct_parent_section_by_line_range() {
         // Two sibling sections: lines 1-9 and lines 10+
         let nodes = vec![section("First", 1, 1), section("Second", 1, 10)];
-        let items = vec![
+        let items = [
             list_item("Belongs to First", 3, 0),
             list_item("Also belongs to First", 7, 0),
             list_item("Belongs to Second", 12, 0),
@@ -387,7 +387,7 @@ mod tests {
 
     #[test]
     fn orphaned_list_items_produce_preamble_section() {
-        let items = vec![list_item("Req one", 5, 0), list_item("Req two", 8, 0)];
+        let items = [list_item("Req one", 5, 0), list_item("Req two", 8, 0)];
         let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
         let result = map_sections(&[], &item_refs);
         assert_eq!(result.len(), 1);
@@ -400,7 +400,7 @@ mod tests {
     #[test]
     fn preamble_items_before_first_heading_preserved() {
         let nodes = vec![section("Introduction", 1, 10)];
-        let items = vec![
+        let items = [
             list_item("Before heading 1", 3, 0),
             list_item("Before heading 2", 5, 0),
             list_item("After heading", 15, 0),
@@ -425,7 +425,7 @@ mod tests {
     #[test]
     fn stable_id_is_none_for_all_requirements() {
         let nodes = vec![section("Policy", 1, 1)];
-        let items = vec![list_item("Req A", 3, 0), list_item("Req B", 5, 1)];
+        let items = [list_item("Req A", 3, 0), list_item("Req B", 5, 1)];
         let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
 
         let result = map_sections(&nodes, &item_refs);
@@ -465,7 +465,7 @@ mod tests {
         // Parent at line 1 with child at line 10
         let nodes = vec![section_with_children("Parent", 1, 1, vec![section("Child", 2, 10)])];
 
-        let items = vec![
+        let items = [
             list_item("Parent req", 5, 0), // In parent range, before child
             list_item("Child req", 12, 0), // In child range
         ];
@@ -485,7 +485,7 @@ mod tests {
     #[test]
     fn nesting_depth_carried_from_list_item_to_requirement() {
         let nodes = vec![section("Policy", 1, 1)];
-        let items = vec![
+        let items = [
             list_item("Top level", 3, 0),
             list_item("Nested once", 4, 1),
             list_item("Nested twice", 5, 2),
@@ -813,6 +813,15 @@ mod tests {
 
     #[test]
     fn assemble_preserves_all_sections_and_requirements_without_drops() {
+        // Count output sections recursively
+        fn count_sections(sections: &[super::super::PolicySection]) -> usize {
+            sections.iter().map(|s| 1 + count_sections(&s.children)).sum()
+        }
+
+        fn count_requirements(sections: &[super::super::PolicySection]) -> usize {
+            sections.iter().map(|s| s.requirements.len() + count_requirements(&s.children)).sum()
+        }
+
         let content = "# S1\n\n- R1\n- R2\n\n# S2\n\n- R3\n\n## S2.1\n\n- R4\n- R5\n";
         let ingested = make_ingested("complete.md", content);
 
@@ -880,15 +889,6 @@ mod tests {
         let input_item_count = 5; // R1-R5
 
         let doc = assemble_document(&ingested, &sections, &clauses).unwrap();
-
-        // Count output sections recursively
-        fn count_sections(sections: &[super::super::PolicySection]) -> usize {
-            sections.iter().map(|s| 1 + count_sections(&s.children)).sum()
-        }
-
-        fn count_requirements(sections: &[super::super::PolicySection]) -> usize {
-            sections.iter().map(|s| s.requirements.len() + count_requirements(&s.children)).sum()
-        }
 
         let output_section_count = count_sections(&doc.sections);
         let output_req_count = count_requirements(&doc.sections);

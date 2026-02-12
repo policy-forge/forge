@@ -115,6 +115,8 @@ mod tests {
 
     #[test]
     fn fingerprint_is_64_char_lowercase_hex_sha256() {
+        use sha2::{Digest, Sha256};
+
         let dir = TempDir::new().unwrap();
         let content = "hello world\n";
         let path = create_temp_md(&dir, "test.md", content);
@@ -128,7 +130,6 @@ mod tests {
         );
 
         // Independently compute expected SHA-256
-        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(content.as_bytes());
         let expected = format!("{:x}", hasher.finalize());
@@ -299,7 +300,7 @@ mod tests {
     fn non_utf8_file_returns_invalid_encoding() {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("binary.md");
-        fs::write(&path, &[0xFF, 0xFE]).unwrap();
+        fs::write(&path, [0xFF, 0xFE]).unwrap();
         let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
         assert!(matches!(err, ForgeError::InvalidEncoding { .. }));
     }
@@ -316,7 +317,7 @@ mod tests {
         fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
         match &err {
             ForgeError::Io(io_err) => {
-                assert_eq!(io_err.kind(), std::io::ErrorKind::PermissionDenied)
+                assert_eq!(io_err.kind(), std::io::ErrorKind::PermissionDenied);
             }
             other => panic!("Expected ForgeError::Io(PermissionDenied), got: {other:?}"),
         }

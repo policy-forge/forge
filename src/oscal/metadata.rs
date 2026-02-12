@@ -105,7 +105,7 @@ mod tests {
     use super::*;
     use chrono::TimeZone;
 
-    /// T006: Inject fixed UUID and timestamp via MetadataOptions, assert both returned unchanged.
+    /// T006: Inject fixed UUID and timestamp via `MetadataOptions`, assert both returned unchanged.
     #[test]
     fn assemble_with_overrides_uses_injected_values() {
         let fixed_uuid = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
@@ -150,7 +150,7 @@ mod tests {
         assert_eq!(result.version, "2.1");
     }
 
-    /// T009: Assert metadata.oscal_version equals "1.2.0".
+    /// T009: Assert `metadata.oscal_version` equals "1.2.0".
     #[test]
     fn assemble_sets_oscal_version_to_1_2_0() {
         let doc_meta = DocumentMetadata {
@@ -163,7 +163,7 @@ mod tests {
         assert_eq!(result.oscal_version, "1.2.0");
     }
 
-    /// T010: Call without override, parse last_modified, assert timezone is UTC.
+    /// T010: Call without override, parse `last_modified`, assert timezone is UTC.
     #[test]
     fn assemble_generates_utc_timestamp() {
         let doc_meta = DocumentMetadata {
@@ -180,7 +180,7 @@ mod tests {
         );
     }
 
-    /// T011: Serialize OscalMetadata to JSON, assert keys include hyphenated names.
+    /// T011: Serialize `OscalMetadata` to JSON, assert keys include hyphenated names.
     #[test]
     fn serialization_produces_correct_json_field_names() {
         let fixed_uuid = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
