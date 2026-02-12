@@ -107,17 +107,32 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 /// # Examples
 ///
 /// ```
+/// use std::path::PathBuf;
 /// use forge::uuid::assign_stable_ids;
-/// use forge::model::{PolicyDocument, PolicySection, PolicyRequirement};
+/// use forge::model::{PolicyDocument, PolicySection, PolicyRequirement, DocumentMetadata};
 ///
 /// let mut doc = PolicyDocument {
+///     id: "test".to_string(),
+///     metadata: DocumentMetadata {
+///         title: "Test".to_string(),
+///         version: "1.0.0".to_string(),
+///         author: None,
+///         date: None,
+///         source_path: PathBuf::from("test.md"),
+///         content_hash: None,
+///     },
 ///     sections: vec![PolicySection {
 ///         title: "Section 1".to_string(),
+///         heading_level: 1,
+///         source_line: 1,
+///         body_text: None,
 ///         requirements: vec![PolicyRequirement {
 ///             text: "All users must use MFA".to_string(),
 ///             source_line: 1,
 ///             nesting_depth: 0,
 ///             stable_id: None,
+///             atom_index: 0,
+///             parent_text: None,
 ///         }],
 ///         children: vec![],
 ///     }],
@@ -151,8 +166,10 @@ fn assign_stable_ids_to_section(section: &mut PolicySection) {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
-    use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
+    use crate::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
     use uuid::Version;
 
     // === Phase 3: User Story 1 — Deterministic IDs Across Runs ===
@@ -188,24 +205,23 @@ mod tests {
     #[test]
     fn test_assign_stable_ids_all_populated() {
         let mut doc = PolicyDocument {
+            id: "test".to_string(),
+            metadata: test_metadata(),
             sections: vec![
-                PolicySection {
-                    title: "Section 1".to_string(),
-                    requirements: vec![
-                        make_req("Requirement A", 1, 0),
-                        make_req("Requirement B", 2, 0),
-                    ],
-                    children: vec![PolicySection {
-                        title: "Section 1.1".to_string(),
-                        requirements: vec![make_req("Requirement C", 3, 1)],
-                        children: vec![],
-                    }],
-                },
-                PolicySection {
-                    title: "Section 2".to_string(),
-                    requirements: vec![],
-                    children: vec![],
-                },
+                make_section(
+                    "Section 1",
+                    1,
+                    1,
+                    vec![make_req("Requirement A", 1, 0), make_req("Requirement B", 2, 0)],
+                    vec![make_section(
+                        "Section 1.1",
+                        2,
+                        5,
+                        vec![make_req("Requirement C", 3, 1)],
+                        vec![],
+                    )],
+                ),
+                make_section("Section 2", 1, 10, vec![], vec![]),
             ],
         };
 
@@ -221,19 +237,21 @@ mod tests {
     #[test]
     fn test_assign_stable_ids_nested_sections() {
         let mut doc = PolicyDocument {
-            sections: vec![PolicySection {
-                title: "Level 0".to_string(),
-                requirements: vec![make_req("L0 Req", 1, 0)],
-                children: vec![PolicySection {
-                    title: "Level 1".to_string(),
-                    requirements: vec![make_req("L1 Req", 2, 1)],
-                    children: vec![PolicySection {
-                        title: "Level 2".to_string(),
-                        requirements: vec![make_req("L2 Req", 3, 2)],
-                        children: vec![],
-                    }],
-                }],
-            }],
+            id: "test".to_string(),
+            metadata: test_metadata(),
+            sections: vec![make_section(
+                "Level 0",
+                1,
+                1,
+                vec![make_req("L0 Req", 1, 0)],
+                vec![make_section(
+                    "Level 1",
+                    2,
+                    5,
+                    vec![make_req("L1 Req", 2, 1)],
+                    vec![make_section("Level 2", 3, 10, vec![make_req("L2 Req", 3, 2)], vec![])],
+                )],
+            )],
         };
 
         assign_stable_ids(&mut doc);
@@ -346,6 +364,36 @@ mod tests {
             source_line: line,
             nesting_depth: depth,
             stable_id: None,
+            atom_index: 0,
+            parent_text: None,
+        }
+    }
+
+    fn test_metadata() -> DocumentMetadata {
+        DocumentMetadata {
+            title: "Test".to_string(),
+            version: "1.0.0".to_string(),
+            author: None,
+            date: None,
+            source_path: PathBuf::from("test.md"),
+            content_hash: None,
+        }
+    }
+
+    fn make_section(
+        title: &str,
+        level: u8,
+        line: usize,
+        reqs: Vec<PolicyRequirement>,
+        children: Vec<PolicySection>,
+    ) -> PolicySection {
+        PolicySection {
+            title: title.to_string(),
+            heading_level: level,
+            source_line: line,
+            body_text: None,
+            requirements: reqs,
+            children,
         }
     }
 }

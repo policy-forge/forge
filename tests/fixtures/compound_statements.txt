@@ -1,0 +1,29 @@
+# Compound Policy Statements — Test Reference
+# These are human-readable examples; actual test data is inline in unit tests.
+
+# AC-1: Two-part compound with "and must"
+Systems must enforce MFA and must require complex passwords
+→ Expected: 2 atomic requirements
+  1. "Systems must enforce MFA"
+  2. "Systems must require complex passwords"
+
+# AC-2: Two-part compound with "and shall" + shared subject
+The organization shall review access logs and shall revoke inactive accounts within 30 days
+→ Expected: 2 atomic requirements
+  1. "The organization shall review access logs"
+  2. "The organization shall revoke inactive accounts within 30 days"
+
+# AC-3: Three-part compound with mixed conjunctions
+All employees must complete security training and must acknowledge the acceptable use policy or must request a waiver
+→ Expected: 3 atomic requirements
+  1. "All employees must complete security training"
+  2. "All employees must acknowledge the acceptable use policy"
+  3. "All employees must request a waiver"
+
+# EC-2: "or" conjunction with normative verbs
+Systems must implement MFA or must use certificate-based authentication
+→ Expected: 2 atomic requirements
+
+# EC-6: "shall" normative verb
+The team shall document procedures and shall train all staff
+→ Expected: 2 atomic requirements

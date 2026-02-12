@@ -49,6 +49,11 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust edition 2024, stable 1.93.0 + pulldown-cmark 0.13.x (new), clap 4, thiserror 2.0.18, serde 1.x, serde_json 1.x, sha2 0.10.x (existing) (003-structural-extraction-headings)
 - N/A — in-memory processing only (003-structural-extraction-headings)
 - Rust (edition 2024, stable 1.93.0) + pulldown-cmark 0.13.x (existing), serde 1.x (existing), thiserror 2.0.18 (existing) (004-structural-extraction-clauses)
+- N/A — in-memory processing only; operates on domain model structs (004-structural-extraction-clauses)
+- Rust (edition 2024, stable 1.93.0) + serde 1.x (serialization), serde_yaml (YAML frontmatter parsing), thiserror 2.0.18 (error handling), pulldown-cmark 0.13.x (existing from WI-3/4) (005-domain-model)
+- N/A (in-memory processing only; no persistent storage) (005-domain-model)
+- Rust (edition 2024, stable 1.93.0) + regex (latest stable, already in use), sha2 0.10.x (already a dependency from WI-2), thiserror 2.0.18 (existing error handling) (006-requirement-atomization)
+- N/A — in-memory processing only; operates on domain model structs (006-requirement-atomization)
 - Rust (edition 2024, stable 1.93.0) + uuid (v5 feature, NEW), tracing (NEW, Constitution IX), pulldown-cmark 0.13.x, serde 1.x, serde_json 1.x, sha2 0.10.x, clap 4, thiserror 2.0.18 (existing) (007-uuid-generation)
 
 ## Recent Changes

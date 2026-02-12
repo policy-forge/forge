@@ -1,0 +1,35 @@
+# Edge Cases — Test Reference
+# These test boundary conditions and security scenarios.
+
+# EC-7: Empty text
+(empty string)
+→ Expected: 1 atomic requirement (preserved as-is, no error)
+
+# EC-7: Whitespace-only
+"   "
+→ Expected: 1 atomic requirement (preserved as-is, no error)
+
+# EC-8: PolicyDocument with zero requirements
+→ Expected: document returned unchanged
+
+# EC-9: Exceeds max split count (>50 splits)
+must X and must Y and must Z ... (51+ conjunction-verb pairs)
+→ Expected: 1 atomic requirement (preserved as-is, warning logged)
+
+# EC-10: Mixed case normative verbs
+Systems Must enforce MFA and Must require passwords
+→ Expected: 1 atomic requirement (unchanged — case-sensitive matching)
+
+# ReDoS resistance (SC-007, SEC-4)
+10KB+ repetitive string: "Systems must X " repeated 1000 times
+→ Expected: completes in <1 second (regex crate linear-time guarantee)
+
+# Unicode edge cases (SEC-4)
+Zero-width space between conjunction and verb
+→ Expected: no panic, handled gracefully
+
+# Bidirectional override characters
+→ Expected: no panic or corruption
+
+# Multi-byte UTF-8 characters in requirement text
+→ Expected: preserved correctly

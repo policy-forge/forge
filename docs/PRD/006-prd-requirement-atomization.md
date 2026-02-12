@@ -189,6 +189,7 @@ N/A
 - [ ] **M-4:** Each atomic requirement shall be assigned a preliminary stable ID that is deterministic (same input produces same ID). *(Traces to: Parent PRD M-2, M-8)*
 - [ ] **M-5:** The atomizer shall preserve source line numbers from the original `PolicyRequirement` on each resulting atomic requirement. *(Traces to: Parent PRD M-10)*
 - [ ] **M-6:** The atomizer shall operate on a `PolicyDocument` and return an updated `PolicyDocument` with compound requirements replaced by their atomic parts. *(Traces to: Parent PRD M-2)*
+- [ ] **M-7:** The atomizer shall enforce a maximum split count of 50 atomic requirements per compound statement; when exceeded, the statement shall be preserved as-is and a warning shall be logged. *(Traces to: SEC-5, Security Finding F1)*
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
 - [ ] **S-1:** The atomizer shall handle statements with more than two conjunctions (e.g., "must X and must Y and must Z") producing the correct number of atomic requirements.

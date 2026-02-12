@@ -9,3 +9,4 @@ pub mod uuid;
 pub mod validate;
 
 pub use error::ForgeError;
+pub use model::{PolicyDocument, PolicyRequirement, PolicySection};
