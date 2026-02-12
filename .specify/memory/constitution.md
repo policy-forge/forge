@@ -420,14 +420,14 @@ Using an older crate version REQUIRES:
 | Component | Technology | Version | Rationale |
 |-----------|-----------|---------|-----------|
 | **Language** | Rust | Latest stable | Memory safety, performance, type system |
-| **Async Runtime** | Tokio | 1.x | Industry standard, excellent ecosystem |
-| **HTTP Framework** | Axum | 0.8.x | Tower-based, composable, ergonomic (or Actix-Web 4.x) |
-| **CLI Framework** | Clap | 4.x | Derive macros, completions, rich help text |
-| **Serialization** | Serde | 1.x | De facto standard, zero-cost when possible |
-| **Database** | SQLx | 0.8.x | Compile-time checked queries, async, no ORM overhead |
-| **Error Handling** | thiserror + miette | latest | Structured errors + rich diagnostics |
-| **Logging/Tracing** | tracing + tracing-subscriber | latest | Structured, span-based, zero-cost when disabled |
-| **Testing** | Built-in + proptest + insta + criterion | latest | Comprehensive testing strategy |
+| **Async Runtime** | Tokio | Latest stable | Industry standard, excellent ecosystem |
+| **HTTP Framework** | Axum | Latest stable | Tower-based, composable, ergonomic (or Actix-Web 4.x) |
+| **CLI Framework** | Clap | Latest stable | Derive macros, completions, rich help text |
+| **Serialization** | Serde | Latest stable | De facto standard, zero-cost when possible |
+| **Database** | SQLx | Latest stable | Compile-time checked queries, async, no ORM overhead |
+| **Error Handling** | thiserror + miette | Latest stable | Structured errors + rich diagnostics |
+| **Logging/Tracing** | tracing + tracing-subscriber | Latest stable | Structured, span-based, zero-cost when disabled |
+| **Testing** | Built-in + proptest + insta + criterion | Latest stable | Comprehensive testing strategy |
 | **Build** | Cargo | (ships with rustc) | Workspace management, dependency resolution |
 
 ### Rust Toolchain
@@ -452,8 +452,8 @@ Using an older crate version REQUIRES:
 - `bacon` — Background code checker (alternative to cargo-watch)
 
 **Rust Edition & MSRV**:
-- Edition: 2021 (or 2024 when stable and beneficial)
-- MSRV: Document in workspace `Cargo.toml` via `rust-version = "1.XX"`
+- Edition: 2024 (stable as of Rust 1.85)
+- MSRV: Document in workspace `Cargo.toml` via `rust-version = "1.85"`
 - Update MSRV quarterly, tracking stable release schedule
 
 ### Infrastructure

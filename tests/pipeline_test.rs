@@ -44,6 +44,12 @@ fn full_pipeline_produces_valid_policy_document() -> Result<(), ForgeError> {
     let mut total_requirements = 0;
     count_and_verify(&document.sections, &mut total_requirements);
 
+    assert_eq!(
+        document.total_requirements(),
+        total_requirements,
+        "total_requirements() helper must match manual count"
+    );
+
     assert!(total_requirements > 0, "Document should have requirements");
 
     // Verify content_hash is present (from IngestedDocument.fingerprint)

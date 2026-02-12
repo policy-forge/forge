@@ -214,13 +214,13 @@ pub struct PolicyRequirement {
 /// let sections = extract_sections(&ingested.content)?;
 /// let clauses = extract_clauses(&ingested.content)?;
 ///
-/// let document = assemble_document(&ingested, sections, clauses)?;
+/// let document = assemble_document(&ingested, &sections, &clauses)?;
 /// assert_eq!(document.metadata.title, "Security Policy");
 /// ```
 pub fn assemble_document(
     ingested: &IngestedDocument,
-    sections: Vec<SectionNode>,
-    clauses: ExtractedContent,
+    sections: &[SectionNode],
+    clauses: &ExtractedContent,
 ) -> Result<PolicyDocument, ForgeError>;
 ```
 
@@ -287,13 +287,13 @@ fn parse_frontmatter(content: &str) -> Option<FrontmatterData>;
 ///
 /// # Arguments
 /// * `section_nodes` - Section hierarchy from WI-3
-/// * `extracted_clauses` - Extracted list items from WI-4
+/// * `list_items` - Borrowed list item references from WI-4
 ///
 /// # Returns
 /// * `Vec<PolicySection>` - Mapped sections with nested requirements
 fn map_sections(
-    section_nodes: Vec<SectionNode>,
-    extracted_clauses: &ExtractedContent,
+    section_nodes: &[SectionNode],
+    list_items: &[&ExtractedListItem],
 ) -> Vec<PolicySection>;
 ```
 

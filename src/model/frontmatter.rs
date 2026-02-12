@@ -9,9 +9,6 @@
 //! - SEC-3: Empty input returns `None` without error
 //! - SEC-6: No `unwrap()` on deserialization — graceful error handling
 
-// Allow dead code until `assemble_document` (T009) consumes these items.
-#![allow(dead_code)]
-
 use serde::Deserialize;
 
 /// Frontmatter data extracted from YAML between `---` delimiters.

@@ -59,7 +59,36 @@ pub(crate) fn map_sections(
         }];
     }
 
-    map_sections_recursive(section_nodes, list_items)
+    let first_heading_line = section_nodes[0].source_line;
+
+    // Collect list items before the first heading into a Preamble section
+    let preamble_items: Vec<&ExtractedListItem> =
+        list_items.iter().copied().filter(|item| item.source_line < first_heading_line).collect();
+
+    let mut result = Vec::new();
+
+    if !preamble_items.is_empty() {
+        let requirements: Vec<PolicyRequirement> = preamble_items
+            .iter()
+            .map(|item| PolicyRequirement {
+                stable_id: None,
+                text: item.text.clone(),
+                source_line: item.source_line,
+                nesting_depth: item.nesting_depth,
+            })
+            .collect();
+        result.push(PolicySection {
+            title: "Preamble".to_string(),
+            heading_level: 0,
+            source_line: preamble_items[0].source_line,
+            body_text: None,
+            children: vec![],
+            requirements,
+        });
+    }
+
+    result.extend(map_sections_recursive(section_nodes, list_items));
+    result
 }
 
 /// Recursive implementation of section mapping (does not produce Preamble fallback).
@@ -360,6 +389,29 @@ mod tests {
         assert_eq!(result[0].heading_level, 0);
         assert_eq!(result[0].requirements.len(), 2);
         assert_eq!(result[0].requirements[0].text, "Req one");
+    }
+
+    #[test]
+    fn preamble_items_before_first_heading_preserved() {
+        let nodes = vec![section("Introduction", 1, 10)];
+        let items = vec![
+            list_item("Before heading 1", 3, 0),
+            list_item("Before heading 2", 5, 0),
+            list_item("After heading", 15, 0),
+        ];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
+        let result = map_sections(&nodes, &item_refs);
+
+        // Should have Preamble + Introduction
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].title, "Preamble");
+        assert_eq!(result[0].heading_level, 0);
+        assert_eq!(result[0].requirements.len(), 2);
+        assert_eq!(result[0].requirements[0].text, "Before heading 1");
+        assert_eq!(result[0].requirements[1].text, "Before heading 2");
+        assert_eq!(result[1].title, "Introduction");
+        assert_eq!(result[1].requirements.len(), 1);
+        assert_eq!(result[1].requirements[0].text, "After heading");
     }
 
     // ── Additional edge case tests ───────────────────────────────────
