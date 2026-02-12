@@ -11,7 +11,7 @@
 
 **Signature**:
 ```rust
-pub fn atomize_document(document: PolicyDocument) -> Result<PolicyDocument, ForgeError>
+pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, ForgeError>
 ```
 
 **Purpose**: Atomize all requirements in a PolicyDocument, replacing compound requirements with their atomic parts.
@@ -227,14 +227,17 @@ assert_ne!(id1, id3);
 
 ## Internal Helpers (Private API)
 
-### `build_split_pattern`
+### `SPLIT_PATTERN` (static)
 
-**Signature**:
+**Definition**:
 ```rust
-fn build_split_pattern() -> Regex
+static SPLIT_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\b(and|or)\s+(must|shall|should|will)\b")
+        .expect("Failed to compile split pattern regex")
+});
 ```
 
-**Purpose**: Compile the regex pattern for conjunction + normative verb detection. Should be called once (e.g., via `lazy_static` or `once_cell`) to avoid repeated compilation.
+**Purpose**: Compile-once regex pattern for conjunction + normative verb detection. Initialized on first access via `std::sync::LazyLock`, providing thread-safe, zero-cost access after initialization.
 
 **Pattern**: `\b(and|or)\s+(must|shall|should|will)\b`
 - `\b`: Word boundary (ensures "and" is a full word, not part of "band")
@@ -245,9 +248,9 @@ fn build_split_pattern() -> Regex
 
 **Case Sensitivity**: Case-sensitive (lowercase normative verbs only). Uppercase or mixed-case normative verbs (e.g., "MUST", "Must") will NOT match (EC-10).
 
-**Returns**: Compiled `Regex` object.
+**Thread Safety**: Thread-safe via `LazyLock` — the regex is compiled exactly once, even under concurrent access.
 
-**Panics**: If the regex pattern is invalid (should not happen with this static pattern).
+**Panics**: The initializer panics if regex compilation fails (should not happen with this static pattern).
 
 ---
 
@@ -365,7 +368,7 @@ pub struct AtomizationResult {
 
 | Requirement | Contract Enforcement |
 |-------------|---------------------|
-| **SEC-1**: Use Rust `regex` crate | `build_split_pattern` uses `regex::Regex` |
+| **SEC-1**: Use Rust `regex` crate | `SPLIT_PATTERN` uses `regex::Regex` via `LazyLock` |
 | **SEC-4**: Test with adversarial input | Test suite includes 10KB+ repetitive strings, unicode edge cases (SC-007) |
 | **SEC-5**: Enforce max split count | `atomize_requirement` checks split count; if >50, preserve as-is + log warning (FR-010) |
 | **SEC-7**: Pure function | All functions are side-effect-free; no global state, no I/O, no threading |

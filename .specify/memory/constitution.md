@@ -20,7 +20,7 @@ Modules/crates must be:
 
 **Single-Crate Architecture** (focused CLI tools like FORGE):
 
-```
+```text
 project/
 ├── Cargo.toml
 ├── src/
@@ -39,7 +39,7 @@ project/
 
 **Workspace Architecture** (larger systems with multiple binaries or services):
 
-```
+```text
 workspace/
 ├── Cargo.toml              # Workspace root
 ├── crates/
@@ -150,7 +150,7 @@ mod tests {
 }
 ```
 
-```
+```rust
 // Integration tests — crate-level tests/ directory
 // tests/integration_scan.rs
 use my_crate::Scanner;
@@ -653,7 +653,7 @@ make health        # Check health endpoints
 ### Commit Messages
 
 Follow Conventional Commits:
-```
+```text
 feat(scanner): add SARIF output format support
 fix(rules): correct false positive on nested structs
 docs(api): update OpenAPI specs for scan endpoint

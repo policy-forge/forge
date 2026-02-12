@@ -4,19 +4,11 @@
 //! end-to-end, verifying the full pipeline from PolicyDocument input
 //! to atomized PolicyDocument output.
 
-use forge::model::{PolicyDocument, PolicyRequirement, PolicySection};
+use forge::model::{PolicyDocument, PolicySection};
 use forge::parse::{atomize_document, atomize_requirement};
 
-/// Helper to create a `PolicyRequirement` for testing.
-fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
-    PolicyRequirement {
-        stable_id: String::new(),
-        text: text.to_string(),
-        source_line,
-        atom_index: 0,
-        parent_text: None,
-    }
-}
+mod common;
+use common::make_req;
 
 // ===================================================================
 // T014: Integration tests for atomize_document
@@ -128,7 +120,6 @@ fn atomize_requirement_preserves_text_byte_for_byte() {
     let result = atomize_requirement(&req).unwrap();
 
     assert_eq!(result.requirements[0].text, original_text);
-    assert_eq!(result.requirements[0].text.as_bytes(), original_text.as_bytes());
 }
 
 #[test]

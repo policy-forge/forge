@@ -12,7 +12,7 @@ The atomization feature operates on the existing domain model from WI-5 (`Policy
 
 ### PolicyRequirement (Modified)
 
-**Source**: Existing struct from WI-5 domain model (`src/models/`)
+**Source**: Existing struct from WI-5 domain model (`src/model/`)
 
 **Purpose**: Represents a single policy requirement (atomic or compound). After atomization, compound requirements are replaced by N atomic requirements.
 

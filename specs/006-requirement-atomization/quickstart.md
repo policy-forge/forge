@@ -113,7 +113,7 @@ EC-10 | 56 | Systems MUST enforce MFA and MUST require passwords | preserve_as_i
 **tests/unit/atomize_test.rs**:
 
 ```rust
-use forge::models::PolicyRequirement;
+use forge::model::PolicyRequirement;
 use forge::parse::atomize::{atomize_requirement, preliminary_id, AtomizationResult};
 
 #[test]
@@ -327,7 +327,7 @@ Expected: All tests fail because `atomize_requirement` and `preliminary_id` are 
 **src/parse/atomize.rs**:
 
 ```rust
-use crate::models::{PolicyDocument, PolicyRequirement};
+use crate::model::{PolicyDocument, PolicyRequirement};
 use crate::error::ForgeError;
 use regex::Regex;
 use sha2::{Sha256, Digest};
@@ -448,7 +448,7 @@ Expected: Tests turn GREEN as you implement each function.
 **tests/integration/atomize_integration_test.rs**:
 
 ```rust
-use forge::models::{PolicyDocument, PolicySection, PolicyRequirement};
+use forge::model::{PolicyDocument, PolicySection, PolicyRequirement};
 use forge::parse::atomize::atomize_document;
 
 #[test]
@@ -618,7 +618,7 @@ cargo test --all && cargo clippy -- -D warnings && cargo fmt --check && cargo mu
 **Next Stage**: WI-7 (UUID generation) consumes atomized requirements and replaces preliminary IDs with deterministic UUID v5
 
 **Pipeline Position**:
-```
+```text
 WI-2 (Markdown Ingestion)
   → WI-3 (Heading Extraction)
   → WI-4 (Clause Extraction)

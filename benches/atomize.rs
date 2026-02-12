@@ -4,6 +4,7 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use forge::model::{PolicyDocument, PolicyRequirement, PolicySection};
 use forge::parse::{atomize_document, atomize_requirement, preliminary_id};
 
+// NOTE: mirrors tests/common/mod.rs — kept local since benches cannot import test modules
 fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
     PolicyRequirement {
         stable_id: String::new(),

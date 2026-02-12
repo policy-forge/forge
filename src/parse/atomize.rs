@@ -261,14 +261,20 @@ pub fn atomize_requirement(
 /// assert_eq!(result.sections[0].requirements.len(), 2);
 /// ```
 pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, ForgeError> {
-    let original_count: usize = document.sections.iter().map(|s| s.requirements.len()).sum();
     let mut new_sections = Vec::with_capacity(document.sections.len());
+    let mut split_count: usize = 0;
+    let mut preserved_count: usize = 0;
 
     for section in &document.sections {
         let mut new_requirements = Vec::new();
 
         for requirement in &section.requirements {
             let result = atomize_requirement(requirement)?;
+            if result.was_split {
+                split_count += 1;
+            } else {
+                preserved_count += 1;
+            }
             new_requirements.extend(result.requirements);
         }
 
@@ -279,8 +285,6 @@ pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, For
     }
 
     let total_after: usize = new_sections.iter().map(|s| s.requirements.len()).sum();
-    let split_count = total_after.saturating_sub(original_count);
-    let preserved_count = original_count.saturating_sub(split_count);
     debug!(
         total = total_after,
         split = split_count,
