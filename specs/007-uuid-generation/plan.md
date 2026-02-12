@@ -7,7 +7,7 @@
 
 Implement deterministic UUID v5 generation for `PolicyRequirement` elements using a fixed FORGE namespace UUID and whitespace-normalized requirement text. This ensures identical policy content always produces identical OSCAL identifiers across conversion runs, satisfying product principle P-3 (Deterministic and auditable) and parent PRD requirements M-8, AC-8, EC-5, EC-6, and Spike-4.
 
-**Technical approach**: Add the `uuid` crate with v5 feature. Create a dedicated `src/uuid.rs` module containing a `FORGE_NAMESPACE_UUID` constant (project-specific UUID v4), `normalize_for_hashing()`, and `generate_stable_id()` as pure functions. Implement `assign_stable_ids()` to walk the `PolicyDocument` tree and populate `stable_id` on every `PolicyRequirement`. Invoke automatically after requirement atomization (WI-6).
+**Technical approach**: Add the `uuid` crate with v5 feature. Create a dedicated `src/uuid.rs` module containing a `FORGE_NAMESPACE_UUID` constant (project-specific UUID v4), `normalize_for_hashing()`, and `generate_stable_id()` as pure functions. Implement `assign_stable_ids()` to walk the `PolicyDocument` tree and populate `stable_id` on every `PolicyRequirement`. Integration into the conversion pipeline (automatic invocation after requirement atomization, WI-6) is deferred to a follow-up WI/PR; this WI only introduces the pure functions and tree-walk helper.
 
 ## Technical Context
 

@@ -40,7 +40,7 @@ pub const FORGE_NAMESPACE_UUID: Uuid = Uuid::from_bytes([
 /// assert_eq!(normalize_for_hashing("   "), "");
 /// assert_eq!(normalize_for_hashing(""), "");
 /// ```
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip(text), fields(text_len = text.len()))]
 pub fn normalize_for_hashing(text: &str) -> String {
     let mut result = String::new();
     for word in text.split_whitespace() {
@@ -86,7 +86,7 @@ pub fn normalize_for_hashing(text: &str) -> String {
 /// let uuid3 = generate_stable_id("  All  users  must  use  MFA  ");
 /// assert_eq!(uuid1, uuid3);
 /// ```
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip(text), fields(text_len = text.len()))]
 pub fn generate_stable_id(text: &str) -> Uuid {
     let normalized = normalize_for_hashing(text);
     Uuid::new_v5(&FORGE_NAMESPACE_UUID, normalized.as_bytes())

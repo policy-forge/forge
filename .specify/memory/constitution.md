@@ -443,7 +443,7 @@ Using an older crate version REQUIRES:
 - `bacon` — Background code checker (alternative to cargo-watch)
 
 **Rust Edition & MSRV**:
-- Edition: 2021 (or 2024 when stable and beneficial)
+- Edition: 2024 (Rust 1.93.0+)
 - MSRV: Document in workspace `Cargo.toml` via `rust-version = "1.XX"`
 - Update MSRV quarterly, tracking stable release schedule
 

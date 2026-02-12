@@ -4,7 +4,7 @@
 
 ## Module Purpose
 
-Deterministic UUID v5 generation for content-addressed identifiers. All functions are pure (no side effects, no I/O).
+Deterministic UUID v5 generation for content-addressed identifiers. All functions are deterministic for a given input and perform no external network or filesystem I/O, but may mutate in-memory data structures and emit tracing/logging instrumentation.
 
 ## Public API
 

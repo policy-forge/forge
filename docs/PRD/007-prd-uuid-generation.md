@@ -88,7 +88,7 @@ This PRD covers **WI-7: Deterministic UUID v5 Generation** from the FORGE Produc
 ### Session 2026-02-11
 
 - Q: What value should be used for the FORGE_NAMESPACE_UUID constant? → A: Generate a new project-specific UUID v4 and hardcode it in the source (ensures global uniqueness)
-- Q: Where in the pipeline should UUID generation be invoked? → A: Automatically invoked immediately after requirement atomization completes, before returning the PolicyDocument (ensures stable_ids always populated)
+- Q: Where in the pipeline should UUID generation be invoked? → A: Target design is to invoke it immediately after requirement atomization completes, before returning the PolicyDocument (ensures stable_ids are always populated). Integration into the pipeline is explicitly deferred for a follow-up PR; this PRD describes intended behavior, not current implementation.
 - Q: Where should the UUID generation code be organized? → A: In a separate uuid generation module (src/uuid.rs or src/uuid_generation.rs) for clear separation of concerns
 - Q: What information should be included in debug logging (PRD C-1)? → A: Normalized text + generated UUID (verifies normalization + generation, matches PRD C-1 specification)
 
