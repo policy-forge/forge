@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 use tracing::debug;
 
+use super::parts::{OscalPart, OscalProp, build_control_parts, build_control_props};
 use crate::error::ForgeError;
 use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 
@@ -57,6 +58,13 @@ pub struct OscalControl {
     pub uuid: String,
     /// Derived title (first sentence, 120-char cap).
     pub title: String,
+    /// Parts array: statement part (mandatory) + optional guidance/objective.
+    /// NOT skip-serialized — always present per FR-001.
+    pub parts: Vec<OscalPart>,
+    /// Props array: structured metadata (e.g., forge:source-line).
+    /// Omitted from JSON when empty.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub props: Vec<OscalProp>,
 }
 
 /// Placeholder metadata — fully implemented in WI-11.
@@ -285,10 +293,13 @@ pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeErr
                 ))
             })?;
 
+            let control_id = generate_control_id(&abbreviation, req_idx, "POL");
             controls.push(OscalControl {
-                id: generate_control_id(&abbreviation, req_idx, "POL"),
+                id: control_id.clone(),
                 uuid: stable_id.clone(),
                 title: derive_control_title(&req.text),
+                parts: build_control_parts(&control_id, req, section.body_text.as_deref()),
+                props: build_control_props(req),
             });
         }
 
@@ -854,5 +865,196 @@ mod tests {
         ids.dedup();
         assert_eq!(ids.len(), count);
         assert_eq!(count, 10);
+    }
+
+    // ── Additional helpers ──────────────────────────────
+
+    fn sec_with_body(title: &str, body: &str, reqs: Vec<PolicyRequirement>) -> PolicySection {
+        PolicySection {
+            title: title.to_string(),
+            heading_level: 1,
+            source_line: 1,
+            body_text: Some(body.to_string()),
+            children: vec![],
+            requirements: reqs,
+        }
+    }
+
+    fn req_with_line(text: &str, id: &str, line: usize) -> PolicyRequirement {
+        PolicyRequirement {
+            stable_id: Some(id.to_string()),
+            text: text.to_string(),
+            source_line: line,
+            nesting_depth: 0,
+            atom_index: 0,
+            parent_text: None,
+        }
+    }
+
+    // ── T010: controls have statement parts ─────────────
+
+    #[test]
+    fn test_catalog_controls_have_statement_parts() {
+        let d = doc(vec![
+            sec("Access Control", vec![req("Users shall authenticate.", "u1")]),
+            sec("Data Protection", vec![req("Encrypt at rest.", "u2")]),
+        ]);
+        let cat = build_catalog(&d).unwrap();
+
+        for group in &cat.groups {
+            for ctrl in &group.controls {
+                assert!(!ctrl.parts.is_empty(), "Control {} has no parts", ctrl.id);
+                assert_eq!(ctrl.parts[0].name, "statement");
+                assert!(
+                    ctrl.parts[0].id.ends_with("_smt"),
+                    "Statement part id '{}' does not end with _smt",
+                    ctrl.parts[0].id
+                );
+            }
+        }
+
+        // Verify prose matches requirement text
+        assert_eq!(cat.groups[0].controls[0].parts[0].prose, "Users shall authenticate.");
+        assert_eq!(cat.groups[1].controls[0].parts[0].prose, "Encrypt at rest.");
+    }
+
+    // ── T013: no remarks + props skip when empty ────────
+
+    #[test]
+    fn test_serialized_control_no_remarks_field() {
+        let d = doc(vec![sec("Access Control", vec![req("Auth required.", "u1")])]);
+        let cat = build_catalog(&d).unwrap();
+        let envelope = CatalogEnvelope { catalog: cat };
+        let json = serde_json::to_string_pretty(&envelope).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let controls = v["catalog"]["groups"][0]["controls"].as_array().unwrap();
+        for ctrl in controls {
+            assert!(ctrl.get("remarks").is_none(), "Control should not have a 'remarks' field");
+        }
+    }
+
+    #[test]
+    fn test_props_omitted_when_empty() {
+        // source_line: 0 means build_control_props returns empty vec
+        let r = PolicyRequirement {
+            stable_id: Some("u1".to_string()),
+            text: "Test requirement.".to_string(),
+            source_line: 0,
+            nesting_depth: 0,
+            atom_index: 0,
+            parent_text: None,
+        };
+        let d = doc(vec![sec("Test", vec![r])]);
+        let cat = build_catalog(&d).unwrap();
+        let envelope = CatalogEnvelope { catalog: cat };
+        let json = serde_json::to_string_pretty(&envelope).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let ctrl = &v["catalog"]["groups"][0]["controls"][0];
+        assert!(
+            ctrl.get("props").is_none(),
+            "props should be omitted when empty (skip_serializing_if)"
+        );
+    }
+
+    // ── T020: guidance from body_text ───────────────────
+
+    #[test]
+    fn test_catalog_guidance_from_body_text() {
+        let d = doc(vec![sec_with_body(
+            "Access Control",
+            "Guidance here.",
+            vec![req("Users shall authenticate.", "u1")],
+        )]);
+        let cat = build_catalog(&d).unwrap();
+        let ctrl = &cat.groups[0].controls[0];
+
+        assert_eq!(ctrl.parts.len(), 2, "Expected statement + guidance parts");
+
+        // First part: statement
+        assert_eq!(ctrl.parts[0].name, "statement");
+        assert!(ctrl.parts[0].id.ends_with("_smt"));
+        assert_eq!(ctrl.parts[0].prose, "Users shall authenticate.");
+
+        // Second part: guidance
+        assert_eq!(ctrl.parts[1].name, "guidance");
+        assert!(
+            ctrl.parts[1].id.ends_with("_gdn"),
+            "Guidance part id '{}' does not end with _gdn",
+            ctrl.parts[1].id
+        );
+        assert_eq!(ctrl.parts[1].prose, "Guidance here.");
+    }
+
+    #[test]
+    fn test_catalog_no_guidance_without_body_text() {
+        let d = doc(vec![sec("Access Control", vec![req("Auth required.", "u1")])]);
+        let cat = build_catalog(&d).unwrap();
+        let ctrl = &cat.groups[0].controls[0];
+
+        assert_eq!(ctrl.parts.len(), 1, "Expected only statement part when no body_text");
+        assert_eq!(ctrl.parts[0].name, "statement");
+    }
+
+    // ── T024: JSON serialization OSCAL v1.2.0 shape ─────
+
+    #[test]
+    fn test_json_parts_structure_oscal_v120() {
+        let d = doc(vec![sec_with_body(
+            "Access Control",
+            "Some guidance.",
+            vec![req("Auth required.", "u1")],
+        )]);
+        let cat = build_catalog(&d).unwrap();
+        let envelope = CatalogEnvelope { catalog: cat };
+        let json = serde_json::to_string_pretty(&envelope).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let parts = v["catalog"]["groups"][0]["controls"][0]["parts"]
+            .as_array()
+            .expect("parts should be an array");
+
+        assert_eq!(parts.len(), 2, "Expected statement + guidance parts");
+
+        // Verify each part has the required OSCAL fields
+        for part in parts {
+            let obj = part.as_object().unwrap();
+            assert!(obj.contains_key("id"), "Part missing 'id' field");
+            assert!(obj.contains_key("name"), "Part missing 'name' field");
+            assert!(obj.contains_key("prose"), "Part missing 'prose' field");
+        }
+
+        // Verify statement part field values
+        assert_eq!(parts[0]["name"], "statement");
+        assert!(parts[0]["id"].as_str().unwrap().ends_with("_smt"));
+        assert_eq!(parts[0]["prose"], "Auth required.");
+
+        // Verify guidance part field values
+        assert_eq!(parts[1]["name"], "guidance");
+        assert!(parts[1]["id"].as_str().unwrap().ends_with("_gdn"));
+        assert_eq!(parts[1]["prose"], "Some guidance.");
+    }
+
+    #[test]
+    fn test_json_props_structure() {
+        let d = doc(vec![sec("Access Control", vec![req_with_line("Auth required.", "u1", 42)])]);
+        let cat = build_catalog(&d).unwrap();
+        let envelope = CatalogEnvelope { catalog: cat };
+        let json = serde_json::to_string_pretty(&envelope).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let props = v["catalog"]["groups"][0]["controls"][0]["props"]
+            .as_array()
+            .expect("props should be present when source_line > 0");
+
+        assert_eq!(props.len(), 1);
+
+        let prop = &props[0];
+        let obj = prop.as_object().unwrap();
+        assert!(obj.contains_key("name"), "Prop missing 'name' field");
+        assert!(obj.contains_key("value"), "Prop missing 'value' field");
+        assert_eq!(prop["name"], "forge:source-line");
+        assert_eq!(prop["value"], "42");
     }
 }

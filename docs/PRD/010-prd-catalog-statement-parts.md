@@ -123,7 +123,7 @@ Controls with guidance or objective content produce additional parts beyond the 
 
 **Acceptance Scenarios**:
 1. **Given** a PolicyRequirement with associated guidance text, **When** the Catalog builder generates the control, **Then** the control has a statement part and a separate guidance part with `name: "guidance"` and appropriate prose.
-2. **Given** a PolicyRequirement with associated objective text, **When** the Catalog builder generates the control, **Then** the control has a statement part and a separate objective part with `name: "objective"` and appropriate prose.
+2. *(Deferred — S-2)* **Given** a PolicyRequirement with associated objective text, **When** the Catalog builder generates the control, **Then** the control has a statement part and a separate objective part with `name: "objective"` and appropriate prose. *(Deferred pending domain model changes — no signal for objective text exists)*
 
 ---
 
@@ -199,7 +199,7 @@ N/A — No state transitions in this work item. Controls are built in a single p
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
 - [ ] **S-1:** Multi-part controls shall support guidance parts with `name: "guidance"` and ID convention `{control-id}_gdn` when guidance text is available.
-- [ ] **S-2:** Multi-part controls shall support objective parts with `name: "objective"` and ID convention `{control-id}_obj` when objective text is available.
+- [ ] **S-2:** Multi-part controls shall support objective parts with `name: "objective"` and ID convention `{control-id}_obj` when objective text is available. *(Deferred — no domain model signal exists for objective text; revisit when domain model evolves)*
 - [ ] **S-3:** Part generation shall handle multi-paragraph prose by preserving paragraph breaks in the `prose` field.
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
@@ -341,11 +341,12 @@ pub fn build_control_parts(
 | AC-5 | M-5 | US-1 | WI-9 Catalog builder producing controls with IDs and titles | Extending with parts generation | Controls retain their IDs and titles and now also have populated `parts[]` arrays |
 | AC-6 | M-6 | US-1 | Generated parts JSON | Comparing against OSCAL v1.2.0 parts schema shape | JSON structure matches expected OSCAL parts format |
 | AC-7 | S-1 | US-2 | A PolicyRequirement with associated guidance text | Building control parts | Control has both a statement part and a guidance part with `name: "guidance"` |
-| AC-8 | S-2 | US-2 | A PolicyRequirement with associated objective text | Building control parts | Control has both a statement part and an objective part with `name: "objective"` |
+| AC-8 | S-2 | US-2 | A PolicyRequirement with associated objective text | Building control parts | Control has both a statement part and an objective part with `name: "objective"` *(Deferred — S-2 is deferred pending domain model changes; no domain model signal for objective text exists)* |
 
 ### Edge Cases 🟢 `@llm-autonomous`
+
 - [ ] **EC-1:** (M-2) When a PolicyRequirement has empty text, then the statement part has an empty string prose field and a warning is emitted.
-- [ ] **EC-2:** (M-1) When a control has no associated PolicyRequirement (e.g., a section-level control placeholder), then the control has a statement part with prose indicating no requirement text was found.
+- [ ] **EC-2:** (M-2) When a PolicyRequirement has only whitespace text, then the statement part preserves the original whitespace-only prose exactly as provided (no trimming per SEC-1 direct copy) and a warning is emitted.
 - [ ] **EC-3:** (S-3) When prose contains Markdown formatting (bold, links, inline code), then the formatting is preserved as-is in the prose field.
 - [ ] **EC-4:** (M-3) When a control ID contains special characters, then the part ID is still correctly formed using the `{control-id}_smt` convention.
 - [ ] **EC-5:** (C-1) When a requirement has sub-items (a, b, c), then each sub-item becomes a nested sub-part with `name: "item"` if C-1 is implemented; otherwise they are concatenated into the statement prose.
