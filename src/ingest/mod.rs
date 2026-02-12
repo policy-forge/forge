@@ -31,6 +31,14 @@ pub struct IngestedDocument {
     pub lines: Vec<SourceLine>,
 }
 
+impl IngestedDocument {
+    /// Reconstruct the full document content by joining all source lines.
+    #[must_use]
+    pub fn reconstruct_content(&self) -> String {
+        self.lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n")
+    }
+}
+
 /// Read a Markdown file, validate it, and produce an [`IngestedDocument`].
 ///
 /// # Arguments

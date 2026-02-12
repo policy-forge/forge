@@ -106,7 +106,8 @@ erDiagram
 - `source_path` must be valid PathBuf
 
 **Extraction Logic**:
-```
+
+```text
 1. Check for YAML frontmatter (content starts with "---\n")
 2. If present: deserialize with serde_yaml into FrontmatterData { title, version, author, date }
 3. If parsing fails: warn to stderr, fall through to heading-based extraction
@@ -187,6 +188,7 @@ erDiagram
 ### assemble_document
 
 **Signature**:
+
 ```rust
 pub fn assemble_document(
     ingested: &IngestedDocument,
@@ -214,7 +216,8 @@ pub fn assemble_document(
 | Fatal error | `Err(ForgeError)` | Data inconsistency preventing assembly (e.g., invalid section tree structure) |
 
 **Algorithm**:
-```
+
+```text
 1. Parse frontmatter:
    a. Check if content starts with "---\n"
    b. If yes: extract YAML between delimiters, deserialize with serde_yaml

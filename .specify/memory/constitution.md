@@ -15,7 +15,7 @@ Every feature MUST begin as a standalone crate within the Cargo workspace before
 
 **Crate Boundaries** (adapt to your project):
 
-```
+```text
 workspace/
 ├── Cargo.toml              # Workspace root
 ├── crates/
@@ -74,7 +74,7 @@ API contracts, trait definitions, and type schemas MUST be defined before implem
 - **Type Definitions**: Define request/response types, error types, and domain models before business logic
 - **API Schemas**: Define HTTP endpoints using OpenAPI via `utoipa` decorators before handler implementation
 - **Database Schemas**: Define migrations (via `sqlx` or `diesel`) before data access code
-- **CLI Interface**: Define `clap` argument structures before command handlers
+- **CLI**: Define `clap` argument structures before command handlers
 - **Error Types**: Define error enums with `thiserror` before writing fallible functions
 
 **Contract Review Process**:
@@ -114,6 +114,7 @@ TDD is mandatory for all production code:
 - **Benchmark Tests**: `criterion` for performance regression detection
 
 **Test Organization**:
+
 ```rust
 // Unit tests — same file as implementation
 #[cfg(test)]
@@ -132,7 +133,7 @@ mod tests {
 }
 ```
 
-```
+```rust
 // Integration tests — crate-level tests/ directory
 // tests/integration_scan.rs
 use my_crate::Scanner;
@@ -245,6 +246,7 @@ Errors must be actionable, contextual, and never expose internal state:
 - Use `.context()` / `.with_context()` to add call-site information
 
 **Standard Error Pattern**:
+
 ```rust
 use thiserror::Error;
 
@@ -292,6 +294,7 @@ Every crate must be observable in production:
 - Sensitive fields MUST be excluded from spans: `#[instrument(skip(password, api_key))]`
 
 **Tracing Configuration**:
+
 ```rust
 use tracing_subscriber::{fmt, EnvFilter, prelude::*};
 
@@ -318,7 +321,7 @@ tracing_subscriber::registry()
 
 Start simple, add complexity only when justified:
 
-- YAGNI (You Aren't Gonna Need It) principle MUST be followed
+- YAGNI (You Are Not Going to Need It) principle MUST be followed
 - Premature optimization MUST be avoided — profile first, then optimize
 - Third-party dependencies MUST be minimized and justified
 - Design patterns MUST solve real problems, not demonstrate cleverness
@@ -360,10 +363,12 @@ All dependencies MUST use the most recent stable versions to minimize security r
 
 **Pre-Addition Security Checks** (MANDATORY):
 - ALL crates MUST be checked against the RustSec Advisory Database before adding:
+
   ```bash
   cargo audit
   cargo deny check advisories
   ```
+
 - Review crate on `lib.rs` / `crates.io`: last update, downloads, maintainer activity
 - Check for `unsafe` usage with `cargo geiger`
 - Verify license compatibility with `cargo deny check licenses`
@@ -474,6 +479,7 @@ Using an older crate version REQUIRES:
 ### Code Quality Standards
 
 **Formatting**: `rustfmt` with project `.rustfmt.toml`:
+
 ```toml
 edition = "2021"
 max_width = 100
@@ -483,6 +489,7 @@ group_imports = "StdExternalCrate"
 ```
 
 **Linting**: `clippy` with workspace-level configuration in `Cargo.toml`:
+
 ```toml
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
@@ -494,6 +501,7 @@ must_use_candidate = "allow"
 ```
 
 **Type Checking**: Rust compiler in strict mode:
+
 ```toml
 [workspace.lints.rust]
 unsafe_code = "warn"          # or "deny" for maximum safety
@@ -502,6 +510,7 @@ unused_results = "warn"       # Don't ignore Results
 ```
 
 **Documentation**: `rustdoc` for all public APIs with examples:
+
 ```rust
 /// Scans a target directory for security vulnerabilities.
 ///
@@ -563,6 +572,7 @@ Before every commit:
 - Commit messages SHOULD follow Conventional Commits
 
 **PR Template**:
+
 ```markdown
 ## Constitution Compliance
 - [ ] Crate-first architecture (new crate or existing boundary maintained)
@@ -584,6 +594,7 @@ Before every commit:
 Run before every commit and in CI:
 
 **Workspace Commands**:
+
 ```bash
 # Format all code
 cargo fmt --all
@@ -619,6 +630,7 @@ make commit-ready                      # Runs all of the above
 ```
 
 **Docker Commands**:
+
 ```bash
 make build         # Multi-stage Docker build
 make up            # Start all services
@@ -637,7 +649,8 @@ make health        # Check health endpoints
 ### Commit Messages
 
 Follow Conventional Commits:
-```
+
+```text
 feat(scanner): add SARIF output format support
 fix(rules): correct false positive on nested structs
 docs(api): update OpenAPI specs for scan endpoint
@@ -662,6 +675,7 @@ All public items require comprehensive `rustdoc` comments:
 ### API Documentation (if HTTP API)
 
 Use `utoipa` for OpenAPI generation:
+
 ```rust
 /// Search for vulnerabilities matching the given criteria.
 #[utoipa::path(

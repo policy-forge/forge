@@ -383,6 +383,7 @@ Downstream WIs can depend on:
 - `source_line` being accurate for traceability tests
 
 Example test pattern for downstream WIs:
+
 ```rust
 #[test]
 fn test_downstream_enrichment() {

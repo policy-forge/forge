@@ -57,8 +57,12 @@ pub(crate) fn parse_frontmatter(content: &str) -> Option<FrontmatterData> {
     // Frontmatter must start with "---\n" at the beginning of the document
     let rest = content.strip_prefix("---\n")?;
 
-    // Find the closing "---" delimiter (must be on its own line)
-    let end = rest.find("\n---")?;
+    // Find the closing "---" delimiter (must be on its own line, not mid-line)
+    let end = rest
+        .find("\n---\n")
+        .or_else(|| rest.find("\n---\r\n"))
+        .or_else(|| rest.strip_suffix("\n---").map(str::len))
+        .or_else(|| rest.strip_suffix("\r\n---").map(str::len))?;
     let yaml_str = &rest[..end];
 
     // SEC-1, SEC-6: Deserialize gracefully — no unwrap()
@@ -173,6 +177,17 @@ version: 1.0.0
         assert!(fm.version.is_none());
         assert!(fm.author.is_none());
         assert!(fm.date.is_none());
+    }
+
+    /// Triple dashes appearing mid-line in YAML content must NOT be treated as a closing delimiter.
+    #[test]
+    fn mid_line_triple_dash_not_treated_as_delimiter() {
+        let content = "---\ntitle: some---value\nversion: 1.0\n---\n";
+        let result = parse_frontmatter(content);
+        assert!(result.is_some(), "Mid-line --- should not close the frontmatter block");
+        let data = result.unwrap();
+        assert_eq!(data.title.as_deref(), Some("some---value"));
+        assert_eq!(data.version.as_deref(), Some("1.0"));
     }
 
     /// Content that does not start with `---` returns `None` even if delimiters exist later.

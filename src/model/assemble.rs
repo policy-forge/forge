@@ -29,10 +29,43 @@ use super::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 /// # Returns
 ///
 /// A vector of `PolicySection`s with requirements populated from matching list items.
-/// Returns an empty vector if `section_nodes` is empty.
+/// Returns a "Preamble" section if `section_nodes` is empty but `list_items` is not.
+/// Returns an empty vector if both are empty.
 pub(crate) fn map_sections(
     section_nodes: &[SectionNode],
-    list_items: &[ExtractedListItem],
+    list_items: &[&ExtractedListItem],
+) -> Vec<PolicySection> {
+    if section_nodes.is_empty() {
+        if list_items.is_empty() {
+            return Vec::new();
+        }
+        // SEC-5: Don't silently drop orphaned list items
+        let requirements: Vec<PolicyRequirement> = list_items
+            .iter()
+            .map(|item| PolicyRequirement {
+                stable_id: None,
+                text: item.text.clone(),
+                source_line: item.source_line,
+                nesting_depth: item.nesting_depth,
+            })
+            .collect();
+        return vec![PolicySection {
+            title: "Preamble".to_string(),
+            heading_level: 0,
+            source_line: list_items[0].source_line,
+            body_text: None,
+            children: vec![],
+            requirements,
+        }];
+    }
+
+    map_sections_recursive(section_nodes, list_items)
+}
+
+/// Recursive implementation of section mapping (does not produce Preamble fallback).
+fn map_sections_recursive(
+    section_nodes: &[SectionNode],
+    list_items: &[&ExtractedListItem],
 ) -> Vec<PolicySection> {
     if section_nodes.is_empty() {
         return Vec::new();
@@ -47,14 +80,12 @@ pub(crate) fn map_sections(
         // Filter list items within this section's line range.
         let items_in_range: Vec<&ExtractedListItem> = list_items
             .iter()
+            .copied()
             .filter(|item| item.source_line >= range_start && item.source_line < range_end)
             .collect();
 
         // Recursively process children, passing only items within this section's range.
-        let children = map_sections(
-            &node.children,
-            &items_in_range.iter().copied().cloned().collect::<Vec<_>>(),
-        );
+        let children = map_sections_recursive(&node.children, &items_in_range);
 
         // Items consumed by children should not also be requirements of the parent.
         // Collect all source lines owned by children's ranges.
@@ -102,18 +133,6 @@ fn is_in_child_range(line: usize, ranges: &[(usize, usize)]) -> bool {
     ranges.iter().any(|&(start, end)| line >= start && line < end)
 }
 
-/// Reconstruct the document content from `IngestedDocument` lines.
-fn reconstruct_content(ingested: &IngestedDocument) -> String {
-    let mut content = String::new();
-    for (i, line) in ingested.lines.iter().enumerate() {
-        if i > 0 {
-            content.push('\n');
-        }
-        content.push_str(&line.text);
-    }
-    content
-}
-
 /// Extract filename stem from a path, used as fallback document ID and title.
 fn filename_stem(path: &Path) -> String {
     path.file_stem().and_then(|s| s.to_str()).unwrap_or("untitled").to_string()
@@ -146,7 +165,7 @@ pub fn assemble_document(
     sections: &[SectionNode],
     clauses: &ExtractedContent,
 ) -> Result<PolicyDocument, ForgeError> {
-    let content = reconstruct_content(ingested);
+    let content = ingested.reconstruct_content();
     let frontmatter = parse_frontmatter(&content);
 
     // Resolve title: frontmatter -> first H1 heading -> filename stem
@@ -175,7 +194,8 @@ pub fn assemble_document(
         content_hash: Some(ingested.fingerprint.clone()),
     };
 
-    let mapped_sections = map_sections(sections, &clauses.list_items);
+    let item_refs: Vec<&ExtractedListItem> = clauses.list_items.iter().collect();
+    let mapped_sections = map_sections(sections, &item_refs);
 
     let id = filename_stem(&ingested.source_path);
 
@@ -281,8 +301,9 @@ mod tests {
         // Items only in the second section's range
         let nodes = vec![section("First", 1, 1), section("Second", 1, 10)];
         let items = vec![list_item("Belongs to second only", 15, 0)];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
 
-        let result = map_sections(&nodes, &items);
+        let result = map_sections(&nodes, &item_refs);
 
         assert_eq!(result.len(), 2);
         assert!(
@@ -302,8 +323,9 @@ mod tests {
             list_item("Belongs to Second", 12, 0),
             list_item("Also belongs to Second", 15, 1),
         ];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
 
-        let result = map_sections(&nodes, &items);
+        let result = map_sections(&nodes, &item_refs);
 
         assert_eq!(result.len(), 2);
 
@@ -328,14 +350,27 @@ mod tests {
         assert!(result.is_empty());
     }
 
+    #[test]
+    fn orphaned_list_items_produce_preamble_section() {
+        let items = vec![list_item("Req one", 5, 0), list_item("Req two", 8, 0)];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
+        let result = map_sections(&[], &item_refs);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].title, "Preamble");
+        assert_eq!(result[0].heading_level, 0);
+        assert_eq!(result[0].requirements.len(), 2);
+        assert_eq!(result[0].requirements[0].text, "Req one");
+    }
+
     // ── Additional edge case tests ───────────────────────────────────
 
     #[test]
     fn stable_id_is_none_for_all_requirements() {
         let nodes = vec![section("Policy", 1, 1)];
         let items = vec![list_item("Req A", 3, 0), list_item("Req B", 5, 1)];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
 
-        let result = map_sections(&nodes, &items);
+        let result = map_sections(&nodes, &item_refs);
 
         for req in &result[0].requirements {
             assert!(req.stable_id.is_none(), "stable_id must be None (SEC-7)");
@@ -376,8 +411,9 @@ mod tests {
             list_item("Parent req", 5, 0), // In parent range, before child
             list_item("Child req", 12, 0), // In child range
         ];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
 
-        let result = map_sections(&nodes, &items);
+        let result = map_sections(&nodes, &item_refs);
 
         // Parent should only have the item at line 5
         assert_eq!(result[0].requirements.len(), 1);
@@ -396,8 +432,9 @@ mod tests {
             list_item("Nested once", 4, 1),
             list_item("Nested twice", 5, 2),
         ];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
 
-        let result = map_sections(&nodes, &items);
+        let result = map_sections(&nodes, &item_refs);
 
         assert_eq!(result[0].requirements.len(), 3);
         assert_eq!(result[0].requirements[0].nesting_depth, 0);

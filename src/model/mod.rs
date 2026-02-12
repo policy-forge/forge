@@ -116,6 +116,23 @@ pub struct PolicyRequirement {
     pub nesting_depth: u8,
 }
 
+impl PolicySection {
+    /// Recursively count all requirements in this section and its children.
+    #[must_use]
+    pub fn total_requirements(&self) -> usize {
+        self.requirements.len()
+            + self.children.iter().map(PolicySection::total_requirements).sum::<usize>()
+    }
+}
+
+impl PolicyDocument {
+    /// Recursively count all requirements across all sections.
+    #[must_use]
+    pub fn total_requirements(&self) -> usize {
+        self.sections.iter().map(PolicySection::total_requirements).sum()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

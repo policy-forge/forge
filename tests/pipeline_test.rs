@@ -26,8 +26,7 @@ fn full_pipeline_produces_valid_policy_document() -> Result<(), ForgeError> {
     let ingested = ingest_file(input, 10 * 1024 * 1024)?;
 
     // Reconstruct content from lines
-    let content: String =
-        ingested.lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n");
+    let content = ingested.reconstruct_content();
 
     let sections = extract_sections(&content)?;
     let clauses = extract_clauses(&content)?;
