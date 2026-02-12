@@ -74,6 +74,7 @@
 **Rationale**: The `v5` feature provides `Uuid::new_v5()` which implements RFC 4122 UUID v5 (SHA-1 hash of namespace + name). No other features needed. The crate is MIT/Apache-2.0 licensed, actively maintained, and widely used in the Rust ecosystem.
 
 **Cargo.toml addition**:
+
 ```toml
 uuid = { version = "1", features = ["v5"] }
 ```

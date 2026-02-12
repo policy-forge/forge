@@ -15,7 +15,7 @@ Every feature MUST begin as a standalone crate within the Cargo workspace before
 
 **Crate Boundaries** (adapt to your project):
 
-```
+```text
 workspace/
 ├── Cargo.toml              # Workspace root
 ├── crates/
@@ -130,7 +130,7 @@ mod tests {
 }
 ```
 
-```
+```rust
 // Integration tests — crate-level tests/ directory
 // tests/integration_scan.rs
 use my_crate::Scanner;
@@ -633,7 +633,7 @@ make health        # Check health endpoints
 ### Commit Messages
 
 Follow Conventional Commits:
-```
+```text
 feat(scanner): add SARIF output format support
 fix(rules): correct false positive on nested structs
 docs(api): update OpenAPI specs for scan endpoint

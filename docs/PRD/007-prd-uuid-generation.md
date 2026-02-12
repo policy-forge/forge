@@ -216,7 +216,7 @@ stateDiagram-v2
 - [ ] **S-2:** The UUID generation function shall accept any string input (not just PolicyRequirement), enabling reuse for other content-addressed identifiers in later WIs.
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
-- [ ] **C-1:** The system could log (at debug level) the normalized text and generated UUID for each requirement to aid debugging. Log format: `debug!("UUID generated: text='{}' uuid='{}'", normalized_text, uuid)`
+- [ ] **C-1:** The system could log (at debug level) the normalized text and generated UUID for each requirement to aid debugging. Use structured tracing fields: `tracing::debug!(normalized_text = %normalized, uuid = %uuid, "UUID generated")` per Section IX observability guidance.
 
 ### Won't Have (W) — Explicitly deferred 🟡 `@human-review`
 - [ ] **W-1:** CLI warning when a requirement's stable ID changes between conversions — *Reason: Requires diff/comparison capability; deferred to WI-43 (diff report)*

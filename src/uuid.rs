@@ -42,7 +42,14 @@ pub const FORGE_NAMESPACE_UUID: Uuid = Uuid::from_bytes([
 /// ```
 #[tracing::instrument(level = "trace")]
 pub fn normalize_for_hashing(text: &str) -> String {
-    text.split_whitespace().collect::<Vec<&str>>().join(" ")
+    let mut result = String::new();
+    for word in text.split_whitespace() {
+        if !result.is_empty() {
+            result.push(' ');
+        }
+        result.push_str(word);
+    }
+    result
 }
 
 /// Generate a deterministic UUID v5 from text content.
@@ -129,7 +136,7 @@ pub fn assign_stable_ids(document: &mut PolicyDocument) {
 fn assign_stable_ids_to_section(section: &mut PolicySection) {
     for requirement in &mut section.requirements {
         let normalized = normalize_for_hashing(&requirement.text);
-        let uuid = generate_stable_id(&requirement.text);
+        let uuid = Uuid::new_v5(&FORGE_NAMESPACE_UUID, normalized.as_bytes());
         tracing::debug!(
             normalized_text = %normalized,
             uuid = %uuid,

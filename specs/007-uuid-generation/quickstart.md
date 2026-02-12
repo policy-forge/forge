@@ -17,6 +17,7 @@ cargo add uuid --features v5
 ```
 
 This adds to `Cargo.toml`:
+
 ```toml
 uuid = { version = "1", features = ["v5"] }
 ```
@@ -24,6 +25,7 @@ uuid = { version = "1", features = ["v5"] }
 ### 2. Register the module
 
 In `src/lib.rs`, add:
+
 ```rust
 pub mod uuid;
 ```
@@ -112,10 +114,13 @@ This feature uses Test-Driven Development:
 ## Common Issues
 
 ### "unresolved import `uuid`"
+
 Ensure `uuid` is in `[dependencies]` in `Cargo.toml` with `features = ["v5"]`.
 
 ### "cannot find type `PolicyDocument`"
+
 The domain model types depend on WI-5/WI-6. If not yet implemented, use stub types or test only the core `generate_stable_id` function with `&str` input.
 
 ### "UUID version is not 5"
+
 Verify you're using `Uuid::new_v5`, not `Uuid::new_v4`. Check the version nibble: byte 6, high nibble should be `5`.

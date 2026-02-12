@@ -283,7 +283,6 @@ sequenceDiagram
 use uuid::Uuid;
 
 /// Fixed namespace UUID for all FORGE content-addressed identifier generation.
-/// Fixed namespace UUID for all FORGE content-addressed identifier generation.
 /// Implementation MUST generate a fresh project-specific v4 UUID once and hardcode it here.
 /// DO NOT use well-known namespace UUIDs (DNS, URL, OID, X500) from RFC 4122.
 /// WARNING: Changing this value will change ALL generated stable_ids and is a breaking change.
