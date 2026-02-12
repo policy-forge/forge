@@ -110,7 +110,7 @@ The pipeline converts policy sections into OSCAL Catalog groups, preserving the 
 
 **Acceptance Scenarios**:
 1. **Given** a PolicyDocument with sections "Access Control", "Data Protection", and "Incident Response", **When** the Catalog builder runs, **Then** `catalog.groups[]` contains 3 groups with IDs derived from section titles (e.g., `access-control`, `data-protection`, `incident-response`) and matching titles.
-2. **Given** a PolicySection with nested child sections, **When** the Catalog builder runs, **Then** the parent group contains the child sections as nested groups (if applicable) or the hierarchy is flattened with controls in their respective groups.
+2. **Given** a PolicySection with nested child sections, **When** the Catalog builder runs, **Then** the hierarchy is flattened: only the top-level section becomes a group, and child sections' requirements are included in the parent group's controls.
 
 ---
 
@@ -142,7 +142,7 @@ Control IDs follow a deterministic naming pattern derived from section and requi
 
 **Acceptance Scenarios**:
 1. **Given** a section titled "Access Control" with 3 requirements, **When** generating control IDs, **Then** IDs are `POL-AC-001`, `POL-AC-002`, `POL-AC-003`.
-2. **Given** a section titled "Incident Response and Recovery" with 1 requirement, **When** generating control IDs, **Then** the ID follows the pattern (e.g., `POL-IR-001`) using an abbreviation derived from the section title.
+2. **Given** a section titled "Incident Response and Recovery" with 1 requirement, **When** generating control IDs, **Then** the ID follows the pattern (e.g., `POL-IRR-001`) using an abbreviation derived from the section title.
 3. **Given** two sections with potentially colliding abbreviations, **When** generating control IDs, **Then** IDs remain unique across the entire Catalog.
 
 ---
@@ -201,15 +201,15 @@ N/A — No state transitions in this work item. The builder is a pure function: 
 - [ ] **M-2:** Each OSCAL group shall have an `id` derived from the section title (e.g., `access-control` from "Access Control Policies") and a `title` matching the section title. *(Traces to: Parent PRD M-3)*
 - [ ] **M-3:** The Catalog builder shall map each `PolicyRequirement` within a section to an OSCAL `control` in the parent group's `controls[]` array, preserving requirement order. *(Traces to: Parent PRD M-3)*
 - [ ] **M-4:** Each OSCAL control shall have a human-readable `id` generated from section context and requirement index (e.g., `POL-AC-001`). *(Traces to: Parent PRD M-3)*
-- [ ] **M-5:** Each OSCAL control shall have a `title` derived from the requirement text (first sentence or truncated text). *(Traces to: Parent PRD M-3)*
+- [ ] **M-5:** Each OSCAL control shall have a `title` derived from the requirement text: first sentence (up to first `.`, `!`, or `?`), capped at 120 characters with a `...` suffix if exceeded. *(Traces to: Parent PRD M-3)*
 - [ ] **M-6:** Each OSCAL control shall include a UUID sourced from the `PolicyRequirement.stable_id` field (populated by WI-7). *(Traces to: Parent PRD M-8)*
 - [ ] **M-7:** The Catalog builder shall serialize the assembled Catalog structure to valid JSON using `serde` / `serde_json`. *(Traces to: Parent PRD M-3, M-7)*
 - [ ] **M-8:** Control IDs shall be unique across the entire generated Catalog. *(Traces to: Parent PRD M-3)*
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
 - [ ] **S-1:** Group IDs shall be unique across the Catalog; the builder shall detect and resolve collisions by appending a numeric suffix.
-- [ ] **S-2:** The Catalog builder shall handle nested `PolicySection` children by generating nested OSCAL groups or flattening with disambiguated control IDs.
-- [ ] **S-3:** The control ID abbreviation (e.g., `AC` from "Access Control") shall be configurable or derived via a deterministic abbreviation algorithm that produces stable results across runs.
+- [ ] **S-2:** The Catalog builder shall handle nested `PolicySection` children by flattening: only top-level sections become groups, and child sections' requirements are included in the parent group's controls. Recursive nested OSCAL group generation is deferred to a future work item.
+- [ ] **S-3:** The control ID abbreviation (e.g., `AC` from "Access Control") shall be derived via a deterministic abbreviation algorithm that produces stable results across runs. On abbreviation collision, the first section retains the base abbreviation and subsequent collisions receive a numeric suffix (e.g., `AC`, `AC2`, `AC3`).
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
 - [ ] **C-1:** The Catalog builder could accept an optional prefix parameter (default: `POL`) for control IDs, allowing customization (e.g., `SEC-AC-001` instead of `POL-AC-001`).
@@ -451,9 +451,9 @@ fn generate_section_abbreviation(section_title: &str) -> String;
 - [ ] **EC-2:** (M-3) When a section has zero requirements, then the group has an empty `controls[]` array.
 - [ ] **EC-3:** (M-4) When two sections have titles that produce the same abbreviation (e.g., "Access Control" and "Application Configuration" both yielding "AC"), then control IDs are disambiguated to avoid collisions.
 - [ ] **EC-4:** (M-2) When a section title contains special characters or non-ASCII text, then the group ID is properly slugified to contain only lowercase alphanumeric characters and hyphens.
-- [ ] **EC-5:** (M-6) When a `PolicyRequirement.stable_id` is `None` (WI-7 not yet run), then the builder returns an error or generates a temporary UUID with a warning.
+- [ ] **EC-5:** (M-6) When a `PolicyRequirement.stable_id` is `None` (WI-7 not yet run), then the builder returns an error identifying the affected requirement.
 - [ ] **EC-6:** (M-4) When a section has more than 999 requirements, then control IDs extend beyond 3 digits (e.g., `POL-AC-1000`).
-- [ ] **EC-7:** (M-5) When requirement text is very long (>200 characters), then the control title is truncated to a reasonable length.
+- [ ] **EC-7:** (M-5) When the first sentence of requirement text exceeds 120 characters, then the control title is truncated to 120 characters with a `...` suffix appended.
 
 ---
 

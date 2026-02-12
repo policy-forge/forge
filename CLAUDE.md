@@ -55,6 +55,8 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust (edition 2024, stable 1.93.0) + regex (latest stable, already in use), sha2 0.10.x (already a dependency from WI-2), thiserror 2.0.18 (existing error handling) (006-requirement-atomization)
 - N/A — in-memory processing only; operates on domain model structs (006-requirement-atomization)
 - Rust (edition 2024, stable 1.93.0) + uuid (v5 feature, NEW), tracing (NEW, Constitution IX), pulldown-cmark 0.13.x, serde 1.x, serde_json 1.x, sha2 0.10.x, clap 4, thiserror 2.0.18 (existing) (007-uuid-generation)
+- Rust (edition 2024, stable 1.93.0) + serde 1.x, serde_json 1.x, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0 (all existing) (009-catalog-groups-controls)
+- N/A — in-memory processing only; no persistent storage (009-catalog-groups-controls)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x
