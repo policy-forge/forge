@@ -5,6 +5,7 @@ pub mod ingest;
 pub mod model;
 pub mod oscal;
 pub mod parse;
+pub mod uuid;
 pub mod validate;
 
 pub use error::ForgeError;

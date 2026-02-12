@@ -49,6 +49,7 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust edition 2024, stable 1.93.0 + pulldown-cmark 0.13.x (new), clap 4, thiserror 2.0.18, serde 1.x, serde_json 1.x, sha2 0.10.x (existing) (003-structural-extraction-headings)
 - N/A — in-memory processing only (003-structural-extraction-headings)
 - Rust (edition 2024, stable 1.93.0) + pulldown-cmark 0.13.x (existing), serde 1.x (existing), thiserror 2.0.18 (existing) (004-structural-extraction-clauses)
+- Rust (edition 2024, stable 1.93.0) + uuid (v5 feature, NEW), tracing (NEW, Constitution IX), pulldown-cmark 0.13.x, serde 1.x, serde_json 1.x, sha2 0.10.x, clap 4, thiserror 2.0.18 (existing) (007-uuid-generation)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x

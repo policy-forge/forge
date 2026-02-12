@@ -83,6 +83,17 @@ This PRD covers **WI-7: Deterministic UUID v5 Generation** from the FORGE Produc
 
 ---
 
+## Clarifications
+
+### Session 2026-02-11
+
+- Q: What value should be used for the FORGE_NAMESPACE_UUID constant? → A: Generate a new project-specific UUID v4 and hardcode it in the source (ensures global uniqueness)
+- Q: Where in the pipeline should UUID generation be invoked? → A: Automatically invoked immediately after requirement atomization completes, before returning the PolicyDocument (ensures stable_ids always populated)
+- Q: Where should the UUID generation code be organized? → A: In a separate uuid generation module (src/uuid.rs or src/uuid_generation.rs) for clear separation of concerns
+- Q: What information should be included in debug logging (PRD C-1)? → A: Normalized text + generated UUID (verifies normalization + generation, matches PRD C-1 specification)
+
+---
+
 ## Problem Statement 🔴 `@human-required`
 
 After atomization (WI-6), each `PolicyRequirement` has a `stable_id` field that is `None`. Without deterministic identifiers, every conversion run would produce different UUIDs for the same requirements, making diffs between conversion runs meaningless, breaking traceability across re-conversions, and violating product principle P-3 (Deterministic and auditable). The parent PRD explicitly states: "Generating new UUIDs on every run breaks traceability and makes diffs meaningless." UUID v5 generation solves this by deriving the identifier from the content itself — same content always produces the same UUID, without requiring any external persistence or state.
@@ -143,7 +154,7 @@ When a requirement's text is substantively changed, the stable ID changes to ref
 
 ### Assumptions
 - [A-1] The `uuid` Rust crate (MIT/Apache-2.0) supports UUID v5 generation and is the selected tool per the parent PRD tool evaluation.
-- [A-2] A single fixed FORGE namespace UUID will be defined as a constant and used for all requirement UUID generation.
+- [A-2] A single fixed FORGE namespace UUID (a project-specific UUID v4) will be generated once, hardcoded as a constant, and used for all requirement UUID generation to ensure global uniqueness of FORGE's identifier namespace.
 - [A-3] Content normalization consists of trimming leading/trailing whitespace and collapsing internal runs of whitespace to single spaces. No other normalization (e.g., case folding, punctuation normalization) is required.
 - [A-4] The `stable_id` field on `PolicyRequirement` is `Option<String>` (defined in WI-5) and will be populated as `Some(uuid_string)` after this WI.
 
@@ -162,11 +173,13 @@ When a requirement's text is substantively changed, the stable ID changes to ref
 
 ```mermaid
 flowchart TD
-    A[PolicyRequirement from WI-6] --> B[Extract requirement text]
-    B --> C[Normalize text: trim + collapse whitespace]
-    C --> D[Generate UUID v5: namespace UUID + normalized text]
-    D --> E[Set PolicyRequirement.stable_id = Some uuid]
-    E --> F[PolicyRequirement with stable_id ready for WI-9]
+    A[WI-6: Atomization completes] --> B[Automatic invocation: assign_stable_ids]
+    B --> C[For each PolicyRequirement: extract text]
+    C --> D[Normalize text: trim + collapse whitespace]
+    D --> E[Generate UUID v5: namespace UUID + normalized text]
+    E --> F[Set PolicyRequirement.stable_id = Some uuid]
+    F --> G[Return PolicyDocument with all stable_ids populated]
+    G --> H[WI-9: OSCAL generation can proceed]
 ```
 
 ### State Diagram (if applicable) 🟡 `@human-review`
@@ -203,7 +216,7 @@ stateDiagram-v2
 - [ ] **S-2:** The UUID generation function shall accept any string input (not just PolicyRequirement), enabling reuse for other content-addressed identifiers in later WIs.
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
-- [ ] **C-1:** The system could log (at debug level) the normalized text and generated UUID for each requirement to aid debugging.
+- [ ] **C-1:** The system could log (at debug level) the normalized text and generated UUID for each requirement to aid debugging. Log format: `debug!("UUID generated: text='{}' uuid='{}'", normalized_text, uuid)`
 
 ### Won't Have (W) — Explicitly deferred 🟡 `@human-review`
 - [ ] **W-1:** CLI warning when a requirement's stable ID changes between conversions — *Reason: Requires diff/comparison capability; deferred to WI-43 (diff report)*
@@ -249,45 +262,16 @@ erDiagram
 
 ## Interface Contract (if applicable) 🟡 `@human-review`
 
-```rust
-use uuid::Uuid;
+> **Canonical interface definition**: See [007-ar-uuid-generation.md](../AR/007-ar-uuid-generation.md) § Interface Definitions for the full Rust code contract.
 
-/// Fixed namespace UUID for all FORGE content-addressed identifier generation.
-/// WARNING: Changing this value will change ALL generated stable_ids and is a breaking change.
-pub const FORGE_NAMESPACE_UUID: Uuid = Uuid::from_bytes([
-    /* 16 bytes representing a v4 UUID generated once for the FORGE project */
-]);
+**Module**: `src/uuid.rs`
 
-/// Normalize text for stable ID generation.
-/// Trims leading/trailing whitespace and collapses internal whitespace runs to a single space.
-pub fn normalize_for_hashing(text: &str) -> String {
-    text.split_whitespace().collect::<Vec<&str>>().join(" ")
-}
-
-/// Generate a deterministic UUID v5 from requirement text.
-/// The text is normalized before hashing to ensure whitespace-insensitivity.
-pub fn generate_stable_id(text: &str) -> Uuid {
-    let normalized = normalize_for_hashing(text);
-    Uuid::new_v5(&FORGE_NAMESPACE_UUID, normalized.as_bytes())
-}
-
-/// Populate stable_id on all PolicyRequirements in a PolicyDocument.
-pub fn assign_stable_ids(document: &mut PolicyDocument) {
-    for section in &mut document.sections {
-        assign_stable_ids_to_section(section);
-    }
-}
-
-fn assign_stable_ids_to_section(section: &mut PolicySection) {
-    for requirement in &mut section.requirements {
-        let uuid = generate_stable_id(&requirement.text);
-        requirement.stable_id = Some(uuid.to_string());
-    }
-    for child in &mut section.children {
-        assign_stable_ids_to_section(child);
-    }
-}
-```
+| Component | Signature | Purpose |
+|-----------|-----------|---------|
+| `FORGE_NAMESPACE_UUID` | `pub const Uuid` | Fixed namespace for UUID v5 generation (compile-time constant) |
+| `normalize_for_hashing` | `pub fn(&str) -> String` | Trim + collapse whitespace |
+| `generate_stable_id` | `pub fn(&str) -> Uuid` | Deterministic UUID v5 from any text (S-2) |
+| `assign_stable_ids` | `pub fn(&mut PolicyDocument)` | Walk tree, populate all `stable_id` fields |
 
 ---
 
@@ -375,7 +359,14 @@ graph LR
 ## Implementation Guidance 🟢 `@llm-autonomous`
 
 ### Suggested Approach
-Add the `uuid` crate with the `v5` feature to `Cargo.toml`. Define a `FORGE_NAMESPACE_UUID` constant (generate a v4 UUID once and hardcode it). Implement `normalize_for_hashing` using Rust's `split_whitespace().collect::<Vec<&str>>().join(" ")` — this handles trimming, collapsing, and Unicode whitespace in a single idiomatic expression. Implement `generate_stable_id` as a pure function: normalize then call `Uuid::new_v5`. Implement `assign_stable_ids` to walk all sections/requirements in a `PolicyDocument` and populate `stable_id`. Write TDD tests first: determinism test, normalization test, sensitivity test, and edge cases.
+
+**Module Structure:** Create a dedicated UUID generation module at `src/uuid.rs` for clear separation of concerns and reusability (per S-2). This module will be independent of the domain model and pipeline orchestration.
+
+**Implementation:** Add the `uuid` crate with the `v5` feature to `Cargo.toml`. Define a `FORGE_NAMESPACE_UUID` constant (generate a v4 UUID once and hardcode it). Implement `normalize_for_hashing` using Rust's `split_whitespace().collect::<Vec<&str>>().join(" ")` — this handles trimming, collapsing, and Unicode whitespace in a single idiomatic expression. Implement `generate_stable_id` as a pure function: normalize then call `Uuid::new_v5`. Implement `assign_stable_ids` to walk all sections/requirements in a `PolicyDocument` and populate `stable_id`.
+
+**Pipeline Integration:** Call `assign_stable_ids(&mut document)` automatically at the end of the atomization pipeline (WI-6), immediately after all PolicyRequirements have been extracted but before returning the PolicyDocument. This ensures stable_ids are always populated before downstream OSCAL generation (WI-9) receives the document.
+
+**Testing:** Write TDD tests first: determinism test, normalization test, sensitivity test, and edge cases. Place tests in `tests/uuid_generation_test.rs` or as unit tests within the module.
 
 ### Anti-patterns to Avoid
 - Using UUID v4 (random) for requirement identifiers — this violates determinism and is explicitly rejected in the parent PRD Decision Log
