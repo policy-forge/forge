@@ -47,6 +47,9 @@ pub enum ForgeError {
 
     #[error("'{}' is not a regular file.", path.display())]
     NotAFile { path: PathBuf },
+
+    #[error("Catalog build error: {0}")]
+    CatalogBuild(String),
 }
 
 #[cfg(test)]
@@ -124,6 +127,12 @@ mod tests {
     fn not_a_file_display() {
         let err = ForgeError::NotAFile { path: PathBuf::from("/tmp/somedir") };
         assert_eq!(err.to_string(), "'/tmp/somedir' is not a regular file.");
+    }
+
+    #[test]
+    fn catalog_build_error_display() {
+        let err = ForgeError::CatalogBuild("missing stable_id".to_string());
+        assert_eq!(err.to_string(), "Catalog build error: missing stable_id");
     }
 
     #[test]
