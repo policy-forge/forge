@@ -44,7 +44,7 @@ pub struct PolicyDocument {
 ///
 /// Extracted from YAML frontmatter when available, with fallback to
 /// heading-based extraction and sensible defaults.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct DocumentMetadata {
     /// Document title.
     /// - Frontmatter `title` field, OR
