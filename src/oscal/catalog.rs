@@ -154,16 +154,26 @@ pub fn generate_group_id(section_title: &str) -> String {
 pub fn generate_section_abbreviation(section_title: &str) -> String {
     let abbreviation: String = section_title
         .split_whitespace()
-        .filter(|word| {
-            let lower = word.to_ascii_lowercase();
-            !STOP_WORDS.contains(&lower.as_str())
+        .filter_map(|word| {
+            let cleaned: String = word.chars().filter(|c| c.is_alphanumeric()).collect();
+            if cleaned.is_empty() {
+                return None;
+            }
+            let lower = cleaned.to_ascii_lowercase();
+            if STOP_WORDS.contains(&lower.as_str()) {
+                return None;
+            }
+            cleaned.chars().next().map(|c| c.to_ascii_uppercase())
         })
-        .filter_map(|word| word.chars().next())
-        .map(|c| c.to_ascii_uppercase())
         .collect();
 
     if abbreviation.is_empty() {
-        let fallback: String = section_title.chars().take(2).collect::<String>().to_uppercase();
+        let fallback: String = section_title
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .take(2)
+            .collect::<String>()
+            .to_uppercase();
         if fallback.is_empty() { "SEC".to_string() } else { fallback }
     } else {
         abbreviation
@@ -270,8 +280,7 @@ pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeErr
             let stable_id = req.stable_id.as_ref().ok_or_else(|| {
                 let preview: String = req.text.chars().take(60).collect();
                 ForgeError::CatalogBuild(format!(
-                    "Requirement missing stable_id \
-                         in section '{}': '{preview}'",
+                    "Requirement missing stable_id in section '{}': '{preview}'",
                     section.title,
                 ))
             })?;
@@ -462,6 +471,20 @@ mod tests {
     fn abbrev_all_stop_words_fallback() {
         assert_eq!(generate_section_abbreviation("of the"), "OF");
         assert_eq!(generate_section_abbreviation("a"), "A");
+    }
+
+    #[test]
+    fn abbrev_punctuation_in_tokens() {
+        // "&" token stripped to empty, skipped; remaining words produce "DPP"
+        assert_eq!(generate_section_abbreviation("Data Protection & Privacy"), "DPP");
+        // "The," cleaned to "the" (stop word), "Art" kept, "of" stop word, "War" kept
+        assert_eq!(generate_section_abbreviation("The, Art of War"), "AW");
+    }
+
+    #[test]
+    fn abbrev_only_punctuation_fallback() {
+        // All tokens are punctuation-only → fallback to "SEC"
+        assert_eq!(generate_section_abbreviation("& # !"), "SEC");
     }
 
     #[test]

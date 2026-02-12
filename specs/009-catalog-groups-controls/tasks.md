@@ -163,7 +163,7 @@
 
 ### User Story Dependencies
 
-```
+```text
 Phase 1: Setup
     ↓
 Phase 2: Foundational (error variant + OSCAL structs)
@@ -198,7 +198,7 @@ Phase 7: Polish (integration tests + quality gates)
 
 ## Parallel Example: User Story 3 (Control IDs)
 
-```
+```text
 # Launch test-writing tasks in parallel:
 Task T009: "TDD tests for generate_section_abbreviation() in src/oscal/catalog.rs"
 Task T010: "TDD tests for generate_control_id() in src/oscal/catalog.rs"

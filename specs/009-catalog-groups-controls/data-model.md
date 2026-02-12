@@ -110,7 +110,9 @@ An OSCAL control mapped from a PolicyRequirement.
 2. Replace any character that is not alphanumeric or hyphen with a hyphen
 3. Collapse consecutive hyphens into single hyphen
 4. Trim leading and trailing hyphens
-5. If result is empty, return `"group-{index}"` (fallback)
+5. If result is empty, return an empty string
+
+> **Note**: `generate_group_id` does not handle the `"group-{index}"` fallback itself because it has no index parameter. The fallback is applied by `resolve_group_id` (called from `build_catalog`), which substitutes `"group-{index}"` when `generate_group_id` returns an empty string.
 
 **Examples**:
 - `"Access Control Policies"` → `"access-control-policies"`
