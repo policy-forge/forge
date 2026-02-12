@@ -7,11 +7,13 @@ license = "MIT"
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 pulldown-cmark = "0.13"
+regex = "1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 serde_yaml = { package = "serde_yaml_ng", version = "0.10" }
 sha2 = "0.10.9"
 thiserror = "2.0.18"
+tracing = "0.1"
 
 [lints.clippy]
 all = "warn"
@@ -21,4 +23,9 @@ pedantic = "warn"
 unsafe_code = "warn"
 
 [dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.25.0"
+
+[[bench]]
+name = "atomize"
+harness = false

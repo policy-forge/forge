@@ -99,7 +99,7 @@ pub struct PolicySection {
 /// An individual policy requirement extracted from a list item or clause pattern.
 ///
 /// Requirements represent the atomic units of policy that will map to OSCAL controls.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct PolicyRequirement {
     /// Stable UUID for this requirement.
     /// - `None` until populated by WI-7 (UUID generation)
@@ -114,6 +114,15 @@ pub struct PolicyRequirement {
 
     /// Nesting depth from extraction (0 = top-level list item, 1 = nested once, etc.).
     pub nesting_depth: u8,
+
+    /// 0-based position in the split. For non-split (atomic) requirements,
+    /// this is 0. For split requirements, this is 0..N where N is the
+    /// number of atomic parts produced. Added by WI-6 (atomization).
+    pub atom_index: usize,
+
+    /// Original compound text if this requirement was produced by splitting.
+    /// `None` if the requirement was already atomic (not split). Added by WI-6 (atomization).
+    pub parent_text: Option<String>,
 }
 
 impl PolicySection {
@@ -154,6 +163,8 @@ mod tests {
             text: "Users must authenticate before access".to_string(),
             source_line: 15,
             nesting_depth: 0,
+            atom_index: 0,
+            parent_text: None,
         }
     }
 

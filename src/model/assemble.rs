@@ -47,6 +47,8 @@ pub(crate) fn map_sections(
                 text: item.text.clone(),
                 source_line: item.source_line,
                 nesting_depth: item.nesting_depth,
+                atom_index: 0,
+                parent_text: None,
             })
             .collect();
         return vec![PolicySection {
@@ -75,6 +77,8 @@ pub(crate) fn map_sections(
                 text: item.text.clone(),
                 source_line: item.source_line,
                 nesting_depth: item.nesting_depth,
+                atom_index: 0,
+                parent_text: None,
             })
             .collect();
         result.push(PolicySection {
@@ -128,6 +132,8 @@ fn map_sections_recursive(
                 text: item.text.clone(),
                 source_line: item.source_line,
                 nesting_depth: item.nesting_depth,
+                atom_index: 0,
+                parent_text: None,
             })
             .collect();
 

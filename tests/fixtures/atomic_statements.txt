@@ -1,0 +1,22 @@
+# Atomic Policy Statements — Test Reference
+# These statements should pass through the atomizer UNCHANGED.
+
+# AC-3: Single obligation with "must"
+All systems must enforce MFA
+→ Expected: 1 atomic requirement (unchanged)
+
+# AC-4: Single obligation with "must"
+Passwords must be at least 12 characters
+→ Expected: 1 atomic requirement (unchanged)
+
+# EC-1: "and" without normative verb after conjunction
+Systems must encrypt and store data securely
+→ Expected: 1 atomic requirement (unchanged — "and" not followed by normative verb)
+
+# EC-5: Non-splitting "and" in object phrase
+Systems must implement logging and monitoring
+→ Expected: 1 atomic requirement (unchanged)
+
+# EC-10: Uppercase normative verbs (case-sensitive, no match)
+Systems MUST enforce MFA and MUST require passwords
+→ Expected: 1 atomic requirement (unchanged — case-sensitive matching)
