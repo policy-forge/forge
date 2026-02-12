@@ -184,15 +184,15 @@ gantt
 
 | ID | Work Item | Sprint | Theme | Milestone | PRD Req | Size | Status | Parallel With |
 |----|-----------|--------|-------|-----------|---------|------|--------|---------------|
-| WI-1 | Project scaffolding: clap CLI, module structure, error types, CI setup | S-1 (Mar 3) | T-1 | MS-1 | — | XS | Not Started | — |
-| WI-2 | Markdown ingestion: file reading, format detection | S-2 (Mar 10) | T-1 | MS-1 | M-1 | XS | Not Started | — |
+| WI-1 | Project scaffolding: clap CLI, module structure, error types, CI setup | S-1 (Mar 3) | T-1 | MS-1 | — | XS | Done | — |
+| WI-2 | Markdown ingestion: file reading, format detection | S-2 (Mar 10) | T-1 | MS-1 | M-1 | XS | Done | — |
 | WI-3 | Markdown structural extraction: headings, section hierarchy | S-3 (Mar 17) | T-1 | MS-1 | M-1 | S | Done | WI-4 |
-| WI-4 | Markdown clause extraction: numbered lists, bullets, tables, paragraphs | S-4 (Mar 24) | T-1 | MS-1 | M-1 | S | In Review | WI-3 |
-| WI-5 | Internal domain model: PolicyDocument, PolicySection, PolicyRequirement structs | S-5 (Mar 31) | T-1 | MS-1 | M-1 | S | Not Started | — |
-| WI-6 | Requirement atomization: compound statement splitting | S-6 (Apr 7) | T-1 | MS-1 | M-2 | S | Not Started | WI-8 |
-| WI-7 | Deterministic UUID v5 generation with content-based stability | S-7 (Apr 14) | T-1 | MS-1 | M-8 | S | Not Started | WI-8 |
-| WI-8 | Citation and reference extraction into internal Citation model | S-8 (Apr 21) | T-1 | MS-1 | M-9 | S | Not Started | WI-6, WI-7 |
-| WI-9 | OSCAL Catalog JSON: groups and controls from domain model | S-9 (Apr 28) | T-2 | MS-2 | M-3 | S | Not Started | WI-11, WI-12 |
+| WI-4 | Markdown clause extraction: numbered lists, bullets, tables, paragraphs | S-4 (Mar 24) | T-1 | MS-1 | M-1 | S | Done | WI-3 |
+| WI-5 | Internal domain model: PolicyDocument, PolicySection, PolicyRequirement structs | S-5 (Mar 31) | T-1 | MS-1 | M-1 | S | Done | — |
+| WI-6 | Requirement atomization: compound statement splitting | S-6 (Apr 7) | T-1 | MS-1 | M-2 | S | Done | WI-8 |
+| WI-7 | Deterministic UUID v5 generation with content-based stability | S-7 (Apr 14) | T-1 | MS-1 | M-8 | S | Done | WI-8 |
+| WI-8 | Citation and reference extraction into internal Citation model | S-8 (Apr 21) | T-1 | MS-1 | M-9 | S | Not Started | WI-9, WI-11 |
+| WI-9 | OSCAL Catalog JSON: groups and controls from domain model | S-9 (Apr 28) | T-2 | MS-2 | M-3 | S | Not Started | WI-8, WI-11, WI-12 |
 | WI-10 | OSCAL Catalog JSON: statement parts, prose, control structure | S-10 (May 5) | T-2 | MS-2 | M-3 | S | Not Started | WI-11, WI-12 |
 | WI-11 | OSCAL metadata: uuid, title, last-modified, version, oscal-version | S-11 (May 12) | T-2 | MS-2 | M-5 | XS | Not Started | WI-9, WI-10, WI-12 |
 | WI-12 | OSCAL back matter: resources from citations, link patterns | S-12 (May 19) | T-2 | MS-2 | M-9, M-11 | S | Not Started | WI-9, WI-10, WI-11 |
@@ -263,18 +263,20 @@ gantt
 
 ### Phase 1 — Foundation (25 Sprints) :yellow_circle: `@human-review`
 
-#### Sprint 1 (Mar 3–7): Project Scaffolding
+#### Sprint 1 (Mar 3–7): Project Scaffolding ✅ DONE
 - Set up clap CLI with `convert` and `validate` subcommands
 - Establish module structure: `cli/`, `ingest/`, `parse/`, `model/`, `oscal/`, `validate/`, `export/`
 - Define error types with `thiserror`
 - Set up CI: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`
 - **Deliverable:** `forge --help` prints usage; CI green
+- **Status:** Complete — clap 4 derive-based CLI, `ForgeError` enum with thiserror, module structure established
 
-#### Sprint 2 (Mar 10–14): Markdown Ingestion
+#### Sprint 2 (Mar 10–14): Markdown Ingestion ✅ DONE
 - Implement file reader with format detection (by extension)
 - Read Markdown files into raw text with line tracking
 - Spike: evaluate `pulldown-cmark` vs `comrak` for Markdown parsing
 - **Deliverable:** `forge convert policy.md` reads file and prints raw structure to stdout
+- **Status:** Complete — `ingest_file()` with UTF-8 validation, SHA-256 fingerprinting, file size limits, line-level tracking
 
 #### Sprint 3 (Mar 17–21): Structural Extraction — Headings ✅ DONE
 - Parse Markdown headings (H1–H6) into hierarchical section tree
@@ -283,34 +285,37 @@ gantt
 - **Deliverable:** Section hierarchy extracted and printed as debug output
 - **Status:** Complete (PR #5 merged 2026-02-10) — 87 tests passing, event-based parsing with pulldown-cmark
 
-#### Sprint 4 (Mar 24–28): Structural Extraction — Clauses & Tables 🔄 IN REVIEW
+#### Sprint 4 (Mar 24–28): Structural Extraction — Clauses & Tables ✅ DONE
 - Extract numbered lists, bullet lists, and tables from within sections
 - Extract standalone paragraphs (not inside lists or tables)
 - Map list items to candidate policy requirements
 - Preserve table structure for tabular policy content
 - **Deliverable:** All structural elements (headings, lists, tables, paragraphs) extracted from test fixtures
-- **Status:** In Review (PR #6 pending merge) — 92 tests passing (87 unit + 5 doc), GFM table support, paragraph extraction added, all SEC-1 through SEC-7 requirements met
+- **Status:** Complete (PR #6 merged) — GFM table support, paragraph extraction, nesting depth tracking, all SEC-1 through SEC-7 requirements met
 
-#### Sprint 5 (Mar 31–Apr 4): Internal Domain Model
+#### Sprint 5 (Mar 31–Apr 4): Internal Domain Model ✅ DONE
 - Implement `PolicyDocument`, `PolicySection`, `PolicyRequirement` structs
 - Wire ingestion output into domain model
 - Add `DocumentMetadata` (title, version from frontmatter or first heading)
 - Unit tests for model construction
 - **Deliverable:** Markdown → PolicyDocument round-trip with all sections and requirements
+- **Status:** Complete (PR #7 merged) — `PolicyDocument`, `DocumentMetadata`, `PolicySection`, `PolicyRequirement` structs; `assemble_document()` pipeline; YAML frontmatter parsing; `parse_frontmatter()` with `serde_yaml_ng`
 
-#### Sprint 6 (Apr 7–11): Requirement Atomization
+#### Sprint 6 (Apr 7–11): Requirement Atomization ✅ DONE
 - Implement compound statement splitter ("must X and must Y" → 2 requirements)
 - Heuristic splitting on "and"/"or" conjunctions with normative verbs
 - Preserve single atomic statements as-is
 - Assign preliminary stable IDs to each atomic requirement
 - **Deliverable:** Compound statements split correctly in test fixtures; unit tests passing
+- **Status:** Complete (PR #10 merged) — `atomize_requirement()` and `atomize_document()` with regex-based splitting on conjunctions + normative verbs; shared subject extraction; `preliminary_id()` via SHA-256; max split safety limit; criterion benchmarks
 
-#### Sprint 7 (Apr 14–18): Deterministic UUID Generation
+#### Sprint 7 (Apr 14–18): Deterministic UUID Generation ✅ DONE
 - Implement UUID v5 generation: namespace UUID + content hash of requirement text
 - Verify identical content → identical UUID across runs
 - Verify substantive text change → new UUID
 - Verify whitespace-only change → same UUID (normalize before hashing)
 - **Deliverable:** `PolicyRequirement.stable_id` deterministic; Spike-4 acceptance criteria met
+- **Status:** Complete (PR #8 merged) — `FORGE_NAMESPACE_UUID` constant; `normalize_for_hashing()` for whitespace resilience; `generate_stable_id()` UUID v5; `assign_stable_ids()` recursive traversal; criterion benchmarks; tracing instrumentation
 
 #### Sprint 8 (Apr 21–25): Citation & Reference Extraction
 - Detect inline citations, URLs, and cross-references in requirement text
@@ -596,10 +601,10 @@ gantt
 ```mermaid
 graph LR
     subgraph "T-1: Core Pipeline"
-        WI1["WI-1: Scaffolding"]
-        WI5["WI-5: Domain Model"]
-        WI6["WI-6: Atomization"]
-        WI7["WI-7: UUID Gen"]
+        WI1["WI-1: Scaffolding ✅"]
+        WI5["WI-5: Domain Model ✅"]
+        WI6["WI-6: Atomization ✅"]
+        WI7["WI-7: UUID Gen ✅"]
         WI8["WI-8: Citations"]
         WI1 --> WI5
         WI5 --> WI6
@@ -609,11 +614,18 @@ graph LR
 
     subgraph "T-2: OSCAL Generation"
         WI9["WI-9: Catalog"]
+        WI11["WI-11: Metadata"]
+        WI12["WI-12: Back Matter"]
+        WI13["WI-13: Catalog Pipeline"]
         WI14["WI-14: Component Def"]
         WI16["WI-16: Traceability"]
         WI7 --> WI9
-        WI8 --> WI9
-        WI9 --> WI14
+        WI7 --> WI11
+        WI8 --> WI12
+        WI9 --> WI13
+        WI11 --> WI13
+        WI12 --> WI13
+        WI13 --> WI14
         WI14 --> WI16
     end
 
@@ -644,9 +656,9 @@ graph LR
 
 | ID | Blocked Item | Depends On | Type | Owner | Status | Risk if Late |
 |----|-------------|------------|------|-------|--------|--------------|
-| D-1 | WI-5 (Domain Model) | WI-1 (Scaffolding) | Internal | Brian Luby | Not Started | MS-1 slips |
-| D-2 | WI-9 (Catalog Gen) | WI-7 (UUID Gen) | Internal | Brian Luby | Not Started | MS-2 slips |
-| D-3 | WI-9 (Catalog Gen) | WI-8 (Citations) | Internal | Brian Luby | Not Started | MS-2 slips |
+| D-1 | WI-5 (Domain Model) | WI-1 (Scaffolding) | Internal | Brian Luby | Done | MS-1 slips |
+| D-2 | WI-9 (Catalog Gen) | WI-7 (UUID Gen) | Internal | Brian Luby | Done | MS-2 slips |
+| D-3 | WI-12 (Back Matter) | WI-8 (Citations) | Internal | Brian Luby | Not Started | MS-2 slips |
 | D-4 | WI-14 (Component Def) | WI-9 (Catalog Gen) | Internal | Brian Luby | Not Started | MS-3 slips |
 | D-5 | WI-19 (Schema Val) | WI-16 (Traceability) | Internal | Brian Luby | Not Started | MS-4 slips |
 | D-6 | WI-26 (XML Output) | WI-25 (Phase 1 Release) | Internal | Brian Luby | Not Started | MS-5 slips |
@@ -656,11 +668,14 @@ graph LR
 
 ### Critical Path :green_circle: `@llm-autonomous`
 
-> **Critical Path:** WI-1 → WI-5 → WI-6 → WI-7 → WI-9 → WI-14 → WI-16 → WI-19 → WI-21 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
+> **Critical Path:** ~~WI-1 → WI-5 → WI-6 → WI-7~~ (Done) → WI-9 → WI-13 → WI-14 → WI-16 → WI-19 → WI-21 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
 >
-> **Total estimated duration:** ~50 weeks (Sprints 1–50)
-> **Slack:** ~8 weeks before Phase 3 target (Apr 2027)
-> **Bottleneck:** Sprints 19–22 (Validation + Golden Files) — most requirements must be working before these can fully validate
+> **Completed:** 7 of 50 work items (WI-1 through WI-7) — ahead of original schedule
+> **Remaining critical path:** ~43 weeks (Sprints 8–50)
+> **Slack:** ~15+ weeks ahead of original MS-1 target (2026-04-24); significant buffer accumulated
+> **Bottleneck:** WI-13 (Catalog Pipeline) is the integration point requiring WI-8 + WI-9 + WI-10 + WI-11 + WI-12 to converge
+>
+> **Parallelism opportunity (now):** WI-8 (Citations), WI-9 (Catalog structure), and WI-11 (Metadata) can all start immediately since their dependencies (WI-5, WI-7) are done. WI-12 (Back Matter) requires WI-8 to complete. This means 3 independent work streams can overlap before converging at WI-13.
 
 ---
 
@@ -726,8 +741,8 @@ graph LR
 
 | Milestone | Target Date | Status | On Track? | Blockers |
 |-----------|-------------|--------|-----------|----------|
-| MS-1: Markdown → Domain Model | 2026-04-24 | 2 of 8 work items done | :construction: In Progress | None |
-| MS-2: First Valid Catalog | 2026-06-05 | 0 of 5 work items done | :white_check_mark: Not Started | None |
+| MS-1: Markdown → Domain Model | 2026-04-24 | 7 of 8 work items done | :white_check_mark: Ahead of Schedule | None — only WI-8 (Citation extraction) remains |
+| MS-2: First Valid Catalog | 2026-06-05 | 0 of 5 work items done | :white_check_mark: Not Started | WI-8 blocks WI-9 |
 | MS-3: Component Def + Traceability | 2026-07-03 | 0 of 5 work items done | :white_check_mark: Not Started | None |
 | MS-4: Phase 1 Release (v0.1.0) | 2026-08-21 | 0 of 7 work items done | :white_check_mark: Not Started | None |
 | MS-5: Multi-Format Output | 2026-09-19 | 0 of 4 work items done | :white_check_mark: Not Started | None |
@@ -738,7 +753,7 @@ graph LR
 
 | Theme | Work Items Total | Done | In Progress | Blocked | Not Started | Health |
 |-------|-----------------|------|-------------|---------|-------------|--------|
-| T-1: Core Pipeline | 8 | 1 | 1 | 0 | 6 | :construction: In Progress |
+| T-1: Core Pipeline | 8 | 7 | 0 | 0 | 1 | :white_check_mark: Ahead of Schedule |
 | T-2: OSCAL Generation | 10 | 0 | 0 | 0 | 10 | :white_check_mark: Not Started |
 | T-3: Validation & Quality | 7 | 0 | 0 | 0 | 7 | :white_check_mark: Not Started |
 | T-4: Output Format Expansion | 4 | 0 | 0 | 0 | 4 | :white_check_mark: Not Started |
@@ -750,9 +765,10 @@ graph LR
 ```mermaid
 xychart-beta
     title "Work Items Remaining by Phase"
-    x-axis ["Phase 1 Start", "MS-1", "MS-2", "MS-3", "MS-4", "MS-5", "MS-6", "MS-7"]
+    x-axis ["Phase 1 Start", "Now", "MS-1", "MS-2", "MS-3", "MS-4", "MS-5", "MS-6", "MS-7"]
     y-axis "Work Items Remaining" 0 --> 50
-    line "Planned" [50, 42, 37, 32, 25, 21, 15, 0]
+    line "Planned" [50, 46, 42, 37, 32, 25, 21, 15, 0]
+    line "Actual" [50, 43]
 ```
 
 ---
@@ -812,6 +828,7 @@ xychart-beta
 | 0.1 | 2026-02-10 | LLM (Claude) | Initial draft with 58 work items across 3 phases in 1-week sprints |
 | 0.2 | 2026-02-10 | Brian Luby | Constrained to Markdown-only input (ADR-001); removed PDF/DOCX work items (old WI-26–WI-33) and MS-5; renumbered to 50 work items; compressed Phase 2 from 18→10 sprints; overall timeline reduced by ~2 months |
 | 0.3 | 2026-02-11 | LLM (Claude) | Status update: WI-3 (heading extraction) complete (PR #5 merged); WI-4 (clause/table/paragraph extraction) in review (PR #6 pending merge); MS-1 progress: 2 of 8 items done; T-1 pipeline progressing on schedule |
+| 0.4 | 2026-02-11 | LLM (Claude) | Major status update: WI-1 through WI-7 all Done (merged to main). MS-1 at 7/8 complete — ahead of schedule. Corrected D-3 dependency (WI-12 depends on WI-8, not WI-9). Expanded dependency map to show WI-11/WI-12/WI-13 nodes. Updated parallelism analysis: WI-8, WI-9, WI-11 can all start immediately in parallel. Updated burndown, milestone health, theme health, and all sprint detail statuses. |
 
 ---
 
