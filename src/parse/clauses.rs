@@ -510,7 +510,8 @@ mod tests {
         assert_eq!(result.list_items.len(), 6, "Expected 6 nested items");
 
         for (i, item) in result.list_items.iter().enumerate() {
-            assert_eq!(item.nesting_depth, u8::try_from(i).unwrap(), "Item {i} should have depth {i}");
+            let expected = u8::try_from(i).unwrap();
+            assert_eq!(item.nesting_depth, expected, "Item {i} should have depth {i}");
         }
     }
 
