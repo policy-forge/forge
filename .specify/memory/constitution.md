@@ -2,63 +2,43 @@
 
 ## Core Principles
 
-### I. Modular Architecture (NON-NEGOTIABLE)
+### I. Crate-First Architecture (NON-NEGOTIABLE)
 
-Features MUST be organized into well-defined, independently testable modules with clear boundaries. The appropriate granularity depends on project scope:
+Every feature MUST begin as a standalone crate within the Cargo workspace before integration. Crates must be:
 
-- **Single-purpose CLI tools**: Dedicated submodules within a single crate (one feature = one submodule with explicit `pub` API)
-- **Multi-service systems**: Standalone crates within a Cargo workspace (one service/domain = one crate)
-
-Modules/crates must be:
-
-- **Self-contained**: Minimal coupling between modules (use trait abstractions and clear API boundaries)
-- **Independently testable**: Full test coverage without requiring the entire project
+- **Self-contained**: Minimal dependencies on sibling crates (use trait abstractions and dependency injection via generics or trait objects)
+- **Independently testable**: Full test coverage without requiring the full workspace
 - **Clearly purposed**: Single responsibility with explicit public API boundaries
 - **API-documented**: All public items documented with `rustdoc` comments
 
-**Prohibited**: God-modules/god-crates, kitchen-sink utility modules, or modules that exist solely to group unrelated code. Every module must provide concrete, reusable functionality.
+**Prohibited**: Monolithic god-crates, kitchen-sink utility crates, or crates that exist solely to group code. Every crate must provide concrete, reusable functionality.
 
-**Single-Crate Architecture** (focused CLI tools like FORGE):
-
-```text
-project/
-├── Cargo.toml
-├── src/
-│   ├── main.rs              # CLI entry point (thin wrapper)
-│   ├── lib.rs               # Library root — re-exports public API
-│   ├── error.rs             # Error types (thiserror)
-│   ├── model/               # Domain model types
-│   │   └── mod.rs
-│   ├── parse/               # Parsing and structural extraction
-│   │   ├── mod.rs           # Module root with re-exports
-│   │   ├── clauses.rs       # Clause extraction (WI-4)
-│   │   └── atomize.rs       # Requirement atomization (WI-6)
-│   ├── export/              # Output generation
-│   └── validate/            # Validation logic
-```
-
-**Workspace Architecture** (larger systems with multiple binaries or services):
+**Crate Boundaries** (adapt to your project):
 
 ```text
 workspace/
 ├── Cargo.toml              # Workspace root
 ├── crates/
 │   ├── core/               # Shared types, traits, error types
+│   ├── config/             # Configuration loading and validation
+│   ├── api/                # HTTP API layer (axum/actix-web)
 │   ├── scanner/            # Core scanning/analysis engine
+│   ├── rules/              # Rule definitions and evaluation
 │   ├── reporting/          # Output formatting and report generation
+│   ├── storage/            # Persistence layer (database, filesystem)
+│   ├── queue/              # Job queue management
+│   ├── cache/              # Caching layer
 │   └── cli/                # CLI binary entry point
 ```
 
-**Binary vs Library**: Binary entry points (`main.rs`) are thin wrappers that compose library modules/crates. Business logic lives in library code. Binaries handle startup, configuration wiring, and signal handling only.
+**Binary vs Library Crates**: Binary crates (`cli`, `api`) are thin wrappers that compose library crates. Business logic lives in library crates. Binary crates handle startup, configuration wiring, and signal handling only.
 
 **Public API Design**:
-- Use `pub(crate)` by default; only `pub` items that are part of the module's contract
-- Re-export key types from `lib.rs` and module `mod.rs` for ergonomic imports
-- Use feature flags for optional functionality, not separate modules for small variations
+- Use `pub(crate)` by default; only `pub` items that are part of the crate's contract
+- Re-export key types from `lib.rs` for ergonomic imports
+- Use feature flags for optional functionality, not separate crates for small variations
 
-**Migration Path**: A single-crate project MAY be refactored into a workspace when complexity warrants it (e.g., multiple binary targets, shared library extraction). This is a future optimization, not a prerequisite.
-
-**Rationale**: Modular architecture enables independent testing and clear separation of concerns. For focused CLI tools, submodules within a single crate provide sufficient isolation without the overhead of workspace management. Rust's module system enforces visibility boundaries at compile time.
+**Rationale**: Crate-first architecture enables independent compilation, testing, and potential future extraction to separate repositories if needed. Rust's compilation model rewards well-defined crate boundaries with faster incremental builds.
 
 ### II. Rust-First with Strategic FFI Integration
 
@@ -132,6 +112,7 @@ TDD is mandatory for all production code:
 - **Benchmark Tests**: `criterion` for performance regression detection
 
 **Test Organization**:
+
 ```rust
 // Unit tests — same file as implementation
 #[cfg(test)]
@@ -261,6 +242,7 @@ Errors must be actionable, contextual, and never expose internal state:
 - Use `.context()` / `.with_context()` to add call-site information
 
 **Standard Error Pattern**:
+
 ```rust
 use thiserror::Error;
 
@@ -308,6 +290,7 @@ Every crate must be observable in production:
 - Sensitive fields MUST be excluded from spans: `#[instrument(skip(password, api_key))]`
 
 **Tracing Configuration**:
+
 ```rust
 use tracing_subscriber::{fmt, EnvFilter, prelude::*};
 
@@ -376,10 +359,12 @@ All dependencies MUST use the most recent stable versions to minimize security r
 
 **Pre-Addition Security Checks** (MANDATORY):
 - ALL crates MUST be checked against the RustSec Advisory Database before adding:
+
   ```bash
   cargo audit
   cargo deny check advisories
   ```
+
 - Review crate on `lib.rs` / `crates.io`: last update, downloads, maintainer activity
 - Check for `unsafe` usage with `cargo geiger`
 - Verify license compatibility with `cargo deny check licenses`
@@ -463,7 +448,7 @@ Using an older crate version REQUIRES:
 - `bacon` — Background code checker (alternative to cargo-watch)
 
 **Rust Edition & MSRV**:
-- Edition: 2021 (or 2024 when stable and beneficial)
+- Edition: 2024 (Rust 1.93.0+)
 - MSRV: Document in workspace `Cargo.toml` via `rust-version = "1.XX"`
 - Update MSRV quarterly, tracking stable release schedule
 
@@ -490,6 +475,7 @@ Using an older crate version REQUIRES:
 ### Code Quality Standards
 
 **Formatting**: `rustfmt` with project `.rustfmt.toml`:
+
 ```toml
 edition = "2021"
 max_width = 100
@@ -499,6 +485,7 @@ group_imports = "StdExternalCrate"
 ```
 
 **Linting**: `clippy` with workspace-level configuration in `Cargo.toml`:
+
 ```toml
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
@@ -510,6 +497,7 @@ must_use_candidate = "allow"
 ```
 
 **Type Checking**: Rust compiler in strict mode:
+
 ```toml
 [workspace.lints.rust]
 unsafe_code = "warn"          # or "deny" for maximum safety
@@ -518,6 +506,7 @@ unused_results = "warn"       # Don't ignore Results
 ```
 
 **Documentation**: `rustdoc` for all public APIs with examples:
+
 ```rust
 /// Scans a target directory for security vulnerabilities.
 ///
@@ -579,6 +568,7 @@ Before every commit:
 - Commit messages SHOULD follow Conventional Commits
 
 **PR Template**:
+
 ```markdown
 ## Constitution Compliance
 - [ ] Crate-first architecture (new crate or existing boundary maintained)
@@ -600,6 +590,7 @@ Before every commit:
 Run before every commit and in CI:
 
 **Workspace Commands**:
+
 ```bash
 # Format all code
 cargo fmt --all
@@ -635,6 +626,7 @@ make commit-ready                      # Runs all of the above
 ```
 
 **Docker Commands**:
+
 ```bash
 make build         # Multi-stage Docker build
 make up            # Start all services
@@ -653,6 +645,7 @@ make health        # Check health endpoints
 ### Commit Messages
 
 Follow Conventional Commits:
+
 ```text
 feat(scanner): add SARIF output format support
 fix(rules): correct false positive on nested structs
@@ -678,6 +671,7 @@ All public items require comprehensive `rustdoc` comments:
 ### API Documentation (if HTTP API)
 
 Use `utoipa` for OpenAPI generation:
+
 ```rust
 /// Search for vulnerabilities matching the given criteria.
 #[utoipa::path(
@@ -744,7 +738,7 @@ All pull requests MUST verify constitution compliance:
 - Constitution violations MUST be fixed or justified before merge
 - Use CLAUDE.md for tactical development guidance (this constitution defines strategic principles)
 
-**Version**: 4.0.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-11
+**Version**: 3.2.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
 
 ---
 

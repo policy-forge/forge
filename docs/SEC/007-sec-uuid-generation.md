@@ -366,8 +366,8 @@ None — no conditions required for this low-risk feature.
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-1 | AC-1, EC-1 | Unit | tests/uuid_generation_test.rs |
-| SEC-2 | M-2 | AC-2, EC-2, EC-3 | Unit | tests/uuid_generation_test.rs |
+| SEC-1 | M-1 | AC-1, EC-1 | Unit | src/uuid.rs (#[cfg(test)] mod tests) |
+| SEC-2 | M-2 | AC-2, EC-2, EC-3 | Unit | src/uuid.rs (#[cfg(test)] mod tests) |
 | SEC-3 | S-1 | — | Code Review | src/uuid.rs (compile-time constant) |
 | SEC-4 | M-4 | AC-1 | Code Review | src/uuid.rs (pure function) |
 

@@ -283,13 +283,14 @@ sequenceDiagram
 use uuid::Uuid;
 
 /// Fixed namespace UUID for all FORGE content-addressed identifier generation.
-/// Example value shown here is illustrative only; implementation MUST generate
-/// a project-specific v4 UUID once and hardcode it here.
+/// Implementation MUST generate a fresh project-specific v4 UUID once and hardcode it here.
+/// DO NOT use well-known namespace UUIDs (DNS, URL, OID, X500) from RFC 4122.
 /// WARNING: Changing this value will change ALL generated stable_ids and is a breaking change.
 pub const FORGE_NAMESPACE_UUID: Uuid = Uuid::from_bytes([
-    // 16 bytes representing a UUID (example: 6ba7b810-9dad-11d1-80b4-00c04fd430c8)
-    0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1,
-    0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8,
+    // 16 bytes — PLACEHOLDER: generate a real v4 UUID during implementation
+    // e.g. via `uuidgen` CLI or `Uuid::new_v4()` and hardcode the bytes
+    0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x11,
+    0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99,
 ]);
 
 /// Normalize text for stable ID generation.
