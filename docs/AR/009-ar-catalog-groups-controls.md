@@ -371,7 +371,7 @@ fn generate_group_id(section_title: &str) -> String;
 
 /// Generate a section abbreviation from a section title.
 /// Takes initials of significant words (skip stop words: "and", "the", "of", "for").
-/// Example: "Access Control" -> "AC", "Incident Response and Recovery" -> "IR"
+/// Example: "Access Control" -> "AC", "Incident Response and Recovery" -> "IRR"
 fn generate_section_abbreviation(section_title: &str) -> String;
 
 /// Generate a control ID from section abbreviation and requirement index.
@@ -395,8 +395,8 @@ fn generate_control_id(
    d. Result: abbreviation (e.g., "Access Control" → "AC")
 2. Track used abbreviations across entire Catalog
 3. On collision (two sections produce same abbreviation):
-   a. Append numeric suffix: "AC", "AC2"
-   b. Or use longer abbreviation: take first two letters of first word
+   a. First section retains base abbreviation ("AC")
+   b. Subsequent collisions receive numeric suffix ("AC2", "AC3", etc.)
 4. For each control ID:
    a. Format: POL-{ABBR}-{NNN} where NNN is 1-indexed, zero-padded
    b. Track all control IDs; verify global uniqueness

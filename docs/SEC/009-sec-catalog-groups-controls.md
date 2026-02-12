@@ -380,9 +380,9 @@ None — no conditions required for this low-risk feature.
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-6 | AC-4, EC-5 | Unit | tests/catalog_builder_test.rs |
-| SEC-2 | M-8 | AC-6, EC-3 | Unit | tests/catalog_builder_test.rs |
-| SEC-3 | M-2 | AC-1, EC-4 | Unit | tests/catalog_builder_test.rs |
+| SEC-1 | M-6 | AC-4, EC-5 | Unit | src/oscal/catalog.rs |
+| SEC-2 | M-8 | AC-6, EC-3 | Unit | src/oscal/catalog.rs |
+| SEC-3 | M-2 | AC-1, EC-4 | Unit | src/oscal/catalog.rs |
 | SEC-4 | — | — | Code Review | src/oscal/catalog.rs |
 | SEC-5 | — | — | Code Review | src/oscal/catalog.rs |
 
