@@ -10,3 +10,4 @@ pub mod validate;
 
 pub use error::ForgeError;
 pub use model::{PolicyDocument, PolicyRequirement, PolicySection};
+pub use oscal::{OscalMetadata, assemble_metadata};
