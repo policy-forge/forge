@@ -161,7 +161,7 @@ N/A
 ### Must Have (M) — MVP, launch blockers 🔴 `@human-required`
 - [ ] **M-1:** The domain model shall include a `PolicyDocument` struct containing document metadata and a collection of `PolicySection`s. *(Traces to: Parent PRD M-1)*
 - [ ] **M-2:** The domain model shall include a `PolicySection` struct with title, heading level, source line, body text, child sections, and contained `PolicyRequirement`s. *(Traces to: Parent PRD M-1)*
-- [ ] **M-3:** The domain model shall include a `PolicyRequirement` struct with text content, source line number, and a placeholder for stable_id (populated later by WI-7). *(Traces to: Parent PRD M-1, M-2)*
+- [ ] **M-3:** The domain model shall include a `PolicyRequirement` struct with text content, source line number, nesting depth (0-based), and a placeholder for stable_id (populated later by WI-7). *(Traces to: Parent PRD M-1, M-2)*
 - [ ] **M-4:** The domain model shall include `DocumentMetadata` with title and version fields, populated from YAML frontmatter or first heading. *(Traces to: Parent PRD M-5)*
 - [ ] **M-5:** The assembly function shall wire ingestion output (WI-2), section tree (WI-3), and extracted clauses (WI-4) into a complete `PolicyDocument`. *(Traces to: Parent PRD M-1)*
 - [ ] **M-6:** All domain model structs shall preserve source line numbers for traceability. *(Traces to: Parent PRD M-10)*
@@ -232,23 +232,24 @@ erDiagram
 
 ```rust
 /// Top-level domain model for a parsed policy document
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PolicyDocument {
     pub id: String,
     pub metadata: DocumentMetadata,
     pub sections: Vec<PolicySection>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DocumentMetadata {
     pub title: String,
     pub version: String,
     pub author: Option<String>,
     pub date: Option<String>,
     pub source_path: PathBuf,
+    pub content_hash: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PolicySection {
     pub title: String,
     pub heading_level: u8,
@@ -258,7 +259,7 @@ pub struct PolicySection {
     pub requirements: Vec<PolicyRequirement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PolicyRequirement {
     /// Populated by WI-7 (UUID generation); None until then
     pub stable_id: Option<String>,
