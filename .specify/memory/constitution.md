@@ -112,6 +112,7 @@ TDD is mandatory for all production code:
 - **Benchmark Tests**: `criterion` for performance regression detection
 
 **Test Organization**:
+
 ```rust
 // Unit tests — same file as implementation
 #[cfg(test)]
@@ -241,6 +242,7 @@ Errors must be actionable, contextual, and never expose internal state:
 - Use `.context()` / `.with_context()` to add call-site information
 
 **Standard Error Pattern**:
+
 ```rust
 use thiserror::Error;
 
@@ -288,6 +290,7 @@ Every crate must be observable in production:
 - Sensitive fields MUST be excluded from spans: `#[instrument(skip(password, api_key))]`
 
 **Tracing Configuration**:
+
 ```rust
 use tracing_subscriber::{fmt, EnvFilter, prelude::*};
 
@@ -356,10 +359,12 @@ All dependencies MUST use the most recent stable versions to minimize security r
 
 **Pre-Addition Security Checks** (MANDATORY):
 - ALL crates MUST be checked against the RustSec Advisory Database before adding:
+
   ```bash
   cargo audit
   cargo deny check advisories
   ```
+
 - Review crate on `lib.rs` / `crates.io`: last update, downloads, maintainer activity
 - Check for `unsafe` usage with `cargo geiger`
 - Verify license compatibility with `cargo deny check licenses`
@@ -470,6 +475,7 @@ Using an older crate version REQUIRES:
 ### Code Quality Standards
 
 **Formatting**: `rustfmt` with project `.rustfmt.toml`:
+
 ```toml
 edition = "2021"
 max_width = 100
@@ -479,6 +485,7 @@ group_imports = "StdExternalCrate"
 ```
 
 **Linting**: `clippy` with workspace-level configuration in `Cargo.toml`:
+
 ```toml
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
@@ -490,6 +497,7 @@ must_use_candidate = "allow"
 ```
 
 **Type Checking**: Rust compiler in strict mode:
+
 ```toml
 [workspace.lints.rust]
 unsafe_code = "warn"          # or "deny" for maximum safety
@@ -498,6 +506,7 @@ unused_results = "warn"       # Don't ignore Results
 ```
 
 **Documentation**: `rustdoc` for all public APIs with examples:
+
 ```rust
 /// Scans a target directory for security vulnerabilities.
 ///
@@ -559,6 +568,7 @@ Before every commit:
 - Commit messages SHOULD follow Conventional Commits
 
 **PR Template**:
+
 ```markdown
 ## Constitution Compliance
 - [ ] Crate-first architecture (new crate or existing boundary maintained)
@@ -580,6 +590,7 @@ Before every commit:
 Run before every commit and in CI:
 
 **Workspace Commands**:
+
 ```bash
 # Format all code
 cargo fmt --all
@@ -615,6 +626,7 @@ make commit-ready                      # Runs all of the above
 ```
 
 **Docker Commands**:
+
 ```bash
 make build         # Multi-stage Docker build
 make up            # Start all services
@@ -633,6 +645,7 @@ make health        # Check health endpoints
 ### Commit Messages
 
 Follow Conventional Commits:
+
 ```text
 feat(scanner): add SARIF output format support
 fix(rules): correct false positive on nested structs
@@ -658,6 +671,7 @@ All public items require comprehensive `rustdoc` comments:
 ### API Documentation (if HTTP API)
 
 Use `utoipa` for OpenAPI generation:
+
 ```rust
 /// Search for vulnerabilities matching the given criteria.
 #[utoipa::path(
