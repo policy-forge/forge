@@ -67,6 +67,7 @@ The integration requires:
 3. Set `parts` and `props` on the `OscalControl` struct
 
 **Current OscalControl shape** (catalog.rs:53-60):
+
 ```rust
 pub struct OscalControl {
     pub id: String,

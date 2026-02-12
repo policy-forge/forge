@@ -142,7 +142,7 @@ No setup tasks required.
 
 **Purpose**: Edge cases, observability, validation, and final quality checks.
 
-- [x] T023 [P] Write edge case tests in `src/oscal/parts.rs`: EC-1 (empty requirement text → empty prose + tracing::warn), EC-2 (whitespace-only requirement text → trimmed empty prose + tracing::warn), EC-3 (Markdown formatting bold/links/code preserved in prose)
+- [x] T023 [P] Write edge case tests in `src/oscal/parts.rs`: EC-1 (empty requirement text → empty prose + tracing::warn), EC-2 (whitespace-only requirement text → prose preserves original whitespace verbatim + tracing::warn), EC-3 (Markdown formatting bold/links/code preserved in prose)
 - [x] T024 [P] Write JSON serialization validation test in `src/oscal/catalog.rs` — build full catalog, serialize to JSON, parse back, verify `parts` array structure matches OSCAL v1.2.0 shape (M-6, AC-6) including field names `id`, `name`, `prose`
 - [x] T025 Add `tracing::warn` in `build_control_parts` for empty requirement text (EC-1, SEC-2) and `tracing::debug` for part count per control (Constitution IX) in `src/oscal/parts.rs`
 - [x] T026 Run `cargo clippy -- -D warnings`, `cargo fmt --check`, `cargo test --doc`, and `cargo doc --no-deps` to verify zero warnings, correct formatting, doc test compilation, and rustdoc completeness

@@ -99,7 +99,7 @@ Controls whose requirement text spans multiple paragraphs preserve paragraph bre
 ### Edge Cases
 
 - **EC-1** (M-2): When a PolicyRequirement has empty text, the statement part has an empty string prose field and a warning is emitted.
-- **EC-2** (M-2): When a PolicyRequirement has only whitespace text, the statement part has the whitespace-trimmed (empty) prose and a warning is emitted (analogous to EC-1 for whitespace-only input).
+- **EC-2** (M-2): When a PolicyRequirement has only whitespace text, the statement part's prose preserves that whitespace verbatim (no trimming per SEC-1 direct copy), and a warning is emitted to indicate effectively empty content (analogous to EC-1 for whitespace-only input).
 - **EC-3** (S-3): When prose contains Markdown formatting (bold, links, inline code), the formatting is preserved as-is in the prose field.
 - **EC-4** (M-3): When a control ID contains special characters, the part ID is still correctly formed using the `{control-id}_smt` convention.
 - **EC-5** (C-1): When a requirement has sub-items (a, b, c), sub-items are concatenated into the statement prose. Nested sub-parts with `name: "item"` are deferred to a future WI if C-1 is prioritized.

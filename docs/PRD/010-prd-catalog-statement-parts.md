@@ -344,8 +344,9 @@ pub fn build_control_parts(
 | AC-8 | S-2 | US-2 | A PolicyRequirement with associated objective text | Building control parts | Control has both a statement part and an objective part with `name: "objective"` *(Deferred — S-2 is deferred pending domain model changes; no domain model signal for objective text exists)* |
 
 ### Edge Cases 🟢 `@llm-autonomous`
+
 - [ ] **EC-1:** (M-2) When a PolicyRequirement has empty text, then the statement part has an empty string prose field and a warning is emitted.
-- [ ] **EC-2:** (M-2) When a PolicyRequirement has only whitespace text, then the statement part has the whitespace-trimmed (empty) prose and a warning is emitted (analogous to EC-1 for whitespace-only input).
+- [ ] **EC-2:** (M-2) When a PolicyRequirement has only whitespace text, then the statement part preserves the original whitespace-only prose exactly as provided (no trimming per SEC-1 direct copy) and a warning is emitted.
 - [ ] **EC-3:** (S-3) When prose contains Markdown formatting (bold, links, inline code), then the formatting is preserved as-is in the prose field.
 - [ ] **EC-4:** (M-3) When a control ID contains special characters, then the part ID is still correctly formed using the `{control-id}_smt` convention.
 - [ ] **EC-5:** (C-1) When a requirement has sub-items (a, b, c), then each sub-item becomes a nested sub-part with `name: "item"` if C-1 is implemented; otherwise they are concatenated into the statement prose.

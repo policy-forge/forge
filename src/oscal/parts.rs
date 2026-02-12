@@ -89,7 +89,7 @@ pub fn generate_part_id(control_id: &str, suffix: &str) -> String {
 /// When `guidance_text` is `Some(non_empty_text)`, also produces a guidance
 /// part with `name: "guidance"` and prose from the guidance text.
 ///
-/// Logs `tracing::warn` if `requirement.text` is empty (EC-1).
+/// Logs `tracing::warn` if `requirement.text` is empty or whitespace-only (EC-1, EC-2).
 ///
 /// # Arguments
 ///
@@ -128,7 +128,7 @@ pub fn build_control_parts(
 
     // Warn on empty or whitespace-only requirement text (EC-1, EC-2, SEC-2).
     if requirement.text.trim().is_empty() {
-        warn!(control_id, "Empty requirement text — statement part will have empty prose");
+        warn!(control_id, "Empty/whitespace requirement text — statement prose preserved as-is");
     }
 
     // Statement part — always present (FR-001).
