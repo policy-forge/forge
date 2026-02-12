@@ -49,7 +49,7 @@ let document = PolicyDocument::new(/* ... */);
 let original_count = document.total_requirement_count();
 
 // When atomizing
-let atomized = atomize_document(document)?;
+let atomized = atomize_document(&document)?;
 
 // Then the count increases (or stays same if no compounds)
 assert!(atomized.total_requirement_count() >= original_count);
@@ -354,7 +354,7 @@ pub struct AtomizationResult {
   - `original_text.is_some()`
   - All requirements have sequential `atom_index` (0, 1, 2, ...)
   - All requirements have the same `source_line`
-  - All requirements have `parent_text == original_text`
+  - All `PolicyRequirement.parent_text` fields are set to `Some(AtomizationResult.original_text.clone().unwrap())` (i.e., each generated requirement's `parent_text` equals the originating `AtomizationResult.original_text`)
 
 - If `was_split == false`:
   - `requirements.len() == 1`
