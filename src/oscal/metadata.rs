@@ -29,6 +29,9 @@ pub const OSCAL_VERSION: &str = "1.2.0";
 #[derive(Debug, Clone, Serialize)]
 pub struct OscalMetadata {
     /// UUID v4 — unique per artifact generation instance.
+    /// Not part of the OSCAL metadata section; used programmatically
+    /// as the artifact-level UUID (e.g., `OscalCatalog.uuid`).
+    #[serde(skip)]
     pub uuid: Uuid,
 
     /// Document title from PolicyDocument.metadata.title.
@@ -199,9 +202,10 @@ mod tests {
 
         assert!(json.contains("\"last-modified\""), "Should use hyphenated last-modified");
         assert!(json.contains("\"oscal-version\""), "Should use hyphenated oscal-version");
-        assert!(json.contains("\"uuid\""), "Should contain uuid field");
         assert!(json.contains("\"title\""), "Should contain title field");
         assert!(json.contains("\"version\""), "Should contain version field");
+        // uuid is #[serde(skip)] — it's an artifact-level field, not part of metadata section
+        assert!(!json.contains("\"uuid\""), "uuid should not serialize in metadata section");
     }
 
     // --- US2: UUID Uniqueness Tests ---

@@ -8,7 +8,9 @@ use std::collections::HashMap;
 
 use serde::Serialize;
 use tracing::debug;
+use uuid::Uuid;
 
+use super::metadata::{OscalMetadata, assemble_metadata};
 use crate::error::ForgeError;
 use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 
@@ -23,13 +25,11 @@ pub struct CatalogEnvelope {
 }
 
 /// OSCAL Catalog root structure.
-///
-/// Metadata and UUID are placeholders — populated by WI-11.
 #[derive(Debug, Clone, Serialize)]
 pub struct OscalCatalog {
-    /// Placeholder UUID.
-    pub uuid: String,
-    /// Placeholder metadata (WI-11).
+    /// UUID v4 — unique per catalog generation instance.
+    pub uuid: Uuid,
+    /// OSCAL metadata section (title, last-modified, version, oscal-version).
     pub metadata: OscalMetadata,
     /// Groups mapped from `PolicySection`s.
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -57,21 +57,6 @@ pub struct OscalControl {
     pub uuid: String,
     /// Derived title (first sentence, 120-char cap).
     pub title: String,
-}
-
-/// Placeholder metadata — fully implemented in WI-11.
-#[derive(Debug, Clone, Serialize)]
-pub struct OscalMetadata {
-    /// Document title (placeholder: `"placeholder"`).
-    pub title: String,
-    /// Last modified timestamp.
-    #[serde(rename = "last-modified")]
-    pub last_modified: String,
-    /// Document version (placeholder: `"0.0.0"`).
-    pub version: String,
-    /// OSCAL specification version.
-    #[serde(rename = "oscal-version")]
-    pub oscal_version: String,
 }
 
 // ─── Constants ──────────────────────────────────────────────────────────
@@ -298,16 +283,9 @@ pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeErr
     let total_controls: usize = groups.iter().map(|g| g.controls.len()).sum();
     debug!(group_count = groups.len(), control_count = total_controls, "Catalog built");
 
-    Ok(OscalCatalog {
-        uuid: "00000000-0000-0000-0000-000000000000".to_string(),
-        metadata: OscalMetadata {
-            title: "placeholder".to_string(),
-            last_modified: "1970-01-01T00:00:00Z".to_string(),
-            version: "0.0.0".to_string(),
-            oscal_version: "1.2.0".to_string(),
-        },
-        groups,
-    })
+    let oscal_meta = assemble_metadata(&document.metadata, None)?;
+
+    Ok(OscalCatalog { uuid: oscal_meta.uuid, metadata: oscal_meta, groups })
 }
 
 /// Resolve a group ID with collision tracking.
@@ -696,12 +674,13 @@ mod tests {
         assert!(v.get("catalog").is_some());
         let c = &v["catalog"];
 
-        // D-5: Placeholder metadata
-        assert_eq!(c["uuid"], "00000000-0000-0000-0000-000000000000");
+        // Catalog UUID is a valid UUID v4 string
+        assert!(c["uuid"].as_str().unwrap().len() == 36, "UUID should be hyphenated format");
+        // Metadata populated from DocumentMetadata via assemble_metadata
         let m = &c["metadata"];
-        assert_eq!(m["title"], "placeholder");
-        assert_eq!(m["last-modified"], "1970-01-01T00:00:00Z");
-        assert_eq!(m["version"], "0.0.0");
+        assert_eq!(m["title"], "Test");
+        assert!(m["last-modified"].as_str().unwrap().contains('T'), "Should be ISO 8601");
+        assert_eq!(m["version"], "1.0");
         assert_eq!(m["oscal-version"], "1.2.0");
 
         // Control fields
@@ -731,17 +710,11 @@ mod tests {
 
     #[test]
     fn json_empty_groups_omitted() {
-        let cat = OscalCatalog {
-            uuid: "t".to_string(),
-            metadata: OscalMetadata {
-                title: "t".to_string(),
-                last_modified: "t".to_string(),
-                version: "t".to_string(),
-                oscal_version: "t".to_string(),
-            },
-            groups: vec![],
-        };
-        let json = serde_json::to_string(&cat).unwrap();
+        let d = doc(vec![]);
+        let cat = build_catalog(&d).unwrap();
+        assert!(cat.groups.is_empty());
+        let envelope = CatalogEnvelope { catalog: cat };
+        let json = serde_json::to_string(&envelope).unwrap();
         assert!(!json.contains("groups"));
     }
 
