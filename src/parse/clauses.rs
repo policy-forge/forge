@@ -387,11 +387,13 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write;
+
     use super::*;
 
     // ── Phase 2: Foundational Tests ───────────────────────────────────
 
-    /// T005: Empty document returns empty ExtractedContent (SEC-1, EC-1)
+    /// T005: Empty document returns empty `ExtractedContent` (SEC-1, EC-1)
     #[test]
     fn test_empty_document_returns_empty_content() {
         let result = extract_clauses("").unwrap();
@@ -400,7 +402,7 @@ mod tests {
         assert!(result.paragraphs.is_empty(), "Expected no paragraphs");
     }
 
-    /// T006: Document with only headings returns empty ExtractedContent (SEC-1)
+    /// T006: Document with only headings returns empty `ExtractedContent` (SEC-1)
     #[test]
     fn test_document_with_only_headings_returns_empty_content() {
         let md = "# Title\n\n## Section\n\n### Subsection\n";
@@ -440,8 +442,8 @@ mod tests {
         assert_eq!(result.list_items.len(), 3, "Expected 3 list items");
 
         for (i, item) in result.list_items.iter().enumerate() {
-            assert_eq!(item.list_type, ListType::Unordered, "Item {} should be unordered", i);
-            assert_eq!(item.nesting_depth, 0, "Item {} should have depth 0", i);
+            assert_eq!(item.list_type, ListType::Unordered, "Item {i} should be unordered");
+            assert_eq!(item.nesting_depth, 0, "Item {i} should have depth 0");
         }
 
         assert_eq!(result.list_items[0].text, "First item");
@@ -508,7 +510,7 @@ mod tests {
         assert_eq!(result.list_items.len(), 6, "Expected 6 nested items");
 
         for (i, item) in result.list_items.iter().enumerate() {
-            assert_eq!(item.nesting_depth, i as u8, "Item {} should have depth {}", i, i);
+            assert_eq!(item.nesting_depth, u8::try_from(i).unwrap(), "Item {i} should have depth {i}");
         }
     }
 
@@ -528,7 +530,7 @@ mod tests {
 
         // Should NOT contain markup characters
         assert!(!text.contains("**"), "Should not contain bold markers");
-        assert!(!text.contains("["), "Should not contain link brackets");
+        assert!(!text.contains('['), "Should not contain link brackets");
         assert!(!text.contains("]("), "Should not contain link syntax");
     }
 
@@ -598,7 +600,7 @@ mod tests {
         assert_eq!(table.rows[4], vec!["Guest", "None", "External"]);
     }
 
-    /// T023: Table at a known line position records correct source_line (AC-4, M-4)
+    /// T023: Table at a known line position records correct `source_line` (AC-4, M-4)
     #[test]
     fn test_table_source_line() {
         let md = "\
@@ -723,7 +725,7 @@ Some text between tables.
 
     // ── Phase 5: User Story 4 — Paragraph Extraction Tests (TDD) ────
 
-    /// T031: Standalone paragraph produces ExtractedParagraph (S-2)
+    /// T031: Standalone paragraph produces `ExtractedParagraph` (S-2)
     #[test]
     fn test_standalone_paragraph() {
         let md = "This is a standalone paragraph about access control.\n";
@@ -776,7 +778,7 @@ This paragraph is standalone.
 
         // Markdown formatting should be stripped
         assert!(!text.contains("**"), "Should not contain bold markers");
-        assert!(!text.contains("["), "Should not contain link brackets");
+        assert!(!text.contains('['), "Should not contain link brackets");
         assert!(!text.contains("]("), "Should not contain link syntax");
     }
 
@@ -936,9 +938,9 @@ Closing paragraph.
         for i in 0..260 {
             let indent = "   ".repeat(i);
             if i % 2 == 0 {
-                md.push_str(&format!("{indent}1. Level {i}\n"));
+                writeln!(md, "{indent}1. Level {i}").unwrap();
             } else {
-                md.push_str(&format!("{indent}- Level {i}\n"));
+                writeln!(md, "{indent}- Level {i}").unwrap();
             }
         }
 

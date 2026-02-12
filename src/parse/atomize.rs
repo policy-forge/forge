@@ -324,6 +324,7 @@ pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, For
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write;
     use std::path::PathBuf;
 
     use super::*;
@@ -497,7 +498,7 @@ mod tests {
         // EC-9: >50 splits → preserved as-is
         let mut text = "Systems must do task0".to_string();
         for i in 1..=51 {
-            text.push_str(&format!(" and must do task{i}"));
+            write!(text, " and must do task{i}").unwrap();
         }
         let req = make_req(&text, 99);
         let result = atomize_requirement(&req).unwrap();
@@ -833,7 +834,7 @@ mod tests {
         let elapsed = start.elapsed();
 
         // Must complete in under 1 second (regex crate linear-time guarantee)
-        assert!(elapsed.as_secs() < 1, "ReDoS: took {:?}", elapsed);
+        assert!(elapsed.as_secs() < 1, "ReDoS: took {elapsed:?}");
         // This won't match "and must" or "or must" so should be preserved
         assert!(!result.was_split);
     }
@@ -843,14 +844,14 @@ mod tests {
         // Many conjunction-verb pairs — linear time
         let mut text = "Systems must do task0".to_string();
         for i in 1..200 {
-            text.push_str(&format!(" and must do task{i}"));
+            write!(text, " and must do task{i}").unwrap();
         }
         let req = make_req(&text, 1);
         let start = std::time::Instant::now();
         let result = atomize_requirement(&req).unwrap();
         let elapsed = start.elapsed();
 
-        assert!(elapsed.as_secs() < 1, "ReDoS: took {:?}", elapsed);
+        assert!(elapsed.as_secs() < 1, "ReDoS: took {elapsed:?}");
         // 200 conjunction-verb pairs → 201 parts > MAX_SPLITS_PER_REQUIREMENT → preserved as-is
         assert!(!result.was_split);
     }
@@ -864,7 +865,7 @@ mod tests {
         let result = atomize_requirement(&req).unwrap();
         let elapsed = start.elapsed();
 
-        assert!(elapsed.as_secs() < 1, "ReDoS: took {:?}", elapsed);
+        assert!(elapsed.as_secs() < 1, "ReDoS: took {elapsed:?}");
         assert!(result.was_split);
         assert_eq!(result.requirements.len(), 2);
     }
@@ -881,7 +882,7 @@ mod tests {
         let result = atomize_requirement(&req).unwrap();
         // Zero-width space breaks the \s+ match, so no split
         // (or it may still split if \s matches ZWS — either way, no panic)
-        assert!(result.requirements.len() >= 1);
+        assert!(!result.requirements.is_empty());
     }
 
     #[test]
@@ -928,7 +929,7 @@ mod tests {
         // With mutant (*1), split_count=50, which is NOT >50, so it would incorrectly split
         let mut text = "Systems must do task0".to_string();
         for i in 1..51 {
-            text.push_str(&format!(" and must do task{i}"));
+            write!(text, " and must do task{i}").unwrap();
         }
         // 50 conjunctions → 51 parts → exceeds MAX_SPLITS_PER_REQUIREMENT (50)
         let req = make_req(&text, 1);
@@ -943,7 +944,7 @@ mod tests {
         // Exactly 50 splits (49 conjunctions + 1) should be allowed, not rejected
         let mut text = "Systems must do task0".to_string();
         for i in 1..50 {
-            text.push_str(&format!(" and must do task{i}"));
+            write!(text, " and must do task{i}").unwrap();
         }
         // 49 conjunctions → 50 parts = exactly MAX_SPLITS_PER_REQUIREMENT → should split
         let req = make_req(&text, 1);

@@ -1,8 +1,8 @@
 //! Integration tests for the atomization pipeline.
 //!
 //! Tests the public API of `atomize_document` and `atomize_requirement`
-//! end-to-end, verifying the full pipeline from PolicyDocument input
-//! to atomized PolicyDocument output.
+//! end-to-end, verifying the full pipeline from `PolicyDocument` input
+//! to atomized `PolicyDocument` output.
 
 use forge::parse::{atomize_document, atomize_requirement};
 
