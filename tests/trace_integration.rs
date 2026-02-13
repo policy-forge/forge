@@ -187,7 +187,7 @@ fn component_def_trace_empty_when_no_implemented_requirements() {
 
     let mut trace_links = TraceLinkCollection::new();
     let envelope =
-        forge::oscal::build_component_definition(&doc, None, Some(&mut trace_links)).unwrap();
+        forge::oscal::build_component_definition(&doc, None, Some(&mut trace_links), None).unwrap();
 
     // WI-15 not merged: no implemented-requirements → empty trace collection
     assert!(trace_links.is_empty());
@@ -199,6 +199,6 @@ fn component_def_trace_none_is_backward_compatible() {
     let doc = test_document(vec![]);
 
     // None trace_links — backward compatible
-    let envelope = forge::oscal::build_component_definition(&doc, None, None).unwrap();
+    let envelope = forge::oscal::build_component_definition(&doc, None, None, None).unwrap();
     assert_eq!(envelope.component_definition.components.len(), 1);
 }

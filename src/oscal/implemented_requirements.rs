@@ -13,7 +13,10 @@ use uuid::Uuid;
 
 use crate::error::ForgeError;
 use crate::model::{PolicyDocument, PolicyRequirement};
-use crate::oscal::catalog::{collect_requirements, generate_control_id, resolve_abbreviation};
+use crate::oscal::catalog::{
+    collect_requirements_with_section, generate_control_id, resolve_abbreviation,
+};
+use crate::oscal::trace_embedding::{build_trace_link, build_trace_props};
 use crate::uuid::{CONTROL_IMPL_NAMESPACE, IMPL_REQ_NAMESPACE};
 
 /// Build the `control-implementations` JSON array for a Component Definition.
@@ -35,6 +38,7 @@ use crate::uuid::{CONTROL_IMPL_NAMESPACE, IMPL_REQ_NAMESPACE};
 pub fn build_control_implementations(
     document: &PolicyDocument,
     source_profile: &str,
+    source_file: &str,
 ) -> Result<Value, ForgeError> {
     let mut abbrev_counts: HashMap<String, usize> = HashMap::new();
     let mut implemented_requirements = Vec::new();
@@ -42,13 +46,19 @@ pub fn build_control_implementations(
 
     for section in &document.sections {
         let abbreviation = resolve_abbreviation(&section.title, &mut abbrev_counts);
-        let requirements = collect_requirements(section);
+        let requirements = collect_requirements_with_section(section);
 
-        for (req_idx, req) in requirements.iter().enumerate() {
+        for (req_idx, (req, req_section)) in requirements.iter().enumerate() {
             let has_stable_id = req.stable_id.is_some();
             let control_id =
                 derive_control_id_or_fallback(&abbreviation, req_idx, global_index, has_stable_id);
-            let entry = map_requirement_to_implemented(req, &control_id, global_index);
+            let entry = map_requirement_to_implemented(
+                req,
+                &control_id,
+                global_index,
+                source_file,
+                &req_section.title,
+            );
             implemented_requirements.push(entry);
             global_index += 1;
         }
@@ -80,13 +90,17 @@ pub fn build_control_implementations(
 /// * `requirement` - A single `PolicyRequirement` from the domain model
 /// * `control_id` - The pre-computed control-id for this requirement
 /// * `global_index` - The requirement's global index (for UUID seed uniqueness)
+/// * `source_file` - Path to the source policy file (for trace props)
+/// * `section_title` - Section title containing this requirement (for trace props)
 ///
 /// # Returns
-/// A `serde_json::Value` object with `uuid`, `control-id`, and `description` fields.
+/// A `serde_json::Value` object with `uuid`, `control-id`, `description`, `props`, and `links` fields.
 fn map_requirement_to_implemented(
     requirement: &PolicyRequirement,
     control_id: &str,
     global_index: usize,
+    source_file: &str,
+    section_title: &str,
 ) -> Value {
     let stable_id = requirement.stable_id.as_deref().unwrap_or("no-stable-id");
 
@@ -98,10 +112,15 @@ fn map_requirement_to_implemented(
         requirement.text.clone()
     };
 
+    let props = build_trace_props(source_file, section_title, requirement.source_line);
+    let link = build_trace_link(source_file, requirement.source_line);
+
     serde_json::json!({
         "uuid": uuid.to_string(),
         "control-id": control_id,
         "description": description,
+        "props": props,
+        "links": [link],
     })
 }
 
@@ -292,7 +311,8 @@ mod tests {
     #[test]
     fn map_requirement_has_required_fields() {
         let req = make_req("All users must authenticate.", Some("uuid-1"), 0);
-        let result = map_requirement_to_implemented(&req, "POL-AC-001", 0);
+        let result =
+            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
 
         assert!(result.get("uuid").is_some(), "Must have uuid field");
         assert!(result.get("control-id").is_some(), "Must have control-id field");
@@ -302,7 +322,8 @@ mod tests {
     #[test]
     fn map_requirement_uses_raw_text() {
         let req = make_req("All users must authenticate.", Some("uuid-1"), 0);
-        let result = map_requirement_to_implemented(&req, "POL-AC-001", 0);
+        let result =
+            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
 
         assert_eq!(
             result["description"], "All users must authenticate.",
@@ -313,7 +334,8 @@ mod tests {
     #[test]
     fn map_requirement_control_id_matches() {
         let req = make_req("Test requirement.", Some("uuid-1"), 0);
-        let result = map_requirement_to_implemented(&req, "POL-AC-001", 0);
+        let result =
+            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
 
         assert_eq!(result["control-id"], "POL-AC-001");
     }
@@ -339,7 +361,7 @@ mod tests {
             ),
         ]);
 
-        let result = build_control_implementations(&doc, "./baseline.json").unwrap();
+        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         let arr = result.as_array().expect("Must be a JSON array");
         assert_eq!(arr.len(), 1, "Must produce exactly one control-implementations entry");
     }
@@ -352,7 +374,7 @@ mod tests {
             vec![],
         )]);
 
-        let result = build_control_implementations(&doc, "./baseline.json").unwrap();
+        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         let entry = &result[0];
 
         assert!(entry.get("uuid").is_some(), "Must have uuid");
@@ -372,7 +394,8 @@ mod tests {
             vec![],
         )]);
 
-        let result = build_control_implementations(&doc, "./baselines/nist.json").unwrap();
+        let result =
+            build_control_implementations(&doc, "./baselines/nist.json", "test.md").unwrap();
         assert_eq!(result[0]["source"], "./baselines/nist.json");
     }
 
@@ -384,7 +407,7 @@ mod tests {
             vec![],
         )]);
 
-        let result = build_control_implementations(&doc, "./baseline.json").unwrap();
+        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         assert_eq!(
             result[0]["description"],
             "Implementation narratives derived from Corporate Security Policy."
@@ -410,7 +433,7 @@ mod tests {
             ),
         ]);
 
-        let result = build_control_implementations(&doc, "./baseline.json").unwrap();
+        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         let impl_reqs = result[0]["implemented-requirements"].as_array().unwrap();
         assert_eq!(
             impl_reqs.len(),
@@ -424,7 +447,7 @@ mod tests {
     #[test]
     fn zero_requirements_produces_empty_impl_reqs() {
         let doc = make_doc(vec![make_section("Empty Section", vec![], vec![])]);
-        let result = build_control_implementations(&doc, "./baseline.json").unwrap();
+        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         let impl_reqs = result[0]["implemented-requirements"].as_array().unwrap();
         assert!(impl_reqs.is_empty(), "Zero requirements must produce empty array");
     }
@@ -434,7 +457,8 @@ mod tests {
     #[test]
     fn empty_text_produces_placeholder_description() {
         let req = make_req("", Some("uuid-1"), 0);
-        let result = map_requirement_to_implemented(&req, "POL-AC-001", 0);
+        let result =
+            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
         assert_eq!(
             result["description"], "No implementation narrative available.",
             "Empty text must produce placeholder description"
@@ -451,7 +475,7 @@ mod tests {
             vec![],
         )]);
 
-        let result = build_control_implementations(&doc, "./baseline.json").unwrap();
+        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         let impl_reqs = result[0]["implemented-requirements"].as_array().unwrap();
         assert_eq!(impl_reqs[0]["control-id"], "REQ-001");
         assert_eq!(impl_reqs[1]["control-id"], "REQ-002");
@@ -464,8 +488,10 @@ mod tests {
         let req1 = make_req("Same requirement text.", Some("id-1"), 0);
         let req2 = make_req("Same requirement text.", Some("id-2"), 1);
 
-        let result1 = map_requirement_to_implemented(&req1, "POL-AC-001", 0);
-        let result2 = map_requirement_to_implemented(&req2, "POL-AC-002", 1);
+        let result1 =
+            map_requirement_to_implemented(&req1, "POL-AC-001", 0, "test.md", "Access Control");
+        let result2 =
+            map_requirement_to_implemented(&req2, "POL-AC-002", 1, "test.md", "Access Control");
 
         assert_ne!(
             result1["uuid"], result2["uuid"],
@@ -473,12 +499,75 @@ mod tests {
         );
     }
 
+    // ─── T014: Trace props and links in implemented-requirement (WI-17) ──
+
+    #[test]
+    fn map_requirement_has_trace_props() {
+        let req = PolicyRequirement {
+            text: "All users must authenticate.".to_string(),
+            source_line: 42,
+            nesting_depth: 0,
+            stable_id: Some("uuid-1".to_string()),
+            atom_index: 0,
+            parent_text: None,
+            citations: vec![],
+        };
+        let result = map_requirement_to_implemented(
+            &req,
+            "POL-AC-001",
+            0,
+            "policies/security.md",
+            "Access Control",
+        );
+
+        let props = result["props"].as_array().expect("Must have props array");
+        assert_eq!(props.len(), 3, "Must have exactly 3 trace props");
+
+        assert_eq!(props[0]["name"], "source-file");
+        assert_eq!(props[0]["ns"], "https://forge.policy-forge.github.io/ns/trace");
+        assert_eq!(props[0]["value"], "policies/security.md");
+
+        assert_eq!(props[1]["name"], "source-section");
+        assert_eq!(props[1]["ns"], "https://forge.policy-forge.github.io/ns/trace");
+        assert_eq!(props[1]["value"], "Access Control");
+
+        assert_eq!(props[2]["name"], "source-line");
+        assert_eq!(props[2]["ns"], "https://forge.policy-forge.github.io/ns/trace");
+        assert_eq!(props[2]["value"], "42");
+    }
+
+    #[test]
+    fn map_requirement_has_trace_link() {
+        let req = PolicyRequirement {
+            text: "Encrypt at rest.".to_string(),
+            source_line: 99,
+            nesting_depth: 0,
+            stable_id: Some("uuid-2".to_string()),
+            atom_index: 0,
+            parent_text: None,
+            citations: vec![],
+        };
+        let result = map_requirement_to_implemented(
+            &req,
+            "POL-DP-001",
+            0,
+            "policies/security.md",
+            "Data Protection",
+        );
+
+        let links = result["links"].as_array().expect("Must have links array");
+        assert_eq!(links.len(), 1, "Must have exactly 1 source link");
+        assert_eq!(links[0]["rel"], "source");
+        assert_eq!(links[0]["href"], "policies/security.md#line=99");
+    }
+
     // ─── T023: No remarks in output (SEC-1, SEC-2) ──────────────────────
 
     #[test]
     fn no_remarks_key_in_output() {
         let req = make_req("All users must authenticate.", Some("uuid-1"), 0);
-        let result = map_requirement_to_implemented(&req, "POL-AC-001", 0);
+        let result =
+            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
         let json = serde_json::to_string(&result).unwrap();
 
         assert!(!json.contains("\"remarks\""), "Output must not contain 'remarks' key");

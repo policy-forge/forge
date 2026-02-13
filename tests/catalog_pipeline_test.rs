@@ -165,6 +165,90 @@ fn smoke_test_compound_requirements_atomized() {
     }
 }
 
+// ─── T025: Group-Level Source Annotation Integration (WI-17, US4) ──────
+
+#[test]
+fn catalog_groups_have_source_section_props() {
+    let json = run_pipeline_on_fixture();
+    let groups = json["catalog"]["groups"].as_array().unwrap();
+
+    for (i, group) in groups.iter().enumerate() {
+        let title = group["title"].as_str().unwrap_or("?");
+        let controls = group["controls"].as_array();
+        let has_controls = controls.is_some_and(|c| !c.is_empty());
+
+        if has_controls {
+            // Groups with controls should have source-section prop
+            let props = group["props"]
+                .as_array()
+                .unwrap_or_else(|| panic!("Group [{i}] '{title}' with controls must have props"));
+
+            let source_section = props
+                .iter()
+                .find(|p| p["name"] == "source-section")
+                .unwrap_or_else(|| panic!("Group [{i}] '{title}' must have source-section prop"));
+
+            assert_eq!(
+                source_section["ns"], "https://forge.policy-forge.github.io/ns/trace",
+                "source-section ns at group [{i}]"
+            );
+
+            let section_val = source_section["value"].as_str().unwrap();
+            assert!(
+                !section_val.is_empty(),
+                "source-section value at group [{i}] must be non-empty"
+            );
+        }
+    }
+}
+
+#[test]
+fn catalog_controls_have_trace_props_and_links() {
+    let json = run_pipeline_on_fixture();
+    let groups = json["catalog"]["groups"].as_array().unwrap();
+
+    for group in groups {
+        if let Some(controls) = group["controls"].as_array() {
+            for (i, control) in controls.iter().enumerate() {
+                let ctrl_id = control["id"].as_str().unwrap_or("?");
+
+                // Each control should have 3 trace props
+                let props = control["props"]
+                    .as_array()
+                    .unwrap_or_else(|| panic!("Control [{i}] '{ctrl_id}' must have props"));
+                assert_eq!(props.len(), 3, "Control '{ctrl_id}' must have exactly 3 trace props");
+                assert_eq!(props[0]["name"], "source-file");
+                assert_eq!(props[1]["name"], "source-section");
+                assert_eq!(props[2]["name"], "source-line");
+
+                for prop in props {
+                    assert_eq!(
+                        prop["ns"], "https://forge.policy-forge.github.io/ns/trace",
+                        "All trace props on '{ctrl_id}' must have FORGE trace ns"
+                    );
+                }
+
+                // Each control should have 1 source link
+                let links = control["links"]
+                    .as_array()
+                    .unwrap_or_else(|| panic!("Control [{i}] '{ctrl_id}' must have links"));
+                assert_eq!(links.len(), 1, "Control '{ctrl_id}' must have exactly 1 source link");
+                assert_eq!(links[0]["rel"], "source");
+
+                let href = links[0]["href"].as_str().unwrap();
+                assert!(
+                    href.contains("full_policy.md"),
+                    "Link href on '{ctrl_id}' must reference fixture. Got: {href}"
+                );
+                assert!(
+                    href.contains("#line="),
+                    "Link href on '{ctrl_id}' must have #line= fragment. Got: {href}"
+                );
+            }
+        }
+    }
+}
+
 /// T015 [US3] Edge case: input with no sections produces catalog with empty groups
 #[test]
 fn pipeline_no_sections_produces_empty_groups() {

@@ -48,6 +48,12 @@ pub struct OscalGroup {
     pub id: String,
     /// Section title verbatim.
     pub title: String,
+    /// Group-level properties (e.g., source-section for traceability).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub props: Vec<OscalProp>,
+    /// Group-level links.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub links: Vec<crate::oscal::back_matter::OscalLink>,
     /// Controls mapped from requirements.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub controls: Vec<OscalControl>,
@@ -68,7 +74,7 @@ pub struct OscalControl {
     /// Parts array: statement part (mandatory) + optional guidance/objective.
     /// NOT skip-serialized — always present per FR-001.
     pub parts: Vec<OscalPart>,
-    /// Props array: structured metadata (e.g., forge:source-line).
+    /// Props array: trace metadata added by post-processing (WI-17).
     /// Omitted from JSON when empty.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub props: Vec<OscalProp>,
@@ -274,7 +280,7 @@ pub fn collect_requirements(section: &PolicySection) -> Vec<&PolicyRequirement> 
 /// Unlike [`collect_requirements`], this tracks which section each
 /// requirement belongs to, so callers can use the correct subsection
 /// title (e.g., for trace link `SourceLocation`).
-fn collect_requirements_with_section(
+pub(crate) fn collect_requirements_with_section(
     section: &PolicySection,
 ) -> Vec<(&PolicyRequirement, &PolicySection)> {
     let mut reqs: Vec<(&PolicyRequirement, &PolicySection)> =
@@ -354,7 +360,13 @@ pub fn build_catalog(
             }
         }
 
-        groups.push(OscalGroup { id: group_id, title: section.title.clone(), controls });
+        groups.push(OscalGroup {
+            id: group_id,
+            title: section.title.clone(),
+            props: vec![],
+            links: vec![],
+            controls,
+        });
     }
 
     let total_controls: usize = groups.iter().map(|g| g.controls.len()).sum();
@@ -1094,24 +1106,19 @@ mod tests {
     }
 
     #[test]
-    fn test_json_props_structure() {
+    fn test_json_props_omitted_without_trace_embedding() {
+        // After WI-17, build_control_props returns vec![] — trace props are
+        // added by embed_trace_in_catalog post-processing, not inline.
         let d = doc(vec![sec("Access Control", vec![req_with_line("Auth required.", "u1", 42)])]);
         let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        let props = v["catalog"]["groups"][0]["controls"][0]["props"]
-            .as_array()
-            .expect("props should be present when source_line > 0");
-
-        assert_eq!(props.len(), 1);
-
-        let prop = &props[0];
-        let obj = prop.as_object().unwrap();
-        assert!(obj.contains_key("name"), "Prop missing 'name' field");
-        assert!(obj.contains_key("value"), "Prop missing 'value' field");
-        assert_eq!(prop["name"], "forge:source-line");
-        assert_eq!(prop["value"], "42");
+        // Props should be omitted (empty vec skipped by serde)
+        assert!(
+            v["catalog"]["groups"][0]["controls"][0].get("props").is_none(),
+            "props should be omitted when no trace embedding has been applied"
+        );
     }
 }

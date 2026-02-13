@@ -124,6 +124,105 @@ fn component_pipeline_implemented_requirements_have_required_fields() {
     }
 }
 
+// ─── T020: Component Definition Trace Embedding Integration (WI-17) ───────
+
+#[test]
+fn component_pipeline_documentary_component_has_source_file_prop() {
+    let json = run_component_pipeline_on_fixture("./baselines/nist-800-53.json");
+    let comp = &json["component-definition"]["components"][0];
+
+    let props = comp["props"].as_array().expect("Documentary component must have props");
+    assert_eq!(props.len(), 1, "Must have exactly 1 source-file prop");
+    assert_eq!(props[0]["name"], "source-file");
+    assert_eq!(props[0]["ns"], "https://forge.policy-forge.github.io/ns/trace");
+
+    let value = props[0]["value"].as_str().unwrap();
+    assert!(
+        value.contains("full_policy.md"),
+        "source-file prop must reference the input file. Got: {value}"
+    );
+}
+
+#[test]
+fn component_pipeline_implemented_requirements_have_trace_props() {
+    let json = run_component_pipeline_on_fixture("./baselines/nist-800-53.json");
+    let impl_reqs = json["component-definition"]["components"][0]["control-implementations"][0]
+        ["implemented-requirements"]
+        .as_array()
+        .unwrap();
+
+    for (i, req) in impl_reqs.iter().enumerate() {
+        let props = req["props"]
+            .as_array()
+            .unwrap_or_else(|| panic!("implemented-requirement[{i}] must have props"));
+        assert_eq!(props.len(), 3, "implemented-requirement[{i}] must have exactly 3 trace props");
+
+        // Verify prop names and namespace
+        assert_eq!(props[0]["name"], "source-file", "First prop must be source-file at [{i}]");
+        assert_eq!(
+            props[0]["ns"], "https://forge.policy-forge.github.io/ns/trace",
+            "source-file ns at [{i}]"
+        );
+
+        assert_eq!(
+            props[1]["name"], "source-section",
+            "Second prop must be source-section at [{i}]"
+        );
+        assert_eq!(
+            props[1]["ns"], "https://forge.policy-forge.github.io/ns/trace",
+            "source-section ns at [{i}]"
+        );
+
+        assert_eq!(props[2]["name"], "source-line", "Third prop must be source-line at [{i}]");
+        assert_eq!(
+            props[2]["ns"], "https://forge.policy-forge.github.io/ns/trace",
+            "source-line ns at [{i}]"
+        );
+
+        // source-file value must reference the input fixture
+        let file_val = props[0]["value"].as_str().unwrap();
+        assert!(
+            file_val.contains("full_policy.md"),
+            "source-file at [{i}] must reference fixture. Got: {file_val}"
+        );
+
+        // source-line must be a non-zero number string
+        let line_val = props[2]["value"].as_str().unwrap();
+        let line_num: usize = line_val
+            .parse()
+            .unwrap_or_else(|_| panic!("source-line at [{i}] must be a number. Got: {line_val}"));
+        assert!(line_num > 0, "source-line at [{i}] must be > 0. Got: {line_num}");
+    }
+}
+
+#[test]
+fn component_pipeline_implemented_requirements_have_source_link() {
+    let json = run_component_pipeline_on_fixture("./baselines/nist-800-53.json");
+    let impl_reqs = json["component-definition"]["components"][0]["control-implementations"][0]
+        ["implemented-requirements"]
+        .as_array()
+        .unwrap();
+
+    for (i, req) in impl_reqs.iter().enumerate() {
+        let links = req["links"]
+            .as_array()
+            .unwrap_or_else(|| panic!("implemented-requirement[{i}] must have links"));
+        assert_eq!(links.len(), 1, "implemented-requirement[{i}] must have exactly 1 source link");
+
+        assert_eq!(links[0]["rel"], "source", "Link rel at [{i}] must be 'source'");
+
+        let href = links[0]["href"].as_str().unwrap();
+        assert!(
+            href.contains("full_policy.md"),
+            "Link href at [{i}] must reference fixture. Got: {href}"
+        );
+        assert!(
+            href.contains("#line="),
+            "Link href at [{i}] must have #line= fragment. Got: {href}"
+        );
+    }
+}
+
 // ─── T025: Cross-Artifact Consistency Test ───────────────────────────────
 
 #[test]

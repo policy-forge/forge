@@ -84,6 +84,10 @@ pub struct DocumentaryComponent {
     /// Component description (template format).
     pub description: String,
 
+    /// Component-level properties (e.g., source-file for traceability).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub props: Vec<crate::oscal::parts::OscalProp>,
+
     /// Control implementations placeholder (empty for WI-14; populated by WI-15).
     #[serde(rename = "control-implementations")]
     pub control_implementations: Vec<serde_json::Value>,
@@ -109,6 +113,7 @@ pub fn build_component_definition(
     document: &PolicyDocument,
     source_profile: Option<&str>,
     _trace_links: Option<&mut TraceLinkCollection>,
+    source_file: Option<&str>,
 ) -> Result<ComponentDefinitionEnvelope, ForgeError> {
     // Step 1: Resolve title and version defaults
     let title = resolve_title(&document.metadata.title);
@@ -123,10 +128,13 @@ pub fn build_component_definition(
     let assembled = assemble_metadata(&resolved_meta, None)?;
 
     // Step 3: Build control-implementations (WI-15) when source_profile is provided
+    let resolved_source_file = source_file.unwrap_or("");
     let control_implementations = match source_profile {
         Some(profile) => {
             let ci = crate::oscal::implemented_requirements::build_control_implementations(
-                document, profile,
+                document,
+                profile,
+                resolved_source_file,
             )?;
             ci.as_array()
                 .cloned()
@@ -143,16 +151,24 @@ pub fn build_component_definition(
     let component_uuid = generate_component_uuid(&title, &version, &document.id);
     let description = format!("Documentary component representing the {title} policy document.");
 
+    let component_props = if resolved_source_file.is_empty() {
+        vec![]
+    } else {
+        vec![crate::oscal::parts::OscalProp {
+            name: crate::oscal::trace_embedding::PROP_SOURCE_FILE.to_string(),
+            ns: Some(crate::oscal::trace_embedding::FORGE_TRACE_NS.to_string()),
+            value: resolved_source_file.to_string(),
+        }]
+    };
+
     let component = DocumentaryComponent {
         uuid: component_uuid.to_string(),
         component_type: "policy".to_string(),
         title: title.clone(),
         description,
+        props: component_props,
         control_implementations,
     };
-
-    // TODO(WI-16): Record trace links for each implemented-requirement
-    // using _trace_links.record(TraceLink { ... }) to complete traceability integration.
 
     // Step 5: Collect citations and generate back matter (WI-12 reuse)
     let all_citations = collect_all_citations(&document.sections);
@@ -304,7 +320,7 @@ mod tests {
     #[test]
     fn test_happy_path_root_key_and_metadata() {
         let doc = test_document("Corporate Security Policy", "2.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
@@ -336,7 +352,7 @@ mod tests {
     #[test]
     fn test_documentary_component_structure() {
         let doc = test_document("Corporate Security Policy", "2.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
@@ -371,8 +387,8 @@ mod tests {
         let doc1 = test_document("Corporate Security Policy", "2.0");
         let doc2 = test_document("Corporate Security Policy", "2.0");
 
-        let env1 = build_component_definition(&doc1, None, None).unwrap();
-        let env2 = build_component_definition(&doc2, None, None).unwrap();
+        let env1 = build_component_definition(&doc1, None, None, None).unwrap();
+        let env2 = build_component_definition(&doc2, None, None, None).unwrap();
 
         // (1) Same input produces same component UUID
         assert_eq!(
@@ -382,7 +398,7 @@ mod tests {
 
         // (2) Different title produces different UUID
         let doc_diff_title = test_document("Different Policy", "2.0");
-        let env_diff = build_component_definition(&doc_diff_title, None, None).unwrap();
+        let env_diff = build_component_definition(&doc_diff_title, None, None, None).unwrap();
         assert_ne!(
             env1.component_definition.components[0].uuid,
             env_diff.component_definition.components[0].uuid,
@@ -390,7 +406,7 @@ mod tests {
 
         // (3) Different version produces different UUID
         let doc_diff_version = test_document("Corporate Security Policy", "3.0");
-        let env_diff_v = build_component_definition(&doc_diff_version, None, None).unwrap();
+        let env_diff_v = build_component_definition(&doc_diff_version, None, None, None).unwrap();
         assert_ne!(
             env1.component_definition.components[0].uuid,
             env_diff_v.component_definition.components[0].uuid,
@@ -405,7 +421,7 @@ mod tests {
     #[test]
     fn test_empty_title_defaults() {
         let doc = test_document("", "1.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let comp = &envelope.component_definition.components[0];
 
         // EC-1, SEC-3: component title defaults to "Untitled Policy Document"
@@ -424,7 +440,7 @@ mod tests {
     #[test]
     fn test_empty_version_defaults() {
         let doc = test_document("Test Policy", "");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
 
         // EC-2, SEC-4: metadata.version defaults to "0.0.0"
         assert_eq!(envelope.component_definition.metadata.version, "0.0.0");
@@ -434,7 +450,7 @@ mod tests {
     fn test_empty_sections_produces_valid_output() {
         // EC-3: No sections or requirements — still valid
         let doc = test_document("Minimal Policy", "1.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
 
         assert_eq!(envelope.component_definition.components.len(), 1);
         assert_eq!(envelope.component_definition.components[0].component_type, "policy");
@@ -446,7 +462,7 @@ mod tests {
     fn test_no_remarks_in_output() {
         // SEC-2: No "remarks" key anywhere in JSON
         let doc = test_document("Corporate Security Policy", "2.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
 
         assert!(!json.contains("\"remarks\""), "JSON must not contain 'remarks' key");
@@ -456,7 +472,7 @@ mod tests {
     fn test_no_extra_data_beyond_policy_document() {
         // SEC-1: Only PolicyDocument-derived and OSCAL-convention fields
         let doc = test_document("Corporate Security Policy", "2.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
@@ -479,7 +495,7 @@ mod tests {
     fn test_empty_control_implementations() {
         // S-1: control-implementations is an empty array
         let doc = test_document("Corporate Security Policy", "2.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
@@ -506,7 +522,7 @@ mod tests {
                 vec![test_requirement_with_citation("All users must auth.", citation)],
             )],
         );
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         assert!(
             envelope.component_definition.back_matter.is_some(),
             "Back matter should be present when citations exist"
@@ -539,7 +555,7 @@ mod tests {
                 ],
             )],
         );
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let bm = envelope.component_definition.back_matter.as_ref().unwrap();
         assert_eq!(bm.resources.len(), 1, "Duplicate citations should produce one resource");
     }
@@ -548,7 +564,7 @@ mod tests {
     fn test_back_matter_absent_without_citations() {
         // S-2: Back matter absent when no citations
         let doc = test_document("Corporate Security Policy", "2.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         assert!(
             envelope.component_definition.back_matter.is_none(),
             "Back matter should be absent when no citations"
@@ -568,7 +584,7 @@ mod tests {
     fn test_metadata_consistency_with_catalog() {
         // AC-6, M-7: Both artifacts use assemble_metadata from WI-11
         let doc = test_document("Corporate Security Policy", "2.0");
-        let cd_envelope = build_component_definition(&doc, None, None).unwrap();
+        let cd_envelope = build_component_definition(&doc, None, None, None).unwrap();
 
         // Build catalog metadata via the same assemble_metadata path
         let cat_metadata = assemble_metadata(&doc.metadata, None).unwrap();
@@ -595,7 +611,7 @@ mod tests {
     fn test_version_default_consistency() {
         // EC-2, US2-AC-2: Empty version defaults to "0.0.0"
         let doc = test_document("Test Policy", "");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         assert_eq!(envelope.component_definition.metadata.version, "0.0.0");
     }
 
@@ -604,7 +620,7 @@ mod tests {
         // The builder resolves defaults BEFORE calling assemble_metadata,
         // so both the builder and assemble_metadata see the same "0.0.0" version.
         let doc = test_document("Test Policy", "");
-        let cd_envelope = build_component_definition(&doc, None, None).unwrap();
+        let cd_envelope = build_component_definition(&doc, None, None, None).unwrap();
         let cd_meta = &cd_envelope.component_definition.metadata;
 
         // Builder defaults empty version to "0.0.0" and passes it to assemble_metadata
@@ -635,8 +651,8 @@ mod tests {
         };
         let doc2 = PolicyDocument { id: "doc-beta".to_string(), ..doc1.clone() };
 
-        let env1 = build_component_definition(&doc1, None, None).unwrap();
-        let env2 = build_component_definition(&doc2, None, None).unwrap();
+        let env1 = build_component_definition(&doc1, None, None, None).unwrap();
+        let env2 = build_component_definition(&doc2, None, None, None).unwrap();
 
         assert_ne!(
             env1.component_definition.components[0].uuid,
@@ -645,12 +661,43 @@ mod tests {
         );
     }
 
+    // ─── T015: DocumentaryComponent source-file prop (WI-17) ─────────────
+
+    #[test]
+    fn test_documentary_component_source_file_prop() {
+        let doc = test_document("Test Policy", "1.0");
+        let envelope =
+            build_component_definition(&doc, None, None, Some("policies/security.md")).unwrap();
+        let json = serde_json::to_string_pretty(&envelope).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let comp = &v["component-definition"]["components"][0];
+        let props = comp["props"].as_array().expect("Must have props array");
+        assert_eq!(props.len(), 1, "Must have exactly 1 source-file prop");
+
+        assert_eq!(props[0]["name"], "source-file");
+        assert_eq!(props[0]["ns"], "https://forge.policy-forge.github.io/ns/trace");
+        assert_eq!(props[0]["value"], "policies/security.md");
+    }
+
+    #[test]
+    fn test_documentary_component_no_props_without_source_file() {
+        let doc = test_document("Test Policy", "1.0");
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
+        let json = serde_json::to_string_pretty(&envelope).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let comp = &v["component-definition"]["components"][0];
+        // When no source_file, props should be absent (skip_serializing_if = "Vec::is_empty")
+        assert!(comp.get("props").is_none(), "No props when source_file is None");
+    }
+
     // ─── T012: build_component_definition with source_profile (WI-15) ────
 
     #[test]
     fn test_none_source_profile_empty_control_implementations() {
         let doc = test_document("Test Policy", "1.0");
-        let envelope = build_component_definition(&doc, None, None).unwrap();
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let comp = &envelope.component_definition.components[0];
         assert!(
             comp.control_implementations.is_empty(),
@@ -676,7 +723,9 @@ mod tests {
                 }],
             )],
         );
-        let envelope = build_component_definition(&doc, Some("./baseline.json"), None).unwrap();
+        let envelope =
+            build_component_definition(&doc, Some("./baseline.json"), None, Some("test.md"))
+                .unwrap();
         let comp = &envelope.component_definition.components[0];
         assert!(
             !comp.control_implementations.is_empty(),
@@ -685,5 +734,53 @@ mod tests {
 
         let ci = &comp.control_implementations[0];
         assert_eq!(ci["source"], "./baseline.json");
+    }
+
+    // ─── T022: No trace data in remarks (Component Definition) — SEC-1, SEC-2, M-7 ──
+
+    use crate::oscal::test_utils::collect_remarks;
+
+    #[test]
+    fn test_no_trace_data_in_remarks_component_definition() {
+        let doc = test_document_with_sections(
+            "Test Policy",
+            "1.0",
+            vec![test_section(
+                "Access Control",
+                vec![PolicyRequirement {
+                    text: "Users shall authenticate.".to_string(),
+                    source_line: 42,
+                    nesting_depth: 0,
+                    stable_id: Some("uuid-1".to_string()),
+                    atom_index: 0,
+                    parent_text: None,
+                    citations: vec![],
+                }],
+            )],
+        );
+        let envelope = build_component_definition(
+            &doc,
+            Some("./baseline.json"),
+            None,
+            Some("policies/security.md"),
+        )
+        .unwrap();
+
+        let json_str = serde_json::to_string_pretty(&envelope).unwrap();
+        let json_val: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+        let mut remarks = Vec::new();
+        collect_remarks(&json_val, &mut remarks);
+
+        let trace_patterns =
+            ["policies/security.md", "Access Control", "42", "source-file", "source-line"];
+        for remark in &remarks {
+            for pattern in &trace_patterns {
+                assert!(
+                    !remark.contains(pattern),
+                    "Remarks must not contain trace data '{pattern}'. Found in: {remark}"
+                );
+            }
+        }
     }
 }
