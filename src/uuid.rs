@@ -145,6 +145,7 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 ///             stable_id: None,
 ///             atom_index: 0,
 ///             parent_text: None,
+///             citations: vec![],
 ///         }],
 ///         children: vec![],
 ///     }],
@@ -384,6 +385,7 @@ mod tests {
             stable_id: None,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         }
     }
 

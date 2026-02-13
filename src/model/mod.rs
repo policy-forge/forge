@@ -123,12 +123,16 @@ pub struct PolicyRequirement {
     /// Original compound text if this requirement was produced by splitting.
     /// `None` if the requirement was already atomic (not split). Added by WI-6 (atomization).
     pub parent_text: Option<String>,
+
+    /// Citations extracted from this requirement's text by WI-8.
+    /// Empty until citation extraction runs.
+    pub citations: Vec<Citation>,
 }
 
 /// A citation extracted from a policy document by WI-8.
 ///
 /// This is the input to back matter generation (WI-12).
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Citation {
     /// Unique identifier for this citation.
     pub id: String,
@@ -183,6 +187,7 @@ mod tests {
             nesting_depth: 0,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         }
     }
 
