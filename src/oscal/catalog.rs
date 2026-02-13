@@ -278,7 +278,8 @@ pub fn collect_requirements(section: &PolicySection) -> Vec<&PolicyRequirement> 
 /// # Errors
 ///
 /// Returns [`ForgeError::CatalogBuild`] if any
-/// `PolicyRequirement.stable_id` is `None`.
+/// `PolicyRequirement.stable_id` is `None`, or if a duplicate trace link
+/// is detected for the same requirement.
 pub fn build_catalog(
     document: &PolicyDocument,
     mut trace_links: Option<&mut TraceLinkCollection>,
@@ -326,9 +327,13 @@ pub fn build_catalog(
                         line_number: req.source_line,
                     },
                 };
-                // Ignore duplicate errors — catalog controls use stable_id as element_id,
-                // which is guaranteed unique by upstream UUID generation.
-                let _ = tl.record(trace);
+                tl.record(trace).map_err(|e| {
+                    ForgeError::CatalogBuild(format!(
+                        "Failed to record trace link for requirement '{stable_id}' in section '{}' at line {}: {e}",
+                        section.title,
+                        req.source_line,
+                    ))
+                })?;
             }
         }
 
