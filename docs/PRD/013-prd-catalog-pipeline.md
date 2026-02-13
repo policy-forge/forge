@@ -180,7 +180,7 @@ flowchart TD
     E --> F
     F --> G[Atomize Requirements\nWI-6]
     G --> H[Generate Stable UUIDs\nWI-7]
-    H --> I[Extract Citations\nWI-8]
+    H --> I[Extract Citations\nWI-8 stub — empty]
     I --> J[Map to OSCAL Groups & Controls\nWI-9]
     J --> K[Build Statement Parts & Prose\nWI-10]
     K --> L[Assemble OSCAL Metadata\nWI-11]
@@ -273,9 +273,13 @@ N/A — No new data model introduced in this work item. This WI wires together t
 
 // Pipeline orchestration function
 /// Run the full catalog conversion pipeline from file path to OSCAL JSON
+/// `max_size_bytes` is inherited from the ingest stage (WI-2) and configurable
+/// via `--max-size <MB>` CLI flag (default: 10 MB). Files exceeding this limit
+/// are rejected with a descriptive error suggesting `--max-size` override.
 pub fn run_catalog_pipeline(
     input_path: &Path,
     output: Option<&Path>,
+    max_size_bytes: u64,
 ) -> Result<(), ForgeError>;
 
 // Internal pipeline stages (already implemented in WI-1 through WI-12):

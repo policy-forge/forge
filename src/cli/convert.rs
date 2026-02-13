@@ -1,18 +1,7 @@
 use std::path::Path;
 
-use serde::Serialize;
-
 use crate::ForgeError;
 use crate::cli::{OutputFormat, Strategy};
-use crate::ingest;
-use crate::parse;
-
-#[derive(Serialize)]
-struct ConvertOutput<'a> {
-    document: &'a ingest::IngestedDocument,
-    sections: Vec<parse::SectionNode>,
-    policy_document: crate::model::PolicyDocument,
-}
 
 /// Execute the convert subcommand.
 ///
@@ -21,33 +10,29 @@ struct ConvertOutput<'a> {
 /// Returns `ForgeError` if the conversion fails.
 pub fn execute(
     input: &Path,
-    _strategy: Option<&Strategy>,
-    _format: &OutputFormat,
-    _output: Option<&Path>,
+    strategy: &Strategy,
+    format: &OutputFormat,
+    output: Option<&Path>,
     max_size: u64,
 ) -> Result<(), ForgeError> {
     let max_size_bytes = max_size
         .checked_mul(1024 * 1024)
         .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))?;
-    let doc = ingest::ingest_file(input, max_size_bytes)?;
 
-    // Reconstruct content from ingested lines for section extraction
-    let content = doc.reconstruct_content();
-    let sections = parse::extract_sections(&content)?;
-    let clauses = parse::extract_clauses(&content)?;
+    // S-3: reject unsupported strategies
+    // W-2: reject non-JSON formats (XML/YAML deferred to WI-26, WI-27)
+    if !matches!(format, OutputFormat::Json) {
+        return Err(ForgeError::Validation(
+            "Only 'json' output format is currently supported. XML and YAML formats will be available in a future release.".to_string(),
+        ));
+    }
 
-    let mut policy_doc = crate::model::assemble_document(&doc, &sections, &clauses)?;
-
-    // WI-8: Extract citations from requirement text (after assembly, before OSCAL generation)
-    crate::citation::extract_citations(&mut policy_doc)?;
-
-    let section_count = policy_doc.sections.len();
-    let req_count = policy_doc.total_requirements();
-
-    let output = ConvertOutput { document: &doc, sections, policy_document: policy_doc };
-    let json =
-        serde_json::to_string_pretty(&output).map_err(|e| ForgeError::Parse(e.to_string()))?;
-    println!("{json}");
-    eprintln!("Assembled: {section_count} sections, {req_count} requirements");
-    Ok(())
+    match strategy {
+        Strategy::Catalog => {
+            crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes)
+        }
+        Strategy::Component => Err(ForgeError::Validation(
+            "Only 'catalog' strategy is currently supported. Component support will be available in a future release.".to_string(),
+        )),
+    }
 }

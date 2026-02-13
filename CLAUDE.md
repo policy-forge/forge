@@ -62,6 +62,8 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - N/A (in-memory processing only) (010-catalog-statement-parts)
 - Rust edition 2024, stable 1.93.0 + serde 1.x, serde_json 1.x, uuid 1.20.0 (v5 feature, existing), url 2.5.x (NEW), thiserror 2.0.18 (existing), tracing 0.1.44 (existing) (012-back-matter)
 - Rust (edition 2024, stable 1.93.0) + regex 1.x (existing), url 2.5.x (existing), uuid 1.20.0 (existing, v5 feature), tracing 0.1.44 (existing), thiserror 2.0.18 (existing), serde 1.x (existing) (008-citation-extraction)
+- Rust edition 2024, stable 1.93.0 + clap 4 (CLI), serde 1.x + serde_json 1.x (serialization), pulldown-cmark 0.13 (Markdown parsing), uuid 1.20.0 (ID generation), chrono 0.4 (timestamps), thiserror 2.0.18 (errors), tracing 0.1.44 (logging) -- all existing, no new dependencies (013-catalog-pipeline)
+- Filesystem (read input .md, optional write output .json) (013-catalog-pipeline)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x
