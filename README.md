@@ -6,7 +6,7 @@ A Rust CLI tool that converts security policy documents into [OSCAL](https://pag
 
 ## Status
 
-FORGE is in active development. The ingestion and parsing pipeline is implemented:
+FORGE is in active development. The ingestion pipeline and OSCAL Catalog generation are implemented:
 
 | Stage | Description | Status |
 |-------|-------------|--------|
@@ -16,7 +16,13 @@ FORGE is in active development. The ingestion and parsing pipeline is implemente
 | Assemble | Combine into domain model with YAML frontmatter | Done |
 | Atomize | Split compound requirements into atomic statements | Done |
 | Assign IDs | Deterministic UUID v5 stable identifiers | Done |
-| OSCAL mapping | Map domain model to OSCAL Catalog / Component Definition | Planned |
+| Catalog groups & controls | Map sections/requirements to OSCAL groups and controls | Done |
+| Catalog statement parts | Control parts with prose, props, and structure | Done |
+| OSCAL metadata | UUID, title, last-modified, version, oscal-version | Done |
+| Back matter | Resources from citations, link patterns | Done |
+| Catalog pipeline | End-to-end `forge convert --strategy catalog` | Planned |
+| Component Definition | OSCAL Component Definition generation | Planned |
+| Traceability | Source-to-OSCAL element mapping | Planned |
 | Validate | Schema validation against OSCAL v1.2.0 | Planned |
 | Export | JSON / XML / YAML output | Planned |
 
@@ -63,7 +69,7 @@ FORGE processes a Markdown policy document through a deterministic pipeline:
 5. **Atomize** -- Splits compound requirements (e.g., "Systems must X and must Y") into individual atomic statements, each with a preliminary content-hash ID.
 6. **Assign IDs** -- Generates deterministic UUID v5 identifiers for each requirement using a project namespace and normalized content, ensuring stable IDs across re-conversions.
 
-The output is currently the internal domain model as JSON. OSCAL Catalog and Component Definition mapping is the next milestone.
+The OSCAL Catalog building blocks (groups, controls, statement parts, metadata, back matter) are implemented. The next milestone is wiring the end-to-end Catalog pipeline and Component Definition generation.
 
 ## Project Structure
 
@@ -87,7 +93,12 @@ src/
     frontmatter.rs     YAML frontmatter parsing
     assemble.rs        Pipeline assembly (sections + clauses + frontmatter)
   uuid.rs              Deterministic UUID v5 generation
-  oscal/mod.rs         OSCAL types (planned)
+  oscal/
+    mod.rs             OSCAL module declarations
+    catalog.rs         Catalog builder (groups, controls)
+    parts.rs           Statement parts, prose, props
+    metadata.rs        OSCAL metadata assembly
+    back_matter.rs     Back matter resources and links
   export/mod.rs        Multi-format export (planned)
   validate/mod.rs      Schema validation (planned)
 tests/                 Integration tests and fixtures

@@ -1,6 +1,6 @@
 # FORGE Roadmap
 
-> **Last Updated:** 2026-02-11
+> **Last Updated:** 2026-02-12
 
 This roadmap translates the FORGE product vision into a sequenced execution plan. See [FORGE_PRODUCT_VISION.md](docs/FORGE_PRODUCT_VISION.md) for strategic goals and [FORGE_PRD.md](docs/FORGE_PRD.md) for detailed requirements.
 
@@ -8,7 +8,7 @@ This roadmap translates the FORGE product vision into a sequenced execution plan
 
 ## Completed Work Items
 
-All foundation work (WI-1 through WI-7) is merged to `main`.
+All foundation work (WI-1 through WI-7) and core OSCAL generation (WI-9 through WI-12) are merged to `main`.
 
 | WI | Title | AR | Status |
 |----|-------|----|--------|
@@ -19,8 +19,12 @@ All foundation work (WI-1 through WI-7) is merged to `main`.
 | WI-5 | Domain model | [005](docs/AR/005-ar-domain-model.md) | Done |
 | WI-6 | Requirement atomization | [006](docs/AR/006-ar-requirement-atomization.md) | Done |
 | WI-7 | UUID generation | [007](docs/AR/007-ar-uuid-generation.md) | Done |
+| WI-9 | Catalog — groups & controls | [009](docs/AR/009-ar-catalog-groups-controls.md) | Done |
+| WI-10 | Catalog — statement parts | [010](docs/AR/010-ar-catalog-statement-parts.md) | Done |
+| WI-11 | OSCAL metadata | [011](docs/AR/011-ar-oscal-metadata.md) | Done |
+| WI-12 | Back matter | [012](docs/AR/012-ar-back-matter.md) | Done |
 
-**What's built:** A complete Markdown-to-domain-model pipeline that ingests policy documents, extracts structural hierarchy, parses clauses (lists, tables, paragraphs), assembles a `PolicyDocument` with YAML frontmatter metadata, atomizes compound requirements, and assigns deterministic UUID v5 stable identifiers. Output is JSON of the internal domain model.
+**What's built:** A complete Markdown-to-domain-model pipeline that ingests policy documents, extracts structural hierarchy, parses clauses (lists, tables, paragraphs), assembles a `PolicyDocument` with YAML frontmatter metadata, atomizes compound requirements, and assigns deterministic UUID v5 stable identifiers. OSCAL Catalog building blocks are implemented: groups and controls mapping, statement parts with prose and props, metadata assembly (uuid, title, last-modified, version, oscal-version), and back matter resource generation from citations. The end-to-end Catalog pipeline (WI-13) is the next integration milestone.
 
 ---
 
@@ -33,10 +37,10 @@ All foundation work (WI-1 through WI-7) is merged to `main`.
 | WI | Title | AR | PRD Req | Status |
 |----|-------|----|---------|--------|
 | WI-8 | Citation extraction | [008](docs/AR/008-ar-citation-extraction.md) | M-9 | Not Started |
-| WI-9 | Catalog — groups & controls | [009](docs/AR/009-ar-catalog-groups-controls.md) | M-3 | Not Started |
-| WI-10 | Catalog — statement parts | [010](docs/AR/010-ar-catalog-statement-parts.md) | M-3 | Not Started |
-| WI-11 | OSCAL metadata | [011](docs/AR/011-ar-oscal-metadata.md) | M-5 | Not Started |
-| WI-12 | Back matter | [012](docs/AR/012-ar-back-matter.md) | M-9 | Not Started |
+| WI-9 | Catalog — groups & controls | [009](docs/AR/009-ar-catalog-groups-controls.md) | M-3 | Done |
+| WI-10 | Catalog — statement parts | [010](docs/AR/010-ar-catalog-statement-parts.md) | M-3 | Done |
+| WI-11 | OSCAL metadata | [011](docs/AR/011-ar-oscal-metadata.md) | M-5 | Done |
+| WI-12 | Back matter | [012](docs/AR/012-ar-back-matter.md) | M-9 | Done |
 | WI-13 | Catalog pipeline | [013](docs/AR/013-ar-catalog-pipeline.md) | M-3 | Not Started |
 | WI-14 | Component Definition — structure | [014](docs/AR/014-ar-component-definition-structure.md) | M-4 | Not Started |
 | WI-15 | Component — implemented requirements | [015](docs/AR/015-ar-component-implemented-requirements.md) | M-4 | Not Started |

@@ -3,7 +3,7 @@
 > **Document Type:** Product Roadmap
 > **Audience:** LLM agents, human reviewers, leadership stakeholders, engineering leads
 > **Status:** Draft
-> **Last Updated:** 2026-02-11 <!-- @auto -->
+> **Last Updated:** 2026-02-12 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Parent Vision:** docs/FORGE_PRODUCT_VISION.md <!-- @auto -->
 
@@ -192,10 +192,10 @@ gantt
 | WI-6 | Requirement atomization: compound statement splitting | S-6 (Apr 7) | T-1 | MS-1 | M-2 | S | Done | WI-8 |
 | WI-7 | Deterministic UUID v5 generation with content-based stability | S-7 (Apr 14) | T-1 | MS-1 | M-8 | S | Done | WI-8 |
 | WI-8 | Citation and reference extraction into internal Citation model | S-8 (Apr 21) | T-1 | MS-1 | M-9 | S | Not Started | WI-9, WI-11 |
-| WI-9 | OSCAL Catalog JSON: groups and controls from domain model | S-9 (Apr 28) | T-2 | MS-2 | M-3 | S | Not Started | WI-8, WI-11, WI-12 |
-| WI-10 | OSCAL Catalog JSON: statement parts, prose, control structure | S-10 (May 5) | T-2 | MS-2 | M-3 | S | Not Started | WI-11, WI-12 |
-| WI-11 | OSCAL metadata: uuid, title, last-modified, version, oscal-version | S-11 (May 12) | T-2 | MS-2 | M-5 | XS | Not Started | WI-9, WI-10, WI-12 |
-| WI-12 | OSCAL back matter: resources from citations, link patterns | S-12 (May 19) | T-2 | MS-2 | M-9, M-11 | S | Not Started | WI-9, WI-10, WI-11 |
+| WI-9 | OSCAL Catalog JSON: groups and controls from domain model | S-9 (Apr 28) | T-2 | MS-2 | M-3 | S | Done | WI-8, WI-11, WI-12 |
+| WI-10 | OSCAL Catalog JSON: statement parts, prose, control structure | S-10 (May 5) | T-2 | MS-2 | M-3 | S | Done | WI-11, WI-12 |
+| WI-11 | OSCAL metadata: uuid, title, last-modified, version, oscal-version | S-11 (May 12) | T-2 | MS-2 | M-5 | XS | Done | WI-9, WI-10, WI-12 |
+| WI-12 | OSCAL back matter: resources from citations, link patterns | S-12 (May 19) | T-2 | MS-2 | M-9, M-11 | S | Done | WI-9, WI-10, WI-11 |
 | WI-13 | End-to-end Catalog pipeline: `forge convert --strategy catalog --format json` | S-13 (May 26) | T-2 | MS-2 | M-3, M-7 | S | Not Started | — |
 | WI-14 | Component Definition: documentary component structure | S-14 (Jun 2) | T-2 | MS-3 | M-4 | S | Not Started | — |
 | WI-15 | Component Definition: implemented-requirements with control-id mapping | S-15 (Jun 9) | T-2 | MS-3 | M-4 | S | Not Started | WI-16 |
@@ -323,31 +323,35 @@ gantt
 - Strip citations from prose, preserve for later back matter generation
 - **Deliverable:** Citations extracted from test fixtures; linked to source requirements
 
-#### Sprint 9 (Apr 28–May 2): OSCAL Catalog — Groups & Controls
+#### Sprint 9 (Apr 28–May 2): OSCAL Catalog — Groups & Controls ✅ DONE
 - Implement Catalog JSON builder: `catalog.groups[]` from `PolicySection`
 - Map `PolicyRequirement` → `catalog.groups[].controls[]`
 - Generate control IDs (e.g., `POL-AC-001`) from section + requirement index
 - **Deliverable:** Valid JSON structure matching OSCAL Catalog shape (not yet schema-validated)
+- **Status:** Complete (PR #12 merged) — `CatalogBuilder` with groups/controls mapping, control ID generation, JSON serialization
 
-#### Sprint 10 (May 5–9): OSCAL Catalog — Statement Parts & Prose
+#### Sprint 10 (May 5–9): OSCAL Catalog — Statement Parts & Prose ✅ DONE
 - Implement control `parts[]` with `name: "statement"` and prose from requirement text
 - Handle multi-part controls (guidance, objective parts)
 - Ensure props are used for structured data, not remarks
 - **Deliverable:** Controls have complete statement parts with prose
+- **Status:** Complete (PR #14 merged) — `parts.rs` module with statement parts, prose generation, and props for structured data
 
-#### Sprint 11 (May 12–16): OSCAL Metadata
+#### Sprint 11 (May 12–16): OSCAL Metadata ✅ DONE
 - Implement required metadata assembly: `uuid`, `title`, `last-modified`, `version`, `oscal-version`
 - Auto-generate document UUID (v4 for artifact instance)
 - Pull title/version from PolicyDocument metadata
 - Set `oscal-version: "1.2.0"`
 - **Deliverable:** Generated Catalog has all required metadata fields
+- **Status:** Complete (PR #11 merged) — `metadata.rs` module with `OscalMetadata` struct, UUID v4 generation, chrono timestamps, version tracking
 
-#### Sprint 12 (May 19–23): Back Matter & Link Patterns
+#### Sprint 12 (May 19–23): Back Matter & Link Patterns ✅ DONE
 - Implement back matter `resources[]` from extracted citations
 - Generate `rlinks` for URLs, `citation` for bibliographic references
 - Implement `link` elements in control bodies referencing back matter resource UUIDs
 - Ensure no arbitrary data in `remarks` fields
 - **Deliverable:** Citations appear in back matter; control bodies link to them
+- **Status:** Complete (PR #15 merged) — `back_matter.rs` module with resource generation, rlinks, citation references, and link patterns
 
 #### Sprint 13 (May 26–30): End-to-End Catalog Pipeline
 - Wire full pipeline: ingest → parse → normalize → map → assemble → serialize
@@ -613,9 +617,9 @@ graph LR
     end
 
     subgraph "T-2: OSCAL Generation"
-        WI9["WI-9: Catalog"]
-        WI11["WI-11: Metadata"]
-        WI12["WI-12: Back Matter"]
+        WI9["WI-9: Catalog ✅"]
+        WI11["WI-11: Metadata ✅"]
+        WI12["WI-12: Back Matter ✅"]
         WI13["WI-13: Catalog Pipeline"]
         WI14["WI-14: Component Def"]
         WI16["WI-16: Traceability"]
@@ -659,7 +663,7 @@ graph LR
 | D-1 | WI-5 (Domain Model) | WI-1 (Scaffolding) | Internal | Brian Luby | Done | MS-1 slips |
 | D-2 | WI-9 (Catalog Gen) | WI-7 (UUID Gen) | Internal | Brian Luby | Done | MS-2 slips |
 | D-3 | WI-12 (Back Matter) | WI-8 (Citations) | Internal | Brian Luby | Not Started | MS-2 slips |
-| D-4 | WI-14 (Component Def) | WI-9 (Catalog Gen) | Internal | Brian Luby | Not Started | MS-3 slips |
+| D-4 | WI-14 (Component Def) | WI-9 (Catalog Gen) | Internal | Brian Luby | Done | MS-3 slips |
 | D-5 | WI-19 (Schema Val) | WI-16 (Traceability) | Internal | Brian Luby | Not Started | MS-4 slips |
 | D-6 | WI-26 (XML Output) | WI-25 (Phase 1 Release) | Internal | Brian Luby | Not Started | MS-5 slips |
 | D-7 | WI-30 (Profile Gen) | WI-29 (Export Subcmd) | Internal | Brian Luby | Not Started | MS-6 slips |
@@ -668,14 +672,14 @@ graph LR
 
 ### Critical Path :green_circle: `@llm-autonomous`
 
-> **Critical Path:** ~~WI-1 → WI-5 → WI-6 → WI-7~~ (Done) → WI-9 → WI-13 → WI-14 → WI-16 → WI-19 → WI-21 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
+> **Critical Path:** ~~WI-1 → WI-5 → WI-6 → WI-7~~ (Done) → ~~WI-9 → WI-10 → WI-11 → WI-12~~ (Done) → WI-13 → WI-14 → WI-16 → WI-19 → WI-21 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
 >
-> **Completed:** 7 of 50 work items (WI-1 through WI-7) — ahead of original schedule
-> **Remaining critical path:** ~43 weeks (Sprints 8–50)
+> **Completed:** 11 of 50 work items (WI-1 through WI-7, WI-9 through WI-12) — significantly ahead of original schedule
+> **Remaining critical path:** ~39 weeks (Sprints 8, 13–50)
 > **Slack:** ~15+ weeks ahead of original MS-1 target (2026-04-24); significant buffer accumulated
-> **Bottleneck:** WI-13 (Catalog Pipeline) is the integration point requiring WI-8 + WI-9 + WI-10 + WI-11 + WI-12 to converge
+> **Bottleneck:** WI-13 (Catalog Pipeline) is the next integration point, requiring only WI-8 (Citations) to complete — WI-9, WI-10, WI-11, WI-12 are all done
 >
-> **Parallelism opportunity (now):** WI-8 (Citations), WI-9 (Catalog structure), and WI-11 (Metadata) can all start immediately since their dependencies (WI-5, WI-7) are done. WI-12 (Back Matter) requires WI-8 to complete. This means 3 independent work streams can overlap before converging at WI-13.
+> **Parallelism opportunity (now):** WI-8 (Citations) is the only remaining blocker for WI-13 (Catalog Pipeline). Once WI-8 is done, the end-to-end pipeline can be wired together using the completed catalog, metadata, and back matter modules.
 
 ---
 
@@ -742,8 +746,8 @@ graph LR
 | Milestone | Target Date | Status | On Track? | Blockers |
 |-----------|-------------|--------|-----------|----------|
 | MS-1: Markdown → Domain Model | 2026-04-24 | 7 of 8 work items done | :white_check_mark: Ahead of Schedule | None — only WI-8 (Citation extraction) remains |
-| MS-2: First Valid Catalog | 2026-06-05 | 0 of 5 work items done | :white_check_mark: Not Started | WI-8 blocks WI-9 |
-| MS-3: Component Def + Traceability | 2026-07-03 | 0 of 5 work items done | :white_check_mark: Not Started | None |
+| MS-2: First Valid Catalog | 2026-06-05 | 4 of 5 work items done | :white_check_mark: Ahead of Schedule | WI-8 blocks WI-13; WI-9, WI-10, WI-11, WI-12 all done |
+| MS-3: Component Def + Traceability | 2026-07-03 | 0 of 5 work items done | :white_check_mark: Not Started | None — WI-9 dependency resolved |
 | MS-4: Phase 1 Release (v0.1.0) | 2026-08-21 | 0 of 7 work items done | :white_check_mark: Not Started | None |
 | MS-5: Multi-Format Output | 2026-09-19 | 0 of 4 work items done | :white_check_mark: Not Started | None |
 | MS-6: Profile Generation (v0.2.0) | 2026-10-31 | 0 of 6 work items done | :white_check_mark: Not Started | None |
@@ -754,7 +758,7 @@ graph LR
 | Theme | Work Items Total | Done | In Progress | Blocked | Not Started | Health |
 |-------|-----------------|------|-------------|---------|-------------|--------|
 | T-1: Core Pipeline | 8 | 7 | 0 | 0 | 1 | :white_check_mark: Ahead of Schedule |
-| T-2: OSCAL Generation | 10 | 0 | 0 | 0 | 10 | :white_check_mark: Not Started |
+| T-2: OSCAL Generation | 10 | 4 | 0 | 0 | 6 | :white_check_mark: Ahead of Schedule |
 | T-3: Validation & Quality | 7 | 0 | 0 | 0 | 7 | :white_check_mark: Not Started |
 | T-4: Output Format Expansion | 4 | 0 | 0 | 0 | 4 | :white_check_mark: Not Started |
 | T-5: Profile & Tailoring | 6 | 0 | 0 | 0 | 6 | :white_check_mark: Not Started |
@@ -768,7 +772,7 @@ xychart-beta
     x-axis ["Phase 1 Start", "Now", "MS-1", "MS-2", "MS-3", "MS-4", "MS-5", "MS-6", "MS-7"]
     y-axis "Work Items Remaining" 0 --> 50
     line "Planned" [50, 46, 42, 37, 32, 25, 21, 15, 0]
-    line "Actual" [50, 43]
+    line "Actual" [50, 43, 39]
 ```
 
 ---
@@ -829,6 +833,7 @@ xychart-beta
 | 0.2 | 2026-02-10 | Brian Luby | Constrained to Markdown-only input (ADR-001); removed PDF/DOCX work items (old WI-26–WI-33) and MS-5; renumbered to 50 work items; compressed Phase 2 from 18→10 sprints; overall timeline reduced by ~2 months |
 | 0.3 | 2026-02-11 | LLM (Claude) | Status update: WI-3 (heading extraction) complete (PR #5 merged); WI-4 (clause/table/paragraph extraction) in review (PR #6 pending merge); MS-1 progress: 2 of 8 items done; T-1 pipeline progressing on schedule |
 | 0.4 | 2026-02-11 | LLM (Claude) | Major status update: WI-1 through WI-7 all Done (merged to main). MS-1 at 7/8 complete — ahead of schedule. Corrected D-3 dependency (WI-12 depends on WI-8, not WI-9). Expanded dependency map to show WI-11/WI-12/WI-13 nodes. Updated parallelism analysis: WI-8, WI-9, WI-11 can all start immediately in parallel. Updated burndown, milestone health, theme health, and all sprint detail statuses. |
+| 0.5 | 2026-02-12 | LLM (Claude) | Status update: WI-9 (Catalog groups/controls, PR #12), WI-10 (statement parts, PR #14), WI-11 (metadata, PR #11), WI-12 (back matter, PR #15) all Done and merged to main. MS-2 at 4/5 complete — only WI-8 (Citations) blocks WI-13 (Catalog Pipeline). T-2 theme at 4/10 done. Updated dependency map, critical path, milestone health, theme health, burndown, and sprint detail statuses. |
 
 ---
 
