@@ -75,7 +75,13 @@ fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), For
         if !req.citations.is_empty() {
             continue;
         }
-        let requirement_id = req.stable_id.as_deref().unwrap_or("");
+        let requirement_id = req.stable_id.as_deref().unwrap_or_else(|| {
+            tracing::warn!(
+                source_line = req.source_line,
+                "Requirement missing stable_id, citation IDs may collide"
+            );
+            ""
+        });
         let (cleaned_text, citations) = extract_citations_from_text(requirement_id, &req.text)?;
         tracing::debug!(
             requirement_id = requirement_id,
@@ -117,7 +123,10 @@ pub fn extract_citations_from_text(
 
     // US1: URL matches (highest priority)
     for m in URL_REGEX.find_iter(text) {
-        let url_text = m.as_str().to_string();
+        let raw = m.as_str();
+        // Trim trailing sentence punctuation (periods are valid inside URLs but not at end)
+        let url_text = raw.trim_end_matches('.').to_string();
+        let trimmed_len = raw.len() - url_text.len();
         let citation_id = generate_citation_id(requirement_id, &url_text);
         citations.push(Citation {
             id: citation_id,
@@ -125,7 +134,7 @@ pub fn extract_citations_from_text(
             url: Some(url_text),
             source_requirement_id: Some(requirement_id.to_string()),
         });
-        matched_ranges.push(m.start()..m.end());
+        matched_ranges.push(m.start()..(m.end() - trimmed_len));
     }
 
     // US3: Scheme-less URL matches (skip if overlapping with full URL matches)
@@ -134,7 +143,9 @@ pub fn extract_citations_from_text(
         if overlaps_any(&range, &matched_ranges) {
             continue;
         }
-        let url_text = m.as_str().to_string();
+        let raw = m.as_str();
+        let url_text = raw.trim_end_matches('.').to_string();
+        let trimmed_len = raw.len() - url_text.len();
         let citation_id = generate_citation_id(requirement_id, &url_text);
         citations.push(Citation {
             id: citation_id,
@@ -142,7 +153,7 @@ pub fn extract_citations_from_text(
             url: Some(url_text),
             source_requirement_id: Some(requirement_id.to_string()),
         });
-        matched_ranges.push(range);
+        matched_ranges.push(m.start()..(m.end() - trimmed_len));
     }
 
     // US2: Bibliographic matches (skip if overlapping with URL matches)
@@ -354,6 +365,17 @@ mod tests {
         assert!(!text.contains(", ,"));
         assert!(!text.contains(",,"));
         assert_eq!(text, "Controls per, and more requirements.");
+    }
+
+    // Trailing period not captured in URL
+    #[test]
+    fn us1_trailing_period_not_captured() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "See https://example.com.").unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].url.as_deref(), Some("https://example.com"));
+        assert_eq!(text, "See.");
     }
 
     // T011: Citation ID generation tests

@@ -50,14 +50,14 @@ This PRD covers **WI-8: Citation and Reference Extraction** from the FORGE Produ
 - Extracting detected citations into `Citation` model objects linked to their source requirement
 - Stripping extracted citation text from requirement prose (clean prose for OSCAL control statement generation)
 - Preserving extracted citations for later back matter resource generation (WI-12)
-- Extending the domain model with a `Citation` struct (id, requirement_id, text, url)
-- Handling malformed URLs gracefully (preserve with unvalidated annotation)
+- Extending the domain model with a `Citation` struct (id, text, url, source_requirement_id)
+- Handling scheme-less URLs gracefully (preserve for downstream back_matter classification)
 - Unit tests verifying citation extraction from test fixtures
 
 **Out of Scope:**
 - OSCAL back matter resource generation — deferred to WI-12 (012-prd-back-matter-links)
 - OSCAL `link` element generation in control bodies — deferred to WI-12
-- URL validation or resolution (checking if URLs are reachable) — not in scope; malformed URLs are flagged, not verified
+- URL validation or resolution (checking if URLs are reachable) — not in scope; scheme-less URLs are preserved for downstream classification
 - Citation deduplication across requirements — deferred to WI-12 when assembling back matter
 - PDF or DOCX citation extraction — this WI operates on already-parsed requirement text from the domain model
 
@@ -129,17 +129,17 @@ A policy requirement references external standards or documents by name that sho
 
 ### User Story 3 — Handle Malformed URLs Gracefully (Priority: P2)
 
-A policy requirement contains a malformed or incomplete URL that cannot be parsed as a valid URI.
+A policy requirement contains a scheme-less URL (e.g., www.example.com) that should be detected and preserved as a citation for downstream validation.
 
-> As a developer working on FORGE, I want malformed URLs to be preserved as citations with an unvalidated flag so that no data is lost, even when URLs are not well-formed.
+> As a developer working on FORGE, I want scheme-less URLs (e.g., www.example.com) to be detected and preserved as citations so that no data is lost, with downstream back_matter (WI-12) classifying them via OSCAL prop annotations.
 
-**Why this priority**: Per parent PRD EC-7, malformed URLs must be preserved (not silently dropped), with an annotation indicating they are unvalidated.
+**Why this priority**: Per parent PRD EC-7, scheme-less URLs must be preserved (not silently dropped). The back_matter module (WI-12) classifies URLs via `classify_url` and annotates unvalidated ones with OSCAL properties. Data loss is unacceptable for compliance tooling.
 
-**Independent Test**: Parse a requirement with a malformed URL, run citation extraction, and verify the citation is created with an unvalidated annotation.
+**Independent Test**: Parse a requirement with "www.example.com/policy", run citation extraction, and verify a Citation is created with `url: Some("www.example.com/policy")`.
 
 **Acceptance Scenarios**:
-1. **Given** a PolicyRequirement with text containing "See htp://broken-url for details", **When** citation extraction runs, **Then** a Citation is created with text = "htp://broken-url" and a flag/prop indicating it is unvalidated.
-2. **Given** a requirement with a URL missing its scheme (e.g., "www.example.com/policy"), **When** citation extraction runs, **Then** the citation is preserved with the unvalidated flag.
+1. **Given** a PolicyRequirement with text containing "See www.example.com/policy for details", **When** citation extraction runs, **Then** a Citation is created with `url = Some("www.example.com/policy")` (downstream back_matter classifies as unvalidated via OSCAL prop).
+2. **Given** a requirement with a scheme-less URL alongside a full URL, **When** citation extraction runs, **Then** both are extracted as separate Citations — the full URL with its scheme, the scheme-less URL with `url: Some("www....")` for downstream classification.
 
 ---
 
@@ -164,7 +164,7 @@ A policy requirement references another section within the same document.
 ### Assumptions
 - [A-1] Citation extraction operates on `PolicyRequirement.text` after the domain model is assembled (WI-5).
 - [A-2] Citation patterns can be detected via regex and pattern matching — no NLP or ML is required at this stage.
-- [A-3] The `Citation` struct extends the domain model with an `Option<Vec<Citation>>` field on `PolicyRequirement`, consistent with the pattern used for `stable_id` in WI-7.
+- [A-3] The `Citation` struct extends the domain model with a `Vec<Citation>` field on `PolicyRequirement` (default `vec![]`), consistent with the enrichment pattern used for `stable_id` in WI-7.
 - [A-4] Citation extraction runs as a pipeline enrichment step, similar to atomization (WI-6) and UUID generation (WI-7).
 
 ### Risks
@@ -187,7 +187,7 @@ flowchart TD
     C -->|Inline URL| D[Extract URL citation]
     C -->|Bibliographic ref| E[Extract bibliographic citation]
     C -->|Cross-reference| F[Extract cross-reference citation]
-    C -->|Malformed URL| G[Extract with unvalidated flag]
+    C -->|Scheme-less URL| G[Extract for downstream classification]
     D --> H[Create Citation object]
     E --> H
     F --> H
@@ -210,7 +210,7 @@ N/A — Citation extraction is a stateless transformation pass over the domain m
 - [ ] **M-2:** The system shall strip extracted citation text from `PolicyRequirement.text`, producing clean prose suitable for OSCAL control statements. *(Traces to: Parent PRD M-9)*
 - [ ] **M-3:** The `Citation` struct shall include fields for: `id` (unique identifier), `requirement_id` (FK to source requirement), `text` (citation display text), and `url` (optional URL). *(Traces to: Parent PRD M-9, data model)*
 - [ ] **M-4:** Each extracted `Citation` shall be linked to the `PolicyRequirement` from which it was extracted. *(Traces to: Parent PRD M-9)*
-- [ ] **M-5:** When a detected URL is malformed, the system shall preserve it as a `Citation` with a flag (prop annotation) indicating it is unvalidated. *(Traces to: Parent PRD EC-7)*
+- [ ] **M-5:** When a scheme-less URL is detected (e.g., www.example.com), the system shall preserve it as a `Citation` with `url: Some(matched_text)` for downstream back_matter classification via OSCAL prop annotations. *(Traces to: Parent PRD EC-7)*
 - [ ] **M-6:** Citation extraction shall be implemented as a pipeline enrichment function that takes a `PolicyDocument` and returns an enriched `PolicyDocument` with citations populated. *(Traces to: Parent PRD M-9)*
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
@@ -255,11 +255,10 @@ erDiagram
         int nesting_depth "0-based"
     }
     Citation {
-        string id PK "unique citation identifier"
-        string requirement_id FK "link to source requirement"
+        string id PK "unique citation identifier (UUID v5)"
+        string source_requirement_id FK "optional, link to source requirement"
         string text "citation display text"
         string url "optional, URL if present"
-        bool validated "true if URL is well-formed"
     }
 ```
 
@@ -269,18 +268,16 @@ erDiagram
 
 ```rust
 /// A citation extracted from policy requirement text
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Citation {
-    /// Unique identifier for this citation
+    /// Unique identifier for this citation (UUID v5)
     pub id: String,
-    /// ID of the PolicyRequirement this citation was extracted from
-    pub requirement_id: String,
-    /// Display text of the citation (standard name, reference label, etc.)
+    /// Display text of the citation (standard name, reference label, URL text)
     pub text: String,
     /// URL if the citation contains a link; None for bibliographic/cross-refs
     pub url: Option<String>,
-    /// Whether the URL (if present) is well-formed; false for malformed URLs
-    pub validated: bool,
+    /// stable_id of the source PolicyRequirement (populated during extraction)
+    pub source_requirement_id: Option<String>,
 }
 
 /// Enrichment function: extract citations from all requirements in a document
@@ -331,7 +328,7 @@ pub struct PolicyRequirement {
 
 ### Selected Approach 🔴 `@human-required`
 > **Decision:** Use `regex` crate for pattern detection; `url` crate for URL validation; plain struct for the Citation model
-> **Rationale:** Regex provides sufficient pattern matching for URL, bibliographic, and cross-reference patterns. The `url` crate cleanly distinguishes well-formed from malformed URLs (enabling EC-7 compliance). No heavier parsing framework is needed at this stage.
+> **Rationale:** Regex provides sufficient pattern matching for URL, bibliographic, and cross-reference patterns. Scheme-less URLs are preserved with `url: Some(matched_text)` for downstream back_matter classification (enabling EC-7 compliance). No heavier parsing framework is needed at this stage.
 
 ---
 
@@ -342,7 +339,7 @@ pub struct PolicyRequirement {
 | AC-1 | M-1, M-2 | US-1 | A PolicyRequirement with text containing "https://example.com/policy" | Running citation extraction | A Citation is created with the URL and the URL is stripped from the prose |
 | AC-2 | M-1, M-4 | US-1 | A PolicyRequirement with multiple inline URLs | Running citation extraction | One Citation per URL, each linked to the source requirement |
 | AC-3 | M-3, M-4 | US-1 | Any extracted citation | Inspecting the Citation object | Fields id, requirement_id, text, and url are populated correctly |
-| AC-4 | M-5 | US-3 | A PolicyRequirement with a malformed URL (e.g., "htp://broken") | Running citation extraction | Citation is created with validated = false |
+| AC-4 | M-5 | US-3 | A PolicyRequirement with a scheme-less URL (e.g., "www.example.com/policy") | Running citation extraction | Citation is created with `url: Some("www.example.com/policy")` for downstream back_matter classification |
 | AC-5 | M-6 | US-1 | A PolicyDocument with multiple requirements containing citations | Running extract_citations() | All requirements are processed; citations attached; prose cleaned |
 | AC-6 | S-1 | US-2 | A PolicyRequirement referencing "NIST SP 800-53 Rev 5" | Running citation extraction | A Citation is created with text capturing the bibliographic reference |
 | AC-7 | S-2 | US-4 | A PolicyRequirement containing "See Section 3.2" | Running citation extraction | A Citation is created with text = "Section 3.2" and url = None |
@@ -350,7 +347,7 @@ pub struct PolicyRequirement {
 ### Edge Cases 🟢 `@llm-autonomous`
 - [ ] **EC-1:** (M-1) When a requirement contains no citations, URLs, or references, then the text is unchanged and no Citations are created.
 - [ ] **EC-2:** (M-2) When stripping a URL leaves awkward whitespace or punctuation (e.g., double spaces, trailing commas), then the prose is normalized (extra whitespace collapsed).
-- [ ] **EC-3:** (M-5) When a URL is missing its scheme (e.g., "www.example.com/policy"), then it is extracted as a Citation with validated = false.
+- [ ] **EC-3:** (M-5) When a URL is missing its scheme (e.g., "www.example.com/policy"), then it is extracted as a Citation with `url: Some("www.example.com/policy")` for downstream back_matter classification.
 - [ ] **EC-4:** (M-1) When a URL appears in parentheses (e.g., "(https://example.com)"), then the URL is extracted without the surrounding parentheses.
 - [ ] **EC-5:** (M-1) When the same URL appears multiple times in one requirement, then each occurrence produces a separate Citation (deduplication deferred to WI-12).
 - [ ] **EC-6:** (S-2) When text contains a partial cross-reference pattern that is ambiguous (e.g., "section" in lowercase without a number), then it is not extracted (conservative matching).
@@ -398,12 +395,12 @@ graph LR
 ## Implementation Guidance 🟢 `@llm-autonomous`
 
 ### Suggested Approach
-Implement citation extraction as an enrichment pass in the pipeline, similar to atomization (WI-6) and UUID generation (WI-7). Create a `citation` module (or extend the existing `parse` module) with extraction functions. Start with URL detection using a well-tested regex pattern for http/https URLs. Use the `url` crate to validate detected URLs — those that parse successfully are marked `validated = true`; those that fail are marked `validated = false` (satisfying EC-7). For bibliographic references, define regex patterns for common standard naming conventions (e.g., `NIST SP \d+-\d+`, `ISO \d+`, `RFC \d+`, `FIPS \d+`). For cross-references, match patterns like `Section \d+(\.\d+)*`, `Appendix [A-Z]`, `Table \d+`. After extracting all citations, strip the matched text from the requirement prose and normalize whitespace. Add the `citations: Vec<Citation>` field to `PolicyRequirement` (defaulting to an empty Vec). Write unit tests using test fixture strings that represent realistic policy requirement text.
+Implement citation extraction as an enrichment pass in the pipeline, similar to atomization (WI-6) and UUID generation (WI-7). Create a `citation` module with extraction functions. Start with URL detection using a well-tested regex pattern for http/https URLs. Add a secondary regex for scheme-less URLs (`www.` prefix) — these are preserved with `url: Some(matched_text)` for downstream back_matter classification (WI-12). For bibliographic references, define regex patterns for common standard naming conventions (e.g., `NIST SP \d+-\d+`, `ISO \d+`, `RFC \d+`, `FIPS \d+`). For cross-references, match patterns like `Section \d+(\.\d+)*`, `Appendix [A-Z]`, `Table \d+`. After extracting all citations, strip the matched text from the requirement prose and normalize whitespace. Add the `citations: Vec<Citation>` field to `PolicyRequirement` (defaulting to an empty Vec). Write unit tests using test fixture strings that represent realistic policy requirement text.
 
 ### Anti-patterns to Avoid
 - Embedding OSCAL back matter logic in this module — citation extraction produces the data model; back matter assembly is WI-12
 - Using overly aggressive regex that matches ordinary text as citations (e.g., matching any number after "section" in prose)
-- Silently dropping malformed URLs — parent PRD EC-7 explicitly requires preservation with an annotation
+- Silently dropping scheme-less URLs — parent PRD EC-7 explicitly requires preservation for downstream classification
 - Modifying `PolicyRequirement` in place without returning updated text — use a functional transformation pattern returning (cleaned_text, citations)
 
 ### Reference Examples
@@ -425,7 +422,7 @@ N/A — No spike tasks for this work item. The `regex` and `url` crates are well
 |--------|----------|--------|-------------------|
 | URL citation extraction | N/A | 100% of inline URLs extracted from test fixtures | Unit tests |
 | Prose cleaning | N/A | No residual citation text in requirement prose | Unit tests |
-| Malformed URL preservation | N/A | 100% preserved with unvalidated flag | Unit tests with malformed URL fixtures |
+| Scheme-less URL preservation | N/A | 100% preserved with `url: Some(matched_text)` | Unit tests with scheme-less URL fixtures |
 | Citation-requirement linking | N/A | Every Citation linked to its source requirement | Unit tests |
 
 ### Technical Verification 🟢 `@llm-autonomous`
@@ -467,7 +464,7 @@ N/A — No spike tasks for this work item. The `regex` and `url` crates are well
 | Date | Decision | Rationale | Alternatives Considered |
 |------|----------|-----------|------------------------|
 | 2026-02-10 | Use regex + url crates for citation detection | Regex is sufficient for URL and pattern-based citation detection; url crate provides reliable well-formedness validation | NLP-based extraction (overkill for MVP), nom parser combinators (unnecessary complexity) |
-| 2026-02-10 | Preserve malformed URLs with unvalidated flag rather than dropping them | Parent PRD EC-7 mandates preservation; data loss is unacceptable for compliance tooling | Drop malformed URLs (violates EC-7), attempt auto-correction (unreliable) |
+| 2026-02-10 | Preserve scheme-less URLs for downstream classification rather than dropping them | Parent PRD EC-7 mandates preservation; back_matter (WI-12) classifies via OSCAL prop annotations; data loss is unacceptable for compliance tooling | Drop scheme-less URLs (violates EC-7), attempt auto-correction (unreliable) |
 | 2026-02-10 | Citation extraction as pipeline enrichment pass (not inline during parsing) | Keeps extraction decoupled from parsing; enables independent testing and parallel development with WI-6/WI-7 | Inline extraction during WI-4 clause parsing (tight coupling, blocks parallelism) |
 
 ---

@@ -1,3 +1,4 @@
+pub mod citation;
 pub mod cli;
 pub mod error;
 pub mod export;
@@ -8,6 +9,7 @@ pub mod parse;
 pub mod uuid;
 pub mod validate;
 
+pub use citation::extract_citations;
 pub use error::ForgeError;
 pub use model::{Citation, PolicyDocument, PolicyRequirement, PolicySection};
 pub use oscal::{
