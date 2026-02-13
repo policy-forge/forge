@@ -125,6 +125,24 @@ pub struct PolicyRequirement {
     pub parent_text: Option<String>,
 }
 
+/// A citation extracted from a policy document by WI-8.
+///
+/// This is the input to back matter generation (WI-12).
+#[derive(Debug, Clone, Serialize)]
+pub struct Citation {
+    /// Unique identifier for this citation.
+    pub id: String,
+
+    /// Citation text (bibliographic reference or descriptive text).
+    pub text: String,
+
+    /// URL if this is a URL-based citation; None for bibliographic-only.
+    pub url: Option<String>,
+
+    /// `stable_id` of the `PolicyRequirement` that references this citation.
+    pub source_requirement_id: Option<String>,
+}
+
 impl PolicySection {
     /// Recursively count all requirements in this section and its children.
     #[must_use]

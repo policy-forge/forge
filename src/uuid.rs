@@ -15,6 +15,18 @@ pub const FORGE_NAMESPACE_UUID: Uuid = Uuid::from_bytes([
     0x71, 0x43, 0xFD, 0xCB, 0xD7, 0xC4, 0x40, 0xC5, 0xBC, 0xA6, 0x51, 0xCD, 0x54, 0x83, 0xA1, 0x3B,
 ]);
 
+/// Fixed namespace UUID for back matter resource identifier generation.
+///
+/// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"back-matter")`.
+///
+/// # Breaking Change Warning
+///
+/// Changing this value will change **ALL** generated back matter resource UUIDs.
+/// Any change requires a documented migration path.
+pub const BACK_MATTER_NAMESPACE: Uuid = Uuid::from_bytes([
+    0xA1, 0x8D, 0x97, 0xB8, 0x5E, 0xC6, 0x5A, 0x97, 0xBF, 0xD2, 0xE1, 0x61, 0xD6, 0x19, 0x97, 0x73,
+]);
+
 /// Normalize text for stable ID generation.
 ///
 /// Trims leading/trailing whitespace and collapses internal whitespace runs
