@@ -380,11 +380,11 @@ flowchart TD
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-1, M-2 | AC-1, AC-2 | Unit | tests/trace_model_test.rs |
-| SEC-2 | — (immutability constraint) | — | Unit + Code Review | tests/trace_model_test.rs |
-| SEC-3 | M-5 | AC-3 | Unit | tests/trace_model_test.rs |
-| SEC-4 | M-4 | AC-4, AC-5 | Unit | tests/trace_model_test.rs |
-| SEC-5 | M-5 | AC-4, AC-5 | Unit | tests/trace_model_test.rs |
+| SEC-1 | M-1, M-2 | AC-1, AC-2 | Unit | src/model/trace.rs (#[cfg(test)]) |
+| SEC-2 | — (immutability constraint) | — | Unit + Code Review | src/model/trace.rs (#[cfg(test)]) |
+| SEC-3 | M-5 | AC-3 | Unit | src/model/trace.rs (#[cfg(test)]) |
+| SEC-4 | M-4 | AC-4, AC-5 | Unit | src/model/trace.rs (#[cfg(test)]) |
+| SEC-5 | M-5 | AC-4, AC-5 | Unit | src/model/trace.rs (#[cfg(test)]) |
 
 ---
 
