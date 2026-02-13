@@ -3,6 +3,7 @@
 pub mod back_matter;
 pub mod catalog;
 pub mod component_definition;
+pub mod implemented_requirements;
 pub mod metadata;
 pub mod parts;
 

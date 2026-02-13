@@ -128,6 +128,51 @@ pub fn run_catalog_pipeline(
     write_output(&json, output_path)
 }
 
+/// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize → output.
+///
+/// # Arguments
+/// * `input_path` - Path to the Markdown policy document
+/// * `output_path` - Optional output file path; if None, writes JSON to stdout
+/// * `max_size_bytes` - Maximum allowed input file size in bytes
+/// * `source_profile` - The baseline profile reference for control-implementations
+///
+/// # Errors
+/// * `Err(ForgeError)` if any pipeline stage fails
+pub fn run_component_pipeline(
+    input_path: &Path,
+    output_path: Option<&Path>,
+    max_size_bytes: u64,
+    source_profile: &str,
+) -> Result<(), ForgeError> {
+    // Steps 1-9: shared pipeline stages (same as catalog)
+    let ingested = crate::ingest::ingest_file(input_path, max_size_bytes)?;
+    let content = ingested.reconstruct_content();
+
+    if content.trim().is_empty() {
+        return Err(ForgeError::Validation(
+            "Input file is empty — no content to process".to_string(),
+        ));
+    }
+
+    let sections = crate::parse::extract_sections(&content)?;
+    let clauses = crate::parse::extract_clauses(&content)?;
+    let document = crate::model::assemble_document(&ingested, &sections, &clauses)?;
+    let atomized = crate::parse::atomize_document(&document)?;
+    let mut doc_with_ids = atomized;
+    crate::uuid::assign_stable_ids(&mut doc_with_ids);
+    crate::citation::extract_citations(&mut doc_with_ids)?;
+
+    // Step 10: Build component definition with source_profile
+    let envelope = crate::oscal::build_component_definition(&doc_with_ids, Some(source_profile))?;
+
+    // Step 11: Serialize to pretty JSON
+    let json = serde_json::to_string_pretty(&envelope)
+        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+
+    // Step 12: Write output
+    write_output(&json, output_path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -90,7 +90,7 @@ flowchart LR
     subgraph "Internal Processing"
         PD[PolicyDocument\nwith PolicyRequirements] --> BCI
         BCI --> MRI[map_requirement_to_implemented]
-        MRI --> CID[control_id_from_stable_id\nshared with WI-9]
+        MRI --> CID[derive_control_id_or_fallback\nvia generate_control_id\nshared with WI-9]
         MRI --> UUID5[UUID v5 Generation]
         BCI --> CI[control-implementations JSON]
     end
@@ -218,7 +218,7 @@ If this feature is compromised, what's the impact?
 
 | Asset at Risk | Modification Scenario | Impact | Likelihood |
 |---------------|----------------------|--------|------------|
-| Control-id to requirement mapping | Incorrect `control_id_from_stable_id` mapping causes implemented-requirements to reference wrong control-ids, breaking compliance traceability | Medium | Low |
+| Control-id to requirement mapping | Incorrect `derive_control_id_or_fallback` mapping causes implemented-requirements to reference wrong control-ids, breaking compliance traceability | Medium | Low |
 | UUID determinism | Non-deterministic UUID generation breaks stability across re-conversions; diffs become meaningless | Low | Very Low |
 | Source profile reference | `--source-profile` value stored incorrectly or truncated, causing downstream consumers to misidentify the baseline | Low | Very Low |
 | Implementation narrative fidelity | Requirement prose transformed or truncated, misrepresenting the source requirement | Low | Very Low |
@@ -292,7 +292,7 @@ flowchart TD
 
 | ID | Risk Description | Severity | Mitigation | Status | Owner |
 |----|------------------|----------|------------|--------|-------|
-| R1 | Control-id scheme diverges between Catalog builder (WI-9) and implemented-requirements mapping, causing cross-artifact inconsistency | Low | Shared `control_id_from_stable_id` utility function used by both WI-9 and WI-15 ensures consistency | Mitigated | Brian Luby |
+| R1 | Control-id scheme diverges between Catalog builder (WI-9) and implemented-requirements mapping, causing cross-artifact inconsistency | Low | Both WI-9 and WI-15 use the same `generate_control_id` + `resolve_abbreviation` functions from `catalog.rs`, ensuring identical control-ids for the same document | Mitigated | Brian Luby |
 | R2 | `--source-profile` value is stored in output as-is; if it contains a path with sensitive directory structure, that structure appears in the output | Low | Standard CLI behavior; users control what values they provide; output inherits sensitivity of inputs | Accepted | Brian Luby |
 | R3 | Requirement prose used directly as implementation narrative may contain content that is misleading in the implemented-requirement context | Low | Direct prose use is auditable and faithful to source; users can edit output; AI-generated paraphrasing would introduce non-determinism | Accepted | Brian Luby |
 
@@ -359,7 +359,7 @@ flowchart TD
 
 ### Positive Observations 🟢 `@llm-autonomous`
 
-- Shared `control_id_from_stable_id` utility ensures cross-artifact consistency between Catalog controls and Component implemented-requirements
+- Shared `generate_control_id` + `resolve_abbreviation` utilities (from `catalog.rs`) ensure cross-artifact consistency between Catalog controls and Component implemented-requirements
 - Deterministic UUID v5 with dedicated namespaces for both control-implementation and implemented-requirement elements prevents UUID collisions
 - Requirement prose is used directly as the implementation narrative — no non-deterministic transformation that could introduce inconsistency
 - `--source-profile` is stored as a reference (href), not as embedded content — FORGE never fetches or resolves the profile, eliminating network-related attack vectors

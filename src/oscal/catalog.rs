@@ -341,7 +341,7 @@ fn resolve_group_id(title: &str, index: usize, counts: &mut HashMap<String, usiz
 }
 
 /// Resolve an abbreviation with collision tracking.
-fn resolve_abbreviation(title: &str, counts: &mut HashMap<String, usize>) -> String {
+pub(crate) fn resolve_abbreviation(title: &str, counts: &mut HashMap<String, usize>) -> String {
     let base = generate_section_abbreviation(title);
     let count = counts.entry(base.clone()).or_insert(0);
     *count += 1;

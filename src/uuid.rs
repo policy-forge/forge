@@ -39,6 +39,30 @@ pub const COMPONENT_NAMESPACE: Uuid = Uuid::from_bytes([
     0x16, 0x35, 0x5D, 0xEF, 0xED, 0x48, 0x54, 0x20, 0x90, 0xE0, 0x0A, 0x95, 0xC0, 0xD9, 0xCE, 0xCA,
 ]);
 
+/// Fixed namespace UUID for control-implementation identifier generation.
+///
+/// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"control-implementation")`.
+///
+/// # Breaking Change Warning
+///
+/// Changing this value will change **ALL** generated control-implementation UUIDs.
+/// Any change requires a documented migration path.
+pub const CONTROL_IMPL_NAMESPACE: Uuid = Uuid::from_bytes([
+    0x2B, 0x14, 0x50, 0xFE, 0xC1, 0x0F, 0x55, 0xAE, 0x98, 0x93, 0x9A, 0x4E, 0xA3, 0x05, 0x75, 0x0B,
+]);
+
+/// Fixed namespace UUID for implemented-requirement identifier generation.
+///
+/// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"implemented-requirement")`.
+///
+/// # Breaking Change Warning
+///
+/// Changing this value will change **ALL** generated implemented-requirement UUIDs.
+/// Any change requires a documented migration path.
+pub const IMPL_REQ_NAMESPACE: Uuid = Uuid::from_bytes([
+    0x41, 0x39, 0x89, 0xA7, 0xB5, 0x5A, 0x53, 0xB2, 0xB9, 0x81, 0x11, 0x19, 0x28, 0x04, 0x29, 0x0F,
+]);
+
 /// Normalize text for stable ID generation.
 ///
 /// Trims leading/trailing whitespace and collapses internal whitespace runs
@@ -236,6 +260,18 @@ mod tests {
     fn component_namespace_matches_derivation() {
         let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"component");
         assert_eq!(COMPONENT_NAMESPACE, expected);
+    }
+
+    #[test]
+    fn control_impl_namespace_matches_derivation() {
+        let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"control-implementation");
+        assert_eq!(CONTROL_IMPL_NAMESPACE, expected);
+    }
+
+    #[test]
+    fn impl_req_namespace_matches_derivation() {
+        let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"implemented-requirement");
+        assert_eq!(IMPL_REQ_NAMESPACE, expected);
     }
 
     // T011: All requirements populated (AC-4, M-3)

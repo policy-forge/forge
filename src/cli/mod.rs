@@ -49,6 +49,10 @@ pub enum Commands {
         /// Maximum file size in MB
         #[arg(long, default_value = "10")]
         max_size: u64,
+
+        /// Source profile/baseline reference for component strategy
+        #[arg(long)]
+        source_profile: Option<String>,
     },
 
     /// Validate an OSCAL artifact against schemas
@@ -78,8 +82,15 @@ pub enum OutputFormat {
 /// Returns `ForgeError` if the subcommand handler fails.
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     match &cli.command {
-        Commands::Convert { input, strategy, format, output, max_size } => {
-            convert::execute(input, strategy, format, output.as_deref(), *max_size)
+        Commands::Convert { input, strategy, format, output, max_size, source_profile } => {
+            convert::execute(
+                input,
+                strategy,
+                format,
+                output.as_deref(),
+                *max_size,
+                source_profile.as_deref(),
+            )
         }
         Commands::Validate { input } => validate::execute(input),
     }

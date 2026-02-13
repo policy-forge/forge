@@ -475,11 +475,11 @@ fn convert_strategy_component_shows_rejection_error() {
         .output()
         .expect("Failed to execute process");
 
-    // S-3: --strategy component → descriptive rejection
+    // WI-15: --strategy component without --source-profile → validation error
     assert!(!output.status.success(), "Expected non-zero exit code");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("catalog") && stderr.contains("supported"),
-        "stderr should mention only catalog is supported:\n{stderr}"
+        stderr.contains("--source-profile is required"),
+        "stderr should mention --source-profile is required:\n{stderr}"
     );
 }
