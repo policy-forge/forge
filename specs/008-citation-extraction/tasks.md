@@ -51,15 +51,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T009 [US1] Write unit tests for URL extraction in src/citation.rs: single URL extraction (AC-1), multiple URLs in one requirement (AC-2), URL in parentheses extracted without parens (EC-4), duplicate URLs produce separate Citations (EC-5), no-citations text unchanged (EC-1), whitespace normalization after stripping (EC-2)
+- [X] T009 [US1] Write unit tests for URL extraction in src/citation.rs: single URL extraction (AC-1), multiple URLs in one requirement (AC-2), URL in parentheses extracted without parens (EC-4), duplicate URLs produce separate Citations (EC-5), no-citations text unchanged (EC-1), whitespace normalization after stripping (EC-2)
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Define `LazyLock<Regex>` URL pattern `https?://[^\s\)\]>,;]+` as static in src/citation.rs (SEC-1, SEC-2, SEC-7)
-- [ ] T011 [US1] Implement `generate_citation_id(requirement_id: &str, citation_text: &str) -> String` using UUID v5 with `FORGE_NAMESPACE_UUID` namespace, hashing `"{requirement_id}:{citation_text}"` in src/citation.rs (R-1)
-- [ ] T012 [US1] Implement `extract_citations_from_text(requirement_id: &str, text: &str) -> Result<(String, Vec<Citation>), ForgeError>` with URL regex matching, byte range tracking for overlap detection, and Citation construction in src/citation.rs
-- [ ] T013 [US1] Implement prose cleanup in `extract_citations_from_text`: replace matched text with space, collapse consecutive spaces, trim, normalize punctuation artifacts (double commas, trailing commas before periods) in src/citation.rs (R-9)
-- [ ] T014 [US1] Verify all US1 tests pass with `cargo test citation`
+- [X] T010 [US1] Define `LazyLock<Regex>` URL pattern `https?://[^\s\)\]>,;]+` as static in src/citation.rs (SEC-1, SEC-2, SEC-7)
+- [X] T011 [US1] Implement `generate_citation_id(requirement_id: &str, citation_text: &str) -> String` using UUID v5 with `FORGE_NAMESPACE_UUID` namespace, hashing `"{requirement_id}:{citation_text}"` in src/citation.rs (R-1)
+- [X] T012 [US1] Implement `extract_citations_from_text(requirement_id: &str, text: &str) -> Result<(String, Vec<Citation>), ForgeError>` with URL regex matching, byte range tracking for overlap detection, and Citation construction in src/citation.rs
+- [X] T013 [US1] Implement prose cleanup in `extract_citations_from_text`: replace matched text with space, collapse consecutive spaces, trim, normalize punctuation artifacts (double commas, trailing commas before periods) in src/citation.rs (R-9)
+- [X] T014 [US1] Verify all US1 tests pass with `cargo test citation`
 
 **Checkpoint**: URL extraction works independently — inline URLs are detected, extracted, and prose is cleaned
 
