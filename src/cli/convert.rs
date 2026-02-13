@@ -36,7 +36,10 @@ pub fn execute(
     let sections = parse::extract_sections(&content)?;
     let clauses = parse::extract_clauses(&content)?;
 
-    let policy_doc = crate::model::assemble_document(&doc, &sections, &clauses)?;
+    let mut policy_doc = crate::model::assemble_document(&doc, &sections, &clauses)?;
+
+    // WI-8: Extract citations from requirement text (after assembly, before OSCAL generation)
+    crate::citation::extract_citations(&mut policy_doc)?;
 
     let section_count = policy_doc.sections.len();
     let req_count = policy_doc.total_requirements();

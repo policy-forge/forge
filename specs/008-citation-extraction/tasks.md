@@ -97,15 +97,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T019 [P] [US5] Write unit tests for document-level extraction in src/citation.rs: multiple sections each with requirements, nested subsections, empty document with zero requirements (EC-7), requirements with mixed citation types (URL + bibliographic in same requirement)
+- [X] T019 [P] [US5] Write unit tests for document-level extraction in src/citation.rs: multiple sections each with requirements, nested subsections, empty document with zero requirements (EC-7), requirements with mixed citation types (URL + bibliographic in same requirement)
 
 ### Implementation for User Story 5
 
-- [ ] T020 [US5] Implement `extract_citations(document: &mut PolicyDocument) -> Result<(), ForgeError>` with recursive section walking (consistent with `assign_stable_ids_to_section` pattern in src/uuid.rs) in src/citation.rs
-- [ ] T021 [US5] Add tracing instrumentation: `#[tracing::instrument]` on `extract_citations`, DEBUG-level log of citation count per requirement in src/citation.rs
-- [ ] T022 [US5] Integrate citation extraction into conversion pipeline in src/cli/convert.rs: call `extract_citations(&mut document)` after UUID assignment (`assign_stable_ids`) and before OSCAL generation
-- [ ] T023 [US5] Write integration test: end-to-end PolicyDocument with multiple citation types through `extract_citations`, verifying all requirements have citations populated and text cleaned in src/citation.rs
-- [ ] T024 [US5] Verify all US5 tests pass and pipeline produces correct output with `cargo test`
+- [X] T020 [US5] Implement `extract_citations(document: &mut PolicyDocument) -> Result<(), ForgeError>` with recursive section walking (consistent with `assign_stable_ids_to_section` pattern in src/uuid.rs) in src/citation.rs
+- [X] T021 [US5] Add tracing instrumentation: `#[tracing::instrument]` on `extract_citations`, DEBUG-level log of citation count per requirement in src/citation.rs
+- [X] T022 [US5] Integrate citation extraction into conversion pipeline in src/cli/convert.rs: call `extract_citations(&mut document)` after UUID assignment (`assign_stable_ids`) and before OSCAL generation
+- [X] T023 [US5] Write integration test: end-to-end PolicyDocument with multiple citation types through `extract_citations`, verifying all requirements have citations populated and text cleaned in src/citation.rs
+- [X] T024 [US5] Verify all US5 tests pass and pipeline produces correct output with `cargo test`
 
 **Checkpoint**: Full pipeline works — documents flow through citation extraction end-to-end. MVP complete (URL + bibliographic + pipeline).
 

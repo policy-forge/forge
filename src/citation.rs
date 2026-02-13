@@ -24,7 +24,7 @@ use regex::Regex;
 use uuid::Uuid;
 
 use crate::error::ForgeError;
-use crate::model::{Citation, PolicyDocument};
+use crate::model::{Citation, PolicyDocument, PolicySection};
 use crate::uuid::FORGE_NAMESPACE_UUID;
 
 // T010: URL pattern — matches http:// or https:// followed by non-whitespace, non-delimiter chars.
@@ -49,8 +49,31 @@ static BIBLIO_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 ///
 /// Returns `ForgeError::Parse` if regex pattern compilation fails
 /// (should not happen with static patterns).
-pub fn extract_citations(_document: &mut PolicyDocument) -> Result<(), ForgeError> {
-    todo!("T020: Implement document-level citation extraction")
+#[tracing::instrument(level = "debug", skip(document))]
+pub fn extract_citations(document: &mut PolicyDocument) -> Result<(), ForgeError> {
+    for section in &mut document.sections {
+        extract_citations_from_section(section)?;
+    }
+    Ok(())
+}
+
+/// Recursively process a section and its children for citation extraction.
+fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), ForgeError> {
+    for req in &mut section.requirements {
+        let requirement_id = req.stable_id.as_deref().unwrap_or("");
+        let (cleaned_text, citations) = extract_citations_from_text(requirement_id, &req.text)?;
+        tracing::debug!(
+            requirement_id = requirement_id,
+            citation_count = citations.len(),
+            "Extracted citations from requirement"
+        );
+        req.text = cleaned_text;
+        req.citations = citations;
+    }
+    for child in &mut section.children {
+        extract_citations_from_section(child)?;
+    }
+    Ok(())
 }
 
 /// Extract citations from a single requirement's text.
@@ -383,5 +406,185 @@ mod tests {
         assert!(citations[0].url.is_none());
         assert!(citations[1].url.is_none());
         assert_eq!(text, "Comply with and standards");
+    }
+
+    // === T019/T023: US5 Document-Level Extraction Tests ===
+
+    use crate::model::{DocumentMetadata, PolicyRequirement, PolicySection};
+    use std::path::PathBuf;
+
+    fn make_test_doc(sections: Vec<PolicySection>) -> crate::model::PolicyDocument {
+        crate::model::PolicyDocument {
+            id: "test-doc".to_string(),
+            metadata: DocumentMetadata {
+                title: "Test Policy".to_string(),
+                version: "1.0.0".to_string(),
+                author: None,
+                date: None,
+                source_path: PathBuf::from("test.md"),
+                content_hash: None,
+            },
+            sections,
+        }
+    }
+
+    fn make_req(stable_id: &str, text: &str) -> PolicyRequirement {
+        PolicyRequirement {
+            stable_id: Some(stable_id.to_string()),
+            text: text.to_string(),
+            source_line: 1,
+            nesting_depth: 0,
+            atom_index: 0,
+            parent_text: None,
+            citations: vec![],
+        }
+    }
+
+    fn make_section(title: &str, reqs: Vec<PolicyRequirement>) -> PolicySection {
+        PolicySection {
+            title: title.to_string(),
+            heading_level: 2,
+            source_line: 1,
+            body_text: None,
+            children: vec![],
+            requirements: reqs,
+        }
+    }
+
+    // Multiple sections each with requirements
+    #[test]
+    fn us5_multiple_sections_with_requirements() {
+        let mut doc = make_test_doc(vec![
+            make_section(
+                "Access Control",
+                vec![make_req("req-1", "Comply with https://example.com/access policy")],
+            ),
+            make_section("Encryption", vec![make_req("req-2", "Must meet FIPS 140-2 standards")]),
+        ]);
+
+        extract_citations(&mut doc).unwrap();
+
+        assert_eq!(doc.sections[0].requirements[0].citations.len(), 1);
+        assert_eq!(
+            doc.sections[0].requirements[0].citations[0].url.as_deref(),
+            Some("https://example.com/access")
+        );
+        assert_eq!(doc.sections[0].requirements[0].text, "Comply with policy");
+
+        assert_eq!(doc.sections[1].requirements[0].citations.len(), 1);
+        assert_eq!(doc.sections[1].requirements[0].citations[0].text, "FIPS 140-2");
+        assert_eq!(doc.sections[1].requirements[0].text, "Must meet standards");
+    }
+
+    // Nested subsections
+    #[test]
+    fn us5_nested_subsections() {
+        let child = PolicySection {
+            title: "MFA Requirements".to_string(),
+            heading_level: 3,
+            source_line: 10,
+            body_text: None,
+            children: vec![],
+            requirements: vec![make_req("req-nested", "Per NIST SP 800-63 use MFA")],
+        };
+
+        let parent = PolicySection {
+            title: "Authentication".to_string(),
+            heading_level: 2,
+            source_line: 5,
+            body_text: None,
+            children: vec![child],
+            requirements: vec![make_req(
+                "req-parent",
+                "See https://auth.example.com for guidelines",
+            )],
+        };
+
+        let mut doc = make_test_doc(vec![parent]);
+        extract_citations(&mut doc).unwrap();
+
+        // Parent requirement
+        assert_eq!(doc.sections[0].requirements[0].citations.len(), 1);
+        assert_eq!(
+            doc.sections[0].requirements[0].citations[0].url.as_deref(),
+            Some("https://auth.example.com")
+        );
+
+        // Child requirement
+        assert_eq!(doc.sections[0].children[0].requirements[0].citations.len(), 1);
+        assert_eq!(doc.sections[0].children[0].requirements[0].citations[0].text, "NIST SP 800-63");
+    }
+
+    // EC-7: Empty document with zero requirements
+    #[test]
+    fn us5_empty_document_no_error() {
+        let mut doc = make_test_doc(vec![]);
+        let result = extract_citations(&mut doc);
+        assert!(result.is_ok());
+        assert!(doc.sections.is_empty());
+    }
+
+    // Mixed citation types (URL + bibliographic in same requirement)
+    #[test]
+    fn us5_mixed_citation_types_in_same_requirement() {
+        let mut doc = make_test_doc(vec![make_section(
+            "Compliance",
+            vec![make_req(
+                "req-mixed",
+                "Per NIST SP 800-53 Rev 5 and https://example.com/controls apply",
+            )],
+        )]);
+
+        extract_citations(&mut doc).unwrap();
+
+        let citations = &doc.sections[0].requirements[0].citations;
+        assert_eq!(citations.len(), 2);
+
+        // URL comes first (highest priority)
+        assert!(citations[0].url.is_some());
+        assert_eq!(citations[0].url.as_deref(), Some("https://example.com/controls"));
+
+        // Bibliographic second
+        assert!(citations[1].url.is_none());
+        assert_eq!(citations[1].text, "NIST SP 800-53 Rev 5");
+    }
+
+    // Integration test: end-to-end with multiple citation types
+    #[test]
+    fn us5_integration_end_to_end() {
+        let mut doc = make_test_doc(vec![
+            make_section(
+                "Section 1",
+                vec![
+                    make_req("req-1", "No citations here"),
+                    make_req("req-2", "See https://example.com/policy for details"),
+                ],
+            ),
+            make_section(
+                "Section 2",
+                vec![make_req(
+                    "req-3",
+                    "Comply with ISO 27001 and NIST SP 800-53 Rev 5, Section AC-2",
+                )],
+            ),
+        ]);
+
+        extract_citations(&mut doc).unwrap();
+
+        // req-1: no citations
+        assert!(doc.sections[0].requirements[0].citations.is_empty());
+        assert_eq!(doc.sections[0].requirements[0].text, "No citations here");
+
+        // req-2: one URL citation
+        assert_eq!(doc.sections[0].requirements[1].citations.len(), 1);
+        assert!(!doc.sections[0].requirements[1].text.contains("https://"));
+
+        // req-3: two bibliographic citations
+        assert_eq!(doc.sections[1].requirements[0].citations.len(), 2);
+        assert_eq!(doc.sections[1].requirements[0].citations[0].text, "ISO 27001");
+        assert_eq!(
+            doc.sections[1].requirements[0].citations[1].text,
+            "NIST SP 800-53 Rev 5, Section AC-2"
+        );
     }
 }
