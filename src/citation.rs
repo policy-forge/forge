@@ -28,8 +28,13 @@ use crate::model::{Citation, PolicyDocument};
 use crate::uuid::FORGE_NAMESPACE_UUID;
 
 // T010: URL pattern — matches http:// or https:// followed by non-whitespace, non-delimiter chars.
-static URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"https?://[^\s\)\]>,;]+").expect("URL regex must compile")
+static URL_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"https?://[^\s\)\]>,;]+").expect("URL regex must compile"));
+
+// T016: Bibliographic pattern — NIST SP, ISO, RFC, FIPS with optional Rev and Section suffixes.
+static BIBLIO_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?")
+        .expect("Bibliographic regex must compile")
 });
 
 /// Extract citations from all requirements in a `PolicyDocument`.
@@ -83,6 +88,23 @@ pub fn extract_citations_from_text(
             source_requirement_id: Some(requirement_id.to_string()),
         });
         matched_ranges.push(m.start()..m.end());
+    }
+
+    // US2: Bibliographic matches (skip if overlapping with URL matches)
+    for m in BIBLIO_REGEX.find_iter(text) {
+        let range = m.start()..m.end();
+        if overlaps_any(&range, &matched_ranges) {
+            continue;
+        }
+        let ref_text = m.as_str().to_string();
+        let citation_id = generate_citation_id(requirement_id, &ref_text);
+        citations.push(Citation {
+            id: citation_id,
+            text: ref_text,
+            url: None,
+            source_requirement_id: Some(requirement_id.to_string()),
+        });
+        matched_ranges.push(range);
     }
 
     let cleaned = strip_matches(text, &matched_ranges);
@@ -150,6 +172,11 @@ fn normalize_prose(text: &str) -> String {
     result.trim().to_string()
 }
 
+/// Check if a byte range overlaps with any existing matched ranges (R-5 priority).
+fn overlaps_any(range: &Range<usize>, existing: &[Range<usize>]) -> bool {
+    existing.iter().any(|r| range.start < r.end && r.start < range.end)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,26 +193,18 @@ mod tests {
         .unwrap();
 
         assert_eq!(citations.len(), 1);
-        assert_eq!(
-            citations[0].url.as_deref(),
-            Some("https://example.com/policy")
-        );
+        assert_eq!(citations[0].url.as_deref(), Some("https://example.com/policy"));
         assert_eq!(citations[0].text, "https://example.com/policy");
-        assert_eq!(
-            citations[0].source_requirement_id.as_deref(),
-            Some("req-1")
-        );
+        assert_eq!(citations[0].source_requirement_id.as_deref(), Some("req-1"));
         assert_eq!(text, "Access must comply with requirements");
     }
 
     // AC-2: Multiple URLs in one requirement
     #[test]
     fn us1_multiple_urls_extracted() {
-        let (text, citations) = extract_citations_from_text(
-            "req-1",
-            "See https://a.com and https://b.com for details",
-        )
-        .unwrap();
+        let (text, citations) =
+            extract_citations_from_text("req-1", "See https://a.com and https://b.com for details")
+                .unwrap();
 
         assert_eq!(citations.len(), 2);
         assert_eq!(citations[0].url.as_deref(), Some("https://a.com"));
@@ -197,17 +216,12 @@ mod tests {
     // EC-4: URL in parentheses extracted without parens
     #[test]
     fn us1_url_in_parentheses_extracted_without_parens() {
-        let (text, citations) = extract_citations_from_text(
-            "req-1",
-            "Requirements (https://example.com) apply",
-        )
-        .unwrap();
+        let (text, citations) =
+            extract_citations_from_text("req-1", "Requirements (https://example.com) apply")
+                .unwrap();
 
         assert_eq!(citations.len(), 1);
-        assert_eq!(
-            citations[0].url.as_deref(),
-            Some("https://example.com")
-        );
+        assert_eq!(citations[0].url.as_deref(), Some("https://example.com"));
         assert_eq!(text, "Requirements apply");
     }
 
@@ -227,11 +241,8 @@ mod tests {
     // EC-1: No citations text unchanged
     #[test]
     fn us1_no_citations_text_unchanged() {
-        let (text, citations) = extract_citations_from_text(
-            "req-1",
-            "Users must authenticate before access",
-        )
-        .unwrap();
+        let (text, citations) =
+            extract_citations_from_text("req-1", "Users must authenticate before access").unwrap();
 
         assert!(citations.is_empty());
         assert_eq!(text, "Users must authenticate before access");
@@ -240,11 +251,9 @@ mod tests {
     // EC-2: Whitespace normalization after stripping
     #[test]
     fn us1_whitespace_normalized_after_stripping() {
-        let (text, _) = extract_citations_from_text(
-            "req-1",
-            "Access  https://example.com  requirements",
-        )
-        .unwrap();
+        let (text, _) =
+            extract_citations_from_text("req-1", "Access  https://example.com  requirements")
+                .unwrap();
 
         assert!(!text.contains("  "));
         assert_eq!(text, "Access requirements");
@@ -253,11 +262,8 @@ mod tests {
     // HTTP URL (not just HTTPS)
     #[test]
     fn us1_http_url_extracted() {
-        let (text, citations) = extract_citations_from_text(
-            "req-1",
-            "See http://example.com for details",
-        )
-        .unwrap();
+        let (text, citations) =
+            extract_citations_from_text("req-1", "See http://example.com for details").unwrap();
 
         assert_eq!(citations.len(), 1);
         assert_eq!(citations[0].url.as_deref(), Some("http://example.com"));
@@ -304,5 +310,78 @@ mod tests {
     fn citation_id_is_valid_uuid() {
         let id = generate_citation_id("req-1", "https://example.com");
         assert!(uuid::Uuid::parse_str(&id).is_ok());
+    }
+
+    // === T015: US2 Bibliographic Extraction Tests ===
+
+    // AC-6: NIST SP with Rev and Section suffix
+    #[test]
+    fn us2_nist_sp_with_rev_and_section() {
+        let (text, citations) = extract_citations_from_text(
+            "req-1",
+            "Controls shall align with NIST SP 800-53 Rev 5, Section AC-2",
+        )
+        .unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].text, "NIST SP 800-53 Rev 5, Section AC-2");
+        assert!(citations[0].url.is_none());
+        assert_eq!(citations[0].source_requirement_id.as_deref(), Some("req-1"));
+        assert_eq!(text, "Controls shall align with");
+    }
+
+    // ISO standard number
+    #[test]
+    fn us2_iso_standard() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "Must comply with ISO 27001 requirements")
+                .unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].text, "ISO 27001");
+        assert!(citations[0].url.is_none());
+        assert_eq!(text, "Must comply with requirements");
+    }
+
+    // RFC number
+    #[test]
+    fn us2_rfc_number() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "Follow RFC 2119 keyword conventions").unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].text, "RFC 2119");
+        assert!(citations[0].url.is_none());
+        assert_eq!(text, "Follow keyword conventions");
+    }
+
+    // FIPS number
+    #[test]
+    fn us2_fips_number() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "Encryption must meet FIPS 140-2 standards")
+                .unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].text, "FIPS 140-2");
+        assert!(citations[0].url.is_none());
+        assert_eq!(text, "Encryption must meet standards");
+    }
+
+    // Multiple standards in one requirement
+    #[test]
+    fn us2_multiple_standards_separate_citations() {
+        let (text, citations) = extract_citations_from_text(
+            "req-1",
+            "Comply with NIST SP 800-53 Rev 5 and ISO 27001 standards",
+        )
+        .unwrap();
+
+        assert_eq!(citations.len(), 2);
+        assert_eq!(citations[0].text, "NIST SP 800-53 Rev 5");
+        assert_eq!(citations[1].text, "ISO 27001");
+        assert!(citations[0].url.is_none());
+        assert!(citations[1].url.is_none());
+        assert_eq!(text, "Comply with and standards");
     }
 }

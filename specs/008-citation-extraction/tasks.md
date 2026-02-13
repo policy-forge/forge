@@ -75,13 +75,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T015 [P] [US2] Write unit tests for bibliographic extraction in src/citation.rs: NIST SP with Rev and Section suffix (AC-6), ISO standard number, RFC number, FIPS number, multiple standards in one requirement producing separate Citations
+- [X] T015 [P] [US2] Write unit tests for bibliographic extraction in src/citation.rs: NIST SP with Rev and Section suffix (AC-6), ISO standard number, RFC number, FIPS number, multiple standards in one requirement producing separate Citations
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Define `LazyLock<Regex>` bibliographic pattern `\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?` as static in src/citation.rs (SEC-3)
-- [ ] T017 [US2] Add bibliographic pattern matching to `extract_citations_from_text` with priority-based overlap detection: URL matches processed first, bibliographic matches skip overlapping byte ranges (R-5) in src/citation.rs
-- [ ] T018 [US2] Verify all US2 tests pass with `cargo test citation`
+- [X] T016 [US2] Define `LazyLock<Regex>` bibliographic pattern `\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?` as static in src/citation.rs (SEC-3)
+- [X] T017 [US2] Add bibliographic pattern matching to `extract_citations_from_text` with priority-based overlap detection: URL matches processed first, bibliographic matches skip overlapping byte ranges (R-5) in src/citation.rs
+- [X] T018 [US2] Verify all US2 tests pass with `cargo test citation`
 
 **Checkpoint**: URL + bibliographic extraction both work — core P1 extraction functionality complete
 
