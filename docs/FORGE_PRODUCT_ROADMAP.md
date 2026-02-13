@@ -3,7 +3,7 @@
 > **Document Type:** Product Roadmap
 > **Audience:** LLM agents, human reviewers, leadership stakeholders, engineering leads
 > **Status:** Draft
-> **Last Updated:** 2026-02-12 <!-- @auto -->
+> **Last Updated:** 2026-02-13 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Parent Vision:** docs/FORGE_PRODUCT_VISION.md <!-- @auto -->
 
@@ -197,9 +197,9 @@ gantt
 | WI-11 | OSCAL metadata: uuid, title, last-modified, version, oscal-version | S-11 (May 12) | T-2 | MS-2 | M-5 | XS | Done | WI-9, WI-10, WI-12 |
 | WI-12 | OSCAL back matter: resources from citations, link patterns | S-12 (May 19) | T-2 | MS-2 | M-9, M-11 | S | Done | WI-9, WI-10, WI-11 |
 | WI-13 | End-to-end Catalog pipeline: `forge convert --strategy catalog --format json` | S-13 (May 26) | T-2 | MS-2 | M-3, M-7 | S | Done | WI-8 |
-| WI-14 | Component Definition: documentary component structure | S-14 (Jun 2) | T-2 | MS-3 | M-4 | S | Not Started | — |
-| WI-15 | Component Definition: implemented-requirements with control-id mapping | S-15 (Jun 9) | T-2 | MS-3 | M-4 | S | Not Started | WI-16 |
-| WI-16 | Traceability: TraceLink model, source location → OSCAL element mapping | S-16 (Jun 16) | T-2 | MS-3 | M-10 | S | Not Started | WI-15 |
+| WI-14 | Component Definition: documentary component structure | S-14 (Jun 2) | T-2 | MS-3 | M-4 | S | Done | — |
+| WI-15 | Component Definition: implemented-requirements with control-id mapping | S-15 (Jun 9) | T-2 | MS-3 | M-4 | S | Done | WI-16 |
+| WI-16 | Traceability: TraceLink model, source location → OSCAL element mapping | S-16 (Jun 16) | T-2 | MS-3 | M-10 | S | Done | WI-15 |
 | WI-17 | Traceability: embed trace metadata as props/links in generated artifacts | S-17 (Jun 23) | T-2 | MS-3 | M-10, M-11 | S | Not Started | — |
 | WI-18 | End-to-end Component pipeline: `forge convert --strategy component` | S-18 (Jun 30) | T-2 | MS-3 | M-4, M-7 | S | Not Started | — |
 | WI-19 | Schema validation: integrate OSCAL v1.2.0 JSON schemas, `forge validate` | S-19 (Jul 6) | T-3 | MS-4 | M-6 | S | Not Started | — |
@@ -362,23 +362,26 @@ gantt
 - **Deliverable:** `forge convert policy.md --strategy catalog --format json` produces output
 - **Status:** Complete (PR #16 merged) — `pipeline.rs` module with `run_catalog_pipeline()`; CLI `--strategy catalog --format json` and `--output` flags; full integration tests; idempotent output
 
-#### Sprint 14 (Jun 2–6): Component Definition — Structure
+#### Sprint 14 (Jun 2–6): Component Definition — Structure ✅ DONE
 - Implement Component Definition JSON builder
 - Create documentary component with `type: "policy"`
 - Generate component UUID, title, description from PolicyDocument
 - **Deliverable:** Valid Component Definition JSON structure
+- **Status:** Complete (PR #18 merged) — `component_definition.rs` with `ComponentDefinitionBuilder`, documentary component generation, document ID discriminator for unique UUIDs, version/title defaults resolution
 
-#### Sprint 15 (Jun 9–13): Component Definition — Implemented Requirements
+#### Sprint 15 (Jun 9–13): Component Definition — Implemented Requirements ✅ DONE
 - Implement `control-implementations[]` with source profile reference
 - Map PolicyRequirements → `implemented-requirements[]` with `control-id`
 - Generate implementation narrative from requirement prose
 - **Deliverable:** Component Definition with implemented-requirements mapped to control IDs
+- **Status:** Complete (PR #19 merged) — `implemented_requirements.rs` with `ImplementedRequirementsBuilder`, control-id mapping, implementation narrative from requirement prose, shared `prepare_document` helper extracted for pipeline reuse
 
-#### Sprint 16 (Jun 16–20): Traceability — TraceLink Model
+#### Sprint 16 (Jun 16–20): Traceability — TraceLink Model ✅ DONE
 - Implement `TraceLink` struct: `requirement_stable_id` → `oscal_json_path` + `oscal_element_id`
 - Capture trace links during Catalog and Component generation
 - Store source location (file, section, line number) per link
 - **Deliverable:** TraceLink collection populated during generation
+- **Status:** Complete (PR #20 merged) — `model/trace.rs` with `TraceLink`, `TraceRecord`, `TraceMap` structs; bidirectional requirement-to-OSCAL mapping; trace link recording during Catalog and Component generation; integration tests for traceability
 
 #### Sprint 17 (Jun 23–27): Traceability — Embedded Props/Links
 - Embed trace metadata in generated artifacts as `prop` annotations
@@ -623,8 +626,11 @@ graph LR
         WI11["WI-11: Metadata ✅"]
         WI12["WI-12: Back Matter ✅"]
         WI13["WI-13: Catalog Pipeline ✅"]
-        WI14["WI-14: Component Def"]
-        WI16["WI-16: Traceability"]
+        WI14["WI-14: Component Def ✅"]
+        WI15["WI-15: Impl Reqs ✅"]
+        WI16["WI-16: Traceability ✅"]
+        WI17["WI-17: Trace Embedding"]
+        WI18["WI-18: Component Pipeline"]
         WI7 --> WI9
         WI7 --> WI11
         WI8 --> WI12
@@ -632,7 +638,11 @@ graph LR
         WI11 --> WI13
         WI12 --> WI13
         WI13 --> WI14
+        WI14 --> WI15
         WI14 --> WI16
+        WI15 --> WI17
+        WI16 --> WI17
+        WI17 --> WI18
     end
 
     subgraph "T-3: Validation"
@@ -665,8 +675,11 @@ graph LR
 | D-1 | WI-5 (Domain Model) | WI-1 (Scaffolding) | Internal | Brian Luby | Done | MS-1 slips |
 | D-2 | WI-9 (Catalog Gen) | WI-7 (UUID Gen) | Internal | Brian Luby | Done | MS-2 slips |
 | D-3 | WI-12 (Back Matter) | WI-8 (Citations) | Internal | Brian Luby | Done | MS-2 slips |
-| D-4 | WI-14 (Component Def) | WI-9 (Catalog Gen) | Internal | Brian Luby | Done | MS-3 slips |
-| D-5 | WI-19 (Schema Val) | WI-16 (Traceability) | Internal | Brian Luby | Not Started | MS-4 slips |
+| D-4 | WI-14 (Component Def) | WI-13 (Catalog Pipeline) | Internal | Brian Luby | Done | MS-3 slips |
+| D-4a | WI-15 (Impl Reqs) | WI-14 (Component Def) | Internal | Brian Luby | Done | MS-3 slips |
+| D-4b | WI-16 (Traceability) | WI-14 (Component Def) | Internal | Brian Luby | Done | MS-3 slips |
+| D-4c | WI-17 (Trace Embedding) | WI-15, WI-16 | Internal | Brian Luby | Not Started | MS-3 slips |
+| D-5 | WI-19 (Schema Val) | WI-18 (Component Pipeline) | Internal | Brian Luby | Not Started | MS-4 slips |
 | D-6 | WI-26 (XML Output) | WI-25 (Phase 1 Release) | Internal | Brian Luby | Not Started | MS-5 slips |
 | D-7 | WI-30 (Profile Gen) | WI-29 (Export Subcmd) | Internal | Brian Luby | Not Started | MS-6 slips |
 | D-8 | WI-19 (Schema Val) | OSCAL v1.2.0 JSON schemas | External | NIST | Available | MS-4 blocked if schemas change |
@@ -674,12 +687,12 @@ graph LR
 
 ### Critical Path :green_circle: `@llm-autonomous`
 
-> **Critical Path:** ~~WI-1 → WI-5 → WI-6 → WI-7~~ (Done) → ~~WI-9 → WI-10 → WI-11 → WI-12~~ (Done) → ~~WI-8 → WI-13~~ (Done) → WI-14 → WI-16 → WI-19 → WI-21 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
+> **Critical Path:** ~~WI-1 → WI-5 → WI-6 → WI-7~~ (Done) → ~~WI-9 → WI-10 → WI-11 → WI-12~~ (Done) → ~~WI-8 → WI-13~~ (Done) → ~~WI-14 → WI-15 → WI-16~~ (Done) → WI-17 → WI-18 → WI-19 → WI-21 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
 >
-> **Completed:** 13 of 50 work items (WI-1 through WI-13) — MS-1 and MS-2 fully complete, significantly ahead of original schedule
-> **Remaining critical path:** ~37 weeks (Sprints 14–50)
-> **Slack:** ~15+ weeks ahead of original MS-2 target (2026-06-05); significant buffer accumulated
-> **Bottleneck:** None — next up is WI-14 (Component Definition structure)
+> **Completed:** 16 of 50 work items (WI-1 through WI-16) — MS-1 and MS-2 fully complete, MS-3 at 3/5
+> **Remaining critical path:** ~34 weeks (Sprints 17–50)
+> **Slack:** ~16+ weeks ahead of original MS-3 target (2026-07-03); significant buffer accumulated
+> **Bottleneck:** None — next up is WI-17 (trace metadata embedding)
 
 ---
 
@@ -747,7 +760,7 @@ graph LR
 |-----------|-------------|--------|-----------|----------|
 | MS-1: Markdown → Domain Model | 2026-04-24 | 8 of 8 work items done | :white_check_mark: Complete | None |
 | MS-2: First Valid Catalog | 2026-06-05 | 5 of 5 work items done | :white_check_mark: Complete | None |
-| MS-3: Component Def + Traceability | 2026-07-03 | 0 of 5 work items done | :white_check_mark: Not Started | None — WI-9 dependency resolved |
+| MS-3: Component Def + Traceability | 2026-07-03 | 3 of 5 work items done | :white_check_mark: Ahead of Schedule | None — WI-17 next |
 | MS-4: Phase 1 Release (v0.1.0) | 2026-08-21 | 0 of 7 work items done | :white_check_mark: Not Started | None |
 | MS-5: Multi-Format Output | 2026-09-19 | 0 of 4 work items done | :white_check_mark: Not Started | None |
 | MS-6: Profile Generation (v0.2.0) | 2026-10-31 | 0 of 6 work items done | :white_check_mark: Not Started | None |
@@ -758,7 +771,7 @@ graph LR
 | Theme | Work Items Total | Done | In Progress | Blocked | Not Started | Health |
 |-------|-----------------|------|-------------|---------|-------------|--------|
 | T-1: Core Pipeline | 8 | 8 | 0 | 0 | 0 | :white_check_mark: Complete |
-| T-2: OSCAL Generation | 10 | 5 | 0 | 0 | 5 | :white_check_mark: Ahead of Schedule |
+| T-2: OSCAL Generation | 10 | 8 | 0 | 0 | 2 | :white_check_mark: Ahead of Schedule |
 | T-3: Validation & Quality | 7 | 0 | 0 | 0 | 7 | :white_check_mark: Not Started |
 | T-4: Output Format Expansion | 4 | 0 | 0 | 0 | 4 | :white_check_mark: Not Started |
 | T-5: Profile & Tailoring | 6 | 0 | 0 | 0 | 6 | :white_check_mark: Not Started |
@@ -772,7 +785,7 @@ xychart-beta
     x-axis ["Phase 1 Start", "Now", "MS-1", "MS-2", "MS-3", "MS-4", "MS-5", "MS-6", "MS-7"]
     y-axis "Work Items Remaining" 0 --> 50
     line "Planned" [50, 46, 42, 37, 32, 25, 21, 15, 0]
-    line "Actual" [50, 43, 39, 37]
+    line "Actual" [50, 43, 39, 37, 34]
 ```
 
 ---
@@ -835,6 +848,7 @@ xychart-beta
 | 0.4 | 2026-02-11 | LLM (Claude) | Major status update: WI-1 through WI-7 all Done (merged to main). MS-1 at 7/8 complete — ahead of schedule. Corrected D-3 dependency (WI-12 depends on WI-8, not WI-9). Expanded dependency map to show WI-11/WI-12/WI-13 nodes. Updated parallelism analysis: WI-8, WI-9, WI-11 can all start immediately in parallel. Updated burndown, milestone health, theme health, and all sprint detail statuses. |
 | 0.5 | 2026-02-12 | LLM (Claude) | Status update: WI-9 (Catalog groups/controls, PR #12), WI-10 (statement parts, PR #14), WI-11 (metadata, PR #11), WI-12 (back matter, PR #15) all Done and merged to main. MS-2 at 4/5 complete — only WI-8 (Citations) blocks WI-13 (Catalog Pipeline). T-2 theme at 4/10 done. Updated dependency map, critical path, milestone health, theme health, burndown, and sprint detail statuses. |
 | 0.6 | 2026-02-12 | LLM (Claude) | Status update: WI-8 (citation extraction, PR #17) and WI-13 (catalog pipeline, PR #16) both Done and merged to main. MS-1 complete (8/8). MS-2 complete (5/5). T-1 theme fully complete (8/8). T-2 at 5/10 done. 13 of 50 work items complete. Updated dependency map, critical path, milestone health, theme health, Gantt chart, burndown, and sprint detail statuses. Next up: WI-14 (Component Definition structure). |
+| 0.7 | 2026-02-13 | LLM (Claude) | Status update: WI-14 (Component Definition structure, PR #18), WI-15 (implemented-requirements, PR #19), WI-16 (traceability model, PR #20) all Done and merged to main. MS-3 at 3/5 complete. T-2 theme at 8/10 done. 16 of 50 work items complete. Expanded dependency map with WI-15/WI-17/WI-18 nodes. Added D-4a/D-4b/D-4c dependencies. Updated critical path, milestone health, theme health, burndown, and sprint detail statuses. Next up: WI-17 (trace metadata embedding). |
 
 ---
 
