@@ -378,10 +378,10 @@ flowchart TD
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-1, M-5, M-6 | AC-1, AC-5 | Unit | tests/component_definition_test.rs |
-| SEC-2 | — (Parent PRD M-11) | — | Unit | tests/component_definition_test.rs |
-| SEC-3 | M-5 | AC-5 (EC-1) | Unit | tests/component_definition_test.rs |
-| SEC-4 | M-2 | AC-2 (EC-2) | Unit | tests/component_definition_test.rs |
+| SEC-1 | M-1, M-5, M-6 | AC-1, AC-5 | Unit | src/oscal/component_definition.rs (in-module tests) |
+| SEC-2 | — (Parent PRD M-11) | — | Unit | src/oscal/component_definition.rs (in-module tests) |
+| SEC-3 | M-5 | AC-5 (EC-1) | Unit | src/oscal/component_definition.rs (in-module tests) |
+| SEC-4 | M-2 | AC-2 (EC-2) | Unit | src/oscal/component_definition.rs (in-module tests) |
 
 ---
 

@@ -54,6 +54,9 @@ pub enum ForgeError {
     #[error("Back matter error: {0}")]
     BackMatter(String),
 
+    #[error("Component definition build error: {0}")]
+    ComponentDefinitionBuild(String),
+
     #[error("Serialization error: {0}")]
     Serialization(String),
 }
@@ -165,5 +168,11 @@ mod tests {
     fn serialization_error_display() {
         let err = ForgeError::Serialization("failed to serialize".to_string());
         assert_eq!(err.to_string(), "Serialization error: failed to serialize");
+    }
+
+    #[test]
+    fn component_definition_build_error_display() {
+        let err = ForgeError::ComponentDefinitionBuild("missing field".to_string());
+        assert_eq!(err.to_string(), "Component definition build error: missing field");
     }
 }

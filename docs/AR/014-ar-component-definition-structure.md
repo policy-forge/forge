@@ -55,7 +55,9 @@
 > Use a `build_component_definition` function in the `oscal` module that mirrors the Catalog builder pattern, producing a `serde_json::Value` with the `component-definition` root key. The function reuses WI-11 metadata assembly and WI-12 back matter generation. It creates exactly one documentary component of type `"policy"` with a deterministic UUID v5.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> The Component Definition builder follows the same `serde_json::Value` pattern as the Catalog builder. It produces a JSON object with root key `"component-definition"` containing: document-level metadata (via WI-11 `assemble_metadata`), a `components` array with one documentary component of `type: "policy"`, and optional back matter (via WI-12). The documentary component gets a deterministic UUID v5 (content-based, same WI-7 infrastructure), and its `control-implementations` array is left empty for WI-15 to populate. Do NOT create typed Component Definition structs yet — use `serde_json::Value` for consistency with the Catalog builder. Do NOT populate `control-implementations` — that is WI-15's responsibility.
+> The Component Definition builder follows the same typed struct pattern as the actual Catalog builder (research R-1 found the Catalog uses `#[derive(Serialize)]` structs, not `serde_json::Value`). It produces a JSON object with root key `"component-definition"` containing: document-level metadata (via WI-11 `assemble_metadata`), a `components` array with one documentary component of `type: "policy"`, and optional back matter (via WI-12). The documentary component gets a deterministic UUID v5 (content-based, same WI-7 infrastructure), and its `control-implementations` array is left empty for WI-15 to populate. Do NOT populate `control-implementations` — that is WI-15's responsibility.
+>
+> **Note:** The original AR recommended `serde_json::Value`, but research R-1 discovered the Catalog builder actually uses typed structs. The implementation follows the actual codebase pattern (typed structs).
 
 ---
 
@@ -443,7 +445,7 @@ fn generate_component_uuid(document: &PolicyDocument) -> Uuid {
 - [x] **DO NOT** duplicate metadata assembly logic — call `assemble_metadata` from WI-11 *(from PRD M-7)*
 - [x] **DO NOT** use UUID v4 for the documentary component UUID — must be deterministic v5 *(from PRD M-4)*
 - [x] **DO NOT** populate `control-implementations` with real data — leave as empty array for WI-15 *(from PRD W-1)*
-- [x] **DO NOT** create typed Component Definition structs — use `serde_json::Value` for consistency *(from decision log)*
+- [x] ~~**DO NOT** create typed Component Definition structs — use `serde_json::Value` for consistency~~ **OVERRIDDEN by research R-1**: Use typed structs with `#[derive(Serialize)]` — the actual Catalog builder uses typed structs, not `serde_json::Value`. See `specs/014-component-definition-structure/research.md` R-1.
 - [x] **DO NOT** use `remarks` for arbitrary data *(from Parent PRD M-11)*
 - [x] **MUST** produce JSON with root key `"component-definition"` (hyphenated) *(from PRD M-1)*
 - [x] **MUST** set documentary component `type` to `"policy"` *(from PRD M-3)*
@@ -501,9 +503,9 @@ fn generate_component_uuid(document: &PolicyDocument) -> Uuid {
 | Integration | Catalog + Component consistency | Key paths | Both produce consistent metadata |
 
 ### Anti-patterns to Avoid 🟡 `@human-review`
-- **Don't:** Create a `ComponentDefinition` struct with serde derives at this stage
-  - **Why:** Premature — the structure will be modified by WI-15 (control-implementations); refactor to typed structs holistically post WI-19
-  - **Instead:** Use `serde_json::Value` (json! macro) consistent with Catalog builder
+- ~~**Don't:** Create a `ComponentDefinition` struct with serde derives at this stage~~ **OVERRIDDEN by R-1**: Typed structs ARE the actual Catalog pattern.
+  - **Do:** Use typed structs with `#[derive(Serialize)]` — consistent with `CatalogEnvelope`, `OscalCatalog`, etc.
+  - **Why:** Research R-1 found the Catalog builder uses typed structs, not `serde_json::Value`
 - **Don't:** Include control-implementation content at this stage
   - **Why:** That is WI-15's responsibility; mixing concerns across WIs creates merge conflicts and unclear ownership
   - **Instead:** Leave `control-implementations` as an empty array
