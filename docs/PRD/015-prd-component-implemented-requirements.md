@@ -295,17 +295,21 @@ pub struct ImplementedRequirement {
     pub description: String,
 }
 
-/// Build control-implementations from PolicyRequirements and a source profile reference
+/// Build control-implementations by walking the PolicyDocument's section tree.
+///
+/// Walks sections depth-first, generating control-ids via `generate_control_id`
+/// (same scheme as the Catalog builder) to ensure cross-artifact consistency.
 pub fn build_control_implementations(
-    requirements: &[PolicyRequirement],
+    document: &PolicyDocument,
     source_profile: &str,
-    policy_title: &str,
-) -> Result<Vec<ControlImplementation>, ForgeError>;
+) -> Result<Value, ForgeError>;
 
-/// Map a single PolicyRequirement to an ImplementedRequirement
+/// Map a single PolicyRequirement to an implemented-requirement JSON entry.
 pub fn map_requirement_to_implemented(
     requirement: &PolicyRequirement,
-) -> Result<ImplementedRequirement, ForgeError>;
+    control_id: &str,
+    global_index: usize,
+) -> Result<Value, ForgeError>;
 ```
 
 ---
