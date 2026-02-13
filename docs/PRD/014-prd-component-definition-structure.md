@@ -68,7 +68,7 @@ This PRD covers **WI-14: Component Definition -- Structure** from the FORGE Prod
 | Component Definition | OSCAL model (`component-definition`) describing how controls are implemented by reusable components or capabilities |
 | Documentary Component | An OSCAL component of type `"policy"`, `"procedure"`, or `"process"` representing non-technical control implementations |
 | Component | A reusable unit within a Component Definition that describes control implementation capabilities |
-| Component UUID | A stable UUID v4 identifier for the documentary component within the Component Definition |
+| Component UUID | A stable UUID v5 (deterministic, content-based) identifier for the documentary component within the Component Definition |
 | OSCAL Metadata | The required metadata block in every OSCAL document: `uuid`, `title`, `last-modified`, `version`, `oscal-version` |
 | PolicyDocument | The internal domain model struct representing a parsed policy document (from WI-5) |
 
@@ -172,7 +172,7 @@ N/A -- No state transitions in this work item. The builder produces a complete C
 - [ ] **M-3:** The `components` array shall contain one documentary component with `type: "policy"`. *(Traces to: Parent PRD M-4)*
 - [ ] **M-4:** The documentary component shall have a stable UUID generated from PolicyDocument content (UUID v5, consistent with WI-7 pattern). *(Traces to: Parent PRD M-4, M-8)*
 - [ ] **M-5:** The documentary component `title` shall be derived from `PolicyDocument.metadata.title`. *(Traces to: Parent PRD M-4)*
-- [ ] **M-6:** The documentary component `description` shall be derived from the PolicyDocument (title + summary or a standard description). *(Traces to: Parent PRD M-4)*
+- [ ] **M-6:** The documentary component `description` shall use the template format `"Documentary component representing the {title} policy document."` where `{title}` is the PolicyDocument's title (or the default title if empty). *(Traces to: Parent PRD M-4)*
 - [ ] **M-7:** The builder shall reuse the metadata assembly function established in WI-11 for generating the document-level metadata block. *(Traces to: consistency with WI-11)*
 
 ### Should Have (S) -- High value, not blocking :red_circle: `@human-required`
@@ -245,18 +245,23 @@ erDiagram
 ## Interface Contract (if applicable) :yellow_circle: `@human-review`
 
 ```rust
-/// Build an OSCAL Component Definition JSON structure from a PolicyDocument.
+/// Build an OSCAL Component Definition from a PolicyDocument.
 ///
-/// Produces a component-definition root with:
-///   - document-level UUID (v4) and metadata
+/// Produces a `ComponentDefinitionEnvelope` with:
+///   - document-level UUID (v4) and metadata (via WI-11 `assemble_metadata`)
 ///   - one documentary component (type: "policy") with UUID (v5), title, description
 ///   - empty control-implementations placeholder (populated by WI-15)
 ///   - optional back matter (reused from WI-12)
+///
+/// Note: Returns typed structs with `#[derive(Serialize)]` consistent with the
+/// actual Catalog builder pattern (see research.md R-1). The AR's original
+/// recommendation of `serde_json::Value` was based on a mistaken premise about
+/// the Catalog builder's implementation.
 pub fn build_component_definition(
     document: &PolicyDocument,
-) -> Result<serde_json::Value, ForgeError>;
+) -> Result<ComponentDefinitionEnvelope, ForgeError>;
 
-// Expected JSON output structure:
+// Expected JSON output structure (via serde serialization of typed structs):
 // {
 //   "component-definition": {
 //     "uuid": "<document-uuid-v4>",
@@ -271,7 +276,7 @@ pub fn build_component_definition(
 //         "uuid": "<component-uuid-v5>",
 //         "type": "policy",
 //         "title": "<from PolicyDocument.metadata.title>",
-//         "description": "<derived description>",
+//         "description": "Documentary component representing the {title} policy document.",
 //         "control-implementations": []
 //       }
 //     ],
@@ -298,12 +303,12 @@ pub fn build_component_definition(
 
 | Option | License | Pros | Cons | Spike Result |
 |--------|---------|------|------|--------------|
-| serde_json Value builder | MIT/Apache-2.0 | Flexible JSON construction; already used in Catalog builder | No compile-time OSCAL shape enforcement | Selected -- consistent with Catalog pattern |
-| Typed Component Definition structs | N/A | Compile-time safety; serde derives | More upfront code; may over-constrain during iteration | Alternative for later refactoring |
+| serde_json Value builder | MIT/Apache-2.0 | Flexible JSON construction | No compile-time OSCAL shape enforcement | Originally selected; superseded by research R-1 |
+| Typed Component Definition structs | N/A | Compile-time safety; serde derives; matches actual Catalog builder pattern | More upfront code | **Selected** -- consistent with actual Catalog builder (research R-1) |
 
 ### Selected Approach :red_circle: `@human-required`
-> **Decision:** Use `serde_json::Value` builder pattern consistent with the Catalog builder (WI-9/WI-10), with shared metadata assembly from WI-11.
-> **Rationale:** Maintains consistency with the established OSCAL generation pattern. Typed structs can be introduced as a refactoring step once all OSCAL models are working (WI-19+ timeframe). The `Value` approach allows rapid iteration during the Component Definition build-out across WI-14/WI-15.
+> **Decision:** Use typed Rust structs with `#[derive(Serialize)]` consistent with the actual Catalog builder pattern (research R-1), with shared metadata assembly from WI-11.
+> **Rationale:** Research R-1 found that the Catalog builder uses typed structs (`CatalogEnvelope`, `OscalCatalog`, etc.), not `serde_json::Value`. The original decision was based on a mistaken premise. Using typed structs provides compile-time field enforcement, self-documenting code, and true consistency with the established codebase pattern.
 
 ---
 
@@ -436,7 +441,8 @@ N/A -- No spike tasks for this work item. The Component Definition JSON structur
 
 | Date | Decision | Rationale | Alternatives Considered |
 |------|----------|-----------|------------------------|
-| 2026-02-10 | Use serde_json::Value builder pattern (same as Catalog) | Maintains consistency with established OSCAL generation pattern; enables rapid iteration | Typed Component Definition structs (more rigid, premature for iteration phase) |
+| 2026-02-10 | Use serde_json::Value builder pattern (same as Catalog) | Original decision based on assumed Catalog pattern | Typed Component Definition structs |
+| 2026-02-12 | **Override**: Use typed structs with `#[derive(Serialize)]` (research R-1) | Research found Catalog actually uses typed structs, not serde_json::Value; typed structs provide compile-time enforcement and true codebase consistency | serde_json::Value (AR original recommendation, based on mistaken premise) |
 | 2026-02-10 | Single documentary component per Component Definition | One policy document maps to one component; simplest correct representation per OSCAL model | Multiple components per definition (adds complexity without current use case) |
 | 2026-02-10 | UUID v5 for component, UUID v4 for document | Component UUID must be deterministic for stability across re-conversions; document UUID is an artifact instance identifier | UUID v4 for both (breaks stability requirement); UUID v5 for both (document instance should be unique per generation) |
 

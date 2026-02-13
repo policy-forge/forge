@@ -27,6 +27,18 @@ pub const BACK_MATTER_NAMESPACE: Uuid = Uuid::from_bytes([
     0xA1, 0x8D, 0x97, 0xB8, 0x5E, 0xC6, 0x5A, 0x97, 0xBF, 0xD2, 0xE1, 0x61, 0xD6, 0x19, 0x97, 0x73,
 ]);
 
+/// Fixed namespace UUID for component definition identifier generation.
+///
+/// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"component")`.
+///
+/// # Breaking Change Warning
+///
+/// Changing this value will change **ALL** generated component UUIDs.
+/// Any change requires a documented migration path.
+pub const COMPONENT_NAMESPACE: Uuid = Uuid::from_bytes([
+    0x16, 0x35, 0x5D, 0xEF, 0xED, 0x48, 0x54, 0x20, 0x90, 0xE0, 0x0A, 0x95, 0xC0, 0xD9, 0xCE, 0xCA,
+]);
+
 /// Normalize text for stable ID generation.
 ///
 /// Trims leading/trailing whitespace and collapses internal whitespace runs
@@ -218,6 +230,12 @@ mod tests {
     fn back_matter_namespace_matches_derivation() {
         let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"back-matter");
         assert_eq!(BACK_MATTER_NAMESPACE, expected);
+    }
+
+    #[test]
+    fn component_namespace_matches_derivation() {
+        let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"component");
+        assert_eq!(COMPONENT_NAMESPACE, expected);
     }
 
     // T011: All requirements populated (AC-4, M-3)
