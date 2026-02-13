@@ -208,7 +208,7 @@ N/A — Citation extraction is a stateless transformation pass over the domain m
 ### Must Have (M) — MVP, launch blockers 🔴 `@human-required`
 - [ ] **M-1:** The system shall detect inline URLs (http://, https://) in `PolicyRequirement` text and extract them into `Citation` objects. *(Traces to: Parent PRD M-9)*
 - [ ] **M-2:** The system shall strip extracted citation text from `PolicyRequirement.text`, producing clean prose suitable for OSCAL control statements. *(Traces to: Parent PRD M-9)*
-- [ ] **M-3:** The `Citation` struct shall include fields for: `id` (unique identifier), `requirement_id` (FK to source requirement), `text` (citation display text), and `url` (optional URL). *(Traces to: Parent PRD M-9, data model)*
+- [ ] **M-3:** The `Citation` struct shall include fields for: `id: String` (unique identifier), `text: String` (citation display text), `url: Option<String>` (optional URL), and `source_requirement_id: Option<String>` (FK to source requirement's `stable_id`). *(Traces to: Parent PRD M-9, data model)*
 - [ ] **M-4:** Each extracted `Citation` shall be linked to the `PolicyRequirement` from which it was extracted. *(Traces to: Parent PRD M-9)*
 - [ ] **M-5:** When a scheme-less URL is detected (e.g., www.example.com), the system shall preserve it as a `Citation` with `url: Some(matched_text)` for downstream back_matter classification via OSCAL prop annotations. *(Traces to: Parent PRD EC-7)*
 - [ ] **M-6:** Citation extraction shall be implemented as a pipeline enrichment function that takes a `PolicyDocument` and returns an enriched `PolicyDocument` with citations populated. *(Traces to: Parent PRD M-9)*

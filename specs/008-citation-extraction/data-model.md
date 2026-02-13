@@ -39,7 +39,7 @@ pub struct PolicyRequirement {
 
 ## Relationships
 
-```
+```text
 PolicyDocument 1──* PolicySection 1──* PolicyRequirement 1──* Citation
 ```
 
@@ -60,7 +60,7 @@ PolicyDocument 1──* PolicySection 1──* PolicyRequirement 1──* Citati
 
 ## State Transitions
 
-```
+```text
 PolicyRequirement
   [Initial: citations = vec![]]
       ↓ WI-8 citation extraction

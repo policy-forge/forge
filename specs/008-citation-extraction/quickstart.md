@@ -40,7 +40,7 @@ assert_eq!(citations[0].url, Some("https://example.com/policy".to_string()));
 
 ## Pipeline Position
 
-```
+```text
 Markdown → WI-2 Ingest → WI-3/4 Parse → WI-5 Assemble → WI-6 Atomize
     → WI-7 UUID → **WI-8 Citations** → WI-9 Catalog → WI-12 Back Matter
 ```

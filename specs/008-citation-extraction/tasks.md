@@ -184,7 +184,7 @@
 
 ### Execution Order
 
-```
+```text
 Phase 1 → Phase 2 → Phase 3 (US1) → Phase 4 (US2) → Phase 5 (US5) → Phase 6 (US3) → Phase 7 (US4) → Phase 8
 ```
 
