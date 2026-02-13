@@ -36,12 +36,12 @@ All foundation work (WI-1 through WI-7) and core OSCAL generation (WI-9 through 
 
 | WI | Title | AR | PRD Req | Status |
 |----|-------|----|---------|--------|
-| WI-8 | Citation extraction | [008](docs/AR/008-ar-citation-extraction.md) | M-9 | Not Started |
+| WI-8 | Citation extraction | [008](docs/AR/008-ar-citation-extraction.md) | M-9 | In Progress |
 | WI-9 | Catalog — groups & controls | [009](docs/AR/009-ar-catalog-groups-controls.md) | M-3 | Done |
 | WI-10 | Catalog — statement parts | [010](docs/AR/010-ar-catalog-statement-parts.md) | M-3 | Done |
 | WI-11 | OSCAL metadata | [011](docs/AR/011-ar-oscal-metadata.md) | M-5 | Done |
 | WI-12 | Back matter | [012](docs/AR/012-ar-back-matter.md) | M-9 | Done |
-| WI-13 | Catalog pipeline | [013](docs/AR/013-ar-catalog-pipeline.md) | M-3 | Not Started |
+| WI-13 | Catalog pipeline | [013](docs/AR/013-ar-catalog-pipeline.md) | M-3 | In Progress |
 | WI-14 | Component Definition — structure | [014](docs/AR/014-ar-component-definition-structure.md) | M-4 | Not Started |
 | WI-15 | Component — implemented requirements | [015](docs/AR/015-ar-component-implemented-requirements.md) | M-4 | Not Started |
 | WI-16 | Traceability model | [016](docs/AR/016-ar-traceability-model.md) | M-10 | Not Started |

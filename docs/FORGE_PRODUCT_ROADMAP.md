@@ -161,8 +161,8 @@ gantt
     axisFormat %b %Y
 
     section Phase 1 — Foundation
-        MS-1: Markdown → Domain Model      :ms1, 2026-03-03, 56d
-        MS-2: First Valid Catalog           :ms2, 2026-04-27, 40d
+        MS-1: Markdown → Domain Model      :done, ms1, 2026-03-03, 56d
+        MS-2: First Valid Catalog           :active, ms2, 2026-04-27, 40d
         MS-3: Component Def + Traceability  :ms3, 2026-06-08, 25d
         MS-4: Phase 1 Release (v0.1.0)     :ms4, 2026-07-06, 47d
 
@@ -191,12 +191,12 @@ gantt
 | WI-5 | Internal domain model: PolicyDocument, PolicySection, PolicyRequirement structs | S-5 (Mar 31) | T-1 | MS-1 | M-1 | S | Done | — |
 | WI-6 | Requirement atomization: compound statement splitting | S-6 (Apr 7) | T-1 | MS-1 | M-2 | S | Done | WI-8 |
 | WI-7 | Deterministic UUID v5 generation with content-based stability | S-7 (Apr 14) | T-1 | MS-1 | M-8 | S | Done | WI-8 |
-| WI-8 | Citation and reference extraction into internal Citation model | S-8 (Apr 21) | T-1 | MS-1 | M-9 | S | Not Started | WI-9, WI-11 |
+| WI-8 | Citation and reference extraction into internal Citation model | S-8 (Apr 21) | T-1 | MS-1 | M-9 | S | In Progress | WI-9, WI-11 |
 | WI-9 | OSCAL Catalog JSON: groups and controls from domain model | S-9 (Apr 28) | T-2 | MS-2 | M-3 | S | Done | WI-8, WI-11, WI-12 |
 | WI-10 | OSCAL Catalog JSON: statement parts, prose, control structure | S-10 (May 5) | T-2 | MS-2 | M-3 | S | Done | WI-11, WI-12 |
 | WI-11 | OSCAL metadata: uuid, title, last-modified, version, oscal-version | S-11 (May 12) | T-2 | MS-2 | M-5 | XS | Done | WI-9, WI-10, WI-12 |
 | WI-12 | OSCAL back matter: resources from citations, link patterns | S-12 (May 19) | T-2 | MS-2 | M-9, M-11 | S | Done | WI-9, WI-10, WI-11 |
-| WI-13 | End-to-end Catalog pipeline: `forge convert --strategy catalog --format json` | S-13 (May 26) | T-2 | MS-2 | M-3, M-7 | S | Not Started | — |
+| WI-13 | End-to-end Catalog pipeline: `forge convert --strategy catalog --format json` | S-13 (May 26) | T-2 | MS-2 | M-3, M-7 | S | In Progress | WI-8 |
 | WI-14 | Component Definition: documentary component structure | S-14 (Jun 2) | T-2 | MS-3 | M-4 | S | Not Started | — |
 | WI-15 | Component Definition: implemented-requirements with control-id mapping | S-15 (Jun 9) | T-2 | MS-3 | M-4 | S | Not Started | WI-16 |
 | WI-16 | Traceability: TraceLink model, source location → OSCAL element mapping | S-16 (Jun 16) | T-2 | MS-3 | M-10 | S | Not Started | WI-15 |
@@ -677,9 +677,9 @@ graph LR
 > **Completed:** 11 of 50 work items (WI-1 through WI-7, WI-9 through WI-12) — significantly ahead of original schedule
 > **Remaining critical path:** ~39 weeks (Sprints 8, 13–50)
 > **Slack:** ~15+ weeks ahead of original MS-1 target (2026-04-24); significant buffer accumulated
-> **Bottleneck:** WI-13 (Catalog Pipeline) is the next integration point, requiring only WI-8 (Citations) to complete — WI-9, WI-10, WI-11, WI-12 are all done
+> **Bottleneck:** None — WI-8 and WI-13 are running in parallel. WI-13 can proceed with empty citations; WI-8 enriches back matter when merged.
 >
-> **Parallelism opportunity (now):** WI-8 (Citations) is the only remaining blocker for WI-13 (Catalog Pipeline). Once WI-8 is done, the end-to-end pipeline can be wired together using the completed catalog, metadata, and back matter modules.
+> **Active parallelism:** WI-8 (Citation extraction) and WI-13 (Catalog Pipeline) are in progress concurrently. The `Citation` struct is the integration contract — WI-13 passes `&[]` initially, WI-8 populates real citations. Both converge cleanly at merge time.
 
 ---
 
@@ -745,8 +745,8 @@ graph LR
 
 | Milestone | Target Date | Status | On Track? | Blockers |
 |-----------|-------------|--------|-----------|----------|
-| MS-1: Markdown → Domain Model | 2026-04-24 | 7 of 8 work items done | :white_check_mark: Ahead of Schedule | None — only WI-8 (Citation extraction) remains |
-| MS-2: First Valid Catalog | 2026-06-05 | 4 of 5 work items done | :white_check_mark: Ahead of Schedule | WI-8 blocks WI-13; WI-9, WI-10, WI-11, WI-12 all done |
+| MS-1: Markdown → Domain Model | 2026-04-24 | 7 of 8 work items done; WI-8 in progress | :white_check_mark: Ahead of Schedule | None — WI-8 in progress |
+| MS-2: First Valid Catalog | 2026-06-05 | 4 of 5 work items done; WI-13 in progress | :white_check_mark: Ahead of Schedule | None — WI-8 and WI-13 running in parallel |
 | MS-3: Component Def + Traceability | 2026-07-03 | 0 of 5 work items done | :white_check_mark: Not Started | None — WI-9 dependency resolved |
 | MS-4: Phase 1 Release (v0.1.0) | 2026-08-21 | 0 of 7 work items done | :white_check_mark: Not Started | None |
 | MS-5: Multi-Format Output | 2026-09-19 | 0 of 4 work items done | :white_check_mark: Not Started | None |
@@ -757,8 +757,8 @@ graph LR
 
 | Theme | Work Items Total | Done | In Progress | Blocked | Not Started | Health |
 |-------|-----------------|------|-------------|---------|-------------|--------|
-| T-1: Core Pipeline | 8 | 7 | 0 | 0 | 1 | :white_check_mark: Ahead of Schedule |
-| T-2: OSCAL Generation | 10 | 4 | 0 | 0 | 6 | :white_check_mark: Ahead of Schedule |
+| T-1: Core Pipeline | 8 | 7 | 1 | 0 | 0 | :white_check_mark: Ahead of Schedule |
+| T-2: OSCAL Generation | 10 | 4 | 1 | 0 | 5 | :white_check_mark: Ahead of Schedule |
 | T-3: Validation & Quality | 7 | 0 | 0 | 0 | 7 | :white_check_mark: Not Started |
 | T-4: Output Format Expansion | 4 | 0 | 0 | 0 | 4 | :white_check_mark: Not Started |
 | T-5: Profile & Tailoring | 6 | 0 | 0 | 0 | 6 | :white_check_mark: Not Started |
