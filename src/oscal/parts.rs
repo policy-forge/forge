@@ -51,12 +51,20 @@ pub struct OscalPart {
 ///
 /// Serializes to the OSCAL JSON `props` array structure:
 /// ```json
-/// { "name": "forge:source-line", "value": "42" }
+/// { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "policy.md" }
 /// ```
+///
+/// The `ns` field is optional; when `None` it is omitted from JSON output.
+/// FORGE trace props always set `ns` to [`crate::oscal::trace_embedding::FORGE_TRACE_NS`].
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct OscalProp {
-    /// Property name. FORGE-specific names use `forge:` prefix.
+    /// Property name (e.g., `"source-file"`, `"source-section"`, `"source-line"`).
     pub name: String,
+
+    /// Optional namespace URI. FORGE trace props use `FORGE_TRACE_NS`.
+    /// Omitted from JSON when `None`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ns: Option<String>,
 
     /// Property value as string.
     pub value: String,
@@ -162,46 +170,14 @@ pub fn build_control_parts(
 
 /// Generate props for a control from a `PolicyRequirement`.
 ///
-/// Only emits `forge:source-line` when `requirement.source_line > 0` (EC-6).
-/// Never stores structured data in remarks (SEC-3).
+/// Returns an empty vec — trace props (source-file, source-section, source-line)
+/// are now added by [`crate::oscal::trace_embedding::embed_trace_in_catalog`]
+/// post-processing instead of inline during catalog construction.
 ///
-/// # Arguments
-///
-/// * `requirement` — The source `PolicyRequirement`
-///
-/// # Examples
-///
-/// ```
-/// use forge::oscal::parts::build_control_props;
-/// use forge::model::PolicyRequirement;
-///
-/// let req = PolicyRequirement {
-///     text: "Encrypt data.".to_string(),
-///     source_line: 42,
-///     stable_id: Some("uuid-1".to_string()),
-///     nesting_depth: 0,
-///     atom_index: 0,
-///     parent_text: None,
-///     citations: vec![],
-/// };
-///
-/// let props = build_control_props(&req);
-/// assert_eq!(props.len(), 1);
-/// assert_eq!(props[0].name, "forge:source-line");
-/// assert_eq!(props[0].value, "42");
-/// ```
+/// Retained for API compatibility with existing callers.
 #[must_use]
-pub fn build_control_props(requirement: &PolicyRequirement) -> Vec<OscalProp> {
-    let mut props = Vec::new();
-
-    if requirement.source_line > 0 {
-        props.push(OscalProp {
-            name: "forge:source-line".to_string(),
-            value: requirement.source_line.to_string(),
-        });
-    }
-
-    props
+pub fn build_control_props(_requirement: &PolicyRequirement) -> Vec<OscalProp> {
+    vec![]
 }
 
 #[cfg(test)]
@@ -268,40 +244,23 @@ mod tests {
         assert_eq!(parts[0].prose.as_bytes(), original.as_bytes());
     }
 
-    // ── T012: build_control_props tests ───────────────────────────────
+    // ── build_control_props tests (returns empty — trace props handled by embed_trace_in_catalog) ──
 
     #[test]
-    fn test_build_props_source_line_positive() {
+    fn test_build_props_returns_empty_for_positive_line() {
         let req = test_req("text", 42);
         let props = build_control_props(&req);
-
-        assert_eq!(props.len(), 1);
-        assert_eq!(props[0].name, "forge:source-line");
-        assert_eq!(props[0].value, "42");
+        assert!(
+            props.is_empty(),
+            "build_control_props now returns empty — trace props added by post-processing"
+        );
     }
 
     #[test]
-    fn test_build_props_source_line_zero() {
+    fn test_build_props_returns_empty_for_zero_line() {
         let req = test_req("text", 0);
         let props = build_control_props(&req);
-
         assert!(props.is_empty());
-    }
-
-    #[test]
-    fn test_build_props_forge_prefix() {
-        let req = test_req("text", 1);
-        let props = build_control_props(&req);
-
-        assert!(props[0].name.starts_with("forge:"));
-    }
-
-    #[test]
-    fn test_build_props_source_line_large() {
-        let req = test_req("text", 999999);
-        let props = build_control_props(&req);
-
-        assert_eq!(props[0].value, "999999");
     }
 
     // ── T016: build_control_parts with guidance ───────────────────────

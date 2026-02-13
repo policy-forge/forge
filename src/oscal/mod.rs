@@ -6,6 +6,7 @@ pub mod component_definition;
 pub mod implemented_requirements;
 pub mod metadata;
 pub mod parts;
+pub mod trace_embedding;
 
 pub use back_matter::{
     BackMatter, BackMatterResource, OscalLink, generate_back_matter, generate_control_links,
