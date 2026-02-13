@@ -40,7 +40,7 @@ A component within the Component Definition of type `"policy"`.
 
 | Field | Type | Serde | Required | Source |
 |-------|------|-------|----------|--------|
-| `uuid` | `String` | -- | Yes | UUID v5 from `COMPONENT_NAMESPACE` + `"{title}\0{version}"` (null-separated) |
+| `uuid` | `String` | -- | Yes | UUID v5 from `COMPONENT_NAMESPACE` + `"{title}\0{version}\0{document_id}"` (null-separated) |
 | `component_type` | `String` | `#[serde(rename = "type")]` | Yes | Always `"policy"` |
 | `title` | `String` | -- | Yes | `doc.metadata.title` or `"Untitled Policy Document"` |
 | `description` | `String` | -- | Yes | Template: `"Documentary component representing the {title} policy document."` |

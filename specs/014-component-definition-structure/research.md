@@ -45,7 +45,7 @@ The final design (see `contracts/component_definition.rs`) uses a dedicated `Com
 
 **Rationale**: The existing pattern uses `BACK_MATTER_NAMESPACE` derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"back-matter")`. The component namespace follows the same derivation pattern but with `"component"` as the label. This ensures component UUIDs never collide with back matter UUIDs or requirement stable IDs.
 
-**Hash input**: `format!("{title}\0{version}")` — null byte separator prevents collisions between ambiguous title/version boundaries (e.g., title="abc", version="123" vs title="abc1", version="23").
+**Hash input**: `format!("{title}\0{version}\0{document_id}")` — null byte separators prevent collisions between ambiguous title/version boundaries, and the document ID (derived from filename) ensures uniqueness across different source files sharing the same title/version.
 
 **Alternatives considered**:
 - Reuse `FORGE_NAMESPACE_UUID` directly -- rejected (collision risk with requirement UUIDs)

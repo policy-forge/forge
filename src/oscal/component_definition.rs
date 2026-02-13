@@ -70,7 +70,7 @@ pub struct ComponentDefinitionMetadata {
 /// A documentary component of type "policy" within the Component Definition.
 #[derive(Debug, Clone, Serialize)]
 pub struct DocumentaryComponent {
-    /// Deterministic UUID v5 (from `COMPONENT_NAMESPACE` + title + version).
+    /// Deterministic UUID v5 (from `COMPONENT_NAMESPACE` + title + version + document ID).
     pub uuid: String,
 
     /// Component type -- always "policy" for documentary components.
@@ -117,7 +117,7 @@ pub fn build_component_definition(
     };
 
     // Step 3: Build documentary component
-    let component_uuid = generate_component_uuid(&title, &version);
+    let component_uuid = generate_component_uuid(&title, &version, &document.id);
     let description = format!("Documentary component representing the {title} policy document.");
 
     let component = DocumentaryComponent {
@@ -165,8 +165,11 @@ fn resolve_title(title: &str) -> String {
 }
 
 /// Generate a deterministic UUID v5 for the documentary component.
-fn generate_component_uuid(title: &str, version: &str) -> Uuid {
-    let input = format!("{title}\0{version}");
+///
+/// Uses title, version, and document ID as inputs to ensure uniqueness
+/// across different source documents that may share the same title/version.
+fn generate_component_uuid(title: &str, version: &str, document_id: &str) -> Uuid {
+    let input = format!("{title}\0{version}\0{document_id}");
     Uuid::new_v5(&COMPONENT_NAMESPACE, input.as_bytes())
 }
 
@@ -563,5 +566,26 @@ mod tests {
         let doc = test_document("Test Policy", "");
         let envelope = build_component_definition(&doc).unwrap();
         assert_eq!(envelope.component_definition.metadata.version, "0.0.0");
+    }
+
+    #[test]
+    fn test_empty_version_metadata_consistency_with_assemble_metadata() {
+        // assemble_metadata passes version through as-is; the builder defaults "" to "0.0.0"
+        let doc = test_document("Test Policy", "");
+        let raw_metadata = assemble_metadata(&doc.metadata, None).unwrap();
+        let cd_envelope = build_component_definition(&doc).unwrap();
+        let cd_meta = &cd_envelope.component_definition.metadata;
+
+        // assemble_metadata passes through raw empty version
+        assert_eq!(raw_metadata.version, "");
+        // Component Definition builder defaults empty version to "0.0.0"
+        assert_eq!(cd_meta.version, "0.0.0");
+
+        // Non-empty version: both agree (no defaulting needed)
+        let doc_with_version = test_document("Test Policy", "3.0");
+        let raw_meta_v = assemble_metadata(&doc_with_version.metadata, None).unwrap();
+        let cd_env_v = build_component_definition(&doc_with_version).unwrap();
+        assert_eq!(raw_meta_v.version, "3.0");
+        assert_eq!(cd_env_v.component_definition.metadata.version, "3.0");
     }
 }
