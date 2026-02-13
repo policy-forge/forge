@@ -432,13 +432,13 @@ flowchart TD
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-1, M-6 | AC-1, AC-2 | Integration | tests/pipeline_smoke_test.rs |
-| SEC-2 | M-5 | AC-4 | Manual | Security checklist |
-| SEC-3 | M-2, M-3 | AC-1 (EC-4, EC-5) | Unit | tests/cli_test.rs |
-| SEC-4 | M-1 | AC-1 (EC-1) | Integration | tests/pipeline_smoke_test.rs |
-| SEC-5 | M-1 | AC-1 (EC-2) | Integration | tests/pipeline_smoke_test.rs |
-| SEC-6 | M-5 | AC-4 (EC-3) | Integration | tests/pipeline_smoke_test.rs |
-| SEC-7 | S-2 | — | Integration | tests/pipeline_smoke_test.rs |
+| SEC-1 | M-1, M-6 | AC-1, AC-2 | Integration | tests/catalog_pipeline_test.rs |
+| SEC-2 | M-5 | AC-4 | Manual + Integration | tests/cli_integration.rs (file permission check) |
+| SEC-3 | M-2, M-3 | AC-1 (EC-4, EC-5) | Integration | tests/cli_integration.rs |
+| SEC-4 | M-1 | AC-1 (EC-1) | Integration | tests/cli_integration.rs |
+| SEC-5 | M-1 | AC-1 (EC-2) | Integration | tests/cli_integration.rs |
+| SEC-6 | M-5 | AC-4 (EC-3) | Integration | tests/cli_integration.rs |
+| SEC-7 | S-2 | — | Integration | tests/cli_integration.rs (see also S-2) |
 | SEC-8 | M-1 | — | Code Review | Code review during PR |
 
 ---

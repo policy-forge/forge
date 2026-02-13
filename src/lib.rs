@@ -5,6 +5,7 @@ pub mod ingest;
 pub mod model;
 pub mod oscal;
 pub mod parse;
+pub mod pipeline;
 pub mod uuid;
 pub mod validate;
 

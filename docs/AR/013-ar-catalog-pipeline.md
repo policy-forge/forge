@@ -312,7 +312,7 @@ graph TD
 | Component | Responsibility | Interface | Dependencies |
 |-----------|---------------|-----------|--------------|
 | `cli/convert.rs` | Parse CLI flags, dispatch to pipeline | CLI handler | clap 4.x |
-| `run_catalog_pipeline` | Compose all pipeline stages in sequence | `fn(&Path, Option<&Path>) -> Result<(), ForgeError>` | All pipeline stage modules |
+| `run_catalog_pipeline` | Compose all pipeline stages in sequence | `fn(&Path, Option<&Path>, u64) -> Result<(), ForgeError>` | All pipeline stage modules |
 | `write_output` | Route JSON string to stdout or file | `fn(&str, Option<&Path>) -> Result<(), ForgeError>` | `std::fs`, `std::io` |
 
 ### Data Flow 🟢 `@llm-autonomous`
@@ -372,9 +372,10 @@ use std::path::Path;
 pub fn run_catalog_pipeline(
     input_path: &Path,
     output_path: Option<&Path>,
+    max_size_bytes: u64,
 ) -> Result<(), ForgeError> {
     // 1. Ingest
-    let ingested = ingest::read_file(input_path)?;
+    let ingested = ingest::read_file(input_path, max_size_bytes)?;
 
     // 2. Parse structure
     let sections = parse::extract_sections(&ingested)?;
