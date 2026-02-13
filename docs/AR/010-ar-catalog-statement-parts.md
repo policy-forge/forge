@@ -127,7 +127,7 @@ After WI-9, `OscalControl` structs have `id`, `uuid`, and `title` fields but no 
 
 ### Option 1: Structured Builders Extending WI-9 (Recommended)
 
-**Description:** Add `OscalPart` and `OscalProp` structs to the OSCAL module. Implement `build_control_parts(control_id, &PolicyRequirement) -> Vec<OscalPart>` and `build_control_props(control_id, &PolicyRequirement) -> Vec<OscalProp>` as composable builder functions that the WI-9 `build_catalog` function calls when constructing each `OscalControl`. Statement parts are generated for all requirements. Guidance and objective parts are generated only when explicit signals exist in the domain model.
+**Description:** Add `OscalPart` and `OscalProp` structs to the OSCAL module. Implement `build_control_parts(control_id, &PolicyRequirement, guidance_text: Option<&str>) -> Vec<OscalPart>` and `build_control_props(&PolicyRequirement) -> Vec<OscalProp>` as composable builder functions that the WI-9 `build_catalog` function calls when constructing each `OscalControl`. Statement parts are generated for all requirements. Guidance parts are generated when `guidance_text` is present and non-empty. Objective parts are deferred until the domain model provides an explicit signal.
 
 ```mermaid
 graph TD
@@ -261,8 +261,8 @@ graph TD
 |-----------|---------------|-----------|--------------|
 | OscalPart | OSCAL part struct (statement, guidance, objective) | `#[derive(Serialize)]` struct | serde |
 | OscalProp | OSCAL property struct for structured metadata | `#[derive(Serialize)]` struct | serde |
-| build_control_parts | Generate parts array for a control | `pub fn(&str, &PolicyRequirement) -> Vec<OscalPart>` | domain model |
-| build_control_props | Generate props array for a control | `pub fn(&str, &PolicyRequirement) -> Vec<OscalProp>` | domain model |
+| build_control_parts | Generate parts array for a control | `pub fn(&str, &PolicyRequirement, Option<&str>) -> Vec<OscalPart>` | domain model |
+| build_control_props | Generate props array for a control | `pub fn(&PolicyRequirement) -> Vec<OscalProp>` | domain model |
 | generate_part_id | Create part ID from control ID and suffix | `fn(&str, &str) -> String` | None |
 
 ### Data Flow 🟢 `@llm-autonomous`
@@ -275,7 +275,7 @@ sequenceDiagram
     participant ID as generate_part_id
 
     B->>B: Create OscalControl { id, uuid, title }
-    B->>P: build_control_parts(control_id, &requirement)
+    B->>P: build_control_parts(control_id, &requirement, guidance_text)
     P->>ID: generate_part_id(control_id, "smt")
     ID-->>P: "POL-AC-001_smt"
     P->>P: Create OscalPart { id, name: "statement", prose: text }
@@ -285,7 +285,7 @@ sequenceDiagram
         P->>P: Create OscalPart { id, name: "guidance", prose: guidance_text }
     end
     P-->>B: Vec<OscalPart>
-    B->>R: build_control_props(control_id, &requirement)
+    B->>R: build_control_props(&requirement)
     alt source_line > 0
         R->>R: Create OscalProp { name: "forge:source-line", value: line }
     end
@@ -326,17 +326,18 @@ pub struct OscalProp {
 
 /// Generate statement parts for a control from a PolicyRequirement.
 /// Always produces at least one part with name: "statement".
-/// Optionally produces guidance and objective parts if domain model provides signals.
+/// Produces a guidance part when guidance_text is Some(non_empty).
+/// Objective parts deferred until domain model provides a signal.
 pub fn build_control_parts(
     control_id: &str,
     requirement: &PolicyRequirement,
+    guidance_text: Option<&str>,
 ) -> Vec<OscalPart>;
 
 /// Generate props for a control from a PolicyRequirement.
 /// Structured metadata (source line, etc.) expressed as props.
 /// Never stores structured data in remarks.
 pub fn build_control_props(
-    control_id: &str,
     requirement: &PolicyRequirement,
 ) -> Vec<OscalProp>;
 
