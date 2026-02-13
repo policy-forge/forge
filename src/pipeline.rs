@@ -7,6 +7,7 @@
 use std::path::Path;
 
 use crate::error::ForgeError;
+use crate::model::PolicyDocument;
 
 /// Writes JSON output to a file or stdout.
 ///
@@ -39,20 +40,19 @@ pub fn write_output(json: &str, output_path: Option<&Path>) -> Result<(), ForgeE
     }
 }
 
-/// Orchestrates the full catalog pipeline: ingest → parse → normalize → map → serialize → output.
+/// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations.
+///
+/// Encapsulates the common steps (1-9) used by both the catalog and component
+/// pipelines. Each caller receives a fully-prepared `PolicyDocument` ready for
+/// OSCAL generation.
 ///
 /// # Arguments
 /// * `input_path` - Path to the Markdown policy document
-/// * `output_path` - Optional output file path; if None, writes JSON to stdout
 /// * `max_size_bytes` - Maximum allowed input file size in bytes
 ///
 /// # Errors
-/// * `Err(ForgeError)` if any pipeline stage fails
-pub fn run_catalog_pipeline(
-    input_path: &Path,
-    output_path: Option<&Path>,
-    max_size_bytes: u64,
-) -> Result<(), ForgeError> {
+/// * `Err(ForgeError)` if any pipeline stage fails (ingest, parse, atomize, etc.)
+fn prepare_document(input_path: &Path, max_size_bytes: u64) -> Result<PolicyDocument, ForgeError> {
     // Step 1: Ingest file
     let ingested = crate::ingest::ingest_file(input_path, max_size_bytes)?;
 
@@ -71,7 +71,7 @@ pub fn run_catalog_pipeline(
 
     // EC-6: Warn when no identifiable sections found
     if sections.is_empty() {
-        tracing::warn!("No identifiable sections found in input — catalog will have empty groups");
+        tracing::warn!("No identifiable sections found in input — output will have empty groups");
     }
 
     // Step 4: Extract clauses
@@ -89,6 +89,26 @@ pub fn run_catalog_pipeline(
 
     // Step 7b: Extract citations (WI-8, after UUID assignment, before OSCAL generation)
     crate::citation::extract_citations(&mut doc_with_ids)?;
+
+    Ok(doc_with_ids)
+}
+
+/// Orchestrates the full catalog pipeline: ingest → parse → normalize → map → serialize → output.
+///
+/// # Arguments
+/// * `input_path` - Path to the Markdown policy document
+/// * `output_path` - Optional output file path; if None, writes JSON to stdout
+/// * `max_size_bytes` - Maximum allowed input file size in bytes
+///
+/// # Errors
+/// * `Err(ForgeError)` if any pipeline stage fails
+pub fn run_catalog_pipeline(
+    input_path: &Path,
+    output_path: Option<&Path>,
+    max_size_bytes: u64,
+) -> Result<(), ForgeError> {
+    // Steps 1-9: shared pipeline stages
+    let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
 
     // Step 8: Build catalog
     let catalog = crate::oscal::build_catalog(&doc_with_ids)?;
@@ -151,23 +171,8 @@ pub fn run_component_pipeline(
         ));
     }
 
-    // Steps 1-9: shared pipeline stages (same as catalog)
-    let ingested = crate::ingest::ingest_file(input_path, max_size_bytes)?;
-    let content = ingested.reconstruct_content();
-
-    if content.trim().is_empty() {
-        return Err(ForgeError::Validation(
-            "Input file is empty — no content to process".to_string(),
-        ));
-    }
-
-    let sections = crate::parse::extract_sections(&content)?;
-    let clauses = crate::parse::extract_clauses(&content)?;
-    let document = crate::model::assemble_document(&ingested, &sections, &clauses)?;
-    let atomized = crate::parse::atomize_document(&document)?;
-    let mut doc_with_ids = atomized;
-    crate::uuid::assign_stable_ids(&mut doc_with_ids);
-    crate::citation::extract_citations(&mut doc_with_ids)?;
+    // Steps 1-9: shared pipeline stages
+    let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
 
     // Step 10: Build component definition with source_profile
     let envelope = crate::oscal::build_component_definition(&doc_with_ids, Some(source_profile))?;
