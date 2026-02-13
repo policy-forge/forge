@@ -64,9 +64,8 @@ pub enum Strategy {
     Component,
 }
 
-#[derive(ValueEnum, Clone, Debug, Default)]
+#[derive(ValueEnum, Clone, Debug)]
 pub enum OutputFormat {
-    #[default]
     Json,
     Xml,
     Yaml,

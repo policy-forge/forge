@@ -69,6 +69,11 @@ pub fn run_catalog_pipeline(
     // Step 3: Extract sections
     let sections = crate::parse::extract_sections(&content)?;
 
+    // EC-6: Warn when no identifiable sections found
+    if sections.is_empty() {
+        tracing::warn!("No identifiable sections found in input — catalog will have empty groups");
+    }
+
     // Step 4: Extract clauses
     let clauses = crate::parse::extract_clauses(&content)?;
 

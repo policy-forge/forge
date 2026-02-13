@@ -12,10 +12,12 @@ fn run_pipeline_on_fixture() -> serde_json::Value {
 
     let result =
         forge::pipeline::run_catalog_pipeline(fixture, Some(&output_path), 10 * 1024 * 1024);
-    assert!(result.is_ok(), "Pipeline should succeed: {result:?}");
+    assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
-    let json_str = std::fs::read_to_string(&output_path).unwrap();
-    serde_json::from_str(&json_str).expect("Output should be valid JSON")
+    let json_str = std::fs::read_to_string(&output_path)
+        .unwrap_or_else(|e| panic!("Failed to read output {}: {e}", output_path.display()));
+    serde_json::from_str(&json_str)
+        .unwrap_or_else(|e| panic!("Output is not valid JSON: {e}\nContent: {json_str}"))
 }
 
 /// T005 [US1] End-to-end smoke test: call run_catalog_pipeline with full_policy.md fixture,
@@ -55,15 +57,15 @@ fn smoke_test_groups_contain_expected_sections() {
     // full_policy.md has 3 top-level sections: Access Control, Data Protection, Incident Response
     assert!(
         titles.contains(&"Access Control"),
-        "Groups should contain 'Access Control' (AC-1). Got: {titles:?}"
+        "Groups should contain 'Access Control'. Got: {titles:?}"
     );
     assert!(
         titles.contains(&"Data Protection"),
-        "Groups should contain 'Data Protection' (AC-1). Got: {titles:?}"
+        "Groups should contain 'Data Protection'. Got: {titles:?}"
     );
     assert!(
         titles.contains(&"Incident Response"),
-        "Groups should contain 'Incident Response' (AC-1). Got: {titles:?}"
+        "Groups should contain 'Incident Response'. Got: {titles:?}"
     );
     // At least 3 groups for the 3 content sections
     assert!(
@@ -152,16 +154,13 @@ fn smoke_test_compound_requirements_atomized() {
         "Should have a control about logging privilege escalation (AC-7)"
     );
 
-    // Verify they have unique IDs
+    // Verify atomization: auth and priv controls must not share the same set of IDs
     if !auth_logging_controls.is_empty() && !priv_logging_controls.is_empty() {
         let auth_ids: Vec<_> = auth_logging_controls.iter().map(|(id, _)| *id).collect();
         let priv_ids: Vec<_> = priv_logging_controls.iter().map(|(id, _)| *id).collect();
-        // At least one ID from each set should differ (they're atomized into separate controls)
-        let overlap: Vec<_> = auth_ids.iter().filter(|id| priv_ids.contains(id)).collect();
-        // If they overlap completely, they weren't atomized
-        assert!(
-            overlap.len() < auth_ids.len() || overlap.len() < priv_ids.len(),
-            "Compound requirements should be atomized into separate controls with unique IDs"
+        assert_ne!(
+            auth_ids, priv_ids,
+            "Compound requirements should be atomized into separate controls with different IDs"
         );
     }
 }

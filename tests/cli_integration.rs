@@ -162,8 +162,13 @@ fn convert_file_output_creates_oscal_json() {
         use std::os::unix::fs::PermissionsExt;
         let metadata = fs::metadata(&output_path).unwrap();
         let mode = metadata.permissions().mode() & 0o777;
-        // Default umask typically gives 0o644 or less; definitely not 0o777
-        assert!(mode <= 0o644, "File permissions should not be elevated, got: {mode:o}");
+        // File should not be executable and should not be world-writable,
+        // regardless of the process umask (which affects group-writable bits).
+        assert_eq!(
+            mode & (0o111 | 0o002),
+            0,
+            "File permissions should not be executable or world-writable, got: {mode:o}"
+        );
     }
 }
 
@@ -174,8 +179,13 @@ fn convert_overwrite_output_file() {
     let path = create_temp_md(&dir, "policy.md", content);
     let output_path = dir.path().join("output.json");
 
-    // First run
-    let output1 = forge_bin()
+    // Write garbage content to the output path first
+    fs::write(&output_path, "this is not json").unwrap();
+    let garbage_content = fs::read_to_string(&output_path).unwrap();
+    assert_eq!(garbage_content, "this is not json");
+
+    // Run pipeline (EC-7: should overwrite the garbage content)
+    let output = forge_bin()
         .arg("convert")
         .arg(&path)
         .arg("--strategy")
@@ -186,27 +196,14 @@ fn convert_overwrite_output_file() {
         .arg(&output_path)
         .output()
         .expect("Failed to execute process");
-    assert!(output1.status.success(), "First run should succeed");
-    let first_content = fs::read_to_string(&output_path).unwrap();
+    assert!(output.status.success(), "Pipeline should succeed and overwrite existing file");
 
-    // Second run (EC-7: should overwrite)
-    let output2 = forge_bin()
-        .arg("convert")
-        .arg(&path)
-        .arg("--strategy")
-        .arg("catalog")
-        .arg("--format")
-        .arg("json")
-        .arg("--output")
-        .arg(&output_path)
-        .output()
-        .expect("Failed to execute process");
-    assert!(output2.status.success(), "Second run should succeed");
-    let second_content = fs::read_to_string(&output_path).unwrap();
-
-    // Both should be valid JSON
-    let _: serde_json::Value = serde_json::from_str(&first_content).unwrap();
-    let _: serde_json::Value = serde_json::from_str(&second_content).unwrap();
+    // File should now contain valid OSCAL JSON, not garbage
+    let overwritten_content = fs::read_to_string(&output_path).unwrap();
+    assert_ne!(overwritten_content, garbage_content, "File should be overwritten");
+    let json: serde_json::Value = serde_json::from_str(&overwritten_content)
+        .expect("Overwritten file should contain valid JSON");
+    assert!(json["catalog"].is_object(), "Overwritten file should contain OSCAL catalog");
 }
 
 // T011: Updated existing tests with --strategy catalog --format json flags
@@ -361,7 +358,10 @@ fn convert_empty_file_shows_error() {
     // EC-2: empty file should produce non-zero exit and descriptive error
     assert!(!output.status.success(), "Expected non-zero exit code for empty file");
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(!stderr.is_empty(), "stderr should contain a descriptive error for empty file");
+    assert!(
+        stderr.contains("empty") || stderr.contains("Empty") || stderr.contains("no content"),
+        "stderr should mention empty file, got: {stderr}"
+    );
 }
 
 #[test]
@@ -433,6 +433,30 @@ fn convert_missing_format_flag_shows_error() {
     assert!(
         stderr.contains("--format") || stderr.contains("required"),
         "stderr should indicate --format is required:\n{stderr}"
+    );
+}
+
+#[test]
+fn convert_format_xml_shows_rejection_error() {
+    let dir = TempDir::new().unwrap();
+    let path = create_temp_md(&dir, "policy.md", "# Title\n");
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("xml")
+        .output()
+        .expect("Failed to execute process");
+
+    // W-2: --format xml → descriptive rejection (deferred to WI-26)
+    assert!(!output.status.success(), "Expected non-zero exit code");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("json") && stderr.contains("supported"),
+        "stderr should mention only json is supported:\n{stderr}"
     );
 }
 
