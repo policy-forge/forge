@@ -328,7 +328,7 @@ pub fn build_catalog(
                 uuid: stable_id.clone(),
                 title: derive_control_title(&req.text),
                 links: vec![],
-                parts: build_control_parts(&control_id, req, section.body_text.as_deref()),
+                parts: build_control_parts(&control_id, req, req_section.body_text.as_deref()),
                 props: build_control_props(req),
             });
 
