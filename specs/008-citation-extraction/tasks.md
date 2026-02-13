@@ -159,13 +159,13 @@
 
 **Purpose**: Verification, performance, security, and quality gates
 
-- [ ] T033 [P] Write idempotency test (S-3): run `extract_citations` twice on same document, verify citations and text are identical after second pass in src/citation.rs
-- [ ] T034 [P] Write performance benchmark (SEC-6): construct document with 1000+ PolicyRequirements containing mixed citation types, verify `extract_citations` completes under 1 second in src/citation.rs
-- [ ] T035 [P] Write ReDoS resistance tests (SEC-1): test each regex pattern against pathological input strings (long strings of URL-like characters, deeply nested patterns), verify bounded execution time in src/citation.rs
-- [ ] T036 Verify `cargo fmt --check` passes
-- [ ] T037 Verify `cargo clippy --workspace -- -D warnings` passes
-- [ ] T038 Verify `cargo doc --no-deps` builds without warnings
-- [ ] T039 Verify test coverage >90% for citation module (SC-007) and run quickstart.md validation
+- [X] T033 [P] Write idempotency test (S-3): run `extract_citations` twice on same document, verify citations and text are identical after second pass in src/citation.rs
+- [X] T034 [P] Write performance benchmark (SEC-6): construct document with 1000+ PolicyRequirements containing mixed citation types, verify `extract_citations` completes under 1 second in src/citation.rs
+- [X] T035 [P] Write ReDoS resistance tests (SEC-1): test each regex pattern against pathological input strings (long strings of URL-like characters, deeply nested patterns), verify bounded execution time in src/citation.rs
+- [X] T036 Verify `cargo fmt --check` passes
+- [X] T037 Verify `cargo clippy --workspace -- -D warnings` passes
+- [X] T038 Verify `cargo doc --no-deps` builds without warnings
+- [X] T039 Verify test coverage >90% for citation module (SC-007) and run quickstart.md validation
 
 ---
 

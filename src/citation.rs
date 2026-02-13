@@ -71,6 +71,10 @@ pub fn extract_citations(document: &mut PolicyDocument) -> Result<(), ForgeError
 /// Recursively process a section and its children for citation extraction.
 fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), ForgeError> {
     for req in &mut section.requirements {
+        // Skip already-processed requirements (idempotency, S-3)
+        if !req.citations.is_empty() {
+            continue;
+        }
         let requirement_id = req.stable_id.as_deref().unwrap_or("");
         let (cleaned_text, citations) = extract_citations_from_text(requirement_id, &req.text)?;
         tracing::debug!(
@@ -739,5 +743,110 @@ mod tests {
         // Cross-ref second
         assert_eq!(citations[1].text, "Section 3.2");
         assert!(citations[1].url.is_none());
+    }
+
+    // === T033: Idempotency Test (S-3) ===
+
+    #[test]
+    fn idempotency_second_pass_unchanged() {
+        let mut doc = make_test_doc(vec![make_section(
+            "Policy",
+            vec![
+                make_req(
+                    "req-1",
+                    "Comply with https://example.com/policy and NIST SP 800-53 Rev 5",
+                ),
+                make_req("req-2", "See www.example.com and Section 3.2 for details"),
+            ],
+        )]);
+
+        // First pass
+        extract_citations(&mut doc).unwrap();
+        let text_after_first = doc.sections[0].requirements[0].text.clone();
+        let citations_after_first = doc.sections[0].requirements[0].citations.clone();
+        let text2_after_first = doc.sections[0].requirements[1].text.clone();
+        let citations2_after_first = doc.sections[0].requirements[1].citations.clone();
+
+        // Second pass
+        extract_citations(&mut doc).unwrap();
+
+        // Text and citations should be identical after second pass
+        assert_eq!(doc.sections[0].requirements[0].text, text_after_first);
+        assert_eq!(doc.sections[0].requirements[0].citations, citations_after_first);
+        assert_eq!(doc.sections[0].requirements[1].text, text2_after_first);
+        assert_eq!(doc.sections[0].requirements[1].citations, citations2_after_first);
+    }
+
+    // === T034: Performance Test (SEC-6) ===
+
+    #[test]
+    fn performance_1000_requirements_under_1_second() {
+        let reqs: Vec<PolicyRequirement> = (0..1000)
+            .map(|i| {
+                make_req(
+                    &format!("req-{i}"),
+                    &format!(
+                        "Requirement {i}: comply with https://example.com/policy-{i}, \
+                         per NIST SP 800-53 Rev 5 and www.standards.org/ref-{i}, \
+                         see Section 3.{} for details",
+                        i % 10
+                    ),
+                )
+            })
+            .collect();
+
+        let mut doc = make_test_doc(vec![make_section("All Requirements", reqs)]);
+
+        let start = std::time::Instant::now();
+        extract_citations(&mut doc).unwrap();
+        let elapsed = start.elapsed();
+
+        assert!(
+            elapsed.as_secs() < 1,
+            "Citation extraction took {elapsed:?} (>1s) for 1000 requirements"
+        );
+
+        // Verify all requirements were processed
+        for req in &doc.sections[0].requirements {
+            assert!(!req.citations.is_empty(), "Requirement should have citations");
+        }
+    }
+
+    // === T035: ReDoS Resistance Tests (SEC-1) ===
+
+    #[test]
+    fn redos_resistance_long_url_like_string() {
+        let pathological = "https://".to_string() + &"a".repeat(10_000);
+        let start = std::time::Instant::now();
+        let result = extract_citations_from_text("req-1", &pathological);
+        let elapsed = start.elapsed();
+
+        assert!(result.is_ok());
+        assert!(elapsed.as_secs() < 1, "URL regex took {elapsed:?} on pathological input");
+    }
+
+    #[test]
+    fn redos_resistance_long_biblio_like_string() {
+        let pathological = "NIST SP ".to_string() + &"1-2-3-4-5-".repeat(2_000);
+        let start = std::time::Instant::now();
+        let result = extract_citations_from_text("req-1", &pathological);
+        let elapsed = start.elapsed();
+
+        assert!(result.is_ok());
+        assert!(
+            elapsed.as_secs() < 1,
+            "Bibliographic regex took {elapsed:?} on pathological input"
+        );
+    }
+
+    #[test]
+    fn redos_resistance_deeply_nested_parens() {
+        let pathological = "(".repeat(1_000) + "https://example.com" + &")".repeat(1_000);
+        let start = std::time::Instant::now();
+        let result = extract_citations_from_text("req-1", &pathological);
+        let elapsed = start.elapsed();
+
+        assert!(result.is_ok());
+        assert!(elapsed.as_secs() < 1, "Regex took {elapsed:?} on deeply nested parens");
     }
 }
