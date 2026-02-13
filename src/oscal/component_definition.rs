@@ -593,4 +593,31 @@ mod tests {
         let catalog_metadata = assemble_metadata(&resolved_meta, None).unwrap();
         assert_eq!(catalog_metadata.version, cd_meta.version);
     }
+
+    #[test]
+    fn test_component_uuid_differs_by_document_id() {
+        // Same title/version but different document IDs should produce different UUIDs
+        let doc1 = PolicyDocument {
+            id: "doc-alpha".to_string(),
+            metadata: DocumentMetadata {
+                title: "Same Policy".to_string(),
+                version: "1.0".to_string(),
+                author: None,
+                date: None,
+                source_path: PathBuf::from("test.md"),
+                content_hash: None,
+            },
+            sections: vec![],
+        };
+        let doc2 = PolicyDocument { id: "doc-beta".to_string(), ..doc1.clone() };
+
+        let env1 = build_component_definition(&doc1).unwrap();
+        let env2 = build_component_definition(&doc2).unwrap();
+
+        assert_ne!(
+            env1.component_definition.components[0].uuid,
+            env2.component_definition.components[0].uuid,
+            "Different document IDs should produce different component UUIDs"
+        );
+    }
 }
