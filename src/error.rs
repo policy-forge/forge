@@ -50,6 +50,9 @@ pub enum ForgeError {
 
     #[error("Catalog build error: {0}")]
     CatalogBuild(String),
+
+    #[error("Back matter error: {0}")]
+    BackMatter(String),
 }
 
 #[cfg(test)]
@@ -147,5 +150,11 @@ mod tests {
         let err = result.unwrap_err();
         assert!(matches!(err, ForgeError::Io(_)), "Expected ForgeError::Io, got: {err:?}");
         assert_eq!(err.to_string(), "I/O error: access denied");
+    }
+
+    #[test]
+    fn back_matter_error_display() {
+        let err = ForgeError::BackMatter("invalid citation".to_string());
+        assert_eq!(err.to_string(), "Back matter error: invalid citation");
     }
 }

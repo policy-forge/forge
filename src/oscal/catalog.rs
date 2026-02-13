@@ -35,6 +35,9 @@ pub struct OscalCatalog {
     /// Groups mapped from `PolicySection`s.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub groups: Vec<OscalGroup>,
+    /// Back matter containing reference resources (WI-12).
+    #[serde(rename = "back-matter", skip_serializing_if = "Option::is_none")]
+    pub back_matter: Option<crate::oscal::back_matter::BackMatter>,
 }
 
 /// OSCAL Group mapped from a [`PolicySection`].
@@ -58,6 +61,9 @@ pub struct OscalControl {
     pub uuid: String,
     /// Derived title (first sentence, 120-char cap).
     pub title: String,
+    /// Links to back matter resources (WI-12).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub links: Vec<crate::oscal::back_matter::OscalLink>,
     /// Parts array: statement part (mandatory) + optional guidance/objective.
     /// NOT skip-serialized — always present per FR-001.
     pub parts: Vec<OscalPart>,
@@ -298,6 +304,7 @@ pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeErr
                 id: control_id.clone(),
                 uuid: stable_id.clone(),
                 title: derive_control_title(&req.text),
+                links: vec![],
                 parts: build_control_parts(&control_id, req, section.body_text.as_deref()),
                 props: build_control_props(req),
             });
@@ -318,6 +325,7 @@ pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeErr
             oscal_version: "1.2.0".to_string(),
         },
         groups,
+        back_matter: None,
     })
 }
 
@@ -751,6 +759,7 @@ mod tests {
                 oscal_version: "t".to_string(),
             },
             groups: vec![],
+            back_matter: None,
         };
         let json = serde_json::to_string(&cat).unwrap();
         assert!(!json.contains("groups"));

@@ -15,6 +15,18 @@ pub const FORGE_NAMESPACE_UUID: Uuid = Uuid::from_bytes([
     0x71, 0x43, 0xFD, 0xCB, 0xD7, 0xC4, 0x40, 0xC5, 0xBC, 0xA6, 0x51, 0xCD, 0x54, 0x83, 0xA1, 0x3B,
 ]);
 
+/// Fixed namespace UUID for back matter resource identifier generation.
+///
+/// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"back-matter")`.
+///
+/// # Breaking Change Warning
+///
+/// Changing this value will change **ALL** generated back matter resource UUIDs.
+/// Any change requires a documented migration path.
+pub const BACK_MATTER_NAMESPACE: Uuid = Uuid::from_bytes([
+    0xA1, 0x8D, 0x97, 0xB8, 0x5E, 0xC6, 0x5A, 0x97, 0xBF, 0xD2, 0xE1, 0x61, 0xD6, 0x19, 0x97, 0x73,
+]);
+
 /// Normalize text for stable ID generation.
 ///
 /// Trims leading/trailing whitespace and collapses internal whitespace runs
@@ -199,6 +211,12 @@ mod tests {
         let uuid = generate_stable_id("All users must use multi-factor authentication");
         assert_eq!(uuid.get_version(), Some(Version::Sha1));
         assert_eq!(uuid.get_variant(), uuid::Variant::RFC4122);
+    }
+
+    #[test]
+    fn back_matter_namespace_matches_derivation() {
+        let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"back-matter");
+        assert_eq!(BACK_MATTER_NAMESPACE, expected);
     }
 
     // T011: All requirements populated (AC-4, M-3)

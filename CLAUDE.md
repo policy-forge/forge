@@ -60,6 +60,7 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust (edition 2024, stable 1.93.0) + `uuid` 1.20.0 (add `v4` feature), `chrono` latest stable (NEW), `serde` 1.x (existing), `thiserror` 2.0.18 (existing), `tracing` 0.1.44 (existing) (011-oscal-metadata)
 - Rust (edition 2024, stable 1.93.0) + serde 1.x, serde_json 1.x, thiserror 2.0.18, tracing 0.1.44 (all existing — no new dependencies) (010-catalog-statement-parts)
 - N/A (in-memory processing only) (010-catalog-statement-parts)
+- Rust edition 2024, stable 1.93.0 + serde 1.x, serde_json 1.x, uuid 1.20.0 (v5 feature, existing), url 2.5.x (NEW), thiserror 2.0.18 (existing), tracing 0.1.44 (existing) (012-back-matter)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x
