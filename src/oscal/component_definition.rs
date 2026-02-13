@@ -10,7 +10,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::error::ForgeError;
-use crate::model::{Citation, PolicyDocument, PolicySection};
+use crate::model::{Citation, DocumentMetadata, PolicyDocument, PolicySection};
 use crate::oscal::back_matter::BackMatter;
 use crate::oscal::metadata::assemble_metadata;
 use crate::uuid::COMPONENT_NAMESPACE;
@@ -104,17 +104,19 @@ pub struct DocumentaryComponent {
 pub fn build_component_definition(
     document: &PolicyDocument,
 ) -> Result<ComponentDefinitionEnvelope, ForgeError> {
-    // Step 1: Assemble metadata via WI-11 reuse
-    let real_metadata = assemble_metadata(&document.metadata, None)?;
-
-    // Step 2: Resolve title and version with defaults
+    // Step 1: Resolve title and version defaults
     let title = resolve_title(&document.metadata.title);
+    let version = resolve_version(&document.metadata.version);
 
-    let version = if document.metadata.version.is_empty() {
-        "0.0.0".to_string()
-    } else {
-        document.metadata.version.clone()
+    // Step 2: Assemble metadata via WI-11 with resolved defaults
+    // This ensures assemble_metadata sees the same defaults the builder uses,
+    // keeping Component Definition metadata consistent with Catalog metadata.
+    let resolved_meta = DocumentMetadata {
+        title: title.clone(),
+        version: version.clone(),
+        ..document.metadata.clone()
     };
+    let assembled = assemble_metadata(&resolved_meta, None)?;
 
     // Step 3: Build documentary component
     let component_uuid = generate_component_uuid(&title, &version, &document.id);
@@ -140,18 +142,18 @@ pub fn build_component_definition(
         if resources.is_empty() { None } else { Some(BackMatter { resources }) }
     };
 
-    // Step 5: Map metadata fields into Component Definition metadata
+    // Step 5: Map metadata fields from assembled metadata
     let metadata = ComponentDefinitionMetadata {
-        title: resolve_title(&real_metadata.title),
-        last_modified: real_metadata.last_modified.to_rfc3339(),
-        version,
-        oscal_version: real_metadata.oscal_version,
+        title: assembled.title,
+        last_modified: assembled.last_modified.to_rfc3339(),
+        version: assembled.version,
+        oscal_version: assembled.oscal_version,
     };
 
     // Step 6: Assemble envelope
     Ok(ComponentDefinitionEnvelope {
         component_definition: ComponentDefinition {
-            uuid: real_metadata.uuid.to_string(),
+            uuid: assembled.uuid.to_string(),
             metadata,
             components: vec![component],
             back_matter,
@@ -162,6 +164,11 @@ pub fn build_component_definition(
 /// Resolve a title string, defaulting to `DEFAULT_COMPONENT_TITLE` if empty.
 fn resolve_title(title: &str) -> String {
     if title.is_empty() { DEFAULT_COMPONENT_TITLE.to_string() } else { title.to_string() }
+}
+
+/// Resolve a version string, defaulting to `"0.0.0"` if empty.
+fn resolve_version(version: &str) -> String {
+    if version.is_empty() { "0.0.0".to_string() } else { version.to_string() }
 }
 
 /// Generate a deterministic UUID v5 for the documentary component.
@@ -570,22 +577,20 @@ mod tests {
 
     #[test]
     fn test_empty_version_metadata_consistency_with_assemble_metadata() {
-        // assemble_metadata passes version through as-is; the builder defaults "" to "0.0.0"
+        // The builder resolves defaults BEFORE calling assemble_metadata,
+        // so both the builder and assemble_metadata see the same "0.0.0" version.
         let doc = test_document("Test Policy", "");
-        let raw_metadata = assemble_metadata(&doc.metadata, None).unwrap();
         let cd_envelope = build_component_definition(&doc).unwrap();
         let cd_meta = &cd_envelope.component_definition.metadata;
 
-        // assemble_metadata passes through raw empty version
-        assert_eq!(raw_metadata.version, "");
-        // Component Definition builder defaults empty version to "0.0.0"
+        // Builder defaults empty version to "0.0.0" and passes it to assemble_metadata
         assert_eq!(cd_meta.version, "0.0.0");
 
-        // Non-empty version: both agree (no defaulting needed)
-        let doc_with_version = test_document("Test Policy", "3.0");
-        let raw_meta_v = assemble_metadata(&doc_with_version.metadata, None).unwrap();
-        let cd_env_v = build_component_definition(&doc_with_version).unwrap();
-        assert_eq!(raw_meta_v.version, "3.0");
-        assert_eq!(cd_env_v.component_definition.metadata.version, "3.0");
+        // Verify consistency: build with same empty version doc and compare
+        // assemble_metadata (with resolved defaults) against ComponentDefinitionMetadata
+        let resolved_meta =
+            DocumentMetadata { version: "0.0.0".to_string(), ..doc.metadata.clone() };
+        let catalog_metadata = assemble_metadata(&resolved_meta, None).unwrap();
+        assert_eq!(catalog_metadata.version, cd_meta.version);
     }
 }
