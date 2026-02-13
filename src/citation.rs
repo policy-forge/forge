@@ -37,6 +37,17 @@ static BIBLIO_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .expect("Bibliographic regex must compile")
 });
 
+// T026: Scheme-less URL pattern — matches www. prefix (R-7).
+static SCHEMELESS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\bwww\.[^\s\)\]>,;]+").expect("Scheme-less URL regex must compile")
+});
+
+// T030: Cross-reference pattern — Section X.Y, Appendix A, Table N (SEC-4).
+static CROSSREF_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\b(?:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b")
+        .expect("Cross-reference regex must compile")
+});
+
 /// Extract citations from all requirements in a `PolicyDocument`.
 ///
 /// Walks the full section tree recursively. For each `PolicyRequirement`:
@@ -113,8 +124,42 @@ pub fn extract_citations_from_text(
         matched_ranges.push(m.start()..m.end());
     }
 
+    // US3: Scheme-less URL matches (skip if overlapping with full URL matches)
+    for m in SCHEMELESS_URL_REGEX.find_iter(text) {
+        let range = m.start()..m.end();
+        if overlaps_any(&range, &matched_ranges) {
+            continue;
+        }
+        let url_text = m.as_str().to_string();
+        let citation_id = generate_citation_id(requirement_id, &url_text);
+        citations.push(Citation {
+            id: citation_id,
+            text: url_text.clone(),
+            url: Some(url_text),
+            source_requirement_id: Some(requirement_id.to_string()),
+        });
+        matched_ranges.push(range);
+    }
+
     // US2: Bibliographic matches (skip if overlapping with URL matches)
     for m in BIBLIO_REGEX.find_iter(text) {
+        let range = m.start()..m.end();
+        if overlaps_any(&range, &matched_ranges) {
+            continue;
+        }
+        let ref_text = m.as_str().to_string();
+        let citation_id = generate_citation_id(requirement_id, &ref_text);
+        citations.push(Citation {
+            id: citation_id,
+            text: ref_text,
+            url: None,
+            source_requirement_id: Some(requirement_id.to_string()),
+        });
+        matched_ranges.push(range);
+    }
+
+    // US4: Cross-reference matches (skip if overlapping with any prior matches)
+    for m in CROSSREF_REGEX.find_iter(text) {
         let range = m.start()..m.end();
         if overlaps_any(&range, &matched_ranges) {
             continue;
@@ -586,5 +631,113 @@ mod tests {
             doc.sections[1].requirements[0].citations[1].text,
             "NIST SP 800-53 Rev 5, Section AC-2"
         );
+    }
+
+    // === T025: US3 Scheme-less URL Detection Tests ===
+
+    // EC-3: www.example.com/policy extracted as Citation with url field
+    #[test]
+    fn us3_schemeless_url_extracted() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "See www.example.com/policy for details").unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].url.as_deref(), Some("www.example.com/policy"));
+        assert_eq!(citations[0].text, "www.example.com/policy");
+        assert_eq!(text, "See for details");
+    }
+
+    // Scheme-less URL in parentheses
+    #[test]
+    fn us3_schemeless_url_in_parentheses() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "Reference (www.example.com) applies").unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].url.as_deref(), Some("www.example.com"));
+        assert_eq!(text, "Reference applies");
+    }
+
+    // Scheme-less URL alongside full URL
+    #[test]
+    fn us3_schemeless_alongside_full_url() {
+        let (_, citations) = extract_citations_from_text(
+            "req-1",
+            "See https://example.com and www.other.com for details",
+        )
+        .unwrap();
+
+        assert_eq!(citations.len(), 2);
+        assert_eq!(citations[0].url.as_deref(), Some("https://example.com"));
+        assert_eq!(citations[1].url.as_deref(), Some("www.other.com"));
+    }
+
+    // === T029: US4 Cross-Reference Detection Tests ===
+
+    // AC-7: Section 3.2 extracted
+    #[test]
+    fn us4_section_reference_extracted() {
+        let (text, citations) = extract_citations_from_text(
+            "req-1",
+            "This control supplements Section 3.2 requirements",
+        )
+        .unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].text, "Section 3.2");
+        assert!(citations[0].url.is_none());
+        assert_eq!(text, "This control supplements requirements");
+    }
+
+    // Appendix A extracted
+    #[test]
+    fn us4_appendix_reference_extracted() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "See Appendix A for definitions").unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].text, "Appendix A");
+        assert!(citations[0].url.is_none());
+        assert_eq!(text, "See for definitions");
+    }
+
+    // Table 2 extracted
+    #[test]
+    fn us4_table_reference_extracted() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "As shown in Table 2 below").unwrap();
+
+        assert_eq!(citations.len(), 1);
+        assert_eq!(citations[0].text, "Table 2");
+        assert!(citations[0].url.is_none());
+        assert_eq!(text, "As shown in below");
+    }
+
+    // EC-6: Lowercase "section" NOT matched
+    #[test]
+    fn us4_lowercase_section_not_matched() {
+        let (text, citations) =
+            extract_citations_from_text("req-1", "This section covers authentication requirements")
+                .unwrap();
+
+        assert!(citations.is_empty());
+        assert_eq!(text, "This section covers authentication requirements");
+    }
+
+    // Cross-ref alongside URL in same requirement
+    #[test]
+    fn us4_crossref_alongside_url() {
+        let (_, citations) = extract_citations_from_text(
+            "req-1",
+            "Per Section 3.2 and https://example.com/controls requirements",
+        )
+        .unwrap();
+
+        assert_eq!(citations.len(), 2);
+        // URL first (higher priority)
+        assert_eq!(citations[0].url.as_deref(), Some("https://example.com/controls"));
+        // Cross-ref second
+        assert_eq!(citations[1].text, "Section 3.2");
+        assert!(citations[1].url.is_none());
     }
 }

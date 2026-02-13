@@ -121,13 +121,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T025 [P] [US3] Write unit tests for scheme-less URL detection in src/citation.rs: `www.example.com/policy` extracted as Citation with url field populated (EC-3), scheme-less URL in parentheses, scheme-less URL alongside a full URL in same requirement
+- [X] T025 [P] [US3] Write unit tests for scheme-less URL detection in src/citation.rs: `www.example.com/policy` extracted as Citation with url field populated (EC-3), scheme-less URL in parentheses, scheme-less URL alongside a full URL in same requirement
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Define `LazyLock<Regex>` scheme-less URL pattern `\bwww\.[^\s\)\]>,;]+` as static in src/citation.rs (R-7)
-- [ ] T027 [US3] Add scheme-less URL matching to `extract_citations_from_text`: process after full URL matches, skip overlapping byte ranges, set `url: Some(matched_text)` on Citation in src/citation.rs
-- [ ] T028 [US3] Verify all US3 tests pass with `cargo test citation`
+- [X] T026 [US3] Define `LazyLock<Regex>` scheme-less URL pattern `\bwww\.[^\s\)\]>,;]+` as static in src/citation.rs (R-7)
+- [X] T027 [US3] Add scheme-less URL matching to `extract_citations_from_text`: process after full URL matches, skip overlapping byte ranges, set `url: Some(matched_text)` on Citation in src/citation.rs
+- [X] T028 [US3] Verify all US3 tests pass with `cargo test citation`
 
 **Checkpoint**: Malformed/scheme-less URLs are detected and preserved for downstream back_matter validation
 
@@ -143,13 +143,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T029 [P] [US4] Write unit tests for cross-reference detection in src/citation.rs: "Section 3.2" extracted (AC-7), "Appendix A" extracted, "Table 2" extracted, lowercase "section" NOT matched (EC-6), cross-ref alongside URL in same requirement
+- [X] T029 [P] [US4] Write unit tests for cross-reference detection in src/citation.rs: "Section 3.2" extracted (AC-7), "Appendix A" extracted, "Table 2" extracted, lowercase "section" NOT matched (EC-6), cross-ref alongside URL in same requirement
 
 ### Implementation for User Story 4
 
-- [ ] T030 [US4] Define `LazyLock<Regex>` cross-reference pattern `\b(?:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b` as static in src/citation.rs (SEC-4)
-- [ ] T031 [US4] Add cross-reference matching to `extract_citations_from_text`: process after URL and bibliographic matches, skip overlapping byte ranges, set `url: None` on Citation (R-5) in src/citation.rs
-- [ ] T032 [US4] Verify all US4 tests pass with `cargo test citation`
+- [X] T030 [US4] Define `LazyLock<Regex>` cross-reference pattern `\b(?:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b` as static in src/citation.rs (SEC-4)
+- [X] T031 [US4] Add cross-reference matching to `extract_citations_from_text`: process after URL and bibliographic matches, skip overlapping byte ranges, set `url: None` on Citation (R-5) in src/citation.rs
+- [X] T032 [US4] Verify all US4 tests pass with `cargo test citation`
 
 **Checkpoint**: All four citation types (URL, bibliographic, scheme-less URL, cross-reference) are detected and extracted
 
