@@ -231,7 +231,7 @@ If this feature is compromised, what's the impact?
 |---------------|----------------------|--------|------------|
 | Cleaned prose text | Overly aggressive regex stripping could remove non-citation text, corrupting requirement prose | Medium | Low |
 | Citation extraction accuracy | A false positive match could extract ordinary text as a citation, altering both the citation list and the prose | Medium | Medium |
-| Malformed URL handling | If malformed URLs were silently dropped instead of preserved with `validated: false`, citation data would be lost | Medium | Low |
+| Scheme-less URL handling | If scheme-less URLs were silently dropped instead of preserved with `url: Some(matched_text)`, citation data would be lost | Medium | Low |
 
 **Integrity Risk Level:** Medium
 
@@ -304,7 +304,7 @@ flowchart TD
 |----|------------------|----------|------------|--------|-------|
 | R1 | **ReDoS via crafted input**: Complex or pathological input strings could cause regex backtracking leading to CPU exhaustion | Medium | Use Rust's `regex` crate which implements a RE2-style engine with guaranteed linear-time matching. Avoid PCRE-style features (backreferences, lookaheads) that enable catastrophic backtracking. | Mitigated | Brian Luby |
 | R2 | **False positive citation extraction**: Conservative regex patterns may still match ordinary text as citations, corrupting prose | Low | Use conservative patterns requiring structural cues (capital "Section" + number, "NIST SP" prefix, "https://" scheme). Test with realistic policy documents. | Mitigated | Brian Luby |
-| R3 | **Silent data loss from malformed URLs**: If malformed URLs are dropped, citation data is lost | Medium | PRD M-5 and parent PRD EC-7 mandate preservation with `validated: false`. Enforced by unit tests. | Mitigated | Brian Luby |
+| R3 | **Silent data loss from scheme-less URLs**: If scheme-less URLs are dropped, citation data is lost | Medium | PRD M-5 and parent PRD EC-7 mandate preservation with `url: Some(matched_text)`. Back_matter (WI-12) handles classification. Enforced by unit tests. | Mitigated | Brian Luby |
 | R4 | **Regex pattern complexity growth**: As more citation types are added, regex patterns may become harder to audit for ReDoS vulnerability | Low | Keep patterns simple and independent. Each pattern type (URL, bibliographic, cross-reference) uses a separate regex. Avoid combining into a single complex pattern. | Mitigated | Brian Luby |
 
 ### Risk Acceptance 🔴 `@human-required`
@@ -334,7 +334,7 @@ N/A — No persistent data storage. All processing is in-memory and transient.
 | SEC-2 | URL regex must be bounded: `https?://[^\s\)\]>]+` — no unbounded quantifiers or nested groups that could cause backtracking | M-1 | Unit Test + Code Review |
 | SEC-3 | Bibliographic reference regex must require known prefixes (NIST SP, ISO, RFC, FIPS) — no open-ended pattern matching on arbitrary text | S-1 | Unit Test |
 | SEC-4 | Cross-reference regex must require capitalized structural keywords (Section, Appendix, Table) followed by a number — no lowercase or ambiguous matching | S-2 | Unit Test |
-| SEC-5 | Malformed URLs must be preserved with `validated: false`, never silently dropped | M-5, AC-4 | Unit Test |
+| SEC-5 | Scheme-less URLs must be preserved with `url: Some(matched_text)` for downstream back_matter classification, never silently dropped | M-5, AC-4 | Unit Test |
 | SEC-6 | Citation extraction must complete within reasonable time for documents with 1000+ requirements (no exponential behavior) | M-6 | Performance Test |
 
 ### Operational Security
@@ -371,8 +371,8 @@ N/A — No persistent data storage. All processing is in-memory and transient.
 ### Positive Observations 🟢 `@llm-autonomous`
 
 - Rust's `regex` crate uses a RE2-style engine with guaranteed linear-time matching, structurally preventing catastrophic backtracking
-- No network I/O — URLs are extracted and validated syntactically only, never fetched, eliminating SSRF risk
-- Malformed URL preservation (with `validated: false`) prevents silent data loss, a good security-aware design choice
+- No network I/O — URLs are extracted syntactically only, never fetched, eliminating SSRF risk
+- Scheme-less URL preservation (with `url: Some(matched_text)` for downstream classification) prevents silent data loss, a good security-aware design choice
 - Separate regex patterns per citation type (URL, bibliographic, cross-reference) keep each pattern simple and auditable
 - Functional transformation design (`text -> (cleaned_text, citations)`) has no side effects, making the extraction logic auditable
 
@@ -380,7 +380,7 @@ N/A — No persistent data storage. All processing is in-memory and transient.
 
 ## Open Questions 🟡 `@human-review`
 
-- [ ] **Q1:** Should a maximum input length be enforced on `PolicyRequirement.text` before regex processing to provide defense-in-depth against resource exhaustion, even with RE2-style guarantees?
+- [x] **Q1:** Should a maximum input length be enforced on `PolicyRequirement.text` before regex processing to provide defense-in-depth against resource exhaustion, even with RE2-style guarantees? **Resolution:** Deferred — Rust's `regex` crate (RE2-style) guarantees linear-time execution, making input length a linear performance concern rather than a security vulnerability. The SEC-6 performance benchmark (1000+ requirements < 1 second) provides sufficient validation. If future profiling reveals issues with extremely long requirement text, a length limit can be added as a targeted optimization.
 
 ---
 
@@ -411,11 +411,11 @@ N/A — No persistent data storage. All processing is in-memory and transient.
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
 | SEC-1 | M-1, M-6 | — | Code Review | src/citation.rs |
-| SEC-2 | M-1 | AC-1 | Unit + Code Review | tests/citation_test.rs |
-| SEC-3 | S-1 | AC-6 | Unit | tests/citation_test.rs |
-| SEC-4 | S-2 | AC-7 | Unit | tests/citation_test.rs |
-| SEC-5 | M-5 | AC-4 | Unit | tests/citation_test.rs |
-| SEC-6 | M-6 | AC-5 | Performance | tests/citation_perf_test.rs |
+| SEC-2 | M-1 | AC-1 | Unit + Code Review | src/citation.rs |
+| SEC-3 | S-1 | AC-6 | Unit | src/citation.rs |
+| SEC-4 | S-2 | AC-7 | Unit | src/citation.rs |
+| SEC-5 | M-5 | AC-4 | Unit | src/citation.rs |
+| SEC-6 | M-6 | AC-5 | Performance | src/citation.rs |
 | SEC-7 | M-6 | — | Code Review | src/citation.rs |
 | SEC-8 | — | — | Code Review | src/citation.rs |
 

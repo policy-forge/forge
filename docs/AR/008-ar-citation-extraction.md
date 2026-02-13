@@ -52,7 +52,7 @@
 > Use the `regex` crate for citation pattern detection (URLs, bibliographic references, cross-references) combined with the `url` crate for URL well-formedness validation, implemented as a pipeline enrichment pass that extracts citations into a `Citation` model and produces cleaned prose text.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> Citation extraction is a pure enrichment function `extract_citations(&mut PolicyDocument)` that scans each `PolicyRequirement.text` for three pattern types: inline URLs (regex for http/https), bibliographic references (regex for NIST SP, ISO, RFC, FIPS patterns), and cross-references (regex for "Section X.Y", "Appendix X", "Table N"). Detected patterns are extracted into `Citation` structs linked to their source requirement, and the citation text is stripped from the prose. Malformed URLs are preserved with `validated: false` — never silently dropped. Do NOT embed OSCAL back matter logic here; citation extraction produces the data model only.
+> Citation extraction is a pure enrichment function `extract_citations(&mut PolicyDocument)` that scans each `PolicyRequirement.text` for three pattern types: inline URLs (regex for http/https), bibliographic references (regex for NIST SP, ISO, RFC, FIPS patterns), and cross-references (regex for "Section X.Y", "Appendix X", "Table N"). Detected patterns are extracted into `Citation` structs linked to their source requirement, and the citation text is stripped from the prose. Scheme-less URLs (www. prefix) are preserved with `url: Some(matched_text)` — never silently dropped. URL validation is handled downstream by back_matter (WI-12) via `classify_url`. Do NOT embed OSCAL back matter logic here; citation extraction produces the data model only.
 
 ---
 
@@ -67,7 +67,7 @@ Policy documents embed citations, URLs, and cross-references directly in require
 - The pattern detection approach for URLs, bibliographic references, and cross-references
 - The `Citation` struct design and its relationship to `PolicyRequirement`
 - How extracted citations are stripped from prose text
-- How malformed URLs are handled (preserved with unvalidated flag)
+- How scheme-less URLs are handled (preserved for downstream back_matter classification)
 
 **This AR does NOT decide:**
 - OSCAL back matter resource generation — deferred to 012-ar-back-matter
@@ -86,7 +86,7 @@ After WI-5, `PolicyRequirement` structs contain raw text that may include inline
 | M-2 | Strip extracted citation text from requirement prose | Text replacement and whitespace normalization after stripping |
 | M-3 | Citation struct: id, requirement_id, text, url (optional) | Data model extension to PolicyRequirement |
 | M-4 | Each Citation linked to its source PolicyRequirement | FK relationship in Citation struct |
-| M-5 | Malformed URLs preserved with unvalidated flag | `url` crate for validation; `validated: bool` field on Citation |
+| M-5 | Scheme-less URLs preserved for downstream classification | Scheme-less URL regex pattern; `url: Some(matched_text)` on Citation; back_matter (WI-12) handles validation |
 | M-6 | Pipeline enrichment function on PolicyDocument | Function signature: `extract_citations(&mut PolicyDocument)` |
 
 **PRD Constraints inherited:**
@@ -100,7 +100,7 @@ After WI-5, `PolicyRequirement` structs contain raw text that may include inline
 ## Decision Drivers 🔴 `@human-required`
 
 1. **Extraction accuracy:** URLs and references must be reliably detected without false positives *(traces to PRD M-1)*
-2. **Data preservation:** No citation data may be silently lost, including malformed URLs *(traces to PRD M-5, parent PRD EC-7)*
+2. **Data preservation:** No citation data may be silently lost, including scheme-less URLs *(traces to PRD M-5, parent PRD EC-7)*
 3. **Clean prose:** Extracted citations must be stripped cleanly, leaving readable prose *(traces to PRD M-2)*
 4. **Simplicity:** Pattern matching only; no NLP or network requests *(constitution principle X)*
 
@@ -133,13 +133,10 @@ graph TD
         A1[PolicyRequirement.text] --> B1[Apply URL regex]
         A1 --> C1[Apply bibliographic regex]
         A1 --> D1[Apply cross-reference regex]
-        B1 --> E1{URL well-formed?}
-        E1 -->|Yes| F1[Citation with validated=true]
-        E1 -->|No| G1[Citation with validated=false]
+        B1 --> F1[Citation with url field populated]
         C1 --> H1[Citation with text, no URL]
         D1 --> I1[Citation with text, no URL]
         F1 --> J1[Strip from prose]
-        G1 --> J1
         H1 --> J1
         I1 --> J1
         J1 --> K1[Normalize whitespace in cleaned prose]
@@ -149,7 +146,7 @@ graph TD
 | Driver | Rating | Notes |
 |--------|--------|-------|
 | Extraction accuracy | ✅ Good | Regex patterns are well-suited for URL, standard-name, and section-reference patterns |
-| Data preservation | ✅ Good | Malformed URLs preserved with validated=false; nothing silently dropped |
+| Data preservation | ✅ Good | Scheme-less URLs preserved with `url: Some(matched_text)` for downstream classification; nothing silently dropped |
 | Clean prose | ✅ Good | Matched text stripped; whitespace normalized after removal |
 | Simplicity | ✅ Good | Two well-established crates (regex, url); straightforward patterns |
 
@@ -237,15 +234,15 @@ graph TD
         Input[PolicyDocument] --> Walk[Walk all sections and requirements]
         Walk --> Extract[extract_citations_from_text]
         Extract --> URLRegex[URL Pattern: https?://...]
+        Extract --> SchemeRegex[Scheme-less URL Pattern: www.]
         Extract --> BibRegex[Bibliographic Pattern: NIST SP, ISO, RFC, FIPS]
         Extract --> XRefRegex[Cross-Reference Pattern: Section X.Y, Appendix X]
-        URLRegex --> Validate{url::Url::parse}
-        Validate -->|Ok| ValidCitation[Citation validated=true]
-        Validate -->|Err| InvalidCitation[Citation validated=false]
+        URLRegex --> URLCitation[Citation with url field]
+        SchemeRegex --> SchemeCitation[Citation with url field]
         BibRegex --> BibCitation[Citation url=None]
         XRefRegex --> XRefCitation[Citation url=None]
-        ValidCitation --> Strip[Strip citation text from prose]
-        InvalidCitation --> Strip
+        URLCitation --> Strip[Strip citation text from prose]
+        SchemeCitation --> Strip
         BibCitation --> Strip
         XRefCitation --> Strip
         Strip --> Normalize[Normalize whitespace in cleaned prose]
@@ -265,7 +262,7 @@ graph TD
 | URLDetector | Detect inline HTTP/HTTPS URLs in text | Internal regex matching | regex crate |
 | BibliographicDetector | Detect standard references (NIST SP, ISO, RFC, FIPS) | Internal regex matching | regex crate |
 | CrossReferenceDetector | Detect section/appendix/table references | Internal regex matching | regex crate |
-| URLValidator | Validate detected URLs for well-formedness | `url::Url::parse()` | url crate |
+| SchemeDetector | Detect scheme-less URLs (www. prefix) for downstream validation | Internal regex matching | regex crate |
 | ProseStripper | Remove citation text and normalize whitespace | Internal string processing | None (stdlib) |
 | Citation | Data model for extracted citations | Struct | None |
 
@@ -278,7 +275,6 @@ sequenceDiagram
     participant U as URLDetector
     participant B as BibliographicDetector
     participant X as CrossReferenceDetector
-    participant V as URLValidator
     participant S as ProseStripper
 
     P->>E: extract_citations(&mut document)
@@ -289,11 +285,8 @@ sequenceDiagram
         B-->>E: bib_matches
         E->>X: detect_cross_references(text)
         X-->>E: xref_matches
-        loop For each URL match
-            E->>V: url::Url::parse(url_text)
-            V-->>E: valid/invalid
-            E->>E: Create Citation(validated=true/false)
-        end
+        E->>E: Create Citation for each URL match
+        E->>E: Create Citation for each scheme-less URL match
         E->>E: Create Citation for each bib/xref match
         E->>S: strip_citations(text, all_matches)
         S-->>E: cleaned_text
@@ -306,21 +299,17 @@ sequenceDiagram
 ### Interface Definitions 🟡 `@human-review`
 
 ```rust
-use url::Url;
-
 /// A citation extracted from policy requirement text.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Citation {
-    /// Unique identifier for this citation
+    /// Unique identifier for this citation (UUID v5)
     pub id: String,
-    /// ID of the PolicyRequirement this citation was extracted from
-    pub requirement_id: String,
     /// Display text of the citation (standard name, reference label, URL text)
     pub text: String,
     /// URL if the citation contains a link; None for bibliographic/cross-refs
     pub url: Option<String>,
-    /// Whether the URL (if present) is well-formed; false for malformed URLs
-    pub validated: bool,
+    /// stable_id of the source PolicyRequirement (populated during extraction)
+    pub source_requirement_id: Option<String>,
 }
 
 /// Enrichment function: extract citations from all requirements in a document.
@@ -350,13 +339,12 @@ pub fn extract_citations_from_text(
    c. Cross-reference: \b(Section|Appendix|Table)\s+[\dA-Z]+(\.\d+)*\b
 2. For each PolicyRequirement.text:
    a. Apply all three patterns, collecting matches with positions
-   b. For each URL match: validate with url::Url::parse()
-      - Ok → Citation { validated: true }
-      - Err → Citation { validated: false }
-   c. For each bibliographic match: Citation { url: None, validated: true }
-   d. For each cross-reference match: Citation { url: None, validated: true }
-   e. Strip all matched text from prose (replace with empty string)
-   f. Normalize whitespace: collapse double spaces, trim
+   b. For each URL match: Citation { url: Some(matched_text) }
+   c. For each scheme-less URL match: Citation { url: Some(matched_text) }
+   d. For each bibliographic match: Citation { url: None }
+   e. For each cross-reference match: Citation { url: None }
+   f. Strip all matched text from prose (replace with empty string)
+   g. Normalize whitespace: collapse double spaces, trim
 3. Update requirement: text = cleaned_prose, citations = extracted_citations
 ```
 
@@ -389,7 +377,7 @@ pub fn extract_citations_from_text(
 
 > ⚠️ **Critical for LLM Agents:**
 
-- [x] **DO NOT** silently drop malformed URLs — preserve with `validated: false` *(parent PRD EC-7)*
+- [x] **DO NOT** silently drop scheme-less URLs — preserve with `url: Some(matched_text)` for downstream back_matter classification *(parent PRD EC-7)*
 - [x] **DO NOT** embed OSCAL back matter logic in this module — extraction produces data model only *(PRD W-1)*
 - [x] **DO NOT** perform network requests to validate URL reachability *(PRD W-3, parent PRD technical constraints)*
 - [x] **DO NOT** use overly aggressive regex that matches ordinary text as citations *(risk R-3)*
@@ -439,7 +427,7 @@ pub fn extract_citations_from_text(
 | Layer | Test Type | Coverage Target | Notes |
 |-------|-----------|-----------------|-------|
 | Unit | URL extraction | AC-1, AC-2 | Single and multiple URLs |
-| Unit | URL validation | AC-4 | Malformed URL preserved with validated=false |
+| Unit | Scheme-less URL detection | AC-4 | Scheme-less URL preserved with `url: Some(matched_text)` |
 | Unit | Bibliographic extraction | AC-6 | NIST SP, ISO, RFC patterns |
 | Unit | Cross-reference extraction | AC-7 | Section, Appendix, Table patterns |
 | Unit | Prose cleaning | AC-1, AC-5 | No residual citation text; normalized whitespace |
@@ -447,9 +435,9 @@ pub fn extract_citations_from_text(
 | Integration | Full document extraction | AC-5 | All requirements processed |
 
 ### Anti-patterns to Avoid 🟡 `@human-review`
-- **Don't:** Silently drop malformed URLs
+- **Don't:** Silently drop scheme-less URLs
   - **Why:** Violates parent PRD EC-7 and loses data
-  - **Instead:** Preserve with `validated: false` annotation
+  - **Instead:** Preserve with `url: Some(matched_text)` for downstream back_matter classification
 - **Don't:** Embed OSCAL back matter assembly logic
   - **Why:** Couples extraction to OSCAL serialization; WI-12 handles back matter
   - **Instead:** Extract into `Citation` structs; let WI-12 consume them
@@ -466,18 +454,18 @@ pub fn extract_citations_from_text(
 - Authorization: N/A
 - Data handling: Policy text and URLs are processed; URLs from policy documents may point to internal or sensitive resources
 - ReDoS: Regex patterns must be bounded; URL regex in particular must not backtrack on long input
-- No network access: URLs are extracted and validated syntactically only, never fetched
+- No network access: URLs are extracted syntactically only, never fetched; URL validation happens downstream in back_matter (WI-12)
 
 ### Observability 🟢 `@llm-autonomous`
 - **Logging:** Log at DEBUG level: count of citations extracted per requirement by type (URL, bibliographic, cross-reference)
-- **Metrics:** Total citations extracted per document; count of malformed URLs
+- **Metrics:** Total citations extracted per document; count of scheme-less URLs
 - **Tracing:** N/A for this module
 
 ### Error Handling Strategy 🟢 `@llm-autonomous`
 ```
 Error Category → Handling Approach
 ├── No citations in text → Return text unchanged, empty citations vec
-├── Malformed URL detected → Create Citation with validated=false (per EC-7)
+├── Scheme-less URL detected → Create Citation with url: Some(matched_text) (per EC-7)
 ├── Regex compilation failure → ForgeError::Parse at startup (should not happen with static patterns)
 ├── Prose normalization edge cases → Collapse whitespace, trim; accept minor grammatical artifacts
 └── Zero requirements in document → Return document unchanged, no error
@@ -523,9 +511,9 @@ No open questions for this work item.
 |------------|-----------------|---------------|-----------|-------|
 | M-1 | Extraction accuracy | Option 1: ✅ | URLDetector | Regex detects http/https URLs |
 | M-2 | Clean prose | Option 1: ✅ | ProseStripper | Strips citation text, normalizes whitespace |
-| M-3 | Data preservation | Option 1: ✅ | Citation struct | Fields: id, requirement_id, text, url, validated |
+| M-3 | Data preservation | Option 1: ✅ | Citation struct | Fields: id, text, url, source_requirement_id |
 | M-4 | Data preservation | Option 1: ✅ | CitationExtractor | Each Citation linked to source requirement |
-| M-5 | Data preservation | Option 1: ✅ | URLValidator | Malformed URLs get validated=false |
+| M-5 | Data preservation | Option 1: ✅ | SchemeDetector | Scheme-less URLs preserved with url field for downstream classification |
 | M-6 | Simplicity | Option 1: ✅ | CitationExtractor | Pipeline enrichment on PolicyDocument |
 | S-1 | Extraction accuracy | Option 1: ✅ | BibliographicDetector | Patterns for NIST SP, ISO, RFC, FIPS |
 | S-2 | Extraction accuracy | Option 1: ✅ | CrossReferenceDetector | Patterns for Section, Appendix, Table |

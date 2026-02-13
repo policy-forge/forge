@@ -49,6 +49,7 @@ pub(crate) fn map_sections(
                 nesting_depth: item.nesting_depth,
                 atom_index: 0,
                 parent_text: None,
+                citations: vec![],
             })
             .collect();
         return vec![PolicySection {
@@ -79,6 +80,7 @@ pub(crate) fn map_sections(
                 nesting_depth: item.nesting_depth,
                 atom_index: 0,
                 parent_text: None,
+                citations: vec![],
             })
             .collect();
         result.push(PolicySection {
@@ -134,6 +136,7 @@ fn map_sections_recursive(
                 nesting_depth: item.nesting_depth,
                 atom_index: 0,
                 parent_text: None,
+                citations: vec![],
             })
             .collect();
 

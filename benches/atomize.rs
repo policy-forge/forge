@@ -16,6 +16,7 @@ fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
         nesting_depth: 0,
         atom_index: 0,
         parent_text: None,
+        citations: vec![],
     }
 }
 

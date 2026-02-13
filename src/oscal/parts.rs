@@ -110,6 +110,7 @@ pub fn generate_part_id(control_id: &str, suffix: &str) -> String {
 ///     nesting_depth: 0,
 ///     atom_index: 0,
 ///     parent_text: None,
+///     citations: vec![],
 /// };
 ///
 /// let parts = build_control_parts("POL-AC-001", &req, None);
@@ -181,6 +182,7 @@ pub fn build_control_parts(
 ///     nesting_depth: 0,
 ///     atom_index: 0,
 ///     parent_text: None,
+///     citations: vec![],
 /// };
 ///
 /// let props = build_control_props(&req);
@@ -215,6 +217,7 @@ mod tests {
             nesting_depth: 0,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         }
     }
 

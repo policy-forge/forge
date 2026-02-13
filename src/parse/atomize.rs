@@ -113,6 +113,7 @@ fn reconstruct_clause(shared_subject: &str, clause: &str) -> String {
 ///     nesting_depth: 0,
 ///     atom_index: 0,
 ///     parent_text: None,
+///     citations: vec![],
 /// };
 ///
 /// let result = atomize_requirement(&req).unwrap();
@@ -134,6 +135,7 @@ pub fn atomize_requirement(
                 nesting_depth: requirement.nesting_depth,
                 atom_index: 0,
                 parent_text: None,
+                citations: vec![],
             }],
             was_split: false,
             original_text: None,
@@ -153,6 +155,7 @@ pub fn atomize_requirement(
                 nesting_depth: requirement.nesting_depth,
                 atom_index: 0,
                 parent_text: None,
+                citations: vec![],
             }],
             was_split: false,
             original_text: None,
@@ -176,6 +179,7 @@ pub fn atomize_requirement(
                 nesting_depth: requirement.nesting_depth,
                 atom_index: 0,
                 parent_text: None,
+                citations: vec![],
             }],
             was_split: false,
             original_text: None,
@@ -228,6 +232,7 @@ pub fn atomize_requirement(
             nesting_depth: requirement.nesting_depth,
             atom_index: index,
             parent_text: Some(text.clone()),
+            citations: vec![],
         });
     }
 
@@ -272,6 +277,7 @@ pub fn atomize_requirement(
 ///             nesting_depth: 0,
 ///             atom_index: 0,
 ///             parent_text: None,
+///             citations: vec![],
 ///         }],
 ///     }],
 /// };
@@ -339,6 +345,7 @@ mod tests {
             nesting_depth: 0,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         }
     }
 

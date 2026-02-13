@@ -377,6 +377,7 @@ mod tests {
             nesting_depth: 0,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         }
     }
 
@@ -388,6 +389,7 @@ mod tests {
             nesting_depth: 0,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         }
     }
 
@@ -897,6 +899,7 @@ mod tests {
             nesting_depth: 0,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         }
     }
 
@@ -953,6 +956,7 @@ mod tests {
             nesting_depth: 0,
             atom_index: 0,
             parent_text: None,
+            citations: vec![],
         };
         let d = doc(vec![sec("Test", vec![r])]);
         let cat = build_catalog(&d).unwrap();

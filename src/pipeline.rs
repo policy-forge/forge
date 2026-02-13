@@ -87,6 +87,9 @@ pub fn run_catalog_pipeline(
     let mut doc_with_ids = atomized;
     crate::uuid::assign_stable_ids(&mut doc_with_ids);
 
+    // Step 7b: Extract citations (WI-8, after UUID assignment, before OSCAL generation)
+    crate::citation::extract_citations(&mut doc_with_ids)?;
+
     // Step 8: Build catalog
     let catalog = crate::oscal::build_catalog(&doc_with_ids)?;
 
