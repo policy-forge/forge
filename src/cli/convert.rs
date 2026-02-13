@@ -37,7 +37,7 @@ pub fn execute(
                         "--source-profile is required when using --strategy component".to_string(),
                     ));
                 }
-                Some("") => {
+                Some(p) if p.trim().is_empty() => {
                     return Err(ForgeError::Validation(
                         "--source-profile must not be empty".to_string(),
                     ));
@@ -86,6 +86,23 @@ mod tests {
         assert!(
             err.to_string().contains("--source-profile must not be empty"),
             "Expected empty source-profile error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn component_strategy_whitespace_only_source_profile_errors() {
+        let result = execute(
+            Path::new("test.md"),
+            &Strategy::Component,
+            &OutputFormat::Json,
+            None,
+            10,
+            Some("   "),
+        );
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("--source-profile must not be empty"),
+            "Expected empty source-profile error for whitespace-only, got: {err}"
         );
     }
 }

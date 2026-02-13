@@ -144,6 +144,13 @@ pub fn run_component_pipeline(
     max_size_bytes: u64,
     source_profile: &str,
 ) -> Result<(), ForgeError> {
+    // Validate source_profile is not empty or whitespace-only
+    if source_profile.trim().is_empty() {
+        return Err(ForgeError::Validation(
+            "source_profile is required and must not be empty or whitespace".to_string(),
+        ));
+    }
+
     // Steps 1-9: shared pipeline stages (same as catalog)
     let ingested = crate::ingest::ingest_file(input_path, max_size_bytes)?;
     let content = ingested.reconstruct_content();

@@ -123,7 +123,13 @@ pub fn build_component_definition(
             let ci = crate::oscal::implemented_requirements::build_control_implementations(
                 document, profile,
             )?;
-            ci.as_array().cloned().unwrap_or_default()
+            ci.as_array()
+                .cloned()
+                .ok_or_else(|| {
+                    ForgeError::ComponentDefinitionBuild(
+                        "build_control_implementations returned non-array value for control-implementations".to_string(),
+                    )
+                })?
         }
         None => vec![],
     };
