@@ -110,8 +110,14 @@ pub fn run_catalog_pipeline(
     // Steps 1-9: shared pipeline stages
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
 
-    // Step 8: Build catalog
-    let catalog = crate::oscal::build_catalog(&doc_with_ids)?;
+    // Step 8: Build catalog (with trace link capture)
+    let mut trace_links = crate::model::trace::TraceLinkCollection::new();
+    let catalog = crate::oscal::build_catalog(&doc_with_ids, Some(&mut trace_links))?;
+
+    tracing::info!(
+        trace_link_count = trace_links.len(),
+        "Trace links captured during catalog generation"
+    );
 
     // Step 9: Assemble metadata
     let real_metadata = crate::oscal::assemble_metadata(&doc_with_ids.metadata, None)?;
@@ -175,7 +181,8 @@ pub fn run_component_pipeline(
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
 
     // Step 10: Build component definition with source_profile
-    let envelope = crate::oscal::build_component_definition(&doc_with_ids, Some(source_profile))?;
+    let envelope =
+        crate::oscal::build_component_definition(&doc_with_ids, Some(source_profile), None)?;
 
     // Step 11: Serialize to pretty JSON
     let json = serde_json::to_string_pretty(&envelope)
