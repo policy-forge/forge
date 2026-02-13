@@ -12,6 +12,7 @@ pub mod validate;
 
 pub use citation::extract_citations;
 pub use error::ForgeError;
+pub use model::trace::{SourceLocation, TraceError, TraceLink, TraceLinkCollection};
 pub use model::{Citation, PolicyDocument, PolicyRequirement, PolicySection};
 pub use oscal::{
     BackMatter, BackMatterResource, ComponentDefinition, ComponentDefinitionEnvelope,

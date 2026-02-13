@@ -11,6 +11,7 @@ use tracing::debug;
 
 use super::parts::{OscalPart, OscalProp, build_control_parts, build_control_props};
 use crate::error::ForgeError;
+use crate::model::trace::{SourceLocation, TraceLink, TraceLinkCollection};
 use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 
 // ─── OSCAL Structs ──────────────────────────────────────────────────────
@@ -267,17 +268,39 @@ pub fn collect_requirements(section: &PolicySection) -> Vec<&PolicyRequirement> 
     reqs
 }
 
+/// Recursively collect all requirements paired with their owning section,
+/// preserving depth-first order.
+///
+/// Unlike [`collect_requirements`], this tracks which section each
+/// requirement belongs to, so callers can use the correct subsection
+/// title (e.g., for trace link `SourceLocation`).
+fn collect_requirements_with_section(
+    section: &PolicySection,
+) -> Vec<(&PolicyRequirement, &PolicySection)> {
+    let mut reqs: Vec<(&PolicyRequirement, &PolicySection)> =
+        section.requirements.iter().map(|r| (r, section)).collect();
+    for child in &section.children {
+        reqs.extend(collect_requirements_with_section(child));
+    }
+    reqs
+}
+
 // ─── Builder ────────────────────────────────────────────────────────────
 
 /// Build an OSCAL Catalog from a [`PolicyDocument`].
 ///
-/// Pure function: reads domain model, produces OSCAL struct.
+/// Optionally records a [`TraceLink`] for every generated control into the
+/// provided [`TraceLinkCollection`]. Pass `None` for backward compatibility.
 ///
 /// # Errors
 ///
 /// Returns [`ForgeError::CatalogBuild`] if any
-/// `PolicyRequirement.stable_id` is `None`.
-pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeError> {
+/// `PolicyRequirement.stable_id` is `None`, or if a duplicate trace link
+/// is detected for the same requirement.
+pub fn build_catalog(
+    document: &PolicyDocument,
+    mut trace_links: Option<&mut TraceLinkCollection>,
+) -> Result<OscalCatalog, ForgeError> {
     let mut group_id_counts: HashMap<String, usize> = HashMap::new();
     let mut abbrev_counts: HashMap<String, usize> = HashMap::new();
     let mut groups = Vec::new();
@@ -287,15 +310,15 @@ pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeErr
 
         let abbreviation = resolve_abbreviation(&section.title, &mut abbrev_counts);
 
-        let requirements = collect_requirements(section);
+        let requirements = collect_requirements_with_section(section);
         let mut controls = Vec::with_capacity(requirements.len());
 
-        for (req_idx, req) in requirements.iter().enumerate() {
+        for (req_idx, (req, req_section)) in requirements.iter().enumerate() {
             let stable_id = req.stable_id.as_ref().ok_or_else(|| {
                 let preview: String = req.text.chars().take(60).collect();
                 ForgeError::CatalogBuild(format!(
                     "Requirement missing stable_id in section '{}': '{preview}'",
-                    section.title,
+                    req_section.title,
                 ))
             })?;
 
@@ -305,9 +328,30 @@ pub fn build_catalog(document: &PolicyDocument) -> Result<OscalCatalog, ForgeErr
                 uuid: stable_id.clone(),
                 title: derive_control_title(&req.text),
                 links: vec![],
-                parts: build_control_parts(&control_id, req, section.body_text.as_deref()),
+                parts: build_control_parts(&control_id, req, req_section.body_text.as_deref()),
                 props: build_control_props(req),
             });
+
+            // Record trace link for this control (T020)
+            if let Some(ref mut tl) = trace_links {
+                let trace = TraceLink {
+                    requirement_stable_id: stable_id.clone(),
+                    oscal_json_path: format!("catalog.groups[{idx}].controls[{req_idx}]"),
+                    oscal_element_id: stable_id.clone(),
+                    source_location: SourceLocation {
+                        file_path: document.metadata.source_path.clone(),
+                        section_title: req_section.title.clone(),
+                        line_number: req.source_line,
+                    },
+                };
+                tl.record(trace).map_err(|e| {
+                    ForgeError::CatalogBuild(format!(
+                        "Failed to record trace link for requirement '{stable_id}' in section '{}' at line {}: {e}",
+                        req_section.title,
+                        req.source_line,
+                    ))
+                })?;
+            }
         }
 
         groups.push(OscalGroup { id: group_id, title: section.title.clone(), controls });
@@ -596,7 +640,7 @@ mod tests {
             sec("Data Protection", vec![req("R.", "u2")]),
             sec("Incident Response", vec![req("R.", "u3")]),
         ]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         assert_eq!(cat.groups.len(), 3);
         assert_eq!(cat.groups[0].id, "access-control");
         assert_eq!(cat.groups[0].title, "Access Control");
@@ -607,14 +651,14 @@ mod tests {
     #[test]
     fn catalog_zero_sections() {
         let d = doc(vec![]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         assert!(cat.groups.is_empty());
     }
 
     #[test]
     fn catalog_section_empty_controls() {
         let d = doc(vec![sec("Empty", vec![])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         assert_eq!(cat.groups.len(), 1);
         assert!(cat.groups[0].controls.is_empty());
     }
@@ -624,7 +668,7 @@ mod tests {
     #[test]
     fn catalog_group_id_collision() {
         let d = doc(vec![sec("Data Protection", vec![]), sec("Data Protection!", vec![])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         assert_eq!(cat.groups[0].id, "data-protection");
         assert_eq!(cat.groups[1].id, "data-protection-2");
     }
@@ -632,7 +676,7 @@ mod tests {
     #[test]
     fn catalog_empty_title_fallback() {
         let d = doc(vec![sec("", vec![])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         assert_eq!(cat.groups[0].id, "group-0");
     }
 
@@ -645,7 +689,7 @@ mod tests {
             sec("Application Configuration", vec![req("R.", "u2")]),
             sec("Audit Compliance", vec![req("R.", "u3")]),
         ]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         assert_eq!(cat.groups[0].controls[0].id, "POL-AC-001");
         assert_eq!(cat.groups[1].controls[0].id, "POL-AC2-001");
         assert_eq!(cat.groups[2].controls[0].id, "POL-AC3-001");
@@ -656,7 +700,7 @@ mod tests {
     #[test]
     fn catalog_missing_stable_id() {
         let d = doc(vec![sec("Test", vec![req_no_id("No ID requirement")])]);
-        let err = build_catalog(&d).unwrap_err();
+        let err = build_catalog(&d, None).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("missing stable_id"));
         assert!(msg.contains("Test"));
@@ -685,7 +729,7 @@ mod tests {
                 ],
             ),
         ]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
 
         assert_eq!(cat.groups[0].controls.len(), 3);
         assert_eq!(cat.groups[1].controls.len(), 4);
@@ -708,7 +752,7 @@ mod tests {
     #[test]
     fn json_serialization_structure() {
         let d = doc(vec![sec("Access Control", vec![req("All users shall auth.", "uuid-1")])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -739,7 +783,7 @@ mod tests {
             sec("Access Control", vec![req("Auth required.", "u1"), req("MFA required.", "u2")]),
             sec("Data Protection", vec![req("Encrypt data.", "u3")]),
         ]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -819,7 +863,7 @@ mod tests {
             ),
         ]);
 
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
 
         // SC-001: All sections mapped
         assert_eq!(cat.groups.len(), 5);
@@ -837,7 +881,7 @@ mod tests {
         assert_eq!(ids.len(), count);
 
         // SC-006: Deterministic
-        let cat2 = build_catalog(&d).unwrap();
+        let cat2 = build_catalog(&d, None).unwrap();
         for (g1, g2) in cat.groups.iter().zip(cat2.groups.iter()) {
             assert_eq!(g1.id, g2.id);
             for (c1, c2) in g1.controls.iter().zip(g2.controls.iter()) {
@@ -859,7 +903,7 @@ mod tests {
             sec("Authorization Controls", vec![req("R9.", "u9"), req("R10.", "u10")]),
         ]);
 
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
 
         // Verify collision resolution
         assert_eq!(cat.groups[0].controls[0].id, "POL-AC-001");
@@ -911,7 +955,7 @@ mod tests {
             sec("Access Control", vec![req("Users shall authenticate.", "u1")]),
             sec("Data Protection", vec![req("Encrypt at rest.", "u2")]),
         ]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
 
         for group in &cat.groups {
             for ctrl in &group.controls {
@@ -935,7 +979,7 @@ mod tests {
     #[test]
     fn test_serialized_control_no_remarks_field() {
         let d = doc(vec![sec("Access Control", vec![req("Auth required.", "u1")])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -959,7 +1003,7 @@ mod tests {
             citations: vec![],
         };
         let d = doc(vec![sec("Test", vec![r])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -980,7 +1024,7 @@ mod tests {
             "Guidance here.",
             vec![req("Users shall authenticate.", "u1")],
         )]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let ctrl = &cat.groups[0].controls[0];
 
         assert_eq!(ctrl.parts.len(), 2, "Expected statement + guidance parts");
@@ -1003,7 +1047,7 @@ mod tests {
     #[test]
     fn test_catalog_no_guidance_without_body_text() {
         let d = doc(vec![sec("Access Control", vec![req("Auth required.", "u1")])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let ctrl = &cat.groups[0].controls[0];
 
         assert_eq!(ctrl.parts.len(), 1, "Expected only statement part when no body_text");
@@ -1019,7 +1063,7 @@ mod tests {
             "Some guidance.",
             vec![req("Auth required.", "u1")],
         )]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -1052,7 +1096,7 @@ mod tests {
     #[test]
     fn test_json_props_structure() {
         let d = doc(vec![sec("Access Control", vec![req_with_line("Auth required.", "u1", 42)])]);
-        let cat = build_catalog(&d).unwrap();
+        let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();

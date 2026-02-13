@@ -90,8 +90,14 @@ pub fn run_catalog_pipeline(
     // Step 7b: Extract citations (WI-8, after UUID assignment, before OSCAL generation)
     crate::citation::extract_citations(&mut doc_with_ids)?;
 
-    // Step 8: Build catalog
-    let catalog = crate::oscal::build_catalog(&doc_with_ids)?;
+    // Step 8: Build catalog (with trace link capture)
+    let mut trace_links = crate::model::trace::TraceLinkCollection::new();
+    let catalog = crate::oscal::build_catalog(&doc_with_ids, Some(&mut trace_links))?;
+
+    tracing::info!(
+        trace_link_count = trace_links.len(),
+        "Trace links captured during catalog generation"
+    );
 
     // Step 9: Assemble metadata
     let real_metadata = crate::oscal::assemble_metadata(&doc_with_ids.metadata, None)?;

@@ -6,6 +6,7 @@
 
 pub mod assemble;
 mod frontmatter;
+pub mod trace;
 
 use std::path::PathBuf;
 

@@ -68,7 +68,7 @@ This PRD covers **WI-16: Traceability — TraceLink Model** from the FORGE Produ
 | TraceLink | A data structure mapping a policy requirement's stable ID to its corresponding OSCAL element path and element ID, plus the source location in the original document |
 | SourceLocation | A struct capturing the origin of a policy requirement: file path, section title, and line number |
 | TraceLinkCollection | An aggregation container holding all TraceLink instances produced during a single conversion run, supporting bidirectional lookup |
-| oscal_json_path | A JSON Pointer (RFC 6901) or dot-path identifying where an OSCAL element resides within the generated artifact (e.g., `catalog.groups[0].controls[2]`) |
+| oscal_json_path | A dot-notation logical path identifying where an OSCAL element resides within the generated artifact (e.g., `catalog.groups[0].controls[2]`). Resolved per OQ-1: dot-notation chosen over JSON Pointer (RFC 6901) for readability. |
 | oscal_element_id | The UUID or identifier of the specific OSCAL element (e.g., the control's UUID or the implemented-requirement's UUID) |
 | requirement_stable_id | The deterministic, content-based UUID assigned to a PolicyRequirement by WI-7 (UUID generation) |
 | Bidirectional Traceability | The ability to navigate from an OSCAL element back to its source policy location AND from a source policy location forward to all generated OSCAL elements |
@@ -147,7 +147,7 @@ The system must record precise source locations so that downstream consumers (WI
 - [A-1] The `requirement_stable_id` field is available from WI-7 (UUID generation) by the time trace links are captured. If WI-7 is not yet integrated, a placeholder ID from the domain model suffices.
 - [A-2] The Catalog generation pipeline (WI-9) and Component Definition pipeline (WI-14/WI-15) can be instrumented to emit TraceLink instances without significant refactoring.
 - [A-3] A single `PolicyRequirement` may map to multiple OSCAL elements (e.g., one control in a Catalog and one implemented-requirement in a Component Definition), so the mapping is one-to-many from source to OSCAL.
-- [A-4] The `oscal_json_path` uses a dot-notation or JSON Pointer format that is stable across serialization runs for the same input.
+- [A-4] The `oscal_json_path` uses dot-notation format (per OQ-1 resolution) that is stable across serialization runs for the same input.
 
 ### Risks
 | ID | Risk | Likelihood | Impact | Mitigation |
