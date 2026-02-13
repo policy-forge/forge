@@ -4,6 +4,8 @@
 //! Converts the domain model to an OSCAL Component Definition structure
 //! containing a single documentary component of type "policy".
 
+use std::collections::HashSet;
+
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -106,11 +108,7 @@ pub fn build_component_definition(
     let real_metadata = assemble_metadata(&document.metadata, None)?;
 
     // Step 2: Resolve title and version with defaults
-    let title = if document.metadata.title.is_empty() {
-        DEFAULT_COMPONENT_TITLE.to_string()
-    } else {
-        document.metadata.title.clone()
-    };
+    let title = resolve_title(&document.metadata.title);
 
     let version = if document.metadata.version.is_empty() {
         "0.0.0".to_string()
@@ -144,11 +142,7 @@ pub fn build_component_definition(
 
     // Step 5: Map metadata fields into Component Definition metadata
     let metadata = ComponentDefinitionMetadata {
-        title: if real_metadata.title.is_empty() {
-            DEFAULT_COMPONENT_TITLE.to_string()
-        } else {
-            real_metadata.title
-        },
+        title: resolve_title(&real_metadata.title),
         last_modified: real_metadata.last_modified.to_rfc3339(),
         version,
         oscal_version: real_metadata.oscal_version,
@@ -165,27 +159,43 @@ pub fn build_component_definition(
     })
 }
 
+/// Resolve a title string, defaulting to `DEFAULT_COMPONENT_TITLE` if empty.
+fn resolve_title(title: &str) -> String {
+    if title.is_empty() { DEFAULT_COMPONENT_TITLE.to_string() } else { title.to_string() }
+}
+
 /// Generate a deterministic UUID v5 for the documentary component.
 fn generate_component_uuid(title: &str, version: &str) -> Uuid {
     let input = format!("{title}\0{version}");
     Uuid::new_v5(&COMPONENT_NAMESPACE, input.as_bytes())
 }
 
-/// Recursively collect all citations from all requirements across all sections.
+/// Recursively collect all unique citations from all requirements across all sections.
+///
+/// Deduplicates by citation `id` to prevent duplicate back-matter resources.
 fn collect_all_citations(sections: &[PolicySection]) -> Vec<Citation> {
     let mut citations = Vec::new();
+    let mut seen = HashSet::new();
     for section in sections {
-        collect_citations_from_section(section, &mut citations);
+        collect_citations_from_section(section, &mut citations, &mut seen);
     }
     citations
 }
 
-fn collect_citations_from_section(section: &PolicySection, citations: &mut Vec<Citation>) {
+fn collect_citations_from_section(
+    section: &PolicySection,
+    citations: &mut Vec<Citation>,
+    seen: &mut HashSet<String>,
+) {
     for req in &section.requirements {
-        citations.extend(req.citations.iter().cloned());
+        for citation in &req.citations {
+            if seen.insert(citation.id.clone()) {
+                citations.push(citation.clone());
+            }
+        }
     }
     for child in &section.children {
-        collect_citations_from_section(child, citations);
+        collect_citations_from_section(child, citations, seen);
     }
 }
 
@@ -364,8 +374,11 @@ mod tests {
         let envelope = build_component_definition(&doc).unwrap();
         let comp = &envelope.component_definition.components[0];
 
-        // EC-1, SEC-3: title defaults to "Untitled Policy Document"
+        // EC-1, SEC-3: component title defaults to "Untitled Policy Document"
         assert_eq!(comp.title, DEFAULT_COMPONENT_TITLE);
+
+        // Metadata title also defaults
+        assert_eq!(envelope.component_definition.metadata.title, DEFAULT_COMPONENT_TITLE);
 
         // Description uses default title
         assert_eq!(
@@ -464,6 +477,37 @@ mod tests {
             envelope.component_definition.back_matter.is_some(),
             "Back matter should be present when citations exist"
         );
+    }
+
+    #[test]
+    fn test_back_matter_deduplicates_citations() {
+        // Same citation referenced by multiple requirements should produce one resource
+        let citation1 = Citation {
+            id: "cite-1".to_string(),
+            text: "NIST SP 800-53".to_string(),
+            url: Some("https://example.com/sp800-53".to_string()),
+            source_requirement_id: Some("req-1".to_string()),
+        };
+        let citation2 = Citation {
+            id: "cite-1".to_string(),
+            text: "NIST SP 800-53".to_string(),
+            url: Some("https://example.com/sp800-53".to_string()),
+            source_requirement_id: Some("req-2".to_string()),
+        };
+        let doc = test_document_with_sections(
+            "Corporate Security Policy",
+            "2.0",
+            vec![test_section(
+                "Access Control",
+                vec![
+                    test_requirement_with_citation("All users must auth.", citation1),
+                    test_requirement_with_citation("All admins must use MFA.", citation2),
+                ],
+            )],
+        );
+        let envelope = build_component_definition(&doc).unwrap();
+        let bm = envelope.component_definition.back_matter.as_ref().unwrap();
+        assert_eq!(bm.resources.len(), 1, "Duplicate citations should produce one resource");
     }
 
     #[test]
