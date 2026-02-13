@@ -8,6 +8,9 @@ pub mod metadata;
 pub mod parts;
 pub mod trace_embedding;
 
+#[cfg(test)]
+pub(crate) mod test_utils;
+
 pub use back_matter::{
     BackMatter, BackMatterResource, OscalLink, generate_back_matter, generate_control_links,
 };

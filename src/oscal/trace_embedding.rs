@@ -32,6 +32,10 @@ pub const LINK_REL_SOURCE: &str = "source";
 ///
 /// Encodes: `%` -> `%25`, ` ` (space) -> `%20`, `#` -> `%23` (per RFC 3986 EC-6).
 ///
+/// Only path-critical characters are encoded because inputs are local file paths
+/// (not arbitrary URIs). Characters like `?`, `&`, `=` are not expected in file
+/// paths and are left as-is to keep the encoding minimal and predictable.
+///
 /// `%` is encoded FIRST to avoid double-encoding.
 fn encode_href_path(path: &str) -> String {
     path.replace('%', "%25").replace(' ', "%20").replace('#', "%23")
@@ -421,27 +425,7 @@ mod tests {
 
     // ── T021: No trace data in remarks (Catalog) — SEC-1, SEC-2, M-7 ──
 
-    /// Recursively collect all values under "remarks" keys in a JSON tree.
-    fn collect_remarks(value: &serde_json::Value, collected: &mut Vec<String>) {
-        match value {
-            serde_json::Value::Object(map) => {
-                for (key, val) in map {
-                    if key == "remarks" {
-                        if let Some(s) = val.as_str() {
-                            collected.push(s.to_string());
-                        }
-                    }
-                    collect_remarks(val, collected);
-                }
-            }
-            serde_json::Value::Array(arr) => {
-                for item in arr {
-                    collect_remarks(item, collected);
-                }
-            }
-            _ => {}
-        }
-    }
+    use crate::oscal::test_utils::collect_remarks;
 
     #[test]
     fn catalog_output_has_no_trace_data_in_remarks() {
