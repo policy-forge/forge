@@ -140,6 +140,41 @@ fn catalog_trace_none_is_backward_compatible() {
     assert_eq!(catalog.groups.len(), 1);
 }
 
+// ── Nested section trace accuracy ────────────────────────────────────
+
+#[test]
+fn catalog_trace_nested_section_uses_subsection_title() {
+    // Parent section "Access Control" with a child section "Password Policy".
+    // Requirements in the child should trace back to "Password Policy",
+    // not to the parent "Access Control".
+    let child = test_section(
+        "Password Policy",
+        vec![test_requirement("Passwords must be 12+ chars.", "uuid-pw-1", 20)],
+        vec![],
+    );
+    let parent = test_section(
+        "Access Control",
+        vec![test_requirement("Users must authenticate.", "uuid-ac-1", 10)],
+        vec![child],
+    );
+    let doc = test_document(vec![parent]);
+
+    let mut trace_links = TraceLinkCollection::new();
+    forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
+
+    assert_eq!(trace_links.len(), 2);
+
+    // Parent requirement traces to parent section title
+    let parent_links = trace_links.by_requirement("uuid-ac-1");
+    assert_eq!(parent_links.len(), 1);
+    assert_eq!(parent_links[0].source_location.section_title, "Access Control");
+
+    // Child requirement traces to child section title, not the parent
+    let child_links = trace_links.by_requirement("uuid-pw-1");
+    assert_eq!(child_links.len(), 1);
+    assert_eq!(child_links[0].source_location.section_title, "Password Policy");
+}
+
 // ── T023: Component definition trace capture ───────────────────────────
 
 #[test]

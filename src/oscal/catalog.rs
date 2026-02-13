@@ -268,6 +268,23 @@ pub fn collect_requirements(section: &PolicySection) -> Vec<&PolicyRequirement> 
     reqs
 }
 
+/// Recursively collect all requirements paired with their owning section,
+/// preserving depth-first order.
+///
+/// Unlike [`collect_requirements`], this tracks which section each
+/// requirement belongs to, so callers can use the correct subsection
+/// title (e.g., for trace link `SourceLocation`).
+fn collect_requirements_with_section(
+    section: &PolicySection,
+) -> Vec<(&PolicyRequirement, &PolicySection)> {
+    let mut reqs: Vec<(&PolicyRequirement, &PolicySection)> =
+        section.requirements.iter().map(|r| (r, section)).collect();
+    for child in &section.children {
+        reqs.extend(collect_requirements_with_section(child));
+    }
+    reqs
+}
+
 // ─── Builder ────────────────────────────────────────────────────────────
 
 /// Build an OSCAL Catalog from a [`PolicyDocument`].
@@ -293,15 +310,15 @@ pub fn build_catalog(
 
         let abbreviation = resolve_abbreviation(&section.title, &mut abbrev_counts);
 
-        let requirements = collect_requirements(section);
+        let requirements = collect_requirements_with_section(section);
         let mut controls = Vec::with_capacity(requirements.len());
 
-        for (req_idx, req) in requirements.iter().enumerate() {
+        for (req_idx, (req, req_section)) in requirements.iter().enumerate() {
             let stable_id = req.stable_id.as_ref().ok_or_else(|| {
                 let preview: String = req.text.chars().take(60).collect();
                 ForgeError::CatalogBuild(format!(
                     "Requirement missing stable_id in section '{}': '{preview}'",
-                    section.title,
+                    req_section.title,
                 ))
             })?;
 
@@ -323,14 +340,14 @@ pub fn build_catalog(
                     oscal_element_id: stable_id.clone(),
                     source_location: SourceLocation {
                         file_path: document.metadata.source_path.clone(),
-                        section_title: section.title.clone(),
+                        section_title: req_section.title.clone(),
                         line_number: req.source_line,
                     },
                 };
                 tl.record(trace).map_err(|e| {
                     ForgeError::CatalogBuild(format!(
                         "Failed to record trace link for requirement '{stable_id}' in section '{}' at line {}: {e}",
-                        section.title,
+                        req_section.title,
                         req.source_line,
                     ))
                 })?;
