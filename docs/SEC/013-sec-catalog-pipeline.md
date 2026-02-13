@@ -347,13 +347,13 @@ flowchart TD
 | Req ID | Requirement | PRD AC | Verification Method |
 |--------|-------------|--------|---------------------|
 | SEC-1 | Output JSON shall not contain data beyond what is derived from the source policy document and OSCAL metadata conventions | AC-1, AC-2 | Integration Test (smoke test) |
-| SEC-2 | Output file shall be created with default filesystem permissions (no elevated permissions) | AC-4 | Manual Review |
+| SEC-2 | Output file shall be created with default filesystem permissions (no elevated permissions) | AC-4 | Manual + Integration |
 
 ### Input Validation
 
 | Req ID | Requirement | PRD AC | Verification Method |
 |--------|-------------|--------|---------------------|
-| SEC-3 | CLI flags (`--strategy`, `--format`) shall be validated by clap against known enum values; invalid values shall produce a descriptive error | AC-1 (EC-4, EC-5) | Unit Test |
+| SEC-3 | CLI flags (`--strategy`, `--format`) shall be validated by clap against known enum values; invalid values shall produce a descriptive error | AC-1 (EC-4, EC-5) | Integration |
 | SEC-4 | Input file path shall be validated for existence before pipeline execution begins | AC-1 (EC-1) | Integration Test |
 | SEC-5 | Empty input files shall produce a descriptive error, not a crash or undefined output | AC-1 (EC-2) | Integration Test |
 | SEC-6 | Output path directory shall be validated for existence before attempting write | AC-4 (EC-3) | Integration Test |
@@ -432,13 +432,13 @@ flowchart TD
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | M-1, M-6 | AC-1, AC-2 | Integration | tests/pipeline_smoke_test.rs |
-| SEC-2 | M-5 | AC-4 | Manual | Security checklist |
-| SEC-3 | M-2, M-3 | AC-1 (EC-4, EC-5) | Unit | tests/cli_test.rs |
-| SEC-4 | M-1 | AC-1 (EC-1) | Integration | tests/pipeline_smoke_test.rs |
-| SEC-5 | M-1 | AC-1 (EC-2) | Integration | tests/pipeline_smoke_test.rs |
-| SEC-6 | M-5 | AC-4 (EC-3) | Integration | tests/pipeline_smoke_test.rs |
-| SEC-7 | S-2 | — | Integration | tests/pipeline_smoke_test.rs |
+| SEC-1 | M-1, M-6 | AC-1, AC-2 | Integration | tests/catalog_pipeline_test.rs |
+| SEC-2 | M-5 | AC-4 | Manual + Integration | tests/cli_integration.rs (file permission check) |
+| SEC-3 | M-2, M-3 | AC-1 (EC-4, EC-5) | Integration | tests/cli_integration.rs |
+| SEC-4 | M-1 | AC-1 (EC-1) | Integration | tests/cli_integration.rs |
+| SEC-5 | M-1 | AC-1 (EC-2) | Integration | tests/cli_integration.rs |
+| SEC-6 | M-5 | AC-4 (EC-3) | Integration | tests/cli_integration.rs |
+| SEC-7 | S-2 | — | Integration | tests/cli_integration.rs (see also S-2) |
 | SEC-8 | M-1 | — | Code Review | Code review during PR |
 
 ---

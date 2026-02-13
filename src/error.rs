@@ -53,6 +53,9 @@ pub enum ForgeError {
 
     #[error("Back matter error: {0}")]
     BackMatter(String),
+
+    #[error("Serialization error: {0}")]
+    Serialization(String),
 }
 
 #[cfg(test)]
@@ -156,5 +159,11 @@ mod tests {
     fn back_matter_error_display() {
         let err = ForgeError::BackMatter("invalid citation".to_string());
         assert_eq!(err.to_string(), "Back matter error: invalid citation");
+    }
+
+    #[test]
+    fn serialization_error_display() {
+        let err = ForgeError::Serialization("failed to serialize".to_string());
+        assert_eq!(err.to_string(), "Serialization error: failed to serialize");
     }
 }

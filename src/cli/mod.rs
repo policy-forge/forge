@@ -36,10 +36,10 @@ pub enum Commands {
 
         /// Conversion strategy
         #[arg(long)]
-        strategy: Option<Strategy>,
+        strategy: Strategy,
 
         /// Output format
-        #[arg(long, default_value = "json")]
+        #[arg(long)]
         format: OutputFormat,
 
         /// Output file path
@@ -64,9 +64,8 @@ pub enum Strategy {
     Component,
 }
 
-#[derive(ValueEnum, Clone, Debug, Default)]
+#[derive(ValueEnum, Clone, Debug)]
 pub enum OutputFormat {
-    #[default]
     Json,
     Xml,
     Yaml,
@@ -80,7 +79,7 @@ pub enum OutputFormat {
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     match &cli.command {
         Commands::Convert { input, strategy, format, output, max_size } => {
-            convert::execute(input, strategy.as_ref(), format, output.as_deref(), *max_size)
+            convert::execute(input, strategy, format, output.as_deref(), *max_size)
         }
         Commands::Validate { input } => validate::execute(input),
     }
@@ -94,7 +93,16 @@ mod tests {
 
     #[test]
     fn parse_convert_subcommand() {
-        let cli = Cli::try_parse_from(["forge", "convert", "test.md"]).unwrap();
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "test.md",
+            "--strategy",
+            "catalog",
+            "--format",
+            "json",
+        ])
+        .unwrap();
         if let Commands::Convert { input, .. } = cli.command {
             assert_eq!(input, PathBuf::from("test.md"));
         } else {
@@ -129,12 +137,24 @@ mod tests {
 
         if let Commands::Convert { input, strategy, format, output, .. } = cli.command {
             assert_eq!(input, PathBuf::from("test.md"));
-            assert!(matches!(strategy, Some(Strategy::Catalog)));
+            assert!(matches!(strategy, Strategy::Catalog));
             assert!(matches!(format, OutputFormat::Json));
             assert_eq!(output, Some(PathBuf::from("out.json")));
         } else {
             panic!("Expected Convert command");
         }
+    }
+
+    #[test]
+    fn parse_convert_missing_strategy_fails() {
+        let result = Cli::try_parse_from(["forge", "convert", "test.md", "--format", "json"]);
+        assert!(result.is_err(), "Should fail when --strategy is omitted");
+    }
+
+    #[test]
+    fn parse_convert_missing_format_fails() {
+        let result = Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]);
+        assert!(result.is_err(), "Should fail when --format is omitted");
     }
 
     #[test]
