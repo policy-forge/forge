@@ -196,7 +196,7 @@ Task: "Add Citation struct in src/model/mod.rs"
 | T015-T017 | M-6 | — | AC-5, AC-6 |
 | T019-T020 | M-7 | SEC-1, SEC-2 | AC-7 |
 | T011, T013 | M-8 | SEC-3, SEC-4 | AC-8 |
-| T012 | EC-1 thru EC-5 | — | — |
+| T012 | EC-1 through EC-5 | — | — |
 | T008 | S-1, S-2 | — | — |
 
 ## Notes

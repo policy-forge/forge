@@ -213,6 +213,12 @@ mod tests {
         assert_eq!(uuid.get_variant(), uuid::Variant::RFC4122);
     }
 
+    #[test]
+    fn back_matter_namespace_matches_derivation() {
+        let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"back-matter");
+        assert_eq!(BACK_MATTER_NAMESPACE, expected);
+    }
+
     // T011: All requirements populated (AC-4, M-3)
     #[test]
     fn test_assign_stable_ids_all_populated() {

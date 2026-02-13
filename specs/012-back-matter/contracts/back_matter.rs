@@ -17,7 +17,6 @@ use uuid::Uuid;
 
 /// Top-level OSCAL back matter containing all reference resources.
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "kebab-case")]
 pub struct BackMatter {
     /// All back matter resources generated from citations.
     pub resources: Vec<BackMatterResource>,

@@ -44,8 +44,7 @@ cargo fmt --check
 ## Usage Pattern (after implementation)
 
 ```rust
-use forge::model::Citation;
-use forge::oscal::back_matter::{generate_back_matter, generate_control_links};
+use forge::{Citation, generate_back_matter, generate_control_links};
 
 // Create citations (normally from WI-8 extraction)
 let citations = vec![

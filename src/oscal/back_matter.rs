@@ -143,6 +143,13 @@ fn infer_media_type(url: &url::Url) -> Option<String> {
         Some(ext) if ext.eq_ignore_ascii_case("pdf") => Some("application/pdf".to_string()),
         Some(ext) if ext.eq_ignore_ascii_case("json") => Some("application/json".to_string()),
         Some(ext) if ext.eq_ignore_ascii_case("xml") => Some("application/xml".to_string()),
+        Some(ext) if ext.eq_ignore_ascii_case("html") || ext.eq_ignore_ascii_case("htm") => {
+            Some("text/html".to_string())
+        }
+        Some(ext) if ext.eq_ignore_ascii_case("yaml") || ext.eq_ignore_ascii_case("yml") => {
+            Some("application/yaml".to_string())
+        }
+        Some(ext) if ext.eq_ignore_ascii_case("txt") => Some("text/plain".to_string()),
         _ => None,
     }
 }
@@ -428,6 +435,21 @@ mod tests {
         assert_eq!(resources[0].props.len(), 1);
         assert_eq!(resources[0].props[0].name, "url-status");
         assert_eq!(resources[0].props[0].value, "unvalidated");
+    }
+
+    #[test]
+    fn whitespace_only_url_treated_as_malformed() {
+        let citations = vec![Citation {
+            id: "c1".to_string(),
+            text: "Whitespace URL ref".to_string(),
+            url: Some("   ".to_string()),
+            source_requirement_id: None,
+        }];
+        let (resources, _) = generate_back_matter(&citations).unwrap();
+        assert_eq!(resources[0].props.len(), 1);
+        assert_eq!(resources[0].props[0].name, "url-status");
+        assert_eq!(resources[0].props[0].value, "unvalidated");
+        assert_eq!(resources[0].rlinks[0].href, "   ");
     }
 
     #[test]
