@@ -70,7 +70,7 @@ pub fn build_trace_props(
     ]
 }
 
-/// Build 1 source link with href `"<encoded_file>#line=<n>"`.
+/// Build 1 source link with href `"<encoded_file>#line=<n>"` (relative URI reference per RFC 3986).
 #[must_use]
 pub fn build_trace_link(source_file: &str, line_number: usize) -> OscalLink {
     let encoded = encode_href_path(source_file);

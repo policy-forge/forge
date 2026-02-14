@@ -31,20 +31,37 @@ pub fn execute(
         Strategy::Catalog => crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes),
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
-            let profile = match source_profile {
+            let profile_ref = match source_profile {
                 None => {
-                    return Err(ForgeError::Validation(
-                        "--source-profile is required when using --strategy component".to_string(),
-                    ));
+                    let msg = "--source-profile not provided; control-id mapping will be skipped. The generated Component Definition will have empty control-implementations.";
+                    tracing::warn!(msg);
+                    eprintln!("Warning: {msg}");
+                    None
                 }
                 Some(p) if p.trim().is_empty() => {
                     return Err(ForgeError::Validation(
                         "--source-profile must not be empty".to_string(),
                     ));
                 }
-                Some(p) => p,
+                Some(p) => {
+                    // SEC-3: Validate source-profile path exists and is a regular file
+                    let profile_path = std::path::Path::new(p);
+                    if !profile_path.exists() {
+                        return Err(ForgeError::Validation(format!(
+                            "--source-profile path '{}' does not exist (not found)",
+                            profile_path.display()
+                        )));
+                    }
+                    if !profile_path.is_file() {
+                        return Err(ForgeError::Validation(format!(
+                            "--source-profile path '{}' is not a regular file (is a directory or special file)",
+                            profile_path.display()
+                        )));
+                    }
+                    Some(p)
+                }
             };
-            crate::pipeline::run_component_pipeline(input, output, max_size_bytes, profile)
+            crate::pipeline::run_component_pipeline(input, output, max_size_bytes, profile_ref)
         }
     }
 }
@@ -56,7 +73,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn component_strategy_missing_source_profile_errors() {
+    fn component_strategy_none_source_profile_does_not_error_on_missing_profile() {
+        // T013: With source_profile: None, should NOT get source-profile-required error.
+        // It will fail on file-not-found (test.md doesn't exist), which proves the profile
+        // check is no longer blocking.
         let result = execute(
             Path::new("test.md"),
             &Strategy::Component,
@@ -66,9 +86,10 @@ mod tests {
             None,
         );
         let err = result.unwrap_err();
+        // Should NOT be about source-profile — should be about the missing input file
         assert!(
-            err.to_string().contains("--source-profile is required"),
-            "Expected source-profile required error, got: {err}"
+            !err.to_string().contains("--source-profile is required"),
+            "Should not require source-profile. Got: {err}"
         );
     }
 
