@@ -6,7 +6,7 @@
 > **Last Updated:** 2026-02-10 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
-**Feature Branch**: `020-validation-error-reporting`
+**Feature Branch**: `020-prd-validation-error-reporting`
 **Created**: 2026-02-10
 **Status**: Draft
 **Input**: Derived from FORGE Product Roadmap WI-20
@@ -145,7 +145,7 @@ A compliance engineer needs validation to catch logical inconsistencies beyond s
 
 **Acceptance Scenarios**:
 1. **Given** an OSCAL Catalog where a control's `link` element references a back matter resource UUID that does not exist in `back-matter.resources[]`, **When** running `forge validate catalog.json`, **Then** a semantic error is reported identifying the orphaned link, the referencing element's path, and the missing resource UUID.
-2. **Given** an OSCAL Component Definition where an `implemented-requirement` references a `control-id` that does not exist in the imported catalog/profile, **When** validating, **Then** a semantic warning is reported identifying the unresolvable control-id reference.
+2. **Given** an OSCAL Component Definition where an `implemented-requirement` has an empty or malformed `control-id` field, **When** validating, **Then** a semantic error is reported identifying the invalid control-id reference and its path. (Full cross-reference validation against source catalogs/profiles is deferred per W-4.)
 
 ---
 
@@ -190,18 +190,16 @@ A compliance engineer expects that `forge convert` will never produce invalid ou
 flowchart TD
     A[forge validate artifact.json] --> B[Load JSON Artifact]
     B --> C[Schema Validation Pass]
-    C --> D{Schema Errors?}
-    D -->|Yes| E[Collect All Schema Errors]
-    D -->|No| F[Semantic Validation Pass]
-    F --> G{Semantic Errors?}
-    G -->|Yes| H[Collect All Semantic Errors]
-    G -->|No| I[Report: Valid]
-    E --> J[Merge All Errors]
-    H --> J
-    J --> K[Format Actionable Error Report]
-    K --> L[Print Errors + Exit Non-Zero]
+    C --> E[Collect Schema Errors]
+    E --> F[Semantic Validation Pass]
+    F --> H[Collect Semantic Errors]
+    H --> J[Merge All Errors]
+    J --> K{Any Errors?}
+    K -->|No| I[Report: Valid + Exit 0]
+    K -->|Yes| L[Format Actionable Error Report]
+    L --> M1[Print Errors + Exit Non-Zero]
 
-    M[forge convert policy.md] --> N[Pipeline: Ingest -> Generate]
+    M2[forge convert policy.md] --> N[Pipeline: Ingest -> Generate]
     N --> O[Serialize to JSON]
     O --> P[Auto-Validate]
     P --> Q{Valid?}
@@ -232,7 +230,7 @@ stateDiagram-v2
 - [ ] **M-1:** Validation error messages shall include the JSON path to the offending field (e.g., `$.catalog.metadata.title`), the expected constraint (type, required, enum values), and the actual value found.
 - [ ] **M-2:** The validator shall collect and report all schema validation errors in a single pass, not stopping at the first error.
 - [ ] **M-3:** The validator shall perform semantic validation detecting orphaned links — `link` or `href` elements referencing back matter resource UUIDs that do not exist in `back-matter.resources[]`.
-- [ ] **M-4:** The validator shall perform semantic validation detecting missing required references — cross-references to non-existent controls, parameters, or other OSCAL elements.
+- [ ] **M-4:** The validator shall perform semantic validation detecting missing required references — specifically, `control-id` references in Component Definition `implemented-requirements` that are empty or malformed. (Full cross-reference validation against source catalogs/profiles is deferred per W-4 offline constraint.)
 - [ ] **M-5:** `forge convert` shall auto-validate generated artifacts before writing output; if validation fails, the command shall fail with a non-zero exit code and print all errors.
 - [ ] **M-6:** Errors shall be clearly categorized as either "schema" or "semantic" in the output.
 
@@ -307,6 +305,8 @@ struct ValidationReport {
 ---
 
 ## Interface Contract (if applicable) 🟡 `@human-review`
+
+> **Note:** The trait-based interface below is a conceptual API guide. The Architecture Review (AR 020) specifies the concrete implementation design using functions and a `SemanticValidator` struct. Implementation should follow the AR's function-based interface.
 
 ```rust
 // CLI Interface (enhanced from WI-19)
@@ -394,7 +394,7 @@ trait SemanticValidator: Validator {
 | AC-2 | M-1 | US-1 | An OSCAL artifact with a wrong-type field | Running `forge validate artifact.json` | The error message includes the JSON path, the expected type, and the actual type/value found |
 | AC-3 | M-2 | US-2 | An OSCAL artifact with 3+ distinct schema violations | Running `forge validate artifact.json` | All 3+ errors are reported in a single invocation |
 | AC-4 | M-3 | US-3 | An OSCAL artifact with a link referencing a non-existent back matter resource UUID | Running `forge validate artifact.json` | A semantic error identifies the orphaned link, the referencing path, and the missing UUID |
-| AC-5 | M-4 | US-3 | An OSCAL Component Definition with an implemented-requirement referencing a non-existent control-id | Running `forge validate compdef.json` | A semantic error identifies the missing reference and the expected control-id |
+| AC-5 | M-4 | US-3 | An OSCAL Component Definition with an implemented-requirement containing an empty or malformed control-id | Running `forge validate compdef.json` | A semantic error identifies the invalid control-id reference and its path (full cross-reference validation deferred per W-4) |
 | AC-6 | M-5 | US-4 | A `forge convert` run that would produce invalid OSCAL | Running `forge convert policy.md --strategy catalog --format json` | The command fails with non-zero exit code, prints all validation errors, and does not write output |
 | AC-7 | M-6, M-2 | US-2 | An artifact with both schema and semantic errors | Running `forge validate artifact.json` | Errors are grouped by category ("Schema Errors" and "Semantic Errors") with all errors from both categories reported |
 | AC-8 | M-6 | US-3 | Parent PRD AC-6 | Running `forge validate artifact.json` | Schema validation passes or actionable errors are reported (parent AC-6 fully satisfied) |

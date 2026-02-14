@@ -1,7 +1,20 @@
-//! OSCAL schema validation module (WI-19).
+//! OSCAL schema validation module (WI-19, WI-20).
 //!
 //! Validates OSCAL JSON artifacts against embedded NIST OSCAL v1.2.0 JSON schemas.
 //! Supports Catalog and Component Definition model types with auto-detection.
+//!
+//! WI-20 adds enhanced error reporting with:
+//! - Actionable error messages with JSON Path notation (M-1)
+//! - Semantic validation for orphaned links and missing references (M-3, M-4)
+//! - Categorized error reports with summary counts (M-2, M-6)
+//! - Text and JSON report rendering (S-1, S-2)
+
+pub mod error_types;
+pub mod formatter;
+pub mod report;
+pub mod semantic;
+
+pub use error_types::{ValidationError, ValidationErrorCategory, ValidationReport};
 
 use std::path::{Path, PathBuf};
 
@@ -180,6 +193,55 @@ pub fn check_file_size(path: &Path) -> Result<(), ValidateError> {
     Ok(())
 }
 
+/// Run full validation (schema + semantic) and produce a `ValidationReport`.
+///
+/// This is the main entry point for enhanced validation (WI-20).
+/// Uses `load_schema()` + `jsonschema::validator_for()` directly to get raw
+/// `jsonschema::ValidationError`s, transforms each through `format_schema_error()`,
+/// then runs `SemanticValidator` for semantic checks, and combines results.
+///
+/// MUST collect ALL errors from both passes (PRD M-2).
+/// MUST NOT stop at the first error.
+///
+/// # Errors
+///
+/// Returns `ValidateError::SchemaCompilation` if the schema cannot be compiled.
+pub fn run_full_validation(
+    artifact_path: &str,
+    json: &Value,
+    model_type: OscalModelType,
+) -> Result<error_types::ValidationReport, ValidateError> {
+    let schema = load_schema(model_type)?;
+
+    let validator =
+        jsonschema::validator_for(&schema).map_err(|e| ValidateError::SchemaCompilation {
+            model_type: model_type.to_string(),
+            message: e.to_string(),
+        })?;
+
+    // Schema validation: collect all raw errors and format them
+    let schema_errors: Vec<error_types::ValidationError> = validator
+        .iter_errors(json)
+        .map(|error| formatter::format_schema_error(&error, json))
+        .collect();
+
+    // Semantic validation
+    let semantic_validator = semantic::SemanticValidator;
+    let semantic_errors = semantic_validator.validate(json, model_type);
+
+    // Combine all errors
+    let mut all_errors = schema_errors;
+    all_errors.extend(semantic_errors);
+
+    if all_errors.is_empty() {
+        info!("Full validation passed for {model_type}");
+    } else {
+        info!("Full validation failed for {model_type}: {} error(s)", all_errors.len());
+    }
+
+    Ok(error_types::ValidationReport::new(artifact_path.to_string(), all_errors))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -356,5 +418,123 @@ mod tests {
         let err = ValidateError::FileTooLarge { size_mb: 75.5, limit_mb: 50 };
         assert!(err.to_string().contains("75.5MB"));
         assert!(err.to_string().contains("50MB"));
+    }
+
+    // --- T027: run_full_validation tests ---
+
+    #[test]
+    fn full_validation_valid_catalog() {
+        let json: Value = serde_json::from_str(
+            r#"{
+                "catalog": {
+                    "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                    "metadata": {
+                        "title": "Test Catalog",
+                        "last-modified": "2026-01-01T00:00:00Z",
+                        "version": "1.0",
+                        "oscal-version": "1.2.0"
+                    }
+                }
+            }"#,
+        )
+        .unwrap();
+        let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
+        assert!(report.is_valid);
+        assert!(report.errors.is_empty());
+    }
+
+    #[test]
+    fn full_validation_invalid_catalog_schema_errors() {
+        let json: Value = serde_json::from_str(
+            r#"{
+                "catalog": {
+                    "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+                }
+            }"#,
+        )
+        .unwrap();
+        let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
+        assert!(!report.is_valid);
+        assert!(report.schema_error_count > 0);
+        // Errors should use JSON Path notation
+        for error in &report.errors {
+            if error.category == error_types::ValidationErrorCategory::Schema {
+                assert!(error.path.starts_with('$'), "Path should start with $: {}", error.path);
+            }
+        }
+    }
+
+    #[test]
+    fn full_validation_semantic_errors_included() {
+        // Create artifact with orphaned links
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                    "metadata": {
+                        "title": "Test",
+                        "last-modified": "2026-01-01T00:00:00Z",
+                        "version": "1.0",
+                        "oscal-version": "1.2.0"
+                    },
+                    "groups": [{
+                        "id": "group-1",
+                        "title": "Test Group",
+                        "links": [{"href": "#orphaned-uuid", "rel": "reference"}]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+        let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
+        assert!(!report.is_valid);
+        assert!(report.semantic_error_count > 0);
+        assert!(report.errors.iter().any(|e| e.message.contains("orphaned")));
+    }
+
+    #[test]
+    fn full_validation_both_schema_and_semantic_errors() {
+        // Missing metadata AND orphaned link
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                    "groups": [{
+                        "id": "g1",
+                        "title": "Group",
+                        "links": [{"href": "#orphan", "rel": "ref"}]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+        let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
+        assert!(!report.is_valid);
+        assert!(report.schema_error_count > 0);
+        assert!(report.semantic_error_count > 0);
+        // SEC-8: counts must sum correctly
+        assert_eq!(report.schema_error_count + report.semantic_error_count, report.errors.len());
+    }
+
+    #[test]
+    fn full_validation_no_raw_crate_messages() {
+        // SEC-2: error messages should not contain raw crate text
+        let json: Value = serde_json::from_str(
+            r#"{
+                "catalog": {
+                    "uuid": "not-a-valid-uuid"
+                }
+            }"#,
+        )
+        .unwrap();
+        let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
+        for error in &report.errors {
+            assert!(
+                !error.message.contains("jsonschema"),
+                "Raw crate message leaked: {}",
+                error.message
+            );
+            assert!(!error.message.contains("::"), "Rust path leaked: {}", error.message);
+        }
     }
 }
