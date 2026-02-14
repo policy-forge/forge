@@ -1,0 +1,186 @@
+{
+  "catalog": {
+    "uuid": "7e00b176-efec-4bde-82e7-4ce3b8045123",
+    "metadata": {
+      "title": "Access Control Policy",
+      "last-modified": "2026-02-14T20:27:09.736974+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-access-control-policy-version-1-0-0-author-security-team-date-2026-01-01",
+        "title": "title: \"Access Control Policy\"version: \"1.0.0\"author: \"Security Team\"date: \"2026-01-01\""
+      },
+      {
+        "id": "access-control",
+        "title": "Access Control",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Access Control"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-AC-001",
+            "title": "All users must authenticate using approved multi-factor credentials before accessing any system",
+            "links": [
+              {
+                "href": "input.md#line=12",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-001_smt",
+                "name": "statement",
+                "prose": "All users must authenticate using approved multi-factor credentials before accessing any system"
+              },
+              {
+                "id": "POL-AC-001_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "12"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-002",
+            "title": "Access permissions must follow the principle of least privilege for all user roles",
+            "links": [
+              {
+                "href": "input.md#line=13",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-002_smt",
+                "name": "statement",
+                "prose": "Access permissions must follow the principle of least privilege for all user roles"
+              },
+              {
+                "id": "POL-AC-002_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "13"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-003",
+            "title": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days",
+            "links": [
+              {
+                "href": "input.md#line=14",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-003_smt",
+                "name": "statement",
+                "prose": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+              },
+              {
+                "id": "POL-AC-003_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "14"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-004",
+            "title": "All authentication events must be logged and retained for a minimum of one year",
+            "links": [
+              {
+                "href": "input.md#line=15",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-004_smt",
+                "name": "statement",
+                "prose": "All authentication events must be logged and retained for a minimum of one year"
+              },
+              {
+                "id": "POL-AC-004_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "15"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

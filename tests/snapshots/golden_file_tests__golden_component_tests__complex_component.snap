@@ -1,0 +1,991 @@
+---
+source: tests/golden_file_tests.rs
+expression: normalized
+---
+{
+  "component-definition": {
+    "back-matter": {
+      "resources": [
+        {
+          "citation": {
+            "text": "NIST SP 800-77"
+          },
+          "description": "Referenced by requirement e52209a1-b95d-592a-92e8-2335d9f3f6aa",
+          "title": "NIST SP 800-77",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        },
+        {
+          "citation": {
+            "text": "FIPS 140-3"
+          },
+          "description": "Referenced by requirement 5386a66b-8714-5d7e-93ce-646168964a43",
+          "title": "FIPS 140-3",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        },
+        {
+          "citation": {
+            "text": "NIST SP 800-94"
+          },
+          "description": "Referenced by requirement ea6d0460-c94e-5169-acd3-5393f3d08384",
+          "title": "NIST SP 800-94",
+          "uuid": "00000000-0000-0000-0000-000000000000"
+        }
+      ]
+    },
+    "components": [
+      {
+        "control-implementations": [
+          {
+            "description": "Implementation narratives derived from Comprehensive Security Policy.",
+            "implemented-requirements": [
+              {
+                "control-id": "POL-AC-001",
+                "description": "All users must authenticate using approved multi-factor credentials before accessing any system",
+                "links": [
+                  {
+                    "href": "input.md#line=12",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Control"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "12"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-002",
+                "description": "Access permissions must follow the principle of least privilege",
+                "links": [
+                  {
+                    "href": "input.md#line=13",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Control"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "13"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-003",
+                "description": "Access permissions must be reviewed quarterly",
+                "links": [
+                  {
+                    "href": "input.md#line=13",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Control"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "13"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-004",
+                "description": "Privileged accounts must use hardware security tokens for authentication",
+                "links": [
+                  {
+                    "href": "input.md#line=14",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Control"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "14"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-005",
+                "description": "Remote access connections must use encrypted VPN tunnels per",
+                "links": [
+                  {
+                    "href": "input.md#line=15",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Control"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "15"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-006",
+                "description": "Passwords must be at least 16 characters and include uppercase, lowercase, numbers, and symbols",
+                "links": [
+                  {
+                    "href": "input.md#line=19",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Authentication Standards"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "19"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-007",
+                "description": "Account lockout must occur after 5 consecutive failed authentication attempts",
+                "links": [
+                  {
+                    "href": "input.md#line=20",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Authentication Standards"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "20"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-008",
+                "description": "User sessions must time out after 15 minutes of inactivity",
+                "links": [
+                  {
+                    "href": "input.md#line=24",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Session Management"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "24"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-AC-009",
+                "description": "Concurrent sessions must be limited to 3 per user account",
+                "links": [
+                  {
+                    "href": "input.md#line=25",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Session Management"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "25"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-001",
+                "description": "All sensitive data must be classified according to the organizational data classification scheme",
+                "links": [
+                  {
+                    "href": "input.md#line=31",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "31"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-002",
+                "description": "Data at rest must be encrypted using AES-256 or equivalent per",
+                "links": [
+                  {
+                    "href": "input.md#line=32",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "32"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-003",
+                "description": "Data in transit must be protected using TLS 1.3 or higher",
+                "links": [
+                  {
+                    "href": "input.md#line=33",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "33"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-004",
+                "description": "Encryption keys must be rotated annually and stored in a hardware security module",
+                "links": [
+                  {
+                    "href": "input.md#line=34",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "34"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-005",
+                "description": "Audit logs must be retained for a minimum of three years",
+                "links": [
+                  {
+                    "href": "input.md#line=38",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Retention"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "38"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-006",
+                "description": "Backup copies must be encrypted and stored in a geographically separate location",
+                "links": [
+                  {
+                    "href": "input.md#line=39",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Retention"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "39"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-007",
+                "description": "Sensitive data must be securely erased using DoD 5220.22-M standard or equivalent",
+                "links": [
+                  {
+                    "href": "input.md#line=43",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Disposal"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "43"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-DP-008",
+                "description": "Physical media must be degaussed and physically destroyed before disposal",
+                "links": [
+                  {
+                    "href": "input.md#line=44",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Data Disposal"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "44"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-IR-001",
+                "description": "All security incidents must be reported within 24 hours of detection",
+                "links": [
+                  {
+                    "href": "input.md#line=50",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Incident Response"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "50"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-IR-002",
+                "description": "An incident response plan must be tested at least annually through tabletop exercises",
+                "links": [
+                  {
+                    "href": "input.md#line=51",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Incident Response"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "51"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-IR-003",
+                "description": "Post-incident reviews must be completed within 72 hours and findings documented",
+                "links": [
+                  {
+                    "href": "input.md#line=52",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Incident Response"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "52"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-NS-001",
+                "description": "Network traffic must be monitored continuously and anomalies must be investigated within 4 hours",
+                "links": [
+                  {
+                    "href": "input.md#line=58",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Network Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "58"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-NS-002",
+                "description": "Firewalls must be configured to deny all traffic by default and allow only explicitly authorized connections",
+                "links": [
+                  {
+                    "href": "input.md#line=59",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Network Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "59"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-NS-003",
+                "description": "Intrusion detection systems must be deployed at all network boundaries per",
+                "links": [
+                  {
+                    "href": "input.md#line=60",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Network Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "60"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-NS-004",
+                "description": "Wireless networks must use WPA3 encryption",
+                "links": [
+                  {
+                    "href": "input.md#line=64",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Wireless Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "64"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-NS-005",
+                "description": "Guest wireless networks must be isolated from internal networks",
+                "links": [
+                  {
+                    "href": "input.md#line=65",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Wireless Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "65"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-PS-001",
+                "description": "Server rooms must use biometric access controls and video surveillance",
+                "links": [
+                  {
+                    "href": "input.md#line=71",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Physical Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "71"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-PS-002",
+                "description": "Visitor access must be logged and escorted at all times",
+                "links": [
+                  {
+                    "href": "input.md#line=72",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Physical Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "72"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-PS-003",
+                "description": "Environmental controls must include fire suppression and temperature monitoring",
+                "links": [
+                  {
+                    "href": "input.md#line=73",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Physical Security"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "73"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-CA-001",
+                "description": "Internal security audits must be conducted at least annually",
+                "links": [
+                  {
+                    "href": "input.md#line=79",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Compliance and Audit"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "79"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-CA-002",
+                "description": "Third-party penetration testing must be performed semi-annually and findings must be remediated within 30 days",
+                "links": [
+                  {
+                    "href": "input.md#line=80",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Compliance and Audit"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "80"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-CA-003",
+                "description": "Compliance reports must be submitted to the board of directors quarterly",
+                "links": [
+                  {
+                    "href": "input.md#line=81",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Compliance and Audit"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "81"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-CA-004",
+                "description": "All policy exceptions must be documented and approved by the CISO",
+                "links": [
+                  {
+                    "href": "input.md#line=82",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Compliance and Audit"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "82"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              },
+              {
+                "control-id": "POL-CA-005",
+                "description": "All policy exceptions must expire within 12 months",
+                "links": [
+                  {
+                    "href": "input.md#line=82",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "NORMALIZED_PATH"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Compliance and Audit"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "82"
+                  }
+                ],
+                "uuid": "00000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "source": "./baselines/nist-800-53.json",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Documentary component representing the Comprehensive Security Policy policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "NORMALIZED_PATH"
+          }
+        ],
+        "title": "Comprehensive Security Policy",
+        "type": "policy",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      }
+    ],
+    "metadata": {
+      "last-modified": "2026-01-01T00:00:00Z",
+      "oscal-version": "1.2.0",
+      "title": "Comprehensive Security Policy",
+      "version": "3.0.0"
+    },
+    "uuid": "00000000-0000-0000-0000-000000000000"
+  }
+}
