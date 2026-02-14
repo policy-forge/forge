@@ -13,17 +13,25 @@ fn format_size(bytes: u64) -> String {
 
 #[derive(Debug, Error)]
 pub enum ForgeError {
-    #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    // --- Input/IO errors (exit code 1) ---
+    #[error("File not found: '{}'", path.display())]
+    FileNotFound { path: PathBuf },
 
-    #[error("Parse error: {0}")]
-    Parse(String),
+    #[error("Permission denied: '{}'", path.display())]
+    PermissionDenied { path: PathBuf },
 
-    #[error("Validation error: {0}")]
-    Validation(String),
+    #[error(
+        "File is empty: '{}' — provide a non-empty Markdown policy document",
+        path.display()
+    )]
+    EmptyInput { path: PathBuf },
 
-    #[error("Configuration error: {0}")]
-    Config(String),
+    #[error(
+        "File appears to be binary, not a text document: '{}'. \
+         FORGE accepts UTF-8 Markdown (.md) files.",
+        path.display()
+    )]
+    BinaryFile { path: PathBuf },
 
     #[error(
         "Unsupported file format '.{extension}'. Only Markdown files (.md, .markdown) are supported. \
@@ -48,6 +56,19 @@ pub enum ForgeError {
     #[error("'{}' is not a regular file.", path.display())]
     NotAFile { path: PathBuf },
 
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    // --- Parse/Structure errors (exit code 2) ---
+    #[error(
+        "No policy structure detected in '{}' — expected Markdown headings (# Section) or numbered clauses",
+        path.display()
+    )]
+    NoStructureDetected { path: PathBuf },
+
+    #[error("Parse error: {0}")]
+    Parse(String),
+
     #[error("Catalog build error: {0}")]
     CatalogBuild(String),
 
@@ -57,13 +78,138 @@ pub enum ForgeError {
     #[error("Component definition build error: {0}")]
     ComponentDefinitionBuild(String),
 
+    // --- Validation/Config errors (exit code 3) ---
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    #[error("Configuration error: {0}")]
+    Config(String),
+
+    // --- Other (exit code 1) ---
     #[error("Serialization error: {0}")]
     Serialization(String),
+}
+
+/// Map a `ForgeError` to a CLI exit code.
+///
+/// Exit code categories:
+/// - 0: Success (not handled here — only error cases)
+/// - 1: Input/IO errors (file not found, permission denied, empty, binary, encoding, size, I/O)
+/// - 2: Parse/Structure errors (no structure, parse failure, build errors)
+/// - 3: Validation/Config errors (schema violations, config issues)
+#[must_use]
+pub fn exit_code(err: &ForgeError) -> u8 {
+    match err {
+        // Exit 1: Input/IO errors
+        ForgeError::FileNotFound { .. }
+        | ForgeError::PermissionDenied { .. }
+        | ForgeError::EmptyInput { .. }
+        | ForgeError::BinaryFile { .. }
+        | ForgeError::UnsupportedFormat { .. }
+        | ForgeError::FileTooLarge { .. }
+        | ForgeError::InvalidEncoding { .. }
+        | ForgeError::NotAFile { .. }
+        | ForgeError::Io(_)
+        | ForgeError::Serialization(_) => 1,
+
+        // Exit 2: Parse/Structure errors
+        ForgeError::NoStructureDetected { .. }
+        | ForgeError::Parse(_)
+        | ForgeError::CatalogBuild(_)
+        | ForgeError::BackMatter(_)
+        | ForgeError::ComponentDefinitionBuild(_) => 2,
+
+        // Exit 3: Validation/Config errors
+        ForgeError::Validation(_) | ForgeError::Config(_) => 3,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // --- T004: New variant Display tests ---
+
+    #[test]
+    fn file_not_found_display() {
+        let err = ForgeError::FileNotFound { path: PathBuf::from("missing.md") };
+        assert_eq!(err.to_string(), "File not found: 'missing.md'");
+    }
+
+    #[test]
+    fn permission_denied_display() {
+        let err = ForgeError::PermissionDenied { path: PathBuf::from("restricted.md") };
+        assert_eq!(err.to_string(), "Permission denied: 'restricted.md'");
+    }
+
+    #[test]
+    fn empty_input_display() {
+        let err = ForgeError::EmptyInput { path: PathBuf::from("empty.md") };
+        assert_eq!(
+            err.to_string(),
+            "File is empty: 'empty.md' — provide a non-empty Markdown policy document"
+        );
+    }
+
+    #[test]
+    fn binary_file_display() {
+        let err = ForgeError::BinaryFile { path: PathBuf::from("image.png") };
+        assert_eq!(
+            err.to_string(),
+            "File appears to be binary, not a text document: 'image.png'. \
+             FORGE accepts UTF-8 Markdown (.md) files."
+        );
+    }
+
+    #[test]
+    fn no_structure_detected_display() {
+        let err = ForgeError::NoStructureDetected { path: PathBuf::from("flat.md") };
+        assert_eq!(
+            err.to_string(),
+            "No policy structure detected in 'flat.md' — expected Markdown headings (# Section) or numbered clauses"
+        );
+    }
+
+    // --- T005: exit_code tests ---
+
+    #[test]
+    fn exit_code_input_io_errors_return_1() {
+        assert_eq!(exit_code(&ForgeError::FileNotFound { path: PathBuf::from("a") }), 1);
+        assert_eq!(exit_code(&ForgeError::PermissionDenied { path: PathBuf::from("a") }), 1);
+        assert_eq!(exit_code(&ForgeError::EmptyInput { path: PathBuf::from("a") }), 1);
+        assert_eq!(exit_code(&ForgeError::BinaryFile { path: PathBuf::from("a") }), 1);
+        assert_eq!(exit_code(&ForgeError::UnsupportedFormat { extension: "pdf".into() }), 1);
+        assert_eq!(
+            exit_code(&ForgeError::FileTooLarge {
+                path: PathBuf::from("a"),
+                size_bytes: 100,
+                limit_bytes: 50
+            }),
+            1
+        );
+        assert_eq!(exit_code(&ForgeError::InvalidEncoding { path: PathBuf::from("a") }), 1);
+        assert_eq!(exit_code(&ForgeError::NotAFile { path: PathBuf::from("a") }), 1);
+        let io_err = std::io::Error::new(std::io::ErrorKind::Other, "test");
+        assert_eq!(exit_code(&ForgeError::Io(io_err)), 1);
+        assert_eq!(exit_code(&ForgeError::Serialization("s".into())), 1);
+    }
+
+    #[test]
+    fn exit_code_parse_structure_errors_return_2() {
+        assert_eq!(exit_code(&ForgeError::NoStructureDetected { path: PathBuf::from("a") }), 2);
+        assert_eq!(exit_code(&ForgeError::Parse("p".into())), 2);
+        assert_eq!(exit_code(&ForgeError::CatalogBuild("c".into())), 2);
+        assert_eq!(exit_code(&ForgeError::BackMatter("b".into())), 2);
+        assert_eq!(exit_code(&ForgeError::ComponentDefinitionBuild("d".into())), 2);
+    }
+
+    #[test]
+    fn exit_code_validation_config_errors_return_3() {
+        assert_eq!(exit_code(&ForgeError::Validation("v".into())), 3);
+        assert_eq!(exit_code(&ForgeError::Config("c".into())), 3);
+    }
+
+    // --- Existing tests ---
 
     #[test]
     fn io_error_display() {

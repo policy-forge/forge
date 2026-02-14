@@ -28,21 +28,25 @@ use crate::model::{Citation, PolicyDocument, PolicySection};
 use crate::uuid::FORGE_NAMESPACE_UUID;
 
 // T010: URL pattern — matches http:// or https:// followed by non-whitespace, non-delimiter chars.
+// SAFETY: static regex — panics only if regex literal is invalid
 static URL_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"https?://[^\s\)\]>,;]+").expect("URL regex must compile"));
 
 // T016: Bibliographic pattern — NIST SP, ISO, RFC, FIPS with optional Rev and Section suffixes.
+// SAFETY: static regex — panics only if regex literal is invalid
 static BIBLIO_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?")
         .expect("Bibliographic regex must compile")
 });
 
 // T026: Scheme-less URL pattern — matches www. prefix (R-7).
+// SAFETY: static regex — panics only if regex literal is invalid
 static SCHEMELESS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\bwww\.[^\s\)\]>,;]+").expect("Scheme-less URL regex must compile")
 });
 
 // T030: Cross-reference pattern — Section X.Y, Appendix A, Table N (SEC-4).
+// SAFETY: static regex — panics only if regex literal is invalid
 static CROSSREF_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\b(?:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b")
         .expect("Cross-reference regex must compile")

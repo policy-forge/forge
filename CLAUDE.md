@@ -69,6 +69,7 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust edition 2024, stable 1.93.0 + serde 1.x (Serialize/Deserialize), thiserror 2.0.18 (error types), tracing 0.1.44 (logging) -- all existing (016-traceability-model)
 - N/A -- in-memory processing only (process lifetime) (016-traceability-model)
 - Rust edition 2024, stable 1.93.0 + serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, url 2.5 (all existing -- no new dependencies) (017-traceability-embedding)
+- Rust (edition 2024, stable 1.93.0) + thiserror 2.0.18, clap 4.x, pulldown-cmark 0.13.x, serde 1.x, serde_json 1.x, uuid 1.20.0, chrono 0.4, tracing 0.1.44, sha2 0.10.9, regex 1, url 2.5 (all existing) + NEW: `anyhow` (latest stable, for `.context()` in binary crate) (023-error-handling)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x

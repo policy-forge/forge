@@ -20,11 +20,13 @@ const MAX_SPLITS_PER_REQUIREMENT: usize = 50;
 
 /// Compiled regex pattern for detecting conjunction + normative verb boundaries.
 /// Pattern: `\b(and|or)\s+(must|shall|should|will)\b` (case-sensitive).
+// SAFETY: static regex — panics only if regex literal is invalid
 static SPLIT_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\b(and|or)\s+(must|shall|should|will)\b").expect("SPLIT_PATTERN regex is valid")
 });
 
 /// Compiled regex pattern for finding the first normative verb in a statement.
+// SAFETY: static regex — panics only if regex literal is invalid
 static FIRST_VERB_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\b(must|shall|should|will)\b").expect("FIRST_VERB_PATTERN regex is valid")
 });

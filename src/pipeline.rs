@@ -59,23 +59,20 @@ fn prepare_document(input_path: &Path, max_size_bytes: u64) -> Result<PolicyDocu
     // Step 2: Reconstruct content
     let content = ingested.reconstruct_content();
 
-    // EC-2: Reject empty files
-    if content.trim().is_empty() {
-        return Err(ForgeError::Validation(
-            "Input file is empty — no content to process".to_string(),
-        ));
-    }
-
     // Step 3: Extract sections
     let sections = crate::parse::extract_sections(&content)?;
 
-    // EC-6: Warn when no identifiable sections found
+    // Step 4: Extract clauses
+    let clauses = crate::parse::extract_clauses(&content)?;
+
+    // EC-6: Detect missing structure — error when no sections AND no clauses
+    let has_clause_structure = !clauses.list_items.is_empty() || !clauses.tables.is_empty();
+    if sections.is_empty() && !has_clause_structure {
+        return Err(ForgeError::NoStructureDetected { path: input_path.to_path_buf() });
+    }
     if sections.is_empty() {
         tracing::warn!("No identifiable sections found in input — output will have empty groups");
     }
-
-    // Step 4: Extract clauses
-    let clauses = crate::parse::extract_clauses(&content)?;
 
     // Step 5: Assemble document
     let document = crate::model::assemble_document(&ingested, &sections, &clauses)?;
@@ -232,5 +229,31 @@ mod tests {
             err.to_string().contains("does not exist"),
             "Expected validation error about nonexistent dir, got: {err}"
         );
+    }
+
+    // --- US2: Pipeline integration tests (T019) ---
+
+    #[test]
+    fn empty_file_pipeline_returns_empty_input() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("empty.md");
+        std::fs::write(&path, "").unwrap();
+        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576);
+        match result.unwrap_err() {
+            ForgeError::EmptyInput { .. } => {}
+            other => panic!("Expected EmptyInput, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn structureless_file_pipeline_returns_no_structure_detected() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("flat.md");
+        std::fs::write(&path, "Just plain text without any structure.\n").unwrap();
+        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576);
+        match result.unwrap_err() {
+            ForgeError::NoStructureDetected { .. } => {}
+            other => panic!("Expected NoStructureDetected, got: {other:?}"),
+        }
     }
 }

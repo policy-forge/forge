@@ -306,7 +306,9 @@ fn convert_oversized_file_shows_size_error() {
 fn convert_oversized_file_with_max_size_override_succeeds() {
     let dir = TempDir::new().unwrap();
     let path = dir.path().join("big.md");
-    let content = "x".repeat(11 * 1024 * 1024);
+    let mut content = String::from("# Large Policy\n\n");
+    let padding = "x".repeat(11 * 1024 * 1024 - content.len());
+    content.push_str(&padding);
     fs::write(&path, &content).unwrap();
 
     let output = forge_bin()
@@ -482,4 +484,51 @@ fn convert_strategy_component_shows_rejection_error() {
         stderr.contains("--source-profile is required"),
         "stderr should mention --source-profile is required:\n{stderr}"
     );
+}
+
+// T023 [US5] Exit code integration tests
+
+#[test]
+fn exit_code_1_for_file_not_found() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("nonexistent.md")
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(1), "FileNotFound should exit with code 1");
+}
+
+#[test]
+fn exit_code_2_for_no_structure_detected() {
+    let dir = TempDir::new().unwrap();
+    let content = "This is just plain text without any headings or structure.\nNo sections here.\n";
+    let path = create_temp_md(&dir, "flat.md", content);
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(2), "NoStructureDetected should exit with code 2");
+}
+
+#[test]
+fn exit_code_3_for_validate_command() {
+    let output =
+        forge_bin().arg("validate").arg("any.json").output().expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(3), "Validation error should exit with code 3");
 }
