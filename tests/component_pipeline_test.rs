@@ -357,23 +357,14 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
         10 * 1024 * 1024,
         None, // No source profile
     );
+
+    // Without a source profile, control-implementations will be empty,
+    // which fails OSCAL schema validation (minItems: 1). The pipeline
+    // should return a schema validation error.
+    assert!(result.is_err(), "Pipeline should fail schema validation without source profile");
+    let err_msg = result.unwrap_err().to_string();
     assert!(
-        result.is_ok(),
-        "Pipeline should succeed without source profile: {:?}",
-        result.unwrap_err()
-    );
-
-    let json_str = std::fs::read_to_string(&output_path).unwrap();
-    let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
-
-    // Must still produce valid component-definition structure
-    assert!(json["component-definition"].is_object());
-    assert!(json["component-definition"]["components"].is_array());
-
-    let comp = &json["component-definition"]["components"][0];
-    let ci = comp["control-implementations"].as_array().unwrap();
-    assert!(
-        ci.is_empty(),
-        "control-implementations must be empty when source_profile is None. Got: {ci:?}"
+        err_msg.contains("Schema validation failed") || err_msg.contains("schema error"),
+        "Error should mention schema validation: {err_msg}"
     );
 }

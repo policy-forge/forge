@@ -483,7 +483,6 @@ fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
         .expect("Failed to execute process");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(output.status.success(), "Should succeed without --source-profile, stderr: {stderr}");
 
     // Verify warning about missing source-profile on stderr
     assert!(
@@ -491,11 +490,17 @@ fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
         "Should warn about missing source-profile on stderr: {stderr}"
     );
 
-    // Verify output is valid Component Definition JSON with empty control-implementations
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let json: serde_json::Value = serde_json::from_str(&stdout)
-        .unwrap_or_else(|e| panic!("Stdout should be valid JSON: {e}\nOutput: {stdout}"));
-    assert!(json["component-definition"].is_object(), "Should have component-definition");
+    // Without a source-profile, control-implementations will be empty,
+    // which fails OSCAL schema validation (minItems: 1). The CLI should
+    // report a schema validation error.
+    assert!(
+        !output.status.success(),
+        "Should fail schema validation without --source-profile, stderr: {stderr}"
+    );
+    assert!(
+        stderr.contains("Schema validation failed") || stderr.contains("schema error"),
+        "Should report schema validation error on stderr: {stderr}"
+    );
 }
 
 // =============================================================================
@@ -757,39 +762,18 @@ fn convert_component_strategy_zero_requirements_empty_control_implementations() 
         .expect("Failed to execute process");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let json: serde_json::Value = serde_json::from_str(&stdout)
-        .unwrap_or_else(|e| panic!("Stdout is not valid JSON: {e}\nOutput: {stdout}"));
-
+    // Zero extractable requirements produces empty implemented-requirements,
+    // which fails OSCAL schema validation (minItems: 1). The CLI should
+    // report a schema validation error rather than succeed.
     assert!(
-        json["component-definition"].is_object(),
-        "Should have 'component-definition' top-level key"
+        !output.status.success(),
+        "Should fail schema validation with zero requirements, stderr: {stderr}"
     );
-
-    let components = json["component-definition"]["components"]
-        .as_array()
-        .expect("components should be an array");
-    assert_eq!(components.len(), 1, "Should still have exactly 1 component");
-
-    let ctrl_impls = components[0]["control-implementations"]
-        .as_array()
-        .expect("control-implementations should be an array");
-
-    // Either control-implementations is empty, or its single entry has empty implemented-requirements
-    if ctrl_impls.is_empty() {
-        // Acceptable: no control-implementations at all
-    } else {
-        let impl_reqs = ctrl_impls[0]["implemented-requirements"]
-            .as_array()
-            .expect("implemented-requirements should be an array");
-        assert!(
-            impl_reqs.is_empty(),
-            "implemented-requirements should be empty for a document with no requirements, got {} items",
-            impl_reqs.len()
-        );
-    }
+    assert!(
+        stderr.contains("Schema validation failed") || stderr.contains("schema error"),
+        "Should report schema validation error on stderr: {stderr}"
+    );
 }
 
 // =============================================================================

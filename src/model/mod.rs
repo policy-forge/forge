@@ -163,6 +163,24 @@ impl PolicyDocument {
     pub fn total_requirements(&self) -> usize {
         self.sections.iter().map(PolicySection::total_requirements).sum()
     }
+
+    /// Recursively collect all citations from every requirement in this document.
+    #[must_use]
+    pub fn collect_citations(&self) -> Vec<Citation> {
+        fn walk(section: &PolicySection, out: &mut Vec<Citation>) {
+            for req in &section.requirements {
+                out.extend(req.citations.clone());
+            }
+            for child in &section.children {
+                walk(child, out);
+            }
+        }
+        let mut out = Vec::new();
+        for section in &self.sections {
+            walk(section, &mut out);
+        }
+        out
+    }
 }
 
 #[cfg(test)]
