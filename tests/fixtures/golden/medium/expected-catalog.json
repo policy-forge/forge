@@ -311,7 +311,7 @@
           },
           {
             "id": "POL-DP-003",
-            "title": "Data in transit must be protected using TLS 1.",
+            "title": "Data in transit must be protected using TLS 1.2 or higher",
             "links": [
               {
                 "href": "input.md#line=27",

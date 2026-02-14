@@ -138,7 +138,7 @@
               },
               {
                 "control-id": "POL-AC-005",
-                "description": "Remote access connections must use encrypted VPN tunnels per",
+                "description": "Remote access connections must use encrypted VPN tunnels per NIST SP 800-77",
                 "links": [
                   {
                     "href": "input.md#line=15",
@@ -306,7 +306,7 @@
               },
               {
                 "control-id": "POL-DP-002",
-                "description": "Data at rest must be encrypted using AES-256 or equivalent per",
+                "description": "Data at rest must be encrypted using AES-256 or equivalent per FIPS 140-3",
                 "links": [
                   {
                     "href": "input.md#line=32",
@@ -642,7 +642,7 @@
               },
               {
                 "control-id": "POL-NS-003",
-                "description": "Intrusion detection systems must be deployed at all network boundaries per",
+                "description": "Intrusion detection systems must be deployed at all network boundaries per NIST SP 800-94",
                 "links": [
                   {
                     "href": "input.md#line=60",

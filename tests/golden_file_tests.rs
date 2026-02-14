@@ -20,6 +20,7 @@
 //! ```bash
 //! cargo test golden                    # Run all golden-file tests
 //! cargo test golden -- --nocapture     # With accuracy reports
+//! cargo mutants -- --test golden       # Mutation testing for test quality
 //! cargo insta review                   # Review pending snapshots
 //! ```
 //!
@@ -43,7 +44,7 @@ use tempfile::TempDir;
 /// Fixed UUID placeholder used during normalization.
 const NORMALIZED_UUID: &str = "00000000-0000-0000-0000-000000000000";
 
-/// Fixed timestamp used to replace `last-modified` fields during normalization.
+/// Fixed reference timestamp for test normalization; replaces `last-modified` fields (not current date).
 const NORMALIZED_TIMESTAMP: &str = "2026-01-01T00:00:00Z";
 
 /// Minimum extraction accuracy percentage required to pass (PRD M-8).
@@ -97,13 +98,17 @@ fn normalize_value(value: &Value, parent_key: Option<&str>) -> Value {
                 Value::String(NORMALIZED_TIMESTAMP.to_string())
             } else if UUID_RE.is_match(s) {
                 Value::String(NORMALIZED_UUID.to_string())
-            } else if parent_key == Some("href") && s.starts_with('/') {
-                // Normalize absolute path hrefs: keep #fragment, replace path
-                let normalized = match s.find('#') {
-                    Some(idx) => format!("{}{}", NORMALIZED_PATH, &s[idx..]),
-                    None => NORMALIZED_PATH.to_string(),
+            } else if parent_key == Some("href") {
+                // Normalize absolute path hrefs (Unix and Windows): keep #fragment, replace path
+                let (path_part, fragment) = match s.find('#') {
+                    Some(idx) => (&s[..idx], &s[idx..]),
+                    None => (s.as_str(), ""),
                 };
-                Value::String(normalized)
+                if Path::new(path_part).is_absolute() {
+                    Value::String(format!("{NORMALIZED_PATH}{fragment}"))
+                } else {
+                    value.clone()
+                }
             } else {
                 value.clone()
             }

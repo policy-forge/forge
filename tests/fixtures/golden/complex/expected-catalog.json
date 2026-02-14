@@ -181,7 +181,7 @@
           },
           {
             "id": "POL-AC-005",
-            "title": "Remote access connections must use encrypted VPN tunnels per",
+            "title": "Remote access connections must use encrypted VPN tunnels per NIST SP 800-77",
             "links": [
               {
                 "href": "input.md#line=15",
@@ -192,7 +192,7 @@
               {
                 "id": "POL-AC-005_smt",
                 "name": "statement",
-                "prose": "Remote access connections must use encrypted VPN tunnels per"
+                "prose": "Remote access connections must use encrypted VPN tunnels per NIST SP 800-77"
               },
               {
                 "id": "POL-AC-005_gdn",
@@ -428,7 +428,7 @@
           },
           {
             "id": "POL-DP-002",
-            "title": "Data at rest must be encrypted using AES-256 or equivalent per",
+            "title": "Data at rest must be encrypted using AES-256 or equivalent per FIPS 140-3",
             "links": [
               {
                 "href": "input.md#line=32",
@@ -439,7 +439,7 @@
               {
                 "id": "POL-DP-002_smt",
                 "name": "statement",
-                "prose": "Data at rest must be encrypted using AES-256 or equivalent per"
+                "prose": "Data at rest must be encrypted using AES-256 or equivalent per FIPS 140-3"
               },
               {
                 "id": "POL-DP-002_gdn",
@@ -467,7 +467,7 @@
           },
           {
             "id": "POL-DP-003",
-            "title": "Data in transit must be protected using TLS 1.",
+            "title": "Data in transit must be protected using TLS 1.3 or higher",
             "links": [
               {
                 "href": "input.md#line=33",
@@ -623,7 +623,7 @@
           },
           {
             "id": "POL-DP-007",
-            "title": "Sensitive data must be securely erased using DoD 5220.",
+            "title": "Sensitive data must be securely erased using DoD 5220.22-M standard or equivalent",
             "links": [
               {
                 "href": "input.md#line=43",
@@ -922,7 +922,7 @@
           },
           {
             "id": "POL-NS-003",
-            "title": "Intrusion detection systems must be deployed at all network boundaries per",
+            "title": "Intrusion detection systems must be deployed at all network boundaries per NIST SP 800-94",
             "links": [
               {
                 "href": "input.md#line=60",
@@ -933,7 +933,7 @@
               {
                 "id": "POL-NS-003_smt",
                 "name": "statement",
-                "prose": "Intrusion detection systems must be deployed at all network boundaries per"
+                "prose": "Intrusion detection systems must be deployed at all network boundaries per NIST SP 800-94"
               },
               {
                 "id": "POL-NS-003_gdn",
