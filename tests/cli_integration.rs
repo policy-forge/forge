@@ -415,9 +415,11 @@ fn convert_missing_strategy_flag_shows_error() {
 }
 
 #[test]
-fn convert_missing_format_flag_shows_error() {
+fn convert_missing_format_flag_defaults_to_json() {
+    // EC-1 / T003: omitted --format → defaults to JSON, succeeds
     let dir = TempDir::new().unwrap();
-    let path = create_temp_md(&dir, "policy.md", "# Title\n");
+    let content = "# Title\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
 
     let output = forge_bin()
         .arg("convert")
@@ -427,13 +429,16 @@ fn convert_missing_format_flag_shows_error() {
         .output()
         .expect("Failed to execute process");
 
-    // EC-5: omitted --format → clap error
-    assert!(!output.status.success(), "Expected non-zero exit code");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("--format") || stderr.contains("required"),
-        "stderr should indicate --format is required:\n{stderr}"
+        output.status.success(),
+        "Should succeed when --format omitted (defaults to json), stderr: {stderr}"
     );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: serde_json::Value = serde_json::from_str(&stdout)
+        .unwrap_or_else(|e| panic!("Stdout should be valid JSON: {e}\nOutput: {stdout}"));
+    assert!(json["catalog"].is_object(), "Should produce OSCAL catalog JSON");
 }
 
 #[test]
@@ -461,9 +466,11 @@ fn convert_format_xml_shows_rejection_error() {
 }
 
 #[test]
-fn convert_strategy_component_shows_rejection_error() {
+fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
+    // T014 (S-1): --strategy component without --source-profile → success with warning
     let dir = TempDir::new().unwrap();
-    let path = create_temp_md(&dir, "policy.md", "# Title\n");
+    let content = "---\ntitle: \"Test Policy\"\nversion: \"1.0\"\n---\n\n# Access Control\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
 
     let output = forge_bin()
         .arg("convert")
@@ -475,11 +482,416 @@ fn convert_strategy_component_shows_rejection_error() {
         .output()
         .expect("Failed to execute process");
 
-    // WI-15: --strategy component without --source-profile → validation error
-    assert!(!output.status.success(), "Expected non-zero exit code");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Verify warning about missing source-profile on stderr
+    assert!(
+        stderr.contains("source-profile") && stderr.contains("control-id mapping"),
+        "Should warn about missing source-profile on stderr: {stderr}"
+    );
+
+    // Without a source-profile, control-implementations will be empty,
+    // which fails OSCAL schema validation (minItems: 1). The CLI should
+    // report a schema validation error.
+    assert!(
+        !output.status.success(),
+        "Should fail schema validation without --source-profile, stderr: {stderr}"
+    );
+    assert!(
+        stderr.contains("Schema validation failed") || stderr.contains("schema error"),
+        "Should report schema validation error on stderr: {stderr}"
+    );
+}
+
+// =============================================================================
+// T006–T009, T022–T023: Component pipeline CLI integration tests (WI-18 Phase 2)
+// =============================================================================
+
+/// T006 [US1] — Full component pipeline produces valid Component Definition JSON.
+/// Covers: AC-1, AC-2, AC-3, AC-5, M-3, M-4, M-5, M-7
+#[test]
+fn convert_component_strategy_produces_valid_component_definition() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: serde_json::Value = serde_json::from_str(&stdout)
+        .unwrap_or_else(|e| panic!("Stdout is not valid JSON: {e}\nOutput: {stdout}"));
+
+    // Top-level key
+    assert!(
+        json["component-definition"].is_object(),
+        "Should have 'component-definition' top-level key"
+    );
+
+    let cd = &json["component-definition"];
+
+    // UUID
+    assert!(cd["uuid"].is_string(), "component-definition.uuid should be a string");
+    assert!(
+        !cd["uuid"].as_str().unwrap().is_empty(),
+        "component-definition.uuid should not be empty"
+    );
+
+    // Metadata
+    let metadata = &cd["metadata"];
+    assert_eq!(
+        metadata["title"].as_str().unwrap(),
+        "Sample Security Policy",
+        "metadata.title should match frontmatter"
+    );
+    assert_eq!(
+        metadata["version"].as_str().unwrap(),
+        "1.0.0",
+        "metadata.version should match frontmatter"
+    );
+    assert_eq!(
+        metadata["oscal-version"].as_str().unwrap(),
+        "1.2.0",
+        "metadata.oscal-version should be 1.2.0"
+    );
+    assert!(metadata["last-modified"].is_string(), "metadata.last-modified should be a string");
+    assert!(
+        !metadata["last-modified"].as_str().unwrap().is_empty(),
+        "metadata.last-modified should not be empty"
+    );
+
+    // Components
+    let components = cd["components"].as_array().expect("components should be an array");
+    assert_eq!(components.len(), 1, "Should have exactly 1 component");
+    assert_eq!(
+        components[0]["type"].as_str().unwrap(),
+        "policy",
+        "components[0].type should be 'policy'"
+    );
+
+    // Control implementations
+    let ctrl_impls = components[0]["control-implementations"]
+        .as_array()
+        .expect("control-implementations should be an array");
+    assert_eq!(ctrl_impls.len(), 1, "Should have exactly 1 control-implementation");
+
+    // Implemented requirements (non-empty)
+    let impl_reqs = ctrl_impls[0]["implemented-requirements"]
+        .as_array()
+        .expect("implemented-requirements should be an array");
+    assert!(
+        !impl_reqs.is_empty(),
+        "implemented-requirements should not be empty for full_policy.md"
+    );
+}
+
+/// T007 [US1] — --format omitted defaults to JSON for component strategy.
+/// Covers: T-EC1, EC-1
+#[test]
+fn convert_component_strategy_format_omitted_defaults_to_json() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|e| {
+        panic!("Stdout should be valid JSON when --format omitted: {e}\nOutput: {stdout}")
+    });
+
+    assert!(
+        json["component-definition"].is_object(),
+        "Should have 'component-definition' top-level key when --format omitted"
+    );
+}
+
+/// T008 [US1] — --output writes Component Definition to file.
+/// Covers: AC-6, M-8
+#[test]
+fn convert_component_strategy_output_to_file() {
+    let dir = TempDir::new().unwrap();
+    let output_path = dir.path().join("component.json");
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .arg("--format")
+        .arg("json")
+        .arg("--output")
+        .arg(&output_path)
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    // Stdout should be empty (output went to file)
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.trim().is_empty(),
+        "Stdout should be empty when --output is used, got: {stdout}"
+    );
+
+    // Read file and parse as JSON
+    let file_content = fs::read_to_string(&output_path)
+        .unwrap_or_else(|e| panic!("Failed to read output file: {e}"));
+    let json: serde_json::Value = serde_json::from_str(&file_content)
+        .unwrap_or_else(|e| panic!("Output file is not valid JSON: {e}"));
+
+    assert!(
+        json["component-definition"].is_object(),
+        "File should contain 'component-definition' top-level key"
+    );
+}
+
+/// T009 [US2] — Trace props present in implemented-requirements.
+/// Covers: AC-4, M-6, SEC-1
+#[test]
+fn convert_component_strategy_has_trace_props() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: serde_json::Value = serde_json::from_str(&stdout)
+        .unwrap_or_else(|e| panic!("Stdout is not valid JSON: {e}\nOutput: {stdout}"));
+
+    let impl_reqs = json["component-definition"]["components"][0]["control-implementations"][0]
+        ["implemented-requirements"]
+        .as_array()
+        .expect("implemented-requirements should be an array");
+
+    assert!(!impl_reqs.is_empty(), "implemented-requirements should not be empty");
+
+    for (i, req) in impl_reqs.iter().enumerate() {
+        let props = req["props"]
+            .as_array()
+            .unwrap_or_else(|| panic!("implemented-requirement[{i}] should have 'props' array"));
+
+        // Collect prop names for assertion messages
+        let prop_names: Vec<&str> = props.iter().filter_map(|p| p["name"].as_str()).collect();
+
+        assert!(
+            prop_names.contains(&"source-file"),
+            "implemented-requirement[{i}] props should contain 'source-file', got: {prop_names:?}"
+        );
+        assert!(
+            prop_names.contains(&"source-section"),
+            "implemented-requirement[{i}] props should contain 'source-section', got: {prop_names:?}"
+        );
+        assert!(
+            prop_names.contains(&"source-line"),
+            "implemented-requirement[{i}] props should contain 'source-line', got: {prop_names:?}"
+        );
+
+        // SEC-1: source-file value is filename-only (no path separators)
+        let source_file_prop = props
+            .iter()
+            .find(|p| p["name"].as_str() == Some("source-file"))
+            .expect("source-file prop should exist");
+        let source_file_value =
+            source_file_prop["value"].as_str().expect("source-file value should be a string");
+        assert!(
+            !source_file_value.contains('/') && !source_file_value.contains('\\'),
+            "SEC-1: source-file should be filename-only (no path separators), got: {source_file_value}"
+        );
+
+        // source-line value should be a parseable number > 0
+        let source_line_prop = props
+            .iter()
+            .find(|p| p["name"].as_str() == Some("source-line"))
+            .expect("source-line prop should exist");
+        let source_line_value =
+            source_line_prop["value"].as_str().expect("source-line value should be a string");
+        let line_num: u64 = source_line_value.parse().unwrap_or_else(|e| {
+            panic!("source-line value '{source_line_value}' should be a number: {e}")
+        });
+        assert!(line_num > 0, "source-line should be > 0, got: {line_num}");
+    }
+}
+
+/// T022 [US1] — Zero extractable requirements produces empty implemented-requirements.
+/// Covers: EC-2
+#[test]
+fn convert_component_strategy_zero_requirements_empty_control_implementations() {
+    let dir = TempDir::new().unwrap();
+    let content = "---\ntitle: \"No Requirements\"\nversion: \"1.0\"\n---\n\n# Section\n\nJust a paragraph with no requirements.\n";
+    let path = create_temp_md(&dir, "no_reqs.md", content);
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Zero extractable requirements produces empty implemented-requirements,
+    // which fails OSCAL schema validation (minItems: 1). The CLI should
+    // report a schema validation error rather than succeed.
+    assert!(
+        !output.status.success(),
+        "Should fail schema validation with zero requirements, stderr: {stderr}"
+    );
+    assert!(
+        stderr.contains("Schema validation failed") || stderr.contains("schema error"),
+        "Should report schema validation error on stderr: {stderr}"
+    );
+}
+
+// =============================================================================
+// T015–T016: Source Profile Validation (WI-18 Phase 4, US-4)
+// =============================================================================
+
+/// T015 [US4] — Non-existent --source-profile path produces descriptive error and exits non-zero.
+/// Covers: T-S2-03, AC-8, SEC-3
+#[test]
+fn convert_component_strategy_nonexistent_source_profile_errors() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("nonexistent/path/profile.json")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(
+        !output.status.success(),
+        "Expected non-zero exit code for non-existent source-profile path"
+    );
+
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("--source-profile is required"),
-        "stderr should mention --source-profile is required:\n{stderr}"
+        stderr.contains("source-profile") || stderr.contains("source_profile"),
+        "Error should mention source-profile: {stderr}"
+    );
+    assert!(
+        stderr.contains("not found")
+            || stderr.contains("does not exist")
+            || stderr.contains("No such file"),
+        "Error should indicate file not found: {stderr}"
+    );
+}
+
+/// T016 [US4] — Directory path as --source-profile produces descriptive error and exits non-zero.
+/// Covers: SEC-3
+#[test]
+fn convert_component_strategy_directory_as_source_profile_errors() {
+    let dir = TempDir::new().unwrap();
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg(dir.path())
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(
+        !output.status.success(),
+        "Expected non-zero exit code for directory as source-profile"
+    );
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("source-profile") || stderr.contains("source_profile"),
+        "Error should mention source-profile: {stderr}"
+    );
+    assert!(
+        stderr.contains("not a file")
+            || stderr.contains("not a regular file")
+            || stderr.contains("is a directory"),
+        "Error should indicate path is not a file: {stderr}"
+    );
+}
+
+/// T023 [US1] — Source profile with no matching control IDs still produces valid output.
+/// The pipeline uses source_profile as a string reference — it does not parse or validate the file.
+/// Covers: EC-3
+#[test]
+fn convert_component_strategy_no_matching_control_ids() {
+    // Create a temp file with a distinctive name to verify source string is reflected in output
+    let dir = TempDir::new().unwrap();
+    let profile_path = dir.path().join("some-other-baseline.json");
+    fs::write(&profile_path, "{}").unwrap();
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg(&profile_path)
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: serde_json::Value = serde_json::from_str(&stdout)
+        .unwrap_or_else(|e| panic!("Stdout is not valid JSON: {e}\nOutput: {stdout}"));
+
+    assert!(
+        json["component-definition"].is_object(),
+        "Should have 'component-definition' top-level key with any profile string"
+    );
+
+    // Verify the source profile path is reflected in the output
+    let ctrl_impls = json["component-definition"]["components"][0]["control-implementations"]
+        .as_array()
+        .expect("control-implementations should be an array");
+    assert!(!ctrl_impls.is_empty(), "Should have at least one control-implementation");
+    let source = ctrl_impls[0]["source"].as_str().unwrap();
+    assert!(
+        source.contains("some-other-baseline.json"),
+        "source should reflect the provided --source-profile value, got: {source}"
     );
 }

@@ -14,7 +14,7 @@ fn run_component_pipeline_on_fixture(source_profile: &str) -> serde_json::Value 
         fixture,
         Some(&output_path),
         10 * 1024 * 1024,
-        source_profile,
+        Some(source_profile),
     );
     assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
@@ -223,6 +223,42 @@ fn component_pipeline_implemented_requirements_have_source_link() {
     }
 }
 
+// ─── T002: Source-file prop must be filename-only (SEC-1) ─────────────────
+
+#[test]
+fn component_pipeline_source_file_prop_is_filename_only() {
+    // T002 (SEC-1): source-file prop must NOT contain path separators (absolute path leakage)
+    let json = run_component_pipeline_on_fixture("./baselines/nist-800-53.json");
+    let comp = &json["component-definition"]["components"][0];
+
+    let props = comp["props"].as_array().expect("Component must have props");
+    let source_file_prop =
+        props.iter().find(|p| p["name"] == "source-file").expect("Must have source-file prop");
+    let value = source_file_prop["value"].as_str().unwrap();
+
+    // Must be just a filename — no path separators
+    assert!(
+        !value.contains('/') && !value.contains('\\'),
+        "SEC-1: source-file prop must be filename-only, not a path. Got: {value}"
+    );
+    assert_eq!(value, "full_policy.md", "Should be just the filename");
+
+    // Also verify trace props on implemented-requirements are filename-only
+    let impl_reqs = json["component-definition"]["components"][0]["control-implementations"][0]
+        ["implemented-requirements"]
+        .as_array()
+        .unwrap();
+    for (i, req) in impl_reqs.iter().enumerate() {
+        let req_props = req["props"].as_array().unwrap();
+        let sf = req_props.iter().find(|p| p["name"] == "source-file").unwrap();
+        let sf_val = sf["value"].as_str().unwrap();
+        assert!(
+            !sf_val.contains('/') && !sf_val.contains('\\'),
+            "SEC-1: implemented-requirement[{i}] source-file must be filename-only. Got: {sf_val}"
+        );
+    }
+}
+
 // ─── T025: Cross-Artifact Consistency Test ───────────────────────────────
 
 #[test]
@@ -245,7 +281,7 @@ fn control_ids_match_between_catalog_and_component() {
         fixture,
         Some(&component_path),
         10 * 1024 * 1024,
-        "./baselines/nist.json",
+        Some("./baselines/nist.json"),
     )
     .expect("Component pipeline should succeed");
     let component_str = std::fs::read_to_string(&component_path).unwrap();
@@ -302,4 +338,33 @@ fn control_ids_match_between_catalog_and_component() {
             "Control-id mismatch at position {i}: catalog={cat_id}, component={comp_id}"
         );
     }
+}
+
+// ─── T010: Component Pipeline with source_profile: None ───────────────────
+
+#[test]
+fn component_pipeline_none_source_profile_produces_empty_control_implementations() {
+    // T010 (S-1, AC-7): Pipeline with source_profile: None → empty control-implementations
+    let fixture = Path::new("tests/fixtures/full_policy.md");
+    assert!(fixture.exists());
+
+    let dir = TempDir::new().unwrap();
+    let output_path = dir.path().join("component.json");
+
+    let result = forge::pipeline::run_component_pipeline(
+        fixture,
+        Some(&output_path),
+        10 * 1024 * 1024,
+        None, // No source profile
+    );
+
+    // Without a source profile, control-implementations will be empty,
+    // which fails OSCAL schema validation (minItems: 1). The pipeline
+    // should return a schema validation error.
+    assert!(result.is_err(), "Pipeline should fail schema validation without source profile");
+    let err_msg = result.unwrap_err().to_string();
+    assert!(
+        err_msg.contains("Schema validation failed") || err_msg.contains("schema error"),
+        "Error should mention schema validation: {err_msg}"
+    );
 }

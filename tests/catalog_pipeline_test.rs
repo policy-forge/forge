@@ -2,7 +2,7 @@ use std::path::Path;
 
 use tempfile::TempDir;
 
-/// Helper: run pipeline on `full_policy.md` fixture, return parsed JSON.
+/// Helper: run pipeline on `full_policy.md` fixture, return parsed JSON
 fn run_pipeline_on_fixture() -> serde_json::Value {
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists(), "Fixture file must exist: {}", fixture.display());
