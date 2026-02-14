@@ -39,3 +39,7 @@ harness = false
 [[bench]]
 name = "uuid_benchmark"
 harness = false
+
+[[bench]]
+name = "pipeline_benchmark"
+harness = false

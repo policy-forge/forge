@@ -359,13 +359,12 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
         10 * 1024 * 1024,
         None, // No source profile
     );
-    assert!(
-        result.is_err(),
-        "Pipeline should fail schema validation without source profile (empty control-implementations)"
-    );
 
-    let err = result.unwrap_err();
-    let err_msg = err.to_string();
+    // Without a source profile, control-implementations will be empty,
+    // which fails OSCAL schema validation (minItems: 1). The pipeline
+    // should return a schema validation error.
+    assert!(result.is_err(), "Pipeline should fail schema validation without source profile");
+    let err_msg = result.unwrap_err().to_string();
     assert!(
         err_msg.contains("schema") || err_msg.contains("Schema"),
         "Error should mention schema validation: {err_msg}"

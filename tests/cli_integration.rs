@@ -494,11 +494,12 @@ fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
         "Should warn about missing source-profile on stderr: {stderr}"
     );
 
-    // Without a source-profile, control-implementations is empty, which fails
-    // OSCAL schema validation (minItems: 1). Expect non-zero exit.
+    // Without a source-profile, control-implementations will be empty,
+    // which fails OSCAL schema validation (minItems: 1). The CLI should
+    // report a schema validation error.
     assert!(
         !output.status.success(),
-        "Should fail schema validation without --source-profile (empty control-implementations), stderr: {stderr}"
+        "Should fail schema validation without --source-profile, stderr: {stderr}"
     );
     assert!(
         stderr.contains("schema") || stderr.contains("Schema"),
@@ -767,9 +768,13 @@ fn convert_component_strategy_zero_requirements_empty_control_implementations() 
         .expect("Failed to execute process");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Zero extractable requirements produces empty implemented-requirements,
+    // which fails OSCAL schema validation (minItems: 1). The CLI should
+    // report a schema validation error rather than succeed.
     assert!(
         !output.status.success(),
-        "Should fail schema validation with zero requirements (empty implemented-requirements), stderr: {stderr}"
+        "Should fail schema validation with zero requirements, stderr: {stderr}"
     );
     assert!(
         stderr.contains("schema") || stderr.contains("Schema"),

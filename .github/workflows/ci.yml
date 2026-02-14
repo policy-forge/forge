@@ -43,6 +43,9 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      - name: Run benchmarks
+        run: cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3
+
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
 
