@@ -76,6 +76,8 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust (edition 2024, stable 1.93.0) + thiserror 2.0.18, clap 4.x, pulldown-cmark 0.13.x, serde 1.x, serde_json 1.x, uuid 1.20.0, chrono 0.4, tracing 0.1.44, sha2 0.10.9, regex 1, url 2.5 (all existing) + NEW: `anyhow` (latest stable, for `.context()` in binary crate) (023-error-handling)
 - Rust edition 2024, stable 1.93.0 + criterion 0.8.2 (already in dev-deps with `html_reports`), cargo-flamegraph (conditional, only if optimization needed) (024-performance-benchmark)
 - Filesystem (read synthetic fixture from `tests/fixtures/`) (024-performance-benchmark)
+- Rust edition 2024, stable 1.93.0 + serde_json 1.x (existing), insta (NEW — latest stable, `json` feature, dev-dependency), regex 1.x (existing, for UUID pattern matching) (021-prd-golden-file-tests)
+- N/A — file-based test fixtures (read-only); insta `.snap` files generated alongside tests (021-prd-golden-file-tests)
 - Rust edition 2024, stable 1.93.0 + jsonschema 0.41.0 (WI-19), serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, clap 4.x, anyhow 1.x — all existing, no new dependencies (020-prd-validation-error-reporting)
 
 ## Recent Changes

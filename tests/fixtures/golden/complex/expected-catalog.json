@@ -1,0 +1,1382 @@
+{
+  "catalog": {
+    "uuid": "6dc053b1-5ae4-4a77-b0fb-9cdbbfd7b63f",
+    "metadata": {
+      "title": "Comprehensive Security Policy",
+      "last-modified": "2026-02-14T20:27:10.676451+00:00",
+      "version": "3.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-comprehensive-security-policy-version-3-0-0-author-chief-information-security-officer-date-2026-02-01",
+        "title": "title: \"Comprehensive Security Policy\"version: \"3.0.0\"author: \"Chief Information Security Officer\"date: \"2026-02-01\""
+      },
+      {
+        "id": "access-control",
+        "title": "Access Control",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Access Control"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-AC-001",
+            "title": "All users must authenticate using approved multi-factor credentials before accessing any system",
+            "links": [
+              {
+                "href": "input.md#line=12",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-001_smt",
+                "name": "statement",
+                "prose": "All users must authenticate using approved multi-factor credentials before accessing any system"
+              },
+              {
+                "id": "POL-AC-001_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational information systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege and must be reviewed quarterly\nPrivileged accounts must use hardware security tokens for authentication\nRemote access connections must use encrypted VPN tunnels per NIST SP 800-77"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "12"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-002",
+            "title": "Access permissions must follow the principle of least privilege",
+            "links": [
+              {
+                "href": "input.md#line=13",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-002_smt",
+                "name": "statement",
+                "prose": "Access permissions must follow the principle of least privilege"
+              },
+              {
+                "id": "POL-AC-002_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational information systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege and must be reviewed quarterly\nPrivileged accounts must use hardware security tokens for authentication\nRemote access connections must use encrypted VPN tunnels per NIST SP 800-77"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "13"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-003",
+            "title": "Access permissions must be reviewed quarterly",
+            "links": [
+              {
+                "href": "input.md#line=13",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-003_smt",
+                "name": "statement",
+                "prose": "Access permissions must be reviewed quarterly"
+              },
+              {
+                "id": "POL-AC-003_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational information systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege and must be reviewed quarterly\nPrivileged accounts must use hardware security tokens for authentication\nRemote access connections must use encrypted VPN tunnels per NIST SP 800-77"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "13"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-004",
+            "title": "Privileged accounts must use hardware security tokens for authentication",
+            "links": [
+              {
+                "href": "input.md#line=14",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-004_smt",
+                "name": "statement",
+                "prose": "Privileged accounts must use hardware security tokens for authentication"
+              },
+              {
+                "id": "POL-AC-004_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational information systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege and must be reviewed quarterly\nPrivileged accounts must use hardware security tokens for authentication\nRemote access connections must use encrypted VPN tunnels per NIST SP 800-77"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "14"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-005",
+            "title": "Remote access connections must use encrypted VPN tunnels per NIST SP 800-77",
+            "links": [
+              {
+                "href": "input.md#line=15",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-005_smt",
+                "name": "statement",
+                "prose": "Remote access connections must use encrypted VPN tunnels per NIST SP 800-77"
+              },
+              {
+                "id": "POL-AC-005_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational information systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege and must be reviewed quarterly\nPrivileged accounts must use hardware security tokens for authentication\nRemote access connections must use encrypted VPN tunnels per NIST SP 800-77"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "15"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-006",
+            "title": "Passwords must be at least 16 characters and include uppercase, lowercase, numbers, and symbols",
+            "links": [
+              {
+                "href": "input.md#line=19",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-006_smt",
+                "name": "statement",
+                "prose": "Passwords must be at least 16 characters and include uppercase, lowercase, numbers, and symbols"
+              },
+              {
+                "id": "POL-AC-006_gdn",
+                "name": "guidance",
+                "prose": "Passwords must be at least 16 characters and include uppercase, lowercase, numbers, and symbols\nAccount lockout must occur after 5 consecutive failed authentication attempts"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Authentication Standards"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "19"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-007",
+            "title": "Account lockout must occur after 5 consecutive failed authentication attempts",
+            "links": [
+              {
+                "href": "input.md#line=20",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-007_smt",
+                "name": "statement",
+                "prose": "Account lockout must occur after 5 consecutive failed authentication attempts"
+              },
+              {
+                "id": "POL-AC-007_gdn",
+                "name": "guidance",
+                "prose": "Passwords must be at least 16 characters and include uppercase, lowercase, numbers, and symbols\nAccount lockout must occur after 5 consecutive failed authentication attempts"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Authentication Standards"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "20"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-008",
+            "title": "User sessions must time out after 15 minutes of inactivity",
+            "links": [
+              {
+                "href": "input.md#line=24",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-008_smt",
+                "name": "statement",
+                "prose": "User sessions must time out after 15 minutes of inactivity"
+              },
+              {
+                "id": "POL-AC-008_gdn",
+                "name": "guidance",
+                "prose": "User sessions must time out after 15 minutes of inactivity\nConcurrent sessions must be limited to 3 per user account"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Session Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "24"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-009",
+            "title": "Concurrent sessions must be limited to 3 per user account",
+            "links": [
+              {
+                "href": "input.md#line=25",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-009_smt",
+                "name": "statement",
+                "prose": "Concurrent sessions must be limited to 3 per user account"
+              },
+              {
+                "id": "POL-AC-009_gdn",
+                "name": "guidance",
+                "prose": "User sessions must time out after 15 minutes of inactivity\nConcurrent sessions must be limited to 3 per user account"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Session Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "25"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "data-protection",
+        "title": "Data Protection",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Data Protection"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-DP-001",
+            "title": "All sensitive data must be classified according to the organizational data classification scheme",
+            "links": [
+              {
+                "href": "input.md#line=31",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-001_smt",
+                "name": "statement",
+                "prose": "All sensitive data must be classified according to the organizational data classification scheme"
+              },
+              {
+                "id": "POL-DP-001_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent per FIPS 140-3\nData in transit must be protected using TLS 1.3 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "31"
+              }
+            ]
+          },
+          {
+            "id": "POL-DP-002",
+            "title": "Data at rest must be encrypted using AES-256 or equivalent per FIPS 140-3",
+            "links": [
+              {
+                "href": "input.md#line=32",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-002_smt",
+                "name": "statement",
+                "prose": "Data at rest must be encrypted using AES-256 or equivalent per FIPS 140-3"
+              },
+              {
+                "id": "POL-DP-002_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent per FIPS 140-3\nData in transit must be protected using TLS 1.3 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "32"
+              }
+            ]
+          },
+          {
+            "id": "POL-DP-003",
+            "title": "Data in transit must be protected using TLS 1.3 or higher",
+            "links": [
+              {
+                "href": "input.md#line=33",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-003_smt",
+                "name": "statement",
+                "prose": "Data in transit must be protected using TLS 1.3 or higher"
+              },
+              {
+                "id": "POL-DP-003_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent per FIPS 140-3\nData in transit must be protected using TLS 1.3 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "33"
+              }
+            ]
+          },
+          {
+            "id": "POL-DP-004",
+            "title": "Encryption keys must be rotated annually and stored in a hardware security module",
+            "links": [
+              {
+                "href": "input.md#line=34",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-004_smt",
+                "name": "statement",
+                "prose": "Encryption keys must be rotated annually and stored in a hardware security module"
+              },
+              {
+                "id": "POL-DP-004_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent per FIPS 140-3\nData in transit must be protected using TLS 1.3 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "34"
+              }
+            ]
+          },
+          {
+            "id": "POL-DP-005",
+            "title": "Audit logs must be retained for a minimum of three years",
+            "links": [
+              {
+                "href": "input.md#line=38",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-005_smt",
+                "name": "statement",
+                "prose": "Audit logs must be retained for a minimum of three years"
+              },
+              {
+                "id": "POL-DP-005_gdn",
+                "name": "guidance",
+                "prose": "Audit logs must be retained for a minimum of three years\nBackup copies must be encrypted and stored in a geographically separate location"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Retention"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "38"
+              }
+            ]
+          },
+          {
+            "id": "POL-DP-006",
+            "title": "Backup copies must be encrypted and stored in a geographically separate location",
+            "links": [
+              {
+                "href": "input.md#line=39",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-006_smt",
+                "name": "statement",
+                "prose": "Backup copies must be encrypted and stored in a geographically separate location"
+              },
+              {
+                "id": "POL-DP-006_gdn",
+                "name": "guidance",
+                "prose": "Audit logs must be retained for a minimum of three years\nBackup copies must be encrypted and stored in a geographically separate location"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Retention"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "39"
+              }
+            ]
+          },
+          {
+            "id": "POL-DP-007",
+            "title": "Sensitive data must be securely erased using DoD 5220.22-M standard or equivalent",
+            "links": [
+              {
+                "href": "input.md#line=43",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-007_smt",
+                "name": "statement",
+                "prose": "Sensitive data must be securely erased using DoD 5220.22-M standard or equivalent"
+              },
+              {
+                "id": "POL-DP-007_gdn",
+                "name": "guidance",
+                "prose": "Sensitive data must be securely erased using DoD 5220.22-M standard or equivalent\nPhysical media must be degaussed and physically destroyed before disposal"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Disposal"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "43"
+              }
+            ]
+          },
+          {
+            "id": "POL-DP-008",
+            "title": "Physical media must be degaussed and physically destroyed before disposal",
+            "links": [
+              {
+                "href": "input.md#line=44",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-008_smt",
+                "name": "statement",
+                "prose": "Physical media must be degaussed and physically destroyed before disposal"
+              },
+              {
+                "id": "POL-DP-008_gdn",
+                "name": "guidance",
+                "prose": "Sensitive data must be securely erased using DoD 5220.22-M standard or equivalent\nPhysical media must be degaussed and physically destroyed before disposal"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Disposal"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "44"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "incident-response",
+        "title": "Incident Response",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Incident Response"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-IR-001",
+            "title": "All security incidents must be reported within 24 hours of detection",
+            "links": [
+              {
+                "href": "input.md#line=50",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-IR-001_smt",
+                "name": "statement",
+                "prose": "All security incidents must be reported within 24 hours of detection"
+              },
+              {
+                "id": "POL-IR-001_gdn",
+                "name": "guidance",
+                "prose": "This section establishes incident response procedures per NIST SP 800-61.\nAll security incidents must be reported within 24 hours of detection\nAn incident response plan must be tested at least annually through tabletop exercises\nPost-incident reviews must be completed within 72 hours and findings documented"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Incident Response"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "50"
+              }
+            ]
+          },
+          {
+            "id": "POL-IR-002",
+            "title": "An incident response plan must be tested at least annually through tabletop exercises",
+            "links": [
+              {
+                "href": "input.md#line=51",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-IR-002_smt",
+                "name": "statement",
+                "prose": "An incident response plan must be tested at least annually through tabletop exercises"
+              },
+              {
+                "id": "POL-IR-002_gdn",
+                "name": "guidance",
+                "prose": "This section establishes incident response procedures per NIST SP 800-61.\nAll security incidents must be reported within 24 hours of detection\nAn incident response plan must be tested at least annually through tabletop exercises\nPost-incident reviews must be completed within 72 hours and findings documented"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Incident Response"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "51"
+              }
+            ]
+          },
+          {
+            "id": "POL-IR-003",
+            "title": "Post-incident reviews must be completed within 72 hours and findings documented",
+            "links": [
+              {
+                "href": "input.md#line=52",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-IR-003_smt",
+                "name": "statement",
+                "prose": "Post-incident reviews must be completed within 72 hours and findings documented"
+              },
+              {
+                "id": "POL-IR-003_gdn",
+                "name": "guidance",
+                "prose": "This section establishes incident response procedures per NIST SP 800-61.\nAll security incidents must be reported within 24 hours of detection\nAn incident response plan must be tested at least annually through tabletop exercises\nPost-incident reviews must be completed within 72 hours and findings documented"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Incident Response"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "52"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "network-security",
+        "title": "Network Security",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Network Security"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-NS-001",
+            "title": "Network traffic must be monitored continuously and anomalies must be investigated within 4 hours",
+            "links": [
+              {
+                "href": "input.md#line=58",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-NS-001_smt",
+                "name": "statement",
+                "prose": "Network traffic must be monitored continuously and anomalies must be investigated within 4 hours"
+              },
+              {
+                "id": "POL-NS-001_gdn",
+                "name": "guidance",
+                "prose": "This section defines network segmentation and monitoring requirements.\nNetwork traffic must be monitored continuously and anomalies must be investigated within 4 hours\nFirewalls must be configured to deny all traffic by default and allow only explicitly authorized connections\nIntrusion detection systems must be deployed at all network boundaries per NIST SP 800-94"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Network Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "58"
+              }
+            ]
+          },
+          {
+            "id": "POL-NS-002",
+            "title": "Firewalls must be configured to deny all traffic by default and allow only explicitly authorized connections",
+            "links": [
+              {
+                "href": "input.md#line=59",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-NS-002_smt",
+                "name": "statement",
+                "prose": "Firewalls must be configured to deny all traffic by default and allow only explicitly authorized connections"
+              },
+              {
+                "id": "POL-NS-002_gdn",
+                "name": "guidance",
+                "prose": "This section defines network segmentation and monitoring requirements.\nNetwork traffic must be monitored continuously and anomalies must be investigated within 4 hours\nFirewalls must be configured to deny all traffic by default and allow only explicitly authorized connections\nIntrusion detection systems must be deployed at all network boundaries per NIST SP 800-94"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Network Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "59"
+              }
+            ]
+          },
+          {
+            "id": "POL-NS-003",
+            "title": "Intrusion detection systems must be deployed at all network boundaries per NIST SP 800-94",
+            "links": [
+              {
+                "href": "input.md#line=60",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-NS-003_smt",
+                "name": "statement",
+                "prose": "Intrusion detection systems must be deployed at all network boundaries per NIST SP 800-94"
+              },
+              {
+                "id": "POL-NS-003_gdn",
+                "name": "guidance",
+                "prose": "This section defines network segmentation and monitoring requirements.\nNetwork traffic must be monitored continuously and anomalies must be investigated within 4 hours\nFirewalls must be configured to deny all traffic by default and allow only explicitly authorized connections\nIntrusion detection systems must be deployed at all network boundaries per NIST SP 800-94"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Network Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "60"
+              }
+            ]
+          },
+          {
+            "id": "POL-NS-004",
+            "title": "Wireless networks must use WPA3 encryption",
+            "links": [
+              {
+                "href": "input.md#line=64",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-NS-004_smt",
+                "name": "statement",
+                "prose": "Wireless networks must use WPA3 encryption"
+              },
+              {
+                "id": "POL-NS-004_gdn",
+                "name": "guidance",
+                "prose": "Wireless networks must use WPA3 encryption\nGuest wireless networks must be isolated from internal networks"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Wireless Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "64"
+              }
+            ]
+          },
+          {
+            "id": "POL-NS-005",
+            "title": "Guest wireless networks must be isolated from internal networks",
+            "links": [
+              {
+                "href": "input.md#line=65",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-NS-005_smt",
+                "name": "statement",
+                "prose": "Guest wireless networks must be isolated from internal networks"
+              },
+              {
+                "id": "POL-NS-005_gdn",
+                "name": "guidance",
+                "prose": "Wireless networks must use WPA3 encryption\nGuest wireless networks must be isolated from internal networks"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Wireless Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "65"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "physical-security",
+        "title": "Physical Security",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Physical Security"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-PS-001",
+            "title": "Server rooms must use biometric access controls and video surveillance",
+            "links": [
+              {
+                "href": "input.md#line=71",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-PS-001_smt",
+                "name": "statement",
+                "prose": "Server rooms must use biometric access controls and video surveillance"
+              },
+              {
+                "id": "POL-PS-001_gdn",
+                "name": "guidance",
+                "prose": "This section covers physical access controls for facilities housing information systems.\nServer rooms must use biometric access controls and video surveillance\nVisitor access must be logged and escorted at all times\nEnvironmental controls must include fire suppression and temperature monitoring"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Physical Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "71"
+              }
+            ]
+          },
+          {
+            "id": "POL-PS-002",
+            "title": "Visitor access must be logged and escorted at all times",
+            "links": [
+              {
+                "href": "input.md#line=72",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-PS-002_smt",
+                "name": "statement",
+                "prose": "Visitor access must be logged and escorted at all times"
+              },
+              {
+                "id": "POL-PS-002_gdn",
+                "name": "guidance",
+                "prose": "This section covers physical access controls for facilities housing information systems.\nServer rooms must use biometric access controls and video surveillance\nVisitor access must be logged and escorted at all times\nEnvironmental controls must include fire suppression and temperature monitoring"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Physical Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "72"
+              }
+            ]
+          },
+          {
+            "id": "POL-PS-003",
+            "title": "Environmental controls must include fire suppression and temperature monitoring",
+            "links": [
+              {
+                "href": "input.md#line=73",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-PS-003_smt",
+                "name": "statement",
+                "prose": "Environmental controls must include fire suppression and temperature monitoring"
+              },
+              {
+                "id": "POL-PS-003_gdn",
+                "name": "guidance",
+                "prose": "This section covers physical access controls for facilities housing information systems.\nServer rooms must use biometric access controls and video surveillance\nVisitor access must be logged and escorted at all times\nEnvironmental controls must include fire suppression and temperature monitoring"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Physical Security"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "73"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "compliance-and-audit",
+        "title": "Compliance and Audit",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Compliance and Audit"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-CA-001",
+            "title": "Internal security audits must be conducted at least annually",
+            "links": [
+              {
+                "href": "input.md#line=79",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CA-001_smt",
+                "name": "statement",
+                "prose": "Internal security audits must be conducted at least annually"
+              },
+              {
+                "id": "POL-CA-001_gdn",
+                "name": "guidance",
+                "prose": "This section defines compliance monitoring and audit requirements per ISO 27001.\nInternal security audits must be conducted at least annually\nThird-party penetration testing must be performed semi-annually and findings must be remediated within 30 days\nCompliance reports must be submitted to the board of directors quarterly\nAll policy exceptions must be documented and approved by the CISO and must expire within 12 months"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Compliance and Audit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "79"
+              }
+            ]
+          },
+          {
+            "id": "POL-CA-002",
+            "title": "Third-party penetration testing must be performed semi-annually and findings must be remediated within 30 days",
+            "links": [
+              {
+                "href": "input.md#line=80",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CA-002_smt",
+                "name": "statement",
+                "prose": "Third-party penetration testing must be performed semi-annually and findings must be remediated within 30 days"
+              },
+              {
+                "id": "POL-CA-002_gdn",
+                "name": "guidance",
+                "prose": "This section defines compliance monitoring and audit requirements per ISO 27001.\nInternal security audits must be conducted at least annually\nThird-party penetration testing must be performed semi-annually and findings must be remediated within 30 days\nCompliance reports must be submitted to the board of directors quarterly\nAll policy exceptions must be documented and approved by the CISO and must expire within 12 months"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Compliance and Audit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "80"
+              }
+            ]
+          },
+          {
+            "id": "POL-CA-003",
+            "title": "Compliance reports must be submitted to the board of directors quarterly",
+            "links": [
+              {
+                "href": "input.md#line=81",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CA-003_smt",
+                "name": "statement",
+                "prose": "Compliance reports must be submitted to the board of directors quarterly"
+              },
+              {
+                "id": "POL-CA-003_gdn",
+                "name": "guidance",
+                "prose": "This section defines compliance monitoring and audit requirements per ISO 27001.\nInternal security audits must be conducted at least annually\nThird-party penetration testing must be performed semi-annually and findings must be remediated within 30 days\nCompliance reports must be submitted to the board of directors quarterly\nAll policy exceptions must be documented and approved by the CISO and must expire within 12 months"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Compliance and Audit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "81"
+              }
+            ]
+          },
+          {
+            "id": "POL-CA-004",
+            "title": "All policy exceptions must be documented and approved by the CISO",
+            "links": [
+              {
+                "href": "input.md#line=82",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CA-004_smt",
+                "name": "statement",
+                "prose": "All policy exceptions must be documented and approved by the CISO"
+              },
+              {
+                "id": "POL-CA-004_gdn",
+                "name": "guidance",
+                "prose": "This section defines compliance monitoring and audit requirements per ISO 27001.\nInternal security audits must be conducted at least annually\nThird-party penetration testing must be performed semi-annually and findings must be remediated within 30 days\nCompliance reports must be submitted to the board of directors quarterly\nAll policy exceptions must be documented and approved by the CISO and must expire within 12 months"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Compliance and Audit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "82"
+              }
+            ]
+          },
+          {
+            "id": "POL-CA-005",
+            "title": "All policy exceptions must expire within 12 months",
+            "links": [
+              {
+                "href": "input.md#line=82",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CA-005_smt",
+                "name": "statement",
+                "prose": "All policy exceptions must expire within 12 months"
+              },
+              {
+                "id": "POL-CA-005_gdn",
+                "name": "guidance",
+                "prose": "This section defines compliance monitoring and audit requirements per ISO 27001.\nInternal security audits must be conducted at least annually\nThird-party penetration testing must be performed semi-annually and findings must be remediated within 30 days\nCompliance reports must be submitted to the board of directors quarterly\nAll policy exceptions must be documented and approved by the CISO and must expire within 12 months"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Compliance and Audit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "82"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

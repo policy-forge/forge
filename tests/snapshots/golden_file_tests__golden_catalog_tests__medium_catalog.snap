@@ -1,0 +1,567 @@
+---
+source: tests/golden_file_tests.rs
+expression: normalized
+---
+{
+  "catalog": {
+    "groups": [
+      {
+        "id": "title-enterprise-security-policy-version-2-0-0-author-information-security-office-date-2026-01-15",
+        "title": "title: \"Enterprise Security Policy\"version: \"2.0.0\"author: \"Information Security Office\"date: \"2026-01-15\""
+      },
+      {
+        "controls": [
+          {
+            "id": "POL-AC-001",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=12",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-001_smt",
+                "name": "statement",
+                "prose": "All users must authenticate using approved credentials before accessing any system"
+              },
+              {
+                "id": "POL-AC-001_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "12"
+              }
+            ],
+            "title": "All users must authenticate using approved credentials before accessing any system"
+          },
+          {
+            "id": "POL-AC-002",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=13",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-002_smt",
+                "name": "statement",
+                "prose": "Multi-factor authentication must be enabled for all privileged accounts"
+              },
+              {
+                "id": "POL-AC-002_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "13"
+              }
+            ],
+            "title": "Multi-factor authentication must be enabled for all privileged accounts"
+          },
+          {
+            "id": "POL-AC-003",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=14",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-003_smt",
+                "name": "statement",
+                "prose": "Access permissions must follow the principle of least privilege"
+              },
+              {
+                "id": "POL-AC-003_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "14"
+              }
+            ],
+            "title": "Access permissions must follow the principle of least privilege"
+          },
+          {
+            "id": "POL-AC-004",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=15",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-004_smt",
+                "name": "statement",
+                "prose": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+              },
+              {
+                "id": "POL-AC-004_gdn",
+                "name": "guidance",
+                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Control"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "15"
+              }
+            ],
+            "title": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+          },
+          {
+            "id": "POL-AC-005",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=19",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-005_smt",
+                "name": "statement",
+                "prose": "Passwords must be at least 12 characters and include uppercase, lowercase, numbers, and symbols"
+              },
+              {
+                "id": "POL-AC-005_gdn",
+                "name": "guidance",
+                "prose": "Passwords must be at least 12 characters and include uppercase, lowercase, numbers, and symbols"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Authentication Standards"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "19"
+              }
+            ],
+            "title": "Passwords must be at least 12 characters and include uppercase, lowercase, numbers, and symbols"
+          }
+        ],
+        "id": "access-control",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Access Control"
+          }
+        ],
+        "title": "Access Control"
+      },
+      {
+        "controls": [
+          {
+            "id": "POL-DP-001",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=25",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-001_smt",
+                "name": "statement",
+                "prose": "All sensitive data must be classified according to the organizational data classification scheme"
+              },
+              {
+                "id": "POL-DP-001_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "25"
+              }
+            ],
+            "title": "All sensitive data must be classified according to the organizational data classification scheme"
+          },
+          {
+            "id": "POL-DP-002",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=26",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-002_smt",
+                "name": "statement",
+                "prose": "Data at rest must be encrypted using AES-256 or equivalent"
+              },
+              {
+                "id": "POL-DP-002_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "26"
+              }
+            ],
+            "title": "Data at rest must be encrypted using AES-256 or equivalent"
+          },
+          {
+            "id": "POL-DP-003",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=27",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-003_smt",
+                "name": "statement",
+                "prose": "Data in transit must be protected using TLS 1.2 or higher"
+              },
+              {
+                "id": "POL-DP-003_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "27"
+              }
+            ],
+            "title": "Data in transit must be protected using TLS 1."
+          },
+          {
+            "id": "POL-DP-004",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=28",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-004_smt",
+                "name": "statement",
+                "prose": "Encryption keys must be rotated annually and stored in a hardware security module"
+              },
+              {
+                "id": "POL-DP-004_gdn",
+                "name": "guidance",
+                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "28"
+              }
+            ],
+            "title": "Encryption keys must be rotated annually and stored in a hardware security module"
+          },
+          {
+            "id": "POL-DP-005",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=32",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-005_smt",
+                "name": "statement",
+                "prose": "Audit logs must be retained for a minimum of one year"
+              },
+              {
+                "id": "POL-DP-005_gdn",
+                "name": "guidance",
+                "prose": "Audit logs must be retained for a minimum of one year\nBackup copies must be encrypted and stored in a geographically separate location"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Retention"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "32"
+              }
+            ],
+            "title": "Audit logs must be retained for a minimum of one year"
+          },
+          {
+            "id": "POL-DP-006",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=33",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-DP-006_smt",
+                "name": "statement",
+                "prose": "Backup copies must be encrypted and stored in a geographically separate location"
+              },
+              {
+                "id": "POL-DP-006_gdn",
+                "name": "guidance",
+                "prose": "Audit logs must be retained for a minimum of one year\nBackup copies must be encrypted and stored in a geographically separate location"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Data Retention"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "33"
+              }
+            ],
+            "title": "Backup copies must be encrypted and stored in a geographically separate location"
+          }
+        ],
+        "id": "data-protection",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Data Protection"
+          }
+        ],
+        "title": "Data Protection"
+      },
+      {
+        "controls": [
+          {
+            "id": "POL-IR-001",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=39",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-IR-001_smt",
+                "name": "statement",
+                "prose": "All security incidents must be reported within 24 hours of detection"
+              },
+              {
+                "id": "POL-IR-001_gdn",
+                "name": "guidance",
+                "prose": "This section establishes incident response procedures and requirements per NIST SP 800-61.\nAll security incidents must be reported within 24 hours of detection\nAn incident response plan must be tested at least annually through tabletop exercises"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Incident Response"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "39"
+              }
+            ],
+            "title": "All security incidents must be reported within 24 hours of detection"
+          },
+          {
+            "id": "POL-IR-002",
+            "links": [
+              {
+                "href": "NORMALIZED_PATH#line=40",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-IR-002_smt",
+                "name": "statement",
+                "prose": "An incident response plan must be tested at least annually through tabletop exercises"
+              },
+              {
+                "id": "POL-IR-002_gdn",
+                "name": "guidance",
+                "prose": "This section establishes incident response procedures and requirements per NIST SP 800-61.\nAll security incidents must be reported within 24 hours of detection\nAn incident response plan must be tested at least annually through tabletop exercises"
+              }
+            ],
+            "props": [
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "NORMALIZED_PATH"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Incident Response"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "40"
+              }
+            ],
+            "title": "An incident response plan must be tested at least annually through tabletop exercises"
+          }
+        ],
+        "id": "incident-response",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Incident Response"
+          }
+        ],
+        "title": "Incident Response"
+      }
+    ],
+    "metadata": {
+      "last-modified": "2026-01-01T00:00:00Z",
+      "oscal-version": "1.2.0",
+      "title": "Enterprise Security Policy",
+      "version": "2.0.0"
+    },
+    "uuid": "00000000-0000-0000-0000-000000000000"
+  }
+}
