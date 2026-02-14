@@ -90,16 +90,35 @@ fn bench_full_pipeline(c: &mut Criterion) {
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
+/// Recursively collect all citations from a document's sections.
+fn collect_citations(sections: &[forge::model::PolicySection]) -> Vec<forge::model::Citation> {
+    fn walk(section: &forge::model::PolicySection, out: &mut Vec<forge::model::Citation>) {
+        for req in &section.requirements {
+            out.extend(req.citations.clone());
+        }
+        for child in &section.children {
+            walk(child, out);
+        }
+    }
+    let mut out = Vec::new();
+    for section in sections {
+        walk(section, &mut out);
+    }
+    out
+}
+
 /// Build a `CatalogEnvelope` from a processed document.
 ///
 /// Shared between per-stage `catalog_assembly` benchmark and serialization
-/// pre-computation to avoid code duplication.
+/// pre-computation to avoid code duplication. Passes actual extracted
+/// citations into back-matter generation to match production pipeline behavior.
 fn build_catalog_envelope(doc: &forge::model::PolicyDocument) -> forge::oscal::CatalogEnvelope {
     let mut trace_links = forge::TraceLinkCollection::new();
     let mut catalog = forge::oscal::build_catalog(doc, Some(&mut trace_links)).unwrap();
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
     let metadata = forge::oscal::assemble_metadata(&doc.metadata, None).unwrap();
-    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&[]).unwrap();
+    let citations = collect_citations(&doc.sections);
+    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations).unwrap();
     let back_matter = if back_matter_resources.is_empty() {
         None
     } else {
