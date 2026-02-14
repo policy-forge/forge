@@ -78,7 +78,7 @@ fn validate_invalid_catalog_exits_1_with_errors() {
     }"#;
     let file = temp_json_file(content);
     let (_stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap()]);
-    assert_eq!(code, 1, "Expected exit 1 for invalid catalog");
+    assert_eq!(code, 3, "Expected exit 3 for schema validation errors");
     assert!(stderr.contains("Invalid"), "Expected 'Invalid' in stderr, got: {stderr}");
     assert!(stderr.contains("error(s)"), "Expected error count in stderr, got: {stderr}");
 }
@@ -175,7 +175,7 @@ fn validate_multiple_violations_reports_all_errors() {
     let content = r#"{"catalog": {}}"#;
     let file = temp_json_file(content);
     let (_stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap()]);
-    assert_eq!(code, 1, "Expected exit 1 for invalid catalog");
+    assert_eq!(code, 3, "Expected exit 3 for schema validation errors");
     // Should report more than 1 error
     assert!(stderr.contains("error(s)"), "Expected error count, got: {stderr}");
 }
@@ -219,7 +219,7 @@ fn validate_schema_type_override_forces_validation() {
     let file = temp_json_file(content);
     let (_stdout, stderr, code) =
         run_validate(&[file.path().to_str().unwrap(), "--schema-type", "catalog"]);
-    assert_eq!(code, 1, "Expected exit 1 when component-definition validated as catalog");
+    assert_eq!(code, 3, "Expected exit 3 when component-definition validated as catalog");
     assert!(stderr.contains("Invalid"), "Expected 'Invalid' in stderr");
 }
 

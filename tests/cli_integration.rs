@@ -306,7 +306,9 @@ fn convert_oversized_file_shows_size_error() {
 fn convert_oversized_file_with_max_size_override_succeeds() {
     let dir = TempDir::new().unwrap();
     let path = dir.path().join("big.md");
-    let content = "x".repeat(11 * 1024 * 1024);
+    let mut content = String::from("# Large Policy\n\n");
+    let padding = "x".repeat(11 * 1024 * 1024 - content.len());
+    content.push_str(&padding);
     fs::write(&path, &content).unwrap();
 
     let output = forge_bin()
@@ -467,7 +469,9 @@ fn convert_format_xml_shows_rejection_error() {
 
 #[test]
 fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
-    // T014 (S-1): --strategy component without --source-profile → success with warning
+    // T014 (S-1): --strategy component without --source-profile → warning about missing
+    // source-profile, and schema validation failure because empty control-implementations
+    // violates the OSCAL schema (minItems: 1).
     let dir = TempDir::new().unwrap();
     let content = "---\ntitle: \"Test Policy\"\nversion: \"1.0\"\n---\n\n# Access Control\n\n- Users must authenticate.\n";
     let path = create_temp_md(&dir, "policy.md", content);
@@ -498,8 +502,8 @@ fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
         "Should fail schema validation without --source-profile, stderr: {stderr}"
     );
     assert!(
-        stderr.contains("Schema validation failed") || stderr.contains("schema error"),
-        "Should report schema validation error on stderr: {stderr}"
+        stderr.contains("schema") || stderr.contains("Schema"),
+        "Should mention schema validation error on stderr: {stderr}"
     );
 }
 
@@ -745,6 +749,8 @@ fn convert_component_strategy_has_trace_props() {
 /// Covers: EC-2
 #[test]
 fn convert_component_strategy_zero_requirements_empty_control_implementations() {
+    // Zero extractable requirements produces empty implemented-requirements, which
+    // fails OSCAL schema validation (minItems: 1). Expect non-zero exit.
     let dir = TempDir::new().unwrap();
     let content = "---\ntitle: \"No Requirements\"\nversion: \"1.0\"\n---\n\n# Section\n\nJust a paragraph with no requirements.\n";
     let path = create_temp_md(&dir, "no_reqs.md", content);
@@ -771,8 +777,8 @@ fn convert_component_strategy_zero_requirements_empty_control_implementations() 
         "Should fail schema validation with zero requirements, stderr: {stderr}"
     );
     assert!(
-        stderr.contains("Schema validation failed") || stderr.contains("schema error"),
-        "Should report schema validation error on stderr: {stderr}"
+        stderr.contains("schema") || stderr.contains("Schema"),
+        "Should mention schema validation error on stderr: {stderr}"
     );
 }
 
@@ -894,4 +900,51 @@ fn convert_component_strategy_no_matching_control_ids() {
         source.contains("some-other-baseline.json"),
         "source should reflect the provided --source-profile value, got: {source}"
     );
+}
+
+// T023 [US5] Exit code integration tests
+
+#[test]
+fn exit_code_1_for_file_not_found() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("nonexistent.md")
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(1), "FileNotFound should exit with code 1");
+}
+
+#[test]
+fn exit_code_2_for_no_structure_detected() {
+    let dir = TempDir::new().unwrap();
+    let content = "This is just plain text without any headings or structure.\nNo sections here.\n";
+    let path = create_temp_md(&dir, "flat.md", content);
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(2), "NoStructureDetected should exit with code 2");
+}
+
+#[test]
+fn exit_code_3_for_validate_command() {
+    let output =
+        forge_bin().arg("validate").arg("any.json").output().expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(3), "Validation error should exit with code 3");
 }

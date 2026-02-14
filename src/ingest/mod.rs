@@ -39,6 +39,32 @@ impl IngestedDocument {
     }
 }
 
+const MAGIC_BYTES: &[(&[u8], &str)] = &[
+    (&[0x89, 0x50, 0x4E, 0x47], "PNG"),
+    (&[0xFF, 0xD8, 0xFF], "JPEG"),
+    (&[0x25, 0x50, 0x44, 0x46], "PDF"),
+    (&[0x50, 0x4B, 0x03, 0x04], "ZIP"),
+    (&[0x7F, 0x45, 0x4C, 0x46], "ELF"),
+];
+const BINARY_CHECK_SAMPLE_SIZE: usize = 512;
+const NULL_BYTE_THRESHOLD: f64 = 0.10;
+
+#[allow(clippy::cast_precision_loss, clippy::naive_bytecount)]
+fn is_binary_content(bytes: &[u8]) -> bool {
+    for (signature, _name) in MAGIC_BYTES {
+        if bytes.starts_with(signature) {
+            return true;
+        }
+    }
+    let sample_size = bytes.len().min(BINARY_CHECK_SAMPLE_SIZE);
+    if sample_size == 0 {
+        return false;
+    }
+    let null_count = bytes[..sample_size].iter().filter(|&&b| b == 0).count();
+    let ratio = null_count as f64 / sample_size as f64;
+    ratio > NULL_BYTE_THRESHOLD
+}
+
 /// Read a Markdown file, validate it, and produce an [`IngestedDocument`].
 ///
 /// # Arguments
@@ -52,7 +78,9 @@ impl IngestedDocument {
 /// Returns [`ForgeError::NotAFile`] if the path is not a regular file.
 /// Returns [`ForgeError::FileTooLarge`] if the file exceeds `max_size_bytes`.
 /// Returns [`ForgeError::InvalidEncoding`] if the file is not valid UTF-8.
-/// Returns [`ForgeError::Io`] for filesystem errors (not found, permission denied).
+/// Returns [`ForgeError::FileNotFound`] if the file does not exist.
+/// Returns [`ForgeError::PermissionDenied`] if the file cannot be read due to permissions.
+/// Returns [`ForgeError::Io`] for other filesystem errors.
 pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument, ForgeError> {
     // Extension validation (must execute before any file I/O)
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
@@ -61,7 +89,13 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
     }
 
     // Metadata checks: regular file + size limit
-    let metadata = std::fs::metadata(path)?;
+    let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: path.to_path_buf() }
+        }
+        _ => ForgeError::Io(e),
+    })?;
     if !metadata.is_file() {
         return Err(ForgeError::NotAFile { path: path.to_path_buf() });
     }
@@ -73,7 +107,22 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         });
     }
 
-    let bytes = std::fs::read(path)?;
+    let bytes = std::fs::read(path).map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: path.to_path_buf() }
+        }
+        _ => ForgeError::Io(e),
+    })?;
+
+    if bytes.is_empty() {
+        return Err(ForgeError::EmptyInput { path: path.to_path_buf() });
+    }
+
+    if is_binary_content(&bytes) {
+        return Err(ForgeError::BinaryFile { path: path.to_path_buf() });
+    }
+
     let fingerprint = format!("{:x}", Sha256::digest(&bytes));
 
     let content = String::from_utf8(bytes)
@@ -163,16 +212,16 @@ mod tests {
     }
 
     #[test]
-    fn empty_file_returns_empty_lines_and_known_hash() {
+    fn empty_file_returns_empty_input_error() {
         let dir = TempDir::new().unwrap();
         let path = create_temp_md(&dir, "empty.md", "");
-        let doc = ingest_file(&path, 10 * 1_048_576).unwrap();
-
-        assert!(doc.lines.is_empty());
-        assert_eq!(
-            doc.fingerprint,
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        );
+        let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
+        match &err {
+            ForgeError::EmptyInput { path: err_path } => {
+                assert_eq!(err_path, &path);
+            }
+            other => panic!("Expected ForgeError::EmptyInput, got: {other:?}"),
+        }
     }
 
     #[test]
@@ -273,7 +322,40 @@ mod tests {
         assert_eq!(doc.lines[0].text, "lowercase markdown");
     }
 
-    // --- US3: File access error tests ---
+    // --- US1: Missing or unreadable input file tests ---
+
+    #[test]
+    fn nonexistent_file_returns_file_not_found() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("nonexistent.md");
+        let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
+        match &err {
+            ForgeError::FileNotFound { path: err_path } => {
+                assert_eq!(err_path, &path);
+            }
+            other => panic!("Expected ForgeError::FileNotFound, got: {other:?}"),
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unreadable_file_returns_permission_denied() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = TempDir::new().unwrap();
+        let path = create_temp_md(&dir, "unreadable.md", "secret content");
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).unwrap();
+        let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
+        // Restore permissions for cleanup
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+        match &err {
+            ForgeError::PermissionDenied { path: err_path } => {
+                assert_eq!(err_path, &path);
+            }
+            other => panic!("Expected ForgeError::PermissionDenied, got: {other:?}"),
+        }
+    }
+
+    // --- US3: File access error tests (legacy, updated for US1) ---
 
     #[test]
     fn nonexistent_file_returns_io_not_found() {
@@ -281,8 +363,8 @@ mod tests {
         let path = dir.path().join("missing.md");
         let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
         match &err {
-            ForgeError::Io(io_err) => assert_eq!(io_err.kind(), std::io::ErrorKind::NotFound),
-            other => panic!("Expected ForgeError::Io(NotFound), got: {other:?}"),
+            ForgeError::FileNotFound { path: err_path } => assert_eq!(err_path, &path),
+            other => panic!("Expected ForgeError::FileNotFound, got: {other:?}"),
         }
     }
 
@@ -316,10 +398,10 @@ mod tests {
         // Restore permissions for cleanup
         fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
         match &err {
-            ForgeError::Io(io_err) => {
-                assert_eq!(io_err.kind(), std::io::ErrorKind::PermissionDenied);
+            ForgeError::PermissionDenied { path: err_path } => {
+                assert_eq!(err_path, &path);
             }
-            other => panic!("Expected ForgeError::Io(PermissionDenied), got: {other:?}"),
+            other => panic!("Expected ForgeError::PermissionDenied, got: {other:?}"),
         }
     }
 
@@ -360,5 +442,95 @@ mod tests {
         fs::write(&path, &content).unwrap();
         let doc = ingest_file(&path, 4096).unwrap();
         assert_eq!(doc.lines.len(), 1);
+    }
+
+    // --- US2: Binary detection tests (T011) ---
+
+    #[test]
+    fn is_binary_detects_png_magic_bytes() {
+        let mut bytes = vec![0x89, 0x50, 0x4E, 0x47];
+        bytes.extend_from_slice(b"rest of file");
+        assert!(is_binary_content(&bytes));
+    }
+
+    #[test]
+    fn is_binary_detects_jpeg_magic_bytes() {
+        let mut bytes = vec![0xFF, 0xD8, 0xFF];
+        bytes.extend_from_slice(b"rest of file");
+        assert!(is_binary_content(&bytes));
+    }
+
+    #[test]
+    fn is_binary_detects_pdf_magic_bytes() {
+        let mut bytes = vec![0x25, 0x50, 0x44, 0x46];
+        bytes.extend_from_slice(b"rest of file");
+        assert!(is_binary_content(&bytes));
+    }
+
+    #[test]
+    fn is_binary_detects_zip_magic_bytes() {
+        let mut bytes = vec![0x50, 0x4B, 0x03, 0x04];
+        bytes.extend_from_slice(b"rest of file");
+        assert!(is_binary_content(&bytes));
+    }
+
+    #[test]
+    fn is_binary_detects_elf_magic_bytes() {
+        let mut bytes = vec![0x7F, 0x45, 0x4C, 0x46];
+        bytes.extend_from_slice(b"rest of file");
+        assert!(is_binary_content(&bytes));
+    }
+
+    #[test]
+    fn is_binary_detects_high_null_byte_ratio() {
+        // 60 null bytes out of 100 = 60% > 10% threshold
+        let mut bytes = vec![0u8; 60];
+        bytes.extend_from_slice(&[b'a'; 40]);
+        assert!(is_binary_content(&bytes));
+    }
+
+    #[test]
+    fn is_binary_rejects_clean_ascii_text() {
+        let bytes = b"This is clean ASCII text with no binary content.\n";
+        assert!(!is_binary_content(bytes));
+    }
+
+    #[test]
+    fn is_binary_rejects_empty_bytes() {
+        assert!(!is_binary_content(&[]));
+    }
+
+    // --- US2: Empty file ingest test (T012) ---
+
+    #[test]
+    fn ingest_empty_file_returns_empty_input() {
+        let dir = TempDir::new().unwrap();
+        let path = create_temp_md(&dir, "blank.md", "");
+        let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
+        match &err {
+            ForgeError::EmptyInput { path: err_path } => {
+                assert_eq!(err_path, &path);
+            }
+            other => panic!("Expected ForgeError::EmptyInput, got: {other:?}"),
+        }
+    }
+
+    // --- US2: Binary file ingest test (T013) ---
+
+    #[test]
+    fn ingest_binary_file_returns_binary_file() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("image.md");
+        // Write PNG magic bytes as content
+        let mut bytes = vec![0x89, 0x50, 0x4E, 0x47];
+        bytes.extend_from_slice(b"not real png data");
+        fs::write(&path, &bytes).unwrap();
+        let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
+        match &err {
+            ForgeError::BinaryFile { path: err_path } => {
+                assert_eq!(err_path, &path);
+            }
+            other => panic!("Expected ForgeError::BinaryFile, got: {other:?}"),
+        }
     }
 }

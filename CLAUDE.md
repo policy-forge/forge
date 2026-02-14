@@ -73,6 +73,7 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Filesystem (read input .md and optional source-profile .json; write output .json) (018-component-pipeline)
 - Rust edition 2024, stable 1.93.0 + jsonschema (NEW), serde_json 1.x, clap 4.x, thiserror 2.0.18 (all existing except jsonschema) (019-schema-validation)
 - N/A — in-memory processing only; schemas embedded at compile time via `include_str!` (019-schema-validation)
+- Rust (edition 2024, stable 1.93.0) + thiserror 2.0.18, clap 4.x, pulldown-cmark 0.13.x, serde 1.x, serde_json 1.x, uuid 1.20.0, chrono 0.4, tracing 0.1.44, sha2 0.10.9, regex 1, url 2.5 (all existing) + NEW: `anyhow` (latest stable, for `.context()` in binary crate) (023-error-handling)
 - Rust edition 2024, stable 1.93.0 + criterion 0.8.2 (already in dev-deps with `html_reports`), cargo-flamegraph (conditional, only if optimization needed) (024-performance-benchmark)
 - Filesystem (read synthetic fixture from `tests/fixtures/`) (024-performance-benchmark)
 

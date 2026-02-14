@@ -251,6 +251,7 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
                     // T016: Exclude empty items (only whitespace)
                     let trimmed = text.trim();
                     if !trimmed.is_empty() && !list_type_stack.is_empty() {
+                        // SAFETY: guarded by !list_type_stack.is_empty() check on previous line
                         let list_type = *list_type_stack.last().unwrap();
                         // T017: nesting_depth with saturation at 255 (SEC-4)
                         let depth = list_type_stack.len() - 1;

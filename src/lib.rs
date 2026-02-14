@@ -11,7 +11,7 @@ pub mod uuid;
 pub mod validate;
 
 pub use citation::extract_citations;
-pub use error::ForgeError;
+pub use error::{ForgeError, exit_code};
 pub use model::trace::{SourceLocation, TraceError, TraceLink, TraceLinkCollection};
 pub use model::{Citation, PolicyDocument, PolicyRequirement, PolicySection};
 pub use oscal::{
