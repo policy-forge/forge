@@ -59,13 +59,13 @@ Where to obtain OSCAL JSON schemas, whether they're self-contained for `$ref` re
 ### Decision
 Download from NIST OSCAL GitHub release tag `v1.2.0`:
 - `oscal_catalog_schema.json` — `$id` references OSCAL v1.2.0
-- `oscal_component_schema.json` — `$id` references OSCAL v1.1.3 (model unchanged between releases; this is the filename NIST uses in the v1.2.0 release assets)
+- `oscal_component_schema.json` — `$id` updated to reference OSCAL v1.2.0 for consistency with the catalog schema and codebase `OSCAL_VERSION` constant
 
 ### Key Findings
 1. **Self-contained**: NIST publishes each model schema as a standalone JSON Schema file with all definitions (`$defs`) inlined. Internal `$ref` pointers (e.g., `#/$defs/...`) resolve within the same file.
 2. **No external `$ref`**: Unlike some JSON Schema ecosystems that use external `$ref` URIs, OSCAL schemas bundle everything needed into each model file.
 3. **Schema draft**: Both schemas use JSON Schema Draft-07 (`$schema: "http://json-schema.org/draft-07/schema#"`), which is fully supported by the `jsonschema` crate.
-4. **Component schema versioning**: The component-definition schema's `$id` references v1.1.3 because NIST did not change this model between v1.1.3 and v1.2.0. The file is the official asset from the v1.2.0 release.
+4. **Component schema versioning**: The component-definition schema's `$id` was updated from v1.1.3 to v1.2.0 for consistency with the catalog schema and the codebase `OSCAL_VERSION` constant ("1.2.0"). The original NIST v1.2.0 release asset shipped with a v1.1.3 `$id` because the model was unchanged between releases.
 
 ### Pin Strategy
 - Store schema files in `schemas/` directory at project root
