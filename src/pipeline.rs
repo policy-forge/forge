@@ -185,7 +185,8 @@ pub fn run_catalog_pipeline(
 /// * `input_path` - Path to the Markdown policy document
 /// * `output_path` - Optional output file path; if None, writes JSON to stdout
 /// * `max_size_bytes` - Maximum allowed input file size in bytes
-/// * `source_profile` - The baseline profile reference for control-implementations
+/// * `source_profile` - Optional baseline profile reference for control-implementations;
+///   when `None`, produces a Component Definition with empty `control-implementations`
 ///
 /// # Errors
 /// * `Err(ForgeError)` if any pipeline stage fails
@@ -193,26 +194,32 @@ pub fn run_component_pipeline(
     input_path: &Path,
     output_path: Option<&Path>,
     max_size_bytes: u64,
-    source_profile: &str,
+    source_profile: Option<&str>,
 ) -> Result<(), ForgeError> {
-    // Validate source_profile is not empty or whitespace-only
-    if source_profile.trim().is_empty() {
-        return Err(ForgeError::Validation(
-            "source_profile is required and must not be empty or whitespace".to_string(),
-        ));
-    }
+    // S-3: Pipeline stage progress logging (visible with --verbose)
+    tracing::info!("Ingesting and parsing policy document");
 
     // Steps 1-9: shared pipeline stages
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
 
+    tracing::info!(
+        source_profile = source_profile.unwrap_or("<none>"),
+        "Building component definition"
+    );
+
     // Step 10: Build component definition with source_profile and source_file (WI-17)
-    let source_file_str = input_path.display().to_string();
+    // SEC-1: Use filename-only to prevent absolute path leakage into OSCAL output
+    let source_file_str = input_path
+        .file_name()
+        .map_or_else(|| input_path.display().to_string(), |f| f.to_string_lossy().into_owned());
     let envelope = crate::oscal::build_component_definition(
         &doc_with_ids,
-        Some(source_profile),
+        source_profile,
         None,
         Some(&source_file_str),
     )?;
+
+    tracing::info!("Serializing to JSON");
 
     // Step 11: Serialize to pretty JSON
     let json = serde_json::to_string_pretty(&envelope)
