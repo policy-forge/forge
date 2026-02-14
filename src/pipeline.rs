@@ -159,13 +159,13 @@ pub fn run_catalog_pipeline(
         crate::validate::OscalModelType::Catalog,
     )
     .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-    if !report.is_valid {
+    if !report.is_valid() {
         let rendered = crate::validate::report::render_text_report(&report);
         eprintln!("{rendered}");
         // PRD EC-7: do NOT write output file on validation failure
         return Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s) in generated catalog",
-            report.errors.len()
+            report.errors().len()
         )));
     }
 
@@ -228,13 +228,13 @@ pub fn run_component_pipeline(
         crate::validate::OscalModelType::ComponentDefinition,
     )
     .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-    if !report.is_valid {
+    if !report.is_valid() {
         let rendered = crate::validate::report::render_text_report(&report);
         eprintln!("{rendered}");
         // PRD EC-7: do NOT write output file on validation failure
         return Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s) in generated component definition",
-            report.errors.len()
+            report.errors().len()
         )));
     }
 

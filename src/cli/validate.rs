@@ -70,8 +70,15 @@ pub fn execute(
         .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
 
     // Step 7: Render report and exit
-    if report.is_valid {
-        println!("Valid: {model_type} artifact passes all validation.");
+    if report.is_valid() {
+        match format {
+            ValidateOutputFormat::Text => {
+                println!("Valid: {model_type} artifact passes all validation.");
+            }
+            ValidateOutputFormat::Json => {
+                println!("{}", validate::report::render_json_report(&report));
+            }
+        }
         Ok(())
     } else {
         let rendered = match format {
@@ -81,7 +88,7 @@ pub fn execute(
         eprintln!("{rendered}");
         Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s) in {model_type} artifact",
-            report.errors.len()
+            report.errors().len()
         )))
     }
 }

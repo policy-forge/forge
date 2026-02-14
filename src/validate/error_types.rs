@@ -47,18 +47,32 @@ pub struct ValidationError {
 ///
 /// Invariant: `schema_error_count + semantic_error_count == errors.len()` (SEC-8).
 /// Invariant: `is_valid == errors.is_empty()`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Fields are private to prevent invariant violations. Use [`ValidationReport::new`]
+/// to construct, and accessor methods to read. Custom `Deserialize` recomputes
+/// derived fields from `errors`, so deserialized instances always satisfy invariants.
+#[derive(Debug, Clone, Serialize)]
 pub struct ValidationReport {
-    /// Path to the validated artifact.
-    pub artifact_path: String,
-    /// Whether the artifact passed all validation.
-    pub is_valid: bool,
-    /// All collected errors — schema AND semantic (empty if valid).
-    pub errors: Vec<ValidationError>,
-    /// Count of schema errors.
-    pub schema_error_count: usize,
-    /// Count of semantic errors.
-    pub semantic_error_count: usize,
+    artifact_path: String,
+    is_valid: bool,
+    errors: Vec<ValidationError>,
+    schema_error_count: usize,
+    semantic_error_count: usize,
+}
+
+impl<'de> Deserialize<'de> for ValidationReport {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Raw {
+            artifact_path: String,
+            errors: Vec<ValidationError>,
+        }
+        let raw = Raw::deserialize(deserializer)?;
+        Ok(Self::new(raw.artifact_path, raw.errors))
+    }
 }
 
 impl ValidationReport {
@@ -75,6 +89,36 @@ impl ValidationReport {
         let is_valid = errors.is_empty();
 
         Self { artifact_path, is_valid, errors, schema_error_count, semantic_error_count }
+    }
+
+    /// Path to the validated artifact.
+    #[must_use]
+    pub fn artifact_path(&self) -> &str {
+        &self.artifact_path
+    }
+
+    /// Whether the artifact passed all validation.
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        self.is_valid
+    }
+
+    /// All collected errors — schema AND semantic.
+    #[must_use]
+    pub fn errors(&self) -> &[ValidationError] {
+        &self.errors
+    }
+
+    /// Count of schema errors.
+    #[must_use]
+    pub fn schema_error_count(&self) -> usize {
+        self.schema_error_count
+    }
+
+    /// Count of semantic errors.
+    #[must_use]
+    pub fn semantic_error_count(&self) -> usize {
+        self.semantic_error_count
     }
 }
 
@@ -200,10 +244,10 @@ mod tests {
     #[test]
     fn report_new_empty_errors_is_valid() {
         let report = ValidationReport::new("test.json".to_string(), vec![]);
-        assert!(report.is_valid);
-        assert!(report.errors.is_empty());
-        assert_eq!(report.schema_error_count, 0);
-        assert_eq!(report.semantic_error_count, 0);
+        assert!(report.is_valid());
+        assert!(report.errors().is_empty());
+        assert_eq!(report.schema_error_count(), 0);
+        assert_eq!(report.semantic_error_count(), 0);
     }
 
     #[test]
@@ -216,10 +260,10 @@ mod tests {
             actual: "not-a-uuid".to_string(),
         }];
         let report = ValidationReport::new("test.json".to_string(), errors);
-        assert!(!report.is_valid);
-        assert_eq!(report.errors.len(), 1);
-        assert_eq!(report.schema_error_count, 1);
-        assert_eq!(report.semantic_error_count, 0);
+        assert!(!report.is_valid());
+        assert_eq!(report.errors().len(), 1);
+        assert_eq!(report.schema_error_count(), 1);
+        assert_eq!(report.semantic_error_count(), 0);
     }
 
     #[test]
@@ -232,10 +276,10 @@ mod tests {
             actual: "#missing-uuid".to_string(),
         }];
         let report = ValidationReport::new("test.json".to_string(), errors);
-        assert!(!report.is_valid);
-        assert_eq!(report.errors.len(), 1);
-        assert_eq!(report.schema_error_count, 0);
-        assert_eq!(report.semantic_error_count, 1);
+        assert!(!report.is_valid());
+        assert_eq!(report.errors().len(), 1);
+        assert_eq!(report.schema_error_count(), 0);
+        assert_eq!(report.semantic_error_count(), 1);
     }
 
     #[test]
@@ -264,18 +308,21 @@ mod tests {
             },
         ];
         let report = ValidationReport::new("test.json".to_string(), errors);
-        assert!(!report.is_valid);
-        assert_eq!(report.errors.len(), 3);
-        assert_eq!(report.schema_error_count, 2);
-        assert_eq!(report.semantic_error_count, 1);
+        assert!(!report.is_valid());
+        assert_eq!(report.errors().len(), 3);
+        assert_eq!(report.schema_error_count(), 2);
+        assert_eq!(report.semantic_error_count(), 1);
         // SEC-8: counts must sum to total
-        assert_eq!(report.schema_error_count + report.semantic_error_count, report.errors.len());
+        assert_eq!(
+            report.schema_error_count() + report.semantic_error_count(),
+            report.errors().len()
+        );
     }
 
     #[test]
     fn report_invariant_is_valid_equals_errors_empty() {
         let empty_report = ValidationReport::new("a.json".to_string(), vec![]);
-        assert_eq!(empty_report.is_valid, empty_report.errors.is_empty());
+        assert_eq!(empty_report.is_valid(), empty_report.errors().is_empty());
 
         let error_report = ValidationReport::new(
             "b.json".to_string(),
@@ -287,6 +334,6 @@ mod tests {
                 actual: "y".to_string(),
             }],
         );
-        assert_eq!(error_report.is_valid, error_report.errors.is_empty());
+        assert_eq!(error_report.is_valid(), error_report.errors().is_empty());
     }
 }

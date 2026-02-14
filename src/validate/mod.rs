@@ -439,8 +439,8 @@ mod tests {
         )
         .unwrap();
         let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
-        assert!(report.is_valid);
-        assert!(report.errors.is_empty());
+        assert!(report.is_valid());
+        assert!(report.errors().is_empty());
     }
 
     #[test]
@@ -454,10 +454,10 @@ mod tests {
         )
         .unwrap();
         let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
-        assert!(!report.is_valid);
-        assert!(report.schema_error_count > 0);
+        assert!(!report.is_valid());
+        assert!(report.schema_error_count() > 0);
         // Errors should use JSON Path notation
-        for error in &report.errors {
+        for error in report.errors() {
             if error.category == error_types::ValidationErrorCategory::Schema {
                 assert!(error.path.starts_with('$'), "Path should start with $: {}", error.path);
             }
@@ -487,9 +487,9 @@ mod tests {
         )
         .unwrap();
         let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
-        assert!(!report.is_valid);
-        assert!(report.semantic_error_count > 0);
-        assert!(report.errors.iter().any(|e| e.message.contains("orphaned")));
+        assert!(!report.is_valid());
+        assert!(report.semantic_error_count() > 0);
+        assert!(report.errors().iter().any(|e| e.message.contains("orphaned")));
     }
 
     #[test]
@@ -509,11 +509,14 @@ mod tests {
         )
         .unwrap();
         let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
-        assert!(!report.is_valid);
-        assert!(report.schema_error_count > 0);
-        assert!(report.semantic_error_count > 0);
+        assert!(!report.is_valid());
+        assert!(report.schema_error_count() > 0);
+        assert!(report.semantic_error_count() > 0);
         // SEC-8: counts must sum correctly
-        assert_eq!(report.schema_error_count + report.semantic_error_count, report.errors.len());
+        assert_eq!(
+            report.schema_error_count() + report.semantic_error_count(),
+            report.errors().len()
+        );
     }
 
     #[test]
@@ -528,7 +531,7 @@ mod tests {
         )
         .unwrap();
         let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
-        for error in &report.errors {
+        for error in report.errors() {
             assert!(
                 !error.message.contains("jsonschema"),
                 "Raw crate message leaked: {}",

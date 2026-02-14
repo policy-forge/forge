@@ -20,33 +20,33 @@ use super::error_types::{ValidationErrorCategory, ValidationReport};
 /// ```
 #[must_use]
 pub fn render_text_report(report: &ValidationReport) -> String {
-    if report.is_valid {
-        return format!("Valid: {} artifact passes all validation.", report.artifact_path);
+    if report.is_valid() {
+        return format!("Valid: {} artifact passes all validation.", report.artifact_path());
     }
 
     let mut output = String::new();
 
     // Summary line
     let mut parts = Vec::new();
-    if report.schema_error_count > 0 {
+    if report.schema_error_count() > 0 {
         parts.push(format!(
             "{} schema error{}",
-            report.schema_error_count,
-            if report.schema_error_count == 1 { "" } else { "s" }
+            report.schema_error_count(),
+            if report.schema_error_count() == 1 { "" } else { "s" }
         ));
     }
-    if report.semantic_error_count > 0 {
+    if report.semantic_error_count() > 0 {
         parts.push(format!(
             "{} semantic error{}",
-            report.semantic_error_count,
-            if report.semantic_error_count == 1 { "" } else { "s" }
+            report.semantic_error_count(),
+            if report.semantic_error_count() == 1 { "" } else { "s" }
         ));
     }
     let _ = writeln!(output, "Validation failed: {}", parts.join(", "));
 
     // Schema errors section
     let schema_errors: Vec<_> =
-        report.errors.iter().filter(|e| e.category == ValidationErrorCategory::Schema).collect();
+        report.errors().iter().filter(|e| e.category == ValidationErrorCategory::Schema).collect();
     if !schema_errors.is_empty() {
         output.push_str("\nSchema Errors:\n");
         for (i, error) in schema_errors.iter().enumerate() {
@@ -63,8 +63,11 @@ pub fn render_text_report(report: &ValidationReport) -> String {
     }
 
     // Semantic errors section
-    let semantic_errors: Vec<_> =
-        report.errors.iter().filter(|e| e.category == ValidationErrorCategory::Semantic).collect();
+    let semantic_errors: Vec<_> = report
+        .errors()
+        .iter()
+        .filter(|e| e.category == ValidationErrorCategory::Semantic)
+        .collect();
     if !semantic_errors.is_empty() {
         output.push_str("\nSemantic Errors:\n");
         for (i, error) in semantic_errors.iter().enumerate() {
@@ -90,7 +93,8 @@ pub fn render_text_report(report: &ValidationReport) -> String {
 #[must_use]
 pub fn render_json_report(report: &ValidationReport) -> String {
     serde_json::to_string_pretty(report).unwrap_or_else(|_| {
-        r#"{"error": "Internal error: unable to serialize validation report"}"#.to_string()
+        // SEC-3: fallback must conform to ValidationReport schema (no extra fields).
+        r#"{"artifact_path":"","is_valid":false,"errors":[],"schema_error_count":0,"semantic_error_count":0}"#.to_string()
     })
 }
 
@@ -217,9 +221,9 @@ mod tests {
         let original = ValidationReport::new("test.json".to_string(), errors);
         let json = render_json_report(&original);
         let parsed: ValidationReport = serde_json::from_str(&json).unwrap();
-        assert_eq!(original.is_valid, parsed.is_valid);
-        assert_eq!(original.errors.len(), parsed.errors.len());
-        assert_eq!(original.schema_error_count, parsed.schema_error_count);
-        assert_eq!(original.semantic_error_count, parsed.semantic_error_count);
+        assert_eq!(original.is_valid(), parsed.is_valid());
+        assert_eq!(original.errors().len(), parsed.errors().len());
+        assert_eq!(original.schema_error_count(), parsed.schema_error_count());
+        assert_eq!(original.semantic_error_count(), parsed.semantic_error_count());
     }
 }

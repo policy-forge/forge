@@ -10,7 +10,7 @@ use serde_json::Value;
 
 use super::OscalModelType;
 use super::error_types::{ValidationError, ValidationErrorCategory};
-use super::formatter::pointer_to_json_path;
+use super::formatter::{pointer_to_json_path, truncate_value};
 
 /// Semantic validator for OSCAL artifacts (PRD M-3, M-4).
 pub struct SemanticValidator;
@@ -88,7 +88,7 @@ fn walk_for_orphaned_links(
                         "orphaned link: reference #{uuid} not found in back-matter resources"
                     ),
                     expected: "referenced resource exists in back-matter".to_string(),
-                    actual: format!("#{uuid}"),
+                    actual: truncate_value(&format!("#{uuid}"), 100),
                 });
             }
 
@@ -162,7 +162,7 @@ fn check_component_control_ids(json: &Value) -> Vec<ValidationError> {
                                     "invalid control-id: \"{control_id}\" contains no alphanumeric characters"
                                 ),
                                 expected: "non-empty string with at least one alphanumeric character".to_string(),
-                                actual: format!("\"{control_id}\""),
+                                actual: truncate_value(&format!("\"{control_id}\""), 100),
                             });
                         }
                     }
