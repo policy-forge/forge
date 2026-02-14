@@ -52,7 +52,7 @@ fn run_full_catalog_pipeline(fixture_path: &Path) -> Result<String, forge::Forge
     forge::citation::extract_citations(&mut doc)?;
 
     // Step 4: Catalog Assembly (delegates to shared helper)
-    let envelope = build_catalog_envelope(&doc);
+    let envelope = build_catalog_envelope(&doc)?;
 
     // Step 5: Serialize
     serde_json::to_string_pretty(&envelope)
@@ -112,19 +112,24 @@ fn collect_citations(sections: &[forge::model::PolicySection]) -> Vec<forge::mod
 /// Shared between per-stage `catalog_assembly` benchmark and serialization
 /// pre-computation to avoid code duplication. Passes actual extracted
 /// citations into back-matter generation to match production pipeline behavior.
-fn build_catalog_envelope(doc: &forge::model::PolicyDocument) -> forge::oscal::CatalogEnvelope {
+///
+/// Returns `Result` to propagate errors instead of panicking on recoverable
+/// failures.
+fn build_catalog_envelope(
+    doc: &forge::model::PolicyDocument,
+) -> Result<forge::oscal::CatalogEnvelope, forge::ForgeError> {
     let mut trace_links = forge::TraceLinkCollection::new();
-    let mut catalog = forge::oscal::build_catalog(doc, Some(&mut trace_links)).unwrap();
+    let mut catalog = forge::oscal::build_catalog(doc, Some(&mut trace_links))?;
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
-    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None).unwrap();
+    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None)?;
     let citations = collect_citations(&doc.sections);
-    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations).unwrap();
+    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations)?;
     let back_matter = if back_matter_resources.is_empty() {
         None
     } else {
         Some(forge::BackMatter { resources: back_matter_resources })
     };
-    forge::oscal::CatalogEnvelope {
+    Ok(forge::oscal::CatalogEnvelope {
         catalog: forge::oscal::OscalCatalog {
             uuid: metadata.uuid.to_string(),
             metadata: forge::oscal::catalog::OscalMetadata {
@@ -136,7 +141,7 @@ fn build_catalog_envelope(doc: &forge::model::PolicyDocument) -> forge::oscal::C
             groups: catalog.groups,
             back_matter,
         },
-    }
+    })
 }
 
 // ─── Per-Stage Benchmarks ───────────────────────────────────────────────
@@ -213,13 +218,13 @@ fn bench_per_stage(c: &mut Criterion) {
     // ── Stage 4: Catalog Assembly ──
     group.bench_function("catalog_assembly", |b| {
         b.iter(|| {
-            let envelope = build_catalog_envelope(black_box(&doc_for_catalog));
+            let envelope = build_catalog_envelope(black_box(&doc_for_catalog)).unwrap();
             black_box(envelope)
         });
     });
 
     // Pre-compute catalog envelope for serialization stage
-    let envelope = build_catalog_envelope(&doc_for_catalog);
+    let envelope = build_catalog_envelope(&doc_for_catalog).unwrap();
 
     // ── Stage 5: Serialization ──
     group.bench_function("serialization", |b| {
