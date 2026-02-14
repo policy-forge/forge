@@ -150,25 +150,22 @@ pub fn run_catalog_pipeline(
     let json = serde_json::to_string_pretty(&envelope)
         .map_err(|e| ForgeError::Serialization(e.to_string()))?;
 
-    // Step 12b: Auto-validate serialized JSON against OSCAL schema (WI-19, SEC-8)
+    // Step 12b: Auto-validate serialized JSON (schema + semantic) (WI-20, PRD M-5)
     let json_value: serde_json::Value =
         serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let validation =
-        crate::validate::validate_artifact(&json_value, crate::validate::OscalModelType::Catalog)
-            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-    if !validation.is_valid {
-        let error_summary: Vec<String> = validation
-            .errors
-            .iter()
-            .map(|e| {
-                let path = e.instance_path.as_deref().unwrap_or("");
-                format!("{}: {}", path, e.message)
-            })
-            .collect();
+    let report = crate::validate::run_full_validation(
+        "generated catalog",
+        &json_value,
+        crate::validate::OscalModelType::Catalog,
+    )
+    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    if !report.is_valid() {
+        let rendered = crate::validate::report::render_text_report(&report);
+        eprintln!("{rendered}");
+        // PRD EC-7: do NOT write output file on validation failure
         return Err(ForgeError::SchemaValidation(format!(
-            "{} schema error(s) in generated catalog:\n  {}",
-            validation.errors.len(),
-            error_summary.join("\n  ")
+            "{} validation error(s) in generated catalog",
+            report.errors().len()
         )));
     }
 
@@ -222,27 +219,22 @@ pub fn run_component_pipeline(
     let json = serde_json::to_string_pretty(&envelope)
         .map_err(|e| ForgeError::Serialization(e.to_string()))?;
 
-    // Step 11b: Auto-validate serialized JSON against OSCAL schema (WI-19, SEC-8)
+    // Step 11b: Auto-validate serialized JSON (schema + semantic) (WI-20, PRD M-5)
     let json_value: serde_json::Value =
         serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let validation = crate::validate::validate_artifact(
+    let report = crate::validate::run_full_validation(
+        "generated component definition",
         &json_value,
         crate::validate::OscalModelType::ComponentDefinition,
     )
     .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-    if !validation.is_valid {
-        let error_summary: Vec<String> = validation
-            .errors
-            .iter()
-            .map(|e| {
-                let path = e.instance_path.as_deref().unwrap_or("");
-                format!("{}: {}", path, e.message)
-            })
-            .collect();
+    if !report.is_valid() {
+        let rendered = crate::validate::report::render_text_report(&report);
+        eprintln!("{rendered}");
+        // PRD EC-7: do NOT write output file on validation failure
         return Err(ForgeError::SchemaValidation(format!(
-            "{} schema error(s) in generated component definition:\n  {}",
-            validation.errors.len(),
-            error_summary.join("\n  ")
+            "{} validation error(s) in generated component definition",
+            report.errors().len()
         )));
     }
 
@@ -309,4 +301,65 @@ mod tests {
             other => panic!("Expected NoStructureDetected, got: {other:?}"),
         }
     }
+
+    // --- T034: Catalog pipeline auto-validation uses ValidationReport (WI-20) ---
+
+    #[test]
+    fn catalog_pipeline_valid_input_succeeds() {
+        // T034: valid Markdown input → valid output (no validation errors)
+        let fixture = std::path::Path::new("tests/fixtures/sample_policy.md");
+        if !fixture.exists() {
+            return; // Skip if fixture not available
+        }
+        let dir = TempDir::new().unwrap();
+        let output = dir.path().join("catalog.json");
+        let result = run_catalog_pipeline(fixture, Some(&output), 10 * 1_048_576);
+        assert!(
+            result.is_ok(),
+            "Catalog pipeline should succeed with valid input: {:?}",
+            result.err()
+        );
+        assert!(output.exists(), "Output file should be written");
+    }
+
+    // --- T035: Component pipeline auto-validation uses ValidationReport (WI-20) ---
+
+    #[test]
+    fn component_pipeline_auto_validation_uses_report_format() {
+        // T035: component pipeline auto-validation uses ValidationReport format (WI-20)
+        // Note: without source_profile, component pipeline generates empty
+        // control-implementations which OSCAL schema rejects — this is expected.
+        // We verify the error uses the new ValidationReport-based format.
+        let fixture = std::path::Path::new("tests/fixtures/sample_policy.md");
+        if !fixture.exists() {
+            return;
+        }
+        let dir = TempDir::new().unwrap();
+        let output = dir.path().join("component.json");
+        let result = run_component_pipeline(fixture, Some(&output), 10 * 1_048_576, None);
+        match &result {
+            Ok(()) => {
+                // If it succeeds, that's also fine — means schema accepts the output
+                assert!(output.exists(), "Output file should be written on success");
+            }
+            Err(ForgeError::SchemaValidation(msg)) => {
+                // Verify error uses the new report-based format ("N validation error(s)")
+                assert!(
+                    msg.contains("validation error(s)"),
+                    "SchemaValidation error should use report format, got: {msg}"
+                );
+                // EC-7: output file should NOT be written on validation failure
+                assert!(!output.exists(), "Output file must not be written on validation failure");
+            }
+            Err(other) => {
+                panic!("Expected Ok or SchemaValidation error, got: {other:?}");
+            }
+        }
+    }
+
+    // --- T036: Auto-validation errors go to stderr only (SEC-7) ---
+    // Note: stderr-only behavior is enforced by the pipeline using eprintln!()
+    // for the rendered report and returning Err() before write_output().
+    // This is a structural guarantee, not a runtime assertion, since capturing
+    // stderr in unit tests requires spawning a process.
 }

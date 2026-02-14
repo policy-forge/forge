@@ -373,7 +373,7 @@ sequenceDiagram
 use serde::{Serialize, Deserialize};
 
 /// Category of validation error.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ValidationErrorCategory {
     /// Error from JSON Schema validation.
     Schema,
@@ -418,6 +418,7 @@ pub fn pointer_to_json_path(pointer: &str) -> String;
 /// Format a raw jsonschema crate error into an actionable ValidationError.
 pub fn format_schema_error(
     raw_error: &jsonschema::ValidationError,
+    json: &serde_json::Value,
 ) -> ValidationError;
 
 /// Semantic validator for OSCAL artifacts.

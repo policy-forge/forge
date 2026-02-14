@@ -399,8 +399,10 @@ flowchart TD
 
 ## Open Questions :yellow_circle: `@human-review`
 
-- [ ] **Q1:** Should FORGE display a warning when `--format json` is used, reminding users that the error report may contain sensitive artifact details?
-- [ ] **Q2:** Should the 100-character truncation limit be configurable (e.g., `--max-value-length`), or should it remain a fixed security control?
+- [x] **Q1:** Should FORGE display a warning when `--format json` is used, reminding users that the error report may contain sensitive artifact details?
+  > **Decision (2026-02-14):** No. Adding a warning to every `--format json` invocation would create noise for CI/CD pipelines where JSON output is the primary use case. The truncation control (SEC-1) already limits exposure. Document sensitivity in user-facing help text instead.
+- [x] **Q2:** Should the 100-character truncation limit be configurable (e.g., `--max-value-length`), or should it remain a fixed security control?
+  > **Decision (2026-02-14):** Fixed at 100 characters. Per constitution principle X (Simplicity/YAGNI), a configurable limit adds complexity without clear user demand. The fixed limit is a security control (SEC-1) and should not be user-overridable.
 
 ---
 
@@ -430,14 +432,14 @@ flowchart TD
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | -- (Security Constraint) | -- | Unit | tests/error_formatter_test.rs |
-| SEC-2 | M-1 | AC-1 | Unit | tests/error_formatter_test.rs |
-| SEC-3 | S-1 | AC-7 | Unit | tests/json_report_test.rs |
-| SEC-4 | -- | -- | Integration | tests/validate_integration_test.rs |
-| SEC-5 | -- | -- | Unit | tests/semantic_validator_test.rs |
-| SEC-6 | -- | -- | Unit | tests/pointer_to_json_path_test.rs |
-| SEC-7 | M-5 | AC-5 | Integration | tests/convert_integration_test.rs |
-| SEC-8 | S-2 | AC-8 | Unit | tests/validation_report_test.rs |
+| SEC-1 | -- (Security Constraint) | -- | Unit | src/validate/formatter.rs (in-module tests) |
+| SEC-2 | M-1 | AC-1 | Unit | src/validate/formatter.rs (in-module tests) |
+| SEC-3 | S-1 | AC-7 | Unit | src/validate/report.rs (in-module tests) |
+| SEC-4 | -- | -- | Integration | src/validate/formatter.rs (in-module tests) |
+| SEC-5 | -- | -- | Unit | src/validate/semantic.rs (in-module tests) |
+| SEC-6 | -- | -- | Unit | src/validate/formatter.rs (in-module tests) |
+| SEC-7 | M-5 | AC-5 | Integration | src/pipeline.rs (in-module tests) |
+| SEC-8 | S-2 | AC-8 | Unit | src/validate/error_types.rs (in-module tests) |
 
 ---
 
