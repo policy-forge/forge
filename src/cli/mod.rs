@@ -63,7 +63,22 @@ pub enum Commands {
         /// Override auto-detected OSCAL model type
         #[arg(long, value_enum)]
         schema_type: Option<SchemaType>,
+
+        /// Output format for validation results.
+        /// Note: error reports may contain field values from the input artifact;
+        /// treat reports with the same sensitivity classification as the input.
+        #[arg(long, value_enum, default_value = "text")]
+        format: ValidateOutputFormat,
     },
+}
+
+/// Output format for `forge validate` results (WI-20).
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum ValidateOutputFormat {
+    /// Human-readable text output (default)
+    Text,
+    /// Machine-parseable JSON output (PRD S-1)
+    Json,
 }
 
 /// CLI enum for --schema-type override.
@@ -104,7 +119,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 source_profile.as_deref(),
             )
         }
-        Commands::Validate { input, schema_type } => validate::execute(input, schema_type.as_ref()),
+        Commands::Validate { input, schema_type, format } => {
+            validate::execute(input, schema_type.as_ref(), format)
+        }
     }
 }
 
@@ -136,9 +153,10 @@ mod tests {
     #[test]
     fn parse_validate_subcommand() {
         let cli = Cli::try_parse_from(["forge", "validate", "artifact.json"]).unwrap();
-        if let Commands::Validate { input, schema_type } = cli.command {
+        if let Commands::Validate { input, schema_type, format } = cli.command {
             assert_eq!(input, PathBuf::from("artifact.json"));
             assert!(schema_type.is_none());
+            assert_eq!(format, ValidateOutputFormat::Text);
         } else {
             panic!("Expected Validate command");
         }

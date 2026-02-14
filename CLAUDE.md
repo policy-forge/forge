@@ -71,11 +71,12 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust edition 2024, stable 1.93.0 + serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, url 2.5 (all existing -- no new dependencies) (017-traceability-embedding)
 - Rust edition 2024, stable 1.93.0 + clap 4.x (CLI), serde 1.x + serde_json 1.x (serialization), pulldown-cmark 0.13.x (Markdown parsing), uuid 1.20.0 (ID generation), chrono 0.4 (timestamps), thiserror 2.0.18 (errors), tracing 0.1.44 (logging) — all existing, no new dependencies (018-component-pipeline)
 - Filesystem (read input .md and optional source-profile .json; write output .json) (018-component-pipeline)
-- Rust edition 2024, stable 1.93.0 + jsonschema (NEW), serde_json 1.x, clap 4.x, thiserror 2.0.18 (all existing except jsonschema) (019-schema-validation)
+- Rust edition 2024, stable 1.93.0 + jsonschema 0.41.0 (NEW), serde_json 1.x, clap 4.x, thiserror 2.0.18 (all existing except jsonschema) (019-schema-validation)
 - N/A — in-memory processing only; schemas embedded at compile time via `include_str!` (019-schema-validation)
 - Rust (edition 2024, stable 1.93.0) + thiserror 2.0.18, clap 4.x, pulldown-cmark 0.13.x, serde 1.x, serde_json 1.x, uuid 1.20.0, chrono 0.4, tracing 0.1.44, sha2 0.10.9, regex 1, url 2.5 (all existing) + NEW: `anyhow` (latest stable, for `.context()` in binary crate) (023-error-handling)
 - Rust edition 2024, stable 1.93.0 + criterion 0.8.2 (already in dev-deps with `html_reports`), cargo-flamegraph (conditional, only if optimization needed) (024-performance-benchmark)
 - Filesystem (read synthetic fixture from `tests/fixtures/`) (024-performance-benchmark)
+- Rust edition 2024, stable 1.93.0 + jsonschema 0.41.0 (WI-19), serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, clap 4.x, anyhow 1.x — all existing, no new dependencies (020-prd-validation-error-reporting)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x

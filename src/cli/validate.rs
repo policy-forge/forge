@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::ForgeError;
-use crate::cli::SchemaType;
+use crate::cli::{SchemaType, ValidateOutputFormat};
 use crate::validate::{self, OscalModelType, ValidateError};
 
 /// Convert CLI `SchemaType` to validation module `OscalModelType`.
@@ -14,10 +14,18 @@ fn schema_type_to_model_type(schema_type: &SchemaType) -> OscalModelType {
 
 /// Execute the validate subcommand.
 ///
+/// Uses `run_full_validation()` for enhanced error reporting (WI-20).
+/// On valid: prints "Valid" to stdout + exit 0.
+/// On invalid: renders report to stderr + returns error (exit non-zero).
+///
 /// # Errors
 ///
 /// Returns `ForgeError` if the validation fails.
-pub fn execute(input: &Path, schema_type: Option<&SchemaType>) -> Result<(), ForgeError> {
+pub fn execute(
+    input: &Path,
+    schema_type: Option<&SchemaType>,
+    format: &ValidateOutputFormat,
+) -> Result<(), ForgeError> {
     // Step 1: Check file size (SEC-3)
     validate::check_file_size(input).map_err(|e| match e {
         ValidateError::FileTooLarge { size_mb, limit_mb } => ForgeError::Validation(format!(
@@ -56,24 +64,31 @@ pub fn execute(input: &Path, schema_type: Option<&SchemaType>) -> Result<(), For
         }
     };
 
-    // Step 6: Validate artifact
-    let result = validate::validate_artifact(&json, model_type)
+    // Step 6: Run full validation (schema + semantic) via WI-20 orchestrator
+    let artifact_path = input.display().to_string();
+    let report = validate::run_full_validation(&artifact_path, &json, model_type)
         .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
 
-    // Step 7: Format output and exit
-    if result.is_valid {
-        println!("Valid: {model_type} artifact passes schema validation.");
+    // Step 7: Render report and exit
+    if report.is_valid() {
+        match format {
+            ValidateOutputFormat::Text => {
+                println!("Valid: {model_type} artifact passes all validation.");
+            }
+            ValidateOutputFormat::Json => {
+                println!("{}", validate::report::render_json_report(&report));
+            }
+        }
         Ok(())
     } else {
-        eprintln!("Invalid: {} error(s) found in {model_type} artifact:", result.errors.len());
-        for (i, error) in result.errors.iter().enumerate() {
-            let path_info =
-                error.instance_path.as_deref().map_or(String::new(), |p| format!(" at {p}"));
-            eprintln!("  {}: {}{path_info}", i + 1, error.message);
-        }
+        let rendered = match format {
+            ValidateOutputFormat::Text => validate::report::render_text_report(&report),
+            ValidateOutputFormat::Json => validate::report::render_json_report(&report),
+        };
+        eprintln!("{rendered}");
         Err(ForgeError::SchemaValidation(format!(
-            "{} schema validation error(s) in {model_type} artifact",
-            result.errors.len()
+            "{} validation error(s) in {model_type} artifact",
+            report.errors().len()
         )))
     }
 }

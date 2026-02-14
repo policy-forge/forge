@@ -1,0 +1,498 @@
+//! Semantic validation for OSCAL artifacts (WI-20).
+//!
+//! Detects logical inconsistencies beyond JSON Schema compliance:
+//! - Orphaned back-matter links (PRD M-3)
+//! - Missing required references (PRD M-4)
+
+use std::collections::HashSet;
+
+use serde_json::Value;
+
+use super::OscalModelType;
+use super::error_types::{ValidationError, ValidationErrorCategory};
+use super::formatter::{pointer_to_json_path, truncate_value};
+
+/// Semantic validator for OSCAL artifacts (PRD M-3, M-4).
+pub struct SemanticValidator;
+
+impl SemanticValidator {
+    /// Run all semantic validation checks on an OSCAL artifact.
+    ///
+    /// Returns a list of semantic `ValidationError`s.
+    /// Does NOT follow external URLs (SEC-5).
+    #[must_use]
+    pub fn validate(&self, json: &Value, model_type: OscalModelType) -> Vec<ValidationError> {
+        let mut errors = check_orphaned_links(json);
+        errors.extend(check_missing_references(json, model_type));
+        errors
+    }
+}
+
+/// Collect resource UUIDs from back-matter across all model root keys.
+fn collect_resource_uuids(json: &Value) -> HashSet<String> {
+    let mut uuids = HashSet::new();
+
+    // Try known OSCAL root keys
+    let root_keys = ["catalog", "component-definition"];
+    for key in &root_keys {
+        if let Some(root) = json.get(key)
+            && let Some(resources) = root.pointer("/back-matter/resources")
+            && let Some(arr) = resources.as_array()
+        {
+            for resource in arr {
+                if let Some(uuid) = resource.get("uuid").and_then(Value::as_str) {
+                    uuids.insert(uuid.to_string());
+                }
+            }
+        }
+    }
+
+    uuids
+}
+
+/// Check for orphaned back-matter links (PRD M-3).
+///
+/// Finds `href` values starting with `#` that reference UUIDs
+/// not present in `back-matter.resources[].uuid`.
+/// Does NOT follow external URLs (SEC-5).
+fn check_orphaned_links(json: &Value) -> Vec<ValidationError> {
+    let resource_uuids = collect_resource_uuids(json);
+    let mut errors = Vec::new();
+
+    // Recursively walk JSON tree looking for href fields starting with "#"
+    walk_for_orphaned_links(json, "$", &resource_uuids, &mut errors);
+
+    errors
+}
+
+/// Recursively walk the JSON tree tracking path, looking for orphaned `href` references.
+fn walk_for_orphaned_links(
+    value: &Value,
+    current_path: &str,
+    resource_uuids: &HashSet<String>,
+    errors: &mut Vec<ValidationError>,
+) {
+    match value {
+        Value::Object(map) => {
+            // Check if this object has an href that starts with "#"
+            // SEC-5: do NOT follow external URLs (non-# hrefs)
+            if let Some(href_value) = map.get("href")
+                && let Some(href_str) = href_value.as_str()
+                && let Some(uuid) = href_str.strip_prefix('#')
+                && !resource_uuids.contains(uuid)
+            {
+                errors.push(ValidationError {
+                    category: ValidationErrorCategory::Semantic,
+                    path: format!("{current_path}.href"),
+                    message: format!(
+                        "orphaned link: reference #{uuid} not found in back-matter resources"
+                    ),
+                    expected: "referenced resource exists in back-matter".to_string(),
+                    actual: truncate_value(&format!("#{uuid}"), 100),
+                });
+            }
+
+            // Recurse into all child values
+            for (key, child) in map {
+                let child_path = format!("{current_path}.{key}");
+                walk_for_orphaned_links(child, &child_path, resource_uuids, errors);
+            }
+        }
+        Value::Array(arr) => {
+            for (i, child) in arr.iter().enumerate() {
+                let child_path = format!("{current_path}[{i}]");
+                walk_for_orphaned_links(child, &child_path, resource_uuids, errors);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Check for missing required references (PRD M-4).
+///
+/// For Component Definitions: walk `implemented-requirements` and check
+/// `control-id` fields are non-empty strings with at least one alphanumeric character.
+/// For Catalog: no-op (return empty vec).
+fn check_missing_references(json: &Value, model_type: OscalModelType) -> Vec<ValidationError> {
+    match model_type {
+        OscalModelType::ComponentDefinition => check_component_control_ids(json),
+        OscalModelType::Catalog => vec![],
+    }
+}
+
+/// Validate control-id fields in a component definition.
+fn check_component_control_ids(json: &Value) -> Vec<ValidationError> {
+    let mut errors = Vec::new();
+
+    let Some(root) = json.get("component-definition") else {
+        return errors;
+    };
+
+    let Some(components) = root.get("components").and_then(Value::as_array) else {
+        return errors;
+    };
+
+    for (comp_idx, component) in components.iter().enumerate() {
+        let Some(control_impls) =
+            component.get("control-implementations").and_then(Value::as_array)
+        else {
+            continue;
+        };
+
+        for (ci_idx, ctrl_impl) in control_impls.iter().enumerate() {
+            let Some(impl_reqs) =
+                ctrl_impl.get("implemented-requirements").and_then(Value::as_array)
+            else {
+                continue;
+            };
+
+            for (req_idx, req) in impl_reqs.iter().enumerate() {
+                let base_path = pointer_to_json_path(&format!(
+                    "/component-definition/components/{comp_idx}/control-implementations/{ci_idx}/implemented-requirements/{req_idx}/control-id"
+                ));
+
+                match req.get("control-id") {
+                    Some(Value::String(control_id)) => {
+                        // Valid control-ids must have at least one alphanumeric character
+                        if !control_id.chars().any(char::is_alphanumeric) {
+                            errors.push(ValidationError {
+                                category: ValidationErrorCategory::Semantic,
+                                path: base_path,
+                                message: format!(
+                                    "invalid control-id: \"{control_id}\" contains no alphanumeric characters"
+                                ),
+                                expected: "non-empty string with at least one alphanumeric character".to_string(),
+                                actual: truncate_value(&format!("\"{control_id}\""), 100),
+                            });
+                        }
+                    }
+                    Some(_) => {
+                        errors.push(ValidationError {
+                            category: ValidationErrorCategory::Semantic,
+                            path: base_path,
+                            message: "control-id must be a string".to_string(),
+                            expected: "non-empty string with at least one alphanumeric character"
+                                .to_string(),
+                            actual: "non-string value".to_string(),
+                        });
+                    }
+                    None => {
+                        errors.push(ValidationError {
+                            category: ValidationErrorCategory::Semantic,
+                            path: base_path,
+                            message: "missing control-id in implemented-requirement".to_string(),
+                            expected: "non-empty string with at least one alphanumeric character"
+                                .to_string(),
+                            actual: "field not present".to_string(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    errors
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- T019: check_orphaned_links tests ---
+
+    #[test]
+    fn orphaned_link_detected() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "metadata": { "title": "Test" },
+                    "groups": [{
+                        "links": [{ "href": "#orphaned-uuid" }]
+                    }],
+                    "back-matter": {
+                        "resources": [
+                            { "uuid": "existing-uuid", "title": "Resource" }
+                        ]
+                    }
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_orphaned_links(&json);
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].category, ValidationErrorCategory::Semantic);
+        assert!(errors[0].message.contains("orphaned-uuid"));
+        assert!(errors[0].path.contains("href"));
+    }
+
+    #[test]
+    fn valid_links_no_errors() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "groups": [{
+                        "links": [{ "href": "#valid-uuid" }]
+                    }],
+                    "back-matter": {
+                        "resources": [
+                            { "uuid": "valid-uuid", "title": "Resource" }
+                        ]
+                    }
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_orphaned_links(&json);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn no_back_matter_links_with_hash_all_orphaned() {
+        // PRD EC-3: no back-matter section but links with #uuid hrefs → all reported
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "groups": [{
+                        "links": [
+                            { "href": "#uuid-1" },
+                            { "href": "#uuid-2" }
+                        ]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_orphaned_links(&json);
+        assert_eq!(errors.len(), 2);
+    }
+
+    #[test]
+    fn multiple_orphaned_links_all_reported() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "groups": [
+                        { "links": [{ "href": "#orphan-1" }] },
+                        { "links": [{ "href": "#orphan-2" }, { "href": "#orphan-3" }] }
+                    ],
+                    "back-matter": { "resources": [] }
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_orphaned_links(&json);
+        assert_eq!(errors.len(), 3);
+    }
+
+    #[test]
+    fn no_links_no_errors() {
+        // PRD EC-4: artifact with no links → no errors
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "metadata": { "title": "Test" },
+                    "groups": [{ "title": "Group 1" }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_orphaned_links(&json);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn external_urls_not_followed() {
+        // SEC-5: do not follow external URLs
+        let json: Value = serde_json::from_str(
+            r##"{
+                "catalog": {
+                    "groups": [{
+                        "links": [
+                            { "href": "https://example.com/resource" },
+                            { "href": "http://internal/doc" }
+                        ]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        // External URLs should not produce errors
+        let errors = check_orphaned_links(&json);
+        assert!(errors.is_empty());
+    }
+
+    // --- T020: check_missing_references tests ---
+
+    #[test]
+    fn empty_control_id_detected() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "component-definition": {
+                    "components": [{
+                        "type": "software",
+                        "title": "Test",
+                        "control-implementations": [{
+                            "uuid": "ci-1",
+                            "source": "profile.json",
+                            "implemented-requirements": [{
+                                "uuid": "req-1",
+                                "control-id": ""
+                            }]
+                        }]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_missing_references(&json, OscalModelType::ComponentDefinition);
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].category, ValidationErrorCategory::Semantic);
+        assert!(errors[0].message.contains("control-id"));
+    }
+
+    #[test]
+    fn valid_control_ids_no_errors() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "component-definition": {
+                    "components": [{
+                        "type": "software",
+                        "title": "Test",
+                        "control-implementations": [{
+                            "uuid": "ci-1",
+                            "source": "profile.json",
+                            "implemented-requirements": [{
+                                "uuid": "req-1",
+                                "control-id": "ac-1"
+                            }]
+                        }]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_missing_references(&json, OscalModelType::ComponentDefinition);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn no_implemented_requirements_no_errors() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "component-definition": {
+                    "components": [{
+                        "type": "software",
+                        "title": "Test"
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_missing_references(&json, OscalModelType::ComponentDefinition);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn catalog_skips_check_gracefully() {
+        let json: Value =
+            serde_json::from_str(r##"{ "catalog": { "metadata": { "title": "Test" } } }"##)
+                .unwrap();
+
+        let errors = check_missing_references(&json, OscalModelType::Catalog);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn whitespace_only_control_id_detected() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "component-definition": {
+                    "components": [{
+                        "type": "software",
+                        "title": "Test",
+                        "control-implementations": [{
+                            "uuid": "ci-1",
+                            "source": "profile.json",
+                            "implemented-requirements": [{
+                                "uuid": "req-1",
+                                "control-id": "   "
+                            }]
+                        }]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_missing_references(&json, OscalModelType::ComponentDefinition);
+        assert_eq!(errors.len(), 1);
+    }
+
+    #[test]
+    fn punctuation_only_control_id_detected() {
+        let json: Value = serde_json::from_str(
+            r##"{
+                "component-definition": {
+                    "components": [{
+                        "type": "software",
+                        "title": "Test",
+                        "control-implementations": [{
+                            "uuid": "ci-1",
+                            "source": "profile.json",
+                            "implemented-requirements": [{
+                                "uuid": "req-1",
+                                "control-id": "---"
+                            }]
+                        }]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = check_missing_references(&json, OscalModelType::ComponentDefinition);
+        assert_eq!(errors.len(), 1);
+    }
+
+    // --- SemanticValidator::validate tests ---
+
+    #[test]
+    fn validator_combines_both_checks() {
+        let validator = SemanticValidator;
+        let json: Value = serde_json::from_str(
+            r##"{
+                "component-definition": {
+                    "components": [{
+                        "type": "software",
+                        "title": "Test",
+                        "links": [{ "href": "#orphan" }],
+                        "control-implementations": [{
+                            "uuid": "ci-1",
+                            "source": "profile.json",
+                            "implemented-requirements": [{
+                                "uuid": "req-1",
+                                "control-id": ""
+                            }]
+                        }]
+                    }]
+                }
+            }"##,
+        )
+        .unwrap();
+
+        let errors = validator.validate(&json, OscalModelType::ComponentDefinition);
+        // Should have at least 1 orphaned link + 1 missing reference
+        assert!(errors.len() >= 2);
+        assert!(errors.iter().any(|e| e.message.contains("orphaned")));
+        assert!(errors.iter().any(|e| e.message.contains("control-id")));
+    }
+}
