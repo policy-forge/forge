@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+pub mod fixture_generator;
+
 use std::path::PathBuf;
 
 use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};

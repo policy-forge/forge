@@ -43,6 +43,9 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      - name: Run benchmarks
+        run: cargo bench --bench pipeline_benchmark
+
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
 

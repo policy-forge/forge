@@ -2,7 +2,7 @@ use std::path::Path;
 
 use tempfile::TempDir;
 
-/// Helper: run pipeline on full_policy.md fixture, return parsed JSON
+/// Helper: run pipeline on `full_policy.md` fixture, return parsed JSON.
 fn run_pipeline_on_fixture() -> serde_json::Value {
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists(), "Fixture file must exist: {}", fixture.display());
@@ -20,7 +20,7 @@ fn run_pipeline_on_fixture() -> serde_json::Value {
         .unwrap_or_else(|e| panic!("Output is not valid JSON: {e}\nContent: {json_str}"))
 }
 
-/// T005 [US1] End-to-end smoke test: call run_catalog_pipeline with full_policy.md fixture,
+/// T005 [US1] End-to-end smoke test: call `run_catalog_pipeline` with `full_policy.md` fixture,
 /// capture output to temp file, parse JSON, assert OSCAL structure.
 #[test]
 fn smoke_test_full_pipeline_produces_valid_oscal_json() {

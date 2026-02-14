@@ -786,8 +786,8 @@ mod tests {
         extract_citations(&mut doc).unwrap();
         let text_after_first = doc.sections[0].requirements[0].text.clone();
         let citations_after_first = doc.sections[0].requirements[0].citations.clone();
-        let text2_after_first = doc.sections[0].requirements[1].text.clone();
-        let citations2_after_first = doc.sections[0].requirements[1].citations.clone();
+        let req1_text_after_first = doc.sections[0].requirements[1].text.clone();
+        let req1_citations_after_first = doc.sections[0].requirements[1].citations.clone();
 
         // Second pass
         extract_citations(&mut doc).unwrap();
@@ -795,8 +795,8 @@ mod tests {
         // Text and citations should be identical after second pass
         assert_eq!(doc.sections[0].requirements[0].text, text_after_first);
         assert_eq!(doc.sections[0].requirements[0].citations, citations_after_first);
-        assert_eq!(doc.sections[0].requirements[1].text, text2_after_first);
-        assert_eq!(doc.sections[0].requirements[1].citations, citations2_after_first);
+        assert_eq!(doc.sections[0].requirements[1].text, req1_text_after_first);
+        assert_eq!(doc.sections[0].requirements[1].citations, req1_citations_after_first);
     }
 
     // === T034: Performance Test (SEC-6) ===
