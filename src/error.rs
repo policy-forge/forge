@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 #[allow(clippy::cast_precision_loss)] // Precision loss is acceptable for human-readable file sizes
+#[allow(clippy::trivially_copy_pass_by_ref)] // thiserror passes struct fields by reference
 fn format_size(bytes: &u64) -> String {
     let bytes = *bytes;
     if bytes < 1_048_576 {
