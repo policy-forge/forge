@@ -39,7 +39,7 @@ pub enum Commands {
         strategy: Strategy,
 
         /// Output format
-        #[arg(long)]
+        #[arg(long, default_value = "json")]
         format: OutputFormat,
 
         /// Output file path
@@ -163,9 +163,15 @@ mod tests {
     }
 
     #[test]
-    fn parse_convert_missing_format_fails() {
-        let result = Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]);
-        assert!(result.is_err(), "Should fail when --format is omitted");
+    fn parse_convert_missing_format_defaults_to_json() {
+        // T001 (EC-1): --format omitted → defaults to Json
+        let cli = Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"])
+            .expect("Should succeed when --format is omitted (defaults to json)");
+        if let Commands::Convert { format, .. } = cli.command {
+            assert!(matches!(format, OutputFormat::Json), "Default format should be Json");
+        } else {
+            panic!("Expected Convert command");
+        }
     }
 
     #[test]
