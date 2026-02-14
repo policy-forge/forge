@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::process;
 
 use crate::ForgeError;
 use crate::cli::SchemaType;
@@ -72,6 +71,9 @@ pub fn execute(input: &Path, schema_type: Option<&SchemaType>) -> Result<(), For
                 error.instance_path.as_deref().map_or(String::new(), |p| format!(" at {p}"));
             eprintln!("  {}: {}{path_info}", i + 1, error.message);
         }
-        process::exit(1);
+        Err(ForgeError::SchemaValidation(format!(
+            "{} schema validation error(s) in {model_type} artifact",
+            result.errors.len()
+        )))
     }
 }

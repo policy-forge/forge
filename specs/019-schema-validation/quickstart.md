@@ -20,8 +20,8 @@ mkdir -p schemas
 curl -L -o schemas/oscal_catalog_schema.json \
   "https://github.com/usnistgov/OSCAL/releases/download/v1.2.0/oscal_catalog_schema.json"
 
-curl -L -o schemas/oscal_component-definition_schema.json \
-  "https://github.com/usnistgov/OSCAL/releases/download/v1.2.0/oscal_component-definition_schema.json"
+curl -L -o schemas/oscal_component_schema.json \
+  "https://github.com/usnistgov/OSCAL/releases/download/v1.2.0/oscal_component_schema.json"
 ```
 
 ### 2. Add Dependency
@@ -81,7 +81,7 @@ cargo test
 | File | Purpose |
 |------|---------|
 | `schemas/oscal_catalog_schema.json` | NIST OSCAL Catalog JSON Schema (embedded at compile time) |
-| `schemas/oscal_component-definition_schema.json` | NIST OSCAL Component Definition JSON Schema |
+| `schemas/oscal_component_schema.json` | NIST OSCAL Component Definition JSON Schema (embedded at compile time) |
 | `src/validate/mod.rs` | Validation module: types, detect, load, validate |
 | `src/cli/validate.rs` | CLI handler for `forge validate` |
 | `src/pipeline.rs` | Auto-validation gate in `forge convert` |

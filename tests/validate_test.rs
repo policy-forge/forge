@@ -180,6 +180,26 @@ fn validate_multiple_violations_reports_all_errors() {
     assert!(stderr.contains("error(s)"), "Expected error count, got: {stderr}");
 }
 
+// --- SEC-3: File size limit ---
+
+#[test]
+fn validate_oversized_file_returns_too_large_error() {
+    // Create a temp file just over the 50MB limit
+    let mut f = NamedTempFile::new().expect("Failed to create temp file");
+    let chunk = vec![b' '; 1024 * 1024]; // 1MB chunk
+    for _ in 0..51 {
+        f.write_all(&chunk).expect("Failed to write chunk");
+    }
+    f.flush().expect("Failed to flush");
+
+    let (_stdout, stderr, code) = run_validate(&[f.path().to_str().unwrap()]);
+    assert_ne!(code, 0, "Expected non-zero exit for oversized file");
+    assert!(
+        stderr.contains("too large") || stderr.contains("limit"),
+        "Expected file size error, got: {stderr}"
+    );
+}
+
 // --- US3: --schema-type override (T030) ---
 
 #[test]

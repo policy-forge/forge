@@ -70,12 +70,12 @@ pub fn build_trace_props(
     ]
 }
 
-/// Build 1 source link with href `"<encoded_file>#line=<n>"`.
+/// Build 1 source link with href `"<encoded_file>#line=<n>"` (relative URI reference per RFC 3986).
 #[must_use]
 pub fn build_trace_link(source_file: &str, line_number: usize) -> OscalLink {
     let encoded = encode_href_path(source_file);
     OscalLink {
-        href: format!("file://{encoded}#line={line_number}"),
+        href: format!("{encoded}#line={line_number}"),
         rel: LINK_REL_SOURCE.to_string(),
         text: None,
     }
@@ -242,13 +242,13 @@ mod tests {
     #[test]
     fn build_trace_link_href_format() {
         let link = build_trace_link("policy.md", 42);
-        assert_eq!(link.href, "file://policy.md#line=42");
+        assert_eq!(link.href, "policy.md#line=42");
     }
 
     #[test]
     fn build_trace_link_special_chars_encoded() {
         let link = build_trace_link("my file#1%.md", 10);
-        assert_eq!(link.href, "file://my%20file%231%25.md#line=10");
+        assert_eq!(link.href, "my%20file%231%25.md#line=10");
     }
 
     // ── T010: embed_trace_in_catalog tests ───────────────────────────
@@ -339,8 +339,8 @@ mod tests {
         // Verify specific values
         assert_eq!(catalog.groups[0].controls[0].props[2].value, "10");
         assert_eq!(catalog.groups[0].controls[1].props[2].value, "25");
-        assert_eq!(catalog.groups[0].controls[0].links[0].href, "file://policy.md#line=10");
-        assert_eq!(catalog.groups[0].controls[1].links[0].href, "file://policy.md#line=25");
+        assert_eq!(catalog.groups[0].controls[0].links[0].href, "policy.md#line=10");
+        assert_eq!(catalog.groups[0].controls[1].links[0].href, "policy.md#line=25");
     }
 
     #[test]
