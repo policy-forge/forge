@@ -1,23 +1,5 @@
 use std::path::Path;
 
-/// Recursively collect all citations from a document's sections.
-fn collect_citations(sections: &[forge::model::PolicySection]) -> Vec<forge::model::Citation> {
-    fn walk(section: &forge::model::PolicySection, out: &mut Vec<forge::model::Citation>) {
-        for req in &section.requirements {
-            out.extend(req.citations.clone());
-        }
-        for child in &section.children {
-            walk(child, out);
-        }
-    }
-
-    let mut out = Vec::new();
-    for section in sections {
-        walk(section, &mut out);
-    }
-    out
-}
-
 /// EC-5 (WI-24): Verify the committed synthetic fixture produces valid OSCAL JSON
 /// output when run through the full catalog pipeline.
 #[test]
@@ -54,7 +36,7 @@ fn fixture_produces_valid_oscal_output() {
 
     // Step 7b: Extract citations
     forge::citation::extract_citations(&mut doc).expect("extract_citations should succeed");
-    let citations = collect_citations(&doc.sections);
+    let citations = doc.collect_citations();
 
     // Step 8: Build catalog with trace link capture
     let mut trace_links = forge::TraceLinkCollection::new();

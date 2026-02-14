@@ -7,80 +7,54 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-<!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
--->
+### User Story 1 - Verify Conversion Target (Priority: P1)
 
-### User Story 1 - [Brief Title] (Priority: P1)
+As a developer, I run `cargo bench --bench pipeline_benchmark -- full_pipeline` against the 50-page synthetic fixture to confirm the full catalog pipeline completes within the 30-second target on commodity hardware.
 
-[Describe this user journey in plain language]
+**Why this priority**: The <30s conversion target is an MS-4 exit criterion blocking the Phase 1 release (WI-25). This is the primary deliverable.
 
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
+**Independent Test**: Run `cargo bench --bench pipeline_benchmark -- full_pipeline` and verify mean time is reported below 30 seconds.
 
 **Acceptance Scenarios**:
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+1. **Given** the synthetic 50-page fixture exists at `tests/fixtures/synthetic-50page-policy.md`, **When** I run the full pipeline benchmark, **Then** Criterion reports a mean conversion time under 30 seconds.
+2. **Given** the benchmark has been run before, **When** I run it again, **Then** Criterion reports the change percentage relative to the previous run.
 
 ---
 
-### User Story 2 - [Brief Title] (Priority: P2)
+### User Story 2 - Identify Pipeline Hotspots (Priority: P2)
 
-[Describe this user journey in plain language]
+As a developer, I run per-stage benchmarks to identify which pipeline stages consume the most time, so I know where to focus optimization if the target is not met.
 
-**Why this priority**: [Explain the value and why it has this priority level]
+**Why this priority**: Without per-stage breakdown, optimization would be guesswork. This enables data-driven performance work.
 
-**Independent Test**: [Describe how this can be tested independently]
+**Independent Test**: Run `cargo bench --bench pipeline_benchmark -- pipeline_stages` and verify each stage reports individual timing.
 
 **Acceptance Scenarios**:
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+1. **Given** the synthetic fixture exists, **When** I run per-stage benchmarks, **Then** I see individual timings for ingest, parse, atomize, catalog assembly, and serialization stages.
 
 ---
 
-### User Story 3 - [Brief Title] (Priority: P3)
+### User Story 3 - Detect Performance Regressions in CI (Priority: P3)
 
-[Describe this user journey in plain language]
+As a maintainer, I see benchmark results in CI so that performance regressions are caught before merging.
 
-**Why this priority**: [Explain the value and why it has this priority level]
+**Why this priority**: Without CI integration, regressions can silently ship. Lower priority because local benchmarking (P1) already validates the target.
 
-**Independent Test**: [Describe how this can be tested independently]
+**Independent Test**: Push a commit and verify the CI workflow runs the benchmark step successfully.
 
 **Acceptance Scenarios**:
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-[Add more user stories as needed, each with an assigned priority]
+1. **Given** a push to a branch with the benchmark workflow, **When** CI runs, **Then** the benchmark step executes and reports results.
 
 ### Edge Cases
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
--->
-
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+- What happens when the synthetic fixture file is missing? Benchmark panics with a descriptive assertion message.
+- What happens when a pipeline stage returns an error? The benchmark propagates the error via `Result` instead of panicking silently.
+- How does the benchmark handle noisy CI environments? Criterion uses statistical analysis (confidence intervals) to distinguish real regressions from noise.
 
 ## Requirements *(mandatory)*
-
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
--->
 
 ### Functional Requirements
 
@@ -90,26 +64,17 @@
 - **FR-004**: System MUST export benchmark results via Criterion HTML reports for historical comparison
 - **FR-005**: System MUST detect performance regressions by comparing against saved baselines
 
-*Example of marking unclear requirements:*
+### Key Entities
 
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
-
-### Key Entities *(include if feature involves data)*
-
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
+- **Synthetic Fixture**: A deterministic ~158KB Markdown policy document with ~200 requirements, ~30 citations, and ~10 tables, committed at `tests/fixtures/synthetic-50page-policy.md`
+- **Pipeline Stage**: One of five measured phases (ingest, parse, atomize, catalog assembly, serialization) that compose the full catalog pipeline
+- **CatalogEnvelope**: The final OSCAL JSON output produced by the full pipeline, used as the serialization benchmark target
 
 ## Success Criteria *(mandatory)*
 
-<!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
--->
-
 ### Measurable Outcomes
 
-- **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
-- **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
-- **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+- **SC-001**: Full pipeline mean conversion time is under 30 seconds on commodity hardware (single-core x86-64, 8 GB RAM)
+- **SC-002**: Per-stage breakdown accounts for >95% of total pipeline time (sum of stages closely matches full pipeline measurement)
+- **SC-003**: Synthetic fixture is deterministic — regenerating produces byte-identical output
+- **SC-004**: All existing tests (498+) continue to pass with the benchmark infrastructure added
