@@ -136,10 +136,10 @@ A user runs the component strategy without specifying a source profile to get a 
 
 **Why this priority**: Not all users will have a baseline profile available immediately. The tool should still produce useful output.
 
-**Independent Test**: Run `forge convert policy.md --strategy component --format json` without `--source-profile` and verify a Component Definition is produced with documentary components but without control-id references.
+**Independent Test**: Run `forge convert policy.md --strategy component --format json` without `--source-profile` and verify a Component Definition is produced with an empty `control-implementations` array and a warning on stderr.
 
 **Acceptance Scenarios**:
-1. **Given** no `--source-profile` flag, **When** running `forge convert policy.md --strategy component --format json`, **Then** a valid Component Definition is produced with implemented-requirements that have no control-id mapping (or use placeholder IDs).
+1. **Given** no `--source-profile` flag, **When** running `forge convert policy.md --strategy component --format json`, **Then** a valid Component Definition is produced with an empty `control-implementations` array (OSCAL control-implementations require a `source` reference, which cannot be constructed without a profile).
 2. **Given** no `--source-profile` flag, **When** the output is generated, **Then** a warning is emitted indicating that control-id mapping was skipped due to missing source profile.
 
 ---
@@ -221,8 +221,8 @@ stateDiagram-v2
 - [ ] **M-8:** The output shall be valid JSON written to stdout by default, or to a file when `--output <path>` is specified. *(Traces to: Parent PRD M-7)*
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
-- [ ] **S-1:** When `--source-profile` is omitted, the component pipeline shall produce a Component Definition with implemented-requirements that lack control-id mappings, and emit a warning to stderr.
-- [ ] **S-2:** The pipeline shall validate that the `--source-profile` path exists and is a readable JSON file before processing, and exit with a descriptive error if not.
+- [ ] **S-1:** When `--source-profile` is omitted, the component pipeline shall produce a Component Definition with an empty `control-implementations` array and emit a warning to stderr. *(OSCAL control-implementations require a `source` reference.)*
+- [ ] **S-2:** The pipeline shall validate that the `--source-profile` path exists and is a regular file before processing, and exit with a descriptive error if not. *(JSON content validation deferred per W-3.)*
 - [ ] **S-3:** The `--verbose` flag shall print pipeline stage progress to stderr (e.g., "Ingesting...", "Building component...", "Serializing...").
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
@@ -404,8 +404,8 @@ pub fn run_component_pipeline(
 | AC-4 | M-6 | US-2 | A generated Component Definition | Inspecting any implemented-requirement | Trace props (`source-file`, `source-section`, `source-line`) are present and accurate |
 | AC-5 | M-7 | US-1 | A policy with citations | Converting with `--strategy component` | Citations appear in `back-matter.resources` with `link` elements in the body referencing them |
 | AC-6 | M-8 | US-1 | The `--output report.json` flag | Converting | Component Definition JSON is written to `report.json` file |
-| AC-7 | M-2, S-1 | US-3 | No `--source-profile` flag provided | Running `forge convert policy.md --strategy component --format json` | A Component Definition is produced with unmapped implemented-requirements and a warning is emitted to stderr |
-| AC-8 | S-2 | US-1 | A non-existent `--source-profile` path | Running `forge convert policy.md --strategy component --source-profile nonexistent.json` | A descriptive error is printed and the process exits with non-zero status |
+| AC-7 | M-2, S-1 | US-3 | No `--source-profile` flag provided | Running `forge convert policy.md --strategy component --format json` | A Component Definition is produced with an empty `control-implementations` array and a warning is emitted to stderr |
+| AC-8 | S-2 | US-1 (US-4 in spec) | A non-existent `--source-profile` path | Running `forge convert policy.md --strategy component --source-profile nonexistent.json` | A descriptive error is printed and the process exits with non-zero status |
 
 ### Edge Cases 🟢 `@llm-autonomous`
 - [ ] **EC-1:** (M-1) When `--strategy component` is specified without `--format json`, then the default format is JSON and a Component Definition is produced.
@@ -413,7 +413,7 @@ pub fn run_component_pipeline(
 - [ ] **EC-3:** (M-4) When the source profile contains no control IDs, then implemented-requirements are generated without control-id references and a warning is emitted.
 - [ ] **EC-4:** (M-8) When `--output` points to a directory that does not exist, then a descriptive filesystem error is printed and the process exits with non-zero status.
 - [ ] **EC-5:** (M-2) When `--source-profile` is provided with `--strategy catalog`, then the flag is ignored (it is only meaningful for component strategy).
-- [ ] **EC-6:** (M-3) When the pipeline encounters an error mid-way (e.g., malformed source profile JSON), then a descriptive error is printed with the failing stage and file context, and the process exits with non-zero status.
+- [ ] **EC-6:** (M-3) When the pipeline encounters an error mid-way (e.g., empty input document), then a descriptive error is printed with the failing stage and file context, and the process exits with non-zero status. *(Profile JSON parsing errors deferred per W-3.)*
 
 ---
 
