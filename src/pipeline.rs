@@ -153,6 +153,28 @@ pub fn run_catalog_pipeline(
     let json = serde_json::to_string_pretty(&envelope)
         .map_err(|e| ForgeError::Serialization(e.to_string()))?;
 
+    // Step 12b: Auto-validate serialized JSON against OSCAL schema (WI-19, SEC-8)
+    let json_value: serde_json::Value =
+        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let validation =
+        crate::validate::validate_artifact(&json_value, crate::validate::OscalModelType::Catalog)
+            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    if !validation.is_valid {
+        let error_summary: Vec<String> = validation
+            .errors
+            .iter()
+            .map(|e| {
+                let path = e.instance_path.as_deref().unwrap_or("");
+                format!("{}: {}", path, e.message)
+            })
+            .collect();
+        return Err(ForgeError::SchemaValidation(format!(
+            "{} schema error(s) in generated catalog:\n  {}",
+            validation.errors.len(),
+            error_summary.join("\n  ")
+        )));
+    }
+
     // Step 13: Write output
     write_output(&json, output_path)
 }
@@ -202,6 +224,30 @@ pub fn run_component_pipeline(
     // Step 11: Serialize to pretty JSON
     let json = serde_json::to_string_pretty(&envelope)
         .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+
+    // Step 11b: Auto-validate serialized JSON against OSCAL schema (WI-19, SEC-8)
+    let json_value: serde_json::Value =
+        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let validation = crate::validate::validate_artifact(
+        &json_value,
+        crate::validate::OscalModelType::ComponentDefinition,
+    )
+    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    if !validation.is_valid {
+        let error_summary: Vec<String> = validation
+            .errors
+            .iter()
+            .map(|e| {
+                let path = e.instance_path.as_deref().unwrap_or("");
+                format!("{}: {}", path, e.message)
+            })
+            .collect();
+        return Err(ForgeError::SchemaValidation(format!(
+            "{} schema error(s) in generated component definition:\n  {}",
+            validation.errors.len(),
+            error_summary.join("\n  ")
+        )));
+    }
 
     // Step 12: Write output
     write_output(&json, output_path)
