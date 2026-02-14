@@ -1,6 +1,6 @@
 # FORGE Roadmap
 
-> **Last Updated:** 2026-02-12
+> **Last Updated:** 2026-02-14
 
 This roadmap translates the FORGE product vision into a sequenced execution plan. See [FORGE_PRODUCT_VISION.md](docs/FORGE_PRODUCT_VISION.md) for strategic goals and [FORGE_PRD.md](docs/FORGE_PRD.md) for detailed requirements.
 
@@ -8,7 +8,7 @@ This roadmap translates the FORGE product vision into a sequenced execution plan
 
 ## Completed Work Items
 
-All foundation work (WI-1 through WI-7) and core OSCAL generation (WI-9 through WI-12) are merged to `main`.
+All foundation work (WI-1 through WI-7), core OSCAL generation (WI-8 through WI-18), validation (WI-19 through WI-21), error handling (WI-23), and benchmarks (WI-24) are merged to `main`.
 
 | WI | Title | AR | Status |
 |----|-------|----|--------|
@@ -19,12 +19,24 @@ All foundation work (WI-1 through WI-7) and core OSCAL generation (WI-9 through 
 | WI-5 | Domain model | [005](docs/AR/005-ar-domain-model.md) | Done |
 | WI-6 | Requirement atomization | [006](docs/AR/006-ar-requirement-atomization.md) | Done |
 | WI-7 | UUID generation | [007](docs/AR/007-ar-uuid-generation.md) | Done |
+| WI-8 | Citation extraction | [008](docs/AR/008-ar-citation-extraction.md) | Done |
 | WI-9 | Catalog — groups & controls | [009](docs/AR/009-ar-catalog-groups-controls.md) | Done |
 | WI-10 | Catalog — statement parts | [010](docs/AR/010-ar-catalog-statement-parts.md) | Done |
 | WI-11 | OSCAL metadata | [011](docs/AR/011-ar-oscal-metadata.md) | Done |
 | WI-12 | Back matter | [012](docs/AR/012-ar-back-matter.md) | Done |
+| WI-13 | Catalog pipeline | [013](docs/AR/013-ar-catalog-pipeline.md) | Done |
+| WI-14 | Component Definition — structure | [014](docs/AR/014-ar-component-definition-structure.md) | Done |
+| WI-15 | Component — implemented requirements | [015](docs/AR/015-ar-component-implemented-requirements.md) | Done |
+| WI-16 | Traceability model | [016](docs/AR/016-ar-traceability-model.md) | Done |
+| WI-17 | Traceability embedding | [017](docs/AR/017-ar-traceability-embedding.md) | Done |
+| WI-18 | Component pipeline | [018](docs/AR/018-ar-component-pipeline.md) | Done |
+| WI-19 | Schema validation | [019](docs/AR/019-ar-schema-validation.md) | Done |
+| WI-20 | Validation error reporting | [020](docs/AR/020-ar-validation-error-reporting.md) | Done |
+| WI-21 | Golden-file tests | [021](docs/AR/021-ar-golden-file-tests.md) | Done |
+| WI-23 | Error handling | [023](docs/AR/023-ar-error-handling.md) | Done |
+| WI-24 | Performance benchmarks | [024](docs/AR/024-ar-performance-benchmark.md) | Done |
 
-**What's built:** A complete Markdown-to-domain-model pipeline that ingests policy documents, extracts structural hierarchy, parses clauses (lists, tables, paragraphs), assembles a `PolicyDocument` with YAML frontmatter metadata, atomizes compound requirements, and assigns deterministic UUID v5 stable identifiers. OSCAL Catalog building blocks are implemented: groups and controls mapping, statement parts with prose and props, metadata assembly (uuid, title, last-modified, version, oscal-version), and back matter resource generation from citations. The end-to-end Catalog pipeline (WI-13) is the next integration milestone.
+**What's built:** A complete end-to-end Markdown-to-OSCAL pipeline covering both Catalog and Component Definition strategies. The pipeline ingests policy documents, extracts structural hierarchy, parses clauses (lists, tables, paragraphs), assembles a `PolicyDocument` with YAML frontmatter metadata, atomizes compound requirements, assigns deterministic UUID v5 stable identifiers, and extracts citations. OSCAL generation includes: Catalog with groups/controls/statement parts/prose/props, Component Definition with documentary components and implemented-requirements, metadata assembly, back matter resource generation, and bidirectional traceability with embedded source provenance. Schema validation against OSCAL v1.2.0 JSON schemas with actionable error reporting, golden-file regression tests (small/medium/complex fixtures with insta snapshots), structured error handling with categorized exit codes, and performance benchmarks with per-stage breakdown are all in place. Remaining Phase 1 items: WI-22 (golden-file edge cases) and WI-25 (Phase 1 release).
 
 ---
 
@@ -36,23 +48,23 @@ All foundation work (WI-1 through WI-7) and core OSCAL generation (WI-9 through 
 
 | WI | Title | AR | PRD Req | Status |
 |----|-------|----|---------|--------|
-| WI-8 | Citation extraction | [008](docs/AR/008-ar-citation-extraction.md) | M-9 | In Progress |
+| WI-8 | Citation extraction | [008](docs/AR/008-ar-citation-extraction.md) | M-9 | Done |
 | WI-9 | Catalog — groups & controls | [009](docs/AR/009-ar-catalog-groups-controls.md) | M-3 | Done |
 | WI-10 | Catalog — statement parts | [010](docs/AR/010-ar-catalog-statement-parts.md) | M-3 | Done |
 | WI-11 | OSCAL metadata | [011](docs/AR/011-ar-oscal-metadata.md) | M-5 | Done |
 | WI-12 | Back matter | [012](docs/AR/012-ar-back-matter.md) | M-9 | Done |
-| WI-13 | Catalog pipeline | [013](docs/AR/013-ar-catalog-pipeline.md) | M-3 | In Progress |
-| WI-14 | Component Definition — structure | [014](docs/AR/014-ar-component-definition-structure.md) | M-4 | Not Started |
-| WI-15 | Component — implemented requirements | [015](docs/AR/015-ar-component-implemented-requirements.md) | M-4 | Not Started |
-| WI-16 | Traceability model | [016](docs/AR/016-ar-traceability-model.md) | M-10 | Not Started |
-| WI-17 | Traceability embedding | [017](docs/AR/017-ar-traceability-embedding.md) | M-10 | Not Started |
-| WI-18 | Component pipeline | [018](docs/AR/018-ar-component-pipeline.md) | M-4 | Not Started |
-| WI-19 | Schema validation | [019](docs/AR/019-ar-schema-validation.md) | M-6 | Not Started |
-| WI-20 | Validation error reporting | [020](docs/AR/020-ar-validation-error-reporting.md) | M-6 | Not Started |
-| WI-21 | Golden-file tests | [021](docs/AR/021-ar-golden-file-tests.md) | — | Not Started |
+| WI-13 | Catalog pipeline | [013](docs/AR/013-ar-catalog-pipeline.md) | M-3 | Done |
+| WI-14 | Component Definition — structure | [014](docs/AR/014-ar-component-definition-structure.md) | M-4 | Done |
+| WI-15 | Component — implemented requirements | [015](docs/AR/015-ar-component-implemented-requirements.md) | M-4 | Done |
+| WI-16 | Traceability model | [016](docs/AR/016-ar-traceability-model.md) | M-10 | Done |
+| WI-17 | Traceability embedding | [017](docs/AR/017-ar-traceability-embedding.md) | M-10 | Done |
+| WI-18 | Component pipeline | [018](docs/AR/018-ar-component-pipeline.md) | M-4 | Done |
+| WI-19 | Schema validation | [019](docs/AR/019-ar-schema-validation.md) | M-6 | Done |
+| WI-20 | Validation error reporting | [020](docs/AR/020-ar-validation-error-reporting.md) | M-6 | Done |
+| WI-21 | Golden-file tests | [021](docs/AR/021-ar-golden-file-tests.md) | — | Done |
 | WI-22 | Golden-file edge cases | [022](docs/AR/022-ar-golden-file-edge-cases.md) | — | Not Started |
-| WI-23 | Error handling | [023](docs/AR/023-ar-error-handling.md) | — | Not Started |
-| WI-24 | Performance benchmarks | [024](docs/AR/024-ar-performance-benchmark.md) | — | Not Started |
+| WI-23 | Error handling | [023](docs/AR/023-ar-error-handling.md) | — | Done |
+| WI-24 | Performance benchmarks | [024](docs/AR/024-ar-performance-benchmark.md) | — | Done |
 | WI-25 | Phase 1 release | [025](docs/AR/025-ar-phase1-release.md) | — | Not Started |
 
 ---

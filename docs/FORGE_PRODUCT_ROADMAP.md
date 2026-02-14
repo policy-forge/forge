@@ -3,7 +3,7 @@
 > **Document Type:** Product Roadmap
 > **Audience:** LLM agents, human reviewers, leadership stakeholders, engineering leads
 > **Status:** Draft
-> **Last Updated:** 2026-02-13 <!-- @auto -->
+> **Last Updated:** 2026-02-14 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Parent Vision:** docs/FORGE_PRODUCT_VISION.md <!-- @auto -->
 
@@ -163,8 +163,8 @@ gantt
     section Phase 1 — Foundation
         MS-1: Markdown → Domain Model      :done, ms1, 2026-03-03, 56d
         MS-2: First Valid Catalog           :done, ms2, 2026-04-27, 40d
-        MS-3: Component Def + Traceability  :active, ms3, 2026-06-08, 25d
-        MS-4: Phase 1 Release (v0.1.0)     :ms4, 2026-07-06, 47d
+        MS-3: Component Def + Traceability  :done, ms3, 2026-06-08, 25d
+        MS-4: Phase 1 Release (v0.1.0)     :active, ms4, 2026-07-06, 47d
 
     section Phase 2 — Control Layer & Multi-Format
         MS-5: XML/YAML + Round-trip        :ms5, 2026-08-24, 25d
@@ -200,14 +200,14 @@ gantt
 | WI-14 | Component Definition: documentary component structure | S-14 (Jun 2) | T-2 | MS-3 | M-4 | S | Done | — |
 | WI-15 | Component Definition: implemented-requirements with control-id mapping | S-15 (Jun 9) | T-2 | MS-3 | M-4 | S | Done | WI-16 |
 | WI-16 | Traceability: TraceLink model, source location → OSCAL element mapping | S-16 (Jun 16) | T-2 | MS-3 | M-10 | S | Done | WI-15 |
-| WI-17 | Traceability: embed trace metadata as props/links in generated artifacts | S-17 (Jun 23) | T-2 | MS-3 | M-10, M-11 | S | Not Started | — |
-| WI-18 | End-to-end Component pipeline: `forge convert --strategy component` | S-18 (Jun 30) | T-2 | MS-3 | M-4, M-7 | S | Not Started | — |
-| WI-19 | Schema validation: integrate OSCAL v1.2.0 JSON schemas, `forge validate` | S-19 (Jul 6) | T-3 | MS-4 | M-6 | S | Not Started | — |
-| WI-20 | Schema validation: actionable error reporting with field locations | S-20 (Jul 13) | T-3 | MS-4 | M-6 | S | Not Started | — |
-| WI-21 | Golden-file test suite: Markdown fixtures + expected OSCAL outputs | S-21 (Jul 20) | T-3 | MS-4 | M-1–M-11 | S | Not Started | WI-23 |
+| WI-17 | Traceability: embed trace metadata as props/links in generated artifacts | S-17 (Jun 23) | T-2 | MS-3 | M-10, M-11 | S | Done | — |
+| WI-18 | End-to-end Component pipeline: `forge convert --strategy component` | S-18 (Jun 30) | T-2 | MS-3 | M-4, M-7 | S | Done | — |
+| WI-19 | Schema validation: integrate OSCAL v1.2.0 JSON schemas, `forge validate` | S-19 (Jul 6) | T-3 | MS-4 | M-6 | S | Done | — |
+| WI-20 | Schema validation: actionable error reporting with field locations | S-20 (Jul 13) | T-3 | MS-4 | M-6 | S | Done | — |
+| WI-21 | Golden-file test suite: Markdown fixtures + expected OSCAL outputs | S-21 (Jul 20) | T-3 | MS-4 | M-1–M-11 | S | Done | WI-23 |
 | WI-22 | Golden-file test suite: edge cases (compound stmts, empty sections, missing metadata) | S-22 (Jul 27) | T-3 | MS-4 | M-1–M-11 | S | Not Started | WI-23, WI-24 |
-| WI-23 | Error handling: graceful failures, descriptive messages, non-zero exit codes | S-23 (Aug 4) | T-3 | MS-4 | EC-1–EC-10 | S | Not Started | WI-21, WI-22, WI-24 |
-| WI-24 | Performance benchmark: 50-page document <30s target | S-24 (Aug 11) | T-3 | MS-4 | — | XS | Not Started | WI-22, WI-23 |
+| WI-23 | Error handling: graceful failures, descriptive messages, non-zero exit codes | S-23 (Aug 4) | T-3 | MS-4 | EC-1–EC-10 | S | Done | WI-21, WI-22, WI-24 |
+| WI-24 | Performance benchmark: 50-page document <30s target | S-24 (Aug 11) | T-3 | MS-4 | — | XS | Done | WI-22, WI-23 |
 | WI-25 | Phase 1 integration testing, CLI polish, v0.1.0 release prep | S-25 (Aug 18) | T-3 | MS-4 | AC-1–AC-10 | S | Not Started | — |
 
 #### Phase 2 — Control Layer & Multi-Format (Sprints 26–35, Aug 25 – Oct 31 2026) :yellow_circle: Planned
@@ -383,38 +383,43 @@ gantt
 - **Deliverable:** TraceLink collection populated during generation
 - **Status:** Complete (PR #20 merged) — `model/trace.rs` with `TraceLink`, `TraceRecord`, `TraceMap` structs; bidirectional requirement-to-OSCAL mapping; trace link recording during Catalog and Component generation; integration tests for traceability
 
-#### Sprint 17 (Jun 23–27): Traceability — Embedded Props/Links
+#### Sprint 17 (Jun 23–27): Traceability — Embedded Props/Links ✅ DONE
 - Embed trace metadata in generated artifacts as `prop` annotations
 - Add `link` elements from OSCAL elements back to source locations
 - Verify bidirectional traceability: OSCAL element → source, source → OSCAL element
 - **Deliverable:** Generated artifacts contain trace props; all elements traceable
+- **Status:** Complete (PR #21 merged) — `traceability/embed.rs` module with source provenance props embedded in controls and implemented-requirements; bidirectional traceability verified
 
-#### Sprint 18 (Jun 30–Jul 3): End-to-End Component Pipeline
+#### Sprint 18 (Jun 30–Jul 3): End-to-End Component Pipeline ✅ DONE
 - Wire Component Definition through full pipeline
 - Implement `--strategy component --source-profile <path>` CLI flags
 - Smoke test: sample policy + baseline → Component Definition JSON
 - **Deliverable:** `forge convert policy.md --strategy component` produces output
+- **Status:** Complete (PR #22 merged) — `run_component_pipeline()` in `pipeline.rs`; `--strategy component` and `--source-profile` CLI flags; full integration tests
 
-#### Sprint 19 (Jul 6–10): Schema Validation — Integration
+#### Sprint 19 (Jul 6–10): Schema Validation — Integration ✅ DONE
 - Download OSCAL v1.2.0 JSON schemas (embed or bundle)
 - Integrate `jsonschema` crate for validation
 - Implement `forge validate <artifact.json>` subcommand
 - Validate generated Catalog against schema
 - **Deliverable:** `forge validate catalog.json` reports Valid/Invalid with basic errors
+- **Status:** Complete (PR #25 merged) — OSCAL v1.2.0 JSON schemas embedded via `include_str!`; `jsonschema` 0.41.0 integration; `forge validate` subcommand with auto-detection of OSCAL model type
 
-#### Sprint 20 (Jul 13–17): Schema Validation — Error Reporting
+#### Sprint 20 (Jul 13–17): Schema Validation — Error Reporting ✅ DONE
 - Implement actionable error messages: field path, expected type, actual value
 - Report all errors (not just first)
 - Handle both schema errors and semantic errors (orphaned links, missing references)
 - Auto-validate before output in `forge convert` (fail on invalid)
 - **Deliverable:** Schema violations reported with file locations; AC-6 passing
+- **Status:** Complete (PR #27 merged) — `validate/error_types.rs`, `validate/formatter.rs`, `validate/report.rs`, `validate/semantic.rs` modules; actionable error messages with field paths; semantic validation for orphaned references; all errors collected and reported
 
-#### Sprint 21 (Jul 20–24): Golden-File Test Suite — Core
+#### Sprint 21 (Jul 20–24): Golden-File Test Suite — Core ✅ DONE
 - Create 3+ Markdown policy test fixtures (small, medium, complex)
 - Create expected OSCAL Catalog and Component Definition outputs
 - Implement golden-file comparison harness in `cargo test`
 - Target: >95% extraction accuracy
 - **Deliverable:** `cargo test` runs golden-file comparisons; accuracy measured
+- **Status:** Complete (PR #26 merged) — `tests/golden_file_tests.rs` with small/medium/complex fixtures; insta snapshot testing for Catalog and Component Definition outputs; UUID normalization for deterministic comparisons
 
 #### Sprint 22 (Jul 27–31): Golden-File Test Suite — Edge Cases
 - Add edge case fixtures: compound statements, empty sections, missing metadata, no headings
@@ -423,19 +428,21 @@ gantt
 - Verify all EC-1 through EC-10 edge cases
 - **Deliverable:** Edge case tests passing; extraction accuracy validated
 
-#### Sprint 23 (Aug 4–8): Error Handling & Robustness
+#### Sprint 23 (Aug 4–8): Error Handling & Robustness ✅ DONE
 - Graceful handling of malformed input (no panics)
 - Descriptive error messages for: missing files, unreadable files, no structure detected
 - Non-zero exit codes for all error conditions
 - Test with adversarial inputs (empty files, binary files, huge files)
 - **Deliverable:** All error edge cases handled; no panics on any input
+- **Status:** Complete (PR #23 merged) — Structured `ForgeError` hierarchy with categorized exit codes; `anyhow` context in binary crate; graceful failure on all error conditions
 
-#### Sprint 24 (Aug 11–15): Performance & Benchmarking
+#### Sprint 24 (Aug 11–15): Performance & Benchmarking ✅ DONE
 - Create 50-page synthetic policy document
 - Benchmark full pipeline: ingest → validate → export
 - Verify <30s conversion target on commodity hardware
 - Profile and optimize hot paths if needed
 - **Deliverable:** Performance benchmark passing; results documented
+- **Status:** Complete (PR #24 merged) — Criterion benchmarks with per-stage breakdown; synthetic 50-page fixture in `tests/fixtures/`; pipeline performance within target
 
 #### Sprint 25 (Aug 18–22): Phase 1 Release
 - Final integration testing across all Must Have requirements (M-1 through M-11)
@@ -629,8 +636,8 @@ graph LR
         WI14["WI-14: Component Def ✅"]
         WI15["WI-15: Impl Reqs ✅"]
         WI16["WI-16: Traceability ✅"]
-        WI17["WI-17: Trace Embedding"]
-        WI18["WI-18: Component Pipeline"]
+        WI17["WI-17: Trace Embedding ✅"]
+        WI18["WI-18: Component Pipeline ✅"]
         WI7 --> WI9
         WI7 --> WI11
         WI8 --> WI12
@@ -646,8 +653,15 @@ graph LR
     end
 
     subgraph "T-3: Validation"
-        WI19["WI-19: Schema Val"]
-        WI21["WI-21: Golden Files"]
+        WI19["WI-19: Schema Val ✅"]
+        WI20["WI-20: Error Reporting ✅"]
+        WI21["WI-21: Golden Files ✅"]
+        WI23["WI-23: Error Handling ✅"]
+        WI24["WI-24: Benchmarks ✅"]
+        WI22["WI-22: Edge Cases"]
+        WI25["WI-25: Phase 1 Release"]
+        WI19 --> WI20
+        WI21 --> WI22
         WI16 --> WI19
         WI19 --> WI21
     end
@@ -678,8 +692,8 @@ graph LR
 | D-4 | WI-14 (Component Def) | WI-13 (Catalog Pipeline) | Internal | Brian Luby | Done | MS-3 slips |
 | D-4a | WI-15 (Impl Reqs) | WI-14 (Component Def) | Internal | Brian Luby | Done | MS-3 slips |
 | D-4b | WI-16 (Traceability) | WI-14 (Component Def) | Internal | Brian Luby | Done | MS-3 slips |
-| D-4c | WI-17 (Trace Embedding) | WI-15, WI-16 | Internal | Brian Luby | Not Started | MS-3 slips |
-| D-5 | WI-19 (Schema Val) | WI-18 (Component Pipeline) | Internal | Brian Luby | Not Started | MS-4 slips |
+| D-4c | WI-17 (Trace Embedding) | WI-15, WI-16 | Internal | Brian Luby | Done | MS-3 slips |
+| D-5 | WI-19 (Schema Val) | WI-18 (Component Pipeline) | Internal | Brian Luby | Done | MS-4 slips |
 | D-6 | WI-26 (XML Output) | WI-25 (Phase 1 Release) | Internal | Brian Luby | Not Started | MS-5 slips |
 | D-7 | WI-30 (Profile Gen) | WI-29 (Export Subcmd) | Internal | Brian Luby | Not Started | MS-6 slips |
 | D-8 | WI-19 (Schema Val) | OSCAL v1.2.0 JSON schemas | External | NIST | Available | MS-4 blocked if schemas change |
@@ -687,12 +701,12 @@ graph LR
 
 ### Critical Path :green_circle: `@llm-autonomous`
 
-> **Critical Path:** ~~WI-1 → WI-5 → WI-6 → WI-7~~ (Done) → ~~WI-9 → WI-10 → WI-11 → WI-12~~ (Done) → ~~WI-8 → WI-13~~ (Done) → ~~WI-14 → WI-15 → WI-16~~ (Done) → WI-17 → WI-18 → WI-19 → WI-21 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
+> **Critical Path:** ~~WI-1 → WI-5 → WI-6 → WI-7~~ (Done) → ~~WI-9 → WI-10 → WI-11 → WI-12~~ (Done) → ~~WI-8 → WI-13~~ (Done) → ~~WI-14 → WI-15 → WI-16~~ (Done) → ~~WI-17 → WI-18~~ (Done) → ~~WI-19 → WI-20 → WI-21~~ (Done) → ~~WI-23~~ (Done) → ~~WI-24~~ (Done) → WI-22 → WI-25 (Phase 1) → WI-26 → WI-28 → WI-30 → WI-35 (Phase 2) → WI-36 → WI-50 (Phase 3)
 >
-> **Completed:** 16 of 50 work items (WI-1 through WI-16) — MS-1 and MS-2 fully complete, MS-3 at 3/5
-> **Remaining critical path:** ~34 weeks (Sprints 17–50)
-> **Slack:** ~16+ weeks ahead of original MS-3 target (2026-07-03); significant buffer accumulated
-> **Bottleneck:** None — next up is WI-17 (trace metadata embedding)
+> **Completed:** 24 of 50 work items (WI-1 through WI-21, WI-23, WI-24) — MS-1, MS-2, MS-3 fully complete; MS-4 at 5/7
+> **Remaining critical path:** ~26 weeks (Sprints 22, 25–50)
+> **Slack:** ~20+ weeks ahead of original MS-4 target (2026-08-21); massive buffer accumulated
+> **Bottleneck:** None — next up is WI-22 (golden-file edge cases) and WI-25 (Phase 1 release)
 
 ---
 
@@ -760,8 +774,8 @@ graph LR
 |-----------|-------------|--------|-----------|----------|
 | MS-1: Markdown → Domain Model | 2026-04-24 | 8 of 8 work items done | :white_check_mark: Complete | None |
 | MS-2: First Valid Catalog | 2026-06-05 | 5 of 5 work items done | :white_check_mark: Complete | None |
-| MS-3: Component Def + Traceability | 2026-07-03 | 3 of 5 work items done | :white_check_mark: Ahead of Schedule | None — WI-17 next |
-| MS-4: Phase 1 Release (v0.1.0) | 2026-08-21 | 0 of 7 work items done | :white_check_mark: Not Started | None |
+| MS-3: Component Def + Traceability | 2026-07-03 | 5 of 5 work items done | :white_check_mark: Complete | None |
+| MS-4: Phase 1 Release (v0.1.0) | 2026-08-21 | 5 of 7 work items done | :white_check_mark: Ahead of Schedule | None — WI-22, WI-25 remaining |
 | MS-5: Multi-Format Output | 2026-09-19 | 0 of 4 work items done | :white_check_mark: Not Started | None |
 | MS-6: Profile Generation (v0.2.0) | 2026-10-31 | 0 of 6 work items done | :white_check_mark: Not Started | None |
 | MS-7: Ecosystem Release | 2027-04-01 | 0 of 15 work items done | :white_check_mark: Not Started | None |
@@ -771,8 +785,8 @@ graph LR
 | Theme | Work Items Total | Done | In Progress | Blocked | Not Started | Health |
 |-------|-----------------|------|-------------|---------|-------------|--------|
 | T-1: Core Pipeline | 8 | 8 | 0 | 0 | 0 | :white_check_mark: Complete |
-| T-2: OSCAL Generation | 10 | 8 | 0 | 0 | 2 | :white_check_mark: Ahead of Schedule |
-| T-3: Validation & Quality | 7 | 0 | 0 | 0 | 7 | :white_check_mark: Not Started |
+| T-2: OSCAL Generation | 10 | 10 | 0 | 0 | 0 | :white_check_mark: Complete |
+| T-3: Validation & Quality | 7 | 5 | 0 | 0 | 2 | :white_check_mark: Ahead of Schedule |
 | T-4: Output Format Expansion | 4 | 0 | 0 | 0 | 4 | :white_check_mark: Not Started |
 | T-5: Profile & Tailoring | 6 | 0 | 0 | 0 | 6 | :white_check_mark: Not Started |
 | T-6: Ecosystem & Community | 15 | 0 | 0 | 0 | 15 | :white_check_mark: Not Started |
@@ -782,10 +796,10 @@ graph LR
 ```mermaid
 xychart-beta
     title "Work Items Remaining by Phase"
-    x-axis ["Phase 1 Start", "Now", "MS-1", "MS-2", "MS-3", "MS-4", "MS-5", "MS-6", "MS-7"]
+    x-axis ["Phase 1 Start", "MS-1", "MS-2", "MS-3", "Now", "MS-4", "MS-5", "MS-6", "MS-7"]
     y-axis "Work Items Remaining" 0 --> 50
-    line "Planned" [50, 46, 42, 37, 32, 25, 21, 15, 0]
-    line "Actual" [50, 43, 39, 37, 34]
+    line "Planned" [50, 42, 37, 32, 28, 25, 21, 15, 0]
+    line "Actual" [50, 42, 37, 32, 26]
 ```
 
 ---
@@ -849,6 +863,7 @@ xychart-beta
 | 0.5 | 2026-02-12 | LLM (Claude) | Status update: WI-9 (Catalog groups/controls, PR #12), WI-10 (statement parts, PR #14), WI-11 (metadata, PR #11), WI-12 (back matter, PR #15) all Done and merged to main. MS-2 at 4/5 complete — only WI-8 (Citations) blocks WI-13 (Catalog Pipeline). T-2 theme at 4/10 done. Updated dependency map, critical path, milestone health, theme health, burndown, and sprint detail statuses. |
 | 0.6 | 2026-02-12 | LLM (Claude) | Status update: WI-8 (citation extraction, PR #17) and WI-13 (catalog pipeline, PR #16) both Done and merged to main. MS-1 complete (8/8). MS-2 complete (5/5). T-1 theme fully complete (8/8). T-2 at 5/10 done. 13 of 50 work items complete. Updated dependency map, critical path, milestone health, theme health, Gantt chart, burndown, and sprint detail statuses. Next up: WI-14 (Component Definition structure). |
 | 0.7 | 2026-02-13 | LLM (Claude) | Status update: WI-14 (Component Definition structure, PR #18), WI-15 (implemented-requirements, PR #19), WI-16 (traceability model, PR #20) all Done and merged to main. MS-3 at 3/5 complete. T-2 theme at 8/10 done. 16 of 50 work items complete. Expanded dependency map with WI-15/WI-17/WI-18 nodes. Added D-4a/D-4b/D-4c dependencies. Updated critical path, milestone health, theme health, burndown, and sprint detail statuses. Next up: WI-17 (trace metadata embedding). |
+| 0.8 | 2026-02-14 | LLM (Claude) | Major status update: 8 work items completed in rapid succession — WI-17 (trace embedding, PR #21), WI-18 (component pipeline, PR #22), WI-19 (schema validation, PR #25), WI-20 (error reporting, PR #27), WI-21 (golden-file tests, PR #26), WI-23 (error handling, PR #23), WI-24 (performance benchmarks, PR #24). MS-3 complete (5/5). MS-4 at 5/7. T-2 theme fully complete (10/10). T-3 at 5/7. 24 of 50 work items done. Only WI-22 (edge cases) and WI-25 (Phase 1 release) remain for Phase 1. Updated dependency map, critical path, Gantt chart, milestone health, theme health, burndown, and all sprint detail statuses. |
 
 ---
 
