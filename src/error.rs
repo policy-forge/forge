@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 #[allow(clippy::cast_precision_loss)] // Precision loss is acceptable for human-readable file sizes
-fn format_size(bytes: u64) -> String {
+fn format_size(bytes: &u64) -> String {
+    let bytes = *bytes;
     if bytes < 1_048_576 {
         format!("{:.1}KB", bytes as f64 / 1024.0)
     } else {
@@ -42,8 +43,8 @@ pub enum ForgeError {
     #[error(
         "File '{}' is {}, exceeding the {} limit. Use --max-size to increase the limit.",
         path.display(),
-        format_size(*.size_bytes),
-        format_size(*.limit_bytes)
+        format_size(.size_bytes),
+        format_size(.limit_bytes)
     )]
     FileTooLarge { path: PathBuf, size_bytes: u64, limit_bytes: u64 },
 
