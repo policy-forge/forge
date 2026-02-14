@@ -51,30 +51,8 @@ fn run_full_catalog_pipeline(fixture_path: &Path) -> Result<String, forge::Forge
     forge::uuid::assign_stable_ids(&mut doc);
     forge::citation::extract_citations(&mut doc)?;
 
-    // Step 4: Catalog Assembly
-    let mut trace_links = forge::TraceLinkCollection::new();
-    let mut catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links))?;
-    forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
-    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None)?;
-    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&[])?;
-    let back_matter = if back_matter_resources.is_empty() {
-        None
-    } else {
-        Some(forge::BackMatter { resources: back_matter_resources })
-    };
-    let envelope = forge::oscal::CatalogEnvelope {
-        catalog: forge::oscal::OscalCatalog {
-            uuid: metadata.uuid.to_string(),
-            metadata: forge::oscal::catalog::OscalMetadata {
-                title: metadata.title,
-                last_modified: metadata.last_modified.to_rfc3339(),
-                version: metadata.version,
-                oscal_version: metadata.oscal_version,
-            },
-            groups: catalog.groups,
-            back_matter,
-        },
-    };
+    // Step 4: Catalog Assembly (delegates to shared helper)
+    let envelope = build_catalog_envelope(&doc);
 
     // Step 5: Serialize
     serde_json::to_string_pretty(&envelope)
@@ -200,8 +178,8 @@ fn bench_per_stage(c: &mut Criterion) {
             .unwrap();
             let atomized = forge::parse::atomize_document(black_box(&document)).unwrap();
             let mut doc = atomized;
-            forge::uuid::assign_stable_ids(black_box(&mut doc));
-            forge::citation::extract_citations(black_box(&mut doc)).unwrap();
+            forge::uuid::assign_stable_ids(&mut doc);
+            forge::citation::extract_citations(&mut doc).unwrap();
             black_box(doc)
         });
     });
