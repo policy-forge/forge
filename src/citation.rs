@@ -784,19 +784,19 @@ mod tests {
 
         // First pass
         extract_citations(&mut doc).unwrap();
-        let text_after_first = doc.sections[0].requirements[0].text.clone();
-        let citations_after_first = doc.sections[0].requirements[0].citations.clone();
-        let text2_after_first = doc.sections[0].requirements[1].text.clone();
-        let citations2_after_first = doc.sections[0].requirements[1].citations.clone();
+        let first_text = doc.sections[0].requirements[0].text.clone();
+        let first_citations = doc.sections[0].requirements[0].citations.clone();
+        let second_text = doc.sections[0].requirements[1].text.clone();
+        let second_citations = doc.sections[0].requirements[1].citations.clone();
 
         // Second pass
         extract_citations(&mut doc).unwrap();
 
         // Text and citations should be identical after second pass
-        assert_eq!(doc.sections[0].requirements[0].text, text_after_first);
-        assert_eq!(doc.sections[0].requirements[0].citations, citations_after_first);
-        assert_eq!(doc.sections[0].requirements[1].text, text2_after_first);
-        assert_eq!(doc.sections[0].requirements[1].citations, citations2_after_first);
+        assert_eq!(doc.sections[0].requirements[0].text, first_text);
+        assert_eq!(doc.sections[0].requirements[0].citations, first_citations);
+        assert_eq!(doc.sections[0].requirements[1].text, second_text);
+        assert_eq!(doc.sections[0].requirements[1].citations, second_citations);
     }
 
     // === T034: Performance Test (SEC-6) ===

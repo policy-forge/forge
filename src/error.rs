@@ -59,6 +59,9 @@ pub enum ForgeError {
 
     #[error("Serialization error: {0}")]
     Serialization(String),
+
+    #[error("Schema validation failed: {0}")]
+    SchemaValidation(String),
 }
 
 #[cfg(test)]
@@ -174,5 +177,11 @@ mod tests {
     fn component_definition_build_error_display() {
         let err = ForgeError::ComponentDefinitionBuild("missing field".to_string());
         assert_eq!(err.to_string(), "Component definition build error: missing field");
+    }
+
+    #[test]
+    fn schema_validation_error_display() {
+        let err = ForgeError::SchemaValidation("3 errors found".to_string());
+        assert_eq!(err.to_string(), "Schema validation failed: 3 errors found");
     }
 }

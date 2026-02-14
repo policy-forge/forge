@@ -558,7 +558,7 @@ mod tests {
         let links = result["links"].as_array().expect("Must have links array");
         assert_eq!(links.len(), 1, "Must have exactly 1 source link");
         assert_eq!(links[0]["rel"], "source");
-        assert_eq!(links[0]["href"], "policies/security.md#line=99");
+        assert_eq!(links[0]["href"], "file://policies/security.md#line=99");
     }
 
     // ─── T023: No remarks in output (SEC-1, SEC-2) ──────────────────────

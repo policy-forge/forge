@@ -65,6 +65,8 @@ pub struct OscalControl {
     /// Control ID following `POL-{ABBR}-{NNN}` pattern.
     pub id: String,
     /// UUID copied from `PolicyRequirement.stable_id`.
+    /// Not serialized — OSCAL catalog schema does not allow uuid on controls.
+    #[serde(skip_serializing)]
     pub uuid: String,
     /// Derived title (first sentence, 120-char cap).
     pub title: String,
@@ -784,7 +786,8 @@ mod tests {
         // Control fields
         let ctrl = &c["groups"][0]["controls"][0];
         assert_eq!(ctrl["id"], "POL-AC-001");
-        assert_eq!(ctrl["uuid"], "uuid-1");
+        // uuid is not serialized (OSCAL catalog schema does not allow uuid on controls)
+        assert!(ctrl.get("uuid").is_none());
     }
 
     // ── T023: JSON round-trip ───────────────────────────

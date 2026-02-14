@@ -59,7 +59,19 @@ pub enum Commands {
     Validate {
         /// Path to the OSCAL artifact to validate
         input: PathBuf,
+
+        /// Override auto-detected OSCAL model type
+        #[arg(long, value_enum)]
+        schema_type: Option<SchemaType>,
     },
+}
+
+/// CLI enum for --schema-type override.
+#[derive(ValueEnum, Clone, Debug)]
+pub enum SchemaType {
+    Catalog,
+    #[value(name = "component-definition")]
+    ComponentDefinition,
 }
 
 #[derive(ValueEnum, Clone, Debug)]
@@ -92,7 +104,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 source_profile.as_deref(),
             )
         }
-        Commands::Validate { input } => validate::execute(input),
+        Commands::Validate { input, schema_type } => validate::execute(input, schema_type.as_ref()),
     }
 }
 
@@ -124,8 +136,38 @@ mod tests {
     #[test]
     fn parse_validate_subcommand() {
         let cli = Cli::try_parse_from(["forge", "validate", "artifact.json"]).unwrap();
-        if let Commands::Validate { input } = cli.command {
+        if let Commands::Validate { input, schema_type } = cli.command {
             assert_eq!(input, PathBuf::from("artifact.json"));
+            assert!(schema_type.is_none());
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_with_schema_type_catalog() {
+        let cli =
+            Cli::try_parse_from(["forge", "validate", "artifact.json", "--schema-type", "catalog"])
+                .unwrap();
+        if let Commands::Validate { schema_type, .. } = cli.command {
+            assert!(matches!(schema_type, Some(SchemaType::Catalog)));
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_with_schema_type_component_definition() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "validate",
+            "artifact.json",
+            "--schema-type",
+            "component-definition",
+        ])
+        .unwrap();
+        if let Commands::Validate { schema_type, .. } = cli.command {
+            assert!(matches!(schema_type, Some(SchemaType::ComponentDefinition)));
         } else {
             panic!("Expected Validate command");
         }
