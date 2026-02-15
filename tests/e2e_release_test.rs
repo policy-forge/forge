@@ -188,11 +188,8 @@ fn test_m5_metadata_fields_present() {
     // Catalog-level UUID
     let uuid = json["catalog"]["uuid"].as_str().expect("catalog.uuid should be a string");
     assert!(!uuid.is_empty(), "catalog.uuid should be non-empty");
-    // Validate UUID format (8-4-4-4-12 hex)
-    assert!(
-        uuid.len() == 36 && uuid.chars().filter(|c| *c == '-').count() == 4,
-        "catalog.uuid should be a valid UUID format (8-4-4-4-12)"
-    );
+    // Validate UUID format using the uuid crate (strict parse)
+    assert!(uuid::Uuid::parse_str(uuid).is_ok(), "catalog.uuid should be a valid UUID");
 }
 
 /// T007 [US1] M-6, AC-6: Convert then validate generated catalog.
@@ -427,7 +424,7 @@ fn test_m11_no_arbitrary_remarks() {
 /// T017 [US2] M-2, AC-2: Atomize compound statements into separate controls.
 #[test]
 fn test_m2_atomize_compound_statements() {
-    // Use the golden/complex fixture which has compound statements
+    // Use tests/fixtures/full_policy.md, which contains compound statements
     let input = std::path::Path::new("tests/fixtures/full_policy.md");
     assert!(input.exists(), "full_policy.md fixture should exist");
 
@@ -468,6 +465,17 @@ fn test_m2_atomize_compound_statements() {
     // Both should exist as separate entries (atomization worked)
     assert!(!auth_controls.is_empty(), "Auth logging control should exist");
     assert!(!priv_controls.is_empty(), "Privilege logging control should exist");
+
+    // Verify the compound statement was split into distinct single-statement controls.
+    // Section-level prose (multi-line) preserves original text, so filter to single statements only.
+    let single_statements: Vec<_> = all_prose.iter().filter(|p| !p.contains('\n')).collect();
+    let combined_single = single_statements
+        .iter()
+        .any(|p| p.contains("authentication") && p.contains("privilege") && p.contains("and must"));
+    assert!(
+        !combined_single,
+        "Compound statement should be atomized into separate single-statement controls"
+    );
 }
 
 /// T018 [US2] M-4, AC-4: Valid Component Definition structure.

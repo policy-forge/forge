@@ -26,19 +26,18 @@
 ### Rationale
 - `cargo-dist` automates the generation of complex cross-platform CI workflows
 - Produces binaries for Linux x86_64, macOS x86_64 + ARM64, and Windows x86_64
-- One-time setup via `cargo dist init` generates `dist-workspace.toml` and `.github/workflows/release.yml`
 - Aligns with AR Option 1 (selected)
-- Standard in the Rust ecosystem for CLI tool releases
+
+**Implementation note**: A manual GitHub Actions matrix workflow was used instead of cargo-dist. For a single-binary project, a hand-written workflow is simpler and avoids the cargo-dist build-tool dependency while achieving the same result.
 
 ### Configuration Steps
-1. Install: `cargo install cargo-dist`
-2. Initialize: `cargo dist init` — select targets (linux-x64, macos-x64, macos-arm64, windows-x64)
-3. Generated files: `dist-workspace.toml`, `.github/workflows/release.yml`
-4. Commit generated workflow files
-5. Release is triggered by pushing a git tag matching `v*`
+1. Create `.github/workflows/release.yml` with cross-platform build matrix
+2. Configure targets: linux-x64, macos-x64, macos-arm64, windows-x64
+3. Workflow uses env variables for all user-controllable inputs (security best practice)
+4. Release is triggered by pushing a git tag matching `v*`
 
 ### Alternatives Considered
-- **Manual GitHub Actions**: Full control but complex cross-compilation maintenance
+- **cargo-dist**: Standard Rust ecosystem tool but adds build-time dependency and interactive init step
 - **Source-only release**: Simplest but requires Rust toolchain from users
 
 ---

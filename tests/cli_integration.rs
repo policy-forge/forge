@@ -1115,6 +1115,12 @@ fn test_verbose_flag_shows_pipeline_stages() {
     // Verbose mode enables DEBUG level — should show some tracing output
     assert!(!stderr.is_empty(), "Verbose mode should produce tracing output on stderr");
 
+    // Verify tracing output contains expected level indicators from tracing_subscriber
+    assert!(
+        stderr.contains("DEBUG") || stderr.contains("INFO") || stderr.contains("TRACE"),
+        "Verbose mode should include DEBUG/INFO/TRACE level output on stderr: {stderr}"
+    );
+
     // stdout should contain JSON output, not tracing messages
     assert!(stdout.contains("catalog"), "stdout should contain OSCAL JSON, not tracing: {stdout}");
 }

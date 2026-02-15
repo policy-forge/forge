@@ -97,7 +97,7 @@ FORGE processes a Markdown policy document through a deterministic pipeline:
 
 ## Project Structure
 
-```
+```text
 src/
   main.rs              Entry point (verbose/quiet filter wiring)
   lib.rs               Module declarations and public API
@@ -146,7 +146,7 @@ benches/               Criterion benchmarks
 ```bash
 cargo build                    # Debug build
 cargo build --release          # Release build
-cargo test                     # Run all tests (680+ tests)
+cargo test                     # Run all tests (682 tests)
 cargo clippy -- -D warnings    # Lint (warnings as errors)
 cargo fmt --check              # Check formatting
 cargo bench                    # Run benchmarks
