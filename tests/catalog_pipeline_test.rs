@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use forge::cli::OutputFormat;
 use tempfile::TempDir;
 
 /// Helper: run pipeline on `full_policy.md` fixture, return parsed JSON
@@ -10,8 +11,12 @@ fn run_pipeline_on_fixture() -> serde_json::Value {
     let dir = TempDir::new().unwrap();
     let output_path = dir.path().join("catalog.json");
 
-    let result =
-        forge::pipeline::run_catalog_pipeline(fixture, Some(&output_path), 10 * 1024 * 1024);
+    let result = forge::pipeline::run_catalog_pipeline(
+        fixture,
+        Some(&output_path),
+        10 * 1024 * 1024,
+        &OutputFormat::Json,
+    );
     assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
     let json_str = std::fs::read_to_string(&output_path)
@@ -265,7 +270,12 @@ fn pipeline_no_sections_produces_empty_groups() {
     std::fs::write(&path, "Some requirement without any section heading.\n").unwrap();
 
     let output_path = dir.path().join("output.json");
-    let result = forge::pipeline::run_catalog_pipeline(&path, Some(&output_path), 10 * 1024 * 1024);
+    let result = forge::pipeline::run_catalog_pipeline(
+        &path,
+        Some(&output_path),
+        10 * 1024 * 1024,
+        &OutputFormat::Json,
+    );
 
     // EC-6: Input with no sections should produce a NoStructureDetected error
     match result {

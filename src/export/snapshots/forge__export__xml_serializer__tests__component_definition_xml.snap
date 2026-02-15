@@ -1,0 +1,19 @@
+---
+source: src/export/xml_serializer.rs
+expression: xml
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<component-definition xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="660e8400-e29b-41d4-a716-446655440000">
+  <metadata>
+    <title>Test Policy</title>
+    <last-modified>2026-02-15T12:00:00Z</last-modified>
+    <version>1.0</version>
+    <oscal-version>1.2.0</oscal-version>
+  </metadata>
+  <component uuid="770e8400-e29b-41d4-a716-446655440000" type="policy">
+    <title>Test Policy</title>
+    <description>
+      <p>Documentary component representing the Test Policy policy document.</p>
+    </description>
+  </component>
+</component-definition>

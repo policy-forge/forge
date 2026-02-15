@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use super::parts::{OscalPart, OscalProp, build_control_parts, build_control_props};
@@ -18,7 +18,7 @@ use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 
 /// JSON envelope producing `{"catalog": {...}}` at the top level.
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CatalogEnvelope {
     /// The OSCAL Catalog.
     pub catalog: OscalCatalog,
@@ -27,63 +27,64 @@ pub struct CatalogEnvelope {
 /// OSCAL Catalog root structure.
 ///
 /// Metadata and UUID are placeholders — populated by WI-11.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OscalCatalog {
     /// Placeholder UUID.
     pub uuid: String,
     /// Placeholder metadata (WI-11).
     pub metadata: OscalMetadata,
     /// Groups mapped from `PolicySection`s.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub groups: Vec<OscalGroup>,
     /// Back matter containing reference resources (WI-12).
-    #[serde(rename = "back-matter", skip_serializing_if = "Option::is_none")]
+    #[serde(default, rename = "back-matter", skip_serializing_if = "Option::is_none")]
     pub back_matter: Option<crate::oscal::back_matter::BackMatter>,
 }
 
 /// OSCAL Group mapped from a [`PolicySection`].
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OscalGroup {
     /// Slugified section title (e.g., `"access-control"`).
     pub id: String,
     /// Section title verbatim.
     pub title: String,
     /// Group-level properties (e.g., source-section for traceability).
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub props: Vec<OscalProp>,
     /// Group-level links.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub links: Vec<crate::oscal::back_matter::OscalLink>,
     /// Controls mapped from requirements.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub controls: Vec<OscalControl>,
 }
 
 /// OSCAL Control mapped from a [`PolicyRequirement`].
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OscalControl {
     /// Control ID following `POL-{ABBR}-{NNN}` pattern.
     pub id: String,
     /// UUID copied from `PolicyRequirement.stable_id`.
     /// Not serialized — OSCAL catalog schema does not allow uuid on controls.
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, default)]
     pub uuid: String,
     /// Derived title (first sentence, 120-char cap).
     pub title: String,
     /// Links to back matter resources (WI-12).
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub links: Vec<crate::oscal::back_matter::OscalLink>,
     /// Parts array: statement part (mandatory) + optional guidance/objective.
     /// NOT skip-serialized — always present per FR-001.
+    #[serde(default)]
     pub parts: Vec<OscalPart>,
     /// Props array: trace metadata added by post-processing (WI-17).
     /// Omitted from JSON when empty.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub props: Vec<OscalProp>,
 }
 
 /// Placeholder metadata — fully implemented in WI-11.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OscalMetadata {
     /// Document title (placeholder: `"placeholder"`).
     pub title: String,

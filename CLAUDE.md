@@ -80,3 +80,10 @@ Rust edition 2024, stable 1.93.0.
 24 of 25 work items complete (WI-1 through WI-24). Remaining: WI-25 (Phase 1 release).
 
 See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
+
+## Active Technologies
+- Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4 (026-xml-output)
+- N/A — file output only (stdout or file path) (026-xml-output)
+
+## Recent Changes
+- 026-xml-output: Added Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4
