@@ -79,6 +79,8 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 - Rust edition 2024, stable 1.93.0 + serde_json 1.x (existing), insta (NEW — latest stable, `json` feature, dev-dependency), regex 1.x (existing, for UUID pattern matching) (021-prd-golden-file-tests)
 - N/A — file-based test fixtures (read-only); insta `.snap` files generated alongside tests (021-prd-golden-file-tests)
 - Rust edition 2024, stable 1.93.0 + jsonschema 0.41.0 (WI-19), serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, clap 4.x, anyhow 1.x — all existing, no new dependencies (020-prd-validation-error-reporting)
+- Rust (edition 2024, stable 1.93.0) + clap 4.x, serde 1.x, serde_json 1.x, pulldown-cmark 0.13.x, uuid 1.20.0, chrono 0.4, sha2 0.10.9, thiserror 2.0.18, tracing 0.1.44, anyhow 1.x, jsonschema 0.41.0, url 2.5 — all existing, no new runtime dependencies (025-prd-phase1-release)
+- Filesystem (read input .md, write output .json) (025-prd-phase1-release)
 
 ## Recent Changes
 - 002-markdown-ingestion: Added Rust (edition 2024, stable 1.93.0) + clap 4, thiserror 2.0.18 + NEW: serde 1.x, serde_json 1.x, sha2 0.10.x
