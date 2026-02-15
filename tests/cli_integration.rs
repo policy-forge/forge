@@ -948,3 +948,261 @@ fn exit_code_3_for_validate_command() {
     assert!(!output.status.success(), "Expected non-zero exit code");
     assert_eq!(output.status.code(), Some(3), "Validation error should exit with code 3");
 }
+
+// =========================================================================
+// WI-25 Phase 3: User Story 1 — Error message tests (T013, T014)
+// =========================================================================
+
+/// T013 [US1] S-3, AC-11, SEC-4: Missing file produces descriptive error, no panic.
+#[test]
+fn test_error_message_missing_file() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("absolutely_nonexistent_file.md")
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Should contain descriptive error with file path
+    assert!(
+        stderr.contains("not found") || stderr.contains("No such file"),
+        "Error should mention file not found: {stderr}"
+    );
+
+    // SEC-4: No internal Rust module paths in error
+    assert!(
+        !stderr.contains("src::") && !stderr.contains("src/"),
+        "Error should not contain internal Rust paths (SEC-4): {stderr}"
+    );
+
+    // No panic/backtrace
+    assert!(
+        !stderr.contains("panicked") && !stderr.contains("RUST_BACKTRACE"),
+        "Error should not contain panic output: {stderr}"
+    );
+}
+
+/// T014 [US1] EC-5, SEC-4: Invalid JSON for validate produces descriptive error.
+#[test]
+fn test_error_message_invalid_json_for_validate() {
+    let dir = TempDir::new().unwrap();
+    let path = create_temp_md(&dir, "not_json.json", "This is not JSON content at all.");
+
+    let output =
+        forge_bin().arg("validate").arg(&path).output().expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Should mention JSON or parse error
+    assert!(
+        stderr.contains("JSON") || stderr.contains("parse") || stderr.contains("json"),
+        "Error should mention JSON parse issue: {stderr}"
+    );
+
+    // SEC-4: No internal Rust module paths
+    assert!(
+        !stderr.contains("src::") && !stderr.contains("src/"),
+        "Error should not contain internal Rust paths (SEC-4): {stderr}"
+    );
+}
+
+// =========================================================================
+// WI-25 Phase 5: User Story 3 — CLI Help and Discoverability (T021-T024)
+// =========================================================================
+
+/// T021 [US3] M-5, AC-5, EC-3: Help text lists all subcommands.
+#[test]
+fn test_help_text_lists_all_subcommands() {
+    let output = forge_bin().arg("--help").output().expect("Failed to execute process");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(output.status.success(), "Expected success exit code");
+
+    // Must contain both subcommands
+    assert!(stdout.contains("convert"), "Help should list 'convert': {stdout}");
+    assert!(stdout.contains("validate"), "Help should list 'validate': {stdout}");
+
+    // Must mention verbose/quiet flags
+    assert!(
+        stdout.contains("verbose") || stdout.contains("-v"),
+        "Help should mention verbose flag: {stdout}"
+    );
+    assert!(
+        stdout.contains("quiet") || stdout.contains("-q"),
+        "Help should mention quiet flag: {stdout}"
+    );
+}
+
+/// T022 [US3] M-5: Convert help lists all options.
+#[test]
+fn test_convert_help_lists_all_options() {
+    let output =
+        forge_bin().args(["convert", "--help"]).output().expect("Failed to execute process");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(output.status.success(), "Expected success exit code");
+
+    // All convert options
+    assert!(stdout.contains("strategy"), "Should list --strategy: {stdout}");
+    assert!(stdout.contains("format"), "Should list --format: {stdout}");
+    assert!(stdout.contains("output"), "Should list --output: {stdout}");
+    assert!(stdout.contains("max-size"), "Should list --max-size: {stdout}");
+    assert!(stdout.contains("source-profile"), "Should list --source-profile: {stdout}");
+}
+
+/// T023 [US3] M-5: Validate help lists all options.
+#[test]
+fn test_validate_help_lists_all_options() {
+    let output =
+        forge_bin().args(["validate", "--help"]).output().expect("Failed to execute process");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(output.status.success(), "Expected success exit code");
+
+    // All validate options
+    assert!(stdout.contains("schema-type"), "Should list --schema-type: {stdout}");
+    assert!(stdout.contains("format"), "Should list --format: {stdout}");
+}
+
+/// T024 [US3]: Version flag outputs version string.
+#[test]
+fn test_version_flag() {
+    let output = forge_bin().arg("--version").output().expect("Failed to execute process");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(output.status.success(), "Expected success exit code");
+    assert!(stdout.contains("forge"), "Version output should contain 'forge': {stdout}");
+}
+
+// =========================================================================
+// WI-25 Phase 6: User Story 4 — Verbose/Quiet Output Control (T029-T031)
+// =========================================================================
+
+/// T029 [US4] S-1, AC-8, SEC-7: Verbose flag shows pipeline stage messages on stderr.
+#[test]
+fn test_verbose_flag_shows_pipeline_stages() {
+    let dir = TempDir::new().unwrap();
+    let content =
+        "---\ntitle: \"Test\"\nversion: \"1.0\"\n---\n\n# Section\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
+
+    let output = forge_bin()
+        .arg("--verbose")
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(output.status.success(), "Expected success with --verbose, stderr: {stderr}");
+
+    // SEC-7: tracing output should be on stderr, not stdout
+    // Verbose mode enables DEBUG level — should show some tracing output
+    assert!(!stderr.is_empty(), "Verbose mode should produce tracing output on stderr");
+
+    // Verify tracing output contains expected level indicators from tracing_subscriber
+    assert!(
+        stderr.contains("DEBUG") || stderr.contains("INFO") || stderr.contains("TRACE"),
+        "Verbose mode should include DEBUG/INFO/TRACE level output on stderr: {stderr}"
+    );
+
+    // stdout should contain JSON output, not tracing messages
+    assert!(stdout.contains("catalog"), "stdout should contain OSCAL JSON, not tracing: {stdout}");
+}
+
+/// T030 [US4] S-1, AC-9: Quiet flag suppresses non-essential output.
+#[test]
+fn test_quiet_flag_suppresses_output() {
+    let dir = TempDir::new().unwrap();
+    let content =
+        "---\ntitle: \"Test\"\nversion: \"1.0\"\n---\n\n# Section\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
+
+    let output = forge_bin()
+        .arg("--quiet")
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(output.status.success(), "Expected success with --quiet, stderr: {stderr}");
+
+    // Quiet mode sets tracing_subscriber filter to "error" level, which suppresses
+    // INFO/WARN/DEBUG prefixes from tracing output (only ERROR-level messages appear).
+    assert!(
+        !stderr.contains("INFO") && !stderr.contains("WARN") && !stderr.contains("DEBUG"),
+        "Quiet mode should suppress INFO/WARN/DEBUG on stderr: {stderr}"
+    );
+
+    // stdout should still have JSON output
+    assert!(
+        stdout.contains("catalog"),
+        "stdout should contain OSCAL JSON even in quiet mode: {stdout}"
+    );
+}
+
+/// T031 [US4] S-1, EC-4: Verbose + quiet conflict produces clear error.
+#[test]
+fn test_verbose_quiet_conflict_error() {
+    let output = forge_bin()
+        .arg("--verbose")
+        .arg("--quiet")
+        .arg("convert")
+        .arg("test.md")
+        .arg("--strategy")
+        .arg("catalog")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code for --verbose --quiet conflict");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    // clap should report the conflict
+    assert!(
+        stderr.contains("cannot be used with") || stderr.contains("conflict"),
+        "Error should mention flag conflict: {stderr}"
+    );
+}
+
+/// Test that --max-size with an overflow-inducing value produces a validation error, not a panic.
+#[test]
+fn test_convert_max_size_overflow_produces_error() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("test.md")
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .arg("--max-size")
+        .arg("18446744073709551")
+        .output()
+        .expect("Failed to execute process");
+
+    assert!(!output.status.success(), "Expected non-zero exit code for overflow --max-size");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("too large"), "Should report --max-size value is too large: {stderr}");
+}

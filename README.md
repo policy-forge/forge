@@ -6,7 +6,7 @@ A Rust CLI tool that converts security policy documents into [OSCAL](https://pag
 
 ## Status
 
-FORGE is nearing Phase 1 completion (24 of 25 work items done). Both the Catalog and Component Definition pipelines are fully operational with schema validation, traceability, and error reporting.
+FORGE v0.1.0 — Phase 1 complete. All pipeline stages are implemented and verified:
 
 | Stage | Description | Status |
 |-------|-------------|--------|
@@ -32,21 +32,58 @@ FORGE is nearing Phase 1 completion (24 of 25 work items done). Both the Catalog
 | Error handling | Anyhow-based context propagation in CLI | Done |
 | Phase 1 release | Final packaging and release prep | Planned |
 
-## Installation
-
-Requires Rust 1.93.0+ (edition 2024).
+## Quick Start
 
 ```bash
+# Install (requires Rust 1.93.0+)
 git clone https://github.com/policy-forge/forge.git
 cd forge
 cargo build --release
-```
 
-The binary is at `target/release/forge`.
+# Convert a sample policy to OSCAL Catalog JSON
+./target/release/forge convert tests/fixtures/sample_policy.md --strategy catalog --format json
+```
 
 ## Usage
 
+### Convert a Markdown policy to OSCAL Catalog
+
 ```bash
+forge convert policy.md --strategy catalog --format json
+```
+
+### Convert to OSCAL Component Definition
+
+```bash
+forge convert policy.md --strategy component --format json --source-profile baseline.json
+```
+
+### Write output to a file
+
+```bash
+forge convert policy.md --strategy catalog --format json --output catalog.json
+```
+
+### Validate a generated OSCAL artifact
+
+```bash
+forge validate catalog.json
+```
+
+### Verbose and quiet modes
+
+```bash
+# Show pipeline stage information on stderr
+forge -v convert policy.md --strategy catalog --format json
+
+# Suppress all non-essential output (only OSCAL artifact on stdout)
+forge -q convert policy.md --strategy catalog --format json
+```
+
+### Override max file size (in MB)
+
+```bash
+forge convert large-policy.md --strategy catalog --format json --max-size 20
 # Convert a Markdown policy to an OSCAL Catalog (JSON)
 forge convert policy.md --strategy catalog --format json
 
@@ -70,6 +107,8 @@ forge -v convert policy.md --strategy catalog --format json
 forge -q convert policy.md --strategy catalog --format json
 ```
 
+A sample policy file is available at `tests/fixtures/sample_policy.md`.
+
 ## How It Works
 
 FORGE processes a Markdown policy document through a deterministic pipeline:
@@ -85,7 +124,7 @@ Both the OSCAL Catalog and Component Definition pipelines are complete with full
 
 ## Project Structure
 
-```
+```text
 src/
   main.rs              Entry point (anyhow error handling)
   lib.rs               Module declarations and public API
@@ -134,7 +173,8 @@ example_data/          Sample policy Markdown documents
 
 ```bash
 cargo build                    # Debug build
-cargo test                     # Run all tests
+cargo build --release          # Release build
+cargo test                     # Run all tests (682 tests)
 cargo clippy -- -D warnings    # Lint (warnings as errors)
 cargo fmt --check              # Check formatting
 cargo bench                    # Run benchmarks

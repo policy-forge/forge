@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        run: cargo build --release --target "$BUILD_TARGET"
+
+      - name: Package (Unix)
+        if: matrix.archive == 'tar.gz'
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          cd "target/${BUILD_TARGET}/release"
+          tar czf "../../../forge-${TAG_NAME}-${BUILD_TARGET}.tar.gz" forge
+          cd ../../..
+
+      - name: Package (Windows)
+        if: matrix.archive == 'zip'
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+          TAG_NAME: ${{ github.ref_name }}
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "target/${env:BUILD_TARGET}/release/forge.exe" -DestinationPath "forge-${env:TAG_NAME}-${env:BUILD_TARGET}.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-${{ matrix.target }}
+          path: forge-*.*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/*

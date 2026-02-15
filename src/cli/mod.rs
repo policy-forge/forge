@@ -11,6 +11,13 @@ use crate::ForgeError;
 #[command(
     name = "forge",
     about = "FORGE — Framework for OSCAL Risk & Governance Execution",
+    long_about = "FORGE — Framework for OSCAL Risk & Governance Execution\n\n\
+        Converts security policy documents (Markdown) into machine-readable OSCAL\n\
+        (Open Security Controls Assessment Language) JSON artifacts.\n\n\
+        Pipeline: Ingest → Parse → Atomize → Map → Serialize → Validate\n\n\
+        Supported output strategies:\n\
+         catalog     OSCAL Catalog (groups, controls, statements)\n\
+         component   OSCAL Component Definition (implemented requirements)",
     version,
     arg_required_else_help = true
 )]
@@ -18,11 +25,11 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Enable verbose output
+    /// Enable verbose output showing pipeline stage information
     #[arg(short, long, global = true, conflicts_with = "quiet")]
     pub verbose: bool,
 
-    /// Suppress non-essential output
+    /// Suppress all non-essential output (only OSCAL artifact on stdout)
     #[arg(short, long, global = true)]
     pub quiet: bool,
 }
@@ -31,42 +38,40 @@ pub struct Cli {
 pub enum Commands {
     /// Convert a policy document to OSCAL format
     Convert {
-        /// Path to the input policy document
+        /// Path to the input Markdown policy document (.md)
         input: PathBuf,
 
-        /// Conversion strategy
+        /// Conversion strategy: 'catalog' for OSCAL Catalog, 'component' for Component Definition
         #[arg(long)]
         strategy: Strategy,
 
-        /// Output format
+        /// Output format (currently only 'json' is supported)
         #[arg(long, default_value = "json")]
         format: OutputFormat,
 
-        /// Output file path
+        /// Write output to a file instead of stdout
         #[arg(long)]
         output: Option<PathBuf>,
 
-        /// Maximum file size in MB
+        /// Maximum input file size in MB (default: 10)
         #[arg(long, default_value = "10")]
         max_size: u64,
 
-        /// Source profile/baseline reference for component strategy
+        /// Source profile/baseline reference for component strategy (e.g., path to OSCAL profile JSON)
         #[arg(long)]
         source_profile: Option<String>,
     },
 
-    /// Validate an OSCAL artifact against schemas
+    /// Validate an OSCAL artifact against JSON schemas
     Validate {
-        /// Path to the OSCAL artifact to validate
+        /// Path to the OSCAL JSON artifact to validate
         input: PathBuf,
 
-        /// Override auto-detected OSCAL model type
+        /// Override auto-detected OSCAL model type (catalog or component-definition)
         #[arg(long, value_enum)]
         schema_type: Option<SchemaType>,
 
-        /// Output format for validation results.
-        /// Note: error reports may contain field values from the input artifact;
-        /// treat reports with the same sensitivity classification as the input.
+        /// Output format for validation results (text or json)
         #[arg(long, value_enum, default_value = "text")]
         format: ValidateOutputFormat,
     },
