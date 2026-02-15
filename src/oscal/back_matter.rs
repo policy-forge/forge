@@ -97,12 +97,18 @@ pub struct Prop {
 
 // ─── URL Classification ─────────────────────────────────────────────────
 
+/// URL schemes that are actively dangerous if rendered as clickable links.
+/// These are stripped from rlink hrefs entirely (SEC-2).
+const DANGEROUS_SCHEMES: &[&str] = &["javascript", "data", "vbscript"];
+
 /// Classification of a citation's URL field.
 enum UrlClassification {
     /// Valid http/https URL.
     Valid(url::Url),
-    /// Malformed or non-http/https scheme — preserve URL, annotate.
+    /// Non-http/https scheme that is NOT actively dangerous — preserve URL, annotate.
     Malformed(String),
+    /// Dangerous scheme (javascript:, data:, vbscript:) — href stripped, annotated only.
+    Dangerous(String),
     /// No URL — bibliographic-only citation.
     None,
 }
@@ -131,6 +137,9 @@ fn classify_url(url_opt: Option<&String>) -> UrlClassification {
     match url::Url::parse(raw) {
         Ok(parsed) if parsed.scheme() == "http" || parsed.scheme() == "https" => {
             UrlClassification::Valid(parsed)
+        }
+        Ok(parsed) if DANGEROUS_SCHEMES.contains(&parsed.scheme()) => {
+            UrlClassification::Dangerous(raw.clone())
         }
         Ok(_) | Err(_) => UrlClassification::Malformed(raw.clone()),
     }
@@ -236,6 +245,23 @@ pub fn generate_back_matter(
                     Some(ResourceCitation { text: citation.text.clone() })
                 };
                 (rlinks, citation_field, props)
+            }
+            UrlClassification::Dangerous(raw_url) => {
+                tracing::warn!(
+                    citation_id = %citation.id,
+                    url = %raw_url,
+                    "Dangerous URL scheme stripped from rlink href (SEC-2)"
+                );
+                let props = vec![Prop {
+                    name: "url-status".to_string(),
+                    value: "dangerous-scheme-removed".to_string(),
+                }];
+                let citation_field = if citation.text.is_empty() {
+                    None
+                } else {
+                    Some(ResourceCitation { text: citation.text.clone() })
+                };
+                (vec![], citation_field, props)
             }
             UrlClassification::None => {
                 let citation_field = Some(ResourceCitation { text: citation.text.clone() });
@@ -471,20 +497,28 @@ mod tests {
     }
 
     #[test]
-    fn javascript_scheme_gets_unvalidated_prop() {
+    fn javascript_scheme_stripped_from_rlinks() {
         let citations = vec![url_citation("c1", "JS ref", "javascript:alert(1)")];
         let (resources, _) = generate_back_matter(&citations).unwrap();
+        assert!(resources[0].rlinks.is_empty(), "Dangerous scheme must not appear in rlinks");
         assert!(
-            resources[0].props.iter().any(|p| p.name == "url-status" && p.value == "unvalidated")
+            resources[0]
+                .props
+                .iter()
+                .any(|p| p.name == "url-status" && p.value == "dangerous-scheme-removed")
         );
     }
 
     #[test]
-    fn data_scheme_gets_unvalidated_prop() {
+    fn data_scheme_stripped_from_rlinks() {
         let citations = vec![url_citation("c1", "Data ref", "data:text/plain;base64,SGVsbG8=")];
         let (resources, _) = generate_back_matter(&citations).unwrap();
+        assert!(resources[0].rlinks.is_empty(), "Dangerous scheme must not appear in rlinks");
         assert!(
-            resources[0].props.iter().any(|p| p.name == "url-status" && p.value == "unvalidated")
+            resources[0]
+                .props
+                .iter()
+                .any(|p| p.name == "url-status" && p.value == "dangerous-scheme-removed")
         );
     }
 

@@ -242,10 +242,21 @@ fn normalize_prose(text: &str) -> String {
     result = result.replace("( )", "");
     result = result.replace("()", "");
 
-    // Collapse consecutive spaces
-    while result.contains("  ") {
-        result = result.replace("  ", " ");
+    // Collapse consecutive spaces (single-pass via split_whitespace-style approach)
+    let mut collapsed = String::with_capacity(result.len());
+    let mut prev_space = false;
+    for ch in result.chars() {
+        if ch == ' ' {
+            if !prev_space {
+                collapsed.push(' ');
+            }
+            prev_space = true;
+        } else {
+            collapsed.push(ch);
+            prev_space = false;
+        }
     }
+    result = collapsed;
 
     // Normalize punctuation artifacts from stripping
     result = result.replace(", ,", ",");

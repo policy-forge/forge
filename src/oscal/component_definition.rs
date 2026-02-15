@@ -220,17 +220,18 @@ fn generate_component_uuid(title: &str, version: &str, document_id: &str) -> Uui
     Uuid::new_v5(&COMPONENT_NAMESPACE, input.as_bytes())
 }
 
-/// Maximum recursion depth for section tree traversal (DoS protection).
+/// Maximum recursion depth for section tree traversal (`DoS` protection).
 const MAX_SECTION_DEPTH: usize = 50;
 
-/// Maximum number of unique citations to collect (DoS protection).
+/// Maximum number of unique citations to collect (`DoS` protection).
 const MAX_CITATIONS: usize = 10_000;
 
 /// Recursively collect all unique citations from all requirements across all sections.
 ///
 /// Deduplicates by citation `id` to prevent duplicate back-matter resources.
 /// Enforces depth and count bounds to prevent unbounded memory allocation.
-fn collect_all_citations(sections: &[PolicySection]) -> Vec<Citation> {
+#[must_use]
+pub fn collect_all_citations(sections: &[PolicySection]) -> Vec<Citation> {
     let mut citations = Vec::new();
     let mut seen = HashSet::new();
     for section in sections {

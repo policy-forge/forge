@@ -15,7 +15,7 @@ expression: normalized
             "id": "POL-AC-001",
             "links": [
               {
-                "href": "NORMALIZED_PATH#line=12",
+                "href": "input.md#line=12",
                 "rel": "source"
               }
             ],
@@ -54,7 +54,7 @@ expression: normalized
             "id": "POL-AC-002",
             "links": [
               {
-                "href": "NORMALIZED_PATH#line=13",
+                "href": "input.md#line=13",
                 "rel": "source"
               }
             ],
@@ -93,7 +93,7 @@ expression: normalized
             "id": "POL-AC-003",
             "links": [
               {
-                "href": "NORMALIZED_PATH#line=14",
+                "href": "input.md#line=14",
                 "rel": "source"
               }
             ],
@@ -132,7 +132,7 @@ expression: normalized
             "id": "POL-AC-004",
             "links": [
               {
-                "href": "NORMALIZED_PATH#line=15",
+                "href": "input.md#line=15",
                 "rel": "source"
               }
             ],

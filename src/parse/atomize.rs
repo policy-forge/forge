@@ -288,34 +288,16 @@ pub fn atomize_requirement(
 /// assert_eq!(result.sections[0].requirements.len(), 2);
 /// ```
 pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, ForgeError> {
-    let mut new_sections = Vec::with_capacity(document.sections.len());
     let mut split_count: usize = 0;
     let mut preserved_count: usize = 0;
 
-    for section in &document.sections {
-        let mut new_requirements = Vec::new();
+    let new_sections = document
+        .sections
+        .iter()
+        .map(|s| atomize_section(s, &mut split_count, &mut preserved_count))
+        .collect::<Result<Vec<_>, _>>()?;
 
-        for requirement in &section.requirements {
-            let result = atomize_requirement(requirement)?;
-            if result.was_split {
-                split_count += 1;
-            } else {
-                preserved_count += 1;
-            }
-            new_requirements.extend(result.requirements);
-        }
-
-        new_sections.push(PolicySection {
-            title: section.title.clone(),
-            heading_level: section.heading_level,
-            source_line: section.source_line,
-            body_text: section.body_text.clone(),
-            children: section.children.clone(),
-            requirements: new_requirements,
-        });
-    }
-
-    let total_after: usize = new_sections.iter().map(|s| s.requirements.len()).sum();
+    let total_after: usize = count_requirements_recursive(&new_sections);
     debug!(
         total = total_after,
         split = split_count,
@@ -328,6 +310,45 @@ pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, For
         metadata: document.metadata.clone(),
         sections: new_sections,
     })
+}
+
+/// Recursively atomize a section and all its children.
+fn atomize_section(
+    section: &PolicySection,
+    split_count: &mut usize,
+    preserved_count: &mut usize,
+) -> Result<PolicySection, ForgeError> {
+    let mut new_requirements = Vec::new();
+
+    for requirement in &section.requirements {
+        let result = atomize_requirement(requirement)?;
+        if result.was_split {
+            *split_count += 1;
+        } else {
+            *preserved_count += 1;
+        }
+        new_requirements.extend(result.requirements);
+    }
+
+    let new_children = section
+        .children
+        .iter()
+        .map(|child| atomize_section(child, split_count, preserved_count))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(PolicySection {
+        title: section.title.clone(),
+        heading_level: section.heading_level,
+        source_line: section.source_line,
+        body_text: section.body_text.clone(),
+        children: new_children,
+        requirements: new_requirements,
+    })
+}
+
+/// Count total requirements across sections and their children recursively.
+fn count_requirements_recursive(sections: &[PolicySection]) -> usize {
+    sections.iter().map(|s| s.requirements.len() + count_requirements_recursive(&s.children)).sum()
 }
 
 #[cfg(test)]

@@ -193,24 +193,35 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 #[tracing::instrument(level = "debug", skip(document))]
 pub fn assign_stable_ids(mut document: PolicyDocument) -> PolicyDocument {
     for section in &mut document.sections {
-        assign_stable_ids_to_section(section);
+        assign_stable_ids_to_section(section, &section.title.clone());
     }
     document
 }
 
-fn assign_stable_ids_to_section(section: &mut PolicySection) {
+fn assign_stable_ids_to_section(section: &mut PolicySection, section_path: &str) {
     for requirement in &mut section.requirements {
         let normalized = normalize_for_hashing(&requirement.text);
-        let uuid = Uuid::new_v5(&FORGE_NAMESPACE_UUID, normalized.as_bytes());
+        // Include section path, source line, and atom index in the hash input
+        // to prevent collisions when identical requirement text appears in
+        // different sections or at different positions.
+        let hash_input = format!(
+            "{normalized}\0{section_path}\0{}\0{}",
+            requirement.source_line, requirement.atom_index
+        );
+        let uuid = Uuid::new_v5(&FORGE_NAMESPACE_UUID, hash_input.as_bytes());
         tracing::debug!(
             normalized_text = %normalized,
+            section_path = %section_path,
+            source_line = requirement.source_line,
+            atom_index = requirement.atom_index,
             uuid = %uuid,
             "UUID generated"
         );
         requirement.stable_id = Some(uuid.to_string());
     }
     for child in &mut section.children {
-        assign_stable_ids_to_section(child);
+        let child_path = format!("{section_path}/{}", child.title);
+        assign_stable_ids_to_section(child, &child_path);
     }
 }
 

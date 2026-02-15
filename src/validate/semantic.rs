@@ -65,6 +65,9 @@ fn check_orphaned_links(json: &Value) -> Vec<ValidationError> {
     errors
 }
 
+/// Maximum recursion depth for JSON tree walking (`DoS` protection).
+const MAX_WALK_DEPTH: usize = 100;
+
 /// Recursively walk the JSON tree tracking path, looking for orphaned `href` references.
 fn walk_for_orphaned_links(
     value: &Value,
@@ -72,6 +75,19 @@ fn walk_for_orphaned_links(
     resource_uuids: &HashSet<String>,
     errors: &mut Vec<ValidationError>,
 ) {
+    walk_for_orphaned_links_inner(value, current_path, resource_uuids, errors, 0);
+}
+
+fn walk_for_orphaned_links_inner(
+    value: &Value,
+    current_path: &str,
+    resource_uuids: &HashSet<String>,
+    errors: &mut Vec<ValidationError>,
+    depth: usize,
+) {
+    if depth > MAX_WALK_DEPTH {
+        return;
+    }
     match value {
         Value::Object(map) => {
             // Check if this object has an href that starts with "#"
@@ -95,13 +111,25 @@ fn walk_for_orphaned_links(
             // Recurse into all child values
             for (key, child) in map {
                 let child_path = format!("{current_path}.{key}");
-                walk_for_orphaned_links(child, &child_path, resource_uuids, errors);
+                walk_for_orphaned_links_inner(
+                    child,
+                    &child_path,
+                    resource_uuids,
+                    errors,
+                    depth + 1,
+                );
             }
         }
         Value::Array(arr) => {
             for (i, child) in arr.iter().enumerate() {
                 let child_path = format!("{current_path}[{i}]");
-                walk_for_orphaned_links(child, &child_path, resource_uuids, errors);
+                walk_for_orphaned_links_inner(
+                    child,
+                    &child_path,
+                    resource_uuids,
+                    errors,
+                    depth + 1,
+                );
             }
         }
         _ => {}

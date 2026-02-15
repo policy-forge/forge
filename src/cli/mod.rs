@@ -122,6 +122,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 output.as_deref(),
                 *max_size,
                 source_profile.as_deref(),
+                cli.quiet,
             )
         }
         Commands::Validate { input, schema_type, format } => {
