@@ -39,7 +39,12 @@ fn smoke_test_full_pipeline_produces_valid_oscal_json() {
 
     // Verify groups contain controls
     let groups = catalog["groups"].as_array().unwrap();
-    assert!(!groups.is_empty(), "Should have at least one group");
+    assert_eq!(
+        groups.len(),
+        4,
+        "full_policy.md has 3 content sections + 1 preamble group = 4 groups. Got: {}",
+        groups.len()
+    );
     for group in groups {
         assert!(group["id"].is_string(), "Group should have 'id'");
         assert!(group["title"].is_string(), "Group should have 'title'");
@@ -145,24 +150,26 @@ fn smoke_test_compound_requirements_atomized() {
         .filter(|(_, prose)| prose.contains("log") && prose.contains("privilege"))
         .collect();
 
-    assert!(
-        !auth_logging_controls.is_empty(),
-        "Should have a control about logging authentication attempts (AC-7)"
+    assert_eq!(
+        auth_logging_controls.len(),
+        1,
+        "Should have exactly 1 control about logging authentication attempts. Got: {}",
+        auth_logging_controls.len()
     );
-    assert!(
-        !priv_logging_controls.is_empty(),
-        "Should have a control about logging privilege escalation (AC-7)"
+    assert_eq!(
+        priv_logging_controls.len(),
+        1,
+        "Should have exactly 1 control about logging privilege escalation. Got: {}",
+        priv_logging_controls.len()
     );
 
-    // Verify atomization: auth and priv controls must not share the same set of IDs
-    if !auth_logging_controls.is_empty() && !priv_logging_controls.is_empty() {
-        let auth_ids: Vec<_> = auth_logging_controls.iter().map(|(id, _)| *id).collect();
-        let priv_ids: Vec<_> = priv_logging_controls.iter().map(|(id, _)| *id).collect();
-        assert_ne!(
-            auth_ids, priv_ids,
-            "Compound requirements should be atomized into separate controls with different IDs"
-        );
-    }
+    // Verify atomization: auth and priv controls must have different IDs
+    let auth_ids: Vec<_> = auth_logging_controls.iter().map(|(id, _)| *id).collect();
+    let priv_ids: Vec<_> = priv_logging_controls.iter().map(|(id, _)| *id).collect();
+    assert_ne!(
+        auth_ids, priv_ids,
+        "Compound requirements should be atomized into separate controls with different IDs"
+    );
 }
 
 // ─── T025: Group-Level Source Annotation Integration (WI-17, US4) ──────
@@ -195,8 +202,8 @@ fn catalog_groups_have_source_section_props() {
 
             let section_val = source_section["value"].as_str().unwrap();
             assert!(
-                !section_val.is_empty(),
-                "source-section value at group [{i}] must be non-empty"
+                section_val.len() >= 2,
+                "source-section value at group [{i}] must be a meaningful section title (>= 2 chars). Got: {section_val:?}"
             );
         }
     }
@@ -260,7 +267,7 @@ fn pipeline_no_sections_produces_empty_groups() {
     let output_path = dir.path().join("output.json");
     let result = forge::pipeline::run_catalog_pipeline(&path, Some(&output_path), 10 * 1024 * 1024);
 
-    // Pipeline should either succeed with empty/absent groups or fail gracefully
+    // EC-6: Input with no sections should produce a NoStructureDetected error
     match result {
         Ok(()) => {
             let json_str = std::fs::read_to_string(&output_path).unwrap();
@@ -276,9 +283,11 @@ fn pipeline_no_sections_produces_empty_groups() {
             }
         }
         Err(e) => {
-            // If it fails, the error should be descriptive
             let err_msg = e.to_string();
-            assert!(!err_msg.is_empty(), "Error for no-sections input should be descriptive");
+            assert!(
+                err_msg.contains("structure") || err_msg.contains("section"),
+                "Error should describe missing structure, got: {err_msg}"
+            );
         }
     }
 }

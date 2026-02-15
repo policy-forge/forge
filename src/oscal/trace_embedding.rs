@@ -37,8 +37,14 @@ pub const LINK_REL_SOURCE: &str = "source";
 /// paths and are left as-is to keep the encoding minimal and predictable.
 ///
 /// `%` is encoded FIRST to avoid double-encoding.
+/// Maximum file path length accepted for href encoding (4096 per POSIX PATH_MAX).
+const MAX_HREF_PATH_LENGTH: usize = 4096;
+
 fn encode_href_path(path: &str) -> String {
-    path.replace('%', "%25").replace(' ', "%20").replace('#', "%23")
+    // Guard against excessively long paths (DoS / allocation risk)
+    let safe_path =
+        if path.len() > MAX_HREF_PATH_LENGTH { &path[..MAX_HREF_PATH_LENGTH] } else { path };
+    safe_path.replace('%', "%25").replace(' ', "%20").replace('#', "%23")
 }
 
 /// Build 3 namespaced trace props for a source location.

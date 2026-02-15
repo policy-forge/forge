@@ -65,11 +65,11 @@ static CROSSREF_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 /// Returns `ForgeError::Parse` if regex pattern compilation fails
 /// (should not happen with static patterns).
 #[tracing::instrument(level = "debug", skip(document))]
-pub fn extract_citations(document: &mut PolicyDocument) -> Result<(), ForgeError> {
+pub fn extract_citations(mut document: PolicyDocument) -> Result<PolicyDocument, ForgeError> {
     for section in &mut document.sections {
         extract_citations_from_section(section)?;
     }
-    Ok(())
+    Ok(document)
 }
 
 /// Recursively process a section and its children for citation extraction.
@@ -79,13 +79,12 @@ fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), For
         if !req.citations.is_empty() {
             continue;
         }
-        let requirement_id = req.stable_id.as_deref().unwrap_or_else(|| {
-            tracing::warn!(
-                source_line = req.source_line,
-                "Requirement missing stable_id, citation IDs may collide"
-            );
-            ""
-        });
+        let requirement_id = req.stable_id.as_deref().ok_or_else(|| {
+            ForgeError::Parse(format!(
+                "Requirement at line {} missing stable_id before citation extraction (run UUID assignment first)",
+                req.source_line
+            ))
+        })?;
         let (cleaned_text, citations) = extract_citations_from_text(requirement_id, &req.text)?;
         tracing::debug!(
             requirement_id = requirement_id,
@@ -529,7 +528,7 @@ mod tests {
     // Multiple sections each with requirements
     #[test]
     fn us5_multiple_sections_with_requirements() {
-        let mut doc = make_test_doc(vec![
+        let doc = make_test_doc(vec![
             make_section(
                 "Access Control",
                 vec![make_req("req-1", "Comply with https://example.com/access policy")],
@@ -537,7 +536,7 @@ mod tests {
             make_section("Encryption", vec![make_req("req-2", "Must meet FIPS 140-2 standards")]),
         ]);
 
-        extract_citations(&mut doc).unwrap();
+        let doc = extract_citations(doc).unwrap();
 
         assert_eq!(doc.sections[0].requirements[0].citations.len(), 1);
         assert_eq!(
@@ -575,8 +574,8 @@ mod tests {
             )],
         };
 
-        let mut doc = make_test_doc(vec![parent]);
-        extract_citations(&mut doc).unwrap();
+        let doc = make_test_doc(vec![parent]);
+        let doc = extract_citations(doc).unwrap();
 
         // Parent requirement
         assert_eq!(doc.sections[0].requirements[0].citations.len(), 1);
@@ -593,16 +592,15 @@ mod tests {
     // EC-7: Empty document with zero requirements
     #[test]
     fn us5_empty_document_no_error() {
-        let mut doc = make_test_doc(vec![]);
-        let result = extract_citations(&mut doc);
-        assert!(result.is_ok());
+        let doc = make_test_doc(vec![]);
+        let doc = extract_citations(doc).unwrap();
         assert!(doc.sections.is_empty());
     }
 
     // Mixed citation types (URL + bibliographic in same requirement)
     #[test]
     fn us5_mixed_citation_types_in_same_requirement() {
-        let mut doc = make_test_doc(vec![make_section(
+        let doc = make_test_doc(vec![make_section(
             "Compliance",
             vec![make_req(
                 "req-mixed",
@@ -610,7 +608,7 @@ mod tests {
             )],
         )]);
 
-        extract_citations(&mut doc).unwrap();
+        let doc = extract_citations(doc).unwrap();
 
         let citations = &doc.sections[0].requirements[0].citations;
         assert_eq!(citations.len(), 2);
@@ -627,7 +625,7 @@ mod tests {
     // Integration test: end-to-end with multiple citation types
     #[test]
     fn us5_integration_end_to_end() {
-        let mut doc = make_test_doc(vec![
+        let doc = make_test_doc(vec![
             make_section(
                 "Section 1",
                 vec![
@@ -644,7 +642,7 @@ mod tests {
             ),
         ]);
 
-        extract_citations(&mut doc).unwrap();
+        let doc = extract_citations(doc).unwrap();
 
         // req-1: no citations
         assert!(doc.sections[0].requirements[0].citations.is_empty());
@@ -775,7 +773,7 @@ mod tests {
 
     #[test]
     fn idempotency_second_pass_unchanged() {
-        let mut doc = make_test_doc(vec![make_section(
+        let doc = make_test_doc(vec![make_section(
             "Policy",
             vec![
                 make_req(
@@ -787,14 +785,14 @@ mod tests {
         )]);
 
         // First pass
-        extract_citations(&mut doc).unwrap();
+        let doc = extract_citations(doc).unwrap();
         let first_text = doc.sections[0].requirements[0].text.clone();
         let first_citations = doc.sections[0].requirements[0].citations.clone();
         let second_text = doc.sections[0].requirements[1].text.clone();
         let second_citations = doc.sections[0].requirements[1].citations.clone();
 
         // Second pass
-        extract_citations(&mut doc).unwrap();
+        let doc = extract_citations(doc).unwrap();
 
         // Text and citations should be identical after second pass
         assert_eq!(doc.sections[0].requirements[0].text, first_text);
@@ -821,10 +819,10 @@ mod tests {
             })
             .collect();
 
-        let mut doc = make_test_doc(vec![make_section("All Requirements", reqs)]);
+        let doc = make_test_doc(vec![make_section("All Requirements", reqs)]);
 
         let start = std::time::Instant::now();
-        extract_citations(&mut doc).unwrap();
+        let doc = extract_citations(doc).unwrap();
         let elapsed = start.elapsed();
 
         assert!(

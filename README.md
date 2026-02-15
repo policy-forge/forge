@@ -6,7 +6,7 @@ A Rust CLI tool that converts security policy documents into [OSCAL](https://pag
 
 ## Status
 
-FORGE is in active development. The ingestion pipeline and OSCAL Catalog generation are implemented:
+FORGE is nearing Phase 1 completion (24 of 25 work items done). Both the Catalog and Component Definition pipelines are fully operational with schema validation, traceability, and error reporting.
 
 | Stage | Description | Status |
 |-------|-------------|--------|
@@ -16,15 +16,21 @@ FORGE is in active development. The ingestion pipeline and OSCAL Catalog generat
 | Assemble | Combine into domain model with YAML frontmatter | Done |
 | Atomize | Split compound requirements into atomic statements | Done |
 | Assign IDs | Deterministic UUID v5 stable identifiers | Done |
+| Citation extraction | URL/reference detection with deduplication | Done |
 | Catalog groups & controls | Map sections/requirements to OSCAL groups and controls | Done |
 | Catalog statement parts | Control parts with prose, props, and structure | Done |
 | OSCAL metadata | UUID, title, last-modified, version, oscal-version | Done |
 | Back matter | Resources from citations, link patterns | Done |
-| Catalog pipeline | End-to-end `forge convert --strategy catalog` | Planned |
-| Component Definition | OSCAL Component Definition generation | Planned |
-| Traceability | Source-to-OSCAL element mapping | Planned |
-| Validate | Schema validation against OSCAL v1.2.0 | Planned |
-| Export | JSON / XML / YAML output | Planned |
+| Catalog pipeline | End-to-end `forge convert --strategy catalog` | Done |
+| Component Definition | OSCAL Component Definition generation | Done |
+| Implemented requirements | Control implementations with source profiles | Done |
+| Traceability | Source-to-OSCAL element mapping with embedding | Done |
+| Validate | Schema + semantic validation against OSCAL v1.2.0 | Done |
+| Error reporting | Structured validation errors with human-friendly output | Done |
+| Golden file tests | Snapshot-based regression testing with insta | Done |
+| Performance benchmarks | Criterion benchmarks for pipeline stages | Done |
+| Error handling | Anyhow-based context propagation in CLI | Done |
+| Phase 1 release | Final packaging and release prep | Planned |
 
 ## Installation
 
@@ -41,21 +47,27 @@ The binary is at `target/release/forge`.
 ## Usage
 
 ```bash
-# Convert a Markdown policy to JSON (current output is the internal domain model)
-forge convert policy.md
+# Convert a Markdown policy to an OSCAL Catalog (JSON)
+forge convert policy.md --strategy catalog --format json
 
-# Specify output format (JSON is the default; XML and YAML are planned)
-forge convert policy.md --format json
+# Convert to an OSCAL Component Definition
+forge convert policy.md --strategy component --format json
+
+# Convert with a source profile reference
+forge convert policy.md --strategy component --source-profile ./profile.json --format json
 
 # Write output to a file
-forge convert policy.md --output output.json
+forge convert policy.md --strategy catalog --format json --output catalog.json
+
+# Validate an existing OSCAL artifact against the schema
+forge validate artifact.json
 
 # Override max file size (default: 10 MB)
-forge convert policy.md --max-size 20
+forge convert policy.md --strategy catalog --format json --max-size 20
 
 # Verbose or quiet mode
-forge -v convert policy.md
-forge -q convert policy.md
+forge -v convert policy.md --strategy catalog --format json
+forge -q convert policy.md --strategy catalog --format json
 ```
 
 ## How It Works
@@ -69,19 +81,22 @@ FORGE processes a Markdown policy document through a deterministic pipeline:
 5. **Atomize** -- Splits compound requirements (e.g., "Systems must X and must Y") into individual atomic statements, each with a preliminary content-hash ID.
 6. **Assign IDs** -- Generates deterministic UUID v5 identifiers for each requirement using a project namespace and normalized content, ensuring stable IDs across re-conversions.
 
-The OSCAL Catalog building blocks (groups, controls, statement parts, metadata, back matter) are implemented. The next milestone is wiring the end-to-end Catalog pipeline and Component Definition generation.
+Both the OSCAL Catalog and Component Definition pipelines are complete with full schema validation, traceability embedding, and structured error reporting. The remaining work item (WI-25) is Phase 1 release packaging.
 
 ## Project Structure
 
 ```
 src/
-  main.rs              Entry point
+  main.rs              Entry point (anyhow error handling)
   lib.rs               Module declarations and public API
   error.rs             ForgeError enum (thiserror)
+  pipeline.rs          Catalog and Component pipeline orchestration
+  uuid.rs              Deterministic UUID v5 generation
+  citation.rs          URL/reference extraction and deduplication
   cli/
     mod.rs             CLI definition (clap derive)
-    convert.rs         Convert subcommand
-    validate.rs        Validate subcommand (stub)
+    convert.rs         Convert subcommand (catalog + component strategies)
+    validate.rs        Validate subcommand (schema + semantic checks)
   ingest/
     mod.rs             File ingestion and fingerprinting
   parse/
@@ -92,17 +107,26 @@ src/
     mod.rs             PolicyDocument, PolicySection, PolicyRequirement
     frontmatter.rs     YAML frontmatter parsing
     assemble.rs        Pipeline assembly (sections + clauses + frontmatter)
-  uuid.rs              Deterministic UUID v5 generation
+    trace.rs           Traceability model (TraceLink, TraceIndex)
   oscal/
     mod.rs             OSCAL module declarations
     catalog.rs         Catalog builder (groups, controls)
+    component_definition.rs  Component Definition builder
+    implemented_requirements.rs  Control implementations
     parts.rs           Statement parts, prose, props
     metadata.rs        OSCAL metadata assembly
     back_matter.rs     Back matter resources and links
-  export/mod.rs        Multi-format export (planned)
-  validate/mod.rs      Schema validation (planned)
-tests/                 Integration tests and fixtures
-benches/               Criterion benchmarks (atomization, UUID generation)
+    trace_embedding.rs Post-processing traceability embedding
+    test_utils.rs      Shared OSCAL test helpers
+  export/mod.rs        Multi-format export (JSON implemented; XML/YAML planned)
+  validate/
+    mod.rs             Validation orchestration
+    error_types.rs     Structured validation error categories
+    formatter.rs       Human-friendly error formatting
+    report.rs          Validation report generation
+    semantic.rs        Semantic validation (orphan links, missing fields)
+tests/                 Integration tests (131 tests across 13 files)
+benches/               Criterion benchmarks (atomization, UUID, pipeline)
 example_data/          Sample policy Markdown documents
 ```
 

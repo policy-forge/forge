@@ -80,14 +80,13 @@ fn prepare_document(input_path: &Path, max_size_bytes: u64) -> Result<PolicyDocu
     // Step 6: Atomize document
     let atomized = crate::parse::atomize_document(&document)?;
 
-    // Step 7: Assign stable IDs (mutates)
-    let mut doc_with_ids = atomized;
-    crate::uuid::assign_stable_ids(&mut doc_with_ids);
+    // Step 7: Assign stable IDs (functional transformation)
+    let doc_with_ids = crate::uuid::assign_stable_ids(atomized);
 
     // Step 7b: Extract citations (WI-8, after UUID assignment, before OSCAL generation)
-    crate::citation::extract_citations(&mut doc_with_ids)?;
+    let doc_with_citations = crate::citation::extract_citations(doc_with_ids)?;
 
-    Ok(doc_with_ids)
+    Ok(doc_with_citations)
 }
 
 /// Orchestrates the full catalog pipeline: ingest → parse → normalize → map → serialize → output.

@@ -30,12 +30,11 @@ fn fixture_produces_valid_oscal_output() {
     let atomized =
         forge::parse::atomize_document(&document).expect("atomize_document should succeed");
 
-    // Step 7: Assign stable IDs
-    let mut doc = atomized;
-    forge::uuid::assign_stable_ids(&mut doc);
+    // Step 7: Assign stable IDs (functional transformation)
+    let doc = forge::uuid::assign_stable_ids(atomized);
 
-    // Step 7b: Extract citations
-    forge::citation::extract_citations(&mut doc).expect("extract_citations should succeed");
+    // Step 7b: Extract citations (functional transformation)
+    let doc = forge::citation::extract_citations(doc).expect("extract_citations should succeed");
     let citations = doc.collect_citations();
 
     // Step 8: Build catalog with trace link capture

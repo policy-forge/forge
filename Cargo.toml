@@ -31,6 +31,7 @@ unsafe_code = "warn"
 [dev-dependencies]
 criterion = { version = "0.8.2", features = ["html_reports"] }
 insta = { version = "1.46.3", features = ["json"] }
+proptest = "1"
 tempfile = "3.25.0"
 
 [[bench]]

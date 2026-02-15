@@ -38,7 +38,7 @@ pub fn pointer_to_json_path(pointer: &str) -> String {
 
     // Split on '/' and skip the first empty segment (from leading '/')
     let segments: Vec<&str> = pointer.split('/').collect();
-    let start = usize::from(segments.first() == Some(&""));
+    let start = if segments.first() == Some(&"") { 1 } else { 0 };
 
     for segment in &segments[start..] {
         // RFC 6901: unescape ~1 → /, then ~0 → ~ (order matters)
