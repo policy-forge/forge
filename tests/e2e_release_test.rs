@@ -191,7 +191,7 @@ fn test_m5_metadata_fields_present() {
     // Validate UUID format (8-4-4-4-12 hex)
     assert!(
         uuid.len() == 36 && uuid.chars().filter(|c| *c == '-').count() == 4,
-        "catalog.uuid should be a valid UUID format, got: {uuid}"
+        "catalog.uuid should be a valid UUID format (8-4-4-4-12)"
     );
 }
 
