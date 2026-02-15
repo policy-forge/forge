@@ -86,6 +86,7 @@ fn walk_for_orphaned_links_inner(
     depth: usize,
 ) {
     if depth > MAX_WALK_DEPTH {
+        tracing::trace!(path = %current_path, depth, max = MAX_WALK_DEPTH, "max walk depth exceeded; skipping further traversal");
         return;
     }
     match value {
@@ -353,6 +354,25 @@ mod tests {
         // External URLs should not produce errors
         let errors = check_orphaned_links(&json);
         assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn max_walk_depth_prevents_stack_overflow() {
+        // Build a JSON structure deeper than MAX_WALK_DEPTH with an orphaned link at the bottom
+        let mut json = serde_json::json!({"href": "#deep-orphan"});
+        for _ in 0..=MAX_WALK_DEPTH + 10 {
+            json = serde_json::json!({"child": json});
+        }
+        let wrapper =
+            serde_json::json!({"catalog": {"back-matter": {"resources": []}, "data": json}});
+
+        let errors = check_orphaned_links(&wrapper);
+        // The deeply nested orphaned link should NOT be found (depth guard stops traversal)
+        assert!(
+            errors.is_empty(),
+            "Should not find orphaned link beyond MAX_WALK_DEPTH, found {} errors",
+            errors.len()
+        );
     }
 
     // --- T020: check_missing_references tests ---

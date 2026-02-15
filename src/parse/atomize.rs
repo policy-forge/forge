@@ -18,6 +18,10 @@ use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 /// If exceeded, the statement is preserved as-is and a warning is logged (SEC-5, FR-010).
 const MAX_SPLITS_PER_REQUIREMENT: usize = 50;
 
+/// Maximum section nesting depth for recursive traversal (`DoS` protection).
+/// Consistent with `MAX_SECTION_DEPTH` in `component_definition.rs`.
+const MAX_SECTION_DEPTH: usize = 50;
+
 /// Compiled regex pattern for detecting conjunction + normative verb boundaries.
 /// Pattern: `\b(and|or)\s+(must|shall|should|will)\b` (case-sensitive).
 // SAFETY: static regex — panics only if regex literal is invalid
@@ -318,6 +322,23 @@ fn atomize_section(
     split_count: &mut usize,
     preserved_count: &mut usize,
 ) -> Result<PolicySection, ForgeError> {
+    atomize_section_inner(section, split_count, preserved_count, 0)
+}
+
+fn atomize_section_inner(
+    section: &PolicySection,
+    split_count: &mut usize,
+    preserved_count: &mut usize,
+    depth: usize,
+) -> Result<PolicySection, ForgeError> {
+    if depth > MAX_SECTION_DEPTH {
+        tracing::trace!(
+            depth,
+            max = MAX_SECTION_DEPTH,
+            "max section depth exceeded; skipping further atomization"
+        );
+        return Ok(section.clone());
+    }
     let mut new_requirements = Vec::new();
 
     for requirement in &section.requirements {
@@ -333,7 +354,7 @@ fn atomize_section(
     let new_children = section
         .children
         .iter()
-        .map(|child| atomize_section(child, split_count, preserved_count))
+        .map(|child| atomize_section_inner(child, split_count, preserved_count, depth + 1))
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(PolicySection {
@@ -348,7 +369,17 @@ fn atomize_section(
 
 /// Count total requirements across sections and their children recursively.
 fn count_requirements_recursive(sections: &[PolicySection]) -> usize {
-    sections.iter().map(|s| s.requirements.len() + count_requirements_recursive(&s.children)).sum()
+    count_requirements_recursive_inner(sections, 0)
+}
+
+fn count_requirements_recursive_inner(sections: &[PolicySection], depth: usize) -> usize {
+    if depth > MAX_SECTION_DEPTH {
+        return 0;
+    }
+    sections
+        .iter()
+        .map(|s| s.requirements.len() + count_requirements_recursive_inner(&s.children, depth + 1))
+        .sum()
 }
 
 #[cfg(test)]

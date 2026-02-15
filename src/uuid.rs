@@ -143,7 +143,11 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 /// Populate `stable_id` on all [`PolicyRequirement`]s in a [`PolicyDocument`].
 ///
 /// Walks the full section tree recursively, generating a UUID v5 for each
-/// requirement's text and setting `stable_id = Some(uuid.to_string())`.
+/// requirement using a collision-resistant hash input that combines:
+/// - Normalized requirement text
+/// - Section path (e.g. `"Access Control/MFA Requirements"`)
+/// - Source line number
+/// - Atom index
 ///
 /// After this function returns, no `PolicyRequirement` in the document will
 /// have `stable_id = None`.
@@ -198,7 +202,26 @@ pub fn assign_stable_ids(mut document: PolicyDocument) -> PolicyDocument {
     document
 }
 
+/// Maximum section nesting depth for recursive traversal (`DoS` protection).
+const MAX_SECTION_DEPTH: usize = 50;
+
 fn assign_stable_ids_to_section(section: &mut PolicySection, section_path: &str) {
+    assign_stable_ids_to_section_inner(section, section_path, 0);
+}
+
+fn assign_stable_ids_to_section_inner(
+    section: &mut PolicySection,
+    section_path: &str,
+    depth: usize,
+) {
+    if depth > MAX_SECTION_DEPTH {
+        tracing::trace!(
+            depth,
+            max = MAX_SECTION_DEPTH,
+            "max section depth exceeded; skipping UUID assignment"
+        );
+        return;
+    }
     for requirement in &mut section.requirements {
         let normalized = normalize_for_hashing(&requirement.text);
         // Include section path, source line, and atom index in the hash input
@@ -221,7 +244,7 @@ fn assign_stable_ids_to_section(section: &mut PolicySection, section_path: &str)
     }
     for child in &mut section.children {
         let child_path = format!("{section_path}/{}", child.title);
-        assign_stable_ids_to_section(child, &child_path);
+        assign_stable_ids_to_section_inner(child, &child_path, depth + 1);
     }
 }
 

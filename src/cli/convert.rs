@@ -15,7 +15,6 @@ pub fn execute(
     output: Option<&Path>,
     max_size: u64,
     source_profile: Option<&str>,
-    quiet: bool,
 ) -> Result<(), ForgeError> {
     let max_size_bytes = max_size
         .checked_mul(1024 * 1024)
@@ -34,11 +33,9 @@ pub fn execute(
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
             let profile_ref = match source_profile {
                 None => {
-                    let msg = "--source-profile not provided; control-id mapping will be skipped. The generated Component Definition will have empty control-implementations.";
-                    tracing::warn!(msg);
-                    if !quiet {
-                        eprintln!("Warning: {msg}");
-                    }
+                    tracing::warn!(
+                        "--source-profile not provided; control-id mapping will be skipped. The generated Component Definition will have empty control-implementations."
+                    );
                     None
                 }
                 Some(p) if p.trim().is_empty() => {
@@ -87,7 +84,6 @@ mod tests {
             None,
             10,
             None,
-            false,
         );
         let err = result.unwrap_err();
         // Should NOT be about source-profile — should be about the missing input file
@@ -106,7 +102,6 @@ mod tests {
             None,
             10,
             Some(""),
-            false,
         );
         let err = result.unwrap_err();
         assert!(
@@ -124,7 +119,6 @@ mod tests {
             None,
             10,
             Some("   "),
-            false,
         );
         let err = result.unwrap_err();
         assert!(
