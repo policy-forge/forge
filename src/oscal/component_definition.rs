@@ -220,14 +220,21 @@ fn generate_component_uuid(title: &str, version: &str, document_id: &str) -> Uui
     Uuid::new_v5(&COMPONENT_NAMESPACE, input.as_bytes())
 }
 
+/// Maximum recursion depth for section tree traversal (DoS protection).
+const MAX_SECTION_DEPTH: usize = 50;
+
+/// Maximum number of unique citations to collect (DoS protection).
+const MAX_CITATIONS: usize = 10_000;
+
 /// Recursively collect all unique citations from all requirements across all sections.
 ///
 /// Deduplicates by citation `id` to prevent duplicate back-matter resources.
+/// Enforces depth and count bounds to prevent unbounded memory allocation.
 fn collect_all_citations(sections: &[PolicySection]) -> Vec<Citation> {
     let mut citations = Vec::new();
     let mut seen = HashSet::new();
     for section in sections {
-        collect_citations_from_section(section, &mut citations, &mut seen);
+        collect_citations_from_section(section, &mut citations, &mut seen, 0);
     }
     citations
 }
@@ -236,16 +243,31 @@ fn collect_citations_from_section(
     section: &PolicySection,
     citations: &mut Vec<Citation>,
     seen: &mut HashSet<String>,
+    depth: usize,
 ) {
+    if depth > MAX_SECTION_DEPTH {
+        tracing::warn!(depth, "Section tree depth exceeds safety limit, stopping traversal");
+        return;
+    }
+    if citations.len() >= MAX_CITATIONS {
+        tracing::warn!(
+            count = citations.len(),
+            "Citation count exceeds safety limit, stopping collection"
+        );
+        return;
+    }
     for req in &section.requirements {
         for citation in &req.citations {
+            if citations.len() >= MAX_CITATIONS {
+                return;
+            }
             if seen.insert(citation.id.clone()) {
                 citations.push(citation.clone());
             }
         }
     }
     for child in &section.children {
-        collect_citations_from_section(child, citations, seen);
+        collect_citations_from_section(child, citations, seen, depth + 1);
     }
 }
 

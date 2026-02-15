@@ -47,9 +47,8 @@ fn run_full_catalog_pipeline(fixture_path: &Path) -> Result<String, forge::Forge
     // Step 3: Assemble + Atomize + IDs + Citations
     let document = forge::model::assemble_document(&ingested, &sections, &clauses)?;
     let atomized = forge::parse::atomize_document(&document)?;
-    let mut doc = atomized;
-    forge::uuid::assign_stable_ids(&mut doc);
-    forge::citation::extract_citations(&mut doc)?;
+    let doc = forge::uuid::assign_stable_ids(atomized);
+    let doc = forge::citation::extract_citations(doc)?;
 
     // Step 4: Catalog Assembly (delegates to shared helper)
     let envelope = build_catalog_envelope(&doc)?;
@@ -184,9 +183,8 @@ fn bench_per_stage(c: &mut Criterion) {
             )
             .unwrap();
             let atomized = forge::parse::atomize_document(black_box(&document)).unwrap();
-            let mut doc = atomized;
-            forge::uuid::assign_stable_ids(&mut doc);
-            forge::citation::extract_citations(&mut doc).unwrap();
+            let doc = forge::uuid::assign_stable_ids(atomized);
+            let doc = forge::citation::extract_citations(doc).unwrap();
             black_box(doc)
         });
     });
@@ -194,9 +192,8 @@ fn bench_per_stage(c: &mut Criterion) {
     // Pre-compute atomize output for catalog assembly stage
     let document = forge::model::assemble_document(&ingested, &sections, &clauses).unwrap();
     let atomized = forge::parse::atomize_document(&document).unwrap();
-    let mut doc_for_catalog = atomized;
-    forge::uuid::assign_stable_ids(&mut doc_for_catalog);
-    forge::citation::extract_citations(&mut doc_for_catalog).unwrap();
+    let doc_for_catalog = forge::uuid::assign_stable_ids(atomized);
+    let doc_for_catalog = forge::citation::extract_citations(doc_for_catalog).unwrap();
 
     // ── Stage 4: Catalog Assembly ──
     group.bench_function("catalog_assembly", |b| {

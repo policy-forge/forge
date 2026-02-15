@@ -91,11 +91,13 @@ fn component_pipeline_has_populated_control_implementations() {
     // uuid is present
     assert!(entry["uuid"].is_string(), "control-implementation must have uuid");
 
-    // implemented-requirements is populated
+    // implemented-requirements: full_policy.md has 14 controls (including atomized compound)
     let impl_reqs = entry["implemented-requirements"].as_array().unwrap();
-    assert!(
-        !impl_reqs.is_empty(),
-        "implemented-requirements must be populated for a document with requirements"
+    assert_eq!(
+        impl_reqs.len(),
+        14,
+        "full_policy.md should produce exactly 14 implemented-requirements (including atomized compound). Got: {}",
+        impl_reqs.len()
     );
 }
 
@@ -318,8 +320,18 @@ fn control_ids_match_between_catalog_and_component() {
         }
     }
 
-    assert!(!catalog_ids.is_empty(), "Catalog should have control-ids");
-    assert!(!component_ids.is_empty(), "Component should have control-ids");
+    assert_eq!(
+        catalog_ids.len(),
+        14,
+        "Catalog should have exactly 14 control-ids. Got: {}",
+        catalog_ids.len()
+    );
+    assert_eq!(
+        component_ids.len(),
+        14,
+        "Component should have exactly 14 control-ids. Got: {}",
+        component_ids.len()
+    );
 
     // Both should have the same count
     assert_eq!(

@@ -187,14 +187,15 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 ///     }],
 /// };
 ///
-/// assign_stable_ids(&mut doc);
+/// let doc = assign_stable_ids(doc);
 /// assert!(doc.sections[0].requirements[0].stable_id.is_some());
 /// ```
 #[tracing::instrument(level = "debug", skip(document))]
-pub fn assign_stable_ids(document: &mut PolicyDocument) {
+pub fn assign_stable_ids(mut document: PolicyDocument) -> PolicyDocument {
     for section in &mut document.sections {
         assign_stable_ids_to_section(section);
     }
+    document
 }
 
 fn assign_stable_ids_to_section(section: &mut PolicySection) {
@@ -277,7 +278,7 @@ mod tests {
     // T011: All requirements populated (AC-4, M-3)
     #[test]
     fn test_assign_stable_ids_all_populated() {
-        let mut doc = PolicyDocument {
+        let doc = PolicyDocument {
             id: "test".to_string(),
             metadata: test_metadata(),
             sections: vec![
@@ -298,7 +299,7 @@ mod tests {
             ],
         };
 
-        assign_stable_ids(&mut doc);
+        let doc = assign_stable_ids(doc);
 
         // All requirements should have stable_id populated
         assert!(doc.sections[0].requirements[0].stable_id.is_some());
@@ -309,7 +310,7 @@ mod tests {
     // T012: Nested sections (EC-5)
     #[test]
     fn test_assign_stable_ids_nested_sections() {
-        let mut doc = PolicyDocument {
+        let doc = PolicyDocument {
             id: "test".to_string(),
             metadata: test_metadata(),
             sections: vec![make_section(
@@ -327,7 +328,7 @@ mod tests {
             )],
         };
 
-        assign_stable_ids(&mut doc);
+        let doc = assign_stable_ids(doc);
 
         // Level 0
         assert!(doc.sections[0].requirements[0].stable_id.is_some());

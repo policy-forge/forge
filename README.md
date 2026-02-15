@@ -16,13 +16,21 @@ FORGE v0.1.0 — Phase 1 complete. All pipeline stages are implemented and verif
 | Assemble | Combine into domain model with YAML frontmatter | Done |
 | Atomize | Split compound requirements into atomic statements | Done |
 | Assign IDs | Deterministic UUID v5 stable identifiers | Done |
-| Citation Extraction | Detect bibliographic refs, URLs, cross-refs | Done |
-| Catalog Pipeline | End-to-end `forge convert --strategy catalog` | Done |
-| Component Pipeline | End-to-end `forge convert --strategy component` | Done |
-| Traceability | Source-to-OSCAL element mapping with props and links | Done |
-| Schema Validation | Validate against OSCAL v1.2.0 JSON schemas | Done |
-| Error Handling | Structured errors with exit codes and actionable messages | Done |
-| Performance | <30s for 50-page documents (benchmarked) | Done |
+| Citation extraction | URL/reference detection with deduplication | Done |
+| Catalog groups & controls | Map sections/requirements to OSCAL groups and controls | Done |
+| Catalog statement parts | Control parts with prose, props, and structure | Done |
+| OSCAL metadata | UUID, title, last-modified, version, oscal-version | Done |
+| Back matter | Resources from citations, link patterns | Done |
+| Catalog pipeline | End-to-end `forge convert --strategy catalog` | Done |
+| Component Definition | OSCAL Component Definition generation | Done |
+| Implemented requirements | Control implementations with source profiles | Done |
+| Traceability | Source-to-OSCAL element mapping with embedding | Done |
+| Validate | Schema + semantic validation against OSCAL v1.2.0 | Done |
+| Error reporting | Structured validation errors with human-friendly output | Done |
+| Golden file tests | Snapshot-based regression testing with insta | Done |
+| Performance benchmarks | Criterion benchmarks for pipeline stages | Done |
+| Error handling | Anyhow-based context propagation in CLI | Done |
+| Phase 1 release | Final packaging and release prep | Planned |
 
 ## Quick Start
 
@@ -76,6 +84,27 @@ forge -q convert policy.md --strategy catalog --format json
 
 ```bash
 forge convert large-policy.md --strategy catalog --format json --max-size 20
+# Convert a Markdown policy to an OSCAL Catalog (JSON)
+forge convert policy.md --strategy catalog --format json
+
+# Convert to an OSCAL Component Definition
+forge convert policy.md --strategy component --format json
+
+# Convert with a source profile reference
+forge convert policy.md --strategy component --source-profile ./profile.json --format json
+
+# Write output to a file
+forge convert policy.md --strategy catalog --format json --output catalog.json
+
+# Validate an existing OSCAL artifact against the schema
+forge validate artifact.json
+
+# Override max file size (default: 10 MB)
+forge convert policy.md --strategy catalog --format json --max-size 20
+
+# Verbose or quiet mode
+forge -v convert policy.md --strategy catalog --format json
+forge -q convert policy.md --strategy catalog --format json
 ```
 
 A sample policy file is available at `tests/fixtures/sample_policy.md`.
@@ -84,31 +113,29 @@ A sample policy file is available at `tests/fixtures/sample_policy.md`.
 
 FORGE processes a Markdown policy document through a deterministic pipeline:
 
-1. **Ingest** — Reads the file, validates it's UTF-8 Markdown, computes a SHA-256 fingerprint.
-2. **Parse** — Builds a heading hierarchy tree from the Markdown structure.
-3. **Extract** — Pulls list items, tables, and paragraphs from each section as clause-level content.
-4. **Assemble** — Combines parsed sections, extracted clauses, and optional YAML frontmatter into a `PolicyDocument` domain model.
-5. **Atomize** — Splits compound requirements (e.g., "Systems must X and must Y") into individual atomic statements.
-6. **Assign IDs** — Generates deterministic UUID v5 identifiers for each requirement.
-7. **Extract Citations** — Detects bibliographic references (NIST SP, ISO, RFC), URLs, and cross-references.
-8. **Map to OSCAL** — Converts the domain model to OSCAL Catalog (groups + controls) or Component Definition (components + implemented-requirements).
-9. **Embed Traceability** — Adds source-file, source-section, and source-line props to every control.
-10. **Validate** — Auto-validates the generated OSCAL artifact against JSON schemas before output.
+1. **Ingest** -- Reads the file, validates it's UTF-8 Markdown, computes a SHA-256 fingerprint.
+2. **Parse** -- Builds a heading hierarchy tree from the Markdown structure.
+3. **Extract** -- Pulls list items, tables, and paragraphs from each section as clause-level content.
+4. **Assemble** -- Combines parsed sections, extracted clauses, and optional YAML frontmatter into a `PolicyDocument` domain model.
+5. **Atomize** -- Splits compound requirements (e.g., "Systems must X and must Y") into individual atomic statements, each with a preliminary content-hash ID.
+6. **Assign IDs** -- Generates deterministic UUID v5 identifiers for each requirement using a project namespace and normalized content, ensuring stable IDs across re-conversions.
+
+Both the OSCAL Catalog and Component Definition pipelines are complete with full schema validation, traceability embedding, and structured error reporting. The remaining work item (WI-25) is Phase 1 release packaging.
 
 ## Project Structure
 
 ```text
 src/
-  main.rs              Entry point (verbose/quiet filter wiring)
+  main.rs              Entry point (anyhow error handling)
   lib.rs               Module declarations and public API
   error.rs             ForgeError enum (thiserror)
-  pipeline.rs          E2E pipeline orchestration
+  pipeline.rs          Catalog and Component pipeline orchestration
   uuid.rs              Deterministic UUID v5 generation
-  citation.rs          Citation extraction (URLs, bibliographic, cross-refs)
+  citation.rs          URL/reference extraction and deduplication
   cli/
     mod.rs             CLI definition (clap derive)
-    convert.rs         Convert subcommand handler
-    validate.rs        Validate subcommand handler
+    convert.rs         Convert subcommand (catalog + component strategies)
+    validate.rs        Validate subcommand (schema + semantic checks)
   ingest/
     mod.rs             File ingestion and fingerprinting
   parse/
@@ -119,26 +146,27 @@ src/
     mod.rs             PolicyDocument, PolicySection, PolicyRequirement
     frontmatter.rs     YAML frontmatter parsing
     assemble.rs        Pipeline assembly (sections + clauses + frontmatter)
-    trace.rs           TraceLink model
+    trace.rs           Traceability model (TraceLink, TraceIndex)
   oscal/
     mod.rs             OSCAL module declarations
     catalog.rs         Catalog builder (groups, controls)
+    component_definition.rs  Component Definition builder
+    implemented_requirements.rs  Control implementations
     parts.rs           Statement parts, prose, props
     metadata.rs        OSCAL metadata assembly
     back_matter.rs     Back matter resources and links
-    component_definition.rs  Component Definition builder
-    implemented_requirements.rs  Implemented requirements mapping
-    trace_embedding.rs  Trace prop/link embedding
-  export/
-    mod.rs             JSON export
+    trace_embedding.rs Post-processing traceability embedding
+    test_utils.rs      Shared OSCAL test helpers
+  export/mod.rs        Multi-format export (JSON implemented; XML/YAML planned)
   validate/
-    mod.rs             Schema validation orchestration
-    error_types.rs     Validation error types
-    formatter.rs       Error formatting (SEC-1 truncation)
-    report.rs          Validation report
-    semantic.rs        Semantic validation
-tests/                 Integration tests and fixtures
-benches/               Criterion benchmarks
+    mod.rs             Validation orchestration
+    error_types.rs     Structured validation error categories
+    formatter.rs       Human-friendly error formatting
+    report.rs          Validation report generation
+    semantic.rs        Semantic validation (orphan links, missing fields)
+tests/                 Integration tests (131 tests across 13 files)
+benches/               Criterion benchmarks (atomization, UUID, pipeline)
+example_data/          Sample policy Markdown documents
 ```
 
 ## Development
