@@ -179,7 +179,28 @@ pub fn run_catalog_pipeline(
             write_output(&json, output_path)
         }
         OutputFormat::Xml => {
-            let xml = crate::export::xml_serializer::serialize_catalog_to_xml(&oscal_catalog)?;
+            // Validate the OSCAL model using JSON schema before XML serialization
+            let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
+            let json = serde_json::to_string_pretty(&envelope)
+                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+            let json_value: serde_json::Value = serde_json::from_str(&json)
+                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+            let report = crate::validate::run_full_validation(
+                "generated catalog",
+                &json_value,
+                crate::validate::OscalModelType::Catalog,
+            )
+            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+            if !report.is_valid() {
+                let rendered = crate::validate::report::render_text_report(&report);
+                eprintln!("{rendered}");
+                return Err(ForgeError::SchemaValidation(format!(
+                    "{} validation error(s) in generated catalog",
+                    report.errors().len()
+                )));
+            }
+
+            let xml = crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog)?;
             write_output(&xml, output_path)
         }
         OutputFormat::Yaml => {
@@ -261,6 +282,26 @@ pub fn run_component_pipeline(
         }
         OutputFormat::Xml => {
             tracing::info!("Serializing to XML");
+
+            // Validate the OSCAL model using JSON schema before XML serialization
+            let json = serde_json::to_string_pretty(&envelope)
+                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+            let json_value: serde_json::Value = serde_json::from_str(&json)
+                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+            let report = crate::validate::run_full_validation(
+                "generated component definition",
+                &json_value,
+                crate::validate::OscalModelType::ComponentDefinition,
+            )
+            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+            if !report.is_valid() {
+                let rendered = crate::validate::report::render_text_report(&report);
+                eprintln!("{rendered}");
+                return Err(ForgeError::SchemaValidation(format!(
+                    "{} validation error(s) in generated component definition",
+                    report.errors().len()
+                )));
+            }
 
             let xml = crate::export::xml_serializer::serialize_component_definition_to_xml(
                 &envelope.component_definition,

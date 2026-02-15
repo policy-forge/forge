@@ -82,7 +82,7 @@ fn build_component_def_from_fixture(
 fn bench_xml_serialization(c: &mut Criterion) {
     let fixture_path = Path::new(FIXTURE_PATH);
     if !fixture_path.exists() {
-        eprintln!("Skipping XML benchmark: fixture not found at {FIXTURE_PATH}");
+        tracing::warn!(fixture = %FIXTURE_PATH, "Skipping XML benchmark: fixture not found");
         return;
     }
 

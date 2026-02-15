@@ -165,9 +165,9 @@ fn write_resource<W: Write>(
         write_text_element(writer, "title", &resource.title)?;
     }
 
-    // Description (position 2)
+    // Description (position 2) — OSCAL XSD requires markup-multiline (block elements like <p>)
     if let Some(desc) = &resource.description {
-        write_text_element(writer, "description", desc)?;
+        write_markup_element(writer, "description", desc)?;
     }
 
     // Props (position 3)
@@ -732,7 +732,7 @@ mod tests {
 
         assert!(xml.contains(r#"<resource uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567890">"#));
         assert!(xml.contains("<title>NIST SP 800-53</title>"));
-        assert!(xml.contains("<description>Referenced standard</description>"));
+        assert!(xml.contains("<p>Referenced standard</p>"));
         assert!(xml.contains("<citation>"));
         assert!(xml.contains("<text>NIST SP 800-53 Rev 5</text>"));
         assert!(xml.contains("</citation>"));

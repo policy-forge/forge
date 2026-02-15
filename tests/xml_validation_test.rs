@@ -21,46 +21,28 @@ fn xmllint_available() -> bool {
         .is_ok_and(|o| o.status.success() || !o.stderr.is_empty())
 }
 
-/// Build catalog XML from the sample policy fixture.
+/// Build catalog XML from the sample policy fixture using the pipeline API.
 fn build_catalog_xml(fixture_path: &Path) -> String {
-    let ingested = forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES).unwrap();
-    let content = ingested.reconstruct_content();
-    let sections = forge::parse::extract_sections(&content).unwrap();
-    let clauses = forge::parse::extract_clauses(&content).unwrap();
-    let document = forge::model::assemble_document(&ingested, &sections, &clauses).unwrap();
-    let atomized = forge::parse::atomize_document(&document).unwrap();
-    let doc = forge::uuid::assign_stable_ids(atomized);
-    let doc = forge::citation::extract_citations(doc).unwrap();
+    let dir = TempDir::new().unwrap();
+    let output_path = dir.path().join("catalog.xml");
 
-    let mut trace_links = forge::TraceLinkCollection::new();
-    let mut catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
-    forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
+    forge::pipeline::run_catalog_pipeline(
+        fixture_path,
+        Some(&output_path),
+        MAX_SIZE_BYTES,
+        &forge::cli::OutputFormat::Xml,
+    )
+    .unwrap();
 
-    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None).unwrap();
-    let citations = doc.collect_citations();
-    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations).unwrap();
-    let back_matter = if back_matter_resources.is_empty() {
-        None
-    } else {
-        Some(forge::BackMatter { resources: back_matter_resources })
-    };
-
-    let oscal_catalog = forge::oscal::OscalCatalog {
-        uuid: metadata.uuid.to_string(),
-        metadata: forge::oscal::catalog::OscalMetadata {
-            title: metadata.title,
-            last_modified: metadata.last_modified.to_rfc3339(),
-            version: metadata.version,
-            oscal_version: metadata.oscal_version,
-        },
-        groups: catalog.groups,
-        back_matter,
-    };
-
-    forge::export::xml_serializer::serialize_catalog_to_xml(&oscal_catalog).unwrap()
+    std::fs::read_to_string(&output_path).unwrap()
 }
 
 /// Build component definition XML from the sample policy fixture.
+///
+/// Uses direct serialization (not the pipeline) because the XSD validation test
+/// exercises XML structure independently of JSON schema validation. Without a
+/// `source_profile`, the component definition has empty `control-implementations`
+/// which the JSON schema rejects but the XSD schema permits.
 fn build_component_definition_xml(fixture_path: &Path) -> String {
     let ingested = forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES).unwrap();
     let content = ingested.reconstruct_content();

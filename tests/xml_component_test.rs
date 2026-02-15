@@ -70,8 +70,11 @@ fn component_xml_contains_required_elements() {
         "XML output must contain <component-definition> root element"
     );
 
-    // Component
-    assert!(xml.contains("<component"), "XML output must contain <component> elements");
+    // Component (exclude <component-definition> matches)
+    let has_component = xml
+        .match_indices("<component")
+        .any(|(idx, _)| !xml[idx..].starts_with("<component-definition"));
+    assert!(has_component, "XML output must contain <component> elements");
 
     // Metadata
     assert!(xml.contains("<metadata>"), "XML output must contain <metadata>");
@@ -143,8 +146,11 @@ fn component_json_and_xml_have_same_component_count() {
     // Count components in JSON
     let json_component_count = json["component-definition"]["components"].as_array().unwrap().len();
 
-    // Count components in XML (by counting <component uuid= occurrences)
-    let xml_component_count = xml_str.matches("<component uuid=").count();
+    // Count components in XML (exclude <component-definition> matches)
+    let xml_component_count = xml_str
+        .match_indices("<component ")
+        .filter(|(idx, _)| !xml_str[*idx..].starts_with("<component-definition"))
+        .count();
     assert_eq!(
         json_component_count, xml_component_count,
         "JSON ({json_component_count}) and XML ({xml_component_count}) must have same component count"
@@ -182,7 +188,7 @@ fn component_json_fixture_round_trips_to_xml() {
     let uuid = json["component-definition"]["uuid"].as_str().unwrap();
     assert!(
         xml.contains(&format!("uuid=\"{uuid}\"")),
-        "Round-tripped XML must contain UUID: {uuid}"
+        "Round-tripped XML must contain matching UUID"
     );
 
     // Verify it's valid XML structure

@@ -200,7 +200,7 @@ fn catalog_json_fixture_round_trips_to_xml() {
     let uuid = json["catalog"]["uuid"].as_str().unwrap();
     assert!(
         xml.contains(&format!("uuid=\"{uuid}\"")),
-        "Round-tripped XML must contain UUID: {uuid}"
+        "Round-tripped XML must contain matching UUID"
     );
 
     // Verify it's valid XML structure
