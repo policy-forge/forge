@@ -331,14 +331,8 @@ fn atomize_section_inner(
     preserved_count: &mut usize,
     depth: usize,
 ) -> Result<PolicySection, ForgeError> {
-    if depth > MAX_SECTION_DEPTH {
-        tracing::trace!(
-            depth,
-            max = MAX_SECTION_DEPTH,
-            "max section depth exceeded; skipping further atomization"
-        );
-        return Ok(section.clone());
-    }
+    // Always atomize requirements at this level, only skip child recursion
+    // when depth exceeds the safety limit.
     let mut new_requirements = Vec::new();
 
     for requirement in &section.requirements {
@@ -351,11 +345,20 @@ fn atomize_section_inner(
         new_requirements.extend(result.requirements);
     }
 
-    let new_children = section
-        .children
-        .iter()
-        .map(|child| atomize_section_inner(child, split_count, preserved_count, depth + 1))
-        .collect::<Result<Vec<_>, _>>()?;
+    let new_children = if depth > MAX_SECTION_DEPTH {
+        tracing::trace!(
+            depth,
+            max = MAX_SECTION_DEPTH,
+            "max section depth exceeded; skipping child traversal"
+        );
+        section.children.clone()
+    } else {
+        section
+            .children
+            .iter()
+            .map(|child| atomize_section_inner(child, split_count, preserved_count, depth + 1))
+            .collect::<Result<Vec<_>, _>>()?
+    };
 
     Ok(PolicySection {
         title: section.title.clone(),

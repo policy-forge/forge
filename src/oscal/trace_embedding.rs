@@ -117,10 +117,10 @@ pub fn embed_trace_in_catalog(catalog: &mut OscalCatalog, trace_links: &TraceLin
                 let loc = &trace.source_location;
                 // SEC-1: Use filename-only to prevent absolute path leakage into
                 // OSCAL output (consistent with component pipeline at pipeline.rs:205).
-                let file = loc
-                    .file_path
-                    .file_name()
-                    .map_or_else(|| "<unknown>".to_string(), |f| f.to_string_lossy().into_owned());
+                let file = loc.file_path.file_name().map_or_else(
+                    || "unknown-file".to_string(),
+                    |f| f.to_string_lossy().into_owned(),
+                );
 
                 let props = build_trace_props(&file, &loc.section_title, loc.line_number);
                 control.props.extend(props);
