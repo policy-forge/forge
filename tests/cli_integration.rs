@@ -462,8 +462,8 @@ fn convert_format_xml_shows_rejection_error() {
     assert!(!output.status.success(), "Expected non-zero exit code");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("json") && stderr.contains("supported"),
-        "stderr should mention only json is supported:\n{stderr}"
+        stderr.contains("XML") && stderr.contains("not yet supported"),
+        "stderr should mention XML is not yet supported:\n{stderr}"
     );
 }
 
@@ -857,7 +857,7 @@ fn convert_component_strategy_directory_as_source_profile_errors() {
 }
 
 /// T023 [US1] — Source profile with no matching control IDs still produces valid output.
-/// The pipeline uses source_profile as a string reference — it does not parse or validate the file.
+/// The pipeline uses `source_profile` as a string reference — it does not parse or validate the file.
 /// Covers: EC-3
 #[test]
 fn convert_component_strategy_no_matching_control_ids() {
@@ -1205,4 +1205,210 @@ fn test_convert_max_size_overflow_produces_error() {
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("too large"), "Should report --max-size value is too large: {stderr}");
+}
+
+// =========================================================================
+// WI-27: YAML Output — CLI Integration Tests (T006, T007)
+// =========================================================================
+
+/// T006 [US1] — `--format yaml` catalog stdout produces valid YAML (no JSON braces).
+#[test]
+fn convert_catalog_format_yaml_stdout_valid_yaml() {
+    let dir = TempDir::new().unwrap();
+    let content = "---\ntitle: \"Test Policy\"\nversion: \"1.0\"\n---\n\n# Access Control\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("yaml")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // YAML output should NOT start with JSON brace
+    assert!(!stdout.trim_start().starts_with('{'), "YAML output should not start with JSON brace");
+    // Should be parseable as YAML
+    let value: serde_json::Value =
+        serde_yaml::from_str(&stdout).expect("stdout should be valid YAML");
+    assert!(value["catalog"].is_object(), "YAML should contain 'catalog' key");
+}
+
+/// T006 [US1] — `--format yaml --output` catalog creates parseable YAML file.
+#[test]
+fn convert_catalog_format_yaml_file_output() {
+    let dir = TempDir::new().unwrap();
+    let content = "---\ntitle: \"Test Policy\"\nversion: \"1.0\"\n---\n\n# Access Control\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
+    let output_path = dir.path().join("catalog.yaml");
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("yaml")
+        .arg("--output")
+        .arg(&output_path)
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let file_content = fs::read_to_string(&output_path).expect("Should read YAML file");
+    let value: serde_json::Value =
+        serde_yaml::from_str(&file_content).expect("File should be valid YAML");
+    assert!(value["catalog"].is_object(), "YAML file should contain 'catalog' key");
+}
+
+/// T006 [US1] — YAML output contains expected OSCAL catalog keys.
+#[test]
+fn convert_catalog_format_yaml_contains_oscal_keys() {
+    let dir = TempDir::new().unwrap();
+    let content = "---\ntitle: \"Test Policy\"\nversion: \"1.0\"\n---\n\n# Access Control\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("yaml")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let value: serde_json::Value =
+        serde_yaml::from_str(&stdout).expect("stdout should be valid YAML");
+
+    let catalog = &value["catalog"];
+    assert!(catalog["uuid"].is_string(), "Should have catalog.uuid");
+    assert!(catalog["metadata"].is_object(), "Should have catalog.metadata");
+
+    // AC-7: All OSCAL required metadata fields present
+    let metadata = &catalog["metadata"];
+    assert!(
+        metadata["title"].is_string() && !metadata["title"].as_str().unwrap().is_empty(),
+        "metadata.title should be non-empty string"
+    );
+    assert!(metadata["last-modified"].is_string(), "metadata.last-modified should be present");
+    assert!(metadata["version"].is_string(), "metadata.version should be present");
+    assert_eq!(
+        metadata["oscal-version"].as_str(),
+        Some("1.2.0"),
+        "metadata.oscal-version should be 1.2.0"
+    );
+}
+
+/// T007 [US2] — `--format yaml` component stdout produces valid YAML.
+#[test]
+fn convert_component_format_yaml_stdout_valid_yaml() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .arg("--format")
+        .arg("yaml")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(!stdout.trim_start().starts_with('{'), "YAML output should not start with JSON brace");
+
+    let value: serde_json::Value =
+        serde_yaml::from_str(&stdout).expect("stdout should be valid YAML");
+    assert!(
+        value["component-definition"].is_object(),
+        "YAML should contain 'component-definition' key"
+    );
+}
+
+/// T007 [US2] — `--format yaml --output` component creates parseable YAML file.
+#[test]
+fn convert_component_format_yaml_file_output() {
+    let dir = TempDir::new().unwrap();
+    let output_path = dir.path().join("component.yaml");
+
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .arg("--format")
+        .arg("yaml")
+        .arg("--output")
+        .arg(&output_path)
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let file_content = fs::read_to_string(&output_path).expect("Should read YAML file");
+    let value: serde_json::Value =
+        serde_yaml::from_str(&file_content).expect("File should be valid YAML");
+    assert!(
+        value["component-definition"].is_object(),
+        "YAML file should contain 'component-definition' key"
+    );
+}
+
+/// T007 [US2] — YAML component output contains expected keys and metadata.
+#[test]
+fn convert_component_format_yaml_contains_oscal_keys() {
+    let output = forge_bin()
+        .arg("convert")
+        .arg("tests/fixtures/full_policy.md")
+        .arg("--strategy")
+        .arg("component")
+        .arg("--source-profile")
+        .arg("tests/fixtures/sample_profile.json")
+        .arg("--format")
+        .arg("yaml")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected exit code 0, stderr: {stderr}");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let value: serde_json::Value =
+        serde_yaml::from_str(&stdout).expect("stdout should be valid YAML");
+
+    let cd = &value["component-definition"];
+    assert!(cd["uuid"].is_string(), "Should have component-definition.uuid");
+
+    // AC-7: All OSCAL required metadata fields present
+    let metadata = &cd["metadata"];
+    assert!(
+        metadata["title"].is_string() && !metadata["title"].as_str().unwrap().is_empty(),
+        "metadata.title should be non-empty string"
+    );
+    assert!(metadata["last-modified"].is_string(), "metadata.last-modified should be present");
+    assert!(metadata["version"].is_string(), "metadata.version should be present");
+    assert_eq!(
+        metadata["oscal-version"].as_str(),
+        Some("1.2.0"),
+        "metadata.oscal-version should be 1.2.0"
+    );
 }

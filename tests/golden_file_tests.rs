@@ -487,8 +487,13 @@ mod golden_catalog_tests {
         let dir = TempDir::new().expect("create temp dir");
         let output_path = dir.path().join("catalog.json");
 
-        forge::pipeline::run_catalog_pipeline(&input_path, Some(&output_path), MAX_INPUT_SIZE)
-            .unwrap_or_else(|e| panic!("Catalog pipeline failed on {fixture_dir}: {e}"));
+        forge::pipeline::run_catalog_pipeline(
+            &input_path,
+            Some(&output_path),
+            MAX_INPUT_SIZE,
+            &forge::cli::OutputFormat::Json,
+        )
+        .unwrap_or_else(|e| panic!("Catalog pipeline failed on {fixture_dir}: {e}"));
 
         let json_str = std::fs::read_to_string(&output_path)
             .unwrap_or_else(|e| panic!("Failed to read output: {e}"));
@@ -571,6 +576,7 @@ mod golden_component_tests {
             Some(&output_path),
             MAX_INPUT_SIZE,
             Some(SOURCE_PROFILE),
+            &forge::cli::OutputFormat::Json,
         )
         .unwrap_or_else(|e| panic!("Component pipeline failed on {fixture_dir}: {e}"));
 
@@ -713,13 +719,23 @@ mod determinism_tests {
 
         let dir1 = TempDir::new().unwrap();
         let out1 = dir1.path().join("run1.json");
-        forge::pipeline::run_catalog_pipeline(input_path, Some(&out1), MAX_INPUT_SIZE)
-            .expect("First run failed");
+        forge::pipeline::run_catalog_pipeline(
+            input_path,
+            Some(&out1),
+            MAX_INPUT_SIZE,
+            &forge::cli::OutputFormat::Json,
+        )
+        .expect("First run failed");
 
         let dir2 = TempDir::new().unwrap();
         let out2 = dir2.path().join("run2.json");
-        forge::pipeline::run_catalog_pipeline(input_path, Some(&out2), MAX_INPUT_SIZE)
-            .expect("Second run failed");
+        forge::pipeline::run_catalog_pipeline(
+            input_path,
+            Some(&out2),
+            MAX_INPUT_SIZE,
+            &forge::cli::OutputFormat::Json,
+        )
+        .expect("Second run failed");
 
         let json1: Value = serde_json::from_str(&std::fs::read_to_string(&out1).unwrap()).unwrap();
         let json2: Value = serde_json::from_str(&std::fs::read_to_string(&out2).unwrap()).unwrap();

@@ -40,7 +40,7 @@
 | Document | ID | Relationship |
 |----------|-----|--------------|
 | Parent PRD | [027-prd-yaml-output](../PRD/027-prd-yaml-output.md) | Requirements this architecture satisfies |
-| Security Review | N/A | No security concerns beyond standard YAML generation |
+| Security Review | [027-sec-yaml-output](../SEC/027-sec-yaml-output.md) | Medium-risk review covering YAML injection, boolean coercion, tag injection (SEC-1 through SEC-5) |
 | Supersedes | — | N/A |
 | Superseded By | — | |
 
@@ -95,9 +95,8 @@ graph TD
 | M-1 | Serialize Catalog to valid YAML via serde_yaml | serde_yaml must handle Catalog struct serialization |
 | M-2 | Serialize Component Definition to valid YAML | Same serde_yaml serialization must work for all model types |
 | M-3 | YAML semantically equivalent to JSON | Deserialized models must be identical; serde ensures this |
-| M-4 | `--format yaml` on forge export | OutputFormat::Yaml variant and CLI dispatch |
-| M-5 | YAML to stdout or file via --output | Reuse existing output writing patterns |
-| M-6 | All OSCAL required metadata fields present | Metadata struct serialization must be complete |
+| M-4 | YAML to stdout or file via --output | Reuse existing output writing patterns |
+| M-5 | All OSCAL required metadata fields present | Metadata struct serialization must be complete |
 
 **PRD Constraints inherited:**
 - From constitution: Rust latest stable, serde ecosystem, thiserror, TDD mandatory
@@ -278,8 +277,6 @@ graph TD
 |-----------|---------------|-----------|--------------|
 | yaml_serializer module | YAML serialization functions | Library API | serde_yaml, OSCAL model structs |
 | serialize_to_yaml | Generic YAML serialization for any serde-serializable model | `fn<T: Serialize>(model: &T) -> Result<String, ForgeError>` | serde_yaml |
-| serialize_catalog_to_yaml | Catalog-specific entry point | `fn(&OscalCatalog) -> Result<String, ForgeError>` | serialize_to_yaml |
-| serialize_component_to_yaml | Component Definition-specific entry point | `fn(&OscalComponentDefinition) -> Result<String, ForgeError>` | serialize_to_yaml |
 | deserialize_from_yaml | YAML deserialization for equivalence testing | `fn<T: DeserializeOwned>(yaml: &str) -> Result<T, ForgeError>` | serde_yaml |
 | Format Dispatcher | Routes `--format yaml` to YAML serializer | CLI dispatch | yaml_serializer module |
 
@@ -309,7 +306,9 @@ sequenceDiagram
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-/// Serialize any serde-serializable OSCAL model to YAML
+/// Serialize any serde-serializable OSCAL model to YAML.
+/// Handles all OSCAL model types (Catalog, Component Definition) via generics —
+/// no type-specific wrappers needed.
 pub fn serialize_to_yaml<T: Serialize>(model: &T) -> Result<String, ForgeError> {
     serde_yaml::to_string(model)
         .map_err(|e| ForgeError::Serialization(format!("YAML serialization failed: {e}")))
@@ -321,19 +320,7 @@ pub fn deserialize_from_yaml<T: DeserializeOwned>(yaml: &str) -> Result<T, Forge
         .map_err(|e| ForgeError::Serialization(format!("YAML deserialization failed: {e}")))
 }
 
-/// Serialize an OSCAL Catalog to YAML
-pub fn serialize_catalog_to_yaml(catalog: &OscalCatalog) -> Result<String, ForgeError> {
-    serialize_to_yaml(catalog)
-}
-
-/// Serialize an OSCAL Component Definition to YAML
-pub fn serialize_component_definition_to_yaml(
-    component_def: &OscalComponentDefinition,
-) -> Result<String, ForgeError> {
-    serialize_to_yaml(component_def)
-}
-
-/// Extended output format enumeration
+/// Extended output format enumeration (Yaml variant already exists at src/cli/mod.rs)
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 pub enum OutputFormat {
     Json,
@@ -354,12 +341,13 @@ pub enum OutputFormat {
 
 **Pattern:** Semantic equivalence verification
 ```
-1. Serialize model to JSON via serde_json
-2. Serialize same model to YAML via serde_yaml
-3. Deserialize JSON string back to model struct
-4. Deserialize YAML string back to model struct
-5. Assert deserialized structs are equal (PartialEq)
+1. Serialize model to JSON string via serde_json::to_string_pretty()
+2. Serialize same model to YAML string via serde_yaml::to_string()
+3. Parse JSON string to serde_json::Value via serde_json::from_str()
+4. Parse YAML string to serde_json::Value via serde_yaml::from_str()
+5. Assert both serde_json::Value instances are equal
 ```
+*(Note: OSCAL model structs do not derive PartialEq. Comparison via serde_json::Value is the correct approach — see research.md R-4.)*
 
 ---
 
@@ -423,13 +411,13 @@ pub enum OutputFormat {
 ## Implementation Guidance
 
 ### Suggested Implementation Order 🟢 `@llm-autonomous`
-1. Add `serde_yaml` dependency to `Cargo.toml`
-2. Create `src/export/yaml_serializer.rs` module (or `src/oscal/yaml.rs`)
+1. ~~Add `serde_yaml` dependency to `Cargo.toml`~~ *(Already present: `serde_yaml_ng` 0.10 aliased as `serde_yaml`)*
+2. Create `src/export/yaml.rs` module
 3. Implement `serialize_to_yaml<T: Serialize>` generic function
 4. Implement `deserialize_from_yaml<T: DeserializeOwned>` for testing
-5. Add `Yaml` variant to `OutputFormat` enum
-6. Wire CLI dispatch for `--format yaml` in `forge convert` and `forge export`
-7. Write semantic equivalence tests (JSON vs YAML deserialization comparison)
+5. ~~Add `Yaml` variant to `OutputFormat` enum~~ *(Already exists at `src/cli/mod.rs:107`)*
+6. Wire CLI dispatch for `--format yaml` in `forge convert` *(forge export deferred to WI-29)*
+7. Write semantic equivalence tests (JSON vs YAML via `serde_json::Value` comparison)
 8. Test with golden-file fixtures from WI-21/WI-22
 
 ### Testing Strategy 🟢 `@llm-autonomous`
@@ -514,9 +502,8 @@ No open questions for this work item.
 | M-1 | Correctness | Option 1: ✅ | serialize_catalog_to_yaml | serde_yaml serializes Catalog via derive |
 | M-2 | Correctness | Option 1: ✅ | serialize_component_to_yaml | Same pattern for Component Definition |
 | M-3 | Semantic equivalence | Option 1: ✅ | serialize_to_yaml | Same serde Serialize impl guarantees equivalence |
-| M-4 | Simplicity | Option 1: ✅ | Format Dispatcher | OutputFormat::Yaml variant + CLI dispatch |
-| M-5 | Simplicity | Option 1: ✅ | Output Writer | Reuse existing stdout/file pattern |
-| M-6 | Correctness | Option 1: ✅ | serialize_to_yaml | Metadata struct serialized via derive |
+| M-4 | Simplicity | Option 1: ✅ | Output Writer | Reuse existing stdout/file pattern |
+| M-5 | Correctness | Option 1: ✅ | serialize_to_yaml | Metadata struct serialized via derive |
 
 ---
 

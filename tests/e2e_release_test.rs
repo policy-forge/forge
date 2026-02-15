@@ -3,7 +3,7 @@
 //! These integration tests verify each parent PRD M-requirement end-to-end
 //! by running the `forge` binary as a subprocess and examining output.
 //!
-//! All tests use `std::process::Command` (research R1 — no assert_cmd).
+//! All tests use `std::process::Command` (research R1 — no `assert_cmd`).
 
 use std::fs;
 use std::io::Write;
@@ -298,7 +298,7 @@ fn test_m8_deterministic_uuids() {
 /// T010 [US1] M-9, AC-9: Citations are extracted and the output structure
 /// remains valid when input contains bibliographic references.
 ///
-/// Note: The catalog pipeline currently stubs back_matter with an empty citation
+/// Note: The catalog pipeline currently stubs `back_matter` with an empty citation
 /// list (pipeline.rs:126). Citation data is extracted into the document model.
 /// This test verifies citation extraction doesn't corrupt the output and the
 /// pipeline handles references correctly.
@@ -318,16 +318,14 @@ fn test_m9_citations_in_back_matter() {
     assert!(catalog["groups"].is_array(), "catalog.groups should be present");
 
     // If back-matter IS present, verify its structure is well-formed
-    if let Some(back_matter) = catalog.get("back-matter") {
-        if back_matter.is_object() {
-            if let Some(resources) = back_matter["resources"].as_array() {
+    if let Some(back_matter) = catalog.get("back-matter")
+        && back_matter.is_object()
+            && let Some(resources) = back_matter["resources"].as_array() {
                 for (i, resource) in resources.iter().enumerate() {
                     assert!(resource["uuid"].is_string(), "resource[{i}] should have uuid");
                     assert!(resource["title"].is_string(), "resource[{i}] should have title");
                 }
             }
-        }
-    }
 
     // Verify controls are still produced (citations don't break extraction)
     let groups = catalog["groups"].as_array().unwrap();
@@ -404,14 +402,13 @@ fn test_m11_no_arbitrary_remarks() {
                 let ctrl_id = control["id"].as_str().unwrap_or("?");
 
                 // Controls should not have arbitrary remarks with unstructured prose
-                if let Some(remarks) = control.get("remarks") {
-                    if let Some(text) = remarks.as_str() {
+                if let Some(remarks) = control.get("remarks")
+                    && let Some(text) = remarks.as_str() {
                         assert!(
                             text.is_empty(),
                             "Control '{ctrl_id}' should not have arbitrary remarks, got: '{text}'"
                         );
                     }
-                }
             }
         }
     }

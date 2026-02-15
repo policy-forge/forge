@@ -20,15 +20,10 @@ pub fn execute(
         .checked_mul(1024 * 1024)
         .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))?;
 
-    // W-2: reject non-JSON formats (XML/YAML deferred to WI-26, WI-27)
-    if !matches!(format, OutputFormat::Json) {
-        return Err(ForgeError::Validation(
-            "Only 'json' output format is currently supported. XML and YAML formats will be available in a future release.".to_string(),
-        ));
-    }
-
     match strategy {
-        Strategy::Catalog => crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes),
+        Strategy::Catalog => {
+            crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes, format)
+        }
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
             let profile_ref = match source_profile {
@@ -61,7 +56,13 @@ pub fn execute(
                     Some(p)
                 }
             };
-            crate::pipeline::run_component_pipeline(input, output, max_size_bytes, profile_ref)
+            crate::pipeline::run_component_pipeline(
+                input,
+                output,
+                max_size_bytes,
+                profile_ref,
+                format,
+            )
         }
     }
 }

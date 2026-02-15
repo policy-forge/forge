@@ -67,7 +67,7 @@ fn make_section(title: &str, reqs: Vec<PolicyRequirement>) -> PolicySection {
 /// C-1: Concurrent atomization of different requirements produces correct results.
 ///
 /// Spawns N threads, each atomizing a unique compound requirement. Verifies
-/// that all results are independent and correct (no data races on LazyLock<Regex>).
+/// that all results are independent and correct (no data races on `LazyLock`<Regex>).
 #[test]
 fn concurrent_atomization_produces_correct_results() {
     let thread_count = 16;
@@ -104,7 +104,7 @@ fn concurrent_atomization_produces_correct_results() {
 
 /// C-2: Concurrent citation extraction produces correct, independent results.
 ///
-/// Verifies LazyLock<Regex> patterns (URL, bibliographic, cross-ref, scheme-less)
+/// Verifies `LazyLock`<Regex> patterns (URL, bibliographic, cross-ref, scheme-less)
 /// are safe under concurrent access.
 #[test]
 fn concurrent_citation_extraction_produces_correct_results() {
@@ -144,7 +144,7 @@ fn concurrent_citation_extraction_produces_correct_results() {
     }
 }
 
-/// C-3: Concurrent document-level operations (atomize_document + assign_stable_ids).
+/// C-3: Concurrent document-level operations (`atomize_document` + `assign_stable_ids`).
 ///
 /// Tests that full document processing pipelines run correctly in parallel
 /// without interference.

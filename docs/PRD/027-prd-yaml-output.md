@@ -48,11 +48,9 @@ This PRD covers **WI-27: YAML Output** from the FORGE Product Roadmap (Sprint S-
 **In Scope:**
 - Implementing OSCAL YAML serialization using `serde_yaml` for all OSCAL model types (Catalog, Component Definition)
 - Adding `--format yaml` support to `forge convert` subcommand
-- Adding `--format yaml` support to `forge export` subcommand
 - Validating that YAML output is semantically equivalent to JSON output for the same source input
-- Ensuring YAML output conforms to OSCAL YAML conventions (key ordering, quoting, multiline string handling)
 - Unit and integration tests verifying valid YAML is produced and is semantically equivalent to JSON
-- Extending the existing output format enumeration to include YAML as a variant
+- Unblocking the existing `OutputFormat::Yaml` variant (already defined in CLI enum)
 
 **Out of Scope:**
 - XML serialization — handled by WI-26 (026-prd-xml-output)
@@ -166,7 +164,7 @@ A compliance engineer wants YAML output written to a specific file path or piped
 - [A-2] `serde_yaml` produces YAML output that is compatible with standard YAML 1.2 parsers and conforms to OSCAL YAML conventions.
 - [A-3] The `--format` CLI argument already exists as a placeholder or enum from WI-1 scaffolding, and adding the `yaml` variant is straightforward.
 - [A-4] WI-25 (Phase 1 Release) has completed, meaning JSON output is fully functional and validated before YAML work begins.
-- [A-5] Semantic equivalence can be verified by deserializing both JSON and YAML outputs into the same Rust structs and comparing them.
+- [A-5] Semantic equivalence can be verified by serializing both JSON and YAML outputs to `serde_json::Value` and comparing the Values structurally. *(Note: OSCAL model structs do not derive `PartialEq`, so direct struct comparison is not possible. Comparison via `serde_json::Value` is the correct approach — see research.md R-4.)*
 
 ### Risks
 | ID | Risk | Likelihood | Impact | Mitigation |
@@ -194,11 +192,13 @@ flowchart TD
     H -->|Yes| I[Write YAML to file]
     H -->|No| J[Write YAML to stdout]
 
-    K[User runs forge export artifact.json --format yaml] --> L[Deserialize JSON artifact]
-    L --> M[serde_yaml serialization]
-    M --> N{--output specified?}
-    N -->|Yes| O[Write YAML to file]
-    N -->|No| P[Write YAML to stdout]
+    subgraph "Deferred to WI-29 (W-5)"
+        K[User runs forge export artifact.json --format yaml] --> L[Deserialize JSON artifact]
+        L --> M[serde_yaml serialization]
+        M --> N{--output specified?}
+        N -->|Yes| O[Write YAML to file]
+        N -->|No| P[Write YAML to stdout]
+    end
 ```
 
 ### State Diagram (if applicable) 🟡 `@human-review`
@@ -211,15 +211,12 @@ N/A — YAML serialization is a stateless transformation of the OSCAL data model
 ### Must Have (M) — MVP, launch blockers 🔴 `@human-required`
 - [ ] **M-1:** The CLI shall serialize OSCAL Catalog models to valid YAML using `serde_yaml` when `--format yaml` is specified on `forge convert`. *(Traces to: Parent PRD S-4)*
 - [ ] **M-2:** The CLI shall serialize OSCAL Component Definition models to valid YAML using `serde_yaml` when `--format yaml` is specified on `forge convert`. *(Traces to: Parent PRD S-4)*
-- [ ] **M-3:** YAML output shall be semantically equivalent to JSON output for the same source input — deserializing both into the same Rust model struct shall produce identical values. *(Traces to: Parent PRD S-4, US-5)*
-- [ ] **M-4:** The `--format yaml` option shall be available on `forge export` for converting existing OSCAL artifacts to YAML. *(Traces to: Parent PRD S-4, US-5)*
-- [ ] **M-5:** YAML output shall be written to stdout by default or to a file when `--output <path>` is specified, consistent with existing JSON output behavior. *(Traces to: Parent PRD S-4)*
-- [ ] **M-6:** The YAML output shall include all OSCAL required fields (uuid, metadata with title, last-modified, version, oscal-version) in the correct structure. *(Traces to: Parent PRD M-5, S-4)*
-
+- [ ] **M-3:** YAML output shall be semantically equivalent to JSON output for the same source input — serializing both to `serde_json::Value` and comparing structurally shall produce identical values. *(Traces to: Parent PRD S-4, US-5)*
+- [ ] **M-4:** YAML output shall be written to stdout by default or to a file when `--output <path>` is specified, consistent with existing JSON output behavior. *(Traces to: Parent PRD S-4)* *(Renumbered from M-5; original M-4 moved to W-5)*
+- [ ] **M-5:** The YAML output shall include all OSCAL required fields (uuid, metadata with title, last-modified, version, oscal-version) in the correct structure. *(Traces to: Parent PRD M-5, S-4)* *(Renumbered from M-6)*
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
 - [ ] **S-1:** YAML output should use human-readable formatting with consistent indentation (2-space indent) for readability.
-- [ ] **S-2:** YAML output should handle multiline string fields (e.g., control statement prose) using YAML block scalar style (literal `|` or folded `>`) rather than inline escaped strings.
-- [ ] **S-3:** The CLI should report the output format in verbose mode (e.g., "Writing OSCAL Catalog as YAML to catalog.yaml").
+- [ ] **S-2:** The CLI should report the output format in verbose mode (e.g., "Writing OSCAL Catalog as YAML to catalog.yaml"). *(Renumbered from S-3; original S-2 moved to W-5)*
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
 - [ ] **C-1:** YAML output could include a leading comment indicating the FORGE version and generation timestamp.
@@ -230,13 +227,15 @@ N/A — YAML serialization is a stateless transformation of the OSCAL data model
 - [ ] **W-2:** YAML schema validation (validating YAML surface syntax against OSCAL schemas) — *Reason: OSCAL schemas are JSON Schema; validation operates on the deserialized model, not the YAML text*
 - [ ] **W-3:** Custom YAML style configuration (user-selectable quoting, indentation, flow vs block style) — *Reason: Unnecessary complexity for MVP; default serde_yaml formatting is sufficient*
 - [ ] **W-4:** YAML input ingestion (reading OSCAL YAML as input to FORGE) — *Reason: FORGE ingests policy documents, not OSCAL artifacts; OSCAL input is only for `forge export` which deserializes via serde*
+- [ ] **W-5:** The `--format yaml` option on `forge export` for converting existing OSCAL artifacts to YAML — *Reason: `forge export` subcommand does not exist yet; deferred to WI-29 (029-prd-export-subcommand). The YAML serializer module built in WI-27 will be directly reusable when `forge export` is implemented.* *(Previously M-4)*
+- [ ] **W-6:** YAML multiline block scalar style (literal `|` or folded `>`) for prose fields — *Reason: Requires custom YAML formatting, which conflicts with AR guardrail "use serde_yaml::to_string() exclusively." serde_yaml default formatting is used. Deferred per AR architecture decision.* *(Previously S-2)*
 
 ---
 
 ## Technical Constraints 🟡 `@human-review`
 
 - **Language/Framework:** Rust (latest stable), Cargo build system
-- **Serialization:** `serde_yaml` crate for YAML serialization, integrated with existing `serde` derive macros on OSCAL model structs
+- **Serialization:** `serde_yaml_ng` 0.10 crate (aliased as `serde_yaml` in `Cargo.toml`, already present for frontmatter parsing) for YAML serialization, integrated with existing `serde` derive macros on OSCAL model structs
 - **Semantic Equivalence:** YAML and JSON outputs must deserialize to identical Rust structs; verified by deserialization round-trip in tests
 - **OSCAL Version:** Target OSCAL v1.2.0 model definitions, consistent with JSON output
 - **Error Handling:** `thiserror` for serialization errors (per constitution principle VIII); YAML serialization errors must produce descriptive ForgeError variants
@@ -264,21 +263,12 @@ pub enum OutputFormat {
 
 ## Interface Contract (if applicable) 🟡 `@human-review`
 
+See full interface definitions in [AR §Interface Definitions](../AR/027-ar-yaml-output.md#interface-definitions-human-review) and implementation contract in `specs/027-yaml-output/contracts/yaml_serializer.rs`.
+
 ```rust
 // CLI Interface (YAML output)
-
 // forge convert <input> --strategy <catalog|component> --format yaml [--output <path>]
-// forge export <artifact-path> --format yaml [--output <path>]
-
-/// Serialize an OSCAL Catalog to YAML
-pub fn serialize_catalog_to_yaml(
-    catalog: &OscalCatalog,
-) -> Result<String, ForgeError>;
-
-/// Serialize an OSCAL Component Definition to YAML
-pub fn serialize_component_definition_to_yaml(
-    component_def: &OscalComponentDefinition,
-) -> Result<String, ForgeError>;
+// forge export <artifact-path> --format yaml [--output <path>]  // Deferred to WI-29 (W-5)
 
 /// Generic YAML serialization for any serde-serializable OSCAL model
 pub fn serialize_to_yaml<T: serde::Serialize>(
@@ -291,7 +281,7 @@ pub fn deserialize_from_yaml<T: serde::de::DeserializeOwned>(
 ) -> Result<T, ForgeError>;
 ```
 
-The serialization functions wrap `serde_yaml::to_string()` with FORGE-specific error handling, producing `ForgeError::Serialization` on failure.
+The serialization functions wrap `serde_yaml::to_string()` with FORGE-specific error handling, producing `ForgeError::Serialization` on failure. The generic `serialize_to_yaml<T>` handles all OSCAL model types (Catalog, Component Definition) without type-specific wrappers.
 
 ---
 
@@ -326,19 +316,19 @@ The serialization functions wrap `serde_yaml::to_string()` with FORGE-specific e
 |-------|-------------|------------|-------|------|------|
 | AC-1 | M-1 | US-1 | A Markdown policy document | Running `forge convert policy.md --strategy catalog --format yaml` | A valid OSCAL Catalog in YAML format is produced |
 | AC-2 | M-2 | US-2 | A Markdown policy document | Running `forge convert policy.md --strategy component --format yaml` | A valid OSCAL Component Definition in YAML format is produced |
-| AC-3 | M-3 | US-1, US-2 | The same source document converted to JSON and YAML | Deserializing both outputs into Rust structs | The deserialized models are identical |
-| AC-4 | M-4 | US-3 | An existing OSCAL JSON artifact | Running `forge export artifact.json --format yaml` | A valid OSCAL YAML file is produced that is semantically equivalent to the input |
-| AC-5 | M-5 | US-4 | A policy document | Running `forge convert --format yaml --output catalog.yaml` | YAML is written to the specified file path |
-| AC-6 | M-5 | US-4 | A policy document | Running `forge convert --format yaml` without `--output` | YAML is written to stdout |
-| AC-7 | M-6 | US-1 | Any YAML output | Inspecting the YAML content | All OSCAL required metadata fields (uuid, title, last-modified, version, oscal-version) are present |
+| AC-3 | M-3 | US-1, US-2 | The same source document converted to JSON and YAML | Parsing both outputs to `serde_json::Value` | The Values are structurally identical |
+| AC-4 | ~~M-4~~ W-5 | ~~US-3~~ | ~~An existing OSCAL JSON artifact~~ | ~~Running `forge export artifact.json --format yaml`~~ | ~~Deferred to WI-29~~ |
+| AC-5 | M-4 | US-1, US-2 | A policy document | Running `forge convert --format yaml --output catalog.yaml` | YAML is written to the specified file path |
+| AC-6 | M-4 | US-1, US-2 | A policy document | Running `forge convert --format yaml` without `--output` | YAML is written to stdout |
+| AC-7 | M-5 | US-1 | Any YAML output | Inspecting the YAML content | All OSCAL required metadata fields (uuid, title, last-modified, version, oscal-version) are present |
 
 ### Edge Cases 🟢 `@llm-autonomous`
 - [ ] **EC-1:** (M-1) When the OSCAL model contains empty collections (e.g., a group with no controls), then YAML output represents them as empty sequences (`[]`) or omits them per serde configuration, and the output remains valid.
 - [ ] **EC-2:** (M-3) When the OSCAL model contains Unicode text (e.g., policy text with accented characters or non-Latin scripts), then YAML output preserves the Unicode content and remains semantically equivalent to JSON.
 - [ ] **EC-3:** (M-1) When the OSCAL model contains deeply nested structures (e.g., nested groups within groups), then YAML output correctly represents the nesting hierarchy.
-- [ ] **EC-4:** (M-5) When `--output` specifies a path in a non-existent directory, then the CLI exits with a descriptive filesystem error.
+- [ ] **EC-4:** (M-4) When `--output` specifies a path in a non-existent directory, then the CLI exits with a descriptive filesystem error.
 - [ ] **EC-5:** (M-1) When a control statement contains YAML-special characters (e.g., colons, hash marks, brackets), then serde_yaml properly quotes or escapes them in the output.
-- [ ] **EC-6:** (M-4) When `forge export` receives a malformed or invalid JSON file, then the CLI exits with a descriptive deserialization error (not a YAML serialization error).
+- [ ] **EC-6:** ~~(M-4)~~ *(Deferred to WI-29 with W-5)* When `forge export` receives a malformed or invalid JSON file, then the CLI exits with a descriptive deserialization error (not a YAML serialization error).
 - [ ] **EC-7:** (M-3) When the OSCAL model contains null/None optional fields, then both JSON and YAML handle them consistently (omit or represent as null) and semantic equivalence holds.
 
 ---
@@ -411,7 +401,7 @@ N/A — No spike tasks for this work item. `serde_yaml` is a well-established cr
 | Valid YAML output | N/A | 100% of outputs parse as valid YAML | Automated tests with serde_yaml deserialization |
 | Semantic equivalence | N/A | 100% equivalence with JSON output | Structural comparison of deserialized models |
 | Model type coverage | N/A | Both Catalog and Component Definition supported | Integration tests for each model type |
-| CLI integration | N/A | `--format yaml` works on both `convert` and `export` | CLI integration tests |
+| CLI integration | N/A | `--format yaml` works on `convert` (export deferred to WI-29) | CLI integration tests |
 
 ### Technical Verification 🟢 `@llm-autonomous`
 | Metric | Target | Verification Method |
@@ -467,7 +457,7 @@ No open questions for this work item.
 ## Review Checklist 🟢 `@llm-autonomous`
 
 Before marking as Approved:
-- [x] All requirements have unique IDs (M-1 through M-6, S-1 through S-3, C-1 through C-2, W-1 through W-4)
+- [x] All requirements have unique IDs (M-1 through M-5, S-1 through S-2, C-1 through C-2, W-1 through W-6)
 - [x] All Must Have requirements have linked acceptance criteria
 - [x] User stories are prioritized and independently testable
 - [x] Acceptance criteria reference both requirement IDs and user stories

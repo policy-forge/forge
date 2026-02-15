@@ -206,11 +206,19 @@ fn bench_per_stage(c: &mut Criterion) {
     // Pre-compute catalog envelope for serialization stage
     let envelope = build_catalog_envelope(&doc_for_catalog).unwrap();
 
-    // ── Stage 5: Serialization ──
-    group.bench_function("serialization", |b| {
+    // ── Stage 5: Serialization (JSON) ──
+    group.bench_function("serialization_json", |b| {
         b.iter(|| {
             let json = serde_json::to_string_pretty(black_box(&envelope)).unwrap();
             black_box(json)
+        });
+    });
+
+    // ── Stage 5b: Serialization (YAML) — WI-27 ──
+    group.bench_function("serialization_yaml", |b| {
+        b.iter(|| {
+            let yaml = forge::export::yaml::serialize_to_yaml(black_box(&envelope)).unwrap();
+            black_box(yaml)
         });
     });
 

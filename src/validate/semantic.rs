@@ -321,12 +321,12 @@ mod tests {
     fn no_links_no_errors() {
         // PRD EC-4: artifact with no links → no errors
         let json: Value = serde_json::from_str(
-            r##"{
+            r#"{
                 "catalog": {
                     "metadata": { "title": "Test" },
                     "groups": [{ "title": "Group 1" }]
                 }
-            }"##,
+            }"#,
         )
         .unwrap();
 
@@ -338,7 +338,7 @@ mod tests {
     fn external_urls_not_followed() {
         // SEC-5: do not follow external URLs
         let json: Value = serde_json::from_str(
-            r##"{
+            r#"{
                 "catalog": {
                     "groups": [{
                         "links": [
@@ -347,7 +347,7 @@ mod tests {
                         ]
                     }]
                 }
-            }"##,
+            }"#,
         )
         .unwrap();
 
@@ -380,7 +380,7 @@ mod tests {
     #[test]
     fn empty_control_id_detected() {
         let json: Value = serde_json::from_str(
-            r##"{
+            r#"{
                 "component-definition": {
                     "components": [{
                         "type": "software",
@@ -395,7 +395,7 @@ mod tests {
                         }]
                     }]
                 }
-            }"##,
+            }"#,
         )
         .unwrap();
 
@@ -408,7 +408,7 @@ mod tests {
     #[test]
     fn valid_control_ids_no_errors() {
         let json: Value = serde_json::from_str(
-            r##"{
+            r#"{
                 "component-definition": {
                     "components": [{
                         "type": "software",
@@ -423,7 +423,7 @@ mod tests {
                         }]
                     }]
                 }
-            }"##,
+            }"#,
         )
         .unwrap();
 
@@ -434,14 +434,14 @@ mod tests {
     #[test]
     fn no_implemented_requirements_no_errors() {
         let json: Value = serde_json::from_str(
-            r##"{
+            r#"{
                 "component-definition": {
                     "components": [{
                         "type": "software",
                         "title": "Test"
                     }]
                 }
-            }"##,
+            }"#,
         )
         .unwrap();
 
@@ -452,7 +452,7 @@ mod tests {
     #[test]
     fn catalog_skips_check_gracefully() {
         let json: Value =
-            serde_json::from_str(r##"{ "catalog": { "metadata": { "title": "Test" } } }"##)
+            serde_json::from_str(r#"{ "catalog": { "metadata": { "title": "Test" } } }"#)
                 .unwrap();
 
         let errors = check_missing_references(&json, OscalModelType::Catalog);
@@ -462,7 +462,7 @@ mod tests {
     #[test]
     fn whitespace_only_control_id_detected() {
         let json: Value = serde_json::from_str(
-            r##"{
+            r#"{
                 "component-definition": {
                     "components": [{
                         "type": "software",
@@ -477,7 +477,7 @@ mod tests {
                         }]
                     }]
                 }
-            }"##,
+            }"#,
         )
         .unwrap();
 
@@ -488,7 +488,7 @@ mod tests {
     #[test]
     fn punctuation_only_control_id_detected() {
         let json: Value = serde_json::from_str(
-            r##"{
+            r#"{
                 "component-definition": {
                     "components": [{
                         "type": "software",
@@ -503,7 +503,7 @@ mod tests {
                         }]
                     }]
                 }
-            }"##,
+            }"#,
         )
         .unwrap();
 

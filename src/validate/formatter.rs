@@ -335,7 +335,7 @@ mod tests {
             }"#,
         )
         .unwrap();
-        let instance: Value = serde_json::from_str(r#"{}"#).unwrap();
+        let instance: Value = serde_json::from_str(r"{}").unwrap();
 
         let validator = jsonschema::validator_for(&schema_json).unwrap();
         let errors: Vec<_> = validator.iter_errors(&instance).collect();
@@ -406,7 +406,7 @@ mod tests {
         // SEC-4: no Rust module paths in output
         let schema_json: Value =
             serde_json::from_str(r#"{"type": "object", "required": ["id"]}"#).unwrap();
-        let instance: Value = serde_json::from_str(r#"{}"#).unwrap();
+        let instance: Value = serde_json::from_str(r"{}").unwrap();
 
         let validator = jsonschema::validator_for(&schema_json).unwrap();
         let errors: Vec<_> = validator.iter_errors(&instance).collect();
@@ -423,7 +423,7 @@ mod tests {
     fn extract_actual_at_root() {
         let json: Value = serde_json::from_str(r#"{"a": 1}"#).unwrap();
         let result = extract_actual_value(&json, "");
-        assert!(result.contains("a"));
+        assert!(result.contains('a'));
     }
 
     #[test]
