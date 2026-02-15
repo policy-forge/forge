@@ -143,7 +143,11 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 /// Populate `stable_id` on all [`PolicyRequirement`]s in a [`PolicyDocument`].
 ///
 /// Walks the full section tree recursively, generating a UUID v5 for each
-/// requirement's text and setting `stable_id = Some(uuid.to_string())`.
+/// requirement using a collision-resistant hash input that combines:
+/// - Normalized requirement text
+/// - Section path (e.g. `"Access Control/MFA Requirements"`)
+/// - Source line number
+/// - Atom index
 ///
 /// After this function returns, no `PolicyRequirement` in the document will
 /// have `stable_id = None`.
@@ -193,24 +197,57 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 #[tracing::instrument(level = "debug", skip(document))]
 pub fn assign_stable_ids(mut document: PolicyDocument) -> PolicyDocument {
     for section in &mut document.sections {
-        assign_stable_ids_to_section(section);
+        assign_stable_ids_to_section(section, &section.title.clone());
     }
     document
 }
 
-fn assign_stable_ids_to_section(section: &mut PolicySection) {
+/// Maximum section nesting depth for recursive traversal (`DoS` protection).
+const MAX_SECTION_DEPTH: usize = 50;
+
+fn assign_stable_ids_to_section(section: &mut PolicySection, section_path: &str) {
+    assign_stable_ids_to_section_inner(section, section_path, 0);
+}
+
+fn assign_stable_ids_to_section_inner(
+    section: &mut PolicySection,
+    section_path: &str,
+    depth: usize,
+) {
+    // Always assign IDs to requirements at this level (docstring guarantees
+    // all requirements get stable_id). Only skip recursion into children
+    // when depth exceeds the safety limit.
     for requirement in &mut section.requirements {
         let normalized = normalize_for_hashing(&requirement.text);
-        let uuid = Uuid::new_v5(&FORGE_NAMESPACE_UUID, normalized.as_bytes());
+        // Include section path, source line, and atom index in the hash input
+        // to prevent collisions when identical requirement text appears in
+        // different sections or at different positions.
+        let hash_input = format!(
+            "{normalized}\0{section_path}\0{}\0{}",
+            requirement.source_line, requirement.atom_index
+        );
+        let uuid = Uuid::new_v5(&FORGE_NAMESPACE_UUID, hash_input.as_bytes());
         tracing::debug!(
             normalized_text = %normalized,
+            section_path = %section_path,
+            source_line = requirement.source_line,
+            atom_index = requirement.atom_index,
             uuid = %uuid,
             "UUID generated"
         );
         requirement.stable_id = Some(uuid.to_string());
     }
+    if depth > MAX_SECTION_DEPTH {
+        tracing::trace!(
+            depth,
+            max = MAX_SECTION_DEPTH,
+            "max section depth exceeded; skipping child traversal"
+        );
+        return;
+    }
     for child in &mut section.children {
-        assign_stable_ids_to_section(child);
+        let child_path = format!("{section_path}/{}", child.title);
+        assign_stable_ids_to_section_inner(child, &child_path, depth + 1);
     }
 }
 

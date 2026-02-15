@@ -10,7 +10,7 @@ expression: normalized
           "citation": {
             "text": "NIST SP 800-77"
           },
-          "description": "Referenced by requirement e52209a1-b95d-592a-92e8-2335d9f3f6aa",
+          "description": "Referenced by requirement 77c45e0f-5b61-56c6-bccb-b006a61d6d9b",
           "title": "NIST SP 800-77",
           "uuid": "00000000-0000-0000-0000-000000000000"
         },
@@ -18,7 +18,7 @@ expression: normalized
           "citation": {
             "text": "FIPS 140-3"
           },
-          "description": "Referenced by requirement 5386a66b-8714-5d7e-93ce-646168964a43",
+          "description": "Referenced by requirement a4128754-7f47-5ac6-baee-91c82f2ce78a",
           "title": "FIPS 140-3",
           "uuid": "00000000-0000-0000-0000-000000000000"
         },
@@ -26,7 +26,7 @@ expression: normalized
           "citation": {
             "text": "NIST SP 800-94"
           },
-          "description": "Referenced by requirement ea6d0460-c94e-5169-acd3-5393f3d08384",
+          "description": "Referenced by requirement 9b00ccfe-e54f-53bc-983d-2ee6dff5ce4e",
           "title": "NIST SP 800-94",
           "uuid": "00000000-0000-0000-0000-000000000000"
         }

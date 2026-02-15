@@ -121,8 +121,11 @@ pub fn run_catalog_pipeline(
     // Step 9: Assemble metadata
     let real_metadata = crate::oscal::assemble_metadata(&doc_with_ids.metadata, None)?;
 
-    // Step 10: Generate back matter (empty citations stub per D2)
-    let (back_matter_resources, _resource_map) = crate::oscal::generate_back_matter(&[])?;
+    // Step 10: Generate back matter from extracted citations
+    let all_citations =
+        crate::oscal::component_definition::collect_all_citations(&doc_with_ids.sections);
+    let (back_matter_resources, _resource_map) =
+        crate::oscal::generate_back_matter(&all_citations)?;
 
     // Step 11: Assemble CatalogEnvelope with real metadata mapped to placeholder fields
     let back_matter = if back_matter_resources.is_empty() {

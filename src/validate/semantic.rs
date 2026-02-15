@@ -65,6 +65,9 @@ fn check_orphaned_links(json: &Value) -> Vec<ValidationError> {
     errors
 }
 
+/// Maximum recursion depth for JSON tree walking (`DoS` protection).
+const MAX_WALK_DEPTH: usize = 100;
+
 /// Recursively walk the JSON tree tracking path, looking for orphaned `href` references.
 fn walk_for_orphaned_links(
     value: &Value,
@@ -72,6 +75,20 @@ fn walk_for_orphaned_links(
     resource_uuids: &HashSet<String>,
     errors: &mut Vec<ValidationError>,
 ) {
+    walk_for_orphaned_links_inner(value, current_path, resource_uuids, errors, 0);
+}
+
+fn walk_for_orphaned_links_inner(
+    value: &Value,
+    current_path: &str,
+    resource_uuids: &HashSet<String>,
+    errors: &mut Vec<ValidationError>,
+    depth: usize,
+) {
+    if depth > MAX_WALK_DEPTH {
+        tracing::trace!(path = %current_path, depth, max = MAX_WALK_DEPTH, "max walk depth exceeded; skipping further traversal");
+        return;
+    }
     match value {
         Value::Object(map) => {
             // Check if this object has an href that starts with "#"
@@ -95,13 +112,25 @@ fn walk_for_orphaned_links(
             // Recurse into all child values
             for (key, child) in map {
                 let child_path = format!("{current_path}.{key}");
-                walk_for_orphaned_links(child, &child_path, resource_uuids, errors);
+                walk_for_orphaned_links_inner(
+                    child,
+                    &child_path,
+                    resource_uuids,
+                    errors,
+                    depth + 1,
+                );
             }
         }
         Value::Array(arr) => {
             for (i, child) in arr.iter().enumerate() {
                 let child_path = format!("{current_path}[{i}]");
-                walk_for_orphaned_links(child, &child_path, resource_uuids, errors);
+                walk_for_orphaned_links_inner(
+                    child,
+                    &child_path,
+                    resource_uuids,
+                    errors,
+                    depth + 1,
+                );
             }
         }
         _ => {}
@@ -325,6 +354,25 @@ mod tests {
         // External URLs should not produce errors
         let errors = check_orphaned_links(&json);
         assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn max_walk_depth_prevents_stack_overflow() {
+        // Build a JSON structure deeper than MAX_WALK_DEPTH with an orphaned link at the bottom
+        let mut json = serde_json::json!({"href": "#deep-orphan"});
+        for _ in 0..=MAX_WALK_DEPTH + 10 {
+            json = serde_json::json!({"child": json});
+        }
+        let wrapper =
+            serde_json::json!({"catalog": {"back-matter": {"resources": []}, "data": json}});
+
+        let errors = check_orphaned_links(&wrapper);
+        // The deeply nested orphaned link should NOT be found (depth guard stops traversal)
+        assert!(
+            errors.is_empty(),
+            "Should not find orphaned link beyond MAX_WALK_DEPTH, found {} errors",
+            errors.len()
+        );
     }
 
     // --- T020: check_missing_references tests ---

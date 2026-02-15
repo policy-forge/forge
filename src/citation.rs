@@ -242,10 +242,21 @@ fn normalize_prose(text: &str) -> String {
     result = result.replace("( )", "");
     result = result.replace("()", "");
 
-    // Collapse consecutive spaces
-    while result.contains("  ") {
-        result = result.replace("  ", " ");
+    // Collapse consecutive whitespace (single-pass; handles tabs, newlines, Unicode whitespace)
+    let mut collapsed = String::with_capacity(result.len());
+    let mut prev_space = false;
+    for ch in result.chars() {
+        if ch.is_whitespace() {
+            if !prev_space {
+                collapsed.push(' ');
+            }
+            prev_space = true;
+        } else {
+            collapsed.push(ch);
+            prev_space = false;
+        }
     }
+    result = collapsed;
 
     // Normalize punctuation artifacts from stripping
     result = result.replace(", ,", ",");
@@ -342,6 +353,18 @@ mod tests {
                 .unwrap();
 
         assert!(!text.contains("  "));
+        assert_eq!(text, "Access requirements");
+    }
+
+    // EC-2b: Tab and newline whitespace collapsed after stripping
+    #[test]
+    fn us1_tabs_and_newlines_collapsed_after_stripping() {
+        let (text, _) =
+            extract_citations_from_text("req-1", "Access\thttps://example.com\nrequirements")
+                .unwrap();
+
+        assert!(!text.contains('\t'));
+        assert!(!text.contains('\n'));
         assert_eq!(text, "Access requirements");
     }
 

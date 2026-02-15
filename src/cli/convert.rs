@@ -33,9 +33,9 @@ pub fn execute(
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
             let profile_ref = match source_profile {
                 None => {
-                    let msg = "--source-profile not provided; control-id mapping will be skipped. The generated Component Definition will have empty control-implementations.";
-                    tracing::warn!(msg);
-                    eprintln!("Warning: {msg}");
+                    tracing::warn!(
+                        "--source-profile not provided; control-id mapping will be skipped. The generated Component Definition will have empty control-implementations."
+                    );
                     None
                 }
                 Some(p) if p.trim().is_empty() => {

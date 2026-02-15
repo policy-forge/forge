@@ -37,13 +37,21 @@ pub const LINK_REL_SOURCE: &str = "source";
 /// paths and are left as-is to keep the encoding minimal and predictable.
 ///
 /// `%` is encoded FIRST to avoid double-encoding.
-/// Maximum file path length accepted for href encoding (4096 per POSIX PATH_MAX).
+/// Maximum file path length accepted for href encoding (4096 per POSIX `PATH_MAX`).
 const MAX_HREF_PATH_LENGTH: usize = 4096;
 
 fn encode_href_path(path: &str) -> String {
     // Guard against excessively long paths (DoS / allocation risk)
-    let safe_path =
-        if path.len() > MAX_HREF_PATH_LENGTH { &path[..MAX_HREF_PATH_LENGTH] } else { path };
+    // Use char boundary-safe truncation to avoid panic on non-ASCII UTF-8 paths.
+    let safe_path = if path.len() > MAX_HREF_PATH_LENGTH {
+        let mut end = MAX_HREF_PATH_LENGTH;
+        while end > 0 && !path.is_char_boundary(end) {
+            end -= 1;
+        }
+        &path[..end]
+    } else {
+        path
+    };
     safe_path.replace('%', "%25").replace(' ', "%20").replace('#', "%23")
 }
 
@@ -107,7 +115,12 @@ pub fn embed_trace_in_catalog(catalog: &mut OscalCatalog, trace_links: &TraceLin
         for control in &mut group.controls {
             if let Some(trace) = trace_links.by_oscal_element(&control.uuid) {
                 let loc = &trace.source_location;
-                let file = loc.file_path.display().to_string();
+                // SEC-1: Use filename-only to prevent absolute path leakage into
+                // OSCAL output (consistent with component pipeline at pipeline.rs:205).
+                let file = loc.file_path.file_name().map_or_else(
+                    || "unknown-file".to_string(),
+                    |f| f.to_string_lossy().into_owned(),
+                );
 
                 let props = build_trace_props(&file, &loc.section_title, loc.line_number);
                 control.props.extend(props);

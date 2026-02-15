@@ -18,6 +18,10 @@ use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 /// If exceeded, the statement is preserved as-is and a warning is logged (SEC-5, FR-010).
 const MAX_SPLITS_PER_REQUIREMENT: usize = 50;
 
+/// Maximum section nesting depth for recursive traversal (`DoS` protection).
+/// Consistent with `MAX_SECTION_DEPTH` in `component_definition.rs`.
+const MAX_SECTION_DEPTH: usize = 50;
+
 /// Compiled regex pattern for detecting conjunction + normative verb boundaries.
 /// Pattern: `\b(and|or)\s+(must|shall|should|will)\b` (case-sensitive).
 // SAFETY: static regex — panics only if regex literal is invalid
@@ -288,34 +292,16 @@ pub fn atomize_requirement(
 /// assert_eq!(result.sections[0].requirements.len(), 2);
 /// ```
 pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, ForgeError> {
-    let mut new_sections = Vec::with_capacity(document.sections.len());
     let mut split_count: usize = 0;
     let mut preserved_count: usize = 0;
 
-    for section in &document.sections {
-        let mut new_requirements = Vec::new();
+    let new_sections = document
+        .sections
+        .iter()
+        .map(|s| atomize_section(s, &mut split_count, &mut preserved_count))
+        .collect::<Result<Vec<_>, _>>()?;
 
-        for requirement in &section.requirements {
-            let result = atomize_requirement(requirement)?;
-            if result.was_split {
-                split_count += 1;
-            } else {
-                preserved_count += 1;
-            }
-            new_requirements.extend(result.requirements);
-        }
-
-        new_sections.push(PolicySection {
-            title: section.title.clone(),
-            heading_level: section.heading_level,
-            source_line: section.source_line,
-            body_text: section.body_text.clone(),
-            children: section.children.clone(),
-            requirements: new_requirements,
-        });
-    }
-
-    let total_after: usize = new_sections.iter().map(|s| s.requirements.len()).sum();
+    let total_after: usize = count_requirements_recursive(&new_sections);
     debug!(
         total = total_after,
         split = split_count,
@@ -328,6 +314,75 @@ pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, For
         metadata: document.metadata.clone(),
         sections: new_sections,
     })
+}
+
+/// Recursively atomize a section and all its children.
+fn atomize_section(
+    section: &PolicySection,
+    split_count: &mut usize,
+    preserved_count: &mut usize,
+) -> Result<PolicySection, ForgeError> {
+    atomize_section_inner(section, split_count, preserved_count, 0)
+}
+
+fn atomize_section_inner(
+    section: &PolicySection,
+    split_count: &mut usize,
+    preserved_count: &mut usize,
+    depth: usize,
+) -> Result<PolicySection, ForgeError> {
+    // Always atomize requirements at this level, only skip child recursion
+    // when depth exceeds the safety limit.
+    let mut new_requirements = Vec::new();
+
+    for requirement in &section.requirements {
+        let result = atomize_requirement(requirement)?;
+        if result.was_split {
+            *split_count += 1;
+        } else {
+            *preserved_count += 1;
+        }
+        new_requirements.extend(result.requirements);
+    }
+
+    let new_children = if depth > MAX_SECTION_DEPTH {
+        tracing::trace!(
+            depth,
+            max = MAX_SECTION_DEPTH,
+            "max section depth exceeded; skipping child traversal"
+        );
+        section.children.clone()
+    } else {
+        section
+            .children
+            .iter()
+            .map(|child| atomize_section_inner(child, split_count, preserved_count, depth + 1))
+            .collect::<Result<Vec<_>, _>>()?
+    };
+
+    Ok(PolicySection {
+        title: section.title.clone(),
+        heading_level: section.heading_level,
+        source_line: section.source_line,
+        body_text: section.body_text.clone(),
+        children: new_children,
+        requirements: new_requirements,
+    })
+}
+
+/// Count total requirements across sections and their children recursively.
+fn count_requirements_recursive(sections: &[PolicySection]) -> usize {
+    count_requirements_recursive_inner(sections, 0)
+}
+
+fn count_requirements_recursive_inner(sections: &[PolicySection], depth: usize) -> usize {
+    if depth > MAX_SECTION_DEPTH {
+        return 0;
+    }
+    sections
+        .iter()
+        .map(|s| s.requirements.len() + count_requirements_recursive_inner(&s.children, depth + 1))
+        .sum()
 }
 
 #[cfg(test)]
