@@ -320,12 +320,13 @@ fn test_m9_citations_in_back_matter() {
     // If back-matter IS present, verify its structure is well-formed
     if let Some(back_matter) = catalog.get("back-matter")
         && back_matter.is_object()
-            && let Some(resources) = back_matter["resources"].as_array() {
-                for (i, resource) in resources.iter().enumerate() {
-                    assert!(resource["uuid"].is_string(), "resource[{i}] should have uuid");
-                    assert!(resource["title"].is_string(), "resource[{i}] should have title");
-                }
-            }
+        && let Some(resources) = back_matter["resources"].as_array()
+    {
+        for (i, resource) in resources.iter().enumerate() {
+            assert!(resource["uuid"].is_string(), "resource[{i}] should have uuid");
+            assert!(resource["title"].is_string(), "resource[{i}] should have title");
+        }
+    }
 
     // Verify controls are still produced (citations don't break extraction)
     let groups = catalog["groups"].as_array().unwrap();
@@ -403,12 +404,13 @@ fn test_m11_no_arbitrary_remarks() {
 
                 // Controls should not have arbitrary remarks with unstructured prose
                 if let Some(remarks) = control.get("remarks")
-                    && let Some(text) = remarks.as_str() {
-                        assert!(
-                            text.is_empty(),
-                            "Control '{ctrl_id}' should not have arbitrary remarks, got: '{text}'"
-                        );
-                    }
+                    && let Some(text) = remarks.as_str()
+                {
+                    assert!(
+                        text.is_empty(),
+                        "Control '{ctrl_id}' should not have arbitrary remarks, got: '{text}'"
+                    );
+                }
             }
         }
     }

@@ -12,9 +12,7 @@ use forge::export::{deserialize_from_yaml, serialize_to_yaml};
 #[test]
 fn catalog_yaml_has_no_type_tags() {
     let fixture = std::path::Path::new("tests/fixtures/sample_policy.md");
-    if !fixture.exists() {
-        return;
-    }
+    assert!(fixture.exists(), "Test fixture missing: {}", fixture.display());
     let dir = tempfile::TempDir::new().unwrap();
     let yaml_path = dir.path().join("catalog.yaml");
     forge::pipeline::run_catalog_pipeline(
@@ -34,9 +32,7 @@ fn catalog_yaml_has_no_type_tags() {
 #[test]
 fn component_yaml_has_no_type_tags() {
     let fixture = std::path::Path::new("tests/fixtures/full_policy.md");
-    if !fixture.exists() {
-        return;
-    }
+    assert!(fixture.exists(), "Test fixture missing: {}", fixture.display());
     let dir = tempfile::TempDir::new().unwrap();
     let yaml_path = dir.path().join("component.yaml");
     forge::pipeline::run_component_pipeline(

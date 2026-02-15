@@ -452,8 +452,7 @@ mod tests {
     #[test]
     fn catalog_skips_check_gracefully() {
         let json: Value =
-            serde_json::from_str(r#"{ "catalog": { "metadata": { "title": "Test" } } }"#)
-                .unwrap();
+            serde_json::from_str(r#"{ "catalog": { "metadata": { "title": "Test" } } }"#).unwrap();
 
         let errors = check_missing_references(&json, OscalModelType::Catalog);
         assert!(errors.is_empty());
