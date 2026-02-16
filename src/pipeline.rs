@@ -41,6 +41,64 @@ pub fn write_output(json: &str, output_path: Option<&Path>) -> Result<(), ForgeE
     }
 }
 
+/// Validate a `CatalogEnvelope` against the OSCAL JSON schema.
+///
+/// Serializes the envelope to JSON, validates against the OSCAL catalog schema,
+/// and returns the serialized JSON string on success. On validation failure,
+/// renders the error report to stderr and returns `ForgeError::SchemaValidation`.
+fn validate_catalog_json(envelope: &crate::oscal::CatalogEnvelope) -> Result<String, ForgeError> {
+    let json = serde_json::to_string_pretty(envelope)
+        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let json_value: serde_json::Value =
+        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let report = crate::validate::run_full_validation(
+        "generated catalog",
+        &json_value,
+        crate::validate::OscalModelType::Catalog,
+    )
+    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    if !report.is_valid() {
+        let rendered = crate::validate::report::render_text_report(&report);
+        eprintln!("{rendered}");
+        // PRD EC-7: do NOT write output file on validation failure
+        return Err(ForgeError::SchemaValidation(format!(
+            "{} validation error(s) in generated catalog",
+            report.errors().len()
+        )));
+    }
+    Ok(json)
+}
+
+/// Validate a `ComponentDefinitionEnvelope` against the OSCAL JSON schema.
+///
+/// Serializes the envelope to JSON, validates against the OSCAL component-definition
+/// schema, and returns the serialized JSON string on success. On validation failure,
+/// renders the error report to stderr and returns `ForgeError::SchemaValidation`.
+fn validate_component_json(
+    envelope: &crate::oscal::component_definition::ComponentDefinitionEnvelope,
+) -> Result<String, ForgeError> {
+    let json = serde_json::to_string_pretty(envelope)
+        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let json_value: serde_json::Value =
+        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let report = crate::validate::run_full_validation(
+        "generated component definition",
+        &json_value,
+        crate::validate::OscalModelType::ComponentDefinition,
+    )
+    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    if !report.is_valid() {
+        let rendered = crate::validate::report::render_text_report(&report);
+        eprintln!("{rendered}");
+        // PRD EC-7: do NOT write output file on validation failure
+        return Err(ForgeError::SchemaValidation(format!(
+            "{} validation error(s) in generated component definition",
+            report.errors().len()
+        )));
+    }
+    Ok(json)
+}
+
 /// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations.
 ///
 /// Encapsulates the common steps (1-9) used by both the catalog and component
@@ -149,57 +207,15 @@ pub fn run_catalog_pipeline(
         back_matter,
     };
 
-    // Step 12: Serialize based on output format
+    // Step 12: Validate and serialize based on output format
+    let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
+
+    // Step 12b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
+    let json = validate_catalog_json(&envelope)?;
+
     match format {
-        OutputFormat::Json => {
-            let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
-
-            let json = serde_json::to_string_pretty(&envelope)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-
-            // Step 12b: Auto-validate serialized JSON (schema + semantic) (WI-20, PRD M-5)
-            let json_value: serde_json::Value = serde_json::from_str(&json)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-            let report = crate::validate::run_full_validation(
-                "generated catalog",
-                &json_value,
-                crate::validate::OscalModelType::Catalog,
-            )
-            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-            if !report.is_valid() {
-                let rendered = crate::validate::report::render_text_report(&report);
-                eprintln!("{rendered}");
-                // PRD EC-7: do NOT write output file on validation failure
-                return Err(ForgeError::SchemaValidation(format!(
-                    "{} validation error(s) in generated catalog",
-                    report.errors().len()
-                )));
-            }
-
-            write_output(&json, output_path)
-        }
+        OutputFormat::Json => write_output(&json, output_path),
         OutputFormat::Xml => {
-            // Validate the OSCAL model using JSON schema before XML serialization
-            let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
-            let json = serde_json::to_string_pretty(&envelope)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-            let json_value: serde_json::Value = serde_json::from_str(&json)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-            let report = crate::validate::run_full_validation(
-                "generated catalog",
-                &json_value,
-                crate::validate::OscalModelType::Catalog,
-            )
-            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-            if !report.is_valid() {
-                let rendered = crate::validate::report::render_text_report(&report);
-                eprintln!("{rendered}");
-                return Err(ForgeError::SchemaValidation(format!(
-                    "{} validation error(s) in generated catalog",
-                    report.errors().len()
-                )));
-            }
-
             let xml = crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog)?;
             write_output(&xml, output_path)
         }
@@ -251,58 +267,18 @@ pub fn run_component_pipeline(
         Some(&source_file_str),
     )?;
 
-    // Step 11: Serialize based on output format
+    // Step 11: Validate and serialize based on output format
+
+    // Step 11b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
+    let json = validate_component_json(&envelope)?;
+
     match format {
         OutputFormat::Json => {
             tracing::info!("Serializing to JSON");
-
-            let json = serde_json::to_string_pretty(&envelope)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-
-            // Step 11b: Auto-validate serialized JSON (schema + semantic) (WI-20, PRD M-5)
-            let json_value: serde_json::Value = serde_json::from_str(&json)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-            let report = crate::validate::run_full_validation(
-                "generated component definition",
-                &json_value,
-                crate::validate::OscalModelType::ComponentDefinition,
-            )
-            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-            if !report.is_valid() {
-                let rendered = crate::validate::report::render_text_report(&report);
-                eprintln!("{rendered}");
-                // PRD EC-7: do NOT write output file on validation failure
-                return Err(ForgeError::SchemaValidation(format!(
-                    "{} validation error(s) in generated component definition",
-                    report.errors().len()
-                )));
-            }
-
             write_output(&json, output_path)
         }
         OutputFormat::Xml => {
             tracing::info!("Serializing to XML");
-
-            // Validate the OSCAL model using JSON schema before XML serialization
-            let json = serde_json::to_string_pretty(&envelope)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-            let json_value: serde_json::Value = serde_json::from_str(&json)
-                .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-            let report = crate::validate::run_full_validation(
-                "generated component definition",
-                &json_value,
-                crate::validate::OscalModelType::ComponentDefinition,
-            )
-            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-            if !report.is_valid() {
-                let rendered = crate::validate::report::render_text_report(&report);
-                eprintln!("{rendered}");
-                return Err(ForgeError::SchemaValidation(format!(
-                    "{} validation error(s) in generated component definition",
-                    report.errors().len()
-                )));
-            }
-
             let xml = crate::export::xml_serializer::serialize_component_definition_to_xml(
                 &envelope.component_definition,
             )?;
