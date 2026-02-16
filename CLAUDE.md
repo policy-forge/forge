@@ -82,6 +82,7 @@ Rust edition 2024, stable 1.93.0.
 See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
 
 ## Active Technologies
+- Rust, Edition 2024, stable 1.93.0 + `serde_json` 1.0.149, `quick-xml` 0.37, `serde_yaml_ng` 0.10 — no runtime dependencies, test-only (in-memory models & fixtures) (028-round-trip-testing)
 
 - Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4 (026-xml-output)
 - Rust 2024 edition, stable 1.93.0 + `serde_yaml_ng` 0.10 (aliased as `serde_yaml`, already in `Cargo.toml`), `serde` 1.0.228, `serde_json` 1.0.149 (027-yaml-output)

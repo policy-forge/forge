@@ -685,7 +685,7 @@ mod tests {
         let xml = String::from_utf8(buf).unwrap();
 
         // Verify XSD order: props before prose before nested parts
-        let prop_pos = xml.find(r#"<prop "#).unwrap();
+        let prop_pos = xml.find(r"<prop ").unwrap();
         let prose_pos = xml.find("<p>Parent statement.</p>").unwrap();
         let nested_pos = xml.find(r#"<part id="POL-AC-001_smt.a""#).unwrap();
         assert!(prop_pos < prose_pos);
@@ -815,7 +815,7 @@ mod tests {
 
     #[test]
     fn test_map_xml_err() {
-        let err = map_xml_err(std::io::Error::new(std::io::ErrorKind::Other, "test"));
+        let err = map_xml_err(std::io::Error::other("test"));
         assert!(matches!(err, ForgeError::Serialization(_)));
         assert!(err.to_string().contains("XML write error"));
     }
@@ -868,9 +868,9 @@ mod tests {
         assert!(!xml.contains("should-not-appear"));
         // Verify XSD order: title → props → links → parts
         let title_pos = xml.find("<title>").unwrap();
-        let prop_pos = xml.find(r#"<prop "#).unwrap();
-        let link_pos = xml.find(r#"<link "#).unwrap();
-        let part_pos = xml.find(r#"<part "#).unwrap();
+        let prop_pos = xml.find(r"<prop ").unwrap();
+        let link_pos = xml.find(r"<link ").unwrap();
+        let part_pos = xml.find(r"<part ").unwrap();
         assert!(title_pos < prop_pos);
         assert!(prop_pos < link_pos);
         assert!(link_pos < part_pos);
@@ -884,7 +884,7 @@ mod tests {
         write_control(&mut writer, &control).unwrap();
         let xml = String::from_utf8(buf).unwrap();
         assert!(!xml.contains("skip-me"), "Control uuid must not be serialized");
-        assert!(!xml.contains(r#"uuid="#), "No uuid attribute on control");
+        assert!(!xml.contains(r"uuid="), "No uuid attribute on control");
     }
 
     // ══════════════════════════════════════════════════════
@@ -916,9 +916,9 @@ mod tests {
         assert!(xml.contains(r#"<group id="access-control">"#));
         // Verify XSD order: title → props → links → controls
         let title_pos = xml.find("<title>Access Control</title>").unwrap();
-        let prop_pos = xml.find(r#"<prop "#).unwrap();
-        let link_pos = xml.find(r#"<link "#).unwrap();
-        let control_pos = xml.find(r#"<control "#).unwrap();
+        let prop_pos = xml.find(r"<prop ").unwrap();
+        let link_pos = xml.find(r"<link ").unwrap();
+        let control_pos = xml.find(r"<control ").unwrap();
         assert!(title_pos < prop_pos);
         assert!(prop_pos < link_pos);
         assert!(link_pos < control_pos);
@@ -1021,7 +1021,7 @@ mod tests {
         let desc_pos = xml.find("<description>").unwrap();
         assert!(xml.contains("<description>\n"), "description must use markup-multiline format");
         assert!(xml.contains("<p>A policy document.</p>"), "description must wrap content in <p>");
-        let prop_pos = xml.find(r#"<prop "#).unwrap();
+        let prop_pos = xml.find(r"<prop ").unwrap();
         assert!(title_pos < desc_pos);
         assert!(desc_pos < prop_pos);
     }
@@ -1186,11 +1186,11 @@ mod tests {
         );
         // No child elements should have xmlns attributes — only text content
         assert!(
-            !xml.contains(r#"<group xmlns="#),
+            !xml.contains(r"<group xmlns="),
             "Group must not get xmlns attribute from user content"
         );
         assert!(
-            !xml.contains(r#"<control xmlns="#),
+            !xml.contains(r"<control xmlns="),
             "Control must not get xmlns attribute from user content"
         );
         // User content is preserved as text (not as XML structure)

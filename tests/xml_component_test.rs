@@ -203,7 +203,7 @@ fn component_json_fixture_round_trips_to_xml() {
 fn malformed_json_catalog_deserialize_returns_error() {
     let malformed = r#"{"catalog": {"uuid": "test", "metadata": "not-an-object"}}"#;
     let result: Result<forge::oscal::CatalogEnvelope, _> = serde_json::from_str(malformed);
-    assert!(result.is_err(), "Malformed JSON should fail deserialization: {:?}", result);
+    assert!(result.is_err(), "Malformed JSON should fail deserialization: {result:?}");
 }
 
 #[test]
@@ -211,12 +211,12 @@ fn malformed_json_component_definition_deserialize_returns_error() {
     let malformed = r#"{"component-definition": {"uuid": 123}}"#;
     let result: Result<forge::oscal::component_definition::ComponentDefinitionEnvelope, _> =
         serde_json::from_str(malformed);
-    assert!(result.is_err(), "Malformed JSON should fail deserialization: {:?}", result);
+    assert!(result.is_err(), "Malformed JSON should fail deserialization: {result:?}");
 }
 
 #[test]
 fn invalid_json_returns_parse_error() {
-    let invalid = r#"{not valid json at all"#;
+    let invalid = r"{not valid json at all";
     let result: Result<forge::oscal::CatalogEnvelope, _> = serde_json::from_str(invalid);
     assert!(result.is_err(), "Invalid JSON should fail parsing");
 
