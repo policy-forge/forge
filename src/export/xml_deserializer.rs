@@ -85,9 +85,10 @@ struct XmlPart {
     name: String,
     #[serde(default, rename = "prop")]
     props: Vec<XmlProp>,
-    /// Prose content wrapped in `<p>` element in OSCAL XML.
-    #[serde(default)]
-    p: Option<String>,
+    /// Prose content wrapped in `<p>` elements in OSCAL XML.
+    /// Multiple `<p>` nodes are preserved and joined with newlines.
+    #[serde(default, rename = "p")]
+    paragraphs: Vec<String>,
     #[serde(default, rename = "part")]
     parts: Vec<XmlPart>,
 }
@@ -126,10 +127,11 @@ struct XmlComponent {
 }
 
 /// Handles `<description><p>text</p></description>` markup-multiline format.
+/// Multiple `<p>` elements are preserved and joined with newlines.
 #[derive(Deserialize)]
 struct XmlDescription {
-    #[serde(default)]
-    p: Option<String>,
+    #[serde(default, rename = "p")]
+    paragraphs: Vec<String>,
 }
 
 // ─── Conversion Functions ────────────────────────────────────────────────
@@ -156,10 +158,11 @@ fn convert_link(xml: XmlLink) -> crate::oscal::back_matter::OscalLink {
 }
 
 fn convert_part(xml: XmlPart) -> OscalPart {
+    let prose = if xml.paragraphs.is_empty() { String::new() } else { xml.paragraphs.join("\n") };
     OscalPart {
         id: xml.id.unwrap_or_default(),
         name: xml.name,
-        prose: xml.p.unwrap_or_default(),
+        prose,
         props: xml.props.into_iter().map(convert_prop).collect(),
         parts: xml.parts.into_iter().map(convert_part).collect(),
     }
@@ -198,7 +201,7 @@ fn convert_catalog(xml: XmlCatalog) -> OscalCatalog {
 }
 
 fn convert_component(xml: XmlComponent) -> DocumentaryComponent {
-    let description = xml.description.and_then(|d| d.p).unwrap_or_default();
+    let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
     DocumentaryComponent {
         uuid: xml.uuid,
         component_type: xml.component_type,

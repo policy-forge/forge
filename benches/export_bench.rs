@@ -82,23 +82,25 @@ fn bench_export_pipeline(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("export_pipeline");
 
+    let xml_output = temp_dir.path().join("out.xml");
     group.bench_function(&format!("json_to_xml_{}kb", json_size_kb), |b| {
         b.iter(|| {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
                 forge::cli::OutputFormat::Xml,
-                None,
+                Some(black_box(&xml_output)),
             )
             .unwrap();
         });
     });
 
+    let yaml_output = temp_dir.path().join("out.yaml");
     group.bench_function(&format!("json_to_yaml_{}kb", json_size_kb), |b| {
         b.iter(|| {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
                 forge::cli::OutputFormat::Yaml,
-                None,
+                Some(black_box(&yaml_output)),
             )
             .unwrap();
         });

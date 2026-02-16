@@ -29,11 +29,12 @@ pub fn detect_format(path: &Path) -> Result<OutputFormat, ForgeError> {
         .and_then(|e| e.to_str())
         .ok_or_else(|| ForgeError::ExportNoExtension { path: path.to_path_buf() })?;
 
-    match ext {
+    let ext_lower = ext.to_lowercase();
+    match ext_lower.as_str() {
         "json" => Ok(OutputFormat::Json),
         "xml" => Ok(OutputFormat::Xml),
         "yaml" | "yml" => Ok(OutputFormat::Yaml),
-        other => Err(ForgeError::ExportUnsupportedExtension { extension: other.to_string() }),
+        _ => Err(ForgeError::ExportUnsupportedExtension { extension: ext_lower }),
     }
 }
 
@@ -334,6 +335,15 @@ mod tests {
     fn detect_format_yml() {
         let path = PathBuf::from("catalog.yml");
         assert!(matches!(detect_format(&path).unwrap(), OutputFormat::Yaml));
+    }
+
+    #[test]
+    fn detect_format_case_insensitive() {
+        assert!(matches!(detect_format(&PathBuf::from("file.JSON")).unwrap(), OutputFormat::Json));
+        assert!(matches!(detect_format(&PathBuf::from("file.XML")).unwrap(), OutputFormat::Xml));
+        assert!(matches!(detect_format(&PathBuf::from("file.YAML")).unwrap(), OutputFormat::Yaml));
+        assert!(matches!(detect_format(&PathBuf::from("file.YML")).unwrap(), OutputFormat::Yaml));
+        assert!(matches!(detect_format(&PathBuf::from("file.Json")).unwrap(), OutputFormat::Json));
     }
 
     #[test]

@@ -3,103 +3,81 @@
 //! Tests all 9 format pairs (JSON/XML/YAML x JSON/XML/YAML) for both
 //! Catalog and Component Definition model types (18 cases total).
 
-use std::path::PathBuf;
+use std::path::Path;
 
 use forge::cli::OutputFormat;
 use forge::cli::export::export_artifact;
+
+/// Run export_artifact and return the output file contents.
+fn export_and_read(input: &str, format: OutputFormat) -> String {
+    let input = Path::new(input);
+    let dir = tempfile::TempDir::new().unwrap();
+    let ext = match format {
+        OutputFormat::Json => "json",
+        OutputFormat::Xml => "xml",
+        OutputFormat::Yaml => "yaml",
+    };
+    let output = dir.path().join(format!("out.{ext}"));
+    export_artifact(input, format, Some(&output)).unwrap();
+    std::fs::read_to_string(&output).unwrap()
+}
 
 // ── Catalog: all 9 format pairs ──────────────────────────────────────────
 
 #[test]
 fn format_pair_catalog_json_to_json() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.json");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.json");
-    assert!(export_artifact(&input, OutputFormat::Json, Some(&output)).is_ok());
-    let v: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&output).unwrap()).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.json", OutputFormat::Json);
+    let v: serde_json::Value = serde_json::from_str(&c).unwrap();
     assert!(v.get("catalog").is_some());
 }
 
 #[test]
 fn format_pair_catalog_json_to_xml() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.json");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.xml");
-    assert!(export_artifact(&input, OutputFormat::Xml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.json", OutputFormat::Xml);
     assert!(c.contains("<catalog"));
 }
 
 #[test]
 fn format_pair_catalog_json_to_yaml() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.json");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.yaml");
-    assert!(export_artifact(&input, OutputFormat::Yaml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.json", OutputFormat::Yaml);
     assert!(c.contains("catalog:"));
 }
 
 #[test]
 fn format_pair_catalog_xml_to_json() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.xml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.json");
-    assert!(export_artifact(&input, OutputFormat::Json, Some(&output)).is_ok());
-    let v: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&output).unwrap()).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.xml", OutputFormat::Json);
+    let v: serde_json::Value = serde_json::from_str(&c).unwrap();
     assert!(v.get("catalog").is_some());
 }
 
 #[test]
 fn format_pair_catalog_xml_to_xml() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.xml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.xml");
-    assert!(export_artifact(&input, OutputFormat::Xml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.xml", OutputFormat::Xml);
     assert!(c.contains("<catalog"));
 }
 
 #[test]
 fn format_pair_catalog_xml_to_yaml() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.xml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.yaml");
-    assert!(export_artifact(&input, OutputFormat::Yaml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.xml", OutputFormat::Yaml);
     assert!(c.contains("catalog:"));
 }
 
 #[test]
 fn format_pair_catalog_yaml_to_json() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.yaml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.json");
-    assert!(export_artifact(&input, OutputFormat::Json, Some(&output)).is_ok());
-    let v: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&output).unwrap()).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.yaml", OutputFormat::Json);
+    let v: serde_json::Value = serde_json::from_str(&c).unwrap();
     assert!(v.get("catalog").is_some());
 }
 
 #[test]
 fn format_pair_catalog_yaml_to_xml() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.yaml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.xml");
-    assert!(export_artifact(&input, OutputFormat::Xml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.yaml", OutputFormat::Xml);
     assert!(c.contains("<catalog"));
 }
 
 #[test]
 fn format_pair_catalog_yaml_to_yaml() {
-    let input = PathBuf::from("tests/fixtures/export/catalog.yaml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.yaml");
-    assert!(export_artifact(&input, OutputFormat::Yaml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/catalog.yaml", OutputFormat::Yaml);
     assert!(c.contains("catalog:"));
 }
 
@@ -107,93 +85,57 @@ fn format_pair_catalog_yaml_to_yaml() {
 
 #[test]
 fn format_pair_component_json_to_json() {
-    let input = PathBuf::from("tests/fixtures/export/component.json");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.json");
-    assert!(export_artifact(&input, OutputFormat::Json, Some(&output)).is_ok());
-    let v: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&output).unwrap()).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.json", OutputFormat::Json);
+    let v: serde_json::Value = serde_json::from_str(&c).unwrap();
     assert!(v.get("component-definition").is_some());
 }
 
 #[test]
 fn format_pair_component_json_to_xml() {
-    let input = PathBuf::from("tests/fixtures/export/component.json");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.xml");
-    assert!(export_artifact(&input, OutputFormat::Xml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.json", OutputFormat::Xml);
     assert!(c.contains("<component-definition"));
 }
 
 #[test]
 fn format_pair_component_json_to_yaml() {
-    let input = PathBuf::from("tests/fixtures/export/component.json");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.yaml");
-    assert!(export_artifact(&input, OutputFormat::Yaml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.json", OutputFormat::Yaml);
     assert!(c.contains("component-definition:"));
 }
 
 #[test]
 fn format_pair_component_xml_to_json() {
-    let input = PathBuf::from("tests/fixtures/export/component.xml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.json");
-    assert!(export_artifact(&input, OutputFormat::Json, Some(&output)).is_ok());
-    let v: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&output).unwrap()).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.xml", OutputFormat::Json);
+    let v: serde_json::Value = serde_json::from_str(&c).unwrap();
     assert!(v.get("component-definition").is_some());
 }
 
 #[test]
 fn format_pair_component_xml_to_xml() {
-    let input = PathBuf::from("tests/fixtures/export/component.xml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.xml");
-    assert!(export_artifact(&input, OutputFormat::Xml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.xml", OutputFormat::Xml);
     assert!(c.contains("<component-definition"));
 }
 
 #[test]
 fn format_pair_component_xml_to_yaml() {
-    let input = PathBuf::from("tests/fixtures/export/component.xml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.yaml");
-    assert!(export_artifact(&input, OutputFormat::Yaml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.xml", OutputFormat::Yaml);
     assert!(c.contains("component-definition:"));
 }
 
 #[test]
 fn format_pair_component_yaml_to_json() {
-    let input = PathBuf::from("tests/fixtures/export/component.yaml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.json");
-    assert!(export_artifact(&input, OutputFormat::Json, Some(&output)).is_ok());
-    let v: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&output).unwrap()).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.yaml", OutputFormat::Json);
+    let v: serde_json::Value = serde_json::from_str(&c).unwrap();
     assert!(v.get("component-definition").is_some());
 }
 
 #[test]
 fn format_pair_component_yaml_to_xml() {
-    let input = PathBuf::from("tests/fixtures/export/component.yaml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.xml");
-    assert!(export_artifact(&input, OutputFormat::Xml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.yaml", OutputFormat::Xml);
     assert!(c.contains("<component-definition"));
 }
 
 #[test]
 fn format_pair_component_yaml_to_yaml() {
-    let input = PathBuf::from("tests/fixtures/export/component.yaml");
-    let dir = tempfile::TempDir::new().unwrap();
-    let output = dir.path().join("out.yaml");
-    assert!(export_artifact(&input, OutputFormat::Yaml, Some(&output)).is_ok());
-    let c = std::fs::read_to_string(&output).unwrap();
+    let c = export_and_read("tests/fixtures/export/component.yaml", OutputFormat::Yaml);
     assert!(c.contains("component-definition:"));
 }
