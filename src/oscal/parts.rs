@@ -4,7 +4,7 @@
 //! functions that generate statement parts, guidance parts, and structured
 //! metadata props from the domain model.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, warn};
 
 use crate::model::PolicyRequirement;
@@ -22,7 +22,7 @@ use crate::model::PolicyRequirement;
 /// ```json
 /// { "id": "POL-AC-001_smt", "name": "statement", "prose": "..." }
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OscalPart {
     /// Part ID following `{control-id}_{suffix}` convention.
     /// Example: `"POL-AC-001_smt"`, `"POL-AC-001_gdn"`.
@@ -36,12 +36,12 @@ pub struct OscalPart {
 
     /// Nested sub-parts (e.g., enumerated sub-items within a statement).
     /// Omitted from JSON when empty.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub parts: Vec<OscalPart>,
 
     /// Properties on this part.
     /// Omitted from JSON when empty.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub props: Vec<OscalProp>,
 }
 
@@ -56,14 +56,14 @@ pub struct OscalPart {
 ///
 /// The `ns` field is optional; when `None` it is omitted from JSON output.
 /// FORGE trace props always set `ns` to [`crate::oscal::trace_embedding::FORGE_TRACE_NS`].
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OscalProp {
     /// Property name (e.g., `"source-file"`, `"source-section"`, `"source-line"`).
     pub name: String,
 
     /// Optional namespace URI. FORGE trace props use `FORGE_TRACE_NS`.
     /// Omitted from JSON when `None`.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ns: Option<String>,
 
     /// Property value as string.

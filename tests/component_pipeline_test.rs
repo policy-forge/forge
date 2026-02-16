@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use forge::cli::OutputFormat;
 use tempfile::TempDir;
 
 /// Helper: run component pipeline on `full_policy.md` fixture, return parsed JSON.
@@ -15,7 +16,7 @@ fn run_component_pipeline_on_fixture(source_profile: &str) -> serde_json::Value 
         Some(&output_path),
         10 * 1024 * 1024,
         Some(source_profile),
-        &forge::cli::OutputFormat::Json,
+        &OutputFormat::Json,
     );
     assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
@@ -277,7 +278,7 @@ fn control_ids_match_between_catalog_and_component() {
         fixture,
         Some(&catalog_path),
         10 * 1024 * 1024,
-        &forge::cli::OutputFormat::Json,
+        &OutputFormat::Json,
     )
     .expect("Catalog pipeline should succeed");
     let catalog_str = std::fs::read_to_string(&catalog_path).unwrap();
@@ -290,7 +291,7 @@ fn control_ids_match_between_catalog_and_component() {
         Some(&component_path),
         10 * 1024 * 1024,
         Some("./baselines/nist.json"),
-        &forge::cli::OutputFormat::Json,
+        &OutputFormat::Json,
     )
     .expect("Component pipeline should succeed");
     let component_str = std::fs::read_to_string(&component_path).unwrap();
@@ -377,7 +378,7 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
         Some(&output_path),
         10 * 1024 * 1024,
         None, // No source profile
-        &forge::cli::OutputFormat::Json,
+        &OutputFormat::Json,
     );
 
     // Without a source profile, control-implementations will be empty,

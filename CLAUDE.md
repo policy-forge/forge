@@ -83,9 +83,10 @@ See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
 
 ## Active Technologies
 
+- Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4 (026-xml-output)
 - Rust 2024 edition, stable 1.93.0 + `serde_yaml_ng` 0.10 (aliased as `serde_yaml`, already in `Cargo.toml`), `serde` 1.0.228, `serde_json` 1.0.149 (027-yaml-output)
-- N/A — file output, same pattern as JSON (`write_output` in `pipeline.rs`) (027-yaml-output)
 
 ## Recent Changes
 
+- 026-xml-output: Added Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4
 - 027-yaml-output: Added Rust 2024 edition, stable 1.93.0 + `serde_yaml_ng` 0.10 (aliased as `serde_yaml`, already in `Cargo.toml`), `serde` 1.0.228, `serde_json` 1.0.149

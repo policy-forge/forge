@@ -6,7 +6,7 @@
 
 use std::collections::HashSet;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ForgeError;
@@ -24,7 +24,7 @@ pub const DEFAULT_COMPONENT_TITLE: &str = "Untitled Policy Document";
 // ─── Structs ────────────────────────────────────────────────────────────
 
 /// JSON envelope producing `{"component-definition": {...}}` at the top level.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComponentDefinitionEnvelope {
     /// The OSCAL Component Definition.
     #[serde(rename = "component-definition")]
@@ -32,7 +32,7 @@ pub struct ComponentDefinitionEnvelope {
 }
 
 /// OSCAL Component Definition root structure.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComponentDefinition {
     /// Document-level UUID (v4, unique per generation).
     pub uuid: String,
@@ -44,14 +44,14 @@ pub struct ComponentDefinition {
     pub components: Vec<DocumentaryComponent>,
 
     /// Back matter containing reference resources (WI-12).
-    #[serde(rename = "back-matter", skip_serializing_if = "Option::is_none")]
+    #[serde(default, rename = "back-matter", skip_serializing_if = "Option::is_none")]
     pub back_matter: Option<BackMatter>,
 }
 
 /// OSCAL metadata for the Component Definition.
 ///
 /// Fields mapped from the shared `assemble_metadata` return value.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComponentDefinitionMetadata {
     /// Document title from PolicyDocument.metadata.title.
     pub title: String,
@@ -69,7 +69,7 @@ pub struct ComponentDefinitionMetadata {
 }
 
 /// A documentary component of type "policy" within the Component Definition.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocumentaryComponent {
     /// Deterministic UUID v5 (from `COMPONENT_NAMESPACE` + title + version + document ID).
     pub uuid: String,
@@ -85,7 +85,7 @@ pub struct DocumentaryComponent {
     pub description: String,
 
     /// Component-level properties (e.g., source-file for traceability).
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub props: Vec<crate::oscal::parts::OscalProp>,
 
     /// Control implementations placeholder (empty for WI-14; populated by WI-15).

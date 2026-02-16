@@ -1,9 +1,24 @@
 #![allow(dead_code)]
 pub mod fixture_generator;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
+
+/// Maximum file size for ingest in tests (10 MB).
+pub const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
+
+/// Log a skip message and return `true` if the fixture file does not exist.
+///
+/// Callers should `return` when this returns `true`.
+pub fn skip_if_missing(path: &Path) -> bool {
+    if !path.exists() {
+        eprintln!("Skipping test: fixture not found at {}", path.display());
+        true
+    } else {
+        false
+    }
+}
 
 pub fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
     PolicyRequirement {

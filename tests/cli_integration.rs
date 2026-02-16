@@ -444,27 +444,34 @@ fn convert_missing_format_flag_defaults_to_json() {
 }
 
 #[test]
-fn convert_format_xml_shows_rejection_error() {
+fn convert_format_xml_produces_valid_xml() {
+    let fixture = std::path::Path::new("tests/fixtures/sample_policy.md");
+    if !fixture.exists() {
+        return;
+    }
+
     let dir = TempDir::new().unwrap();
-    let path = create_temp_md(&dir, "policy.md", "# Title\n");
+    let output_path = dir.path().join("catalog.xml");
 
     let output = forge_bin()
         .arg("convert")
-        .arg(&path)
+        .arg(fixture)
         .arg("--strategy")
         .arg("catalog")
         .arg("--format")
         .arg("xml")
+        .arg("--output")
+        .arg(&output_path)
         .output()
         .expect("Failed to execute process");
 
-    // W-2: --format xml → descriptive rejection (deferred to WI-26)
-    assert!(!output.status.success(), "Expected non-zero exit code");
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("XML") && stderr.contains("not yet supported"),
-        "stderr should mention XML is not yet supported:\n{stderr}"
-    );
+    assert!(output.status.success(), "XML output should succeed, stderr: {stderr}");
+    assert!(output_path.exists(), "XML output file should be created");
+
+    let xml = std::fs::read_to_string(&output_path).unwrap();
+    assert!(xml.contains("<?xml"), "Output must contain XML declaration");
+    assert!(xml.contains("<catalog"), "Output must contain <catalog> element");
 }
 
 #[test]

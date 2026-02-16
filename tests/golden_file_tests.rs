@@ -33,6 +33,7 @@
 use std::path::Path;
 use std::sync::LazyLock;
 
+use forge::cli::OutputFormat;
 use regex::Regex;
 use serde_json::{Map, Value, json};
 use tempfile::TempDir;
@@ -491,7 +492,7 @@ mod golden_catalog_tests {
             &input_path,
             Some(&output_path),
             MAX_INPUT_SIZE,
-            &forge::cli::OutputFormat::Json,
+            &OutputFormat::Json,
         )
         .unwrap_or_else(|e| panic!("Catalog pipeline failed on {fixture_dir}: {e}"));
 
@@ -576,7 +577,7 @@ mod golden_component_tests {
             Some(&output_path),
             MAX_INPUT_SIZE,
             Some(SOURCE_PROFILE),
-            &forge::cli::OutputFormat::Json,
+            &OutputFormat::Json,
         )
         .unwrap_or_else(|e| panic!("Component pipeline failed on {fixture_dir}: {e}"));
 
@@ -723,7 +724,7 @@ mod determinism_tests {
             input_path,
             Some(&out1),
             MAX_INPUT_SIZE,
-            &forge::cli::OutputFormat::Json,
+            &OutputFormat::Json,
         )
         .expect("First run failed");
 
@@ -733,7 +734,7 @@ mod determinism_tests {
             input_path,
             Some(&out2),
             MAX_INPUT_SIZE,
-            &forge::cli::OutputFormat::Json,
+            &OutputFormat::Json,
         )
         .expect("Second run failed");
 

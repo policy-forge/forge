@@ -127,4 +127,46 @@ mod tests {
             "Expected empty source-profile error for whitespace-only, got: {err}"
         );
     }
+
+    // --- T026: XML format is accepted (no longer rejected) ---
+
+    #[test]
+    fn catalog_strategy_xml_format_is_accepted() {
+        // T026: OutputFormat::Xml should NOT be rejected for catalog strategy.
+        // Will fail on file-not-found (test.md doesn't exist), proving the
+        // format check no longer blocks XML.
+        let result =
+            execute(Path::new("test.md"), &Strategy::Catalog, &OutputFormat::Xml, None, 10, None);
+        let err = result.unwrap_err();
+        assert!(
+            !err.to_string().contains("not yet supported"),
+            "XML format should be accepted, not rejected. Got: {err}"
+        );
+    }
+
+    #[test]
+    fn component_strategy_xml_format_is_accepted() {
+        // T026: OutputFormat::Xml should NOT be rejected for component strategy.
+        let result =
+            execute(Path::new("test.md"), &Strategy::Component, &OutputFormat::Xml, None, 10, None);
+        let err = result.unwrap_err();
+        assert!(
+            !err.to_string().contains("not yet supported"),
+            "XML format should be accepted for component strategy. Got: {err}"
+        );
+    }
+
+    #[test]
+    fn yaml_format_is_accepted() {
+        // WI-27: YAML format should be accepted (no longer rejected).
+        // Will fail on file-not-found (test.md doesn't exist), proving the
+        // format check no longer blocks YAML.
+        let result =
+            execute(Path::new("test.md"), &Strategy::Catalog, &OutputFormat::Yaml, None, 10, None);
+        let err = result.unwrap_err();
+        assert!(
+            !err.to_string().contains("not yet supported"),
+            "YAML format should be accepted, not rejected. Got: {err}"
+        );
+    }
 }

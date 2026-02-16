@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ForgeError;
@@ -13,7 +13,7 @@ use crate::uuid::BACK_MATTER_NAMESPACE;
 // ─── Back Matter Structs ────────────────────────────────────────────────
 
 /// Top-level OSCAL back matter containing all reference resources.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct BackMatter {
     /// All back matter resources generated from citations.
@@ -24,7 +24,7 @@ pub struct BackMatter {
 ///
 /// Each resource has a deterministic UUID v5 derived from the
 /// `BACK_MATTER_NAMESPACE` and the citation content.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackMatterResource {
     /// Deterministic UUID v5 for this resource.
     pub uuid: Uuid,
@@ -33,44 +33,44 @@ pub struct BackMatterResource {
     pub title: String,
 
     /// Optional description providing citation context.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Bibliographic citation text (for non-URL citations).
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub citation: Option<ResourceCitation>,
 
     /// Resolvable links to external content (for URL-based citations).
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub rlinks: Vec<Rlink>,
 
     /// Property annotations (e.g., url-status for malformed URLs).
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub props: Vec<Prop>,
 }
 
 /// Bibliographic citation text within a resource.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceCitation {
     /// The bibliographic reference text.
     pub text: String,
 }
 
 /// Resolvable link to external content.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rlink {
     /// URL to external content.
     pub href: String,
 
     /// Optional IANA media type inferred from URL extension.
-    #[serde(rename = "media-type", skip_serializing_if = "Option::is_none")]
+    #[serde(default, rename = "media-type", skip_serializing_if = "Option::is_none")]
     pub media_type: Option<String>,
 }
 
 /// OSCAL link element for control bodies.
 ///
 /// Links controls to back matter resources via `href="#<resource-uuid>"`.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OscalLink {
     /// Reference to back matter resource: `"#<resource-uuid>"`.
     pub href: String,
@@ -79,14 +79,14 @@ pub struct OscalLink {
     pub rel: String,
 
     /// Optional display text for the link.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 }
 
 /// OSCAL property annotation (name-value pair).
 ///
 /// Used for structured metadata instead of `remarks` per NIST guidance.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Prop {
     /// Property name (e.g., `"url-status"`).
     pub name: String,

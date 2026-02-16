@@ -2,10 +2,11 @@
 //!
 //! Wires all pipeline stages (WI-1 through WI-12) into a single
 //! `run_catalog_pipeline` function that transforms a Markdown policy
-//! document into OSCAL Catalog JSON.
+//! document into OSCAL Catalog JSON or XML.
 
 use std::path::Path;
 
+use crate::cli::OutputFormat;
 use crate::error::ForgeError;
 use crate::model::PolicyDocument;
 
@@ -40,20 +41,62 @@ pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), For
     }
 }
 
-/// Dispatch serialization to JSON/YAML/XML based on format enum.
-fn serialize_for_format<T: serde::Serialize>(
-    model: &T,
-    format: &crate::cli::OutputFormat,
-) -> Result<String, ForgeError> {
-    tracing::debug!(output_format = ?format, "Serializing output to requested format");
-    match format {
-        crate::cli::OutputFormat::Json => serde_json::to_string_pretty(model)
-            .map_err(|e| ForgeError::Serialization(e.to_string())),
-        crate::cli::OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(model),
-        crate::cli::OutputFormat::Xml => {
-            Err(ForgeError::Validation("XML output format is not yet supported".to_string()))
-        }
+/// Validate a `CatalogEnvelope` against the OSCAL JSON schema.
+///
+/// Serializes the envelope to JSON, validates against the OSCAL catalog schema,
+/// and returns the serialized JSON string on success. On validation failure,
+/// renders the error report to stderr and returns `ForgeError::SchemaValidation`.
+fn validate_catalog_json(envelope: &crate::oscal::CatalogEnvelope) -> Result<String, ForgeError> {
+    let json = serde_json::to_string_pretty(envelope)
+        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let json_value: serde_json::Value =
+        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let report = crate::validate::run_full_validation(
+        "generated catalog",
+        &json_value,
+        crate::validate::OscalModelType::Catalog,
+    )
+    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    if !report.is_valid() {
+        let rendered = crate::validate::report::render_text_report(&report);
+        eprintln!("{rendered}");
+        // PRD EC-7: do NOT write output file on validation failure
+        return Err(ForgeError::SchemaValidation(format!(
+            "{} validation error(s) in generated catalog",
+            report.errors().len()
+        )));
     }
+    Ok(json)
+}
+
+/// Validate a `ComponentDefinitionEnvelope` against the OSCAL JSON schema.
+///
+/// Serializes the envelope to JSON, validates against the OSCAL component-definition
+/// schema, and returns the serialized JSON string on success. On validation failure,
+/// renders the error report to stderr and returns `ForgeError::SchemaValidation`.
+fn validate_component_json(
+    envelope: &crate::oscal::component_definition::ComponentDefinitionEnvelope,
+) -> Result<String, ForgeError> {
+    let json = serde_json::to_string_pretty(envelope)
+        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let json_value: serde_json::Value =
+        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let report = crate::validate::run_full_validation(
+        "generated component definition",
+        &json_value,
+        crate::validate::OscalModelType::ComponentDefinition,
+    )
+    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    if !report.is_valid() {
+        let rendered = crate::validate::report::render_text_report(&report);
+        eprintln!("{rendered}");
+        // PRD EC-7: do NOT write output file on validation failure
+        return Err(ForgeError::SchemaValidation(format!(
+            "{} validation error(s) in generated component definition",
+            report.errors().len()
+        )));
+    }
+    Ok(json)
 }
 
 /// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations.
@@ -119,7 +162,7 @@ pub fn run_catalog_pipeline(
     input_path: &Path,
     output_path: Option<&Path>,
     max_size_bytes: u64,
-    format: &crate::cli::OutputFormat,
+    format: &OutputFormat,
 ) -> Result<(), ForgeError> {
     // Steps 1-9: shared pipeline stages
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
@@ -152,45 +195,35 @@ pub fn run_catalog_pipeline(
         Some(crate::oscal::BackMatter { resources: back_matter_resources })
     };
 
-    let envelope = crate::oscal::CatalogEnvelope {
-        catalog: crate::oscal::OscalCatalog {
-            uuid: real_metadata.uuid.to_string(),
-            metadata: crate::oscal::catalog::OscalMetadata {
-                title: real_metadata.title,
-                last_modified: real_metadata.last_modified.to_rfc3339(),
-                version: real_metadata.version,
-                oscal_version: real_metadata.oscal_version,
-            },
-            groups: catalog.groups,
-            back_matter,
+    let oscal_catalog = crate::oscal::OscalCatalog {
+        uuid: real_metadata.uuid.to_string(),
+        metadata: crate::oscal::catalog::OscalMetadata {
+            title: real_metadata.title,
+            last_modified: real_metadata.last_modified.to_rfc3339(),
+            version: real_metadata.version,
+            oscal_version: real_metadata.oscal_version,
         },
+        groups: catalog.groups,
+        back_matter,
     };
 
-    // Step 12: Validate via serde_json::Value (format-independent, WI-20, PRD M-5).
-    // Uses to_value() instead of JSON roundtrip (to_string_pretty → from_str) so
-    // validation is format-agnostic — the same Value feeds both JSON Schema checks
-    // and subsequent format-specific serialization in serialize_for_format().
-    let json_value =
-        serde_json::to_value(&envelope).map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let report = crate::validate::run_full_validation(
-        "generated catalog",
-        &json_value,
-        crate::validate::OscalModelType::Catalog,
-    )
-    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-    if !report.is_valid() {
-        let rendered = crate::validate::report::render_text_report(&report);
-        eprintln!("{rendered}");
-        // PRD EC-7: do NOT write output file on validation failure
-        return Err(ForgeError::SchemaValidation(format!(
-            "{} validation error(s) in generated catalog",
-            report.errors().len()
-        )));
-    }
+    // Step 12: Validate and serialize based on output format
+    let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
 
-    // Step 13: Serialize to requested format and write output
-    let output_str = serialize_for_format(&envelope, format)?;
-    write_output(&output_str, output_path)
+    // Step 12b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
+    let json = validate_catalog_json(&envelope)?;
+
+    match format {
+        OutputFormat::Json => write_output(&json, output_path),
+        OutputFormat::Xml => {
+            let xml = crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog)?;
+            write_output(&xml, output_path)
+        }
+        OutputFormat::Yaml => {
+            let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
+            write_output(&yaml, output_path)
+        }
+    }
 }
 
 /// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize → output.
@@ -210,7 +243,7 @@ pub fn run_component_pipeline(
     output_path: Option<&Path>,
     max_size_bytes: u64,
     source_profile: Option<&str>,
-    format: &crate::cli::OutputFormat,
+    format: &OutputFormat,
 ) -> Result<(), ForgeError> {
     // S-3: Pipeline stage progress logging (visible with --verbose)
     tracing::info!("Ingesting and parsing policy document");
@@ -235,31 +268,29 @@ pub fn run_component_pipeline(
         Some(&source_file_str),
     )?;
 
-    tracing::info!("Serializing to requested format");
+    // Step 11: Validate and serialize based on output format
 
-    // Step 11: Validate via serde_json::Value (format-independent, WI-20, PRD M-5).
-    // Uses to_value() instead of JSON roundtrip so validation is format-agnostic.
-    let json_value =
-        serde_json::to_value(&envelope).map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let report = crate::validate::run_full_validation(
-        "generated component definition",
-        &json_value,
-        crate::validate::OscalModelType::ComponentDefinition,
-    )
-    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-    if !report.is_valid() {
-        let rendered = crate::validate::report::render_text_report(&report);
-        eprintln!("{rendered}");
-        // PRD EC-7: do NOT write output file on validation failure
-        return Err(ForgeError::SchemaValidation(format!(
-            "{} validation error(s) in generated component definition",
-            report.errors().len()
-        )));
+    // Step 11b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
+    let json = validate_component_json(&envelope)?;
+
+    match format {
+        OutputFormat::Json => {
+            tracing::info!("Serializing to JSON");
+            write_output(&json, output_path)
+        }
+        OutputFormat::Xml => {
+            tracing::info!("Serializing to XML");
+            let xml = crate::export::xml_serializer::serialize_component_definition_to_xml(
+                &envelope.component_definition,
+            )?;
+            write_output(&xml, output_path)
+        }
+        OutputFormat::Yaml => {
+            tracing::info!("Serializing to YAML");
+            let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
+            write_output(&yaml, output_path)
+        }
     }
-
-    // Step 12: Serialize to requested format and write output
-    let output_str = serialize_for_format(&envelope, format)?;
-    write_output(&output_str, output_path)
 }
 
 #[cfg(test)]
@@ -296,17 +327,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn serialize_for_format_xml_returns_validation_error() {
-        let model = serde_json::json!({"test": "value"});
-        let result = serialize_for_format(&model, &crate::cli::OutputFormat::Xml);
-        let err = result.expect_err("XML format should return error");
-        assert!(
-            err.to_string().contains("XML output format is not yet supported"),
-            "Expected XML not supported error, got: {err}"
-        );
-    }
-
     // --- US2: Pipeline integration tests (T019) ---
 
     #[test]
@@ -314,8 +334,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("empty.md");
         std::fs::write(&path, "").unwrap();
-        let result =
-            run_catalog_pipeline(&path, None, 10 * 1_048_576, &crate::cli::OutputFormat::Json);
+        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json);
         match result.unwrap_err() {
             ForgeError::EmptyInput { .. } => {}
             other => panic!("Expected EmptyInput, got: {other:?}"),
@@ -327,8 +346,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("flat.md");
         std::fs::write(&path, "Just plain text without any structure.\n").unwrap();
-        let result =
-            run_catalog_pipeline(&path, None, 10 * 1_048_576, &crate::cli::OutputFormat::Json);
+        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json);
         match result.unwrap_err() {
             ForgeError::NoStructureDetected { .. } => {}
             other => panic!("Expected NoStructureDetected, got: {other:?}"),
@@ -346,12 +364,8 @@ mod tests {
         }
         let dir = TempDir::new().unwrap();
         let output = dir.path().join("catalog.json");
-        let result = run_catalog_pipeline(
-            fixture,
-            Some(&output),
-            10 * 1_048_576,
-            &crate::cli::OutputFormat::Json,
-        );
+        let result =
+            run_catalog_pipeline(fixture, Some(&output), 10 * 1_048_576, &OutputFormat::Json);
         assert!(
             result.is_ok(),
             "Catalog pipeline should succeed with valid input: {:?}",
@@ -379,7 +393,7 @@ mod tests {
             Some(&output),
             10 * 1_048_576,
             None,
-            &crate::cli::OutputFormat::Json,
+            &OutputFormat::Json,
         );
         match &result {
             Ok(()) => {
