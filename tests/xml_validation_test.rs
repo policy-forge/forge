@@ -37,30 +37,21 @@ fn build_catalog_xml(fixture_path: &Path) -> String {
     std::fs::read_to_string(&output_path).unwrap()
 }
 
-/// Build component definition XML from the sample policy fixture.
-///
-/// Uses direct serialization (not the pipeline) because the XSD validation test
-/// exercises XML structure independently of JSON schema validation. Without a
-/// `source_profile`, the component definition has empty `control-implementations`
-/// which the JSON schema rejects but the XSD schema permits.
+/// Build component definition XML from the sample policy fixture using the pipeline API.
 fn build_component_definition_xml(fixture_path: &Path) -> String {
-    let ingested = forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES).unwrap();
-    let content = ingested.reconstruct_content();
-    let sections = forge::parse::extract_sections(&content).unwrap();
-    let clauses = forge::parse::extract_clauses(&content).unwrap();
-    let document = forge::model::assemble_document(&ingested, &sections, &clauses).unwrap();
-    let atomized = forge::parse::atomize_document(&document).unwrap();
-    let doc = forge::uuid::assign_stable_ids(atomized);
-    let doc = forge::citation::extract_citations(doc).unwrap();
+    let dir = TempDir::new().unwrap();
+    let output_path = dir.path().join("component-definition.xml");
 
-    let envelope =
-        forge::oscal::build_component_definition(&doc, None, None, Some("sample_policy.md"))
-            .unwrap();
-
-    forge::export::xml_serializer::serialize_component_definition_to_xml(
-        &envelope.component_definition,
+    forge::pipeline::run_component_pipeline(
+        fixture_path,
+        Some(&output_path),
+        MAX_SIZE_BYTES,
+        Some("./baselines/nist-800-53.json"),
+        &forge::cli::OutputFormat::Xml,
     )
-    .unwrap()
+    .unwrap();
+
+    std::fs::read_to_string(&output_path).unwrap()
 }
 
 /// T035: Validate catalog XML against OSCAL v1.2.0 catalog XSD.
