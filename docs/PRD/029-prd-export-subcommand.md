@@ -217,17 +217,17 @@ N/A -- The export subcommand is a single-pass transformation with no state trans
 ## Requirements
 
 ### Must Have (M) -- MVP, launch blockers :red_circle: `@human-required`
-- [ ] **M-1:** The CLI shall provide a `forge export <input> --format <json|xml|yaml>` subcommand that converts an existing OSCAL artifact to the specified target format. *(Traces to: Parent PRD S-3, S-4, US-5 AC-2)*
-- [ ] **M-2:** The `forge export` subcommand shall auto-detect the input artifact's format from the file extension (`.json`, `.xml`, `.yaml`, `.yml`). *(Traces to: Parent PRD S-3, S-4)*
-- [ ] **M-3:** The `forge export` subcommand shall deserialize the input OSCAL artifact and re-serialize it to the target format, preserving semantic equivalence. *(Traces to: Parent PRD S-3, S-4)*
-- [ ] **M-4:** The `forge export` subcommand shall validate the converted output against OSCAL v1.2.0 schemas and report errors if the output is invalid. *(Traces to: Parent PRD M-6)*
-- [ ] **M-5:** The `forge export` subcommand shall support `--output <path>` for writing to a file, defaulting to stdout when `--output` is not specified. *(Traces to: Parent PRD S-3, S-4)*
-- [ ] **M-6:** The `forge export` subcommand shall report a descriptive error and exit with a non-zero status code when the input file is not a valid OSCAL artifact. *(Traces to: Parent PRD M-6, EC-9)*
+- [x] **M-1:** The CLI shall provide a `forge export <input> --format <json|xml|yaml>` subcommand that converts an existing OSCAL artifact to the specified target format. *(Traces to: Parent PRD S-3, S-4, US-5 AC-2)*
+- [x] **M-2:** The `forge export` subcommand shall auto-detect the input artifact's format from the file extension (`.json`, `.xml`, `.yaml`, `.yml`). *(Traces to: Parent PRD S-3, S-4)*
+- [x] **M-3:** The `forge export` subcommand shall deserialize the input OSCAL artifact and re-serialize it to the target format, preserving semantic equivalence. *(Traces to: Parent PRD S-3, S-4)*
+- [x] **M-4:** The `forge export` subcommand shall validate the converted output against OSCAL v1.2.0 schemas and report errors if the output is invalid. *(Traces to: Parent PRD M-6)*
+- [x] **M-5:** The `forge export` subcommand shall support `--output <path>` for writing to a file, defaulting to stdout when `--output` is not specified. *(Traces to: Parent PRD S-3, S-4)*
+- [x] **M-6:** The `forge export` subcommand shall report a descriptive error and exit with a non-zero status code when the input file is not a valid OSCAL artifact. *(Traces to: Parent PRD M-6, EC-9)*
 
 ### Should Have (S) -- High value, not blocking :red_circle: `@human-required`
-- [ ] **S-1:** The `forge export` subcommand should support content-based format detection as a fallback when the file extension is ambiguous or missing.
-- [ ] **S-2:** The `forge export` subcommand should report the detected input format and target output format in verbose mode (`--verbose`).
-- [ ] **S-3:** When the input format matches the target format (e.g., `forge export artifact.json --format json`), the subcommand should re-serialize and validate the artifact (effectively a format normalization pass).
+- [ ] **S-1:** The `forge export` subcommand should support content-based format detection as a fallback when the file extension is ambiguous or missing. *(Deferred — extension-based detection sufficient for MVP)*
+- [x] **S-2:** The `forge export` subcommand should report the detected input format and target output format in verbose mode (`--verbose`).
+- [x] **S-3:** When the input format matches the target format (e.g., `forge export artifact.json --format json`), the subcommand should re-serialize and validate the artifact (effectively a format normalization pass).
 
 ### Could Have (C) -- Nice to have, if time permits :yellow_circle: `@human-review`
 - [ ] **C-1:** The `forge export` subcommand could support `--validate-only` flag to validate the input without producing output, acting as a quick validation shortcut.
@@ -257,7 +257,9 @@ N/A -- The export subcommand is a single-pass transformation with no state trans
 
 ## Data Model (if applicable) :yellow_circle: `@human-review`
 
-N/A -- The `forge export` subcommand operates on the existing OSCAL internal representation established by WI-9 through WI-14 and the serialization infrastructure from WI-26 and WI-27. No new data model structs are introduced. The subcommand uses the same serde-based OSCAL types for deserialization and re-serialization.
+N/A -- The `forge export` subcommand operates on the existing OSCAL internal representation established by WI-9 through WI-14 and the serialization infrastructure from WI-26 and WI-27. No new *persistent* data model structs are introduced. The subcommand uses the same serde-based OSCAL types for deserialization and re-serialization.
+
+> **Implementation Note:** A transient `OscalModel` enum wrapper was introduced during implementation to hold the deserialized model (Catalog or ComponentDefinition variant) during the export pipeline. This is not a persistent data entity — it exists only in-memory during a single export invocation. See `src/cli/export.rs` and `tasks.md` Design Deviations table.
 
 ---
 
@@ -338,13 +340,13 @@ pub fn export_artifact(
 | AC-9 | M-6 | US-4 | A non-existent input file | Running `forge export missing.json --format xml` | A descriptive error indicating the file does not exist is reported with non-zero exit code |
 
 ### Edge Cases :green_circle: `@llm-autonomous`
-- [ ] **EC-1:** (M-2) When the input file has no extension (e.g., `forge export oscal-artifact --format xml`), then the subcommand attempts content-based detection or reports a descriptive error.
-- [ ] **EC-2:** (M-2) When the input file extension does not match the actual content (e.g., a `.json` file containing XML), then the subcommand reports a descriptive error about the format mismatch.
-- [ ] **EC-3:** (M-3) When exporting to the same format as the input (e.g., JSON to JSON), then the output is a valid, re-serialized copy of the input (format normalization).
-- [ ] **EC-4:** (M-5) When the `--output` path points to a read-only location, then a descriptive filesystem error is reported.
-- [ ] **EC-5:** (M-6) When the input file is empty (0 bytes), then a descriptive error is reported indicating an empty file.
-- [ ] **EC-6:** (M-6) When the input is valid JSON but not a valid OSCAL document, then a descriptive error distinguishes between "not JSON" and "not OSCAL".
-- [ ] **EC-7:** (M-1) When `--format` is not provided, then the CLI reports the required argument and exits with a non-zero status code.
+- [x] **EC-1:** (M-2) When the input file has no extension (e.g., `forge export oscal-artifact --format xml`), then the subcommand reports a descriptive error listing supported extensions.
+- [x] **EC-2:** (M-2) When the input file extension does not match the actual content (e.g., a `.json` file containing XML), then the subcommand reports a descriptive error about the format mismatch.
+- [x] **EC-3:** (M-3) When exporting to the same format as the input (e.g., JSON to JSON), then the output is a valid, re-serialized copy of the input (format normalization).
+- [x] **EC-4:** (M-5) When the `--output` path points to a read-only location, then a descriptive filesystem error is reported.
+- [x] **EC-5:** (M-6) When the input file is empty (0 bytes), then a descriptive error is reported indicating an empty file.
+- [x] **EC-6:** (M-6) When the input is valid JSON but not a valid OSCAL document, then a descriptive error distinguishes between "not JSON" and "not OSCAL".
+- [x] **EC-7:** (M-1) When `--format` is not provided, then the CLI reports the required argument and exits with a non-zero status code.
 
 ---
 
@@ -444,7 +446,7 @@ N/A -- No spike tasks for this work item. All serialization crates have been eva
 ### Sign-off
 | Role | Name | Date | Decision |
 |------|------|------|----------|
-| Product Owner | Brian Luby | YYYY-MM-DD | [Ready / Not Ready] |
+| Product Owner | Brian Luby | 2026-02-15 | Ready |
 
 ---
 

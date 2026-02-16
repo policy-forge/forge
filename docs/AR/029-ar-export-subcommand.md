@@ -2,7 +2,7 @@
 
 > **Document Type:** Architecture Review
 > **Audience:** LLM agents, human reviewers
-> **Status:** Proposed
+> **Status:** Superseded by implementation
 > **Last Updated:** 2026-02-10 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Deciders:** Brian Luby <!-- @human-required -->
@@ -403,6 +403,18 @@ pub fn export_artifact(
 }
 ```
 
+### Design Deviations (Implementation Updates)
+
+> **Note:** This AR captures the original architectural intent (Option 1: Generic Pipeline), which remains the selected approach. The interface details below were refined during research and implementation. For the authoritative implementation interface, see `specs/029-export-subcommand/contracts/export.rs` and `tasks.md`. The Interface Definitions and Implementation Guidance sections above reflect the original design; refer to this table for what changed:
+
+| AR Decision | Implementation Decision | Rationale |
+|-------------|------------------------|-----------|
+| `OscalFormat` enum | Reuse existing `OutputFormat` enum from `src/cli/mod.rs` | Identical variants (`Json`, `Xml`, `Yaml`); creating a duplicate enum violates YAGNI (see `research.md` RQ-5) |
+| `ExportArgs.verbose: bool` field | No verbose field; use global `-v` flag via tracing | Codebase convention: verbosity is a global CLI concern, not per-subcommand |
+| Validate AFTER serialization (`validate_oscal(&output_string, format)`) | Validate BEFORE serialization (`validate_oscal_model(&model)` via JSON intermediate) | OSCAL schemas are JSON-only; validating the serialized output would require re-parsing XML/YAML to JSON first — validating the model directly avoids a redundant round-trip (see `research.md` RQ-2) |
+
+**Authority**: For implementation details, follow `contracts/export.rs` and `tasks.md`. This AR captures the original architectural intent and selected approach (Option 1), which remains correct.
+
 ### Key Algorithms/Patterns 🟡 `@human-review`
 
 **Pattern:** Generic deserialize-reserialize pipeline
@@ -487,9 +499,9 @@ When deserializing, try each OSCAL model type:
 ## Implementation Guidance
 
 ### Suggested Implementation Order 🟢 `@llm-autonomous`
-1. Define `OscalFormat` enum with `clap::ValueEnum` derive
-2. Define `ExportArgs` clap struct
-3. Add `Export(ExportArgs)` variant to the CLI `Command` enum
+1. Reuse existing `OutputFormat` enum from `src/cli/mod.rs` (see Design Deviations above)
+2. Add `Export` variant with inline fields to the CLI `Commands` enum in `src/cli/mod.rs`
+3. Wire CLI dispatch to call `export::execute()`
 4. Implement `detect_format` with unit tests
 5. Implement `export_artifact` orchestration function
 6. Wire CLI dispatch to call `export_artifact`

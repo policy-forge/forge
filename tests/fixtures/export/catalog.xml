@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d">
+  <metadata>
+    <title>Test Catalog</title>
+    <last-modified>2026-01-15T12:00:00Z</last-modified>
+    <version>1.0</version>
+    <oscal-version>1.2.0</oscal-version>
+  </metadata>
+  <group id="access-control">
+    <title>Access Control</title>
+    <control id="POL-AC-001">
+      <title>All users must authenticate using MFA.</title>
+      <part id="POL-AC-001_smt" name="statement">
+        <p>All users must authenticate using MFA.</p>
+      </part>
+    </control>
+  </group>
+</catalog>

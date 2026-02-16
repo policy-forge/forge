@@ -365,8 +365,8 @@ fn control_ids_match_between_catalog_and_component() {
 #[test]
 fn component_pipeline_none_source_profile_produces_empty_control_implementations() {
     // T010 (S-1, AC-7): Pipeline with source_profile: None → empty control-implementations.
-    // Since WI-19, the pipeline runs schema validation which rejects empty
-    // control-implementations (OSCAL minItems: 1). Expect SchemaValidation error.
+    // With skip_serializing_if, empty control-implementations is omitted from output,
+    // making the output valid OSCAL (field is optional in schema).
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists());
 
@@ -381,13 +381,12 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
         &OutputFormat::Json,
     );
 
-    // Without a source profile, control-implementations will be empty,
-    // which fails OSCAL schema validation (minItems: 1). The pipeline
-    // should return a schema validation error.
-    assert!(result.is_err(), "Pipeline should fail schema validation without source profile");
-    let err_msg = result.unwrap_err().to_string();
+    // Empty control-implementations is omitted (skip_serializing_if),
+    // so the output passes schema validation.
     assert!(
-        err_msg.contains("schema") || err_msg.contains("Schema"),
-        "Error should mention schema validation: {err_msg}"
+        result.is_ok(),
+        "Pipeline should succeed: empty control-implementations omitted, err: {:?}",
+        result.err()
     );
+    assert!(output_path.exists(), "Output file should be written");
 }
