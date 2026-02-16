@@ -5,8 +5,8 @@ on:
     tags:
       - "v*"
 
-permissions:
-  contents: write
+# Restrict top-level permissions; each job declares only what it needs.
+permissions: {}
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,6 +15,8 @@ jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -70,10 +72,47 @@ jobs:
           name: forge-${{ matrix.target }}
           path: forge-*.*
 
-  release:
-    name: Create Release
+  hash:
+    name: Compute artifact hashes
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate SHA-256 hashes
+        id: hash
+        run: |
+          cd artifacts
+          echo "hashes=$(sha256sum * | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  provenance:
+    name: Generate SLSA provenance
+    needs: [build, hash]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    # SLSA L3 provenance — tamper-proof build attestation.
+    # https://github.com/slsa-framework/slsa-github-generator
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.hash.outputs.hashes }}"
+      upload-assets: true
+
+  release:
+    name: Create Release
+    needs: [build, provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
