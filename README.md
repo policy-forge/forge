@@ -1,12 +1,42 @@
-# FORGE
+FORGE 🦀
 
-**Framework for OSCAL Risk & Governance Execution**
+Framework for OSCAL Risk & Governance Execution
 
-A Rust CLI tool that converts security policy documents into [OSCAL](https://pages.nist.gov/OSCAL/) (Open Security Controls Assessment Language), the NIST standard for machine-readable security and compliance policies.
+FORGE is a high-performance Rust CLI designed for the Agent-Native software era. It bridges the gap between human-written security policies and autonomous execution by converting Markdown governance into OSCAL (Open Security Controls Assessment Language)—the industry standard for machine-readable compliance.
 
-FORGE reads Markdown policy documents — with optional YAML frontmatter — and produces schema-validated OSCAL Catalogs and Component Definitions in JSON, XML, or YAML. It also validates existing OSCAL artifacts and converts between output formats.
+🚀 Why FORGE?
 
-## Features
+In the world of Agentic AI, natural language documentation is a liability. Agents suffer from "semantic ambiguity," leading to hallucinations and inconsistent security enforcement. FORGE "forges" abstract policy into deterministic, schema-validated artifacts that provide AI agents with a Shared Truth Layer.
+
+By providing a high-fidelity, machine-navigable roadmap of a system's rules, FORGE allows agents to not just write code, but to understand the guardrails they must operate within.
+
+🛠️ Key Architectural Pillars
+
+1. High-Fidelity Machine Readability
+
+FORGE ingest human-centric Markdown and produces structured OSCAL Catalogs and Component Definitions.
+
+Zero-Shot Success: Reduces token waste by providing agents with deterministic schemas rather than ambiguous prose.
+
+Requirement Atomization: Automatically splits compound "Must X and Must Y" statements into individual, addressable controls.
+
+2. Deterministic Agentic Guardrails
+
+In agentic coding, an agent often has the power to modify its environment. FORGE creates the Guardrail Layer:
+
+Stable Identifiers: UUID v5 generation ensures that every security control has a persistent identity, allowing agents to track compliance state across sessions.
+
+Traceability: Source-to-OSCAL mapping ensures every machine rule is linked back to the original policy intent.
+
+3. Agentic Interoperability & Enforcement
+
+FORGE acts as a translation layer for the modern security stack. It enables the transition from "Policy-as-Prose" to Policy-as-Code:
+
+Tooling Integration: Compatible with Open Policy Agent (OPA), GitHub Advanced Security, and standard CI/CD scanners.
+
+MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing agents to query system governance as easily as they query a database.
+
+✨ Features
 
 - **Markdown to OSCAL** — Convert policy documents into OSCAL Catalogs or Component Definitions
 - **Multi-format output** — JSON, XML, and YAML with round-trip fidelity between all three
@@ -18,7 +48,7 @@ FORGE reads Markdown policy documents — with optional YAML frontmatter — and
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
 - **Zero network dependencies** — Reads and writes local files only
 
-## Quick Start
+🚦 Quick Start
 
 ```bash
 # Install (requires Rust 1.93.0+)
@@ -62,7 +92,6 @@ forge convert policy.md --strategy catalog --format json --output catalog.json
 # Override max input file size (default: 10 MB)
 forge convert large-policy.md --strategy catalog --format json --max-size 20
 ```
-
 ### Export
 
 Convert an existing OSCAL artifact between formats. Auto-detects the input format from the file extension.
@@ -137,160 +166,40 @@ For other document formats (PDF, DOCX), convert to Markdown first using tools li
 
 25 sample policies are included in `example_data/` covering topics from acceptable use to incident response.
 
-## How It Works
-
-FORGE processes a Markdown policy document through a deterministic pipeline:
-
-```
-Ingest → Parse → Extract → Assemble → Atomize → Assign IDs → Map to OSCAL → Serialize → Validate
-```
-
-1. **Ingest** — Reads the file, validates UTF-8, computes a SHA-256 fingerprint
-2. **Parse** — Builds a heading hierarchy tree from Markdown structure
-3. **Extract** — Pulls list items, tables, and paragraphs from each section
-4. **Assemble** — Combines sections, clauses, and YAML frontmatter into a `PolicyDocument`
-5. **Atomize** — Splits compound requirements into individual atomic statements
-6. **Assign IDs** — Generates deterministic UUID v5 identifiers from content, ensuring stability across re-conversions
-7. **Map to OSCAL** — Transforms the domain model into OSCAL Catalog or Component Definition structures, with metadata, back matter, citation resources, and traceability links
-8. **Serialize** — Outputs JSON, XML, or YAML
-9. **Validate** — Checks the output against the OSCAL v1.2.0 JSON schema and runs semantic validation
-
-## Project Structure
-
-```
-src/
-  main.rs                    Entry point (anyhow error handling)
-  lib.rs                     Module declarations and public API
-  error.rs                   ForgeError enum (thiserror, 20+ variants)
-  pipeline.rs                Catalog and Component pipeline orchestration
-  uuid.rs                    Deterministic UUID v5 generation
-  citation.rs                URL/reference extraction and deduplication
-  cli/
-    mod.rs                   CLI definition (clap derive)
-    convert.rs               Convert subcommand (catalog + component strategies)
-    export.rs                Export subcommand (format conversion)
-    validate.rs              Validate subcommand (schema + semantic checks)
-  ingest/
-    mod.rs                   File ingestion, format detection, fingerprinting
-  parse/
-    mod.rs                   Heading hierarchy extraction (pulldown-cmark)
-    clauses.rs               List item, table, and paragraph extraction
-    atomize.rs               Compound requirement splitting
-  model/
-    mod.rs                   PolicyDocument, PolicySection, PolicyRequirement
-    frontmatter.rs           YAML frontmatter parsing
-    assemble.rs              Pipeline assembly (sections + clauses + frontmatter)
-    trace.rs                 Traceability model (TraceLink, TraceIndex)
-  oscal/
-    mod.rs                   OSCAL module declarations
-    catalog.rs               Catalog builder (groups, controls)
-    component_definition.rs  Component Definition builder
-    implemented_requirements.rs  Control implementations
-    parts.rs                 Statement parts, prose, props
-    metadata.rs              OSCAL metadata assembly
-    back_matter.rs           Back matter resources and links
-    trace_embedding.rs       Provenance metadata embedding
-  export/
-    mod.rs                   Format serialization orchestration
-    xml_serializer.rs        OSCAL XML serialization (quick-xml)
-    xml_deserializer.rs      OSCAL XML deserialization
-    yaml.rs                  OSCAL YAML serialization (serde_yaml_ng)
-  validate/
-    mod.rs                   Validation orchestration
-    error_types.rs           Structured validation error categories
-    formatter.rs             Human-friendly error formatting
-    report.rs                Validation report generation
-    semantic.rs              Semantic validation (orphan links, missing fields)
-  testing/
-    mod.rs                   Round-trip testing utilities
-    semantic_eq.rs           Format-agnostic equivalence comparison
-tests/                       Integration tests (905 tests across 27 suites)
-benches/                     Criterion benchmarks (pipeline, atomize, UUID, XML, export)
-example_data/                25 sample Markdown policy documents
-```
-
-## Development
-
-```bash
-cargo build                    # Debug build
-cargo build --release          # Release build
-cargo test                     # Run all tests (905 tests)
-cargo clippy -- -D warnings    # Lint (warnings as errors)
-cargo fmt --check              # Check formatting
-cargo bench                    # Run benchmarks
-cargo mutants                  # Mutation testing (requires cargo-mutants)
-```
-
-### CI
-
-Every push and PR runs:
-
-- `cargo fmt --check` + `cargo clippy -- -D warnings`
-- `cargo test` (full suite)
-- `cargo bench` (pipeline benchmarks)
-- `cargo audit` (security advisory check)
-- `cargo deny check` (license and advisory compliance)
-
-### Releases
-
-Tagged releases (`v*`) build cross-platform binaries for:
-
-- Linux (`x86_64-unknown-linux-gnu`)
-- macOS (`x86_64-apple-darwin`, `aarch64-apple-darwin`)
-- Windows (`x86_64-pc-windows-msvc`)
-
 Each release includes SHA-256 checksums and [SLSA Level 3](https://slsa.dev/) provenance attestation.
 
-## Roadmap
+🏗️ How It Works: The Deterministic Pipeline
 
-### Current: Phase 1 — Foundation (v0.1.0)
+FORGE processes governance through a rigorous nine-stage pipeline:
+Ingest → Parse → Extract → Assemble → Atomize → Assign IDs → Map to OSCAL → Serialize → Validate
 
-Core Markdown-to-OSCAL pipeline. **24 of 25 work items complete.** Remaining: Phase 1 release packaging.
+This ensures that the output is not just "valid JSON," but a semantically accurate representation of your security intent.
 
-| Capability | Status |
-|------------|--------|
-| Markdown ingestion with SHA-256 fingerprinting | Done |
-| Heading hierarchy and clause extraction | Done |
-| YAML frontmatter support | Done |
-| Requirement atomization | Done |
-| Deterministic UUID v5 identifiers | Done |
-| Citation and reference extraction | Done |
-| OSCAL Catalog generation (groups, controls, statements) | Done |
-| OSCAL Component Definition generation | Done |
-| Implemented requirements with source profiles | Done |
-| OSCAL metadata, back matter, and traceability | Done |
-| Schema validation against OSCAL v1.2.0 | Done |
-| Structured error reporting | Done |
-| Golden-file regression testing | Done |
-| Performance benchmarks (<30s for 50-page documents) | Done |
-| JSON, XML, and YAML output | Done |
-| Format round-trip equivalence (JSON/XML/YAML) | Done |
-| `forge export` format conversion subcommand | Done |
-| Phase 1 release (v0.1.0 tag) | Pending |
+🗺️ Roadmap
 
-### Next: Phase 2 — Profile & Tailoring (v0.2.0)
+Completed: Phase 1 — Foundation (v0.1.0)
 
-OSCAL Profile generation with baseline selection, parameter extraction, and normative/advisory classification.
+Core Markdown-to-OSCAL pipeline. Focus on Requirement Atomization and Deterministic UUIDs.
 
-- `forge profile` subcommand with `--include`/`--exclude` control selection
-- Parameter tailoring (`--set-param`) for profile `modify` sections
-- Normative vs advisory language detection (`must`/`shall` vs `should`/`may`)
-- Policy parameter extraction (time windows, thresholds) into OSCAL `param` elements
+Current: Phase 2 — Agentic Guardrails (v0.2.0)
 
-### Future: Phase 3 — Ecosystem (v0.3.0+)
+Normative Detection: Using Rust-based NLP to differentiate "Must/Shall" from "Should/May."
 
-Integration with the broader OSCAL toolchain and community adoption.
+Parameter Extraction: Turning prose thresholds (e.g., "30-day rotation") into machine-enforceable parameters.
 
-- **oscal-cli integration** — Delegate profile resolution and cross-format validation to NIST's tooling
-- **Traceability reports** — `forge trace` mapping every OSCAL element back to source text with line numbers
-- **Batch conversion** — Process multiple policy documents in a single invocation
-- **Assessment Plan scaffolding** — Generate OSCAL Assessment Plan skeletons from policies
-- **Diff reports** — Compare two conversions of the same policy to show changes
-- **SSP templates** — System Security Plan scaffolding with placeholders and trace links
-- **Community examples and documentation** — Sample policies, usage guides, CONTRIBUTING.md
-- **Cross-platform binary releases** — Pre-built binaries via GitHub Releases (CI already configured)
+Future: Phase 3 — Ecosystem (v0.3.0+)
+
+Traceability Reports: Mapping every code line back to an OSCAL control.
+
+Assessment Scaffolding: Generating automated test plans for AI agents.
 
 See `docs/FORGE_PRODUCT_ROADMAP.md` for the full 50-item sprint plan.
+
+🤝 Contributing
+
+FORGE is built for the community. We welcome PRs for new language bindings, MCP adapters, and enhanced semantic validators.
+
+Policy Forge: Forging the rules that power the agents.
 
 ## License
 
