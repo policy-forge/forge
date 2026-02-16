@@ -477,8 +477,8 @@ fn convert_format_xml_produces_valid_xml() {
 #[test]
 fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
     // T014 (S-1): --strategy component without --source-profile → warning about missing
-    // source-profile, and schema validation failure because empty control-implementations
-    // violates the OSCAL schema (minItems: 1).
+    // source-profile. Empty control-implementations is omitted (skip_serializing_if),
+    // so the output passes schema validation (field is optional in OSCAL schema).
     let dir = TempDir::new().unwrap();
     let content = "---\ntitle: \"Test Policy\"\nversion: \"1.0\"\n---\n\n# Access Control\n\n- Users must authenticate.\n";
     let path = create_temp_md(&dir, "policy.md", content);
@@ -501,16 +501,11 @@ fn convert_strategy_component_without_source_profile_succeeds_with_warning() {
         "Should warn about missing source-profile on stderr: {stderr}"
     );
 
-    // Without a source-profile, control-implementations will be empty,
-    // which fails OSCAL schema validation (minItems: 1). The CLI should
-    // report a schema validation error.
+    // With skip_serializing_if, empty control-implementations is omitted,
+    // making the output valid OSCAL (field is optional).
     assert!(
-        !output.status.success(),
-        "Should fail schema validation without --source-profile, stderr: {stderr}"
-    );
-    assert!(
-        stderr.contains("schema") || stderr.contains("Schema"),
-        "Should mention schema validation error on stderr: {stderr}"
+        output.status.success(),
+        "Should succeed: empty control-implementations is omitted from output, stderr: {stderr}"
     );
 }
 

@@ -20,7 +20,7 @@ chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
 uuid = { version = "1.20.0", features = ["serde", "v4", "v5"] }
 jsonschema = { version = "0.41.0", default-features = false }
-quick-xml = "0.37"
+quick-xml = { version = "0.37", features = ["serialize"] }
 
 [lints.clippy]
 all = "warn"
@@ -49,4 +49,8 @@ harness = false
 
 [[bench]]
 name = "xml_benchmark"
+harness = false
+
+[[bench]]
+name = "export_bench"
 harness = false

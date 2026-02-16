@@ -1,4 +1,5 @@
 pub mod convert;
+pub mod export;
 pub mod validate;
 
 use std::path::PathBuf;
@@ -62,6 +63,20 @@ pub enum Commands {
         source_profile: Option<String>,
     },
 
+    /// Export an OSCAL artifact to a different format
+    Export {
+        /// Path to the input OSCAL artifact (JSON, XML, or YAML)
+        input: PathBuf,
+
+        /// Target output format
+        #[arg(long, value_enum)]
+        format: OutputFormat,
+
+        /// Write output to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+
     /// Validate an OSCAL artifact against JSON schemas
     Validate {
         /// Path to the OSCAL JSON artifact to validate
@@ -100,7 +115,7 @@ pub enum Strategy {
     Component,
 }
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Copy, Debug)]
 pub enum OutputFormat {
     Json,
     Xml,
@@ -123,6 +138,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 *max_size,
                 source_profile.as_deref(),
             )
+        }
+        Commands::Export { input, format, output } => {
+            export::execute(input, format, output.as_deref())
         }
         Commands::Validate { input, schema_type, format } => {
             validate::execute(input, schema_type.as_ref(), format)

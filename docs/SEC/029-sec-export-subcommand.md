@@ -302,16 +302,17 @@ flowchart TD
 
 | ID | Risk Description | Severity | Mitigation | Status | Owner |
 |----|------------------|----------|------------|--------|-------|
-| R1 | **File Overwrite:** `--output` path may point to an existing important file; export overwrites it without confirmation | Medium | Consider warning or prompting before overwriting existing files; at minimum, document that `--output` will overwrite. CLI tools commonly overwrite without prompting (consistent with `cp`, `mv`), so this may be acceptable behavior with documentation. | Open | Brian Luby |
+| R1 | **File Overwrite:** `--output` path may point to an existing important file; export overwrites it without confirmation | Medium | Consider warning or prompting before overwriting existing files; at minimum, document that `--output` will overwrite. CLI tools commonly overwrite without prompting (consistent with `cp`, `mv`), so this may be acceptable behavior with documentation. | Accepted — Standard CLI behavior; documented in Q1 resolution | Brian Luby |
 | R2 | **Symlink Following on Output:** `--output` path may be a symlink to a sensitive file; `std::fs::write()` follows symlinks by default | Medium | Use `std::fs::metadata()` to check for symlinks before writing; or accept this as standard Unix behavior (consistent with other CLI tools). Document that FORGE follows symlinks. | Open | Brian Luby |
 | R3 | **Path Traversal on Output:** `--output` with `../` components could write outside the expected directory | Low | This is standard CLI behavior -- the user intentionally specifies the path. FORGE runs with the user's permissions, so it cannot write anywhere the user cannot. No mitigation needed beyond standard OS permissions. | Accepted | Brian Luby |
-| R4 | **XXE in XML Deserialization:** Input XML artifact may contain external entity declarations (`<!ENTITY xxe SYSTEM "file:///etc/passwd">`); if quick-xml expands these, it could read arbitrary files | Medium | Verify that quick-xml does not process DTD or expand external entities by default. quick-xml's default parser does NOT process DTDs or expand entities -- it treats them as opaque strings. Add unit test with XXE payload to confirm. | Open | Brian Luby |
+| R4 | **XXE in XML Deserialization:** Input XML artifact may contain external entity declarations (`<!ENTITY xxe SYSTEM "file:///etc/passwd">`); if quick-xml expands these, it could read arbitrary files | Medium | Verify that quick-xml does not process DTD or expand external entities by default. quick-xml's default parser does NOT process DTDs or expand entities -- it treats them as opaque strings. Add unit test with XXE payload to confirm. | Mitigated — Unit test `xxe_prevention_no_entity_expansion` confirms no entity expansion | Brian Luby |
 | R5 | **Deserialization of Malicious Input:** Crafted JSON/XML/YAML input could exploit parser bugs (e.g., deeply nested structures, extremely long strings) | Low | serde_json, quick-xml, and serde_yaml are well-tested crates with no known deserialization vulnerabilities; input size is bounded by filesystem; add error handling for malformed input | Mitigated | Brian Luby |
 
 ### Risk Acceptance :red_circle: `@human-required`
 
 | Risk ID | Accepted By | Date | Justification | Review Date |
 |---------|-------------|------|---------------|-------------|
+| R1 | Brian Luby | 2026-02-15 | File overwrite via `--output` is standard CLI behavior consistent with `cp`, `mv`, `cat >`; documented in Q1 resolution | 2026-08-15 |
 | R3 | Brian Luby | 2026-02-11 | Path traversal via `--output` is standard CLI behavior; FORGE runs with user's permissions and cannot escalate; consistent with cp, mv, cat behavior | 2026-08-11 |
 | R5 | Brian Luby | 2026-02-11 | Deserialization crates are well-audited; input is local files controlled by the user; error handling covers malformed input | 2026-08-11 |
 
@@ -368,9 +369,9 @@ flowchart TD
 
 | ID | Finding | Severity | Category | Recommendation | Status |
 |----|---------|----------|----------|----------------|--------|
-| F1 | XML deserialization must be verified to not expand external entities (XXE) | Medium | Integrity | Write unit test with XXE payload in input XML; verify entity is not expanded and no file system read occurs | Open |
-| F2 | Output file write should consider existing file overwrite behavior | Low | Integrity | Document that `--output` overwrites existing files; consider optional `--no-clobber` flag in future | Open |
-| F3 | Deserialization error messages should be reviewed to ensure they do not leak excessive file content | Low | Confidentiality | Code review during implementation to verify error message content | Open |
+| F1 | XML deserialization must be verified to not expand external entities (XXE) | Medium | Integrity | Write unit test with XXE payload in input XML; verify entity is not expanded and no file system read occurs | **Resolved** — `xxe_prevention_no_entity_expansion` test in `src/export/xml_deserializer.rs` confirms quick-xml does not expand entities |
+| F2 | Output file write should consider existing file overwrite behavior | Low | Integrity | Document that `--output` overwrites existing files; consider optional `--no-clobber` flag in future | **Resolved** — Documented as standard CLI behavior (see Q1 resolution); `--no-clobber` deferred |
+| F3 | Deserialization error messages should be reviewed to ensure they do not leak excessive file content | Low | Confidentiality | Code review during implementation to verify error message content | **Resolved** — All error paths use structured `ForgeError` variants with context fields (extension name, path, parse error summary); no raw file content included in error messages |
 
 ### Positive Observations :green_circle: `@llm-autonomous`
 
@@ -385,7 +386,7 @@ flowchart TD
 
 ## Open Questions :yellow_circle: `@human-review`
 
-- [ ] **Q1:** Should `forge export --output` warn before overwriting an existing file? Standard CLI tools (cp, mv) do not warn by default, but some (like `cp -i`) offer an interactive confirmation mode. This is a UX decision with security implications.
+- [x] **Q1:** Should `forge export --output` warn before overwriting an existing file? **Resolved:** No — `forge export --output` silently overwrites existing files, consistent with standard CLI tool behavior (`cp`, `mv`, `cat >`, `jq ... > file`). This matches the existing `forge convert --output` behavior. A `--no-clobber` flag may be considered in a future UX enhancement (see SEC finding F2).
 
 ---
 
@@ -401,14 +402,14 @@ flowchart TD
 
 | Role | Name | Date | Decision |
 |------|------|------|----------|
-| Security Reviewer | Brian Luby | YYYY-MM-DD | [Approved / Approved with conditions / Rejected] |
-| Feature Owner | Brian Luby | YYYY-MM-DD | [Acknowledged] |
+| Security Reviewer | Brian Luby | 2026-02-15 | Approved with conditions (all conditions met) |
+| Feature Owner | Brian Luby | 2026-02-15 | Acknowledged |
 
 ### Conditions for Approval (if applicable) :red_circle: `@human-required`
 
-- [ ] Unit test with XXE payload in XML input confirms no entity expansion occurs
-- [ ] Error handling for all deserialization failure modes is implemented and tested
-- [ ] Code review confirms output serialization follows WI-26/WI-27 security requirements
+- [x] Unit test with XXE payload in XML input confirms no entity expansion occurs — `src/export/xml_deserializer.rs::xxe_prevention_no_entity_expansion`
+- [x] Error handling for all deserialization failure modes is implemented and tested — T030–T036, T045 all passing
+- [x] Code review confirms output serialization follows WI-26/WI-27 security requirements — `serialize_oscal()` delegates directly to WI-26/WI-27 functions
 
 ---
 
@@ -416,13 +417,13 @@ flowchart TD
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | -- | -- | Unit | tests/export_xxe_test.rs |
-| SEC-2 | M-6 | AC-6 | Code Review | PR review checklist |
-| SEC-3 | M-6 | AC-9 | Unit | tests/export_error_test.rs |
-| SEC-4 | M-2 | AC-3 | Unit | tests/export_format_detection_test.rs |
-| SEC-5 | M-6 | AC-6 | Unit | tests/export_error_test.rs |
-| SEC-6 | -- | -- | Code Review | PR review checklist |
-| SEC-7 | M-4 | AC-5 | Integration | tests/export_validation_test.rs |
+| SEC-1 | -- | -- | Unit | src/export/xml_deserializer.rs (`xxe_prevention_no_entity_expansion`) |
+| SEC-2 | M-6 | AC-6 | Code Review | Verified during implementation — error messages use `ForgeError` variants with structured context, not raw file content |
+| SEC-3 | M-6 | AC-9 | Unit | src/cli/export.rs (`export_artifact_nonexistent_file`) |
+| SEC-4 | M-2 | AC-3 | Unit | src/cli/export.rs (`detect_format_*` tests) |
+| SEC-5 | M-6 | AC-6 | Unit | src/cli/export.rs (`export_artifact_*` error tests, `deserialize_invalid_oscal_json`) |
+| SEC-6 | -- | -- | Code Review | Verified — `serialize_oscal()` delegates to WI-26 `serialize_catalog_to_xml()` / WI-27 `serialize_to_yaml()` without modification |
+| SEC-7 | M-4 | AC-5 | Unit + Integration | src/cli/export.rs (`validate_valid_catalog_model`, `format_pair_*` tests), tests/export_integration.rs |
 
 ---
 

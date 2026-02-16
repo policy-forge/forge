@@ -87,6 +87,26 @@ pub enum ForgeError {
     #[error("Configuration error: {0}")]
     Config(String),
 
+    // --- Export errors (exit code 1) ---
+    #[error(
+        "Unrecognized file extension '.{extension}' on input file. \
+         Expected .json, .xml, .yaml, or .yml for OSCAL artifacts."
+    )]
+    ExportUnsupportedExtension { extension: String },
+
+    #[error(
+        "No file extension on input file '{}'. \
+         Cannot determine OSCAL format. Expected .json, .xml, .yaml, or .yml.",
+        path.display()
+    )]
+    ExportNoExtension { path: PathBuf },
+
+    #[error("Input is not a valid OSCAL artifact: {detail}")]
+    ExportInvalidOscal { detail: String },
+
+    #[error("Export input file is empty: '{}'", path.display())]
+    ExportEmptyInput { path: PathBuf },
+
     // --- Other (exit code 1) ---
     #[error("Serialization error: {0}")]
     Serialization(String),
@@ -115,6 +135,10 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::InvalidEncoding { .. }
         | ForgeError::NotAFile { .. }
         | ForgeError::Io(_)
+        | ForgeError::ExportUnsupportedExtension { .. }
+        | ForgeError::ExportNoExtension { .. }
+        | ForgeError::ExportInvalidOscal { .. }
+        | ForgeError::ExportEmptyInput { .. }
         | ForgeError::Serialization(_) => 1,
 
         // Exit 2: Parse/Structure errors

@@ -89,7 +89,7 @@ pub struct DocumentaryComponent {
     pub props: Vec<crate::oscal::parts::OscalProp>,
 
     /// Control implementations placeholder (empty for WI-14; populated by WI-15).
-    #[serde(rename = "control-implementations")]
+    #[serde(default, rename = "control-implementations", skip_serializing_if = "Vec::is_empty")]
     pub control_implementations: Vec<serde_json::Value>,
 }
 
@@ -516,16 +516,17 @@ mod tests {
 
     #[test]
     fn test_empty_control_implementations() {
-        // S-1: control-implementations is an empty array
+        // S-1: control-implementations is omitted when empty (skip_serializing_if)
         let doc = test_document("Corporate Security Policy", "2.0");
         let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        let ci = v["component-definition"]["components"][0]["control-implementations"]
-            .as_array()
-            .unwrap();
-        assert!(ci.is_empty(), "control-implementations must be empty");
+        let component = &v["component-definition"]["components"][0];
+        assert!(
+            component.get("control-implementations").is_none(),
+            "control-implementations should be omitted when empty"
+        );
     }
 
     #[test]
