@@ -1,16 +1,16 @@
-FORGE 🦀
+# FORGE 🦀
 
 Framework for OSCAL Risk & Governance Execution
 
 FORGE is a high-performance Rust CLI designed for the Agent-Native software era. It bridges the gap between human-written security policies and autonomous execution by converting Markdown governance into OSCAL (Open Security Controls Assessment Language)—the industry standard for machine-readable compliance.
 
-🚀 Why FORGE?
+## 🚀 Why FORGE?
 
 In the world of Agentic AI, natural language documentation is a liability. Agents suffer from "semantic ambiguity," leading to hallucinations and inconsistent security enforcement. FORGE "forges" abstract policy into deterministic, schema-validated artifacts that provide AI agents with a Shared Truth Layer.
 
 By providing a high-fidelity, machine-navigable roadmap of a system's rules, FORGE allows agents to not just write code, but to understand the guardrails they must operate within.
 
-🛠️ Key Architectural Pillars
+## 🛠️ Key Architectural Pillars
 
 1. High-Fidelity Machine Readability
 
@@ -36,7 +36,7 @@ Tooling Integration: Compatible with Open Policy Agent (OPA), GitHub Advanced Se
 
 MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing agents to query system governance as easily as they query a database.
 
-✨ Features
+## ✨ Features
 
 - **Markdown to OSCAL** — Convert policy documents into OSCAL Catalogs or Component Definitions
 - **Multi-format output** — JSON, XML, and YAML with round-trip fidelity between all three
@@ -48,7 +48,7 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
 - **Zero network dependencies** — Reads and writes local files only
 
-🚦 Quick Start
+## 🚦 Quick Start
 
 ```bash
 # Install (requires Rust 1.93.0+)
@@ -168,14 +168,14 @@ For other document formats (PDF, DOCX), convert to Markdown first using tools li
 
 Each release includes SHA-256 checksums and [SLSA Level 3](https://slsa.dev/) provenance attestation.
 
-🏗️ How It Works: The Deterministic Pipeline
+## 🏗️ How It Works: The Deterministic Pipeline
 
 FORGE processes governance through a rigorous nine-stage pipeline:
 Ingest → Parse → Extract → Assemble → Atomize → Assign IDs → Map to OSCAL → Serialize → Validate
 
 This ensures that the output is not just "valid JSON," but a semantically accurate representation of your security intent.
 
-🗺️ Roadmap
+## 🗺️ Roadmap
 
 Completed: Phase 1 — Foundation (v0.1.0)
 
@@ -195,7 +195,7 @@ Assessment Scaffolding: Generating automated test plans for AI agents.
 
 See `docs/FORGE_PRODUCT_ROADMAP.md` for the full 50-item sprint plan.
 
-🤝 Contributing
+## 🤝 Contributing
 
 FORGE is built for the community. We welcome PRs for new language bindings, MCP adapters, and enhanced semantic validators.
 
