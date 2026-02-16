@@ -1,5 +1,7 @@
 # FORGE 🦀
 
+![FORGE](docs/Forge_logo_web.png)
+
 Framework for OSCAL Risk & Governance Execution
 
 FORGE is a high-performance Rust CLI designed for the Agent-Native software era. It bridges the gap between human-written security policies and autonomous execution by converting Markdown governance into OSCAL (Open Security Controls Assessment Language)—the industry standard for machine-readable compliance.
