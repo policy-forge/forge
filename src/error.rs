@@ -194,7 +194,7 @@ mod tests {
         );
         assert_eq!(exit_code(&ForgeError::InvalidEncoding { path: PathBuf::from("a") }), 1);
         assert_eq!(exit_code(&ForgeError::NotAFile { path: PathBuf::from("a") }), 1);
-        let io_err = std::io::Error::new(std::io::ErrorKind::Other, "test");
+        let io_err = std::io::Error::other("test");
         assert_eq!(exit_code(&ForgeError::Io(io_err)), 1);
         assert_eq!(exit_code(&ForgeError::Serialization("s".into())), 1);
     }

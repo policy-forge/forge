@@ -20,13 +20,6 @@ pub fn execute(
         .checked_mul(1024 * 1024)
         .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))?;
 
-    // WI-27: reject YAML format (not yet implemented)
-    if matches!(format, OutputFormat::Yaml) {
-        return Err(ForgeError::Validation(
-            "YAML format is not yet supported (see WI-27)".to_string(),
-        ));
-    }
-
     match strategy {
         Strategy::Catalog => {
             crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes, format)
@@ -164,14 +157,16 @@ mod tests {
     }
 
     #[test]
-    fn yaml_format_is_rejected() {
-        // YAML format should still be rejected (WI-27).
+    fn yaml_format_is_accepted() {
+        // WI-27: YAML format should be accepted (no longer rejected).
+        // Will fail on file-not-found (test.md doesn't exist), proving the
+        // format check no longer blocks YAML.
         let result =
             execute(Path::new("test.md"), &Strategy::Catalog, &OutputFormat::Yaml, None, 10, None);
         let err = result.unwrap_err();
         assert!(
-            err.to_string().contains("YAML format is not yet supported"),
-            "YAML should still be rejected. Got: {err}"
+            !err.to_string().contains("not yet supported"),
+            "YAML format should be accepted, not rejected. Got: {err}"
         );
     }
 }

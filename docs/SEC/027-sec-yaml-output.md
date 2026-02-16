@@ -368,7 +368,8 @@ flowchart TD
 
 ## Open Questions :yellow_circle: `@human-review`
 
-- [ ] **Q1:** Should FORGE document in its output or README that generated YAML is YAML 1.2 compliant and may behave differently in tools using YAML 1.1 parsers (particularly around boolean coercion)?
+- [x] **Q1:** Should FORGE document in its output or README that generated YAML is YAML 1.2 compliant and may behave differently in tools using YAML 1.1 parsers (particularly around boolean coercion)?
+  - **Resolution:** Deferred to WI-29 (export subcommand) or a future documentation WI. SEC R2 (boolean coercion) is accepted with risk acceptance from Brian Luby (2026-02-11). The serde_yaml_ng crate produces YAML 1.2 output where `yes`/`no` are not boolean values; downstream YAML 1.1 parser behavior is outside FORGE's control. No documentation change needed for WI-27 scope.
 
 ---
 
@@ -398,10 +399,10 @@ flowchart TD
 
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
-| SEC-1 | -- | -- | Unit | tests/yaml_serializer_test.rs |
-| SEC-2 | M-1 | AC-1, EC-5 | Unit | tests/yaml_escaping_test.rs |
-| SEC-3 | M-3 | AC-3 | Unit | tests/yaml_equivalence_test.rs |
-| SEC-4 | M-3 | AC-3 | Unit | tests/yaml_equivalence_test.rs |
+| SEC-1 | -- | -- | Unit | tests/yaml_security_test.rs |
+| SEC-2 | M-1 | AC-1, EC-5 | Unit | tests/yaml_security_test.rs |
+| SEC-3 | M-3 | AC-3 | Unit | tests/yaml_security_test.rs |
+| SEC-4 | M-3 | AC-3 | Unit | tests/yaml_security_test.rs |
 | SEC-5 | -- | -- | Code Review | PR review checklist |
 
 ---

@@ -10,19 +10,19 @@ use crate::cli::OutputFormat;
 use crate::error::ForgeError;
 use crate::model::PolicyDocument;
 
-/// Writes JSON output to a file or stdout.
+/// Writes serialized output to a file or stdout.
 ///
 /// # Arguments
-/// * `json` - The serialized JSON string
+/// * `content` - The serialized output string (JSON, YAML, etc.)
 /// * `output_path` - If Some, writes to file (validates parent dir exists); if None, prints to stdout
 ///
 /// # Errors
 /// * `ForgeError::Validation` if parent directory does not exist
 /// * `ForgeError::Io` if file write fails
-pub fn write_output(json: &str, output_path: Option<&Path>) -> Result<(), ForgeError> {
+pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), ForgeError> {
     match output_path {
         None => {
-            println!("{json}");
+            println!("{content}");
             Ok(())
         }
         Some(path) => {
@@ -35,7 +35,7 @@ pub fn write_output(json: &str, output_path: Option<&Path>) -> Result<(), ForgeE
                     parent.display()
                 )));
             }
-            std::fs::write(path, json)?;
+            std::fs::write(path, content)?;
             Ok(())
         }
     }
@@ -154,7 +154,7 @@ fn prepare_document(input_path: &Path, max_size_bytes: u64) -> Result<PolicyDocu
 /// * `input_path` - Path to the Markdown policy document
 /// * `output_path` - Optional output file path; if None, writes to stdout
 /// * `max_size_bytes` - Maximum allowed input file size in bytes
-/// * `format` - Output format (JSON or XML)
+/// * `format` - Output format (JSON, YAML, or XML)
 ///
 /// # Errors
 /// * `Err(ForgeError)` if any pipeline stage fails
@@ -220,7 +220,8 @@ pub fn run_catalog_pipeline(
             write_output(&xml, output_path)
         }
         OutputFormat::Yaml => {
-            Err(ForgeError::Validation("YAML format is not yet supported (see WI-27)".to_string()))
+            let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
+            write_output(&yaml, output_path)
         }
     }
 }
@@ -233,7 +234,7 @@ pub fn run_catalog_pipeline(
 /// * `max_size_bytes` - Maximum allowed input file size in bytes
 /// * `source_profile` - Optional baseline profile reference for control-implementations;
 ///   when `None`, produces a Component Definition with empty `control-implementations`
-/// * `format` - Output format (JSON or XML)
+/// * `format` - Output format (JSON, YAML, or XML)
 ///
 /// # Errors
 /// * `Err(ForgeError)` if any pipeline stage fails
@@ -285,7 +286,9 @@ pub fn run_component_pipeline(
             write_output(&xml, output_path)
         }
         OutputFormat::Yaml => {
-            Err(ForgeError::Validation("YAML format is not yet supported (see WI-27)".to_string()))
+            tracing::info!("Serializing to YAML");
+            let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
+            write_output(&yaml, output_path)
         }
     }
 }
