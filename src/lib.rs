@@ -7,6 +7,8 @@ pub mod model;
 pub mod oscal;
 pub mod parse;
 pub mod pipeline;
+#[doc(hidden)]
+pub mod testing;
 pub mod uuid;
 pub mod validate;
 

@@ -6,8 +6,10 @@
 //! XXE prevention: quick-xml's default parser does NOT process DTDs or expand entities (SEC-1).
 
 use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::error::ForgeError;
+use crate::oscal::back_matter::{BackMatter, BackMatterResource, Prop, ResourceCitation, Rlink};
 use crate::oscal::catalog::{
     CatalogEnvelope, OscalCatalog, OscalControl, OscalGroup, OscalMetadata,
 };
@@ -30,6 +32,8 @@ struct XmlCatalog {
     metadata: XmlMetadata,
     #[serde(default, rename = "group")]
     groups: Vec<XmlGroup>,
+    #[serde(default, rename = "back-matter")]
+    back_matter: Option<XmlBackMatter>,
 }
 
 #[derive(Deserialize)]
@@ -39,6 +43,8 @@ struct XmlComponentDefinition {
     metadata: XmlMetadata,
     #[serde(default, rename = "component")]
     components: Vec<XmlComponent>,
+    #[serde(default, rename = "back-matter")]
+    back_matter: Option<XmlBackMatter>,
 }
 
 #[derive(Deserialize)]
@@ -134,6 +140,50 @@ struct XmlDescription {
     paragraphs: Vec<String>,
 }
 
+#[derive(Deserialize)]
+struct XmlBackMatter {
+    #[serde(default, rename = "resource")]
+    resources: Vec<XmlResource>,
+}
+
+#[derive(Deserialize)]
+struct XmlResource {
+    #[serde(rename = "@uuid")]
+    uuid: String,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    description: Option<XmlDescription>,
+    #[serde(default, rename = "prop")]
+    props: Vec<XmlBackMatterProp>,
+    #[serde(default)]
+    citation: Option<XmlCitation>,
+    #[serde(default, rename = "rlink")]
+    rlinks: Vec<XmlRlink>,
+}
+
+#[derive(Deserialize)]
+struct XmlBackMatterProp {
+    #[serde(rename = "@name")]
+    name: String,
+    #[serde(rename = "@value")]
+    value: String,
+}
+
+#[derive(Deserialize)]
+struct XmlCitation {
+    #[serde(default)]
+    text: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct XmlRlink {
+    #[serde(rename = "@href")]
+    href: String,
+    #[serde(default, rename = "@media-type")]
+    media_type: Option<String>,
+}
+
 // ─── Conversion Functions ────────────────────────────────────────────────
 
 fn convert_metadata(xml: XmlMetadata) -> OscalMetadata {
@@ -191,12 +241,33 @@ fn convert_group(xml: XmlGroup) -> OscalGroup {
     }
 }
 
+fn convert_back_matter(xml: XmlBackMatter) -> BackMatter {
+    BackMatter { resources: xml.resources.into_iter().map(convert_resource).collect() }
+}
+
+fn convert_resource(xml: XmlResource) -> BackMatterResource {
+    let uuid = Uuid::try_parse(&xml.uuid).unwrap_or_else(|_| Uuid::new_v4());
+    let description = xml.description.map(|d| d.paragraphs.join("\n"));
+    BackMatterResource {
+        uuid,
+        title: xml.title.unwrap_or_default(),
+        description,
+        citation: xml.citation.and_then(|c| c.text.map(|t| ResourceCitation { text: t })),
+        rlinks: xml
+            .rlinks
+            .into_iter()
+            .map(|r| Rlink { href: r.href, media_type: r.media_type })
+            .collect(),
+        props: xml.props.into_iter().map(|p| Prop { name: p.name, value: p.value }).collect(),
+    }
+}
+
 fn convert_catalog(xml: XmlCatalog) -> OscalCatalog {
     OscalCatalog {
         uuid: xml.uuid,
         metadata: convert_metadata(xml.metadata),
         groups: xml.groups.into_iter().map(convert_group).collect(),
-        back_matter: None,
+        back_matter: xml.back_matter.map(convert_back_matter),
     }
 }
 
@@ -222,7 +293,7 @@ fn convert_component_definition(xml: XmlComponentDefinition) -> ComponentDefinit
             oscal_version: xml.metadata.oscal_version,
         },
         components: xml.components.into_iter().map(convert_component).collect(),
-        back_matter: None,
+        back_matter: xml.back_matter.map(convert_back_matter),
     }
 }
 

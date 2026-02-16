@@ -160,7 +160,7 @@ fn catalog_json_and_xml_have_same_group_and_control_count() {
 
     // Count controls in JSON
     let json_control_count: usize =
-        json_groups.iter().filter_map(|g| g["controls"].as_array()).map(|c| c.len()).sum();
+        json_groups.iter().filter_map(|g| g["controls"].as_array()).map(Vec::len).sum();
 
     // Count controls in XML
     let xml_control_count = xml_str.matches("<control id=").count();
