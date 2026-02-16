@@ -12,11 +12,11 @@ pub const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 ///
 /// Callers should `return` when this returns `true`.
 pub fn skip_if_missing(path: &Path) -> bool {
-    if !path.exists() {
+    if path.exists() {
+        false
+    } else {
         eprintln!("Skipping test: fixture not found at {}", path.display());
         true
-    } else {
-        false
     }
 }
 

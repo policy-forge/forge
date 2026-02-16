@@ -52,14 +52,14 @@
 > Implement round-trip fidelity testing by normalizing all formats through the internal OSCAL model (deserialize to Rust structs, re-serialize to JSON) and comparing `serde_json::Value` trees using a custom recursive semantic equivalence function that ignores JSON key ordering but preserves array order.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> Round-trip testing normalizes all formats through the internal Rust model: Format A -> Internal Model -> Format B -> Internal Model -> JSON Value, then compares JSON Value trees. The `assert_semantic_equivalence` function recursively compares `serde_json::Value` nodes, treating object keys as unordered sets and array elements as ordered sequences. Supplement with `assert_json_diff` crate for rich diff output on failure. Do NOT compare serialized strings. Do NOT write format-specific comparison logic for each pair. Do NOT skip YAML type coercion edge cases.
+> Round-trip testing normalizes all formats through the internal Rust model: Format A -> Internal Model -> Format B -> Internal Model -> JSON Value, then compares JSON Value trees. The `assert_semantic_equivalence` function recursively compares `serde_json::Value` nodes, treating object keys as unordered sets and array elements as ordered sequences. Custom `EquivalenceResult` with JSON Pointer paths provides structured diff output on failure. Do NOT compare serialized strings. Do NOT write format-specific comparison logic for each pair. Do NOT skip YAML type coercion edge cases.
 
 ---
 
 ## Context
 
 ### Problem Space 🔴 `@human-required`
-After WI-26 (XML serialization) and WI-27 (YAML serialization) deliver format-specific output, FORGE must verify that converting between any two formats introduces zero data loss. Each format uses a different serialization crate with different parsing semantics: `serde_json` (JSON), `quick-xml` (XML), and `serde_yaml` (YAML). Subtle issues like XML element ordering, YAML type coercion, or floating-point representation differences could silently corrupt data during format conversion. The architecture must define a canonical comparison approach that works across all format pairs without requiring format-specific comparison logic.
+After WI-26 (XML serialization) and WI-27 (YAML serialization) deliver format-specific output, FORGE must verify that converting between any two formats introduces zero data loss. Each format uses a different serialization crate with different parsing semantics: `serde_json` (JSON), `quick-xml` (XML), and `serde_yaml_ng` (YAML). Subtle issues like XML element ordering, YAML type coercion, or floating-point representation differences could silently corrupt data during format conversion. The architecture must define a canonical comparison approach that works across all format pairs without requiring format-specific comparison logic.
 
 ### Decision Scope 🟡 `@human-review`
 
@@ -76,21 +76,20 @@ After WI-26 (XML serialization) and WI-27 (YAML serialization) deliver format-sp
 - Performance benchmarking of serialization -- separate work item
 
 ### Current State 🟢 `@llm-autonomous`
-After WI-26 and WI-27, FORGE can serialize OSCAL models to JSON, XML, and YAML, and deserialize from all three formats back to internal Rust structs. No automated round-trip testing exists yet. Semantic equivalence between formats is assumed but unverified.
+After WI-26 and WI-27, FORGE can serialize OSCAL models to JSON, XML, and YAML. Deserialization exists for JSON (via `serde_json`) and YAML (via `serde_yaml_ng`), but **XML deserialization does not yet exist** — WI-26 delivered serialization only using a custom `quick_xml::Writer`-based approach. This WI adds XML deserialization as a prerequisite for XML round-trip testing (see Phase 2B). No automated round-trip testing exists yet. Semantic equivalence between formats is assumed but unverified.
 
 ```mermaid
 graph TD
     subgraph "Current State (after WI-26/WI-27)"
         Model[OSCAL Model Structs] --> JSON[JSON via serde_json]
         Model --> XML[XML via quick-xml]
-        Model --> YAML[YAML via serde_yaml]
+        Model --> YAML[YAML via serde_yaml_ng]
         JSON --> DeJ[Deserialize JSON]
-        XML --> DeX[Deserialize XML]
         YAML --> DeY[Deserialize YAML]
         DeJ --> Model
-        DeX --> Model
         DeY --> Model
     end
+    XML -.->|"No deserializer yet (WI-28 adds this)"| Model
     NoTest["No round-trip tests exist"]
 ```
 
@@ -141,7 +140,7 @@ graph TD
 
 ### Option 1: Model Normalization + serde_json::Value Tree Comparison (Recommended)
 
-**Description:** Normalize all formats through the internal Rust model (deserialize from format A -> internal model -> serialize to JSON), then compare `serde_json::Value` trees using a custom recursive function. Supplement with `assert_json_diff` crate for enhanced diff output.
+**Description:** Normalize all formats through the internal Rust model (deserialize from format A -> internal model -> serialize to JSON), then compare `serde_json::Value` trees using a custom recursive `assert_semantic_equivalence` function. Custom `EquivalenceResult` with JSON Pointer paths provides structured diff output on failure.
 
 ```mermaid
 graph TD
@@ -162,7 +161,7 @@ graph TD
 | Driver | Rating | Notes |
 |--------|--------|-------|
 | Correctness | ✅ Good | Normalizing through the model resolves format-specific artifacts; Value tree comparison is key-order-independent |
-| Actionability | ✅ Good | Custom diff + assert_json_diff produces path-level discrepancy details |
+| Actionability | ✅ Good | Custom `EquivalenceResult` produces path-level discrepancy details via JSON Pointer paths |
 | Reusability | ✅ Good | assert_semantic_equivalence is a standalone function usable by any test |
 | Simplicity | ✅ Good | Single comparison path for all format pairs; no format-specific comparison logic |
 
@@ -170,11 +169,10 @@ graph TD
 - Single comparison approach works for all 6 format pair combinations
 - `serde_json::Value::Object` uses `Map` where equality is key-order-independent
 - Normalizing through the internal model strips format-specific artifacts (XML namespaces, YAML anchors)
-- `assert_json_diff` provides rich, developer-friendly diff output on failure
-- Custom wrapper allows FORGE-specific logic (array ordering verification, type preservation checks)
+- Custom `EquivalenceResult` with JSON Pointer paths provides OSCAL-specific, developer-friendly diff output on failure
+- No additional dependencies needed — custom implementation is < 100 LOC
 
 **Cons:**
-- Adds `assert_json_diff` as a dev-dependency (low cost)
 - Normalization through the model may mask serialization-specific issues (mitigated by format-specific unit tests in WI-26/WI-27)
 
 ---
@@ -232,17 +230,17 @@ graph TD
 > **Option 1: Model Normalization + serde_json::Value Tree Comparison**
 
 ### Rationale 🔴 `@human-required`
-Option 1 provides the right balance of correctness, actionability, and reusability. Normalizing through the internal model means format-specific artifacts are stripped before comparison, allowing a single comparison path for all format pairs. The custom `assert_semantic_equivalence` function gives FORGE control over comparison semantics (array ordering, type preservation) while `assert_json_diff` supplements with rich diff output. Option 2 is viable but less flexible for future needs. Option 3 is fundamentally broken for JSON comparison.
+Option 1 provides the right balance of correctness, actionability, and reusability. Normalizing through the internal model means format-specific artifacts are stripped before comparison, allowing a single comparison path for all format pairs. The custom `assert_semantic_equivalence` function gives FORGE control over comparison semantics (array ordering, type preservation) with structured `EquivalenceResult` output providing JSON Pointer paths on failure. `assert_json_diff` (Option 2) was evaluated but not needed — the custom implementation provides richer, OSCAL-specific diffs with no additional dependencies. Option 3 is fundamentally broken for JSON comparison.
 
 #### Simplest Implementation Comparison 🟡 `@human-review`
 
 | Aspect | Simplest Possible | Selected Option | Justification for Complexity |
 |--------|-------------------|-----------------|------------------------------|
-| Components | assert_json_eq! macro only | Custom equivalence function + assert_json_diff | PRD M-7 requires structured diff; PRD S-3 requires reusable module |
-| Dependencies | No new deps | assert_json_diff dev-dependency | Rich diff output for developer productivity |
+| Components | assert_json_eq! macro only | Custom equivalence function with `EquivalenceResult` | PRD M-7 requires structured diff; PRD S-3 requires reusable module |
+| Dependencies | No new deps | No new deps (custom implementation) | Custom `EquivalenceResult` provides richer OSCAL-specific diffs than `assert_json_diff` |
 | Patterns | Direct string comparison | Model normalization + Value tree traversal | PRD M-5 requires key-order-independent comparison |
 
-**Complexity justified by:** PRD M-7 requires structured diffs and PRD S-3 requires a reusable module. A custom equivalence function with structured `EquivalenceResult` satisfies both while remaining simple (< 100 LOC).
+**Complexity justified by:** PRD M-7 requires structured diffs and PRD S-3 requires a reusable module. A custom equivalence function with structured `EquivalenceResult` satisfies both while remaining simple (< 100 LOC) and adding no new dependencies.
 
 ### Architecture Diagram 🟡 `@human-review`
 
@@ -287,10 +285,12 @@ graph TD
 | assert_semantic_equivalence | Compare two JSON Value trees | `fn(&Value, &Value) -> EquivalenceResult` | recursive Value traversal |
 | EquivalenceResult | Structured comparison result | Data struct | EquivalenceDiff |
 | EquivalenceDiff | Single difference found | Data struct | — |
-| round_trip_json_xml_json | Helper: JSON -> XML -> JSON round-trip | `fn(&Value) -> Result<Value, ForgeError>` | WI-26 serializer, WI-26 deserializer |
-| round_trip_json_yaml_json | Helper: JSON -> YAML -> JSON round-trip | `fn(&Value) -> Result<Value, ForgeError>` | WI-27 serializer, WI-27 deserializer |
-| round_trip_xml_yaml_xml | Helper: XML -> YAML -> XML round-trip | `fn(&str) -> Result<String, ForgeError>` | Both serializers |
-| tests/round_trip.rs | Integration test file | cargo test | All helpers, semantic_eq module |
+| round_trip_catalog_json_xml_json | Helper: JSON -> XML -> JSON for Catalog | `fn(&str) -> (Value, Value)` | WI-26 serializer, WI-28 deserializer |
+| round_trip_component_json_xml_json | Helper: JSON -> XML -> JSON for Component Def | `fn(&str) -> (Value, Value)` | WI-26 serializer, WI-28 deserializer |
+| round_trip_catalog_json_yaml_json | Helper: JSON -> YAML -> JSON for Catalog | `fn(&str) -> (Value, Value)` | WI-27 serializer, WI-27 deserializer |
+| round_trip_component_json_yaml_json | Helper: JSON -> YAML -> JSON for Component Def | `fn(&str) -> (Value, Value)` | WI-27 serializer, WI-27 deserializer |
+| round_trip_catalog_xml_yaml_xml | Helper: XML -> YAML -> XML for Catalog | `fn(&str) -> (Value, Value)` | Both serializers |
+| tests/round_trip_test.rs | Integration test file | cargo test | All helpers, semantic_eq module |
 
 ### Data Flow 🟢 `@llm-autonomous`
 
@@ -410,20 +410,24 @@ fn compare_values(
     }
 }
 
-/// Round-trip helper: JSON -> XML -> JSON (via internal model)
-pub fn round_trip_json_xml_json(json_input: &Value) -> Result<Value, ForgeError> {
-    let model: OscalCatalog = serde_json::from_value(json_input.clone())?;
-    let xml = serialize_catalog_to_xml(&model)?;
-    let round_tripped: OscalCatalog = deserialize_catalog_from_xml(&xml)?;
-    Ok(serde_json::to_value(round_tripped)?)
+/// Round-trip helper: JSON -> XML -> JSON for Catalog (test-local function)
+fn round_trip_catalog_json_xml_json(json_str: &str) -> (Value, Value) {
+    let envelope: CatalogEnvelope = serde_json::from_str(json_str).unwrap();
+    let original = serde_json::to_value(&envelope).unwrap();
+    let xml = serialize_catalog_to_xml(&envelope).unwrap();
+    let round_tripped: CatalogEnvelope = deserialize_catalog_from_xml(&xml).unwrap();
+    let round_tripped_value = serde_json::to_value(round_tripped).unwrap();
+    (original, round_tripped_value)
 }
 
-/// Round-trip helper: JSON -> YAML -> JSON (via internal model)
-pub fn round_trip_json_yaml_json(json_input: &Value) -> Result<Value, ForgeError> {
-    let model: OscalCatalog = serde_json::from_value(json_input.clone())?;
-    let yaml = serialize_to_yaml(&model)?;
-    let round_tripped: OscalCatalog = deserialize_from_yaml(&yaml)?;
-    Ok(serde_json::to_value(round_tripped)?)
+/// Round-trip helper: JSON -> YAML -> JSON for Catalog (test-local function)
+fn round_trip_catalog_json_yaml_json(json_str: &str) -> (Value, Value) {
+    let envelope: CatalogEnvelope = serde_json::from_str(json_str).unwrap();
+    let original = serde_json::to_value(&envelope).unwrap();
+    let yaml = serialize_to_yaml(&envelope).unwrap();
+    let round_tripped: CatalogEnvelope = deserialize_from_yaml(&yaml).unwrap();
+    let round_tripped_value = serde_json::to_value(round_tripped).unwrap();
+    (original, round_tripped_value)
 }
 ```
 
@@ -462,7 +466,7 @@ For each YAML-ambiguous value in test fixtures:
 
 **Added by this Architecture:**
 - All comparisons normalize through `serde_json::Value` -- no direct format-to-format comparison
-- `assert_json_diff` is a dev-dependency only (not a runtime dependency)
+- Custom `EquivalenceResult` provides structured diffs with no additional dependencies
 - YAML type coercion edge cases must be explicitly tested with dedicated fixtures
 - Test fixtures include both small (3-5 controls) and large (50+ controls) OSCAL artifacts
 
@@ -495,8 +499,7 @@ For each YAML-ambiguous value in test fixtures:
 - YAML type coercion edge cases caught before they reach production
 
 ### Negative
-- Model normalization may mask some serialization-specific formatting issues (mitigated by format-specific unit tests)
-- `assert_json_diff` dev-dependency adds to the dependency tree (minimal cost)
+- Model normalization may mask some serialization-specific formatting issues (mitigated by format-specific unit tests in WI-26/WI-27)
 
 ### Risks & Mitigations
 
@@ -513,15 +516,15 @@ For each YAML-ambiguous value in test fixtures:
 ### Suggested Implementation Order 🟢 `@llm-autonomous`
 1. Create `src/testing/semantic_eq.rs` module with `EquivalenceResult`, `EquivalenceDiff`, and `assert_semantic_equivalence`
 2. Write unit tests for `assert_semantic_equivalence` itself (equal objects, different keys, different values, array ordering)
-3. Add `assert_json_diff` as a dev-dependency
-4. Create `tests/round_trip.rs` integration test file
-5. Implement `round_trip_json_xml_json` helper
+3. Create `tests/round_trip_test.rs` integration test file
+4. Implement XML deserialization (`deserialize_catalog_from_xml`, `deserialize_component_from_xml`) — prerequisite for XML round-trip
+5. Implement `round_trip_catalog_json_xml_json` helper
 6. Write JSON -> XML -> JSON round-trip tests for Catalog
-7. Implement `round_trip_json_yaml_json` helper
+7. Implement `round_trip_catalog_json_yaml_json` helper
 8. Write JSON -> YAML -> JSON round-trip tests for Catalog
-9. Add Component Definition round-trip tests
+9. Add Component Definition round-trip tests (`round_trip_component_json_xml_json`, `round_trip_component_json_yaml_json`)
 10. Add YAML type coercion edge-case fixtures and tests
-11. Add XML -> YAML -> XML round-trip tests (S-1)
+11. Add XML -> YAML -> XML round-trip tests (`round_trip_catalog_xml_yaml_xml`, `round_trip_component_xml_yaml_xml`) (S-1)
 
 ### Testing Strategy 🟢 `@llm-autonomous`
 
@@ -606,10 +609,10 @@ No open questions for this work item.
 
 | PRD Req ID | Decision Driver | Option Rating | Component | Notes |
 |------------|-----------------|---------------|-----------|-------|
-| M-1 | Correctness | Option 1: ✅ | round_trip_json_xml_json | Catalog JSON-XML-JSON path |
-| M-2 | Correctness | Option 1: ✅ | round_trip_json_yaml_json | Catalog JSON-YAML-JSON path |
-| M-3 | Correctness | Option 1: ✅ | round_trip_json_xml_json | Component Def JSON-XML-JSON path |
-| M-4 | Correctness | Option 1: ✅ | round_trip_json_yaml_json | Component Def JSON-YAML-JSON path |
+| M-1 | Correctness | Option 1: ✅ | round_trip_catalog_json_xml_json | Catalog JSON-XML-JSON path |
+| M-2 | Correctness | Option 1: ✅ | round_trip_catalog_json_yaml_json | Catalog JSON-YAML-JSON path |
+| M-3 | Correctness | Option 1: ✅ | round_trip_component_json_xml_json | Component Def JSON-XML-JSON path |
+| M-4 | Correctness | Option 1: ✅ | round_trip_component_json_yaml_json | Component Def JSON-YAML-JSON path |
 | M-5 | Correctness | Option 1: ✅ | assert_semantic_equivalence | Object keys compared as unordered sets |
 | M-6 | Correctness | Option 1: ✅ | assert_semantic_equivalence | Array elements compared in order |
 | M-7 | Actionability | Option 1: ✅ | EquivalenceResult / EquivalenceDiff | Structured diff with JSON Pointer paths |
