@@ -20,15 +20,17 @@ pub fn execute(
         .checked_mul(1024 * 1024)
         .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))?;
 
-    // W-2: reject non-JSON formats (XML/YAML deferred to WI-26, WI-27)
-    if !matches!(format, OutputFormat::Json) {
+    // WI-27: reject YAML format (not yet implemented)
+    if matches!(format, OutputFormat::Yaml) {
         return Err(ForgeError::Validation(
-            "Only 'json' output format is currently supported. XML and YAML formats will be available in a future release.".to_string(),
+            "YAML format is not yet supported (see WI-27)".to_string(),
         ));
     }
 
     match strategy {
-        Strategy::Catalog => crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes),
+        Strategy::Catalog => {
+            crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes, format)
+        }
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
             let profile_ref = match source_profile {
@@ -61,7 +63,13 @@ pub fn execute(
                     Some(p)
                 }
             };
-            crate::pipeline::run_component_pipeline(input, output, max_size_bytes, profile_ref)
+            crate::pipeline::run_component_pipeline(
+                input,
+                output,
+                max_size_bytes,
+                profile_ref,
+                format,
+            )
         }
     }
 }
@@ -124,6 +132,46 @@ mod tests {
         assert!(
             err.to_string().contains("--source-profile must not be empty"),
             "Expected empty source-profile error for whitespace-only, got: {err}"
+        );
+    }
+
+    // --- T026: XML format is accepted (no longer rejected) ---
+
+    #[test]
+    fn catalog_strategy_xml_format_is_accepted() {
+        // T026: OutputFormat::Xml should NOT be rejected for catalog strategy.
+        // Will fail on file-not-found (test.md doesn't exist), proving the
+        // format check no longer blocks XML.
+        let result =
+            execute(Path::new("test.md"), &Strategy::Catalog, &OutputFormat::Xml, None, 10, None);
+        let err = result.unwrap_err();
+        assert!(
+            !err.to_string().contains("not yet supported"),
+            "XML format should be accepted, not rejected. Got: {err}"
+        );
+    }
+
+    #[test]
+    fn component_strategy_xml_format_is_accepted() {
+        // T026: OutputFormat::Xml should NOT be rejected for component strategy.
+        let result =
+            execute(Path::new("test.md"), &Strategy::Component, &OutputFormat::Xml, None, 10, None);
+        let err = result.unwrap_err();
+        assert!(
+            !err.to_string().contains("not yet supported"),
+            "XML format should be accepted for component strategy. Got: {err}"
+        );
+    }
+
+    #[test]
+    fn yaml_format_is_rejected() {
+        // YAML format should still be rejected (WI-27).
+        let result =
+            execute(Path::new("test.md"), &Strategy::Catalog, &OutputFormat::Yaml, None, 10, None);
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("YAML format is not yet supported"),
+            "YAML should still be rejected. Got: {err}"
         );
     }
 }
