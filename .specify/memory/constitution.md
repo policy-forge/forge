@@ -789,3 +789,44 @@ FORGE will accept **Markdown as the sole input format**. Users who need to conve
 - **Roadmap items removed:** WI-26 through WI-33, MS-5 (PDF/DOCX Ingestion), RR-1
 - **Theme updated:** T-4 renamed from "Format Expansion" to "Output Format Expansion" (XML/YAML output only)
 - **Documents updated:** `docs/FORGE_PRODUCT_VISION.md`, `docs/FORGE_PRODUCT_ROADMAP.md`
+
+### ADR-002: Simplicity/Scope Exception to Principle I (Crate-First)
+
+**Status:** Accepted
+**Date:** 2026-02-19
+**Deciders:** Brian Luby
+
+#### Context
+
+Principle I states: *"Every feature MUST begin as a standalone crate."* WI-31 (Profile Parameter Tailoring) extends the existing `src/oscal/profile.rs` module (introduced in WI-30) by adding one new function (`build_modify_section`) and one CLI flag (`--set-param`). No new domain boundary or reusable library surface is introduced; the change is a pure additive extension of existing Profile generation logic.
+
+Creating a new crate for a 2-function extension would impose boilerplate overhead (Cargo workspace entry, cross-crate visibility declarations, separate test runner configuration) that exceeds the complexity of the feature itself, violating the spirit of Principle I without the benefit of isolation.
+
+#### Decision
+
+WI-31 is exempt from Principle I. Small **additive extensions** to an existing module — defined as changes where:
+1. No new domain boundary is crossed,
+2. The entire implementation fits within the existing module file, and
+3. No reusable public API surface is added for downstream consumers —
+
+may proceed within the existing crate without spawning a new one.
+
+#### Consequences
+
+**Positive:**
+- Avoids artificial crate proliferation for trivial extensions
+- Keeps workspace dependency graph minimal
+- Reduces reviewer cognitive load for small features
+
+**Negative:**
+- Deviates from Principle I; requires explicit ADR per occurrence
+- Team must exercise discipline to prevent scope creep under this exception
+
+**Guard:**
+This exception applies **only** when all three criteria above are satisfied simultaneously. Features that cross domain boundaries, introduce reusable APIs, or grow beyond a single module must revert to Principle I and begin as a standalone crate.
+
+#### Traceability
+
+- **Principle affected:** Principle I (Crate-First Architecture)
+- **Work item:** WI-31 (Profile Parameter Tailoring)
+- **Affected files:** `src/oscal/profile.rs`, `src/cli/profile.rs`

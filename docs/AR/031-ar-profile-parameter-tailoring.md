@@ -169,7 +169,7 @@ graph TD
 
 ### Option 2: Immutable Transform Pipeline (Recommended)
 
-**Description:** Introduce a `build_modify_section` function that takes `--set-param` pairs and returns an `Option<serde_json::Value>` representing the `modify` section. The Profile builder assembles the final JSON by composing independently-built sections (metadata, imports, modify) into the Profile root. Each section builder is a pure function that can be tested independently.
+**Description:** Introduce a `build_modify_section` function that takes `--set-param` pairs and returns an `Option<Modify>` representing the `modify` section. The Profile builder assembles the final JSON by composing independently-built sections (metadata, imports, modify) into the Profile root. Each section builder is a pure function that can be tested independently.
 
 ```mermaid
 graph TD
@@ -296,8 +296,8 @@ graph TD
 | Component | Responsibility | Interface | Dependencies |
 |-----------|---------------|-----------|--------------|
 | CLI Parser | Parse `--set-param` repeatable flag into `Vec<(String, String)>` | clap derive macro | clap 4.x |
-| build_modify_section | Construct `modify.set-parameters` JSON from param pairs | `fn(&[(String, String)]) -> Option<Value>` | serde_json |
-| Profile Assembler | Compose metadata + imports + optional modify into Profile JSON | `fn(Value, Value, Option<Value>) -> Value` | serde_json |
+| build_modify_section | Construct `modify.set-parameters` from param pairs | `fn(&[(String, String)]) -> Option<Modify>` (see contracts/rust-api.md) | serde_json |
+| Profile Assembler | Compose metadata + imports + optional modify into Profile JSON | extend `build_profile` signature; see contracts/rust-api.md | serde_json |
 | Profile Builder (WI-30) | Existing builder extended with modify support | Library API | WI-30 codebase |
 
 ### Data Flow 🟢 `@llm-autonomous`
@@ -351,7 +351,7 @@ fn parse_set_param_pairs(set_params: &[String]) -> Vec<(String, String)> {
 /// Sorts entries alphabetically by param-id for deterministic output.
 pub fn build_modify_section(
     param_overrides: &[(String, String)],
-) -> Option<serde_json::Value> {
+) -> Option<Modify> {
     if param_overrides.is_empty() {
         return None;
     }

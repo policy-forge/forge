@@ -186,27 +186,27 @@ N/A -- No state transitions in this work item. The builder produces a Profile wi
 ## Requirements
 
 ### Must Have (M) -- MVP, launch blockers :red_circle: `@human-required`
-- [ ] **M-1:** The `forge profile` subcommand shall accept a repeatable `--set-param <id> <value>` flag for specifying parameter overrides. *(Traces to: Parent PRD S-5, US-4 AC-2)*
-- [ ] **M-2:** When `--set-param` flags are provided, the generated Profile JSON shall include a `modify` section containing a `set-parameters` array. *(Traces to: Parent PRD S-5)*
-- [ ] **M-3:** Each `set-parameters` entry shall contain `param-id` (the parameter identifier) and `values` (an array with the specified value string). *(Traces to: OSCAL Profile model)*
-- [ ] **M-4:** Multiple `--set-param` flags with different parameter IDs shall produce multiple entries in the `set-parameters` array. *(Traces to: Parent PRD S-5)*
-- [ ] **M-5:** The `modify` section shall be nested directly under the `profile` root object, as a sibling of `imports` and `metadata`. *(Traces to: OSCAL Profile model)*
-- [ ] **M-6:** When no `--set-param` flags are provided, the Profile shall not include a `modify` section (preserving backward compatibility with WI-30 output). *(Traces to: backward compatibility)*
+- [x] **M-1:** The `forge profile` subcommand shall accept a repeatable `--set-param <id> <value>` flag for specifying parameter overrides. *(Traces to: Parent PRD S-5, US-4 AC-2)*
+- [x] **M-2:** When `--set-param` flags are provided, the generated Profile JSON shall include a `modify` section containing a `set-parameters` array. *(Traces to: Parent PRD S-5)*
+- [x] **M-3:** Each `set-parameters` entry shall contain `param-id` (the parameter identifier) and `values` (an array with the specified value string). *(Traces to: OSCAL Profile model)*
+- [x] **M-4:** Multiple `--set-param` flags with different parameter IDs shall produce multiple entries in the `set-parameters` array. *(Traces to: Parent PRD S-5)*
+- [x] **M-5:** The `modify` section shall be nested directly under the `profile` root object, as a sibling of `imports` and `metadata`. *(Traces to: OSCAL Profile model)*
+- [x] **M-6:** When no `--set-param` flags are provided, the Profile shall not include a `modify` section (preserving backward compatibility with WI-30 output). *(Traces to: backward compatibility)*
 
 ### Should Have (S) -- High value, not blocking :red_circle: `@human-required`
-- [ ] **S-1:** When multiple `--set-param` flags specify the same `param-id`, their values shall be aggregated into a single `set-parameters` entry with a combined `values` array.
-- [ ] **S-2:** The `set-parameters` entries shall be ordered deterministically (e.g., by `param-id` alphabetical order) for reproducible output.
+- [x] **S-1:** When multiple `--set-param` flags specify the same `param-id`, their values shall be aggregated into a single `set-parameters` entry with a combined `values` array.
+- [x] **S-2:** The `set-parameters` entries shall be ordered deterministically (e.g., by `param-id` alphabetical order) for reproducible output.
 
 ### Could Have (C) -- Nice to have, if time permits :yellow_circle: `@human-review`
-- [ ] **C-1:** A `--set-param-file <path>` flag accepting a JSON or YAML file containing parameter overrides in bulk, for convenience with large baseline tailoring.
-- [ ] **C-2:** A warning message when `--set-param` is used without `--include` or `--exclude` (i.e., setting parameters on an empty import is likely unintentional).
+- [x] **C-1:** A `--set-param-file <path>` flag accepting a JSON or YAML file containing parameter overrides in bulk, for convenience with large baseline tailoring.
+- [x] **C-2:** A warning message when `--set-param` is used without `--include` or `--exclude` (i.e., setting parameters on an empty import is likely unintentional).
 
 ### Won't Have (W) -- Explicitly deferred :yellow_circle: `@human-review`
-- [ ] **W-1:** Validation that `param-id` values exist in the source catalog -- *Reason: Deferred to WI-32 (Profile validation)*
-- [ ] **W-2:** `alter` directives in the `modify` section (adding/removing control parts) -- *Reason: Future extension beyond current S-5 scope*
-- [ ] **W-3:** Profile Resolution (computing a resolved catalog from Profile) -- *Reason: Future work item; can be delegated to oscal-cli*
-- [ ] **W-4:** The `merge` section of the Profile -- *Reason: Not required for parameter tailoring; future extension*
-- [ ] **W-5:** Constraint/guideline/label fields on `set-parameters` entries -- *Reason: Start minimal; extend as user needs emerge*
+- [x] **W-1:** Validation that `param-id` values exist in the source catalog -- *Reason: Deferred to WI-32 (Profile validation)*
+- [x] **W-2:** `alter` directives in the `modify` section (adding/removing control parts) -- *Reason: Future extension beyond current S-5 scope*
+- [x] **W-3:** Profile Resolution (computing a resolved catalog from Profile) -- *Reason: Future work item; can be delegated to oscal-cli*
+- [x] **W-4:** The `merge` section of the Profile -- *Reason: Not required for parameter tailoring; future extension*
+- [x] **W-5:** Constraint/guideline/label fields on `set-parameters` entries -- *Reason: Start minimal; extend as user needs emerge*
 
 ---
 
@@ -274,9 +274,14 @@ erDiagram
 /// the OSCAL Profile modify section with set-parameters entries.
 ///
 /// If the input is empty, returns None (no modify section).
+///
+/// NOTE: The canonical typed Rust API definition is in
+/// `contracts/rust-api.md`. The return type is `Option<Modify>` (a
+/// strongly-typed serde struct), not `Option<serde_json::Value>`.
+/// Implementers MUST follow contracts/rust-api.md.
 pub fn build_modify_section(
     param_overrides: &[(String, String)],
-) -> Option<serde_json::Value>;
+) -> Option<Modify>;
 
 // Expected JSON output structure (Profile with modify):
 // {
@@ -323,7 +328,7 @@ pub fn build_modify_section(
 | clap `number_of_values(2)` for --set-param | MIT/Apache-2.0 | Native two-value argument parsing; type-safe | Slightly unusual CLI pattern | Selected -- clap supports this natively |
 
 ### Selected Approach :red_circle: `@human-required`
-> **Decision:** Extend the WI-30 Profile builder with a `build_modify_section` function that takes `--set-param` pairs and produces the `modify` JSON. Use clap's `number_of_values(2)` or equivalent for parsing the parameter ID and value as a pair.
+> **Decision:** Extend the WI-30 Profile builder with a `build_modify_section` function that takes `--set-param` pairs and produces the `modify` JSON. Use clap 4's `num_args = 2` with `ArgAction::Append` for parsing the parameter ID and value as a pair.
 > **Rationale:** This is a natural extension of the Profile builder pattern. The `modify` section is small and well-defined, so a separate module is unnecessary. clap provides native support for multi-value arguments, making the CLI parsing straightforward.
 
 ---
@@ -339,12 +344,12 @@ pub fn build_modify_section(
 | AC-5 | M-1, M-2, M-3 | US-3 | A generated Profile with `set-parameters` | Inspecting each entry | Each entry contains `param-id` (string) and `values` (array of strings) per OSCAL Profile model |
 
 ### Edge Cases :green_circle: `@llm-autonomous`
-- [ ] **EC-1:** (M-1) When `--set-param` value contains spaces (e.g., `"60 days"`), then the value is preserved as a single string in the `values` array.
-- [ ] **EC-2:** (S-1) When the same `param-id` is specified twice with different values (e.g., `--set-param prm1 "val1" --set-param prm1 "val2"`), then a single `set-parameters` entry is produced with `values: ["val1", "val2"]`.
-- [ ] **EC-3:** (M-6) When `--set-param` is not provided and `--include`/`--exclude` are, then the Profile is generated with `imports` only and no `modify` section (same as WI-30 behavior).
-- [ ] **EC-4:** (M-3) When `--set-param` value is an empty string, then the entry is still generated with `values: [""]` (empty string is a valid OSCAL parameter value).
-- [ ] **EC-5:** (M-4) When ten `--set-param` flags are provided with distinct parameter IDs, then all ten entries appear in the `set-parameters` array.
-- [ ] **EC-6:** (S-2) When multiple `--set-param` flags are provided, then `set-parameters` entries are ordered deterministically (e.g., alphabetically by `param-id`).
+- [x] **EC-1:** (M-1) When `--set-param` value contains spaces (e.g., `"60 days"`), then the value is preserved as a single string in the `values` array.
+- [x] **EC-2:** (S-1) When the same `param-id` is specified twice with different values (e.g., `--set-param prm1 "val1" --set-param prm1 "val2"`), then a single `set-parameters` entry is produced with `values: ["val1", "val2"]`.
+- [x] **EC-3:** (M-6) When `--set-param` is not provided and `--include`/`--exclude` are, then the Profile is generated with `imports` only and no `modify` section (same as WI-30 behavior).
+- [x] **EC-4:** (M-3) When `--set-param` value is an empty string, then the entry is still generated with `values: [""]` (empty string is a valid OSCAL parameter value).
+- [x] **EC-5:** (M-4) When ten `--set-param` flags are provided with distinct parameter IDs, then all ten entries appear in the `set-parameters` array.
+- [x] **EC-6:** (S-2) When multiple `--set-param` flags are provided, then `set-parameters` entries are ordered deterministically (e.g., alphabetically by `param-id`).
 
 ---
 
@@ -438,7 +443,7 @@ N/A -- No spike tasks for this work item. The OSCAL Profile `modify.set-paramete
 ### Sign-off
 | Role | Name | Date | Decision |
 |------|------|------|----------|
-| Product Owner | Brian Luby | YYYY-MM-DD | [Ready / Not Ready] |
+| Product Owner | Brian Luby | 2026-02-19 | Ready |
 
 ---
 

@@ -1,0 +1,14 @@
+---
+source: tests/profile_param_test.rs
+expression: modify
+---
+{
+  "set-parameters": [
+    {
+      "param-id": "POL-AC-001_prm",
+      "values": [
+        "60 days"
+      ]
+    }
+  ]
+}

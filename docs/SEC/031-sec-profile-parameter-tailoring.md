@@ -321,7 +321,7 @@ flowchart TD
 | Req ID | Requirement | PRD AC | Verification Method |
 |--------|-------------|--------|---------------------|
 | SEC-2 | `--set-param` shall require exactly two values per occurrence (param-id and value), enforced by clap `num_args = 2` | AC-1 | Unit Test |
-| SEC-3 | When no `--set-param` flags are provided, the `modify` section shall be omitted entirely (backward compatibility with WI-30 output) | AC-6 | Unit Test |
+| SEC-3 | When no `--set-param` flags are provided, the `modify` section shall be omitted entirely (backward compatibility with WI-30 output) | AC-3 | Unit Test |
 | SEC-4 | Duplicate parameter IDs shall be aggregated deterministically using BTreeMap (alphabetical ordering) | AC-4, EC-2 | Unit Test |
 
 ### Operational Security
@@ -383,13 +383,13 @@ No open questions for this work item.
 
 | Role | Name | Date | Decision |
 |------|------|------|----------|
-| Security Reviewer | Brian Luby | YYYY-MM-DD | [Approved / Approved with conditions / Rejected] |
-| Feature Owner | Brian Luby | YYYY-MM-DD | [Acknowledged] |
+| Security Reviewer | Brian Luby | 2026-02-19 | Approved |
+| Feature Owner | Brian Luby | 2026-02-19 | Acknowledged |
 
 ### Conditions for Approval (if applicable) :red_circle: `@human-required`
 
-- [ ] Unit test confirming clap rejects odd-number `--set-param` values
-- [ ] Unit test confirming no `--set-param` produces output identical to WI-30
+- [x] Unit test confirming clap rejects odd-number `--set-param` values
+- [x] Unit test confirming no `--set-param` produces output identical to WI-30
 
 ---
 
@@ -399,7 +399,7 @@ No open questions for this work item.
 |------------|------------|-----------|-----------|---------------|
 | SEC-1 | -- | -- | Code Review | PR review checklist |
 | SEC-2 | M-1 | AC-1 | Unit | tests/profile_param_test.rs |
-| SEC-3 | M-6 | AC-6 | Unit | tests/profile_param_test.rs |
+| SEC-3 | M-6 | AC-3 | Unit | tests/profile_param_test.rs |
 | SEC-4 | M-4, S-1 | AC-4, EC-2 | Unit | tests/profile_param_test.rs |
 | SEC-5 | M-2, M-3 | AC-3 | Unit | tests/profile_param_test.rs |
 | SEC-6 | -- | -- | Code Review | PR review checklist |
