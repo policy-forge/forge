@@ -50,6 +50,7 @@ pub(crate) fn map_sections(
                 atom_index: 0,
                 parent_text: None,
                 citations: vec![],
+                modality: None,
             })
             .collect();
         return vec![PolicySection {
@@ -81,6 +82,7 @@ pub(crate) fn map_sections(
                 atom_index: 0,
                 parent_text: None,
                 citations: vec![],
+                modality: None,
             })
             .collect();
         result.push(PolicySection {
@@ -137,6 +139,7 @@ fn map_sections_recursive(
                 atom_index: 0,
                 parent_text: None,
                 citations: vec![],
+                modality: None,
             })
             .collect();
 

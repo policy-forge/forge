@@ -224,21 +224,48 @@ fn catalog_controls_have_trace_props_and_links() {
             for (i, control) in controls.iter().enumerate() {
                 let ctrl_id = control["id"].as_str().unwrap_or("?");
 
-                // Each control should have 3 trace props
+                // Each control should have 3 trace props + 1 modality prop (WI-33)
                 let props = control["props"]
                     .as_array()
                     .unwrap_or_else(|| panic!("Control [{i}] '{ctrl_id}' must have props"));
-                assert_eq!(props.len(), 3, "Control '{ctrl_id}' must have exactly 3 trace props");
-                assert_eq!(props[0]["name"], "source-file");
-                assert_eq!(props[1]["name"], "source-section");
-                assert_eq!(props[2]["name"], "source-line");
+                assert_eq!(
+                    props.len(),
+                    4,
+                    "Control '{ctrl_id}' must have 3 trace props + 1 modality prop"
+                );
 
-                for prop in props {
+                // Verify trace props by name (order-agnostic for trace props vs modality)
+                let trace_props: Vec<_> =
+                    props.iter().filter(|p| p["ns"].as_str().is_some()).collect();
+                assert_eq!(
+                    trace_props.len(),
+                    3,
+                    "Control '{ctrl_id}' must have 3 trace props with FORGE ns"
+                );
+                let trace_names: Vec<&str> =
+                    trace_props.iter().filter_map(|p| p["name"].as_str()).collect();
+                assert!(trace_names.contains(&"source-file"), "Missing source-file on '{ctrl_id}'");
+                assert!(
+                    trace_names.contains(&"source-section"),
+                    "Missing source-section on '{ctrl_id}'"
+                );
+                assert!(trace_names.contains(&"source-line"), "Missing source-line on '{ctrl_id}'");
+
+                for prop in &trace_props {
                     assert_eq!(
                         prop["ns"], "https://forge.policy-forge.github.io/ns/trace",
-                        "All trace props on '{ctrl_id}' must have FORGE trace ns"
+                        "Trace props on '{ctrl_id}' must have FORGE trace ns"
                     );
                 }
+
+                // Verify modality prop (WI-33)
+                let modality_prop = props.iter().find(|p| p["name"].as_str() == Some("modality"));
+                assert!(modality_prop.is_some(), "Control '{ctrl_id}' must have a modality prop");
+                let mv = modality_prop.unwrap()["value"].as_str().unwrap_or("");
+                assert!(
+                    mv == "normative" || mv == "advisory",
+                    "Modality prop on '{ctrl_id}' must be 'normative' or 'advisory', got '{mv}'"
+                );
 
                 // Each control should have 1 source link
                 let links = control["links"]
@@ -300,4 +327,56 @@ fn pipeline_no_sections_produces_empty_groups() {
             );
         }
     }
+}
+
+// ─── T020: Modality props in catalog JSON output (WI-33) ─────────────────
+
+/// T020 [US2] Integration test: load `033-mixed-modality.md`, run full pipeline,
+/// assert every control in catalog JSON output has a `props` entry with `"name": "modality"`.
+#[test]
+fn modality_props_present_in_catalog_for_mixed_fixture() {
+    let fixture = std::path::Path::new("tests/fixtures/033-mixed-modality.md");
+    assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
+
+    let dir = tempfile::TempDir::new().unwrap();
+    let output_path = dir.path().join("catalog.json");
+
+    let result = forge::pipeline::run_catalog_pipeline(
+        fixture,
+        Some(&output_path),
+        10 * 1024 * 1024,
+        &forge::cli::OutputFormat::Json,
+    );
+    assert!(result.is_ok(), "Pipeline failed: {:?}", result.unwrap_err());
+
+    let json_str = std::fs::read_to_string(&output_path).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+    let groups = json["catalog"]["groups"].as_array().expect("groups should be array");
+    assert!(!groups.is_empty(), "Expected at least one group");
+
+    let mut control_count = 0;
+    let mut modality_count = 0;
+
+    for group in groups {
+        let controls = match group["controls"].as_array() {
+            Some(c) => c,
+            None => continue,
+        };
+        for control in controls {
+            control_count += 1;
+            let props = control["props"].as_array();
+            let has_modality = props
+                .is_some_and(|p| p.iter().any(|prop| prop["name"].as_str() == Some("modality")));
+            if has_modality {
+                modality_count += 1;
+            }
+        }
+    }
+
+    assert!(control_count > 0, "Expected at least one control in output");
+    assert_eq!(
+        modality_count, control_count,
+        "Every control should have a modality prop ({modality_count}/{control_count} have it)"
+    );
 }

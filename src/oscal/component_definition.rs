@@ -335,6 +335,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![citation],
+            modality: None,
         }
     }
 
@@ -744,6 +745,7 @@ mod tests {
                     atom_index: 0,
                     parent_text: None,
                     citations: vec![],
+                    modality: None,
                 }],
             )],
         );
@@ -779,6 +781,7 @@ mod tests {
                     atom_index: 0,
                     parent_text: None,
                     citations: vec![],
+                    modality: None,
                 }],
             )],
         );

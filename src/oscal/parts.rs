@@ -119,6 +119,7 @@ pub fn generate_part_id(control_id: &str, suffix: &str) -> String {
 ///     atom_index: 0,
 ///     parent_text: None,
 ///     citations: vec![],
+///     modality: None,
 /// };
 ///
 /// let parts = build_control_parts("POL-AC-001", &req, None);
@@ -194,6 +195,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 

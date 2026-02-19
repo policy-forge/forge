@@ -186,6 +186,7 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 ///             atom_index: 0,
 ///             parent_text: None,
 ///             citations: vec![],
+///             modality: None,
 ///         }],
 ///         children: vec![],
 ///     }],
@@ -478,6 +479,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 

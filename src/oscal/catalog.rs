@@ -332,13 +332,25 @@ pub fn build_catalog(
             })?;
 
             let control_id = generate_control_id(&abbreviation, req_idx, "POL");
+            let mut control_props = build_control_props(req);
+            if let Some(modality) = req.modality {
+                let modality_value = match modality {
+                    crate::model::Modality::Normative => "normative",
+                    crate::model::Modality::Advisory => "advisory",
+                };
+                control_props.push(OscalProp {
+                    name: "modality".to_string(),
+                    ns: None,
+                    value: modality_value.to_string(),
+                });
+            }
             controls.push(OscalControl {
                 id: control_id.clone(),
                 uuid: stable_id.clone(),
                 title: derive_control_title(&req.text),
                 links: vec![],
                 parts: build_control_parts(&control_id, req, req_section.body_text.as_deref()),
-                props: build_control_props(req),
+                props: control_props,
             });
 
             // Record trace link for this control (T020)
@@ -437,6 +449,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 
@@ -449,6 +462,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 
@@ -960,6 +974,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 
@@ -1017,6 +1032,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         };
         let d = doc(vec![sec("Test", vec![r])]);
         let cat = build_catalog(&d, None).unwrap();

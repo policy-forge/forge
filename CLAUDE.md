@@ -87,6 +87,8 @@ See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
 - Network dependencies: N/A — reads/writes local files only (029-export-subcommand)
 - Rust, Edition 2024, stable 1.93.0 + `serde_json` 1.0.149, `quick-xml` 0.37, `serde_yaml_ng` 0.10 — no runtime dependencies, test-only (in-memory models & fixtures) (028-round-trip-testing)
 - Rust, edition 2024, stable 1.93.0 + clap 4.x (derive), serde 1.0.228, serde_json 1.0.149, uuid 1.20.0, chrono 0.4, thiserror 2.0.18 — all already in `Cargo.toml`; **no new dependencies required** (030-prd-profile-generation)
+- Rust, Edition 2024, stable 1.93.0 + `regex = "1"` (already in `Cargo.toml`), `std::sync::LazyLock` (stdlib, matching `citation.rs` pattern) (033-prd-normative-advisory-detection)
+- N/A — in-memory pipeline enrichment pass (033-prd-normative-advisory-detection)
 
 - Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4 (026-xml-output)
 - Rust 2024 edition, stable 1.93.0 + `serde_yaml_ng` 0.10 (aliased as `serde_yaml`, already in `Cargo.toml`), `serde` 1.0.228, `serde_json` 1.0.149 (027-yaml-output)

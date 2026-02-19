@@ -6,7 +6,7 @@
 > **Last Updated:** 2026-02-10 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
-**Feature Branch**: `033-normative-advisory-detection`
+**Feature Branch**: `033-prd-normative-advisory-detection`
 **Created**: 2026-02-10
 **Status**: Draft
 **Input**: Derived from FORGE Product Roadmap WI-33
@@ -123,7 +123,7 @@ A compliance engineer wants to view only normative requirements in the FORGE out
 
 **Acceptance Scenarios**:
 1. **Given** a converted policy with both normative and advisory requirements, **When** viewing the output, **Then** the modality prop is visible on each requirement (in JSON output, as a `prop` element).
-2. **Given** the CLI output, **When** requesting filtered or highlighted output, **Then** normative and advisory requirements are visually distinguishable.
+2. **Given** a converted policy with mixed modality, **When** viewing the JSON/YAML output, **Then** each requirement's modality is visible as a `prop` element, enabling downstream filtering and prioritization. *(CLI filter flag deferred to C-2)*
 
 ---
 
@@ -193,7 +193,7 @@ N/A -- No state transitions in this work item. Modality detection is a single-pa
 - [ ] **M-1:** The modality detector shall identify normative verbs ("must", "shall", "will", "required") in `PolicyRequirement` text and classify the requirement as normative. *(Traces to: Parent PRD S-7)*
 - [ ] **M-2:** The modality detector shall identify advisory verbs ("should", "may", "recommended", "optional") in `PolicyRequirement` text and classify the requirement as advisory. *(Traces to: Parent PRD S-7)*
 - [ ] **M-3:** Each classified requirement shall be annotated with an OSCAL `prop` element: `name: "modality"`, `value: "normative"` or `"advisory"`. *(Traces to: Parent PRD S-7, AC-13)*
-- [ ] **M-4:** The `PolicyRequirement` domain model struct shall be extended with a `modality` field of type `Modality` enum (`Normative`, `Advisory`). *(Traces to: Parent PRD S-7)*
+- [ ] **M-4:** The `PolicyRequirement` domain model struct shall be extended with a `modality` field of type `Option<Modality>` (where `Modality` is `Normative | Advisory`). The field defaults to `None` for requirements processed before WI-33 and is populated to `Some(_)` after `annotate_modalities` runs. *(Traces to: Parent PRD S-7)*
 - [ ] **M-5:** The modality `prop` shall appear on the corresponding OSCAL control or implemented-requirement in the generated output (Catalog and/or Component Definition). *(Traces to: Parent PRD S-7, AC-13)*
 - [ ] **M-6:** Verb matching shall be case-insensitive to handle "Must", "MUST", "must", and similar variations. *(Traces to: Parent PRD S-7)*
 
@@ -219,7 +219,7 @@ N/A -- No state transitions in this work item. Modality detection is a single-pa
 
 - **Language/Framework:** Rust (latest stable), Cargo build system
 - **Verb Matching:** Case-insensitive pattern matching against known verb lists; word-boundary-aware to prevent partial matches (e.g., "customize" should not match "must")
-- **Domain Model Extension:** Add `Modality` enum to the domain model crate; extend `PolicyRequirement` with a `modality: Modality` field
+- **Domain Model Extension:** Add `Modality` enum to the domain model crate; extend `PolicyRequirement` with a `modality: Option<Modality>` field (`None` until `annotate_modalities` runs; `Some(Modality::Normative)` or `Some(Modality::Advisory)` after)
 - **OSCAL Prop Format:** `{ "name": "modality", "value": "normative" }` or `{ "name": "modality", "value": "advisory" }` per OSCAL `prop` schema
 - **Output Integration:** Modality props must be emitted in both Catalog and Component Definition OSCAL output paths
 - **Linting:** `cargo clippy -- -D warnings` must pass
@@ -232,14 +232,14 @@ N/A -- No state transitions in this work item. Modality detection is a single-pa
 
 ```mermaid
 erDiagram
-    PolicyRequirement ||--|| Modality : has
+    PolicyRequirement ||--o| Modality : "has (None pre-WI-33)"
     PolicyRequirement ||--o{ OscalProp : "generates"
 
     PolicyRequirement {
         string stable_id "from WI-7"
         string text
         int source_line "1-based"
-        Modality modality "normative or advisory"
+        Option~Modality~ modality "None pre-WI-33; Some after annotate_modalities"
     }
     Modality {
         enum value "Normative | Advisory"
@@ -395,7 +395,7 @@ graph LR
 ## Implementation Guidance :green_circle: `@llm-autonomous`
 
 ### Suggested Approach
-Implement a `modality` module (e.g., `src/parse/modality.rs` or `src/annotate/modality.rs`) containing the `Modality` enum and detection logic. Define two static verb lists: `NORMATIVE_VERBS` containing `["must", "shall", "will", "required"]` and `ADVISORY_VERBS` containing `["should", "may", "recommended", "optional"]`. Compile case-insensitive regex patterns with word boundary anchors (e.g., `(?i)\b(must|shall|will|required)\b`) using `lazy_static` or `once_cell` for efficient reuse. The `detect_modality` function scans the requirement text against both patterns and returns a `ModalityResult`. If normative verbs are found, classify as `Normative`. If only advisory verbs are found, classify as `Advisory`. If both are found, classify as `Normative` (strongest wins) and set the `has_conflict` flag. If neither is found, classify as `Normative` (default) and set the `is_default` flag. The `annotate_modalities` function iterates over all `PolicyRequirement`s in a `PolicyDocument`, calls `detect_modality` on each, populates the `modality` field, and returns the updated document. In the OSCAL output builders (Catalog and Component Definition), add the modality prop to the `props` array of each control or implemented-requirement element.
+Implement a `modality` module (e.g., `src/parse/modality.rs` or `src/annotate/modality.rs`) containing the `Modality` enum and detection logic. Define two static verb lists: `NORMATIVE_VERBS` containing `["must", "shall", "will", "required"]` and `ADVISORY_VERBS` containing `["should", "may", "recommended", "optional"]`. Compile case-insensitive regex patterns with word boundary anchors (e.g., `(?i)\b(must|shall|will|required)\b`) using `std::sync::LazyLock` (stdlib) for efficient one-time compilation and reuse. The `detect_modality` function scans the requirement text against both patterns and returns a `ModalityResult`. If normative verbs are found, classify as `Normative`. If only advisory verbs are found, classify as `Advisory`. If both are found, classify as `Normative` (strongest wins) and set the `has_conflict` flag. If neither is found, classify as `Normative` (default) and set the `is_default` flag. The `annotate_modalities` function iterates over all `PolicyRequirement`s in a `PolicyDocument`, calls `detect_modality` on each, populates the `modality` field, and returns the updated document. In the OSCAL output builders (Catalog and Component Definition), add the modality prop to the `props` array of each control or implemented-requirement element.
 
 ### Anti-patterns to Avoid
 - Using `String::contains()` without word boundary checks -- would match "customize" for "must" or "display" for "may"
