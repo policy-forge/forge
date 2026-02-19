@@ -154,6 +154,64 @@ pub struct PolicyRequirement {
     /// After `annotate_modalities` completes, all requirements in the
     /// document have `Some(modality)`.
     pub modality: Option<Modality>,
+
+    /// Parameters extracted from this requirement's text by WI-34.
+    /// Empty until parameter extraction runs.
+    pub parameters: Vec<PolicyParameter>,
+}
+
+/// A parameterizable value extracted from a policy requirement (WI-34).
+///
+/// Represents a configurable criterion (time window, threshold, frequency,
+/// or quantity) extracted from requirement prose. Each parameter is linked
+/// to its source `PolicyRequirement` via `requirement_id`.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct PolicyParameter {
+    /// Deterministic identifier: `"{requirement_id}_prm_{position}"`.
+    pub id: String,
+    /// `stable_id` of the `PolicyRequirement` this parameter was extracted from.
+    pub requirement_id: String,
+    /// Human-readable label describing this parameter (e.g., `"within 30 days"`).
+    pub label: String,
+    /// The extracted parameter value as a string (e.g., `"30 days"`, `"annually"`).
+    pub value: String,
+    /// The semantic category of this parameter.
+    pub parameter_type: ParameterType,
+    /// Value domain constraint inferred from qualifier words.
+    pub constraint: Option<ParameterConstraint>,
+}
+
+/// The semantic category of a policy parameter (WI-34).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub enum ParameterType {
+    /// Duration parameters: "within N days", "after N weeks", "every N months".
+    TimeWindow,
+    /// Numeric boundary parameters: "at least N", "minimum N", "no more than N".
+    Threshold,
+    /// Recurrence parameters: "annually", "quarterly", "at least monthly".
+    Frequency,
+    /// Count parameters: "no fewer than 3 factors", "at least 2 generations".
+    Quantity,
+}
+
+/// Value domain constraint on a `PolicyParameter` (WI-34).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ParameterConstraint {
+    /// The direction of the bound.
+    pub constraint_type: ConstraintType,
+    /// The bound value as a string (same string as `PolicyParameter.value`).
+    pub value: String,
+}
+
+/// The direction of a value domain bound (WI-34).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub enum ConstraintType {
+    /// Value must be at least this amount (triggered by "at least", "within", "after", etc.).
+    Minimum,
+    /// Value must be at most this amount (triggered by "no more than", "maximum", "at most").
+    Maximum,
+    /// Value must equal exactly this (triggered by "every N", bare frequency words).
+    Exact,
 }
 
 /// A citation extracted from a policy document by WI-8.
@@ -234,6 +292,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 

@@ -190,3 +190,78 @@ fn component_control_implementations_vec_fidelity() {
         "control-implementations Vec should be identical across formats (R-2)"
     );
 }
+
+// ---------------------------------------------------------------------------
+// T033c: Parameter Extraction in YAML Output
+// ---------------------------------------------------------------------------
+
+/// T033c: Verify that `params` arrays appear within catalog controls in YAML output
+/// for requirements that contain extractable parameters.
+///
+/// The sample_policy.md fixture contains "at least 12 characters" (threshold)
+/// and "annually" (frequency), so each parameterized control's YAML must include
+/// a non-empty `params` key serialized by serde (via `skip_serializing_if`).
+#[test]
+fn catalog_yaml_contains_params_arrays_for_parameterized_controls() {
+    use forge::cli::OutputFormat;
+
+    let fixture = Path::new("tests/fixtures/sample_policy.md");
+    assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
+
+    let dir = TempDir::new().unwrap();
+    let yaml_path = dir.path().join("catalog.yaml");
+
+    forge::pipeline::run_catalog_pipeline(
+        fixture,
+        Some(&yaml_path),
+        10 * 1024 * 1024,
+        &OutputFormat::Yaml,
+    )
+    .expect("Catalog YAML pipeline should succeed");
+
+    let yaml_str = std::fs::read_to_string(&yaml_path).unwrap();
+
+    // At least one `params:` key must be present
+    assert!(
+        yaml_str.contains("params:"),
+        "Catalog YAML must contain 'params:' arrays for parameterized controls.\nYAML:\n{}",
+        &yaml_str[..yaml_str.len().min(3000)]
+    );
+
+    // Each param must have an `id:` field
+    assert!(yaml_str.contains("id:"), "YAML params must include 'id:' fields");
+
+    // Each param must have a `label:` field
+    assert!(yaml_str.contains("label:"), "YAML params must include 'label:' fields");
+
+    // `values:` must be present (threshold params include extracted numeric values)
+    assert!(yaml_str.contains("values:"), "YAML params must include 'values:' arrays");
+
+    // `constraints:` must be present
+    assert!(yaml_str.contains("constraints:"), "YAML params must include 'constraints:' arrays");
+}
+
+/// T033c (round-trip): Verify that `params` in YAML catalog output round-trip
+/// through serde_json::Value identity — YAML params must equal JSON params.
+#[test]
+fn catalog_yaml_params_match_json_params() {
+    let (json_value, yaml_value) = catalog_json_and_yaml_values();
+
+    let json_groups = json_value["catalog"]["groups"].as_array().expect("Must have groups");
+    let yaml_groups = yaml_value["catalog"]["groups"].as_array().expect("Must have groups");
+
+    // Find any control with params in JSON and verify YAML has the same
+    for (gi, json_group) in json_groups.iter().enumerate() {
+        let Some(json_controls) = json_group["controls"].as_array() else {
+            continue;
+        };
+        for (ci, json_control) in json_controls.iter().enumerate() {
+            let json_params = &json_control["params"];
+            let yaml_params = &yaml_groups[gi]["controls"][ci]["params"];
+            assert_eq!(
+                json_params, yaml_params,
+                "params in control [{gi}][{ci}] must match between JSON and YAML"
+            );
+        }
+    }
+}

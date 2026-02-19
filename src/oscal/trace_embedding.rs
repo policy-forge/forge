@@ -292,6 +292,7 @@ mod tests {
             uuid: uuid.to_string(),
             title: "Test control".to_string(),
             links: vec![],
+            params: vec![],
             parts: vec![],
             props: vec![],
         }

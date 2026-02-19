@@ -148,7 +148,11 @@ fn prepare_document(input_path: &Path, max_size_bytes: u64) -> Result<PolicyDocu
     // Step 7c: Detect modality (WI-33, after citations, before OSCAL generation)
     let doc_with_modality = crate::parse::annotate_modalities(doc_with_citations)?;
 
-    Ok(doc_with_modality)
+    // Step 7d: Extract parameters (WI-34, after modality detection)
+    let mut doc_with_params = doc_with_modality;
+    crate::parameter::extract_parameters(&mut doc_with_params)?;
+
+    Ok(doc_with_params)
 }
 
 /// Orchestrates the full catalog pipeline: ingest → parse → normalize → map → serialize → output.

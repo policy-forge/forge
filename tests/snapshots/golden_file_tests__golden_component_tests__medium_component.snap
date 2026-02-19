@@ -108,7 +108,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-AC-004",
-                "description": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days",
+                "description": "User accounts must be reviewed {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_1 }}",
                 "links": [
                   {
                     "href": "input.md#line=15",
@@ -140,7 +140,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-AC-005",
-                "description": "Passwords must be at least 12 characters and include uppercase, lowercase, numbers, and symbols",
+                "description": "Passwords must be {{ insert: param, id-ref: e0b32d50-f11b-5869-9d89-c863a0c0b8e0_prm_0 }} and include uppercase, lowercase, numbers, and symbols",
                 "links": [
                   {
                     "href": "input.md#line=19",
@@ -268,7 +268,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-DP-004",
-                "description": "Encryption keys must be rotated annually and stored in a hardware security module",
+                "description": "Encryption keys must be rotated {{ insert: param, id-ref: b559ad5b-b2b2-51bb-9c58-fc29f6bef406_prm_0 }} and stored in a hardware security module",
                 "links": [
                   {
                     "href": "input.md#line=28",
@@ -396,7 +396,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-IR-002",
-                "description": "An incident response plan must be tested at least annually through tabletop exercises",
+                "description": "An incident response plan must be tested {{ insert: param, id-ref: e3ca22c7-ba6a-5812-bb2a-3143916455a4_prm_0 }} through tabletop exercises",
                 "links": [
                   {
                     "href": "input.md#line=40",

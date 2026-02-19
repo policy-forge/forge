@@ -367,6 +367,7 @@ mod yaml_round_trip {
                         uuid: String::new(),
                         title: "Deep control".to_string(),
                         links: vec![],
+                        params: vec![],
                         parts: vec![OscalPart {
                             id: "smt".to_string(),
                             name: "statement".to_string(),
@@ -437,6 +438,7 @@ mod yaml_round_trip {
                             uuid: String::new(),
                             title: "First control".to_string(),
                             links: vec![],
+                            params: vec![],
                             parts: vec![OscalPart {
                                 id: "POL-AC-001_smt".to_string(),
                                 name: "statement".to_string(),
@@ -451,6 +453,7 @@ mod yaml_round_trip {
                             uuid: String::new(),
                             title: "Second control".to_string(),
                             links: vec![],
+                            params: vec![],
                             parts: vec![OscalPart {
                                 id: "POL-AC-002_smt".to_string(),
                                 name: "statement".to_string(),
@@ -465,6 +468,7 @@ mod yaml_round_trip {
                             uuid: String::new(),
                             title: "Third control".to_string(),
                             links: vec![],
+                            params: vec![],
                             parts: vec![OscalPart {
                                 id: "POL-AC-003_smt".to_string(),
                                 name: "statement".to_string(),
@@ -528,6 +532,7 @@ mod yaml_round_trip {
                         uuid: String::new(),
                         title: "Test control".to_string(),
                         links: vec![],
+                        params: vec![],
                         parts: vec![OscalPart {
                             id: "POL-T-001_smt".to_string(),
                             name: "statement".to_string(),
@@ -631,6 +636,7 @@ mod xml_round_trip {
                             uuid: String::new(),
                             title: "First".to_string(),
                             links: vec![],
+                            params: vec![],
                             parts: vec![OscalPart {
                                 id: "smt1".to_string(),
                                 name: "statement".to_string(),
@@ -645,6 +651,7 @@ mod xml_round_trip {
                             uuid: String::new(),
                             title: "Second".to_string(),
                             links: vec![],
+                            params: vec![],
                             parts: vec![OscalPart {
                                 id: "smt2".to_string(),
                                 name: "statement".to_string(),
@@ -659,6 +666,7 @@ mod xml_round_trip {
                             uuid: String::new(),
                             title: "Third".to_string(),
                             links: vec![],
+                            params: vec![],
                             parts: vec![OscalPart {
                                 id: "smt3".to_string(),
                                 name: "statement".to_string(),
@@ -710,6 +718,7 @@ mod xml_round_trip {
                         uuid: String::new(),
                         title: "Deep control".to_string(),
                         links: vec![],
+                        params: vec![],
                         parts: vec![OscalPart {
                             id: "smt".to_string(),
                             name: "statement".to_string(),
@@ -825,6 +834,7 @@ mod xml_yaml_xml_round_trip {
                         uuid: String::new(),
                         title: "Namespace control".to_string(),
                         links: vec![],
+                        params: vec![],
                         parts: vec![OscalPart {
                             id: "smt".to_string(),
                             name: "statement".to_string(),

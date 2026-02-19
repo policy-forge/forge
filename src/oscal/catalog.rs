@@ -59,6 +59,28 @@ pub struct OscalGroup {
     pub controls: Vec<OscalControl>,
 }
 
+/// OSCAL `param` element within a catalog control (WI-34).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OscalParam {
+    /// Deterministic parameter ID (e.g., `"POL-AC-001_prm_0"`).
+    pub id: String,
+    /// Human-readable label (e.g., `"within 30 days"`).
+    pub label: String,
+    /// Extracted value(s) for this parameter.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub values: Vec<String>,
+    /// Value domain constraints.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub constraints: Vec<OscalParamConstraint>,
+}
+
+/// OSCAL `param.constraint` element (WI-34).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OscalParamConstraint {
+    /// Constraint description (e.g., `"minimum: 30 days"`).
+    pub description: String,
+}
+
 /// OSCAL Control mapped from a [`PolicyRequirement`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OscalControl {
@@ -73,6 +95,10 @@ pub struct OscalControl {
     /// Links to back matter resources (WI-12).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub links: Vec<crate::oscal::back_matter::OscalLink>,
+    /// Parameters extracted from requirement text (WI-34).
+    /// OSCAL schema ordering: params before parts.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<OscalParam>,
     /// Parts array: statement part (mandatory) + optional guidance/objective.
     /// NOT skip-serialized — always present per FR-001.
     #[serde(default)]
@@ -344,11 +370,15 @@ pub fn build_catalog(
                     value: modality_value.to_string(),
                 });
             }
+            // T031: Emit OSCAL params from extracted PolicyParameters (WI-34)
+            let params: Vec<OscalParam> =
+                req.parameters.iter().map(crate::parameter::to_oscal_param).collect();
             controls.push(OscalControl {
                 id: control_id.clone(),
                 uuid: stable_id.clone(),
                 title: derive_control_title(&req.text),
                 links: vec![],
+                params,
                 parts: build_control_parts(&control_id, req, req_section.body_text.as_deref()),
                 props: control_props,
             });
@@ -450,6 +480,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 
@@ -463,6 +494,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 
@@ -975,6 +1007,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 
@@ -1033,6 +1066,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let d = doc(vec![sec("Test", vec![r])]);
         let cat = build_catalog(&d, None).unwrap();

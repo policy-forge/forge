@@ -5,6 +5,7 @@ pub mod export;
 pub mod ingest;
 pub mod model;
 pub mod oscal;
+pub mod parameter;
 pub mod parse;
 pub mod pipeline;
 #[doc(hidden)]
@@ -15,7 +16,10 @@ pub mod validate;
 pub use citation::extract_citations;
 pub use error::{ForgeError, exit_code};
 pub use model::trace::{SourceLocation, TraceError, TraceLink, TraceLinkCollection};
-pub use model::{Citation, Modality, PolicyDocument, PolicyRequirement, PolicySection};
+pub use model::{
+    Citation, ConstraintType, Modality, ParameterConstraint, ParameterType, PolicyDocument,
+    PolicyParameter, PolicyRequirement, PolicySection,
+};
 pub use oscal::{
     BackMatter, BackMatterResource, ComponentDefinition, ComponentDefinitionEnvelope,
     ComponentDefinitionMetadata, DEFAULT_COMPONENT_TITLE, DocumentaryComponent, OscalLink,

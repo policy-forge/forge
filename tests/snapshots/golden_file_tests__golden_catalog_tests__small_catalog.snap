@@ -105,11 +105,37 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: quarterly"
+                  }
+                ],
+                "id": "p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0",
+                "label": "quarterly",
+                "values": [
+                  "quarterly"
+                ]
+              },
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: 90 days"
+                  }
+                ],
+                "id": "p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_1",
+                "label": "after 90 days",
+                "values": [
+                  "90 days"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-AC-003_smt",
                 "name": "statement",
-                "prose": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+                "prose": "User accounts must be reviewed {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_1 }}"
               },
               {
                 "id": "POL-AC-003_gdn",
@@ -138,7 +164,7 @@ expression: normalized
                 "value": "14"
               }
             ],
-            "title": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+            "title": "User accounts must be reviewed {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0 }} and inactive acc..."
           },
           {
             "id": "POL-AC-004",

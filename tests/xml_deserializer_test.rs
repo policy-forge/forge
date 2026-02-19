@@ -39,6 +39,7 @@ fn test_control(id: &str, title: &str) -> OscalControl {
         uuid: "skip-me".to_string(),
         title: title.to_string(),
         links: vec![],
+        params: vec![],
         parts: vec![OscalPart {
             id: format!("{id}_smt"),
             name: "statement".to_string(),
@@ -83,6 +84,7 @@ fn test_catalog() -> OscalCatalog {
                     rel: "reference".to_string(),
                     text: None,
                 }],
+                params: vec![],
                 parts: vec![OscalPart {
                     id: "POL-AC-001_smt".to_string(),
                     name: "statement".to_string(),
@@ -516,6 +518,7 @@ fn test_xml_escaped_content_round_trips() {
                 uuid: String::new(),
                 title: "Control with \"quotes\" & entities".to_string(),
                 links: vec![],
+                params: vec![],
                 parts: vec![OscalPart {
                     id: "POL-T-001_smt".to_string(),
                     name: "statement".to_string(),
@@ -553,6 +556,7 @@ fn test_deeply_nested_parts_round_trip() {
                 uuid: String::new(),
                 title: "Deep".to_string(),
                 links: vec![],
+                params: vec![],
                 parts: vec![OscalPart {
                     id: "smt".to_string(),
                     name: "statement".to_string(),

@@ -133,11 +133,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: quarterly"
+                  }
+                ],
+                "id": "p22e21047-4c17-583c-8504-c52186c44ba4_prm_0",
+                "label": "quarterly",
+                "values": [
+                  "quarterly"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-AC-003_smt",
                 "name": "statement",
-                "prose": "Access permissions must be reviewed quarterly"
+                "prose": "Access permissions must be reviewed {{ insert: param, id-ref: p22e21047-4c17-583c-8504-c52186c44ba4_prm_0 }}"
               },
               {
                 "id": "POL-AC-003_gdn",
@@ -166,7 +180,7 @@ expression: normalized
                 "value": "13"
               }
             ],
-            "title": "Access permissions must be reviewed quarterly"
+            "title": "Access permissions must be reviewed {{ insert: param, id-ref: p22e21047-4c17-583c-8504-c52186c44ba4_prm_0 }}"
           },
           {
             "id": "POL-AC-004",
@@ -262,11 +276,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: 16"
+                  }
+                ],
+                "id": "edd7dde4-95f0-5e5a-bc74-d395c3a285e0_prm_0",
+                "label": "at least 16 characters",
+                "values": [
+                  "16"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-AC-006_smt",
                 "name": "statement",
-                "prose": "Passwords must be at least 16 characters and include uppercase, lowercase, numbers, and symbols"
+                "prose": "Passwords must be {{ insert: param, id-ref: edd7dde4-95f0-5e5a-bc74-d395c3a285e0_prm_0 }} and include uppercase, lowercase, numbers, and symbols"
               },
               {
                 "id": "POL-AC-006_gdn",
@@ -295,7 +323,7 @@ expression: normalized
                 "value": "19"
               }
             ],
-            "title": "Passwords must be at least 16 characters and include uppercase, lowercase, numbers, and symbols"
+            "title": "Passwords must be {{ insert: param, id-ref: edd7dde4-95f0-5e5a-bc74-d395c3a285e0_prm_0 }} and include uppercase, lowerca..."
           },
           {
             "id": "POL-AC-007",
@@ -576,11 +604,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: annually"
+                  }
+                ],
+                "id": "p6c3ccd4d-74c5-53c1-b96c-8ee71f7fcf9b_prm_0",
+                "label": "annually",
+                "values": [
+                  "annually"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-DP-004_smt",
                 "name": "statement",
-                "prose": "Encryption keys must be rotated annually and stored in a hardware security module"
+                "prose": "Encryption keys must be rotated {{ insert: param, id-ref: p6c3ccd4d-74c5-53c1-b96c-8ee71f7fcf9b_prm_0 }} and stored in a hardware security module"
               },
               {
                 "id": "POL-DP-004_gdn",
@@ -609,7 +651,7 @@ expression: normalized
                 "value": "34"
               }
             ],
-            "title": "Encryption keys must be rotated annually and stored in a hardware security module"
+            "title": "Encryption keys must be rotated {{ insert: param, id-ref: p6c3ccd4d-74c5-53c1-b96c-8ee71f7fcf9b_prm_0 }} and stored in a..."
           },
           {
             "id": "POL-DP-005",
@@ -847,11 +889,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: annually"
+                  }
+                ],
+                "id": "p959331fd-1060-536f-991c-616826fdbe7e_prm_0",
+                "label": "at least annually",
+                "values": [
+                  "annually"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-IR-002_smt",
                 "name": "statement",
-                "prose": "An incident response plan must be tested at least annually through tabletop exercises"
+                "prose": "An incident response plan must be tested {{ insert: param, id-ref: p959331fd-1060-536f-991c-616826fdbe7e_prm_0 }} through tabletop exercises"
               },
               {
                 "id": "POL-IR-002_gdn",
@@ -880,7 +936,7 @@ expression: normalized
                 "value": "51"
               }
             ],
-            "title": "An incident response plan must be tested at least annually through tabletop exercises"
+            "title": "An incident response plan must be tested {{ insert: param, id-ref: p959331fd-1060-536f-991c-616826fdbe7e_prm_0 }} throug..."
           },
           {
             "id": "POL-IR-003",
@@ -1316,11 +1372,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: annually"
+                  }
+                ],
+                "id": "p89464c05-973a-5a0c-9621-ac2e987fbdf0_prm_0",
+                "label": "at least annually",
+                "values": [
+                  "annually"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-CA-001_smt",
                 "name": "statement",
-                "prose": "Internal security audits must be conducted at least annually"
+                "prose": "Internal security audits must be conducted {{ insert: param, id-ref: p89464c05-973a-5a0c-9621-ac2e987fbdf0_prm_0 }}"
               },
               {
                 "id": "POL-CA-001_gdn",
@@ -1349,7 +1419,7 @@ expression: normalized
                 "value": "79"
               }
             ],
-            "title": "Internal security audits must be conducted at least annually"
+            "title": "Internal security audits must be conducted {{ insert: param, id-ref: p89464c05-973a-5a0c-9621-ac2e987fbdf0_prm_0 }}"
           },
           {
             "id": "POL-CA-002",
@@ -1359,11 +1429,37 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: semi-annually"
+                  }
+                ],
+                "id": "d2f3cc44-4d4d-5133-a5ca-5e018ed08107_prm_0",
+                "label": "semi-annually",
+                "values": [
+                  "semi-annually"
+                ]
+              },
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: 30 days"
+                  }
+                ],
+                "id": "d2f3cc44-4d4d-5133-a5ca-5e018ed08107_prm_1",
+                "label": "within 30 days",
+                "values": [
+                  "30 days"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-CA-002_smt",
                 "name": "statement",
-                "prose": "Third-party penetration testing must be performed semi-annually and findings must be remediated within 30 days"
+                "prose": "Third-party penetration testing must be performed {{ insert: param, id-ref: d2f3cc44-4d4d-5133-a5ca-5e018ed08107_prm_0 }} and findings must be remediated {{ insert: param, id-ref: d2f3cc44-4d4d-5133-a5ca-5e018ed08107_prm_1 }}"
               },
               {
                 "id": "POL-CA-002_gdn",
@@ -1392,7 +1488,7 @@ expression: normalized
                 "value": "80"
               }
             ],
-            "title": "Third-party penetration testing must be performed semi-annually and findings must be remediated within 30 days"
+            "title": "Third-party penetration testing must be performed {{ insert: param, id-ref: d2f3cc44-4d4d-5133-a5ca-5e018ed08107_prm_0 }..."
           },
           {
             "id": "POL-CA-003",
@@ -1402,11 +1498,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: quarterly"
+                  }
+                ],
+                "id": "ae0700a0-ff20-5fff-902d-0514e12a826f_prm_0",
+                "label": "quarterly",
+                "values": [
+                  "quarterly"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-CA-003_smt",
                 "name": "statement",
-                "prose": "Compliance reports must be submitted to the board of directors quarterly"
+                "prose": "Compliance reports must be submitted to the board of directors {{ insert: param, id-ref: ae0700a0-ff20-5fff-902d-0514e12a826f_prm_0 }}"
               },
               {
                 "id": "POL-CA-003_gdn",
@@ -1435,7 +1545,7 @@ expression: normalized
                 "value": "81"
               }
             ],
-            "title": "Compliance reports must be submitted to the board of directors quarterly"
+            "title": "Compliance reports must be submitted to the board of directors {{ insert: param, id-ref: ae0700a0-ff20-5fff-902d-0514e12..."
           },
           {
             "id": "POL-CA-004",
@@ -1488,11 +1598,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: 12 months"
+                  }
+                ],
+                "id": "p2971abdb-56e2-520c-a587-72445cc8e19e_prm_0",
+                "label": "within 12 months",
+                "values": [
+                  "12 months"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-CA-005_smt",
                 "name": "statement",
-                "prose": "All policy exceptions must expire within 12 months"
+                "prose": "All policy exceptions must expire {{ insert: param, id-ref: p2971abdb-56e2-520c-a587-72445cc8e19e_prm_0 }}"
               },
               {
                 "id": "POL-CA-005_gdn",
@@ -1521,7 +1645,7 @@ expression: normalized
                 "value": "82"
               }
             ],
-            "title": "All policy exceptions must expire within 12 months"
+            "title": "All policy exceptions must expire {{ insert: param, id-ref: p2971abdb-56e2-520c-a587-72445cc8e19e_prm_0 }}"
           }
         ],
         "id": "compliance-and-audit",

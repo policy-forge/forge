@@ -227,6 +227,7 @@ fn convert_control(xml: XmlControl) -> OscalControl {
         title: xml.title,
         props: xml.props.into_iter().map(convert_prop).collect(),
         links: xml.links.into_iter().map(convert_link).collect(),
+        params: vec![],
         parts: xml.parts.into_iter().map(convert_part).collect(),
     }
 }

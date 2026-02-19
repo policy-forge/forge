@@ -140,7 +140,7 @@ pub fn generate_stable_id(text: &str) -> Uuid {
     Uuid::new_v5(&FORGE_NAMESPACE_UUID, normalized.as_bytes())
 }
 
-/// Populate `stable_id` on all [`PolicyRequirement`]s in a [`PolicyDocument`].
+/// Populate `stable_id` on all [`crate::model::PolicyRequirement`]s in a [`crate::model::PolicyDocument`].
 ///
 /// Walks the full section tree recursively, generating a UUID v5 for each
 /// requirement using a collision-resistant hash input that combines:
@@ -187,6 +187,7 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 ///             parent_text: None,
 ///             citations: vec![],
 ///             modality: None,
+///             parameters: vec![],
 ///         }],
 ///         children: vec![],
 ///     }],
@@ -480,6 +481,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 
