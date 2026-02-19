@@ -145,7 +145,7 @@ A developer needs tests covering boundary conditions and unusual inputs for Prof
 1. **Given** a Catalog with 10 controls, **When** running `forge profile` with an empty `--include` list (no controls selected), **Then** the behavior is well-defined: either an error is produced or a Profile with no imports is generated, and the result is schema-valid.
 2. **Given** a Catalog with 10 controls, **When** running `forge profile` with all 10 control IDs in `--include`, **Then** a valid Profile is generated that imports all controls.
 3. **Given** conflicting `--set-param` values (same parameter ID set twice with different values), **When** generating a Profile, **Then** the behavior is well-defined: either the last value wins or an error is produced.
-4. **Given** a `--include` list containing a control ID that does not exist in the source Catalog, **When** generating a Profile, **Then** a descriptive error or warning is produced.
+4. **Given** a `--include` list containing a control ID that does not exist in the source Catalog, **When** generating a Profile, **Then** the unknown ID is stored as-is in the Profile `with-ids` list (no error — `build_profile()` uses the catalog path as an `href` reference only and does not parse catalog content).
 
 ---
 
@@ -216,7 +216,7 @@ N/A -- No state transitions in this work item. This is a test-only work item tha
 - [ ] **M-10:** All tests shall be runnable via `cargo test` and shall pass in CI. *(Traces to: Parent PRD S-5)*
 
 ### Should Have (S) -- High value, not blocking :red_circle: `@human-required`
-- [ ] **S-1:** Edge case tests should cover non-existent control IDs in `--include`/`--exclude` lists, verifying a descriptive error or warning is produced.
+- [ ] **S-1:** Edge case tests should cover non-existent control IDs in `--include`/`--exclude` lists. Note: `build_profile()` uses the catalog path as an OSCAL Profile `href` reference only and does not parse catalog content, so non-existent IDs are stored as-is in `with-ids` (no error produced). Test `edge_nonexistent_control_id` verifies this behavior: `Ok` is returned and the unknown ID appears verbatim in the output.
 - [ ] **S-2:** Edge case tests should cover duplicate control IDs in `--include` (same ID listed twice), verifying idempotent behavior.
 - [ ] **S-3:** Edge case tests should verify that providing both `--include` and `--exclude` flags returns a descriptive mutual-exclusivity error with a non-zero exit code. WI-30 treats these flags as mutually exclusive via clap `conflicts_with`; this is an error-assertion test, not a golden-file scenario.
 - [ ] **S-4:** Schema validation error messages should include the JSON path of the invalid field for actionable debugging.
@@ -336,9 +336,9 @@ N/A -- No new data model introduced in this work item. This WI tests the Profile
 - [ ] **EC-1:** (M-7) When `--include` is provided with an empty list, then either a descriptive error is produced or an empty Profile is generated that still passes schema validation.
 - [ ] **EC-2:** (M-8) When all control IDs from the source Catalog are included, then the Profile imports all controls and passes schema validation.
 - [ ] **EC-3:** (M-9) When `--set-param` is specified twice for the same parameter ID with different values, then the last value wins or a descriptive error is produced.
-- [ ] **EC-4:** (S-1) When `--include` contains a control ID that does not exist in the source Catalog, then a descriptive error or warning is produced.
+- [ ] **EC-4:** (S-1) When `--include` contains a control ID that does not exist in the source Catalog, then the unknown ID is stored as-is in the Profile `with-ids` list (no error — catalog content is not parsed; see S-1 note).
 - [ ] **EC-5:** (S-2) When `--include` contains the same control ID twice, then the duplicate is handled idempotently (no duplicate imports in the Profile).
-- [ ] **EC-6:** (S-3) When both `--include` and `--exclude` are specified, then the Profile correctly resolves the selection (include takes precedence, or exclude filters from include set, depending on WI-30 design).
+- [ ] **EC-6:** (S-3) When both `--include` and `--exclude` are specified, then a mutual-exclusivity error is returned (WI-30 uses `conflicts_with` via clap; this is an error-assertion test, not a selection-resolution scenario).
 - [ ] **EC-7:** (M-1) When the source Catalog file path is invalid or the file does not exist, then a descriptive error is produced with a non-zero exit code.
 - [ ] **EC-8 (N/A — WI-30 implementation scope):** WI-30's `build_profile()` uses the catalog path as an OSCAL Profile `href` reference only and does not parse catalog content. Malformed catalog JSON at a valid path does not produce an error and does not affect Profile generation. This edge case is not testable against the current implementation; catalog content validation is out of scope for WI-30 and WI-32.
 
@@ -445,7 +445,7 @@ N/A -- No spike tasks for this work item. Schema validation infrastructure is pr
 - [x] Security review completed (or N/A documented with justification)
 - [x] No open questions blocking implementation
 - [x] WI-30 (Profile generation) complete and tests passing
-- [x] WI-31 (Profile parameter tailoring) complete and tests passing
+- [ ] WI-31 (Profile parameter tailoring) complete and tests passing *(NOT YET IMPLEMENTED — three WI-32 tests are `#[ignore]` stubs pending WI-31)*
 - [x] OSCAL v1.2.0 Profile JSON schema available
 
 ### Sign-off
