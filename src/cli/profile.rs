@@ -66,13 +66,14 @@ pub fn execute(
     // Step 3: parse control IDs
     let catalog_str = catalog.to_string_lossy();
     let control_ids = parse_control_ids(raw_ids)?;
+    let control_count = control_ids.len();
 
     // Step 4+5: build profile
-    let oscal_profile = build_profile(&catalog_str, control_ids.clone(), mode)?;
+    let oscal_profile = build_profile(&catalog_str, control_ids, mode)?;
 
     info!(
         catalog = %catalog.display(),
-        selected_controls = control_ids.len(),
+        selected_controls = control_count,
         "Profile generation complete"
     );
 
