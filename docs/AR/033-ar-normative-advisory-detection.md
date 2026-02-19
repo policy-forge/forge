@@ -2,7 +2,7 @@
 
 > **Document Type:** Architecture Review
 > **Audience:** LLM agents, human reviewers
-> **Status:** Proposed
+> **Status:** Accepted
 > **Last Updated:** 2026-02-10 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Deciders:** Brian Luby <!-- @human-required -->
@@ -52,7 +52,7 @@
 > Implement normative/advisory detection as a configurable rule engine using cached regex patterns with word boundary anchors, operating as a separate pipeline enrichment pass on `PolicyRequirement` structs, with results emitted as OSCAL `prop` annotations on controls in both Catalog and Component Definition output.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> WI-33 adds modality detection using `regex` crate patterns with `\b` word boundaries and `(?i)` case-insensitive matching. Implement as a `modality` module with a `detect_modality` function and an `annotate_modalities` enrichment pass. Normative verbs: "must", "shall", "will", "required". Advisory verbs: "should", "may", "recommended", "optional". Default to normative when no verb detected. Emit as OSCAL `prop` with `name: "modality"` and `value: "normative"` or `"advisory"`. Do NOT use NLP/ML. Do NOT use `String::contains` — word boundaries prevent false matches. Cache compiled regex patterns with `once_cell::sync::Lazy`.
+> WI-33 adds modality detection using `regex` crate patterns with `\b` word boundaries and `(?i)` case-insensitive matching. Implement as a `modality` module with a `detect_modality` function and an `annotate_modalities` enrichment pass. Normative verbs: "must", "shall", "will", "required". Advisory verbs: "should", "may", "recommended", "optional". Default to normative when no verb detected. Emit as OSCAL `prop` with `name: "modality"` and `value: "normative"` or `"advisory"`. Do NOT use NLP/ML. Do NOT use `String::contains` — word boundaries prevent false matches. Cache compiled regex patterns with `std::sync::LazyLock` (stdlib, Rust 1.80+).
 
 ---
 
@@ -173,7 +173,7 @@ graph TD
 
 ### Option 2: Configurable Rule Engine with Cached Regex (Recommended)
 
-**Description:** Define normative and advisory verb lists as configuration. Compile case-insensitive regex patterns with `\b` word boundary anchors using `once_cell::sync::Lazy` for one-time compilation. The `detect_modality` function scans requirement text against both patterns and returns a `ModalityResult` with the classification, matched verbs, default/conflict flags.
+**Description:** Define normative and advisory verb lists as configuration. Compile case-insensitive regex patterns with `\b` word boundary anchors using `std::sync::LazyLock` (stdlib) for one-time compilation. The `detect_modality` function scans requirement text against both patterns and returns a `ModalityResult` with the classification, matched verbs, default/conflict flags.
 
 ```mermaid
 graph TD
@@ -205,7 +205,7 @@ graph TD
 **Pros:**
 - Word boundary anchors (`\b`) prevent false positives on partial word matches
 - Case-insensitive matching via `(?i)` flag handles "Must", "MUST", "must"
-- `once_cell::sync::Lazy` compiles regex once, reused across all requirements
+- `std::sync::LazyLock` (stdlib) compiles regex once, reused across all requirements
 - ModalityResult struct provides matched verbs, default flag, and conflict flag for diagnostics
 - Verb lists can be extended or configured without changing detection logic
 - `regex` crate is already a transitive dependency in the project
@@ -258,7 +258,7 @@ graph TD
 > **Option 2: Configurable Rule Engine with Cached Regex**
 
 ### Rationale 🔴 `@human-required`
-Option 2 provides the best balance of correctness, simplicity, and performance. Word boundary anchors prevent the false positives that plague Option 1 (String::contains), while avoiding the complexity and non-determinism of Option 3 (NLP). The `regex` crate is already in the dependency tree, and `once_cell::sync::Lazy` ensures patterns are compiled once. The ModalityResult struct provides rich diagnostic information (matched verbs, default/conflict flags) without adding NLP complexity. The verb lists are configurable, satisfying the extensibility driver for future enhancements (PRD C-1). This approach is deterministic and auditable per constitution principle P-3.
+Option 2 provides the best balance of correctness, simplicity, and performance. Word boundary anchors prevent the false positives that plague Option 1 (String::contains), while avoiding the complexity and non-determinism of Option 3 (NLP). The `regex` crate is already in the dependency tree, and `std::sync::LazyLock` (stdlib, stable since Rust 1.80) ensures patterns are compiled once. The ModalityResult struct provides rich diagnostic information (matched verbs, default/conflict flags) without adding NLP complexity. The verb lists are configurable, satisfying the extensibility driver for future enhancements (PRD C-1). This approach is deterministic and auditable per constitution principle P-3.
 
 #### Simplest Implementation Comparison 🟡 `@human-review`
 
@@ -309,8 +309,8 @@ graph TD
 |-----------|---------------|-----------|--------------|
 | Modality enum | Represent normative/advisory classification | `pub enum Modality { Normative, Advisory }` | None |
 | ModalityResult struct | Carry detection metadata (matched verbs, default/conflict flags) | `pub struct ModalityResult` | Modality enum |
-| NORMATIVE_PATTERN | Compiled regex for normative verb detection | `Lazy<Regex>` | regex, once_cell |
-| ADVISORY_PATTERN | Compiled regex for advisory verb detection | `Lazy<Regex>` | regex, once_cell |
+| NORMATIVE_PATTERN | Compiled regex for normative verb detection | `LazyLock<Regex>` | regex, std |
+| ADVISORY_PATTERN | Compiled regex for advisory verb detection | `LazyLock<Regex>` | regex, std |
 | detect_modality | Classify a single requirement's text | `fn(&PolicyRequirement) -> ModalityResult` | Regex patterns |
 | annotate_modalities | Enrich all requirements in a document | `fn(PolicyDocument) -> Result<PolicyDocument, ForgeError>` | detect_modality |
 | OSCAL prop emitter | Add modality prop to control output | Integrated in Catalog/CompDef builders | Modality enum |
@@ -344,7 +344,7 @@ sequenceDiagram
 ### Interface Definitions 🟡 `@human-review`
 
 ```rust
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use regex::Regex;
 
 /// Modality classification for a policy requirement
@@ -367,12 +367,12 @@ pub struct ModalityResult {
 }
 
 /// Cached compiled regex for normative verbs
-static NORMATIVE_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static NORMATIVE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\b(must|shall|will|required)\b").unwrap()
 });
 
 /// Cached compiled regex for advisory verbs
-static ADVISORY_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static ADVISORY_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\b(should|may|recommended|optional)\b").unwrap()
 });
 
@@ -442,7 +442,7 @@ annotate_modalities(document):
 
 **Added by this Architecture:**
 - `regex` crate for pattern matching with `\b` word boundary anchors
-- `once_cell::sync::Lazy` for one-time regex compilation
+- `std::sync::LazyLock` (stdlib) for one-time regex compilation
 - Modality detection runs as a separate pipeline enrichment pass after atomization (WI-6)
 - Modality prop emitted in both Catalog and Component Definition output paths
 - Static verb lists (no runtime configuration in this sprint; C-1 deferred)
@@ -488,7 +488,7 @@ graph TD
 - [x] **DO NOT** implement NLP or ML-based analysis — heuristic verb matching only *(PRD W-1)*
 - [x] **DO NOT** classify "must not" or "shall not" as non-normative — negated obligations are still normative *(PRD EC-1)*
 - [x] **DO NOT** use `remarks` for modality metadata — use `prop` per NIST guidance *(PRD M-3)*
-- [x] **MUST** compile regex patterns once using `once_cell::sync::Lazy` — not on every call *(Performance driver)*
+- [x] **MUST** compile regex patterns once using `std::sync::LazyLock` (stdlib) — not on every call *(Performance driver)*
 - [x] **MUST** default to normative when no modality verb is detected *(PRD S-1)*
 - [x] **MUST** use normative (strongest) when both normative and advisory verbs are detected *(PRD S-2)*
 - [x] **MUST** emit modality props in both Catalog and Component Definition output *(PRD M-5)*
@@ -536,8 +536,8 @@ graph TD
 
 | Layer | Test Type | Coverage Target | Notes |
 |-------|-----------|-----------------|-------|
-| Unit | detect_modality | 95% | Each normative verb, each advisory verb, mixed, default, case variations |
-| Unit | annotate_modalities | 90% | Document with mixed requirements, empty document |
+| Unit | detect_modality | ≥90% | Each normative verb, each advisory verb, mixed, default, conflict, case variations, edge cases |
+| Unit | annotate_modalities | ≥90% | Document with mixed requirements, empty document |
 | Integration | OSCAL output with props | Key paths | Catalog and Component Definition both emit modality props |
 | Edge case | Word boundary | 100% | "customize", "dismay", "shouldering", "May 2026" do not false-match |
 
@@ -551,7 +551,7 @@ graph TD
   - **Instead:** Use `regex` with `\b` word boundary anchors
 - **Don't:** Compile regex patterns inside `detect_modality` on every call
   - **Why:** Regex compilation is expensive; wasteful when processing hundreds of requirements
-  - **Instead:** Use `once_cell::sync::Lazy` for one-time compilation
+  - **Instead:** Use `std::sync::LazyLock` (stdlib) for one-time compilation
 - **Don't:** Classify "must not" / "shall not" as non-normative
   - **Why:** Negated obligations are still normative requirements ("you must not share passwords")
   - **Instead:** Treat any occurrence of normative verbs as normative, regardless of negation

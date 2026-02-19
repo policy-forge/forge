@@ -62,6 +62,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "12"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -90,6 +94,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "13"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -118,6 +126,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "13"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -146,6 +158,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "14"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -174,6 +190,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "15"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -202,6 +222,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "19"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -230,6 +254,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "20"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -258,6 +286,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "24"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -286,6 +318,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "25"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -314,6 +350,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "31"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -342,6 +382,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "32"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -370,6 +414,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "33"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -398,6 +446,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "34"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -426,6 +478,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "38"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -454,6 +510,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "39"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -482,6 +542,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "43"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -510,6 +574,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "44"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -538,6 +606,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "50"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -566,6 +638,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "51"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -594,6 +670,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "52"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -622,6 +702,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "58"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -650,6 +734,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "59"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -678,6 +766,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "60"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -706,6 +798,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "64"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -734,6 +830,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "65"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -762,6 +862,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "71"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -790,6 +894,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "72"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -818,6 +926,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "73"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -846,6 +958,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "79"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -874,6 +990,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "80"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -902,6 +1022,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "81"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -930,6 +1054,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "82"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"
@@ -958,6 +1086,10 @@ expression: normalized
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "82"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
                 "uuid": "00000000-0000-0000-0000-000000000000"

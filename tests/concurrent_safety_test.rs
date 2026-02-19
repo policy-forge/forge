@@ -21,6 +21,7 @@ fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
         atom_index: 0,
         parent_text: None,
         citations: vec![],
+        modality: None,
     }
 }
 
@@ -33,6 +34,7 @@ fn make_req_no_id(text: &str, source_line: usize) -> PolicyRequirement {
         atom_index: 0,
         parent_text: None,
         citations: vec![],
+        modality: None,
     }
 }
 

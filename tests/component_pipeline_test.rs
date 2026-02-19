@@ -159,43 +159,50 @@ fn component_pipeline_implemented_requirements_have_trace_props() {
         let props = req["props"]
             .as_array()
             .unwrap_or_else(|| panic!("implemented-requirement[{i}] must have props"));
-        assert_eq!(props.len(), 3, "implemented-requirement[{i}] must have exactly 3 trace props");
-
-        // Verify prop names and namespace
-        assert_eq!(props[0]["name"], "source-file", "First prop must be source-file at [{i}]");
+        // 3 trace props + 1 modality prop (WI-33)
         assert_eq!(
-            props[0]["ns"], "https://forge.policy-forge.github.io/ns/trace",
+            props.len(),
+            4,
+            "implemented-requirement[{i}] must have 3 trace props + 1 modality prop"
+        );
+
+        // Verify trace props by name (not position, for robustness)
+        let trace_props: Vec<_> = props.iter().filter(|p| p["ns"].as_str().is_some()).collect();
+        assert_eq!(trace_props.len(), 3, "Must have 3 trace props with FORGE ns at [{i}]");
+
+        let find_prop = |name: &str| props.iter().find(|p| p["name"].as_str() == Some(name));
+
+        let source_file_prop =
+            find_prop("source-file").unwrap_or_else(|| panic!("Missing source-file prop at [{i}]"));
+        assert_eq!(
+            source_file_prop["ns"], "https://forge.policy-forge.github.io/ns/trace",
             "source-file ns at [{i}]"
         );
-
-        assert_eq!(
-            props[1]["name"], "source-section",
-            "Second prop must be source-section at [{i}]"
-        );
-        assert_eq!(
-            props[1]["ns"], "https://forge.policy-forge.github.io/ns/trace",
-            "source-section ns at [{i}]"
-        );
-
-        assert_eq!(props[2]["name"], "source-line", "Third prop must be source-line at [{i}]");
-        assert_eq!(
-            props[2]["ns"], "https://forge.policy-forge.github.io/ns/trace",
-            "source-line ns at [{i}]"
-        );
-
-        // source-file value must reference the input fixture
-        let file_val = props[0]["value"].as_str().unwrap();
+        let file_val = source_file_prop["value"].as_str().unwrap();
         assert!(
             file_val.contains("full_policy.md"),
             "source-file at [{i}] must reference fixture. Got: {file_val}"
         );
 
-        // source-line must be a non-zero number string
-        let line_val = props[2]["value"].as_str().unwrap();
+        find_prop("source-section")
+            .unwrap_or_else(|| panic!("Missing source-section prop at [{i}]"));
+
+        let source_line_prop =
+            find_prop("source-line").unwrap_or_else(|| panic!("Missing source-line prop at [{i}]"));
+        let line_val = source_line_prop["value"].as_str().unwrap();
         let line_num: usize = line_val
             .parse()
             .unwrap_or_else(|_| panic!("source-line at [{i}] must be a number. Got: {line_val}"));
         assert!(line_num > 0, "source-line at [{i}] must be > 0. Got: {line_num}");
+
+        // Verify modality prop (WI-33)
+        let modality_prop =
+            find_prop("modality").unwrap_or_else(|| panic!("Missing modality prop at [{i}]"));
+        let mv = modality_prop["value"].as_str().unwrap_or("");
+        assert!(
+            mv == "normative" || mv == "advisory",
+            "Modality at [{i}] must be 'normative' or 'advisory', got '{mv}'"
+        );
     }
 }
 
@@ -389,4 +396,66 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
         result.err()
     );
     assert!(output_path.exists(), "Output file should be written");
+}
+
+// ─── T021: Modality props in component definition output (WI-33) ──────────
+
+/// T021 [US2] Integration test: verify modality prop appears on implemented-requirements
+/// in component definition output from `033-mixed-modality.md` fixture.
+#[test]
+fn modality_props_present_in_implemented_requirements_for_mixed_fixture() {
+    let fixture = std::path::Path::new("tests/fixtures/033-mixed-modality.md");
+    assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
+
+    let dir = tempfile::TempDir::new().unwrap();
+    let output_path = dir.path().join("component.json");
+
+    let result = forge::pipeline::run_component_pipeline(
+        fixture,
+        Some(&output_path),
+        10 * 1024 * 1024,
+        Some("./baselines/nist-800-53.json"),
+        &forge::cli::OutputFormat::Json,
+    );
+    assert!(result.is_ok(), "Pipeline failed: {:?}", result.unwrap_err());
+
+    let json_str = std::fs::read_to_string(&output_path).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+    let components = json["component-definition"]["components"]
+        .as_array()
+        .expect("components should be an array");
+    assert!(!components.is_empty(), "Expected at least one component");
+
+    let mut impl_req_count = 0;
+    let mut modality_count = 0;
+
+    for component in components {
+        let control_impls = match component["control-implementations"].as_array() {
+            Some(ci) => ci,
+            None => continue,
+        };
+        for ci in control_impls {
+            let impl_reqs = match ci["implemented-requirements"].as_array() {
+                Some(ir) => ir,
+                None => continue,
+            };
+            for ir in impl_reqs {
+                impl_req_count += 1;
+                let props = ir["props"].as_array();
+                let has_modality = props.is_some_and(|p| {
+                    p.iter().any(|prop| prop["name"].as_str() == Some("modality"))
+                });
+                if has_modality {
+                    modality_count += 1;
+                }
+            }
+        }
+    }
+
+    assert!(impl_req_count > 0, "Expected at least one implemented-requirement");
+    assert_eq!(
+        modality_count, impl_req_count,
+        "Every implemented-requirement should have a modality prop ({modality_count}/{impl_req_count} have it)"
+    );
 }

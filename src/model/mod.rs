@@ -12,6 +12,22 @@ use std::path::PathBuf;
 
 use serde::Serialize;
 
+/// Classification of a policy requirement's obligation strength.
+///
+/// Derived from heuristic verb matching against RFC 2119 keywords in
+/// `PolicyRequirement.text`. Applied by the WI-33 modality detection
+/// enrichment pass (`annotate_modalities`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Modality {
+    /// Mandatory obligation: triggered by "must", "shall", "will", "required".
+    /// Also the default when no modality verb is detected.
+    Normative,
+    /// Recommendation or optional practice: triggered by "should", "may",
+    /// "recommended", "optional".
+    Advisory,
+}
+
 pub use assemble::assemble_document;
 
 /// Top-level domain model for a parsed policy document.
@@ -128,6 +144,16 @@ pub struct PolicyRequirement {
     /// Citations extracted from this requirement's text by WI-8.
     /// Empty until citation extraction runs.
     pub citations: Vec<Citation>,
+
+    /// Modality classification for this requirement.
+    ///
+    /// - `None` until `annotate_modalities` runs (pre-WI-33)
+    /// - `Some(Modality::Normative)` for normative requirements (or default)
+    /// - `Some(Modality::Advisory)` for advisory requirements
+    ///
+    /// After `annotate_modalities` completes, all requirements in the
+    /// document have `Some(modality)`.
+    pub modality: Option<Modality>,
 }
 
 /// A citation extracted from a policy document by WI-8.
@@ -207,6 +233,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 

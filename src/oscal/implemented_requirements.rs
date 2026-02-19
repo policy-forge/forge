@@ -112,7 +112,18 @@ fn map_requirement_to_implemented(
         requirement.text.clone()
     };
 
-    let props = build_trace_props(source_file, section_title, requirement.source_line);
+    let mut props = build_trace_props(source_file, section_title, requirement.source_line);
+    if let Some(modality) = requirement.modality {
+        let modality_value = match modality {
+            crate::model::Modality::Normative => "normative",
+            crate::model::Modality::Advisory => "advisory",
+        };
+        props.push(crate::oscal::parts::OscalProp {
+            name: "modality".to_string(),
+            ns: None,
+            value: modality_value.to_string(),
+        });
+    }
     let link = build_trace_link(source_file, requirement.source_line);
 
     serde_json::json!({
@@ -208,6 +219,7 @@ mod tests {
             atom_index,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 
@@ -511,6 +523,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         };
         let result = map_requirement_to_implemented(
             &req,
@@ -546,6 +559,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         };
         let result = map_requirement_to_implemented(
             &req,

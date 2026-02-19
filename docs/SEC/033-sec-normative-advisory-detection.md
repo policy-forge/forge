@@ -186,14 +186,14 @@ flowchart TD
 | Library | Version | License | Purpose | Security Check |
 |---------|---------|---------|---------|----------------|
 | regex | 1.x | MIT/Apache-2.0 | Word-boundary-aware pattern matching for verb detection | Already a transitive dependency; well-audited Rust ecosystem crate |
-| once_cell | 1.x | MIT/Apache-2.0 | One-time compilation and caching of regex patterns | Already a transitive dependency; widely used in Rust ecosystem |
+| std::sync::LazyLock | N/A (stdlib) | N/A | One-time compilation and caching of regex patterns | Rust stdlib (stable since 1.80); no external dependency introduced |
 
 ### Supply Chain Checklist
 
 - [x] **All new services use encrypted communication** -- N/A: No external services
 - [x] **Service agreements/ToS reviewed** -- N/A
 - [x] **Dependencies have acceptable licenses** -- Both MIT/Apache-2.0
-- [x] **Dependencies are actively maintained** -- `regex` and `once_cell` are core Rust ecosystem crates with active maintenance
+- [x] **Dependencies are actively maintained** -- `regex` is a core Rust ecosystem crate with active maintenance; `std::sync::LazyLock` is stdlib (no external dependency)
 - [x] **No known critical vulnerabilities** -- No known CVEs in current versions
 
 ---
@@ -327,7 +327,7 @@ flowchart TD
 
 | Req ID | Requirement | PRD AC | Verification Method |
 |--------|-------------|--------|---------------------|
-| SEC-4 | Regex patterns shall be compiled once via `once_cell::sync::Lazy` (not per-invocation) to prevent resource exhaustion on large documents | -- | Code review |
+| SEC-4 | Regex patterns shall be compiled once via `std::sync::LazyLock` (not per-invocation) to prevent resource exhaustion on large documents | -- | Code review |
 
 ---
 
@@ -380,8 +380,8 @@ flowchart TD
 
 | Role | Name | Date | Decision |
 |------|------|------|----------|
-| Security Reviewer | Brian Luby | YYYY-MM-DD | [Approved / Approved with conditions / Rejected] |
-| Feature Owner | Brian Luby | YYYY-MM-DD | [Acknowledged] |
+| Security Reviewer | Brian Luby | — | ⏳ Pending — complete before merge |
+| Feature Owner | Brian Luby | — | ⏳ Pending — complete before merge |
 
 ### Conditions for Approval (if applicable) :red_circle: `@human-required`
 
@@ -396,7 +396,7 @@ flowchart TD
 |------------|------------|-----------|-----------|---------------|
 | SEC-2 | M-6 | AC-7 | Unit | tests for word boundary false-positive prevention |
 | SEC-3 | -- | -- | Code Review | Static pattern definitions in modality module |
-| SEC-4 | -- | -- | Code Review | `once_cell::sync::Lazy` usage in modality module |
+| SEC-4 | -- | -- | Code Review | `std::sync::LazyLock` usage in modality module |
 
 ---
 
