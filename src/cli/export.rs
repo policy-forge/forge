@@ -81,6 +81,9 @@ fn deserialize_from_json(content: &str) -> Result<OscalModel, ForgeError> {
                 })?;
             Ok(OscalModel::Component(envelope))
         }
+        crate::validate::OscalModelType::Profile => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
+        }),
     }
 }
 
@@ -101,10 +104,13 @@ fn deserialize_from_xml(content: &str) -> Result<OscalModel, ForgeError> {
             let envelope = xml_deserializer::deserialize_component_from_xml(content)?;
             Ok(OscalModel::Component(envelope))
         }
+        "profile" => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
+        }),
         _ => Err(ForgeError::ExportInvalidOscal {
             detail: format!(
                 "XML root element '<{root_element}>' is not a recognized OSCAL type. \
-                 Expected '<catalog>' or '<component-definition>'."
+                 Expected '<catalog>', '<component-definition>', or '<profile>'."
             ),
         }),
     }
@@ -161,6 +167,9 @@ fn deserialize_from_yaml_format(content: &str) -> Result<OscalModel, ForgeError>
                 })?;
             Ok(OscalModel::Component(envelope))
         }
+        crate::validate::OscalModelType::Profile => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
+        }),
     }
 }
 

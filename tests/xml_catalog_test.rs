@@ -239,28 +239,19 @@ fn catalog_xml_contains_param_elements_for_parameterized_requirements() {
     assert!(xml.contains("<label>"), "Catalog XML <param> elements must contain <label>");
 
     // Params must appear inside <control> blocks (not at catalog level).
-    // Scan all control blocks to find at least one containing <param>.
-    let found_control_with_param = {
-        let mut pos = 0;
-        let mut found = false;
-        while let Some(rel) = xml[pos..].find("<control ") {
-            let start = pos + rel;
-            if let Some(end_rel) = xml[start..].find("</control>") {
-                let block = &xml[start..start + end_rel];
-                if block.contains("<param ") {
-                    found = true;
-                    break;
-                }
-                pos = start + end_rel + "</control>".len();
-            } else {
-                break;
-            }
-        }
-        found
-    };
+    // Check that AT LEAST ONE control block contains a <param> element.
+    // Not every control has parameters, so we search all blocks.
+    let has_param_in_control = xml
+        .split("<control ")
+        .skip(1) // skip text before the first <control>
+        .any(|segment| {
+            // Each segment starts after "<control "; find the closing tag for this control
+            let end = segment.find("</control>").unwrap_or(segment.len());
+            segment[..end].contains("<param ")
+        });
     assert!(
-        found_control_with_param,
-        "Catalog XML must contain <param> elements nested within <control> elements"
+        has_param_in_control,
+        "Catalog XML must contain <param> elements nested within at least one <control> element"
     );
 }
 

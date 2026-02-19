@@ -1,0 +1,29 @@
+---
+source: tests/profile_golden_file_tests.rs
+expression: "&normalized"
+---
+{
+  "profile": {
+    "imports": [
+      {
+        "exclude-controls": [
+          {
+            "with-ids": [
+              "AC-9",
+              "AC-10"
+            ]
+          }
+        ],
+        "href": "NORMALIZED_PATH",
+        "include-all": {}
+      }
+    ],
+    "metadata": {
+      "last-modified": "2026-01-01T00:00:00Z",
+      "oscal-version": "1.2.0",
+      "title": "Policy Baseline Profile",
+      "version": "1.0.0"
+    },
+    "uuid": "00000000-0000-0000-0000-000000000000"
+  }
+}

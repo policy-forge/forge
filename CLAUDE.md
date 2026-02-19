@@ -91,6 +91,8 @@ See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
 - N/A — in-memory pipeline enrichment pass (033-prd-normative-advisory-detection)
 - Rust, Edition 2024, stable 1.93.0 + `regex = "1"` (already in Cargo.toml), `std::sync::LazyLock` (std, no new dep), `thiserror = "2.0.18"`, `serde = "1.0.228"`, `tracing = "0.1.44"` (034-prd-parameter-extraction)
 - N/A — transforms in-memory `PolicyDocument`; writes OSCAL JSON/XML/YAML to local filesystem (unchanged) (034-prd-parameter-extraction)
+- Rust, Edition 2024, stable 1.93.0 + `jsonschema` 0.41.0 (already in Cargo.toml), `insta` 1.46.3 with `json` feature (already in Cargo.toml), `tempfile` 3.25.0 (already in Cargo.toml) — **NO NEW DEPENDENCIES REQUIRED** (032-profile-validation-tests)
+- `schemas/oscal_profile_schema.json` (compile-time embedded via `include_str!`); `tests/snapshots/*.snap` (insta golden files checked into git) (032-profile-validation-tests)
 
 - Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4 (026-xml-output)
 - Rust 2024 edition, stable 1.93.0 + `serde_yaml_ng` 0.10 (aliased as `serde_yaml`, already in `Cargo.toml`), `serde` 1.0.228, `serde_json` 1.0.149 (027-yaml-output)

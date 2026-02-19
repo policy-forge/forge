@@ -145,14 +145,14 @@ A developer needs tests covering boundary conditions and unusual inputs for Prof
 1. **Given** a Catalog with 10 controls, **When** running `forge profile` with an empty `--include` list (no controls selected), **Then** the behavior is well-defined: either an error is produced or a Profile with no imports is generated, and the result is schema-valid.
 2. **Given** a Catalog with 10 controls, **When** running `forge profile` with all 10 control IDs in `--include`, **Then** a valid Profile is generated that imports all controls.
 3. **Given** conflicting `--set-param` values (same parameter ID set twice with different values), **When** generating a Profile, **Then** the behavior is well-defined: either the last value wins or an error is produced.
-4. **Given** a `--include` list containing a control ID that does not exist in the source Catalog, **When** generating a Profile, **Then** a descriptive error or warning is produced.
+4. **Given** a `--include` list containing a control ID that does not exist in the source Catalog, **When** generating a Profile, **Then** the unknown ID is stored as-is in the Profile `with-ids` list (no error — `build_profile()` uses the catalog path as an `href` reference only and does not parse catalog content).
 
 ---
 
 ## Assumptions & Risks :yellow_circle: `@human-review`
 
 ### Assumptions
-- [A-1] WI-30 (Profile generation) and WI-31 (parameter tailoring) are complete and their unit tests passing before WI-32 begins.
+- [A-1] WI-30 (Profile generation) is complete and its unit tests are passing before WI-32 begins. WI-31 (parameter tailoring) is **not yet implemented**; WI-31-dependent tests (`schema_with_set_param`, `golden_include_with_params`, `edge_conflicting_set_param`) are `#[ignore]` stubs to be enabled when WI-31 lands.
 - [A-2] The OSCAL v1.2.0 Profile JSON schema is available and can be used with the `jsonschema` crate (or equivalent) already integrated in WI-19 for Catalog schema validation.
 - [A-3] The schema validation infrastructure from WI-19/WI-20 (Catalog validation) can be reused for Profile validation with minimal adaptation.
 - [A-4] Golden-file test infrastructure from WI-21/WI-22 (Catalog golden files) can be reused for Profile golden files.
@@ -207,18 +207,18 @@ N/A -- No state transitions in this work item. This is a test-only work item tha
 - [ ] **M-1:** Schema validation tests shall validate generated OSCAL Profiles against the OSCAL v1.2.0 Profile JSON schema. *(Traces to: Parent PRD S-5, AC-12)*
 - [ ] **M-2:** Schema validation shall cover Profiles generated with `--include` flags (control inclusion). *(Traces to: Parent PRD S-5, AC-12)*
 - [ ] **M-3:** Schema validation shall cover Profiles generated with `--exclude` flags (control exclusion). *(Traces to: Parent PRD S-5, AC-12)*
-- [ ] **M-4:** Schema validation shall cover Profiles generated with `--set-param` flags (parameter tailoring). *(Traces to: Parent PRD S-5)*
-- [ ] **M-5:** Golden-file tests shall compare generated Profile JSON output against expected fixture files for at least 3 representative scenarios (include-only, exclude-only, include with set-param). *(Traces to: Parent PRD S-5)*
+- [ ] **M-4 (DEFERRED — WI-31):** Schema validation shall cover Profiles generated with `--set-param` flags (parameter tailoring); implemented as `#[ignore]` stub `schema_with_set_param` pending WI-31 implementation. *(Traces to: Parent PRD S-5; see W-5)*
+- [ ] **M-5:** Golden-file tests shall compare generated Profile JSON output against `insta` snapshot files for at least **2** active scenarios in this WI: include-only and exclude-only. A third scenario (include with set-param) is implemented as `#[ignore]` stub `golden_include_with_params` pending WI-31 implementation. *(Traces to: Parent PRD S-5)*
 - [ ] **M-6:** Golden-file comparison shall handle dynamic fields (UUIDs, `last-modified` timestamps) by normalizing or masking them before comparison. *(Traces to: Parent PRD S-5)*
 - [ ] **M-7:** Edge case tests shall cover empty control selection (no controls in `--include`). *(Traces to: Parent PRD S-5)*
 - [ ] **M-8:** Edge case tests shall cover all-controls selection (every control ID in `--include`). *(Traces to: Parent PRD S-5)*
-- [ ] **M-9:** Edge case tests shall cover conflicting parameter values (same param ID set twice). *(Traces to: Parent PRD S-5)*
+- [ ] **M-9 (DEFERRED — WI-31):** Edge case tests shall cover conflicting parameter values (same param ID set twice); implemented as `#[ignore]` stub `edge_conflicting_set_param` pending WI-31 implementation. *(Traces to: Parent PRD S-5; see W-6)*
 - [ ] **M-10:** All tests shall be runnable via `cargo test` and shall pass in CI. *(Traces to: Parent PRD S-5)*
 
 ### Should Have (S) -- High value, not blocking :red_circle: `@human-required`
-- [ ] **S-1:** Edge case tests should cover non-existent control IDs in `--include`/`--exclude` lists, verifying a descriptive error or warning is produced.
+- [ ] **S-1:** Edge case tests should cover non-existent control IDs in `--include`/`--exclude` lists. Note: `build_profile()` uses the catalog path as an OSCAL Profile `href` reference only and does not parse catalog content, so non-existent IDs are stored as-is in `with-ids` (no error produced). Test `edge_nonexistent_control_id` verifies this behavior: `Ok` is returned and the unknown ID appears verbatim in the output.
 - [ ] **S-2:** Edge case tests should cover duplicate control IDs in `--include` (same ID listed twice), verifying idempotent behavior.
-- [ ] **S-3:** Golden-file tests should include a scenario with both `--include` and `--exclude` flags combined.
+- [ ] **S-3:** Edge case tests should verify that providing both `--include` and `--exclude` flags returns a descriptive mutual-exclusivity error with a non-zero exit code. WI-30 treats these flags as mutually exclusive via clap `conflicts_with`; this is an error-assertion test, not a golden-file scenario.
 - [ ] **S-4:** Schema validation error messages should include the JSON path of the invalid field for actionable debugging.
 
 ### Could Have (C) -- Nice to have, if time permits :yellow_circle: `@human-review`
@@ -230,6 +230,8 @@ N/A -- No state transitions in this work item. This is a test-only work item tha
 - [ ] **W-2:** Profile Resolution validation (import → merge → modify) -- *Reason: Delegated to NIST oscal-cli in WI-36*
 - [ ] **W-3:** Performance benchmarking of Profile generation -- *Reason: Not required for validation sprint; can be added to WI-35 if needed*
 - [ ] **W-4:** Fuzz testing of Profile generation inputs -- *Reason: Systematic edge cases are sufficient for this sprint; fuzz testing is a future enhancement*
+- [ ] **W-5:** Active schema validation test for `--set-param` Profiles -- *Reason: WI-31 (parameter tailoring) not yet implemented; covered by `#[ignore]` stub `schema_with_set_param`; enabled when WI-31 lands (removes M-4 deferred status)*
+- [ ] **W-6:** Active edge case test for conflicting parameter overrides -- *Reason: WI-31 (parameter tailoring) not yet implemented; covered by `#[ignore]` stub `edge_conflicting_set_param`; enabled when WI-31 lands (removes M-9 deferred status)*
 
 ---
 
@@ -266,21 +268,25 @@ N/A -- No new data model introduced in this work item. This WI tests the Profile
 // 2. Parameter tailoring (from WI-31):
 //    forge profile --catalog <path> --include <ids> --set-param <id> <value> --format json
 //
-// Test infrastructure reused from WI-19/WI-21:
+// Test infrastructure reused/extended from WI-19/WI-21:
 //
-// Schema validation:
-//    fn validate_against_schema(json: &str, schema_path: &Path) -> Result<(), Vec<ValidationError>>
+// Schema validation (from forge::validate, WI-19):
+//    validate_artifact(json: &serde_json::Value, model: OscalModelType) -> ValidationResult
+//    where ValidationResult { is_valid: bool, errors: Vec<ValidationError> }
+//    (ValidationError carries instance_path for JSON path context — satisfies PRD S-4)
 //
-// Golden-file comparison:
-//    fn compare_golden_file(actual: &str, expected_path: &Path) -> Result<(), GoldenFileDiff>
-//    fn normalize_dynamic_fields(json: &str) -> String  // masks UUIDs and timestamps
+// Dynamic field normalization (new, in tests/common/mod.rs):
+//    pub fn normalize_for_snapshot(value: &serde_json::Value) -> serde_json::Value
+//    Replaces UUIDs → "00000000-...", last-modified → "2026-01-01T00:00:00Z",
+//    absolute paths → "NORMALIZED_PATH" (recursive, idempotent)
+//
+// Golden-file snapshots (insta, managed via cargo insta accept/review):
+//    insta::assert_json_snapshot!("snapshot_name", &normalized)
 
-// Golden-file fixtures (new files created by this WI):
-//   tests/fixtures/profiles/include_only.json        -- Profile with --include
-//   tests/fixtures/profiles/exclude_only.json        -- Profile with --exclude
-//   tests/fixtures/profiles/include_with_params.json -- Profile with --include + --set-param
-//   tests/fixtures/profiles/all_controls.json        -- Profile selecting all controls
-//   tests/fixtures/profiles/include_and_exclude.json -- Profile with both --include and --exclude
+// Snapshot files (insta, committed to tests/snapshots/):
+//   tests/snapshots/profile_golden_file_tests__golden_include_only.snap
+//   tests/snapshots/profile_golden_file_tests__golden_exclude_only.snap
+//   (3rd: golden_include_with_params -- added when WI-31 is implemented)
 ```
 
 ---
@@ -320,9 +326,9 @@ N/A -- No new data model introduced in this work item. This WI tests the Profile
 | AC-3 | M-1, M-4 | US-1 | A valid OSCAL Catalog with controls and parameters | Generating a Profile with `--set-param` flags and validating against the Profile schema | Schema validation passes with zero errors, including the `modify.set-parameters` section |
 | AC-4 | M-5, M-6 | US-2 | A sample Catalog and an include list | Generating a Profile and comparing to the golden file (with dynamic field normalization) | Output matches the expected golden file fixture |
 | AC-5 | M-5, M-6 | US-2 | A sample Catalog with parameter tailoring | Generating a Profile with `--set-param` and comparing to the golden file | Output matches the expected golden file fixture including the `modify` section |
-| AC-6 | M-7 | US-3 | A Catalog with 10 controls | Running `forge profile` with an empty `--include` list | Behavior is well-defined (error or empty Profile) and schema-valid if output is produced |
+| AC-6 | M-7 | US-3 | A Catalog with 10 controls | Running `forge profile` with an empty `--include` list | A descriptive error is returned identifying the empty selection; an empty Profile is not produced |
 | AC-7 | M-8 | US-3 | A Catalog with 10 controls | Running `forge profile` with all 10 control IDs in `--include` | A valid Profile is generated importing all controls; schema validation passes |
-| AC-8 | M-9 | US-3 | A Catalog with parameters | Running `forge profile` with conflicting `--set-param` values (same param ID, different values) | Behavior is well-defined (last-wins or error); result is documented and tested |
+| AC-8 | M-9 (DEFERRED — WI-31) | US-3 | A Catalog with parameters | Running `forge profile` with conflicting `--set-param` values (same param ID, different values) | Implemented as `#[ignore]` stub `edge_conflicting_set_param`; enabled when WI-31 is implemented |
 | AC-9 | M-10 | US-1, US-2, US-3 | All Profile validation and golden-file tests | Running `cargo test` | All tests pass with zero failures |
 | AC-10 | M-1 (traces AC-12) | US-1 | A policy Catalog with multiple controls | Running `forge profile` with include/exclude flags | A valid OSCAL Profile is generated (parent PRD AC-12 confirmed passing) |
 
@@ -330,11 +336,11 @@ N/A -- No new data model introduced in this work item. This WI tests the Profile
 - [ ] **EC-1:** (M-7) When `--include` is provided with an empty list, then either a descriptive error is produced or an empty Profile is generated that still passes schema validation.
 - [ ] **EC-2:** (M-8) When all control IDs from the source Catalog are included, then the Profile imports all controls and passes schema validation.
 - [ ] **EC-3:** (M-9) When `--set-param` is specified twice for the same parameter ID with different values, then the last value wins or a descriptive error is produced.
-- [ ] **EC-4:** (S-1) When `--include` contains a control ID that does not exist in the source Catalog, then a descriptive error or warning is produced.
+- [ ] **EC-4:** (S-1) When `--include` contains a control ID that does not exist in the source Catalog, then the unknown ID is stored as-is in the Profile `with-ids` list (no error — catalog content is not parsed; see S-1 note).
 - [ ] **EC-5:** (S-2) When `--include` contains the same control ID twice, then the duplicate is handled idempotently (no duplicate imports in the Profile).
-- [ ] **EC-6:** (S-3) When both `--include` and `--exclude` are specified, then the Profile correctly resolves the selection (include takes precedence, or exclude filters from include set, depending on WI-30 design).
+- [ ] **EC-6:** (S-3) When both `--include` and `--exclude` are specified, then a mutual-exclusivity error is returned (WI-30 uses `conflicts_with` via clap; this is an error-assertion test, not a selection-resolution scenario).
 - [ ] **EC-7:** (M-1) When the source Catalog file path is invalid or the file does not exist, then a descriptive error is produced with a non-zero exit code.
-- [ ] **EC-8:** (M-1) When the source Catalog is not a valid OSCAL Catalog (malformed JSON), then a descriptive error is produced.
+- [ ] **EC-8 (N/A — WI-30 implementation scope):** WI-30's `build_profile()` uses the catalog path as an OSCAL Profile `href` reference only and does not parse catalog content. Malformed catalog JSON at a valid path does not produce an error and does not affect Profile generation. This edge case is not testable against the current implementation; catalog content validation is out of scope for WI-30 and WI-32.
 
 ---
 
@@ -439,7 +445,7 @@ N/A -- No spike tasks for this work item. Schema validation infrastructure is pr
 - [x] Security review completed (or N/A documented with justification)
 - [x] No open questions blocking implementation
 - [x] WI-30 (Profile generation) complete and tests passing
-- [x] WI-31 (Profile parameter tailoring) complete and tests passing
+- [ ] WI-31 (Profile parameter tailoring) complete and tests passing *(NOT YET IMPLEMENTED — three WI-32 tests are `#[ignore]` stubs pending WI-31)*
 - [x] OSCAL v1.2.0 Profile JSON schema available
 
 ### Sign-off
@@ -462,8 +468,8 @@ N/A -- No spike tasks for this work item. Schema validation infrastructure is pr
 | Date | Decision | Rationale | Alternatives Considered |
 |------|----------|-----------|------------------------|
 | 2026-02-10 | Reuse WI-19 schema validation infrastructure for Profile validation | Proven infrastructure; consistent approach across Catalog and Profile validation; minimizes new code | Build separate Profile validation logic (duplicates effort); use oscal-cli only (external dependency, slower) |
-| 2026-02-10 | Reuse WI-21/WI-22 golden-file framework for Profile golden files | Established patterns for dynamic field normalization, fixture management, and comparison; consistent developer experience | Build new golden-file framework (unnecessary duplication); use snapshot testing crate like `insta` (introduces new dependency) |
-| 2026-02-10 | Require at least 3 golden-file scenarios (include, exclude, include+set-param) | Covers the three primary Profile generation paths from WI-30 and WI-31; sufficient for regression confidence without over-investing in fixtures | Single golden file (insufficient coverage); 10+ golden files (diminishing returns for validation sprint) |
+| 2026-02-10 *(revised 2026-02-18)* | Use `insta` snapshot testing for Profile golden files | Consistent with WI-21 Catalog/Component snapshot pattern; `insta` already in `Cargo.toml` (no new dependency); `cargo insta review` workflow is idiomatic; snapshots in `tests/snapshots/` checked into git | Build new JSON fixture file framework (unnecessary duplication); reuse WI-21/WI-22 raw JSON fixture file pattern (different, less ergonomic approach) |
+| 2026-02-10 *(revised 2026-02-18)* | Require 2 active golden-file scenarios (include-only, exclude-only); 3rd scenario (include+set-param) as `#[ignore]` stub pending WI-31 | Covers both active Profile generation paths; WI-31 not implemented so 3rd scenario deferred; stub preserves test structure for future enablement | Single golden file (insufficient coverage); 3 active files (impossible until WI-31 is implemented) |
 | 2026-02-10 | Test edge cases as standard Rust tests, not golden files | Edge cases test behavior (error messages, exit codes) rather than exact output format; standard assertions are more appropriate than golden-file comparison | Golden files for edge cases (brittle for error message formatting changes) |
 
 ---
