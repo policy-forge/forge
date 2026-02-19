@@ -13,7 +13,10 @@ pub const OSCAL_VERSION: &str = "1.2.0";
 /// OSCAL metadata for any artifact type (Catalog, Component Definition, Profile).
 ///
 /// Serializes to OSCAL-compliant JSON with hyphenated field names where required.
-/// All five fields are mandatory per OSCAL v1.2.0 specification.
+/// Four fields are serialized and required per OSCAL v1.2.0: `title`, `last-modified`,
+/// `version`, and `oscal-version`. The `uuid` field is internal-only and annotated
+/// with `#[serde(skip_serializing)]`; it is not emitted in JSON output because
+/// OSCAL v1.2.0 places the artifact UUID at the root object level, not inside metadata.
 ///
 /// # Examples
 ///
