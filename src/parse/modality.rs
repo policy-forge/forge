@@ -140,17 +140,17 @@ fn annotate_section(section: &mut PolicySection) {
     for req in &mut section.requirements {
         let result = detect_modality(req);
 
-        if result.is_default {
-            warn!(
-                text = &req.text[..req.text.len().min(120)],
-                "No modality verb detected — defaulting to Normative"
-            );
-        } else if result.has_conflict {
-            warn!(
-                text = &req.text[..req.text.len().min(120)],
-                verbs = ?result.matched_verbs,
-                "Conflicting normative/advisory verbs — Normative wins"
-            );
+        if result.is_default || result.has_conflict {
+            let preview: String = req.text.chars().take(120).collect();
+            if result.is_default {
+                warn!(text = preview, "No modality verb detected — defaulting to Normative");
+            } else {
+                warn!(
+                    text = preview,
+                    verbs = ?result.matched_verbs,
+                    "Conflicting normative/advisory verbs — Normative wins"
+                );
+            }
         }
 
         debug!(
