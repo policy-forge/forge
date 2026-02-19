@@ -38,7 +38,7 @@ pub fn execute(
     catalog: &Path,
     include: Option<&str>,
     exclude: Option<&str>,
-    _format: &OutputFormat,
+    format: &OutputFormat,
     output: Option<&Path>,
 ) -> Result<(), ForgeError> {
     // Step 1: validate exactly one selection flag is provided
@@ -79,14 +79,21 @@ pub fn execute(
 
     // Step 6: wrap and serialize
     let root = ProfileRoot { profile: oscal_profile };
-    let json = serde_json::to_string_pretty(&root).map_err(|e| {
-        ForgeError::Serialization(format!("Profile JSON serialization failed: {e}"))
-    })?;
+    let serialized = match format {
+        OutputFormat::Json => serde_json::to_string_pretty(&root).map_err(|e| {
+            ForgeError::Serialization(format!("Profile JSON serialization failed: {e}"))
+        })?,
+        OutputFormat::Xml | OutputFormat::Yaml => {
+            return Err(ForgeError::InvalidArgument(format!(
+                "unsupported output format '{format:?}' for forge profile — only --format json is supported in WI-30"
+            )));
+        }
+    };
 
     // Step 7: write to file or stdout
     match output {
-        Some(path) => std::fs::write(path, json)?,
-        None => println!("{json}"),
+        Some(path) => std::fs::write(path, serialized)?,
+        None => println!("{serialized}"),
     }
 
     Ok(())

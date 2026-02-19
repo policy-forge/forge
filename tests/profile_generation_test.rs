@@ -287,6 +287,23 @@ fn empty_include_string_returns_error() {
     assert_ne!(exit_code, 0, "Expected error for empty --include string.\nstderr: {stderr}");
 }
 
+// ─── Unsupported formats return a clear error ───────────────────────────
+
+#[test]
+fn unsupported_format_xml_returns_error() {
+    let catalog = temp_catalog_file(minimal_catalog_json());
+    let catalog_path = catalog.path().to_str().unwrap();
+
+    let (exit_code, _stdout, stderr) =
+        run_profile(&["--catalog", catalog_path, "--include", "AC-1", "--format", "xml"]);
+
+    assert_ne!(exit_code, 0, "Expected error for unsupported --format xml.\nstderr: {stderr}");
+    assert!(
+        stderr.contains("unsupported") || stderr.contains("xml") || stderr.contains("WI-30"),
+        "Error message should mention unsupported format.\nstderr: {stderr}"
+    );
+}
+
 // ─── S-1: --format json produces JSON output ────────────────────────────
 
 #[test]
