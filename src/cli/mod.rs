@@ -113,6 +113,11 @@ pub enum Commands {
         /// Write output to a file instead of stdout
         #[arg(long)]
         output: Option<PathBuf>,
+
+        /// Set a parameter value override in the Profile's modify section (WI-31).
+        /// Takes exactly two arguments: `<PARAM_ID>` `<VALUE>`. Repeatable.
+        #[arg(long = "set-param", num_args = 2, action = clap::ArgAction::Append, value_names = ["PARAM_ID", "VALUE"])]
+        set_params: Vec<String>,
     },
 }
 
@@ -169,13 +174,16 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         Commands::Validate { input, schema_type, format } => {
             validate::execute(input, schema_type.as_ref(), format)
         }
-        Commands::Profile { catalog, include, exclude, format, output } => profile::execute(
-            catalog,
-            include.as_deref(),
-            exclude.as_deref(),
-            format,
-            output.as_deref(),
-        ),
+        Commands::Profile { catalog, include, exclude, format, output, set_params } => {
+            profile::execute(
+                catalog,
+                include.as_deref(),
+                exclude.as_deref(),
+                format,
+                output.as_deref(),
+                set_params,
+            )
+        }
     }
 }
 

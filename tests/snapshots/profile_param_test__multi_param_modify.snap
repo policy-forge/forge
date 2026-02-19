@@ -1,0 +1,26 @@
+---
+source: tests/profile_param_test.rs
+expression: modify
+---
+{
+  "set-parameters": [
+    {
+      "param-id": "aaa_prm",
+      "values": [
+        "v2"
+      ]
+    },
+    {
+      "param-id": "mmm_prm",
+      "values": [
+        "v3"
+      ]
+    },
+    {
+      "param-id": "zzz_prm",
+      "values": [
+        "v1"
+      ]
+    }
+  ]
+}
