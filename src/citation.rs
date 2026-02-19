@@ -535,6 +535,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 

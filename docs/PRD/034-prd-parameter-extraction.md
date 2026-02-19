@@ -110,7 +110,7 @@ A policy requirement specifies a time window that should be extracted as a confi
 **Independent Test**: Pass a requirement containing "within 30 days" through parameter extraction and verify an OSCAL `param` element is generated with the correct value and a minimum-type constraint.
 
 **Acceptance Scenarios**:
-1. **Given** a PolicyRequirement with text "Passwords must be changed within 30 days of compromise", **When** parameter extraction runs, **Then** a PolicyParameter is created with value = "30 days", label = "time window", and a constraint indicating a duration bound, and the requirement text contains a parameter insertion placeholder in place of "30 days".
+1. **Given** a PolicyRequirement with text "Passwords must be changed within 30 days of compromise", **When** parameter extraction runs, **Then** a PolicyParameter is created with value = "30 days", label = "within 30 days" (derived from the matched qualifier + value + unit text), constraint_type = Minimum, and the requirement text contains a parameter insertion placeholder in place of "within 30 days".
 2. **Given** a PolicyRequirement with text "Access reviews shall be completed within 90 days of account creation", **When** parameter extraction runs, **Then** a PolicyParameter is created with value = "90 days" and the prose is updated with the parameter insertion placeholder.
 
 ---
@@ -184,7 +184,7 @@ Extracted parameters must be linked to the OSCAL control that contains them.
 
 ### Assumptions
 - [A-1] Parameterized values in policy requirements follow recognizable syntactic patterns: "within N days", "at least N", "minimum N", "no fewer than N", "no more than N", "every N days/months", frequency words ("annually", "quarterly", "monthly", "weekly", "daily").
-- [A-2] The domain model (WI-5) provides `PolicyParameter` structs as defined in the parent PRD data model, with fields for id, requirement_id, name, value, and value_domain.
+- [A-2] The domain model (WI-5) provides `PolicyParameter` structs as defined in the parent PRD data model, with fields for id, requirement_id, name, value, and value_domain. In WI-34's interface contract, the `name` field is exposed as `label` and `value_domain` is represented as `constraint: Option<ParameterConstraint>` for type safety — these are semantic aliases, not new fields.
 - [A-3] WI-33 (normative detection) has tagged requirements with modality, enabling parameter extraction to focus on normative requirements where parameters are most meaningful.
 - [A-4] Heuristic/regex-based parameter detection is sufficient for the majority of well-structured policy documents; ML-based extraction is not needed in this phase.
 - [A-5] OSCAL `param` elements follow the OSCAL v1.2.0 specification structure with id, label, value, and constraint sub-elements.
@@ -233,22 +233,22 @@ N/A — Parameter extraction is a stateless transformation pass over the domain 
 
 ### Must Have (M) — MVP, launch blockers 🔴 `@human-required`
 - [ ] **M-1:** The system shall detect time window parameters in requirement text using patterns such as "within N days/weeks/months/years", "after N days", and "every N days/months" and extract them into `PolicyParameter` objects. *(Traces to: Parent PRD S-8)*
-- [ ] **M-2:** The system shall detect threshold parameters using patterns such as "at least N", "minimum N", "no fewer than N", "no more than N", "no less than N", and "maximum N" and extract them into `PolicyParameter` objects. *(Traces to: Parent PRD S-8)*
-- [ ] **M-3:** The system shall detect frequency parameters using patterns such as "at least annually/quarterly/monthly/weekly/daily" and standalone frequency words and extract them into `PolicyParameter` objects. *(Traces to: Parent PRD S-8)*
+- [ ] **M-2:** The system shall detect threshold parameters using patterns such as "at least N", "minimum N", "no fewer than N", "no more than N", "no less than N", and "maximum N" and extract them into `PolicyParameter` objects. For disambiguation with S-1 (Quantity): patterns where N is a bare numeric value or unit of measure (e.g., "at least 128-bit", "no more than 15 minutes") are thresholds; patterns where N is followed by a countable noun unit (e.g., "at least 3 factors") are quantities. *(Traces to: Parent PRD S-8)*
+- [ ] **M-3:** The system shall detect frequency parameters using patterns such as "at least annually/quarterly/monthly/weekly/daily/biannually/semi-annually" and standalone frequency words ("annually", "quarterly", "monthly", "weekly", "daily", "biannually", "semi-annually") and extract them into `PolicyParameter` objects. *(Traces to: Parent PRD S-8)*
 - [ ] **M-4:** Each extracted `PolicyParameter` shall include: `id` (unique identifier), `label` (human-readable description of the parameter type), `value` (the extracted numeric or textual value), and `value_domain` (constraint information indicating the bound type — minimum, maximum, or exact). *(Traces to: Parent PRD S-8)*
 - [ ] **M-5:** The system shall generate OSCAL `param` elements from extracted `PolicyParameter` objects, with `id`, `label`, `value`, and `constraint` fields populated. *(Traces to: Parent PRD S-8)*
-- [ ] **M-6:** Each extracted parameter shall be linked to the `PolicyRequirement` (and thereby the OSCAL control) from which it was extracted, via the `requirement_id` field. *(Traces to: Parent PRD S-8)*
+- [ ] **M-6:** Each extracted parameter shall be linked to the `PolicyRequirement` (and thereby the OSCAL control) from which it was extracted, via the `requirement_id` field. Requirements without a `stable_id` are skipped — a deterministic parameter ID cannot be generated without a stable requirement identifier. *(Traces to: Parent PRD S-8)*
 - [ ] **M-7:** The system shall replace extracted parameter values in requirement text with OSCAL parameter insertion placeholders (`{{ insert: param, id-ref: <param-id> }}`), producing parameterized prose suitable for OSCAL control statements. *(Traces to: Parent PRD S-8)*
 - [ ] **M-8:** Parameter extraction shall be implemented as a pipeline enrichment function that takes a `PolicyDocument` and returns an enriched `PolicyDocument` with parameters populated and prose updated. *(Traces to: Parent PRD S-8)*
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
-- [ ] **S-1:** The system should detect quantity parameters using patterns such as "no fewer than N", "at least N [unit]" where the unit is a countable noun (e.g., "factors", "characters", "generations") and extract them as `PolicyParameter` objects.
+- [ ] **S-1:** The system should detect quantity parameters using patterns such as "no fewer than N [unit]", "at least N [unit]" where the unit is a countable noun (e.g., "factors", "characters", "generations") and extract them as `PolicyParameter` objects. For disambiguation with M-2 (Threshold): patterns where N is followed by a countable noun unit are quantities; patterns without a unit noun are thresholds.
 - [ ] **S-2:** The system should infer constraint types from qualifier words: "at least" / "minimum" / "no fewer than" implies a minimum constraint; "no more than" / "maximum" / "at most" implies a maximum constraint; bare values without qualifiers imply an exact constraint.
-- [ ] **S-3:** The system should assign deterministic parameter IDs derived from the parent requirement's stable ID, the parameter's position within the requirement, and the parameter value, ensuring reproducibility across runs.
+- [ ] **S-3:** The system should assign deterministic parameter IDs derived from the parent requirement's stable ID and the parameter's position within the requirement (zero-based index), ensuring reproducibility across runs. Note: the parameter value is intentionally excluded from ID generation to keep IDs stable if the value is corrected.
 - [ ] **S-4:** The parameter extraction function should be idempotent — running it twice on the same document produces the same result without double-extracting parameters.
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
-- [ ] **C-1:** The system could detect compound parameters where a single requirement contains multiple parameterized values (e.g., "must be at least 12 characters and changed within 90 days") and extract each as a separate `PolicyParameter`.
+- [ ] **C-1:** The system could detect compound parameters in requirements where two or more parameterized values appear in a single sentence joined by conjunctions (e.g., "must be at least 12 characters and changed within 90 days"), providing explicit detection that a multi-parameter sentence has been fully processed. Note: The basic mechanical behavior of extracting multiple parameters from a single requirement (each as a separate `PolicyParameter` with a unique ID) is already required by EC-4 and implemented in the orchestration logic. C-1 refers specifically to compound sentence *detection and annotation*, not just the extraction output.
 - [ ] **C-2:** The system could produce an extraction summary log reporting the count of parameters extracted by type (time window, threshold, frequency, quantity) for CLI output.
 - [ ] **C-3:** The system could detect written-out numeric values (e.g., "thirty days", "one year") and convert them to their numeric equivalents during extraction.
 
@@ -270,7 +270,7 @@ N/A — Parameter extraction is a stateless transformation pass over the domain 
 - **OSCAL Compliance:** Generated `param` elements must conform to the OSCAL v1.2.0 Catalog model specification
 - **Testing:** TDD mandatory; comprehensive unit tests for each parameter type with test fixtures
 - **Dependencies:** Depends on WI-33 normative detection (for modality context) and WI-5 domain model (for `PolicyParameter` struct)
-- **Performance:** Parameter extraction must handle documents with hundreds of requirements without noticeable delay; linear time O(n) in the number of requirements
+- **Performance:** Parameter extraction must handle documents with hundreds of requirements without noticeable delay; linear time O(n) in the number of requirements. Measurable target: a document with 500 requirements must complete extraction in ≤1 second on standard developer hardware (2020+ laptop-class CPU).
 
 ---
 
@@ -288,7 +288,7 @@ erDiagram
         int source_line "1-based"
     }
     PolicyParameter {
-        string id PK "deterministic, content-based"
+        string id PK "deterministic, position-based"
         string requirement_id FK "link to source requirement"
         string label "human-readable parameter description"
         string value "extracted parameter value"
@@ -301,7 +301,7 @@ erDiagram
     }
 ```
 
-Note: The `PolicyParameter` struct aligns with the parent PRD data model definition (id, requirement_id, name, value, value_domain). The `ParameterConstraint` maps to the OSCAL `constraint` sub-element within a `param` element. In practice, the value domain is stored as a string in the `PolicyParameter.value_domain` field, encoding the constraint type and bound.
+Note: The `PolicyParameter` struct aligns with the parent PRD data model definition. Two field aliases apply in WI-34: the parent field `name` is adopted as `label` throughout this WI; the parent field `value_domain` is adopted as `constraint` (typed as `Option<ParameterConstraint>`) throughout this WI. Both aliases are used exclusively in WI-34 artifacts — do not use `name` or `value_domain` in implementation. The `ParameterConstraint` type maps to the OSCAL `param.constraint` sub-element, carrying `constraint_type` (`Minimum | Maximum | Exact`) and `value`.
 
 ---
 
@@ -365,10 +365,11 @@ pub fn extract_parameters_from_text(
 /// Generate an OSCAL param element from a PolicyParameter
 pub fn to_oscal_param(parameter: &PolicyParameter) -> OscalParam;
 
-/// Generate a deterministic parameter ID from content
+/// Generate a deterministic parameter ID from requirement ID and position.
+/// Note: `value` is intentionally excluded — IDs are position-based, not
+/// content-based, so they remain stable if a value is corrected post-extraction.
 pub fn parameter_id(
     requirement_id: &str,
-    value: &str,
     position: usize,
 ) -> String;
 ```
@@ -421,7 +422,7 @@ pub struct PolicyRequirement {
 
 | AC ID | Requirement | User Story | Given | When | Then |
 |-------|-------------|------------|-------|------|------|
-| AC-1 | M-1, M-4 | US-1 | "Passwords must be changed within 30 days of compromise" | Running parameter extraction | A PolicyParameter is created with value = "30 days", label describing time window, constraint_type = minimum (duration bound), and prose contains `{{ insert: param, id-ref: <param-id> }}` in place of "30 days" |
+| AC-1 | M-1, M-4 | US-1 | "Passwords must be changed within 30 days of compromise" | Running parameter extraction | A PolicyParameter is created with value = "30 days", label = "within 30 days" (derived from matched qualifier+value+unit text), constraint_type = Minimum, and prose contains `{{ insert: param, id-ref: <param-id> }}` replacing the matched span |
 | AC-2 | M-2, M-4 | US-2 | "Encryption must use at least 128-bit keys" | Running parameter extraction | A PolicyParameter is created with value = "128-bit", constraint_type = minimum, and prose contains the insertion placeholder |
 | AC-3 | M-2, M-4 | US-2 | "Sessions must timeout after no more than 15 minutes of inactivity" | Running parameter extraction | A PolicyParameter is created with value = "15 minutes", constraint_type = maximum |
 | AC-4 | M-3, M-4 | US-3 | "Security training must be completed at least annually" | Running parameter extraction | A PolicyParameter is created with value = "annually", parameter_type = frequency |

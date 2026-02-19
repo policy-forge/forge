@@ -220,6 +220,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 
@@ -524,6 +525,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let result = map_requirement_to_implemented(
             &req,
@@ -560,6 +562,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let result = map_requirement_to_implemented(
             &req,

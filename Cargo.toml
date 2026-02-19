@@ -54,3 +54,7 @@ harness = false
 [[bench]]
 name = "export_bench"
 harness = false
+
+[[bench]]
+name = "parameter_extraction"
+harness = false

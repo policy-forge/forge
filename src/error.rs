@@ -80,6 +80,9 @@ pub enum ForgeError {
     #[error("Component definition build error: {0}")]
     ComponentDefinitionBuild(String),
 
+    #[error("Parameter extraction error: {0}")]
+    ParameterExtraction(String),
+
     // --- Validation/Config errors (exit code 3) ---
     #[error("Validation error: {0}")]
     Validation(String),
@@ -151,7 +154,8 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)
         | ForgeError::BackMatter(_)
-        | ForgeError::ComponentDefinitionBuild(_) => 2,
+        | ForgeError::ComponentDefinitionBuild(_)
+        | ForgeError::ParameterExtraction(_) => 2,
 
         // Exit 3: Validation/Config errors
         ForgeError::Validation(_) | ForgeError::Config(_) | ForgeError::SchemaValidation(_) => 3,
@@ -235,6 +239,7 @@ mod tests {
         assert_eq!(exit_code(&ForgeError::CatalogBuild("c".into())), 2);
         assert_eq!(exit_code(&ForgeError::BackMatter("b".into())), 2);
         assert_eq!(exit_code(&ForgeError::ComponentDefinitionBuild("d".into())), 2);
+        assert_eq!(exit_code(&ForgeError::ParameterExtraction("x".into())), 2);
     }
 
     #[test]

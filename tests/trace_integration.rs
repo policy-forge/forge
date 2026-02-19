@@ -20,6 +20,7 @@ fn test_requirement(text: &str, stable_id: &str, line: usize) -> PolicyRequireme
         parent_text: None,
         citations: vec![],
         modality: None,
+        parameters: vec![],
     }
 }
 

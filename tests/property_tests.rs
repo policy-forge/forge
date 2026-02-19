@@ -23,6 +23,7 @@ proptest! {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let _ = atomize_requirement(&req);
     }
@@ -39,6 +40,7 @@ proptest! {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let result = atomize_requirement(&req).unwrap();
         prop_assert!(!result.requirements.is_empty());
@@ -56,6 +58,7 @@ proptest! {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let result = atomize_requirement(&req).unwrap();
         prop_assert!(result.requirements.len() <= 50);
@@ -73,6 +76,7 @@ proptest! {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let result = atomize_requirement(&req).unwrap();
         for r in &result.requirements {
@@ -96,6 +100,7 @@ proptest! {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let result = atomize_requirement(&req).unwrap();
         for r in &result.requirements {
@@ -115,6 +120,7 @@ proptest! {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let r1 = atomize_requirement(&req).unwrap();
         let r2 = atomize_requirement(&req).unwrap();
@@ -145,6 +151,7 @@ proptest! {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         };
         let result = atomize_requirement(&req).unwrap();
         if result.was_split {

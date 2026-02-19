@@ -336,6 +336,7 @@ mod tests {
             parent_text: None,
             citations: vec![citation],
             modality: None,
+            parameters: vec![],
         }
     }
 
@@ -746,6 +747,7 @@ mod tests {
                     parent_text: None,
                     citations: vec![],
                     modality: None,
+                    parameters: vec![],
                 }],
             )],
         );
@@ -782,6 +784,7 @@ mod tests {
                     parent_text: None,
                     citations: vec![],
                     modality: None,
+                    parameters: vec![],
                 }],
             )],
         );

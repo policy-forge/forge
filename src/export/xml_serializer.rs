@@ -74,6 +74,37 @@ fn write_prop<W: Write>(writer: &mut Writer<W>, prop: &OscalProp) -> Result<(), 
     Ok(())
 }
 
+/// Write a single OSCAL param element (WI-34).
+///
+/// Writes: `<param id="...">` → `<label>`, `<constraint>*`, `<value>*` → `</param>`
+fn write_param<W: Write>(
+    writer: &mut Writer<W>,
+    param: &crate::oscal::catalog::OscalParam,
+) -> Result<(), ForgeError> {
+    let mut elem = BytesStart::new("param");
+    elem.push_attribute(("id", param.id.as_str()));
+    writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
+
+    write_text_element(writer, "label", &param.label)?;
+
+    // XSD order: constraint* before value* (oscal-control-common-parameter-ASSEMBLY)
+    // <description> is MarkupMultilineDatatype — content must be wrapped in <p>
+    for constraint in &param.constraints {
+        writer.write_event(Event::Start(BytesStart::new("constraint"))).map_err(map_xml_err)?;
+        writer.write_event(Event::Start(BytesStart::new("description"))).map_err(map_xml_err)?;
+        write_text_element(writer, "p", &constraint.description)?;
+        writer.write_event(Event::End(BytesEnd::new("description"))).map_err(map_xml_err)?;
+        writer.write_event(Event::End(BytesEnd::new("constraint"))).map_err(map_xml_err)?;
+    }
+
+    for value in &param.values {
+        write_text_element(writer, "value", value)?;
+    }
+
+    writer.write_event(Event::End(BytesEnd::new("param"))).map_err(map_xml_err)?;
+    Ok(())
+}
+
 /// Write a single OSCAL link element.
 ///
 /// When `link.text` is `None`: emit self-closing `<link href="..." rel="..." />`
@@ -201,7 +232,7 @@ fn write_resource<W: Write>(
 
 /// Write a single OSCAL control element with children in XSD order.
 ///
-/// Writes: `<control id="...">` → title, prop*, link*, part* → `</control>`
+/// Writes: `<control id="...">` → title, param*, prop*, link*, part* → `</control>`
 ///
 /// Note: `uuid` field is NOT serialized (OSCAL catalog XSD does not allow uuid on controls).
 fn write_control<W: Write>(
@@ -214,6 +245,11 @@ fn write_control<W: Write>(
 
     // Title (position 1)
     write_text_element(writer, "title", &control.title)?;
+
+    // Params (position 2, before props per OSCAL schema ordering)
+    for param in &control.params {
+        write_param(writer, param)?;
+    }
 
     // Props (position 3)
     for prop in &control.props {
@@ -477,6 +513,7 @@ mod tests {
             uuid: "skip-me".to_string(),
             title: title.to_string(),
             links: vec![],
+            params: vec![],
             parts: vec![OscalPart {
                 id: format!("{id}_smt"),
                 name: "statement".to_string(),
@@ -851,6 +888,7 @@ mod tests {
                 rel: "reference".to_string(),
                 text: None,
             }],
+            params: vec![],
             parts: vec![OscalPart {
                 id: "POL-AC-001_smt".to_string(),
                 name: "statement".to_string(),
@@ -1117,6 +1155,7 @@ mod tests {
                     uuid: "u".to_string(),
                     title: "&entity; injection".to_string(),
                     links: vec![],
+                    params: vec![],
                     parts: vec![OscalPart {
                         id: "test_smt".to_string(),
                         name: "statement".to_string(),
@@ -1239,6 +1278,7 @@ mod tests {
                     uuid: "u".to_string(),
                     title: "Deep control".to_string(),
                     links: vec![],
+                    params: vec![],
                     parts: vec![OscalPart {
                         id: "deep_smt".to_string(),
                         name: "statement".to_string(),

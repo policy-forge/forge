@@ -52,7 +52,7 @@
 > Implement parameter extraction as a pipeline enrichment pass using regex patterns with named capture groups, organized into type-specific matchers (time window, threshold, frequency, quantity) that share a common extraction interface. Each matcher returns `PolicyParameter` objects with deterministic content-based IDs, and the enrichment function replaces matched text with OSCAL parameter insertion placeholders.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> WI-34 extracts parameterizable values from policy requirement text using four regex-based matchers: time windows ("within 30 days"), thresholds ("at least 128-bit"), frequencies ("annually"), and quantities ("no fewer than 3"). Implement as a `parameter` module with `extract_parameters` enrichment function and `extract_parameters_from_text` lower-level function. Use `regex` crate with named capture groups. Replace extracted values with `{{ insert: param, id-ref: <param-id> }}` placeholders. Generate deterministic parameter IDs from requirement stable_id + value + position. Do NOT use NLP/ML. Do NOT extract numeric values without contextual qualifier words. Do NOT extract section references or standard numbers.
+> WI-34 extracts parameterizable values from policy requirement text using four regex-based matchers: time windows ("within 30 days"), thresholds ("at least 128-bit"), frequencies ("annually"), and quantities ("no fewer than 3"). Implement as a `parameter` module with `extract_parameters` enrichment function and `extract_parameters_from_text` lower-level function. Use `regex` crate with named capture groups. Replace extracted values with `{{ insert: param, id-ref: <param-id> }}` placeholders. Generate deterministic parameter IDs from requirement stable_id + position only (value is intentionally excluded per S-3 — IDs must remain stable if values are corrected post-extraction). Do NOT use NLP/ML. Do NOT extract numeric values without contextual qualifier words. Do NOT extract section references or standard numbers.
 
 ---
 
@@ -333,7 +333,7 @@ graph TD
 | QuantityMatcher | Detect quantity patterns | Implements ParameterMatcher | regex, once_cell |
 | extract_parameters_from_text | Orchestrate matchers, replace spans, assign IDs | `fn(&str, &str) -> Result<(String, Vec<PolicyParameter>), ForgeError>` | All matchers |
 | extract_parameters | Document-level enrichment pass | `fn(&mut PolicyDocument) -> Result<(), ForgeError>` | extract_parameters_from_text |
-| parameter_id | Generate deterministic parameter ID | `fn(&str, &str, usize) -> String` | None |
+| parameter_id | Generate deterministic parameter ID | `fn(&str, usize) -> String` | None |
 | to_oscal_param | Convert PolicyParameter to OSCAL param element | `fn(&PolicyParameter) -> OscalParam` | serde_json |
 
 ### Data Flow 🟢 `@llm-autonomous`
@@ -375,7 +375,7 @@ sequenceDiagram
 ### Interface Definitions 🟡 `@human-review`
 
 ```rust
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use regex::Regex;
 
 /// Intermediate match result from a parameter matcher
@@ -406,7 +406,7 @@ trait ParameterMatcher {
 /// Time window matcher: "within N days", "after N weeks", "every N months"
 struct TimeWindowMatcher;
 
-static TIME_WINDOW_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static TIME_WINDOW_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?i)(?P<qualifier>within|after|every)\s+(?P<value>\d+)\s+(?P<unit>days?|weeks?|months?|years?)"
     ).unwrap()
@@ -415,13 +415,13 @@ static TIME_WINDOW_PATTERN: Lazy<Regex> = Lazy::new(|| {
 /// Threshold matcher: "at least N", "minimum N", "no more than N"
 struct ThresholdMatcher;
 
-static THRESHOLD_MIN_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static THRESHOLD_MIN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?i)(?P<qualifier>at\s+least|minimum|no\s+fewer\s+than|no\s+less\s+than)\s+(?P<value>\d+[\w-]*)"
     ).unwrap()
 });
 
-static THRESHOLD_MAX_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static THRESHOLD_MAX_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?i)(?P<qualifier>no\s+more\s+than|maximum|at\s+most)\s+(?P<value>\d+[\w-]*)"
     ).unwrap()
@@ -430,7 +430,7 @@ static THRESHOLD_MAX_PATTERN: Lazy<Regex> = Lazy::new(|| {
 /// Frequency matcher: "annually", "quarterly", "monthly", etc.
 struct FrequencyMatcher;
 
-static FREQUENCY_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static FREQUENCY_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?i)(?:at\s+least\s+)?(?P<value>annually|quarterly|monthly|weekly|daily|biannually|semi-annually)"
     ).unwrap()
@@ -439,7 +439,7 @@ static FREQUENCY_PATTERN: Lazy<Regex> = Lazy::new(|| {
 /// Quantity matcher: "no fewer than 3 factors", "at least 2 generations"
 struct QuantityMatcher;
 
-static QUANTITY_PATTERN: Lazy<Regex> = Lazy::new(|| {
+static QUANTITY_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?i)(?P<qualifier>at\s+least|no\s+fewer\s+than|minimum)\s+(?P<value>\d+)\s+(?P<unit>\w+)"
     ).unwrap()
@@ -471,10 +471,12 @@ pub fn extract_parameters(
     todo!()
 }
 
-/// Generate deterministic parameter ID
+/// Generate deterministic parameter ID.
+/// ID is derived from the parent requirement's stable_id and the parameter's
+/// zero-based position within that requirement. The value is intentionally
+/// excluded so that IDs remain stable if a value is corrected post-extraction.
 pub fn parameter_id(
     requirement_id: &str,
-    value: &str,
     position: usize,
 ) -> String {
     // Format: "{requirement_id}_prm_{position}"
@@ -493,12 +495,17 @@ pub fn to_oscal_param(parameter: &PolicyParameter) -> serde_json::Value {
 ### Key Algorithms/Patterns 🟡 `@human-review`
 
 **Pattern:** Multi-Matcher Extraction with Span-Based Replacement
+
+> **Matcher execution order and overlap design**: QuantityMatcher and ThresholdMatcher both match patterns of the form "no fewer than N" / "at least N". For inputs that include a unit noun (e.g., "no fewer than 3 authentication factors"), QuantityMatcher produces a longer match (includes the unit word) than ThresholdMatcher (stops at the digit). The "same start position → longer match wins" rule therefore correctly classifies these as `Quantity` type. For bare numeric thresholds without a unit noun (e.g., "no fewer than 3"), only ThresholdMatcher fires. This design is intentional — no explicit matcher ordering is required; the overlap resolution rule alone produces correct classification.
+
 ```
 1. Run all four matchers against requirement text → Vec<ParameterMatch>
 2. Sort matches by start position (ascending)
 3. Resolve overlapping matches:
    - If two matches overlap, keep the one that starts first
    - If they start at the same position, keep the longer match
+     (e.g., QuantityMatcher "no fewer than 3 factors" wins over
+      ThresholdMatcher "no fewer than 3" for the same start offset)
 4. Process matches in REVERSE order (to preserve byte offsets):
    a. Generate deterministic parameter ID
    b. Build PolicyParameter from ParameterMatch

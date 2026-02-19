@@ -208,3 +208,93 @@ fn catalog_json_fixture_round_trips_to_xml() {
     assert!(xml.contains("<catalog"));
     assert!(xml.trim().ends_with("</catalog>"));
 }
+
+// ─── T033b: Parameter Extraction in XML Output ────────────────────────────
+
+/// T033b: Verify that `<param>` elements appear within `<control>` blocks
+/// in the catalog XML output for requirements that contain extractable parameters.
+///
+/// The sample_policy.md fixture contains "at least 12 characters" (threshold)
+/// and "annually" (frequency), so the XML must contain at least one `<param>`.
+#[test]
+fn catalog_xml_contains_param_elements_for_parameterized_requirements() {
+    let fixture = Path::new("tests/fixtures/sample_policy.md");
+    if common::skip_if_missing(fixture) {
+        return;
+    }
+
+    let xml = run_catalog_xml(fixture);
+
+    // At least one <param> element must be present
+    assert!(
+        xml.contains("<param "),
+        "Catalog XML must contain <param> elements for parameterized requirements.\nXML snippet:\n{}",
+        xml.chars().take(2000).collect::<String>()
+    );
+
+    // Each <param> must have an id attribute
+    assert!(xml.contains("<param id=\""), "Catalog XML <param> elements must have id attribute");
+
+    // Each <param> must contain a <label> child
+    assert!(xml.contains("<label>"), "Catalog XML <param> elements must contain <label>");
+
+    // Params must appear inside <control> blocks (not at catalog level)
+    // Find first control block and verify <param> appears before its closing tag
+    let control_start = xml.find("<control ").expect("Must have at least one <control>");
+    let control_end =
+        xml[control_start..].find("</control>").expect("Control must have closing tag");
+    let control_block = &xml[control_start..control_start + control_end];
+    assert!(
+        control_block.contains("<param "),
+        "Catalog XML must contain <param> elements nested within <control> elements"
+    );
+}
+
+/// T033b (XSD): Verify that the catalog XML with `<param>` elements
+/// still validates against the OSCAL v1.2.0 XSD schema.
+///
+/// This test relies on xmllint and is skipped if not available.
+#[test]
+fn catalog_xml_with_params_validates_against_xsd() {
+    if !std::process::Command::new("xmllint")
+        .arg("--version")
+        .output()
+        .is_ok_and(|o| o.status.success() || !o.stderr.is_empty())
+    {
+        eprintln!("Skipping XSD validation: xmllint not available");
+        return;
+    }
+
+    let fixture = Path::new("tests/fixtures/sample_policy.md");
+    if common::skip_if_missing(fixture) {
+        return;
+    }
+
+    let xsd_path = Path::new("tests/fixtures/xsd/oscal_catalog_schema.xsd");
+    if common::skip_if_missing(xsd_path) {
+        return;
+    }
+
+    let xml = run_catalog_xml(fixture);
+
+    // Verify params are present before testing XSD conformance
+    assert!(xml.contains("<param "), "Test precondition: XML must contain <param> elements");
+
+    let dir = tempfile::TempDir::new().unwrap();
+    let xml_path = dir.path().join("catalog_with_params.xml");
+    std::fs::write(&xml_path, &xml).unwrap();
+
+    let output = std::process::Command::new("xmllint")
+        .arg("--schema")
+        .arg(xsd_path)
+        .arg(&xml_path)
+        .arg("--noout")
+        .output()
+        .expect("Failed to run xmllint");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success(),
+        "Catalog XML with <param> elements must validate against OSCAL v1.2.0 XSD.\nxmllint stderr:\n{stderr}"
+    );
+}

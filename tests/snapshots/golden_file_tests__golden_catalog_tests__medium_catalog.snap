@@ -148,11 +148,37 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: quarterly"
+                  }
+                ],
+                "id": "p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_0",
+                "label": "quarterly",
+                "values": [
+                  "quarterly"
+                ]
+              },
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: 90 days"
+                  }
+                ],
+                "id": "p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_1",
+                "label": "after 90 days",
+                "values": [
+                  "90 days"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-AC-004_smt",
                 "name": "statement",
-                "prose": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+                "prose": "User accounts must be reviewed {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_1 }}"
               },
               {
                 "id": "POL-AC-004_gdn",
@@ -181,7 +207,7 @@ expression: normalized
                 "value": "15"
               }
             ],
-            "title": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+            "title": "User accounts must be reviewed {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_0 }} and inactive acc..."
           },
           {
             "id": "POL-AC-005",
@@ -191,11 +217,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: 12"
+                  }
+                ],
+                "id": "e0b32d50-f11b-5869-9d89-c863a0c0b8e0_prm_0",
+                "label": "at least 12 characters",
+                "values": [
+                  "12"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-AC-005_smt",
                 "name": "statement",
-                "prose": "Passwords must be at least 12 characters and include uppercase, lowercase, numbers, and symbols"
+                "prose": "Passwords must be {{ insert: param, id-ref: e0b32d50-f11b-5869-9d89-c863a0c0b8e0_prm_0 }} and include uppercase, lowercase, numbers, and symbols"
               },
               {
                 "id": "POL-AC-005_gdn",
@@ -224,7 +264,7 @@ expression: normalized
                 "value": "19"
               }
             ],
-            "title": "Passwords must be at least 12 characters and include uppercase, lowercase, numbers, and symbols"
+            "title": "Passwords must be {{ insert: param, id-ref: e0b32d50-f11b-5869-9d89-c863a0c0b8e0_prm_0 }} and include uppercase, lowerca..."
           }
         ],
         "id": "access-control",
@@ -376,11 +416,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: annually"
+                  }
+                ],
+                "id": "b559ad5b-b2b2-51bb-9c58-fc29f6bef406_prm_0",
+                "label": "annually",
+                "values": [
+                  "annually"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-DP-004_smt",
                 "name": "statement",
-                "prose": "Encryption keys must be rotated annually and stored in a hardware security module"
+                "prose": "Encryption keys must be rotated {{ insert: param, id-ref: b559ad5b-b2b2-51bb-9c58-fc29f6bef406_prm_0 }} and stored in a hardware security module"
               },
               {
                 "id": "POL-DP-004_gdn",
@@ -409,7 +463,7 @@ expression: normalized
                 "value": "28"
               }
             ],
-            "title": "Encryption keys must be rotated annually and stored in a hardware security module"
+            "title": "Encryption keys must be rotated {{ insert: param, id-ref: b559ad5b-b2b2-51bb-9c58-fc29f6bef406_prm_0 }} and stored in a ..."
           },
           {
             "id": "POL-DP-005",
@@ -561,11 +615,25 @@ expression: normalized
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "minimum: annually"
+                  }
+                ],
+                "id": "e3ca22c7-ba6a-5812-bb2a-3143916455a4_prm_0",
+                "label": "at least annually",
+                "values": [
+                  "annually"
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-IR-002_smt",
                 "name": "statement",
-                "prose": "An incident response plan must be tested at least annually through tabletop exercises"
+                "prose": "An incident response plan must be tested {{ insert: param, id-ref: e3ca22c7-ba6a-5812-bb2a-3143916455a4_prm_0 }} through tabletop exercises"
               },
               {
                 "id": "POL-IR-002_gdn",
@@ -594,7 +662,7 @@ expression: normalized
                 "value": "40"
               }
             ],
-            "title": "An incident response plan must be tested at least annually through tabletop exercises"
+            "title": "An incident response plan must be tested {{ insert: param, id-ref: e3ca22c7-ba6a-5812-bb2a-3143916455a4_prm_0 }} through..."
           }
         ],
         "id": "incident-response",

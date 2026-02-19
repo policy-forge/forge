@@ -30,6 +30,7 @@ pub fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
         parent_text: None,
         citations: vec![],
         modality: None,
+        parameters: vec![],
     }
 }
 

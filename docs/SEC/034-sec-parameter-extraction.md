@@ -195,7 +195,7 @@ flowchart TD
 | Library | Version | License | Purpose | Security Check |
 |---------|---------|---------|---------|----------------|
 | regex | 1.x | MIT/Apache-2.0 | Named capture group pattern matching for parameter detection | Already a transitive dependency; well-audited Rust ecosystem crate |
-| once_cell | 1.x | MIT/Apache-2.0 | One-time compilation and caching of multiple regex patterns | Already a transitive dependency; widely used in Rust ecosystem |
+| std::sync::LazyLock | N/A (std) | N/A | One-time compilation and caching of regex patterns (stable since Rust 1.80, project targets 1.93; supersedes `once_cell::sync::Lazy`) | Standard library — zero new dependency |
 
 ### Supply Chain Checklist
 
@@ -334,7 +334,7 @@ flowchart TD
 |--------|-------------|--------|---------------------|
 | SEC-2 | Parameter extraction patterns shall require contextual qualifier words to prevent false positive extraction of bare numbers | AC-2, AC-9 | Unit tests with negative fixtures (section refs, standard numbers) |
 | SEC-3 | Regex patterns shall not contain nested quantifiers or unbounded repetition to prevent ReDoS | -- | Code review of static pattern definitions |
-| SEC-4 | Regex patterns shall be compiled once via `once_cell::sync::Lazy` to prevent resource exhaustion | -- | Code review |
+| SEC-4 | Regex patterns shall be compiled once via `std::sync::LazyLock` (std 1.80+, replaces `once_cell::sync::Lazy`) to prevent resource exhaustion | -- | Code review: verify all static pattern definitions use `static NAME: LazyLock<Regex>` |
 | SEC-5 | Overlapping match resolution shall use position-based sorting and reverse-order replacement to prevent text corruption | -- | Unit tests with multi-parameter and overlapping fixtures |
 
 ### Operational Security
@@ -412,7 +412,7 @@ flowchart TD
 |------------|------------|-----------|-----------|---------------|
 | SEC-2 | M-1, M-2 | AC-2, AC-9 | Unit | Negative fixture tests for false positive prevention |
 | SEC-3 | -- | -- | Code Review | Static pattern definitions in parameter module |
-| SEC-4 | -- | -- | Code Review | `once_cell::sync::Lazy` usage in parameter module |
+| SEC-4 | -- | -- | Code Review | `std::sync::LazyLock` usage in parameter module (all static regex patterns) |
 | SEC-5 | M-7 | -- | Unit | Multi-parameter and overlap test fixtures |
 | SEC-6 | S-4 | AC-8 | Unit | Idempotence test: double extraction |
 

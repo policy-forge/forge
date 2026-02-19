@@ -121,6 +121,7 @@ fn reconstruct_clause(shared_subject: &str, clause: &str) -> String {
 ///     parent_text: None,
 ///     citations: vec![],
 ///     modality: None,
+///     parameters: vec![],
 /// };
 ///
 /// let result = atomize_requirement(&req).unwrap();
@@ -144,6 +145,7 @@ pub fn atomize_requirement(
                 parent_text: None,
                 citations: vec![],
                 modality: None,
+                parameters: vec![],
             }],
             was_split: false,
             original_text: None,
@@ -165,6 +167,7 @@ pub fn atomize_requirement(
                 parent_text: None,
                 citations: vec![],
                 modality: None,
+                parameters: vec![],
             }],
             was_split: false,
             original_text: None,
@@ -190,6 +193,7 @@ pub fn atomize_requirement(
                 parent_text: None,
                 citations: vec![],
                 modality: None,
+                parameters: vec![],
             }],
             was_split: false,
             original_text: None,
@@ -244,6 +248,7 @@ pub fn atomize_requirement(
             parent_text: Some(text.clone()),
             citations: vec![],
             modality: None,
+            parameters: vec![],
         });
     }
 
@@ -290,6 +295,7 @@ pub fn atomize_requirement(
 ///             parent_text: None,
 ///             citations: vec![],
 ///             modality: None,
+///             parameters: vec![],
 ///         }],
 ///     }],
 /// };
@@ -410,6 +416,7 @@ mod tests {
             parent_text: None,
             citations: vec![],
             modality: None,
+            parameters: vec![],
         }
     }
 
