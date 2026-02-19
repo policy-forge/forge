@@ -55,11 +55,20 @@ pub struct OscalProfile {
 
 /// A single entry in the Profile's `imports[]` array.
 ///
-/// Exactly one of `include_controls` or `exclude_controls` is `Some`.
+/// Valid OSCAL v1.2.0 import shapes:
+/// - Include mode: `href` + `include-controls`
+/// - Exclude mode: `href` + `include-all: {}` + `exclude-controls`
+///   (The OSCAL schema requires `include-all` when using `exclude-controls` alone.)
 #[derive(Debug, Serialize)]
 pub struct ProfileImport {
     /// URI reference to the source Catalog (stored as-is from `--catalog`).
     pub href: String,
+
+    /// Include all controls from the catalog (`--exclude` mode).
+    ///
+    /// Required by the OSCAL v1.2.0 Profile schema when `exclude-controls` is present.
+    #[serde(skip_serializing_if = "Option::is_none", rename = "include-all")]
+    pub include_all: Option<IncludeAll>,
 
     /// Controls to include (from `--include`).
     #[serde(skip_serializing_if = "Option::is_none", rename = "include-controls")]
@@ -69,6 +78,13 @@ pub struct ProfileImport {
     #[serde(skip_serializing_if = "Option::is_none", rename = "exclude-controls")]
     pub exclude_controls: Option<Vec<ControlSelection>>,
 }
+
+/// Marker struct for `include-all: {}` — include all controls from the catalog.
+///
+/// Per the OSCAL v1.2.0 Profile schema, this is an empty object that signals
+/// the profile should import every control from the referenced catalog.
+#[derive(Debug, Serialize)]
+pub struct IncludeAll {}
 
 // ---------------------------------------------------------------------------
 // ControlSelection
@@ -214,11 +230,16 @@ pub fn build_profile(
         let import = match mode {
             SelectionMode::Include => ProfileImport {
                 href: catalog_path.to_string(),
+                include_all: None,
                 include_controls: Some(vec![selection]),
                 exclude_controls: None,
             },
             SelectionMode::Exclude => ProfileImport {
                 href: catalog_path.to_string(),
+                // OSCAL v1.2.0 Profile schema requires `include-all` when using
+                // `exclude-controls` alone — an import must include all controls
+                // first, then exclude the specified subset.
+                include_all: Some(IncludeAll {}),
                 include_controls: None,
                 exclude_controls: Some(vec![selection]),
             },

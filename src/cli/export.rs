@@ -81,6 +81,9 @@ fn deserialize_from_json(content: &str) -> Result<OscalModel, ForgeError> {
                 })?;
             Ok(OscalModel::Component(envelope))
         }
+        crate::validate::OscalModelType::Profile => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
+        }),
     }
 }
 
@@ -161,6 +164,9 @@ fn deserialize_from_yaml_format(content: &str) -> Result<OscalModel, ForgeError>
                 })?;
             Ok(OscalModel::Component(envelope))
         }
+        crate::validate::OscalModelType::Profile => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
+        }),
     }
 }
 

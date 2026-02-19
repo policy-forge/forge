@@ -29,6 +29,7 @@ const MAX_VALIDATE_FILE_SIZE: u64 = 50 * 1024 * 1024;
 pub enum OscalModelType {
     Catalog,
     ComponentDefinition,
+    Profile,
 }
 
 impl std::fmt::Display for OscalModelType {
@@ -36,6 +37,7 @@ impl std::fmt::Display for OscalModelType {
         match self {
             Self::Catalog => write!(f, "catalog"),
             Self::ComponentDefinition => write!(f, "component-definition"),
+            Self::Profile => write!(f, "profile"),
         }
     }
 }
@@ -100,6 +102,8 @@ pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> 
         Ok(OscalModelType::Catalog)
     } else if json.get("component-definition").is_some() {
         Ok(OscalModelType::ComponentDefinition)
+    } else if json.get("profile").is_some() {
+        Ok(OscalModelType::Profile)
     } else {
         Err(ValidateError::UnknownModelType)
     }
@@ -120,6 +124,9 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
         }
         OscalModelType::ComponentDefinition => {
             include_str!("../../schemas/oscal_component_schema.json")
+        }
+        OscalModelType::Profile => {
+            include_str!("../../schemas/oscal_profile_schema.json")
         }
     };
 
@@ -264,7 +271,8 @@ mod tests {
 
     #[test]
     fn detect_model_type_unknown_returns_error() {
-        let json: Value = serde_json::from_str(r#"{"profile": {}}"#).unwrap();
+        // Use a key that is not any recognized OSCAL root key
+        let json: Value = serde_json::from_str(r#"{"unknown-oscal-type": {}}"#).unwrap();
         let result = detect_model_type(&json);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), ValidateError::UnknownModelType));
@@ -399,12 +407,35 @@ mod tests {
         );
     }
 
+    // --- Profile variant tests (T002, WI-32) ---
+
+    #[test]
+    fn load_schema_profile() {
+        let result = load_schema(OscalModelType::Profile);
+        assert!(result.is_ok(), "Expected Ok from load_schema(Profile), got: {result:?}");
+        let schema = result.unwrap();
+        let s = serde_json::to_string(&schema).unwrap();
+        assert!(!s.is_empty(), "Profile schema string must not be empty");
+    }
+
+    #[test]
+    fn detect_model_type_profile() {
+        let json = serde_json::json!({ "profile": {} });
+        let result = detect_model_type(&json);
+        assert!(
+            result.is_ok(),
+            "Expected Ok from detect_model_type for profile JSON, got: {result:?}"
+        );
+        assert_eq!(result.unwrap(), OscalModelType::Profile);
+    }
+
     // --- Display tests ---
 
     #[test]
     fn oscal_model_type_display() {
         assert_eq!(OscalModelType::Catalog.to_string(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.to_string(), "component-definition");
+        assert_eq!(OscalModelType::Profile.to_string(), "profile");
     }
 
     #[test]

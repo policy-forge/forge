@@ -5,6 +5,69 @@ use std::path::{Path, PathBuf};
 
 use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 
+/// Normalize a JSON value for stable snapshot comparison.
+///
+/// Replaces dynamic fields with stable placeholder values so that
+/// identical inputs always produce the same snapshot, regardless of
+/// when or where the test is run:
+///
+/// - UUID-format strings → `"00000000-0000-0000-0000-000000000000"`
+/// - `last-modified` string values → `"2026-01-01T00:00:00Z"`
+/// - Absolute path strings (starting with `/` or a Windows drive letter) → `"NORMALIZED_PATH"`
+///
+/// Normalization is applied recursively to all JSON values.
+pub fn normalize_for_snapshot(value: &serde_json::Value) -> serde_json::Value {
+    use serde_json::Value;
+
+    // UUID pattern: 8-4-4-4-12 hex digits
+    static UUID_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+        regex::Regex::new(
+            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+        )
+        .expect("UUID regex is valid")
+    });
+
+    match value {
+        Value::Object(map) => {
+            let normalized: serde_json::Map<String, Value> = map
+                .iter()
+                .map(|(k, v)| {
+                    if k == "last-modified" {
+                        if v.is_string() {
+                            (k.clone(), Value::String("2026-01-01T00:00:00Z".to_string()))
+                        } else {
+                            (k.clone(), normalize_for_snapshot(v))
+                        }
+                    } else {
+                        (k.clone(), normalize_for_snapshot(v))
+                    }
+                })
+                .collect();
+            Value::Object(normalized)
+        }
+        Value::Array(arr) => Value::Array(arr.iter().map(normalize_for_snapshot).collect()),
+        Value::String(s) => {
+            if UUID_RE.is_match(s) {
+                Value::String("00000000-0000-0000-0000-000000000000".to_string())
+            } else if s.starts_with('/') || is_windows_path(s) {
+                Value::String("NORMALIZED_PATH".to_string())
+            } else {
+                value.clone()
+            }
+        }
+        _ => value.clone(),
+    }
+}
+
+/// Returns true if the string looks like a Windows absolute path (e.g. `C:\...`).
+fn is_windows_path(s: &str) -> bool {
+    let mut chars = s.chars();
+    matches!(
+        (chars.next(), chars.next(), chars.next()),
+        (Some(c), Some(':'), Some('\\' | '/')) if c.is_ascii_alphabetic()
+    )
+}
+
 /// Maximum file size for ingest in tests (10 MB).
 pub const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 

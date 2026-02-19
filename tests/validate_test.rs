@@ -161,7 +161,8 @@ fn validate_non_json_file_returns_parse_error() {
 
 #[test]
 fn validate_unknown_model_type_suggests_schema_type() {
-    let content = r#"{"profile": {}}"#;
+    // Use a key that is not any recognized OSCAL root type
+    let content = r#"{"assessment-plan": {}}"#;
     let file = temp_json_file(content);
     let (_stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap()]);
     assert_ne!(code, 0, "Expected non-zero exit for unknown model type");

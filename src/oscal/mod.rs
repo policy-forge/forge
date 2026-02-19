@@ -23,6 +23,6 @@ pub use component_definition::{
 pub use metadata::{MetadataOptions, OSCAL_VERSION, OscalMetadata, assemble_metadata};
 pub use parts::{OscalPart, OscalProp, build_control_parts, build_control_props, generate_part_id};
 pub use profile::{
-    ControlSelection, OscalProfile, ProfileImport, ProfileRoot, SelectionMode, build_profile,
-    parse_control_ids,
+    ControlSelection, IncludeAll, OscalProfile, ProfileImport, ProfileRoot, SelectionMode,
+    build_profile, parse_control_ids,
 };
