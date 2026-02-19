@@ -5,6 +5,7 @@
 
 pub mod atomize;
 pub mod clauses;
+pub mod modality;
 
 use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
 use serde::Serialize;
@@ -13,6 +14,9 @@ use crate::ForgeError;
 
 // Re-export atomize types for convenient access via `forge::parse::*`
 pub use atomize::{AtomizationResult, atomize_document, atomize_requirement, preliminary_id};
+
+// Re-export modality enrichment pass for pipeline use
+pub use modality::annotate_modalities;
 
 // Re-export clause types for convenient access via `forge::parse::*`
 pub use clauses::{

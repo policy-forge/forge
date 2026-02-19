@@ -534,6 +534,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
         }
     }
 

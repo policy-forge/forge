@@ -33,6 +33,10 @@ expression: normalized
             ],
             "props": [
               {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "NORMALIZED_PATH"
@@ -71,6 +75,10 @@ expression: normalized
               }
             ],
             "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
               {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
@@ -111,6 +119,10 @@ expression: normalized
             ],
             "props": [
               {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "NORMALIZED_PATH"
@@ -149,6 +161,10 @@ expression: normalized
               }
             ],
             "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
               {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
