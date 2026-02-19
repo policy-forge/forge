@@ -107,6 +107,10 @@ pub enum ForgeError {
     #[error("Export input file is empty: '{}'", path.display())]
     ExportEmptyInput { path: PathBuf },
 
+    // --- Argument errors (exit code 1) ---
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+
     // --- Other (exit code 1) ---
     #[error("Serialization error: {0}")]
     Serialization(String),
@@ -139,6 +143,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::ExportNoExtension { .. }
         | ForgeError::ExportInvalidOscal { .. }
         | ForgeError::ExportEmptyInput { .. }
+        | ForgeError::InvalidArgument(_)
         | ForgeError::Serialization(_) => 1,
 
         // Exit 2: Parse/Structure errors

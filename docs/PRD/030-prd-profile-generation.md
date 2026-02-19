@@ -6,7 +6,7 @@
 > **Last Updated:** 2026-02-10 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
-**Feature Branch**: `030-profile-generation`
+**Feature Branch**: `030-prd-profile-generation`
 **Created**: 2026-02-10
 **Status**: Draft
 **Input**: Derived from FORGE Product Roadmap WI-30
@@ -206,12 +206,12 @@ N/A -- No state transitions in this work item. Profile generation is a single-pa
 - [ ] **M-6:** When `--include` is used, the `imports[]` entry shall contain an `include-controls` array with a `with-ids` list of the specified control IDs. *(Traces to: Parent PRD S-5, AC-12)*
 - [ ] **M-7:** When `--exclude` is used, the `imports[]` entry shall contain an `exclude-controls` array with a `with-ids` list of the specified control IDs. *(Traces to: Parent PRD S-5, AC-12)*
 - [ ] **M-8:** The generated Profile shall include valid OSCAL metadata (`uuid`, `title`, `last-modified`, `version`, `oscal-version`) using the shared metadata assembly from WI-11. *(Traces to: Parent PRD M-5, S-5)*
-- [ ] **M-9:** The generated Profile shall be valid OSCAL v1.2.0 Profile JSON. *(Traces to: Parent PRD S-5)*
+- [ ] **M-9:** The generated Profile shall be valid OSCAL v1.2.0 Profile JSON (correct structure and field names enforced via serde typed serialization; full schema validation against the NIST OSCAL JSON schema is deferred to WI-32). *(Traces to: Parent PRD S-5)*
 
 ### Should Have (S) -- High value, not blocking :red_circle: `@human-required`
 - [ ] **S-1:** The `forge profile` subcommand shall accept a `--format json` flag (defaulting to JSON). *(Traces to: Parent PRD M-7)*
 - [ ] **S-2:** The `forge profile` subcommand shall accept an `--output <path>` flag to write the Profile to a file (default: stdout). *(Traces to: Parent PRD S-5)*
-- [ ] **S-3:** When the source Catalog file does not exist or is not valid JSON, the CLI shall emit an actionable error message. *(Traces to: quality gates)*
+- [ ] **S-3:** When the source Catalog file does not exist, the CLI shall emit an actionable error message. *(Traces to: quality gates; note: JSON validity checking is deferred to WI-32 per AR-030 Decision Log and spec.md EC-6)*
 - [ ] **S-4:** When both `--include` and `--exclude` are provided, the CLI shall treat them as mutually exclusive and emit a clear error message.
 
 ### Could Have (C) -- Nice to have, if time permits :yellow_circle: `@human-review`
@@ -365,11 +365,11 @@ pub struct ControlSelection {
 | AC-1 | M-1 | US-1 | The FORGE binary | Running `forge profile --help` | Usage text shows `--catalog`, `--include`, `--exclude` flags with descriptions |
 | AC-2 | M-2, M-5, M-6 | US-1 | A policy Catalog at `catalog.json` with controls POL-AC-001 through POL-AC-010 | Running `forge profile --catalog catalog.json --include POL-AC-001,POL-AC-002` | A valid Profile JSON with `imports[0].href` = `"catalog.json"` and `imports[0].include-controls[0].with-ids` = `["POL-AC-001", "POL-AC-002"]` |
 | AC-3 | M-4, M-5, M-7 | US-2 | A policy Catalog at `catalog.json` with controls POL-AC-001 through POL-AC-010 | Running `forge profile --catalog catalog.json --exclude POL-AC-003` | A valid Profile JSON with `imports[0].href` = `"catalog.json"` and `imports[0].exclude-controls[0].with-ids` = `["POL-AC-003"]` |
-| AC-4 | M-8 | US-1 | Any Profile generation request | Inspecting `profile.metadata` | Contains `uuid` (valid UUID v4), `title`, `last-modified` (ISO 8601 UTC), `version`, and `oscal-version` = `"1.2.0"` |
-| AC-5 | M-9 | US-1 | A generated Profile JSON | Comparing against OSCAL v1.2.0 Profile JSON schema shape | JSON structure matches expected OSCAL Profile format |
+| AC-4 | M-8 | US-1 | Any Profile generation request | Inspecting `profile.uuid` and `profile.metadata` | `profile.uuid` is a valid UUID v4; `profile.metadata` contains `title`, `last-modified` (ISO 8601 UTC), `version`, and `oscal-version` = `"1.2.0"` |
+| AC-5 | M-9 | US-1 | A generated Profile JSON | Assert serialized JSON contains `profile.uuid`, `profile.metadata` with required fields, and `profile.imports[0].href` | JSON structure matches expected OSCAL Profile shape (correct field names and nesting); full schema validation against NIST JSON schema deferred to WI-32 |
 | AC-6 | S-2 | US-3 | A Profile generation request with `--output baseline.json` | Generation completes | File `baseline.json` exists and contains valid OSCAL Profile JSON |
 | AC-7 | S-2 | US-3 | A Profile generation request without `--output` | Generation completes | Profile JSON is printed to stdout |
-| AC-8 | S-3 | US-1 | A `--catalog` path pointing to a non-existent file | Running `forge profile --catalog missing.json --include POL-AC-001` | An actionable error message is displayed indicating the file does not exist |
+| AC-8 | S-3 | US-1 | A `--catalog` path pointing to a non-existent file | Running `forge profile --catalog missing.json --include POL-AC-001` | An actionable error message is displayed indicating the file does not exist, e.g., `Error: file not found: missing.json` |
 | AC-9 | S-4 | US-1 | Both `--include` and `--exclude` flags provided | Running `forge profile --catalog catalog.json --include POL-AC-001 --exclude POL-AC-002` | A clear error message indicates that `--include` and `--exclude` are mutually exclusive |
 
 ### Edge Cases :green_circle: `@llm-autonomous`

@@ -1,5 +1,6 @@
 pub mod convert;
 pub mod export;
+pub mod profile;
 pub mod validate;
 
 use std::path::PathBuf;
@@ -90,6 +91,29 @@ pub enum Commands {
         #[arg(long, value_enum, default_value = "text")]
         format: ValidateOutputFormat,
     },
+
+    /// Generate an OSCAL Profile by selecting controls from a source Catalog
+    Profile {
+        /// Path to the source Catalog file (OSCAL Catalog JSON)
+        #[arg(long)]
+        catalog: PathBuf,
+
+        /// Comma-separated control IDs to include (mutually exclusive with --exclude)
+        #[arg(long, conflicts_with = "exclude")]
+        include: Option<String>,
+
+        /// Comma-separated control IDs to exclude (mutually exclusive with --include)
+        #[arg(long, conflicts_with = "include")]
+        exclude: Option<String>,
+
+        /// Output format (currently only 'json' is supported)
+        #[arg(long, default_value = "json")]
+        format: OutputFormat,
+
+        /// Write output to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
 }
 
 /// Output format for `forge validate` results (WI-20).
@@ -145,6 +169,13 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         Commands::Validate { input, schema_type, format } => {
             validate::execute(input, schema_type.as_ref(), format)
         }
+        Commands::Profile { catalog, include, exclude, format, output } => profile::execute(
+            catalog,
+            include.as_deref(),
+            exclude.as_deref(),
+            format,
+            output.as_deref(),
+        ),
     }
 }
 
