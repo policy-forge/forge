@@ -227,6 +227,11 @@ fn convert_control(xml: XmlControl) -> OscalControl {
         title: xml.title,
         props: xml.props.into_iter().map(convert_prop).collect(),
         links: xml.links.into_iter().map(convert_link).collect(),
+        // NOTE: XML <param> elements are not deserialized into OscalControl.params.
+        // This means XML → OscalControl → XML round-trips will drop any params present
+        // in the original XML. This is an intentional limitation of the current XML
+        // deserializer; params are only preserved when constructed in memory or via
+        // non-XML sources.
         params: vec![],
         parts: xml.parts.into_iter().map(convert_part).collect(),
     }
