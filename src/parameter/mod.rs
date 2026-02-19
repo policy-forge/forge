@@ -213,7 +213,7 @@ fn extract_section_parameters(
         // traceability. The OSCAL-safe prefixed id is only for parameter ID generation.
         if requirement_id != stable_id {
             for param in &mut params {
-                param.requirement_id = stable_id.clone();
+                param.requirement_id.clone_from(&stable_id);
             }
         }
 
