@@ -99,7 +99,7 @@ fn validate_component_json(
     Ok(json)
 }
 
-/// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations.
+/// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations, extract parameters.
 ///
 /// Encapsulates the common steps (1-9) used by both the catalog and component
 /// pipelines. Each caller receives a fully-prepared `PolicyDocument` ready for

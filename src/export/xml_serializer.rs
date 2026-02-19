@@ -76,7 +76,7 @@ fn write_prop<W: Write>(writer: &mut Writer<W>, prop: &OscalProp) -> Result<(), 
 
 /// Write a single OSCAL param element (WI-34).
 ///
-/// Writes: `<param id="...">` → `<label>`, `<value>*`, `<constraint>*` → `</param>`
+/// Writes: `<param id="...">` → `<label>`, `<constraint>*`, `<value>*` → `</param>`
 fn write_param<W: Write>(
     writer: &mut Writer<W>,
     param: &crate::oscal::catalog::OscalParam,
@@ -232,7 +232,7 @@ fn write_resource<W: Write>(
 
 /// Write a single OSCAL control element with children in XSD order.
 ///
-/// Writes: `<control id="...">` → title, prop*, link*, part* → `</control>`
+/// Writes: `<control id="...">` → title, param*, prop*, link*, part* → `</control>`
 ///
 /// Note: `uuid` field is NOT serialized (OSCAL catalog XSD does not allow uuid on controls).
 fn write_control<W: Write>(

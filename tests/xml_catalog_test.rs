@@ -229,7 +229,7 @@ fn catalog_xml_contains_param_elements_for_parameterized_requirements() {
     assert!(
         xml.contains("<param "),
         "Catalog XML must contain <param> elements for parameterized requirements.\nXML snippet:\n{}",
-        &xml[..xml.len().min(2000)]
+        xml.chars().take(2000).collect::<String>()
     );
 
     // Each <param> must have an id attribute
