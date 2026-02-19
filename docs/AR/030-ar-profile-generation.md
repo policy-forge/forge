@@ -363,7 +363,7 @@ pub struct ProfileArgs {
 
     /// Output format (default: json)
     #[arg(long, default_value = "json")]
-    pub format: String,
+    pub format: OutputFormat,
 
     /// Output file path (default: stdout)
     #[arg(long)]
@@ -379,7 +379,7 @@ pub struct ProfileRoot {
 /// OSCAL Profile model
 #[derive(Debug, Serialize)]
 pub struct OscalProfile {
-    pub uuid: String,
+    pub uuid: Uuid,
     pub metadata: OscalMetadata,
     pub imports: Vec<ProfileImport>,
     // Future: WI-31 adds modify: Option<ProfileModify>
@@ -414,7 +414,12 @@ pub fn build_profile(
     control_ids: Vec<String>,
     mode: SelectionMode,
 ) -> Result<OscalProfile, ForgeError> {
-    let metadata = assemble_metadata("Policy Baseline Profile")?;
+    let doc_meta = DocumentMetadata {
+        title: "Policy Baseline Profile".to_string(),
+        version: "1.0.0".to_string(),
+        ..Default::default()
+    };
+    let metadata = assemble_metadata(&doc_meta, None)?;
 
     let selection = ControlSelection {
         with_ids: control_ids,
@@ -434,7 +439,7 @@ pub fn build_profile(
     };
 
     Ok(OscalProfile {
-        uuid: uuid::Uuid::new_v4().to_string(),
+        uuid: uuid::Uuid::new_v4(),
         metadata,
         imports: vec![import],
     })
@@ -475,11 +480,12 @@ Result: clap rejects commands with both flags before build_profile is called
 - OSCAL v1.2.0 Profile JSON schema structure
 - Reuse WI-11 shared metadata assembly
 - TDD mandatory (constitution principle IV)
+- **Constitution §I (Crate-First) adapted for single-crate project:** FORGE is a single Cargo crate, not a workspace. The principle is applied as module-level separation: business logic in `src/oscal/profile.rs` (library module), CLI dispatch in `src/cli/profile.rs` (thin dispatcher). This mirrors the intent of workspace crate boundaries within a single crate.
 
 **Added by this Architecture:**
 - `--include` and `--exclude` are mutually exclusive via clap `conflicts_with`
 - Control IDs are used as-is (no validation against source Catalog -- that is WI-32)
-- The `href` field stores the catalog path exactly as provided by the user (no normalization)
+- The `href` field stores the catalog path exactly as provided by the user (no normalization); **intentionally departs from Constitution §VII path-canonicalization requirement for portability — accepted as risk R3 (sec.md)**
 - The root JSON object uses `"profile"` as the key (OSCAL convention)
 - Profile title defaults to "Policy Baseline Profile" (can be overridden in future WI)
 

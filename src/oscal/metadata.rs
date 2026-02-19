@@ -13,7 +13,10 @@ pub const OSCAL_VERSION: &str = "1.2.0";
 /// OSCAL metadata for any artifact type (Catalog, Component Definition, Profile).
 ///
 /// Serializes to OSCAL-compliant JSON with hyphenated field names where required.
-/// All five fields are mandatory per OSCAL v1.2.0 specification.
+/// Four fields are serialized and required per OSCAL v1.2.0: `title`, `last-modified`,
+/// `version`, and `oscal-version`. The `uuid` field is internal-only and annotated
+/// with `#[serde(skip_serializing)]`; it is not emitted in JSON output because
+/// OSCAL v1.2.0 places the artifact UUID at the root object level, not inside metadata.
 ///
 /// # Examples
 ///
@@ -29,6 +32,8 @@ pub const OSCAL_VERSION: &str = "1.2.0";
 #[derive(Debug, Clone, Serialize)]
 pub struct OscalMetadata {
     /// UUID v4 — unique per artifact generation instance.
+    /// Not part of OSCAL metadata serialization; kept for internal use only.
+    #[serde(skip_serializing)]
     pub uuid: Uuid,
 
     /// Document title from PolicyDocument.metadata.title.
@@ -199,7 +204,11 @@ mod tests {
 
         assert!(json.contains("\"last-modified\""), "Should use hyphenated last-modified");
         assert!(json.contains("\"oscal-version\""), "Should use hyphenated oscal-version");
-        assert!(json.contains("\"uuid\""), "Should contain uuid field");
+        // uuid is NOT serialized into metadata — it belongs at the artifact root level per OSCAL spec
+        assert!(
+            !json.contains("\"uuid\""),
+            "metadata must not contain uuid (OSCAL spec: uuid is at artifact root)"
+        );
         assert!(json.contains("\"title\""), "Should contain title field");
         assert!(json.contains("\"version\""), "Should contain version field");
     }

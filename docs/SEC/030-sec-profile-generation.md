@@ -384,10 +384,10 @@ No open questions for this work item.
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
 | SEC-1 | -- | -- | Unit | tests/profile_generation_test.rs |
-| SEC-2 | S-4 | AC-9 | Unit | tests/profile_cli_test.rs |
+| SEC-2 | S-4 | AC-9 | Unit | tests/profile_generation_test.rs |
 | SEC-3 | M-3 | EC-5 | Unit | tests/profile_generation_test.rs |
 | SEC-4 | M-5 | AC-2 | Unit | tests/profile_generation_test.rs |
-| SEC-5 | M-9 | AC-5 | Unit | tests/profile_json_test.rs |
+| SEC-5 | M-9 | AC-5 | Unit | tests/profile_generation_test.rs |
 
 ---
 

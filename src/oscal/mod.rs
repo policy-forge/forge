@@ -6,6 +6,7 @@ pub mod component_definition;
 pub mod implemented_requirements;
 pub mod metadata;
 pub mod parts;
+pub mod profile;
 pub mod trace_embedding;
 
 #[cfg(test)]
@@ -21,3 +22,7 @@ pub use component_definition::{
 };
 pub use metadata::{MetadataOptions, OSCAL_VERSION, OscalMetadata, assemble_metadata};
 pub use parts::{OscalPart, OscalProp, build_control_parts, build_control_props, generate_part_id};
+pub use profile::{
+    ControlSelection, OscalProfile, ProfileImport, ProfileRoot, SelectionMode, build_profile,
+    parse_control_ids,
+};
