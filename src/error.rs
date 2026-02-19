@@ -239,6 +239,7 @@ mod tests {
         assert_eq!(exit_code(&ForgeError::CatalogBuild("c".into())), 2);
         assert_eq!(exit_code(&ForgeError::BackMatter("b".into())), 2);
         assert_eq!(exit_code(&ForgeError::ComponentDefinitionBuild("d".into())), 2);
+        assert_eq!(exit_code(&ForgeError::ParameterExtraction("x".into())), 2);
     }
 
     #[test]

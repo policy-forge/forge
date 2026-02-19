@@ -225,7 +225,7 @@ fn catalog_yaml_contains_params_arrays_for_parameterized_controls() {
     assert!(
         yaml_str.contains("params:"),
         "Catalog YAML must contain 'params:' arrays for parameterized controls.\nYAML:\n{}",
-        &yaml_str[..yaml_str.len().min(3000)]
+        yaml_str.chars().take(3000).collect::<String>()
     );
 
     // Each param must have an `id:` field

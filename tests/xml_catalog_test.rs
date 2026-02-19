@@ -239,11 +239,13 @@ fn catalog_xml_contains_param_elements_for_parameterized_requirements() {
     assert!(xml.contains("<label>"), "Catalog XML <param> elements must contain <label>");
 
     // Params must appear inside <control> blocks (not at catalog level)
-    // Verify structural containment: find a <param> after a <control>
-    let control_pos = xml.find("<control ").expect("Must have at least one <control>");
-    let param_after_control = xml[control_pos..].contains("<param ");
+    // Find first control block and verify <param> appears before its closing tag
+    let control_start = xml.find("<control ").expect("Must have at least one <control>");
+    let control_end =
+        xml[control_start..].find("</control>").expect("Control must have closing tag");
+    let control_block = &xml[control_start..control_start + control_end];
     assert!(
-        param_after_control,
+        control_block.contains("<param "),
         "Catalog XML must contain <param> elements nested within <control> elements"
     );
 }

@@ -202,12 +202,20 @@ fn extract_section_parameters(
             format!("p{stable_id}")
         };
 
-        let (updated_text, params) = extract_parameters_from_text(&requirement_id, &req.text)
+        let (updated_text, mut params) = extract_parameters_from_text(&requirement_id, &req.text)
             .map_err(|e| {
-                ForgeError::ParameterExtraction(format!(
-                    "Failed to extract parameters from requirement '{stable_id}': {e}"
-                ))
-            })?;
+            ForgeError::ParameterExtraction(format!(
+                "Failed to extract parameters from requirement '{stable_id}': {e}"
+            ))
+        })?;
+
+        // PolicyParameter.requirement_id must reference the original stable_id for
+        // traceability. The OSCAL-safe prefixed id is only for parameter ID generation.
+        if requirement_id != stable_id {
+            for param in &mut params {
+                param.requirement_id = stable_id.clone();
+            }
+        }
 
         let param_count = params.len();
         *total_params += param_count;
@@ -390,6 +398,7 @@ mod tests {
                         atom_index: 0,
                         parent_text: None,
                         citations: vec![],
+                        modality: None,
                         parameters: vec![],
                     },
                 ],
@@ -664,6 +673,7 @@ mod tests {
             atom_index: 0,
             parent_text: None,
             citations: vec![],
+            modality: None,
             parameters: vec![],
         }
     }

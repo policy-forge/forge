@@ -48,6 +48,7 @@ fn make_req(i: usize, text: &str) -> PolicyRequirement {
         atom_index: i,
         parent_text: None,
         citations: vec![],
+        modality: None,
         parameters: vec![],
     }
 }
