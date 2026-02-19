@@ -738,7 +738,7 @@ All pull requests MUST verify constitution compliance:
 - Constitution violations MUST be fixed or justified before merge
 - Use CLAUDE.md for tactical development guidance (this constitution defines strategic principles)
 
-**Version**: 3.2.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
+**Version**: 3.3.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-19
 
 ---
 

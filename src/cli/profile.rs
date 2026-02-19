@@ -46,7 +46,14 @@ pub fn execute(
     set_params: &[String],
 ) -> Result<(), ForgeError> {
     // Parse param overrides from flat [id, value, id, value, ...] slice
-    let pairs = parse_set_param_pairs(set_params);
+    let pairs = parse_set_param_pairs(set_params)?;
+    for (id, _) in &pairs {
+        if id.trim().is_empty() {
+            return Err(ForgeError::InvalidArgument(
+                "Empty or whitespace-only --set-param ID".to_string(),
+            ));
+        }
+    }
     tracing::info!(
         param_count = pairs.len(),
         "profile: {} parameter override(s) specified",
@@ -121,8 +128,15 @@ pub fn execute(
 
 /// Parse a flat `[id, value, id, value, ...]` slice into `(id, value)` pairs.
 ///
-/// clap's `num_args = 2` guarantees the slice length is always even when using
-/// `--set-param`, so the `chunks_exact(2)` remainder is always empty.
-fn parse_set_param_pairs(set_params: &[String]) -> Vec<(String, String)> {
-    set_params.chunks_exact(2).map(|c| (c[0].clone(), c[1].clone())).collect()
+/// Returns `Err(ForgeError::InvalidArgument)` if the slice has an odd length
+/// (i.e., an unpaired value). In practice clap's `num_args = 2` prevents this,
+/// but the check is retained as a defensive invariant.
+fn parse_set_param_pairs(set_params: &[String]) -> Result<Vec<(String, String)>, ForgeError> {
+    if set_params.len() % 2 != 0 {
+        return Err(ForgeError::InvalidArgument(format!(
+            "--set-param requires ID VALUE pairs but received an odd number of arguments ({})",
+            set_params.len()
+        )));
+    }
+    Ok(set_params.chunks_exact(2).map(|c| (c[0].clone(), c[1].clone())).collect())
 }
