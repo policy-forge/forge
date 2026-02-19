@@ -132,7 +132,7 @@ pub fn execute(
 /// (i.e., an unpaired value). In practice clap's `num_args = 2` prevents this,
 /// but the check is retained as a defensive invariant.
 fn parse_set_param_pairs(set_params: &[String]) -> Result<Vec<(String, String)>, ForgeError> {
-    if set_params.len() % 2 != 0 {
+    if !set_params.len().is_multiple_of(2) {
         return Err(ForgeError::InvalidArgument(format!(
             "--set-param requires ID VALUE pairs but received an odd number of arguments ({})",
             set_params.len()
