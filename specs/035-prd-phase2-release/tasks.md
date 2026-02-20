@@ -135,16 +135,16 @@
 
 ### Implementation for User Story 6
 
-- [ ] T031 [US6] Run complete test suite: `cargo test` — must report 0 failures (all 1049+ existing + 21 new integration tests: T006–T009, T043, T012–T016, T044, T019–T021, T024–T029, T045); record total pass count
-- [ ] T032 [US6] Run `cargo clippy -- -D warnings` — must report 0 warnings; fix any warnings in integration test files if found
-- [ ] T033 [US6] Run `cargo fmt --check` — must report 0 violations; run `cargo fmt` if needed then re-check; also run `cargo deny check` (deny.toml exists at repo root) — must report 0 deny violations; fix any license or advisory violations before proceeding (traces constitution Principle XI)
-- [ ] T034 [US6] Update `Cargo.toml` version field from `"0.1.0"` to `"0.2.0"` in `/Cargo.toml`
-- [ ] T035 [US6] Create `CHANGELOG.md` at repo root documenting v0.2.0 Phase 2 features: WI-26 (XML output), WI-27 (YAML output), WI-28 (round-trip testing), WI-29 (`forge export`), WI-30 (Profile generation), WI-31 (parameter tailoring), WI-32 (Profile validation), WI-33 (normative/advisory detection), WI-34 (parameter extraction), WI-35 (Phase 2 integration testing) (traces S-3)
-- [ ] T036 [US6] Review `forge profile --help` and `forge export --help` output; assert each of the following flags has a non-empty, human-readable description (not empty or "TODO"): for `profile` — `--include`, `--exclude`, `--set-param`, `--format`, `--output`; for `export` — `--format`, `--output`; update `#[arg(help = "...")]` annotations in `src/cli/` for any missing or inadequate descriptions (traces S-4) [note: removed [P] marker — T036 modifies src/cli/ files staged by T038; must complete before T038]
-- [ ] T037 [US6] Re-run all four quality gates after T034–T036: `cargo test && cargo clippy -- -D warnings && cargo fmt --check && cargo deny check` — all must pass with 0 issues; only proceed to T038 when all four gates report zero failures/warnings/violations
-- [ ] T038 [US6] Stage and commit release preparation: `git add Cargo.toml Cargo.lock CHANGELOG.md src/` then `git commit -m "release: bump version to 0.2.0 for Phase 2 milestone"`
-- [ ] T039 [US6] Create annotated release tag: `git tag v0.2.0` (traces M-7, AC-10)
-- [ ] T040 [US6] Verify release: run `cargo run -- --version` and confirm output contains `0.2.0`; run `git tag -l v0.2.0` and confirm tag exists (traces M-8, AC-10)
+- [X] T031 [US6] Run complete test suite: `cargo test` — must report 0 failures (all 1049+ existing + 21 new integration tests: T006–T009, T043, T012–T016, T044, T019–T021, T024–T029, T045); record total pass count
+- [X] T032 [US6] Run `cargo clippy -- -D warnings` — must report 0 warnings; fix any warnings in integration test files if found
+- [X] T033 [US6] Run `cargo fmt --check` — must report 0 violations; run `cargo fmt` if needed then re-check; also run `cargo deny check` (deny.toml exists at repo root) — must report 0 deny violations; fix any license or advisory violations before proceeding (traces constitution Principle XI)
+- [X] T034 [US6] Update `Cargo.toml` version field from `"0.1.0"` to `"0.2.0"` in `/Cargo.toml`
+- [X] T035 [US6] Create `CHANGELOG.md` at repo root documenting v0.2.0 Phase 2 features: WI-26 (XML output), WI-27 (YAML output), WI-28 (round-trip testing), WI-29 (`forge export`), WI-30 (Profile generation), WI-31 (parameter tailoring), WI-32 (Profile validation), WI-33 (normative/advisory detection), WI-34 (parameter extraction), WI-35 (Phase 2 integration testing) (traces S-3)
+- [X] T036 [US6] Review `forge profile --help` and `forge export --help` output; assert each of the following flags has a non-empty, human-readable description (not empty or "TODO"): for `profile` — `--include`, `--exclude`, `--set-param`, `--format`, `--output`; for `export` — `--format`, `--output`; update `#[arg(help = "...")]` annotations in `src/cli/` for any missing or inadequate descriptions (traces S-4) [note: removed [P] marker — T036 modifies src/cli/ files staged by T038; must complete before T038]
+- [X] T037 [US6] Re-run all four quality gates after T034–T036: `cargo test && cargo clippy -- -D warnings && cargo fmt --check && cargo deny check` — all must pass with 0 issues; only proceed to T038 when all four gates report zero failures/warnings/violations
+- [X] T038 [US6] Stage and commit release preparation: `git add Cargo.toml Cargo.lock CHANGELOG.md src/` then `git commit -m "release: bump version to 0.2.0 for Phase 2 milestone"`
+- [X] T039 [US6] Create annotated release tag: `git tag v0.2.0` (traces M-7, AC-10)
+- [X] T040 [US6] Verify release: run `cargo run -- --version` and confirm output contains `0.2.0`; run `git tag -l v0.2.0` and confirm tag exists (traces M-8, AC-10)
 
 **Checkpoint**: US6 complete — v0.2.0 tagged on a fully verified commit. MS-6 exit criteria met.
 
