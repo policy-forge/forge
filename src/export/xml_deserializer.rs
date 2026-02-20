@@ -11,7 +11,8 @@ use uuid::Uuid;
 use crate::error::ForgeError;
 use crate::oscal::back_matter::{BackMatter, BackMatterResource, Prop, ResourceCitation, Rlink};
 use crate::oscal::catalog::{
-    CatalogEnvelope, OscalCatalog, OscalControl, OscalGroup, OscalMetadata,
+    CatalogEnvelope, OscalCatalog, OscalControl, OscalGroup, OscalMetadata, OscalParam,
+    OscalParamConstraint,
 };
 use crate::oscal::component_definition::{
     ComponentDefinition, ComponentDefinitionEnvelope, ComponentDefinitionMetadata,
@@ -75,12 +76,38 @@ struct XmlControl {
     #[serde(rename = "@id")]
     id: String,
     title: String,
+    #[serde(default, rename = "param")]
+    params: Vec<XmlParam>,
     #[serde(default, rename = "prop")]
     props: Vec<XmlProp>,
     #[serde(default, rename = "link")]
     links: Vec<XmlLink>,
     #[serde(default, rename = "part")]
     parts: Vec<XmlPart>,
+}
+
+/// OSCAL `<param>` element within a control.
+///
+/// XSD order: `<label>`, `<constraint>*`, `<value>*`.
+#[derive(Deserialize)]
+struct XmlParam {
+    #[serde(rename = "@id")]
+    id: String,
+    #[serde(default)]
+    label: String,
+    #[serde(default, rename = "constraint")]
+    constraints: Vec<XmlParamConstraint>,
+    #[serde(default, rename = "value")]
+    values: Vec<String>,
+}
+
+/// OSCAL `<constraint>` element within a `<param>`.
+///
+/// Contains `<description><p>text</p></description>` (markup-multiline).
+#[derive(Deserialize)]
+struct XmlParamConstraint {
+    #[serde(default)]
+    description: Option<XmlDescription>,
 }
 
 #[derive(Deserialize)]
@@ -218,6 +245,20 @@ fn convert_part(xml: XmlPart) -> OscalPart {
     }
 }
 
+fn convert_param_constraint(xml: XmlParamConstraint) -> OscalParamConstraint {
+    let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
+    OscalParamConstraint { description }
+}
+
+fn convert_param(xml: XmlParam) -> OscalParam {
+    OscalParam {
+        id: xml.id,
+        label: xml.label,
+        values: xml.values,
+        constraints: xml.constraints.into_iter().map(convert_param_constraint).collect(),
+    }
+}
+
 fn convert_control(xml: XmlControl) -> OscalControl {
     OscalControl {
         id: xml.id,
@@ -227,12 +268,7 @@ fn convert_control(xml: XmlControl) -> OscalControl {
         title: xml.title,
         props: xml.props.into_iter().map(convert_prop).collect(),
         links: xml.links.into_iter().map(convert_link).collect(),
-        // NOTE: XML <param> elements are not deserialized into OscalControl.params.
-        // This means XML → OscalControl → XML round-trips will drop any params present
-        // in the original XML. This is an intentional limitation of the current XML
-        // deserializer; params are only preserved when constructed in memory or via
-        // non-XML sources.
-        params: vec![],
+        params: xml.params.into_iter().map(convert_param).collect(),
         parts: xml.parts.into_iter().map(convert_part).collect(),
     }
 }

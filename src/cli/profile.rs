@@ -15,7 +15,7 @@ use crate::oscal::profile::{ProfileRoot, SelectionMode, build_profile, parse_con
 /// * `catalog` — Path to the source Catalog file (checked for existence).
 /// * `include` — Comma-separated control IDs to include, or `None`.
 /// * `exclude` — Comma-separated control IDs to exclude, or `None`.
-/// * `format` — Output format (only `OutputFormat::Json` supported in WI-31).
+/// * `format` — Output format: `json`, `xml`, or `yaml`.
 /// * `output` — Optional output file path; if `None`, writes to stdout.
 /// * `set_params` — Flat `[id, value, id, value, ...]` slice from `--set-param` flags (WI-31).
 ///   Pass `&[]` when no `--set-param` flags are provided.
@@ -110,11 +110,10 @@ pub fn execute(
         OutputFormat::Json => serde_json::to_string_pretty(&root).map_err(|e| {
             ForgeError::Serialization(format!("Profile JSON serialization failed: {e}"))
         })?,
-        OutputFormat::Xml | OutputFormat::Yaml => {
-            return Err(ForgeError::InvalidArgument(format!(
-                "unsupported output format '{format:?}' for forge profile — only --format json is supported in WI-31"
-            )));
+        OutputFormat::Xml => {
+            crate::export::xml_serializer::serialize_profile_to_xml(&root.profile)?
         }
+        OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(&root)?,
     };
 
     // Step 7: write to file or stdout
