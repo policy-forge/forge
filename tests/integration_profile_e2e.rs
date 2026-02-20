@@ -268,6 +268,105 @@ fn profile_include_nonexistent_id_produces_error() {
     );
 }
 
+// ── EC-3: --set-param with nonexistent param ID exits 0 (permissive) ─────────
+
+#[test]
+fn profile_set_param_nonexistent_id_exits_zero() {
+    // EC-3 clarification: OSCAL Profile param IDs are independent of Catalog param IDs.
+    // --set-param always produces a modify.set-parameters entry regardless of whether the
+    // param ID exists in the source Catalog. The command exits 0.
+    let dir = TempDir::new().unwrap();
+    let catalog_path = catalog_from_policy(&dir);
+    let catalog = read_json(&catalog_path);
+    let ids = extract_control_ids(&catalog);
+
+    let profile_path = dir.path().join("profile_nonexistent_param.json");
+    let output = forge_bin()
+        .args([
+            "profile",
+            "--catalog",
+            catalog_path.to_str().unwrap(),
+            "--include",
+            &ids[0],
+            "--set-param",
+            "nonexistent-param-999",
+            "42",
+            "--format",
+            "json",
+            "--output",
+            profile_path.to_str().unwrap(),
+        ])
+        .output()
+        .expect("failed to run forge profile");
+
+    assert!(
+        output.status.success(),
+        "forge profile should exit 0 for nonexistent param ID: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let profile = read_json(&profile_path);
+    let set_params = &profile["profile"]["modify"]["set-parameters"];
+    assert!(set_params.is_array(), "modify.set-parameters must be an array");
+    let found = set_params
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|p| p["param-id"].as_str() == Some("nonexistent-param-999"));
+    assert!(
+        found,
+        "expected set-parameter with param-id 'nonexistent-param-999' in: {set_params}"
+    );
+    let entry = set_params
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["param-id"].as_str() == Some("nonexistent-param-999"))
+        .unwrap();
+    let values = &entry["values"];
+    assert!(
+        values.as_array().map(|a| a.iter().any(|v| v.as_str() == Some("42"))).unwrap_or(false),
+        "expected value '42' in nonexistent param entry, got: {values}"
+    );
+}
+
+// ── EC-6: --include and --exclude together are rejected by the CLI ─────────────
+
+#[test]
+fn profile_include_and_exclude_rejected() {
+    // EC-6: --include and --exclude are declared mutually exclusive (conflicts_with).
+    // clap rejects the combination before any forge logic runs; exit code is non-zero.
+    let dir = TempDir::new().unwrap();
+    let catalog_path = catalog_from_policy(&dir);
+    let catalog = read_json(&catalog_path);
+    let ids = extract_control_ids(&catalog);
+
+    let output = forge_bin()
+        .args([
+            "profile",
+            "--catalog",
+            catalog_path.to_str().unwrap(),
+            "--include",
+            &ids[0],
+            "--exclude",
+            ids.get(1).map(String::as_str).unwrap_or(&ids[0]),
+            "--format",
+            "json",
+        ])
+        .output()
+        .expect("failed to run forge profile");
+
+    assert!(
+        !output.status.success(),
+        "forge profile should exit non-zero when both --include and --exclude are provided"
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("cannot be used with") || stderr.contains("error"),
+        "expected usage error in stderr, got: {stderr}"
+    );
+}
+
 // ── S-2: Profile in XML and YAML formats ─────────────────────────────────────
 
 #[test]

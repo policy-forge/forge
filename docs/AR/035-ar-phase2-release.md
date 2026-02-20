@@ -2,7 +2,7 @@
 
 > **Document Type:** Architecture Review
 > **Audience:** LLM agents, human reviewers
-> **Status:** Proposed
+> **Status:** Implemented
 > **Last Updated:** 2026-02-10 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Deciders:** Brian Luby <!-- @human-required -->

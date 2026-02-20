@@ -21,7 +21,7 @@ WI-35 is a pure integration testing and release sprint. All Phase 2 features (WI
 **Project Type**: Single Rust binary crate
 **Performance Goals**: Integration test suite completes in < 60 seconds on developer hardware
 **Constraints**: No new feature code; ADR-001 (Markdown-only input); all Phase 2 WIs must be complete before this sprint begins
-**Scale/Scope**: ~20 new integration test functions across 4 files; 1 CHANGELOG entry; 1 version bump
+**Scale/Scope**: 21 new integration test functions across 4 files; 1 CHANGELOG entry; 1 version bump
 
 ---
 
@@ -66,7 +66,7 @@ specs/035-prd-phase2-release/
 ### Source Code (repository root)
 
 ```text
-src/                         # No changes — WI-35 adds NO feature code
+src/                         # Defect fixes only — S-4 help-text update in cli/mod.rs
 tests/
 ├── common/
 │   ├── mod.rs               # Existing shared test helpers

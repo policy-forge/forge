@@ -12,6 +12,7 @@
 ### Session 2026-02-19
 
 - Q: Should the Component Definition ↔ XML round-trip test normalize (clear `control_implementations`) before semantic equivalence comparison, consistent with WI-28? → A: Yes — normalize before XML comparison, matching the WI-28 pattern.
+- Q: For EC-2 (`--include` with a non-existent control ID), should the integration test assert error behavior? → A: Exit 0 with the ID included in `imports[].include-controls[].with-ids` (permissive — OSCAL profile imports are URI references, not validated catalog handles; no catalog-membership check is performed).
 - Q: For EC-3 (`--set-param` with non-existent param ID), should the integration test assert error or warning behavior? → A: Exit 0 with a warning on stderr (permissive: param is added to Profile regardless of whether the ID exists in the Catalog).
 - Q: Should `integration_regression.rs` use new insta snapshots, structural assertions only, or be skipped in favour of existing `golden_file_tests.rs`? → A: Structural assertions only — assert key invariants (uuid present, oscal-version = "1.2.0", groups/controls non-empty) without duplicating the existing insta snapshot infrastructure.
 
@@ -127,7 +128,7 @@ A developer tags the v0.2.0 release after all integration tests pass.
 ### Edge Cases
 
 - **EC-1:** (M-1) When round-tripping a Catalog with empty groups (no controls), then semantic equivalence is still maintained across JSON, XML, and YAML.
-- **EC-2:** (M-2) When generating a Profile with `--include` specifying a control ID that does not exist in the Catalog, then a descriptive error is produced.
+- **EC-2:** (M-2) When generating a Profile with `--include` specifying a control ID that does not exist in the Catalog, the command exits 0 and the ID is included in `imports[].include-controls[].with-ids` (permissive behavior — OSCAL profile control imports are URI references, not validated Catalog handles; no membership check is performed).
 - **EC-3:** (M-3) When using `--set-param` with a parameter ID that does not exist in the Catalog, then the command exits 0 and emits a warning on stderr. The parameter is still added to `modify.set-parameters` in the Profile output (permissive behavior; OSCAL Profile param IDs are independent of Catalog param IDs).
 - **EC-4:** (M-5) When a control has both normative and advisory sub-statements (from atomization), then each resulting control has the correct individual `prop` annotation.
 - **EC-5:** (M-1) When round-tripping a Component Definition through XML, then semantic equivalence is maintained for fields that XML preserves; `control_implementations` are excluded from comparison (XML intentionally omits this field — matches WI-28 normalization pattern). YAML round-trip preserves all fields including `control_implementations`.
@@ -147,7 +148,7 @@ A developer tags the v0.2.0 release after all integration tests pass.
 - **M-4:** Generated Profiles shall pass schema validation against OSCAL v1.2.0 Profile schemas via `forge validate`. *(S-5)*
 - **M-5:** Normative/advisory `prop` annotations and `param` elements shall be present and correct in JSON, XML, and YAML output, and shall survive format round-trips. *(S-7, S-8, AC-13)*
 - **M-6:** All Phase 1 tests shall pass with zero failures, confirming no regressions from Phase 2 development. *(AC-1 through AC-10)*
-- **M-7:** The `v0.2.0` git tag shall be created on a commit where `cargo test` passes, `cargo clippy -- -D warnings` reports zero warnings, and `cargo fmt --check` reports zero violations.
+- **M-7:** The `v0.2.0` git tag shall be created on a commit where `cargo test` passes, `cargo clippy -- -D warnings` reports zero warnings, `cargo fmt --check` reports zero violations, and `cargo deny check` reports zero violations.
 - **M-8:** `forge --version` shall report version `0.2.0` in the tagged release.
 
 **Should Have:**
@@ -176,5 +177,5 @@ No new data model introduced. WI-35 tests existing Phase 2 data models:
 - **SC-003:** `forge profile` produces schema-valid OSCAL Profiles for include/exclude/set-param combinations.
 - **SC-004:** Normative/advisory `prop` annotations survive XML and YAML round-trips with no loss.
 - **SC-005:** `param` elements survive XML and YAML round-trips with values and constraints intact.
-- **SC-006:** Zero test failures in `cargo test`, zero warnings in `cargo clippy -- -D warnings`, zero violations in `cargo fmt --check`.
+- **SC-006:** Zero test failures in `cargo test`, zero warnings in `cargo clippy -- -D warnings`, zero violations in `cargo fmt --check`, zero violations in `cargo deny check`.
 - **SC-007:** `v0.2.0` git tag created on a verified commit; `forge --version` reports `0.2.0`.
