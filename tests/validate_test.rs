@@ -281,3 +281,50 @@ fn validate_external_component_definition_artifact() {
     assert_eq!(code, 0, "Expected external component definition to pass validation");
     assert!(stdout.contains("Valid"));
 }
+
+#[test]
+fn wi22_expected_catalog_artifacts_pass_schema_validation() {
+    let catalog_paths = [
+        "tests/fixtures/edge-cases/ec02-compound-atomic/expected-catalog.json",
+        "tests/fixtures/edge-cases/ec03-empty-sections/expected-catalog.json",
+        "tests/fixtures/edge-cases/ec04-missing-metadata/expected-catalog.json",
+        "tests/fixtures/edge-cases/ec07-malformed-citation/expected-catalog.json",
+        "tests/fixtures/edge-cases/ec-citation-unusual-positions/expected-catalog.json",
+        "tests/fixtures/edge-cases/ec-parameter-like-content/expected-catalog.json",
+    ];
+
+    for path in catalog_paths {
+        let text = std::fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("Failed to read WI-22 catalog fixture {path}: {e}"));
+        let json: serde_json::Value = serde_json::from_str(&text)
+            .unwrap_or_else(|e| panic!("Invalid JSON in WI-22 catalog fixture {path}: {e}"));
+        let result =
+            forge::validate::validate_artifact(&json, forge::validate::OscalModelType::Catalog)
+                .unwrap_or_else(|e| {
+                    panic!("Schema validation infrastructure failed for {path}: {e}")
+                });
+        assert!(result.is_valid, "WI-22 catalog fixture should be schema-valid: {path}");
+    }
+}
+
+#[test]
+fn wi22_expected_component_artifacts_pass_schema_validation() {
+    let component_paths = [
+        "tests/fixtures/edge-cases/ec02-compound-atomic/expected-component-definition.json",
+        "tests/fixtures/edge-cases/ec-citation-unusual-positions/expected-component-definition.json",
+        "tests/fixtures/edge-cases/ec-parameter-like-content/expected-component-definition.json",
+    ];
+
+    for path in component_paths {
+        let text = std::fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("Failed to read WI-22 component fixture {path}: {e}"));
+        let json: serde_json::Value = serde_json::from_str(&text)
+            .unwrap_or_else(|e| panic!("Invalid JSON in WI-22 component fixture {path}: {e}"));
+        let result = forge::validate::validate_artifact(
+            &json,
+            forge::validate::OscalModelType::ComponentDefinition,
+        )
+        .unwrap_or_else(|e| panic!("Schema validation infrastructure failed for {path}: {e}"));
+        assert!(result.is_valid, "WI-22 component fixture should be schema-valid: {path}");
+    }
+}

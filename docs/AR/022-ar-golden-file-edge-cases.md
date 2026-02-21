@@ -50,17 +50,17 @@
 ## Summary
 
 ### Decision 🔴 `@human-required`
-> Extend the WI-21 `insta`-based golden-file harness with edge case-specific test helpers for error output matching, ID stability comparison, and warning verification. Use parameterized test macros to reduce boilerplate across the 9 edge case fixtures (EC-1 through EC-10, excluding EC-8).
+> Extend the WI-21 `insta`-based golden-file harness with edge case-specific test helpers for error output matching, ID stability comparison, warning verification, and multi-issue validation aggregation checks. Use parameterized test macros to reduce boilerplate across the 9 edge case fixtures (EC-1 through EC-10, excluding EC-8).
 
 ### TL;DR for Agents 🟡 `@human-review`
-> Edge case golden-file tests extend the WI-21 `insta` harness. Fixtures live in `tests/fixtures/edge-cases/ec{NN}-{slug}/`. Each EC has a dedicated test function. Error-path tests assert on error message substrings (not exact strings) and exit codes. ID stability tests compare outputs from paired fixture variants. Use the `golden_edge_case!` parameterized macro to reduce per-test boilerplate. Do NOT create PDF/DOCX edge cases (ADR-001). Do NOT hardcode exact error messages — match on substrings to allow wording refinement. Do NOT skip testing both strategies for applicable edge cases.
+> Edge case golden-file tests extend the WI-21 `insta` harness. Fixtures live in `tests/fixtures/edge-cases/ec{NN}-{slug}/`. Each EC has a dedicated test function. Error-path tests assert on error message substrings (not exact strings) and exit codes. ID stability tests compare outputs from paired fixture variants. Validation aggregation tests assert that schema and semantic issue categories are reported together. Use the `golden_edge_case!` parameterized macro to reduce per-test boilerplate. Do NOT create PDF/DOCX edge cases (ADR-001). Do NOT hardcode exact error messages — match on substrings to allow wording refinement. Do NOT skip testing both strategies for applicable edge cases.
 
 ---
 
 ## Context
 
 ### Problem Space 🔴 `@human-required`
-WI-21 establishes the core golden-file test suite for happy-path scenarios. However, real-world policy documents frequently exhibit edge conditions: missing metadata, empty sections, compound statements, malformed citation URLs, and documents with no structural headings. The parent PRD (FORGE_PRD.md) defines ten edge cases (EC-1 through EC-10) that the pipeline must handle correctly. Without dedicated test fixtures for each, regressions in boundary behavior will go undetected. The architectural question is how to extend the WI-21 harness to handle three new test categories: (1) expected-error tests (pipeline should fail with a descriptive message), (2) expected-output-with-warnings tests (pipeline succeeds but emits warnings), and (3) paired-fixture ID stability tests (compare outputs from two document variants).
+WI-21 establishes the core golden-file test suite for happy-path scenarios. However, real-world policy documents frequently exhibit edge conditions: missing metadata, empty sections, compound statements, malformed citation URLs, and documents with no structural headings. The parent PRD (FORGE_PRD.md) defines ten edge cases (EC-1 through EC-10) that the pipeline must handle correctly. Without dedicated test fixtures for each, regressions in boundary behavior will go undetected. The architectural question is how to extend the WI-21 harness to handle four new test categories: (1) expected-error tests (pipeline should fail with a descriptive message), (2) expected-output-with-warnings tests (pipeline succeeds but emits warnings), (3) paired-fixture ID stability tests (compare outputs from two document variants), and (4) multi-issue validation aggregation tests (all issue categories reported in one run).
 
 ### Decision Scope 🟡 `@human-review`
 
@@ -68,6 +68,7 @@ WI-21 establishes the core golden-file test suite for happy-path scenarios. Howe
 - How to extend the WI-21 golden-file harness for error output matching
 - How to test ID stability across fixture variants
 - How to verify warning messages for degenerate inputs
+- How to verify EC-10 validation aggregation across schema and semantic categories
 - Directory structure for edge case fixtures
 - Parameterized test macro design for reducing boilerplate
 
@@ -77,7 +78,7 @@ WI-21 establishes the core golden-file test suite for happy-path scenarios. Howe
 - Performance testing — deferred to 024-ar-performance-benchmark
 
 ### Current State 🟢 `@llm-autonomous`
-The WI-21 golden-file harness (021-ar-golden-file-tests) provides `insta`-based snapshot testing with normalization for happy-path fixtures. It supports comparing actual OSCAL JSON output against expected snapshots. However, it lacks support for: (a) asserting on error messages when the pipeline is expected to fail, (b) comparing stable IDs across paired fixture variants, and (c) verifying warning messages emitted during conversion.
+The WI-21 golden-file harness (021-ar-golden-file-tests) provides `insta`-based snapshot testing with normalization for happy-path fixtures. It supports comparing actual OSCAL JSON output against expected snapshots. However, it lacks support for: (a) asserting on error messages when the pipeline is expected to fail, (b) comparing stable IDs across paired fixture variants, (c) verifying warning messages emitted during conversion, and (d) asserting that validation reports aggregate schema and semantic issue categories.
 
 ```mermaid
 graph TD
@@ -88,6 +89,7 @@ graph TD
         E1["Error-Path Testing?"] -.->|"Missing"| EP[EC-1, EC-9: Expected Errors]
         E2["ID Stability Testing?"] -.->|"Missing"| ID[EC-5, EC-6: Paired Variants]
         E3["Warning Verification?"] -.->|"Missing"| WN[EC-3, EC-4: Expected Warnings]
+        E4["Validation Aggregation?"] -.->|"Missing"| VA[EC-10: Schema + Semantic in one run]
     end
 ```
 
@@ -103,13 +105,13 @@ graph TD
 | M-6 | EC-6 fixture pair: substantive change → new ID + warning | ID comparison + warning assertion |
 | M-7 | EC-7 fixture: malformed URL → preserved with prop | Standard golden-file comparison |
 | M-8 | EC-9 fixture: file not found → filesystem error | Error-path test (no input fixture needed) |
-| M-9 | EC-10 fixture: multiple validation errors → all reported | Error output golden-file comparison |
+| M-9 | EC-10 fixture: multiple validation errors → all reported | Validation aggregation assertion helper needed |
 | M-10 | Both strategies tested for applicable edge cases | Parameterized tests across strategies |
 | M-11 | All edge case tests pass in `cargo test` | CI integration |
 
 **PRD Constraints inherited:**
 - From constitution: TDD mandatory; `cargo test` integration; `cargo clippy -- -D warnings`
-- From ADR-001: No PDF/DOCX edge cases (Markdown-only input; EC-8 skipped)
+- From ADR-001: No PDF/DOCX edge cases (Markdown convert fixtures; EC-8 skipped). EC-10 validation aggregation uses a JSON artifact fixture.
 
 ---
 
@@ -143,7 +145,7 @@ graph TD
 
 ### Option 1: Extend WI-21 Harness with Edge Case Helpers
 
-**Description:** Add three new test helper categories to the existing WI-21 `insta`-based harness: (a) `assert_edge_case_error()` for expected-error tests, (b) `assert_stable_ids_match()` / `assert_stable_ids_differ()` for ID stability, and (c) warning capture via a custom warning collector. Use a `golden_edge_case!` macro for parameterized tests.
+**Description:** Add four new test helper categories to the existing WI-21 `insta`-based harness: (a) `assert_edge_case_error()` for expected-error tests, (b) `assert_stable_ids_match()` / `assert_stable_ids_differ()` for ID stability, (c) warning capture via a custom warning collector, and (d) validation aggregation assertions for EC-10 completeness. Use a `golden_edge_case!` macro for parameterized tests.
 
 ```mermaid
 graph TD
@@ -153,6 +155,7 @@ graph TD
             OUT[Output Tests] --> INSTA["insta + normalize (from WI-21)"]
             IDS[ID Stability Tests] --> AID["assert_stable_ids_match/differ()"]
             WRN[Warning Tests] --> AWN["Warning Collector + assert"]
+            VAL[Validation Aggregation Tests] --> AVA["assert_validation_issue_set()"]
         end
         subgraph "Parameterization"
             MAC["golden_edge_case! macro"] --> ERR
@@ -261,11 +264,11 @@ Option 1 provides the best balance of consistency, testability, and boilerplate 
 
 | Aspect | Simplest Possible | Selected Option | Justification for Complexity |
 |--------|-------------------|-----------------|------------------------------|
-| Components | Individual test functions with inline assertions | Helpers + macro + fixture directory structure | PRD M-10 requires testing both strategies for each EC; parameterization avoids 18+ nearly-identical functions |
+| Components | Individual test functions with inline assertions | Helpers + macro + fixture directory structure | PRD M-10 requires testing both strategies for strategy-applicable ECs; parameterization avoids repeated near-identical functions |
 | Dependencies | `insta` only (from WI-21) | `insta` + custom helpers | Error-path and ID stability assertions cannot be handled by `insta` alone |
-| Patterns | Direct function calls | Macro-generated test functions | 9 ECs x 2 strategies = 18 tests; macro prevents copy-paste |
+| Patterns | Direct function calls | Macro-generated test functions | 8 ECs x 2 strategies + EC-9 strategy-agnostic = 17 parent tests; macro prevents copy-paste |
 
-**Complexity justified by:** The 9 edge cases with dual-strategy testing produce 18+ test functions. Without helpers and macros, each function would repeat error matching, ID comparison, or warning capture logic. The helpers add ~100 lines of shared code but eliminate ~300 lines of duplicated assertion logic.
+**Complexity justified by:** The 9 parent edge cases require 17 parent test executions (8 dual-strategy ECs plus strategy-agnostic EC-9), plus optional supplemental S-1/S-2 scenarios. Without helpers and macros, each function would repeat error matching, ID comparison, or warning capture logic. The helpers add ~100 lines of shared code but eliminate substantial duplicated assertion logic.
 
 ### Architecture Diagram 🟡 `@human-review`
 
@@ -284,16 +287,16 @@ graph TD
             EC10[ec10-multiple-errors/]
         end
 
-        subgraph "Test Helpers (tests/golden/helpers.rs)"
+        subgraph "Test Helpers (tests/golden_edge_case_tests.rs)"
             AEE["assert_edge_case_error()"]
             AID["assert_stable_ids_match()"]
             ADF["assert_stable_ids_differ()"]
             AWN["capture_warnings()"]
         end
 
-        subgraph "Test Functions (tests/golden/edge_case_tests.rs)"
+        subgraph "Test Functions (tests/golden_edge_case_tests.rs)"
             MAC["golden_edge_case! macro"]
-            TF["Test Functions (18+)"]
+            TF["Test Functions (17 parent + optional S-1/S-2)"]
         end
 
         subgraph "WI-21 Harness (Reused)"
@@ -322,8 +325,9 @@ graph TD
 | assert_stable_ids_match | Convert two fixture variants, extract IDs, assert all match | `fn assert_stable_ids_match(fixture_a: &str, fixture_b: &str)` | FORGE library API, serde_json |
 | assert_stable_ids_differ | Convert two fixture variants, assert specified requirement has different ID | `fn assert_stable_ids_differ(fixture_a: &str, fixture_b: &str, changed_req: &str)` | FORGE library API, serde_json |
 | capture_warnings | Run pipeline with warning capture, return warnings as Vec<String> | `fn capture_warnings(input: &str, strategy: Strategy) -> (Value, Vec<String>)` | FORGE library API |
+| assert_validation_issue_set | Run validation scenario and assert all expected issue categories are present in one result | `fn assert_validation_issue_set(input: &str, expected_issue_substrings: &[&str])` | FORGE library API |
 | golden_edge_case! macro | Generate test function from fixture path, strategy, and expected behavior | `golden_edge_case!(name, fixture_dir, strategy, behavior)` | All helpers above |
-| Edge Case Fixtures | Markdown inputs + expected outputs/errors per EC | File system in `tests/fixtures/edge-cases/` | None |
+| Edge Case Fixtures | Markdown convert inputs plus one JSON validation fixture (EC-10) and expected outputs/errors per EC | File system in `tests/fixtures/edge-cases/` | None |
 
 ### Data Flow 🟢 `@llm-autonomous`
 
@@ -355,7 +359,7 @@ sequenceDiagram
     end
 
     alt ID Stability Test (EC-5, EC-6)
-        T->>F: Load input-original.md + input-variant.md
+        T->>F: Load input-original.md + (input-whitespace-variant.md or input-changed.md)
         T->>H: assert_stable_ids_match(orig, variant) or differ
         H->>P: Convert both fixtures
         P-->>H: Two outputs
@@ -412,6 +416,15 @@ pub fn convert_with_warnings(
     todo!()
 }
 
+/// Assert validation output includes all expected issue categories in one run.
+/// Used for EC-10 (schema + semantic aggregation).
+pub fn assert_validation_issue_set(input_path: &str, expected_issue_substrings: &[&str]) {
+    // Run validation
+    // Assert result contains every expected issue substring
+    // Assert no early-exit behavior hides later categories
+    todo!()
+}
+
 // Parameterized macro for generating edge case test functions
 // golden_edge_case!(test_ec02_catalog, "ec02-compound-atomic", Catalog, OutputMatch);
 // golden_edge_case!(test_ec01_catalog, "ec01-no-headings", Catalog, ExpectError("no headings"));
@@ -437,6 +450,15 @@ pub fn convert_with_warnings(
 4. Test asserts specific warning substrings are present in the collection
 ```
 
+**Pattern:** Validation Aggregation Assertion
+```
+1. Run validation once against EC-10 fixture
+2. Collect all reported issue entries
+3. Assert schema issue substrings are present
+4. Assert semantic issue substrings are present
+5. Fail if any expected category is missing
+```
+
 ---
 
 ## Constraints & Boundaries
@@ -453,7 +475,7 @@ pub fn convert_with_warnings(
 - Error assertions match on substrings, not exact strings — allows WI-23 to refine wording
 - Edge case fixtures stored in `tests/fixtures/edge-cases/` (separate from core golden files)
 - Warning capture mechanism must not interfere with pipeline execution
-- Paired fixture variants (EC-5, EC-6) stored in the same fixture directory with `input-original.md` and `input-variant.md` naming
+- Paired fixture variants (EC-5, EC-6) stored in the same fixture directory with `input-original.md` + `input-whitespace-variant.md` (EC-5) and `input-original.md` + `input-changed.md` (EC-6)
 
 ### Architectural Boundaries 🟡 `@human-review`
 
@@ -480,7 +502,7 @@ pub fn convert_with_warnings(
 ### Positive
 - Complete edge case coverage for all 9 applicable parent PRD edge cases
 - Reusable test helpers for error-path, ID stability, and warning verification
-- Parameterized macro reduces boilerplate for 18+ test functions
+- Parameterized macro reduces boilerplate for 17 parent test functions (plus optional supplemental coverage)
 - Consistent with WI-21 harness — single framework for all golden-file testing
 
 ### Negative
@@ -514,7 +536,7 @@ pub fn convert_with_warnings(
 
 | Layer | Test Type | Coverage Target | Notes |
 |-------|-----------|-----------------|-------|
-| Integration | Edge case golden-file tests | 9 ECs x 2 strategies where applicable | Core edge case coverage |
+| Integration | Edge case golden-file tests | 17 parent runs (8 dual-strategy + 1 strategy-agnostic) + optional S-1/S-2 | Core edge case coverage |
 | Unit | Test helper functions | 100% branch coverage | Error assertion, ID comparison, warning capture |
 | Unit | Macro-generated tests | Verify macro produces correct function signatures | Compile-time verification |
 
@@ -599,8 +621,8 @@ No open questions for this work item.
 | M-6 | ID stability testability | Option 1: ✅ | assert_stable_ids_differ | EC-6: substantive change → new ID |
 | M-7 | Harness consistency | Option 1: ✅ | insta + normalize (WI-21) | EC-7: malformed URL → preserved with prop |
 | M-8 | Error-path testability | Option 1: ✅ | assert_edge_case_error | EC-9: file not found → filesystem error |
-| M-9 | Error-path testability | Option 1: ✅ | assert_edge_case_error | EC-10: multiple errors → all reported |
-| M-10 | Boilerplate reduction | Option 1: ✅ | golden_edge_case! macro | Both strategies tested per EC |
+| M-9 | Error-path testability | Option 1: ✅ | assert_validation_issue_set | EC-10: multiple errors → all reported |
+| M-10 | Boilerplate reduction | Option 1: ✅ | golden_edge_case! macro | Both strategies for EC-1/2/3/4/5/6/7/10; EC-9 validated once |
 | M-11 | Harness consistency | Option 1: ✅ | cargo test integration | All tests pass in CI |
 
 ---

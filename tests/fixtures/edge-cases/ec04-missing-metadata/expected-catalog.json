@@ -1,0 +1,69 @@
+{
+  "catalog": {
+    "uuid": "9bfea5b0-98e3-45d6-a747-4be05711f63a",
+    "metadata": {
+      "title": "input",
+      "last-modified": "2026-02-21T19:52:08.378876+00:00",
+      "version": "0.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "input",
+        "title": "input",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-I-001",
+            "title": "Systems must restrict privileged access to approved administrators.",
+            "links": [
+              {
+                "href": "input.md#line=3",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-I-001_smt",
+                "name": "statement",
+                "prose": "Systems must restrict privileged access to approved administrators."
+              },
+              {
+                "id": "POL-I-001_gdn",
+                "name": "guidance",
+                "prose": "Systems must restrict privileged access to approved administrators."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "3"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

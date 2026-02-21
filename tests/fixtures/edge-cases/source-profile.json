@@ -1,0 +1,11 @@
+{
+  "profile": {
+    "uuid": "11111111-2222-4333-8444-555555555555",
+    "metadata": {
+      "title": "Edge Case Source Profile",
+      "last-modified": "2026-02-21T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    }
+  }
+}

@@ -138,14 +138,15 @@ A user converts a policy document that has sections with no normative requiremen
 
 > As a compliance engineer, I want FORGE to handle empty sections and missing metadata gracefully so that I get a usable (if incomplete) OSCAL output with clear warnings about what is missing.
 
-**Why this priority**: Real-world policy documents often have informational sections with no "must"/"shall" statements, and metadata like version numbers may be absent. The tool must not fail silently or crash on these inputs.
+**Why this priority**: Real-world policy documents often have informational sections with no "must"/"shall" statements, and metadata like title, version, or author may be absent. The tool must not fail silently or crash on these inputs.
 
-**Independent Test**: Run `forge convert empty-sections.md --strategy catalog --format json` on a fixture with informational-only sections and verify empty groups are generated with a warning. Run `forge convert missing-metadata.md` and verify version defaults to "0.0.0" with a warning.
+**Independent Test**: Run `forge convert empty-sections.md --strategy catalog --format json` on a fixture with informational-only sections and verify empty groups are generated with a warning. Run `forge convert missing-metadata.md` and verify `title` defaults to the input filename stem, `version` defaults to "0.0.0", and `author` defaults to "Unknown", with one warning emitted per missing metadata field.
 
 **Acceptance Scenarios**:
 1. **Given** a fixture with a section containing no normative requirements, **When** converting to Catalog, **Then** the section produces an empty group in the Catalog and a warning is emitted to stderr.
-2. **Given** a fixture with no version metadata, **When** converting, **Then** the OSCAL metadata `version` field defaults to "0.0.0" and a warning is emitted.
-3. **Given** a fixture with no title metadata, **When** converting, **Then** a sensible default title is used (e.g., filename) and a warning is emitted.
+2. **Given** a fixture with no version metadata, **When** converting, **Then** the OSCAL metadata `version` field defaults to "0.0.0" and one warning for missing `version` is emitted.
+3. **Given** a fixture with no title metadata, **When** converting, **Then** the OSCAL metadata `title` field defaults to the input filename stem and one warning for missing `title` is emitted.
+4. **Given** a fixture with no author metadata, **When** converting, **Then** the OSCAL metadata `author` field defaults to "Unknown" and one warning for missing `author` is emitted.
 
 ---
 
@@ -155,7 +156,7 @@ A user re-converts a policy document after minor edits and expects stable identi
 
 > As a compliance engineer, I want stable IDs to remain unchanged when I make whitespace-only edits but to update when I substantively change a requirement so that my traceability and diffs are meaningful.
 
-**Why this priority**: Identifier stability is a Must Have requirement (M-8). Incorrect behavior here breaks traceability and produces misleading diffs.
+**Why this priority**: Identifier stability is a Must Have requirement (M-5 and M-6). Incorrect behavior here breaks traceability and produces misleading diffs.
 
 **Independent Test**: Convert two fixture variants (whitespace-only diff and substantive diff) of the same policy and compare generated UUIDs.
 
@@ -194,23 +195,23 @@ A user converts a policy with inline citations and parameter-like content (e.g.,
 
 **Acceptance Scenarios**:
 1. **Given** a fixture with citations in unusual positions (e.g., mid-sentence, in table cells), **When** converting, **Then** citations are correctly extracted to back matter and linked from the referencing control.
-2. **Given** a fixture with parameter-like content ("must review within 30 days"), **When** converting, **Then** the parameter-like text is preserved in the control statement prose (parameter extraction is a Should Have in S-8, not required here, but the content must not be lost or corrupted).
+2. **Given** a fixture with parameter-like content ("must review within 30 days"), **When** converting, **Then** the parameter-like text is preserved in the control statement prose (this aligns with Should Have S-2 for WI-22; parameter extraction itself is handled in WI-34).
 
 ---
 
 ### User Story 7 — Edge Case: Both Strategies Tested (Priority: P1)
 
-Edge case fixtures must be tested with both catalog-first and component-first conversion strategies where applicable.
+Edge case fixtures must be tested with both catalog-first and component-first conversion strategies where applicable, while strategy-agnostic file-not-found behavior is validated once.
 
 > As a compliance engineer, I want edge case behavior to be consistent across both conversion strategies so that I can trust the output regardless of the strategy I choose.
 
 **Why this priority**: Bugs in edge case handling may manifest in one strategy but not the other. Both paths must be validated.
 
-**Independent Test**: For each applicable edge case fixture, run both `--strategy catalog` and `--strategy component` and compare against strategy-specific expected outputs.
+**Independent Test**: For EC-1, EC-2, EC-3, EC-4, EC-5, EC-6, EC-7, and EC-10, run both `--strategy catalog` and `--strategy component` and compare against strategy-specific expected outputs; validate EC-9 once as a strategy-agnostic missing-file failure.
 
 **Acceptance Scenarios**:
-1. **Given** an edge case fixture (e.g., empty sections), **When** converting with `--strategy catalog` and then with `--strategy component`, **Then** both outputs match their respective golden files.
-2. **Given** an error edge case (e.g., no headings), **When** running with both strategies, **Then** both produce equivalent descriptive errors.
+1. **Given** EC-1, EC-2, EC-3, EC-4, EC-5, EC-6, EC-7, or EC-10, **When** converting with `--strategy catalog` and then with `--strategy component`, **Then** both outputs match their respective golden files or expected errors.
+2. **Given** EC-9 (nonexistent source path), **When** converting, **Then** one strategy-agnostic descriptive filesystem error is produced with non-zero exit status.
 
 ---
 
@@ -270,13 +271,13 @@ N/A — No state transitions in this work item. Edge case fixtures are stateless
 - [ ] **M-1:** A test fixture and expected output (or expected error) shall exist for EC-1 (no identifiable headings → descriptive error).
 - [ ] **M-2:** A test fixture and expected output shall exist for EC-2 (single atomic statement preserved as-is; compound statement correctly atomized).
 - [ ] **M-3:** A test fixture and expected output shall exist for EC-3 (zero normative requirements → empty groups + warning).
-- [ ] **M-4:** A test fixture and expected output shall exist for EC-4 (no version → defaults to "0.0.0" + warning).
+- [ ] **M-4:** A test fixture and expected output shall exist for EC-4 (missing `title`, `version`, and/or `author` → `title` defaults to input filename stem, `version` defaults to "0.0.0", `author` defaults to "Unknown", with one warning per missing field).
 - [ ] **M-5:** A test fixture pair shall exist for EC-5 (whitespace-only changes → same stable IDs).
 - [ ] **M-6:** A test fixture pair shall exist for EC-6 (substantive change → new stable ID + warning).
 - [ ] **M-7:** A test fixture and expected output shall exist for EC-7 (malformed citation URL → preserved with unvalidated prop).
 - [ ] **M-8:** A test case shall exist for EC-9 (file not found → descriptive filesystem error).
 - [ ] **M-9:** A test fixture and expected output shall exist for EC-10 (both schema and semantic errors → all reported).
-- [ ] **M-10:** All applicable edge case fixtures shall be tested with both `--strategy catalog` and `--strategy component`, with strategy-specific expected outputs.
+- [ ] **M-10:** EC-1, EC-2, EC-3, EC-4, EC-5, EC-6, EC-7, and EC-10 shall be tested with both `--strategy catalog` and `--strategy component` using strategy-specific expected outputs; EC-9 is strategy-agnostic and shall be validated once.
 - [ ] **M-11:** All edge case tests shall pass in `cargo test` as part of the golden-file test suite.
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
@@ -299,7 +300,7 @@ N/A — No state transitions in this work item. Edge case fixtures are stateless
 
 - **Language/Framework:** Rust (latest stable), Cargo build system and test framework
 - **Test Framework:** `cargo test` with golden-file comparison; must integrate with WI-21 harness
-- **Fixture Format:** Markdown input files in a dedicated test fixtures directory (e.g., `tests/fixtures/edge-cases/`)
+- **Fixture Format:** Markdown input files for convert scenarios plus a JSON artifact fixture for EC-10 validation aggregation, all in `tests/fixtures/edge-cases/`
 - **Expected Output Format:** JSON files for expected OSCAL output; text files for expected error messages
 - **Linting:** `cargo clippy -- -D warnings` must pass including test code
 - **Formatting:** `cargo fmt --check` must pass
@@ -326,14 +327,14 @@ N/A — No new data model introduced in this work item. Edge case fixtures use t
 //   ec02-compound-atomic/
 //     input.md                          // Mix of compound and atomic statements
 //     expected-catalog.json             // Expected Catalog output
-//     expected-component.json           // Expected Component Definition output
+//     expected-component-definition.json // Expected Component Definition output
 //   ec03-empty-sections/
 //     input.md                          // Sections with no normative requirements
 //     expected-catalog.json             // Catalog with empty groups
 //     expected-warnings.txt             // Expected warning messages
 //   ec04-missing-metadata/
-//     input.md                          // No version or title in frontmatter
-//     expected-catalog.json             // Catalog with default version "0.0.0"
+//     input.md                          // Missing title, version, and/or author in frontmatter
+//     expected-catalog.json             // Catalog with default title/version/author values
 //     expected-warnings.txt             // Expected warning messages
 //   ec05-whitespace-only/
 //     input-original.md                 // Original fixture
@@ -350,7 +351,7 @@ N/A — No new data model introduced in this work item. Edge case fixtures use t
 //     // No input file — test passes a nonexistent path
 //     expected-error.txt                // Expected filesystem error message
 //   ec10-multiple-errors/
-//     input.md                          // Artifact with schema + semantic issues
+//     input.json                        // Artifact with schema + semantic issues
 //     expected-errors.txt               // All errors reported
 
 // Golden-file test helper (extends WI-21 harness)
@@ -358,6 +359,7 @@ fn assert_edge_case_output(fixture_dir: &str, strategy: &str);
 fn assert_edge_case_error(fixture_dir: &str, expected_error_substring: &str);
 fn assert_stable_ids_match(fixture_a: &str, fixture_b: &str);
 fn assert_stable_ids_differ(fixture_a: &str, fixture_b: &str, changed_requirement: &str);
+fn assert_validation_issue_set(input_path: &str, expected_issue_substrings: &[&str]);
 ```
 
 ---
@@ -368,7 +370,7 @@ fn assert_stable_ids_differ(fixture_a: &str, fixture_b: &str, changed_requiremen
 |-----------|--------|--------|--------|-------|
 | EC Coverage | Critical | Number of parent PRD edge cases (EC-1 through EC-10, excluding EC-8) with test fixtures | 9 of 9 | Every applicable edge case must have a fixture |
 | Test Pass Rate | Critical | % of edge case tests passing in `cargo test` | 100% | All edge case tests must pass |
-| Strategy Coverage | High | % of applicable edge cases tested with both catalog and component strategies | 100% | Both strategies validated per edge case |
+| Strategy Coverage | High | % of strategy-applicable edge cases tested with both catalog and component strategies | 100% | EC-1/2/3/4/5/6/7/10 validated under both strategies; EC-9 validated once |
 | Extraction Accuracy | High | Edge case outputs match golden files | Exact match | No regressions from WI-21 core suite |
 
 ---
@@ -394,13 +396,13 @@ fn assert_stable_ids_differ(fixture_a: &str, fixture_b: &str, changed_requiremen
 | AC-1 | M-1 | US-1 | A Markdown fixture with no headings | Running `forge convert` | CLI exits with descriptive error and non-zero exit code |
 | AC-2 | M-2 | US-2 | A fixture with compound and atomic statements | Running `forge convert --strategy catalog` | Compound statements are atomized; atomic statements preserved; output matches golden file |
 | AC-3 | M-3 | US-3 | A fixture with sections containing no normative requirements | Running `forge convert --strategy catalog` | Empty groups generated; warning emitted; output matches golden file |
-| AC-4 | M-4 | US-3 | A fixture with no version metadata | Running `forge convert` | Version defaults to "0.0.0"; warning emitted; output matches golden file |
+| AC-4 | M-4 | US-3 | A fixture with missing title/version/author metadata | Running `forge convert` | Title defaults to filename stem, version defaults to "0.0.0", author defaults to "Unknown"; one warning per missing field; output matches golden file |
 | AC-5 | M-5 | US-4 | Two fixture variants with whitespace-only differences | Converting both | All stable IDs are identical |
 | AC-6 | M-6 | US-4 | Two fixture variants with a substantive text change | Converting both | Changed requirement has a new stable ID; warning emitted |
 | AC-7 | M-7 | US-5 | A fixture with a malformed citation URL | Running `forge convert` | Citation preserved in back matter with unvalidated prop; output matches golden file |
 | AC-8 | M-8 | US-5 | A nonexistent file path | Running `forge convert nonexistent.md` | CLI exits with descriptive filesystem error and non-zero exit code |
 | AC-9 | M-9 | US-5 | An artifact with both schema and semantic errors | Running `forge validate` | All errors reported, not just the first |
-| AC-10 | M-10 | US-7 | An applicable edge case fixture | Running with both `--strategy catalog` and `--strategy component` | Both outputs match their respective golden files |
+| AC-10 | M-10 | US-7 | A strategy-applicable edge case fixture (EC-1/2/3/4/5/6/7/10) | Running with both `--strategy catalog` and `--strategy component` | Both outputs match their respective golden files or expected errors |
 | AC-11 | M-11 | All | All edge case fixtures | Running `cargo test` | All edge case tests pass |
 
 ### Edge Cases 🟢 `@llm-autonomous`

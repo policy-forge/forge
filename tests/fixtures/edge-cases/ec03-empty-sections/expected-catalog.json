@@ -1,0 +1,77 @@
+{
+  "catalog": {
+    "uuid": "25b386a1-5eca-4bdb-8cdb-ec124d367000",
+    "metadata": {
+      "title": "Purpose",
+      "last-modified": "2026-02-21T21:03:42.682370+00:00",
+      "version": "0.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "purpose",
+        "title": "Purpose"
+      },
+      {
+        "id": "scope",
+        "title": "Scope"
+      },
+      {
+        "id": "controls",
+        "title": "Controls",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Controls"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-C-001",
+            "title": "Teams must review privileged access every quarter.",
+            "links": [
+              {
+                "href": "input.md#line=11",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-C-001_smt",
+                "name": "statement",
+                "prose": "Teams must review privileged access every quarter."
+              },
+              {
+                "id": "POL-C-001_gdn",
+                "name": "guidance",
+                "prose": "Teams must review privileged access every quarter."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Controls"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "11"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,159 @@
+---
+source: tests/golden_edge_case_tests.rs
+expression: normalize_for_comparison(&catalog_output)
+---
+{
+  "catalog": {
+    "groups": [
+      {
+        "controls": [
+          {
+            "id": "POL-CS-001",
+            "links": [
+              {
+                "href": "input.md#line=3",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CS-001_smt",
+                "name": "statement",
+                "prose": "Systems must encrypt data at rest"
+              },
+              {
+                "id": "POL-CS-001_gdn",
+                "name": "guidance",
+                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Control Statements"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "3"
+              }
+            ],
+            "title": "Systems must encrypt data at rest"
+          },
+          {
+            "id": "POL-CS-002",
+            "links": [
+              {
+                "href": "input.md#line=3",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CS-002_smt",
+                "name": "statement",
+                "prose": "Systems must encrypt data in transit."
+              },
+              {
+                "id": "POL-CS-002_gdn",
+                "name": "guidance",
+                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Control Statements"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "3"
+              }
+            ],
+            "title": "Systems must encrypt data in transit."
+          },
+          {
+            "id": "POL-CS-003",
+            "links": [
+              {
+                "href": "input.md#line=4",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CS-003_smt",
+                "name": "statement",
+                "prose": "Systems must retain audit logs for at least one year."
+              },
+              {
+                "id": "POL-CS-003_gdn",
+                "name": "guidance",
+                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Control Statements"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "4"
+              }
+            ],
+            "title": "Systems must retain audit logs for at least one year."
+          }
+        ],
+        "id": "control-statements",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Control Statements"
+          }
+        ],
+        "title": "Control Statements"
+      }
+    ],
+    "metadata": {
+      "last-modified": "2026-01-01T00:00:00Z",
+      "oscal-version": "1.2.0",
+      "title": "Control Statements",
+      "version": "0.0.0"
+    },
+    "uuid": "00000000-0000-0000-0000-000000000000"
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "component-definition": {
+    "uuid": "3a65bfc1-b5e7-43cc-af2d-afc575a79cea",
+    "metadata": {
+      "title": "Timelines",
+      "last-modified": "2026-02-21T21:03:45.354275+00:00",
+      "version": "0.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "components": [
+      {
+        "uuid": "64fe51df-9520-5897-bef8-cfcae3473e93",
+        "type": "policy",
+        "title": "Timelines",
+        "description": "Documentary component representing the Timelines policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "control-implementations": [
+          {
+            "description": "Implementation narratives derived from Timelines.",
+            "implemented-requirements": [
+              {
+                "control-id": "POL-T-001",
+                "description": "Teams must review access requests {{ insert: param, id-ref: p223d1187-cc60-54fe-bb73-38885ebdb515_prm_0 }}.",
+                "links": [
+                  {
+                    "href": "input.md#line=3",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Timelines"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "3"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "uuid": "e41a8efd-4b12-5388-973e-2e601732d8c8"
+              },
+              {
+                "control-id": "POL-T-002",
+                "description": "Systems must use {{ insert: param, id-ref: c194d8e5-1b54-55bf-8f0b-b1332bd8bf2c_prm_0 }} keys for encrypted channels.",
+                "links": [
+                  {
+                    "href": "input.md#line=4",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Timelines"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "4"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "uuid": "bcbce80d-4b07-5557-a14a-56752e95d241"
+              }
+            ],
+            "source": "tests/fixtures/edge-cases/source-profile.json",
+            "uuid": "a1bb8684-34a9-531a-8c51-75a073a6acc7"
+          }
+        ]
+      }
+    ]
+  }
+}

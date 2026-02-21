@@ -1,0 +1,24 @@
+---
+source: tests/golden_edge_case_tests.rs
+expression: rendered
+---
+Validation failed: 4 schema errors, 1 semantic error
+
+Schema Errors:
+  [1] $.catalog.metadata — required field missing: last-modified
+      Expected: required field
+      Actual: {"title":"Broken Catalog"}
+  [2] $.catalog.metadata — required field missing: version
+      Expected: required field
+      Actual: {"title":"Broken Catalog"}
+  [3] $.catalog.metadata — required field missing: oscal-version
+      Expected: required field
+      Actual: {"title":"Broken Catalog"}
+  [4] $.catalog.uuid — schema validation failed
+      Expected: valid value per schema
+      Actual: "123e4567-e89b-12d3-a456-426614174000"
+
+Semantic Errors:
+  [1] $.catalog.groups[0].controls[0].links[0].href — orphaned link: reference #missing-resource not found in back-matter resources
+      Expected: referenced resource exists in back-matter
+      Actual: #missing-resource

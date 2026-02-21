@@ -105,3 +105,45 @@ fn fixture_produces_valid_oscal_output() {
         "Synthetic fixture should produce at least 100 controls for scale testing, got {total_controls}"
     );
 }
+
+#[test]
+fn wi22_edge_case_fixture_integrity_and_scope_guards() {
+    let edge_root = Path::new("tests/fixtures/edge-cases");
+    assert!(edge_root.exists(), "WI-22 edge fixture root must exist: {}", edge_root.display());
+
+    let required_dirs = [
+        "ec01-no-headings",
+        "ec02-compound-atomic",
+        "ec03-empty-sections",
+        "ec04-missing-metadata",
+        "ec05-whitespace-only",
+        "ec06-substantive-change",
+        "ec07-malformed-citation",
+        "ec09-file-not-found",
+        "ec10-multiple-errors",
+        "ec-citation-unusual-positions",
+        "ec-parameter-like-content",
+    ];
+
+    for dir in required_dirs {
+        let path = edge_root.join(dir);
+        assert!(path.exists(), "Missing WI-22 fixture directory: {}", path.display());
+    }
+
+    assert!(
+        !edge_root.join("ec08-scanned-document").exists(),
+        "FR-012 guard: EC-8 fixtures are out of scope"
+    );
+
+    let benchmark_markers = ["benchmark", "perf", "performance", "throughput", "latency"];
+
+    for entry in std::fs::read_dir(edge_root).expect("read edge fixture directory") {
+        let entry = entry.expect("read fixture entry");
+        let name = entry.file_name().to_string_lossy().to_lowercase();
+        let has_benchmark_marker = benchmark_markers.iter().any(|marker| name.contains(marker));
+        assert!(
+            !has_benchmark_marker,
+            "FR-012 guard: benchmark artifact detected in WI-22 fixtures: {name}"
+        );
+    }
+}
