@@ -68,6 +68,14 @@ fn load_expected_json(path: &Path) -> Value {
 }
 
 fn run_convert(input_path: &Path, strategy: Strategy) -> ConvertRun {
+    run_convert_with_baseline(input_path, strategy, None)
+}
+
+fn run_convert_with_baseline(
+    input_path: &Path,
+    strategy: Strategy,
+    stable_id_baseline: Option<&Path>,
+) -> ConvertRun {
     let temp = TempDir::new().expect("create temp dir");
     let output_path = temp.path().join("out.json");
 
@@ -83,6 +91,10 @@ fn run_convert(input_path: &Path, strategy: Strategy) -> ConvertRun {
 
     if matches!(strategy, Strategy::Component) {
         cmd.arg("--source-profile").arg(SOURCE_PROFILE);
+    }
+
+    if let Some(baseline) = stable_id_baseline {
+        cmd.arg("--stable-id-baseline").arg(baseline);
     }
 
     let output = cmd.output().expect("run forge convert command");
@@ -345,7 +357,7 @@ fn ec06_substantive_change_rotates_stable_ids() {
     let changed = fixture_input("ec06-substantive-change", "input-changed.md");
 
     let run_a = run_convert(&original, Strategy::Component);
-    let run_b = run_convert(&changed, Strategy::Component);
+    let run_b = run_convert_with_baseline(&changed, Strategy::Component, Some(&original));
     assert_eq!(run_a.code, 0, "EC-6 baseline failed: {}", run_a.stderr);
     assert_eq!(run_b.code, 0, "EC-6 changed failed: {}", run_b.stderr);
 
@@ -362,10 +374,7 @@ fn ec06_substantive_change_rotates_stable_ids() {
         "ec06-substantive-change",
         "expected-warnings.txt",
     ));
-    let comparison_warning = format!(
-        "stable id changed for {changed_count} requirement(s) due to non-whitespace change"
-    );
-    assert_expected_warnings(&comparison_warning, &expected_warnings, "EC-6 warnings");
+    assert_expected_warnings(&run_b.stderr, &expected_warnings, "EC-6 warnings");
 }
 
 #[test]
