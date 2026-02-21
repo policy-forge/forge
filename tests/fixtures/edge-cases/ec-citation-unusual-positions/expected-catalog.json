@@ -1,0 +1,116 @@
+{
+  "catalog": {
+    "uuid": "00d41ab6-28ad-4e27-9c54-978ba4145ef8",
+    "metadata": {
+      "title": "Citation Placement Edge Case",
+      "last-modified": "2026-02-21T19:52:09.560555+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-citation-placement-edge-case-version-1-0-0-author-reference-team",
+        "title": "title: \"Citation Placement Edge Case\"version: \"1.0.0\"author: \"Reference Team\""
+      },
+      {
+        "id": "citation-positions",
+        "title": "Citation Positions",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Citation Positions"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-CP-001",
+            "title": "Policy owners must maintain evidence trails audit source.",
+            "links": [
+              {
+                "href": "input.md#line=9",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CP-001_smt",
+                "name": "statement",
+                "prose": "Policy owners must maintain evidence trails audit source."
+              },
+              {
+                "id": "POL-CP-001_gdn",
+                "name": "guidance",
+                "prose": "Policy owners must maintain evidence trails audit source.\nTeams must document exceptions exception guide.\n| Requirement | Citation |\n| --- | --- |\n| Teams must document exceptions. | exception guide |"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Citation Positions"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "9"
+              }
+            ]
+          },
+          {
+            "id": "POL-CP-002",
+            "title": "Teams must document exceptions exception guide.",
+            "links": [
+              {
+                "href": "input.md#line=10",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CP-002_smt",
+                "name": "statement",
+                "prose": "Teams must document exceptions exception guide."
+              },
+              {
+                "id": "POL-CP-002_gdn",
+                "name": "guidance",
+                "prose": "Policy owners must maintain evidence trails audit source.\nTeams must document exceptions exception guide.\n| Requirement | Citation |\n| --- | --- |\n| Teams must document exceptions. | exception guide |"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Citation Positions"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "10"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

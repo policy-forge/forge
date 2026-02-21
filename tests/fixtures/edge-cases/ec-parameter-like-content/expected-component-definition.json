@@ -1,0 +1,99 @@
+{
+  "component-definition": {
+    "uuid": "65163a8b-59c2-4b4d-9209-a13ff21d0677",
+    "metadata": {
+      "title": "Parameter-like Content Edge Case",
+      "last-modified": "2026-02-21T19:52:11.264425+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "components": [
+      {
+        "uuid": "aeccc9ce-0575-5da3-8a3b-28ea4e188621",
+        "type": "policy",
+        "title": "Parameter-like Content Edge Case",
+        "description": "Documentary component representing the Parameter-like Content Edge Case policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "control-implementations": [
+          {
+            "description": "Implementation narratives derived from Parameter-like Content Edge Case.",
+            "implemented-requirements": [
+              {
+                "control-id": "POL-T-001",
+                "description": "Teams must review access requests {{ insert: param, id-ref: p66ee0dea-e531-5ab4-abd0-aeb6f6ab3ed8_prm_0 }}.",
+                "links": [
+                  {
+                    "href": "input.md#line=9",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Timelines"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "9"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "uuid": "efd2e049-d4a9-5350-8817-3f860bad6691"
+              },
+              {
+                "control-id": "POL-T-002",
+                "description": "Systems must use {{ insert: param, id-ref: c7063cfe-7f2c-59d0-af09-454b6b3dff88_prm_0 }} keys for encrypted channels.",
+                "links": [
+                  {
+                    "href": "input.md#line=10",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Timelines"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "10"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "uuid": "5c51a5c3-6428-50b9-a966-42dffd78e279"
+              }
+            ],
+            "source": "tests/fixtures/edge-cases/source-profile.json",
+            "uuid": "7e7b8909-655e-5c75-a496-b916a10893ec"
+          }
+        ]
+      }
+    ]
+  }
+}

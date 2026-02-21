@@ -1,0 +1,144 @@
+{
+  "catalog": {
+    "uuid": "8919215f-eaf5-4a29-b390-9c1f76f44719",
+    "metadata": {
+      "title": "Parameter-like Content Edge Case",
+      "last-modified": "2026-02-21T19:52:10.711345+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-parameter-like-content-edge-case-version-1-0-0-author-policy-office",
+        "title": "title: \"Parameter-like Content Edge Case\"version: \"1.0.0\"author: \"Policy Office\""
+      },
+      {
+        "id": "timelines",
+        "title": "Timelines",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Timelines"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-T-001",
+            "title": "Teams must review access requests {{ insert: param, id-ref: p66ee0dea-e531-5ab4-abd0-aeb6f6ab3ed8_prm_0 }}.",
+            "links": [
+              {
+                "href": "input.md#line=9",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "p66ee0dea-e531-5ab4-abd0-aeb6f6ab3ed8_prm_0",
+                "label": "within 30 days",
+                "values": [
+                  "30 days"
+                ],
+                "constraints": [
+                  {
+                    "description": "minimum: 30 days"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-T-001_smt",
+                "name": "statement",
+                "prose": "Teams must review access requests {{ insert: param, id-ref: p66ee0dea-e531-5ab4-abd0-aeb6f6ab3ed8_prm_0 }}."
+              },
+              {
+                "id": "POL-T-001_gdn",
+                "name": "guidance",
+                "prose": "Teams must review access requests within 30 days.\nSystems must use at least 128-bit keys for encrypted channels."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Timelines"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "9"
+              }
+            ]
+          },
+          {
+            "id": "POL-T-002",
+            "title": "Systems must use {{ insert: param, id-ref: c7063cfe-7f2c-59d0-af09-454b6b3dff88_prm_0 }} keys for encrypted channels.",
+            "links": [
+              {
+                "href": "input.md#line=10",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "c7063cfe-7f2c-59d0-af09-454b6b3dff88_prm_0",
+                "label": "at least 128-bit",
+                "values": [
+                  "128-bit"
+                ],
+                "constraints": [
+                  {
+                    "description": "minimum: 128-bit"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-T-002_smt",
+                "name": "statement",
+                "prose": "Systems must use {{ insert: param, id-ref: c7063cfe-7f2c-59d0-af09-454b6b3dff88_prm_0 }} keys for encrypted channels."
+              },
+              {
+                "id": "POL-T-002_gdn",
+                "name": "guidance",
+                "prose": "Teams must review access requests within 30 days.\nSystems must use at least 128-bit keys for encrypted channels."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Timelines"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "10"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

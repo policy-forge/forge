@@ -1,0 +1,90 @@
+{
+  "catalog": {
+    "uuid": "39f088fe-1d21-4820-be0d-934b5aec6bd6",
+    "metadata": {
+      "title": "Citation Edge Case",
+      "last-modified": "2026-02-21T19:54:26.731772+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-citation-edge-case-version-1-0-0-author-reference-team",
+        "title": "title: \"Citation Edge Case\"version: \"1.0.0\"author: \"Reference Team\""
+      },
+      {
+        "id": "references",
+        "title": "References",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "References"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-R-001",
+            "title": "Systems must document retention controls at.",
+            "links": [
+              {
+                "href": "input.md#line=9",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-R-001_smt",
+                "name": "statement",
+                "prose": "Systems must document retention controls at."
+              },
+              {
+                "id": "POL-R-001_gdn",
+                "name": "guidance",
+                "prose": "Systems must document retention controls at https://example.com/retention."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "References"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "9"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "a22cca0e-3066-5aae-baf0-8eb9827b2231",
+          "title": "https://example.com/retention",
+          "description": "Referenced by requirement a5d609a4-4d1a-5536-8c1f-263c8e8395df",
+          "citation": {
+            "text": "https://example.com/retention"
+          },
+          "rlinks": [
+            {
+              "href": "https://example.com/retention"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

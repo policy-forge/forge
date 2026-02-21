@@ -1,0 +1,81 @@
+{
+  "catalog": {
+    "uuid": "5e799516-c87e-4b70-8543-5b23acb0d1a0",
+    "metadata": {
+      "title": "Informational Policy",
+      "last-modified": "2026-02-21T19:52:07.798838+00:00",
+      "version": "2.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-informational-policy-version-2-0-0-author-policy-office",
+        "title": "title: \"Informational Policy\"version: \"2.0.0\"author: \"Policy Office\""
+      },
+      {
+        "id": "purpose",
+        "title": "Purpose"
+      },
+      {
+        "id": "scope",
+        "title": "Scope"
+      },
+      {
+        "id": "controls",
+        "title": "Controls",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Controls"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-C-001",
+            "title": "Teams must review privileged access every quarter.",
+            "links": [
+              {
+                "href": "input.md#line=17",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-C-001_smt",
+                "name": "statement",
+                "prose": "Teams must review privileged access every quarter."
+              },
+              {
+                "id": "POL-C-001_gdn",
+                "name": "guidance",
+                "prose": "Teams must review privileged access every quarter."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Controls"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "17"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

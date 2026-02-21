@@ -1,6 +1,10 @@
 # === Rust / Cargo ===
 /target/
+debug/
+release/
 **/*.rs.bk
+*.rlib
+*.prof*
 Cargo.lock
 *.log
 
@@ -23,6 +27,7 @@ coverage/
 *.swo
 *~
 .DS_Store
+*.tmp
 
 # === Environment & Secrets ===
 .env

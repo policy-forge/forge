@@ -1,0 +1,14 @@
+---
+source: tests/golden_edge_case_tests.rs
+expression: json!(component_status)
+---
+{
+  "ec01-no-headings": "error-ok",
+  "ec02-compound-atomic": "success",
+  "ec03-empty-sections": "success",
+  "ec04-missing-metadata": "success",
+  "ec05-whitespace-only": "success",
+  "ec06-substantive-change": "success",
+  "ec07-malformed-citation": "success",
+  "ec10-multiple-errors": "validation-aggregate"
+}
