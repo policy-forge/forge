@@ -313,10 +313,7 @@ fn profile_set_param_nonexistent_id_exits_zero() {
         .unwrap()
         .iter()
         .any(|p| p["param-id"].as_str() == Some("nonexistent-param-999"));
-    assert!(
-        found,
-        "expected set-parameter with param-id 'nonexistent-param-999' in: {set_params}"
-    );
+    assert!(found, "expected set-parameter with param-id 'nonexistent-param-999' in: {set_params}");
     let entry = set_params
         .as_array()
         .unwrap()
