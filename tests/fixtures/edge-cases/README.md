@@ -12,7 +12,7 @@ Parent edge cases:
 - `ec06-substantive-change/`: paired inputs for stable ID rotation (`expected-warnings.txt`)
 - `ec07-malformed-citation/`: malformed URL retained with `url-status=unvalidated` (`expected-catalog.json`)
 - `ec09-file-not-found/`: missing source path failure contract (`expected-error.txt`)
-- `ec10-multiple-errors/`: validation fixture containing schema + semantic issues (`input.md`, `expected-errors.txt`)
+- `ec10-multiple-errors/`: validation fixture containing schema + semantic issues (`input.json`, `expected-errors.txt`)
 
 Supplemental Should-Have scenarios:
 

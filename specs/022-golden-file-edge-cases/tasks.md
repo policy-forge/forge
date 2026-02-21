@@ -144,7 +144,7 @@
 - [x] T036 [P] [US5] Create malformed-citation fixture input in `tests/fixtures/edge-cases/ec07-malformed-citation/input.md`
 - [x] T037 [P] [US5] Add expected EC-7 catalog output containing `prop name="url-status" value="unvalidated"` in `tests/fixtures/edge-cases/ec07-malformed-citation/expected-catalog.json`
 - [x] T038 [P] [US5] Add expected EC-9 error substrings in `tests/fixtures/edge-cases/ec09-file-not-found/expected-error.txt`
-- [x] T039 [P] [US5] Create EC-10 multi-issue validation fixture input in `tests/fixtures/edge-cases/ec10-multiple-errors/input.md`
+- [x] T039 [P] [US5] Create EC-10 multi-issue validation fixture input in `tests/fixtures/edge-cases/ec10-multiple-errors/input.json`
 - [x] T040 [P] [US5] Add expected EC-10 schema+semantic issue substrings in `tests/fixtures/edge-cases/ec10-multiple-errors/expected-errors.txt`
 - [x] T041 [US5] Add failing EC-7, EC-9, and EC-10 tests in `tests/golden_edge_case_tests.rs`
 

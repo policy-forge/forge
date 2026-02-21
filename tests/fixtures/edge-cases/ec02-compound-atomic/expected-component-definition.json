@@ -1,18 +1,18 @@
 {
   "component-definition": {
-    "uuid": "9a1be5ad-47f6-41b7-8597-b695174b7fd5",
+    "uuid": "5a081b14-e775-4c07-8eee-5a29267e96a1",
     "metadata": {
-      "title": "Compound and Atomic Policy",
-      "last-modified": "2026-02-21T19:52:07.216056+00:00",
-      "version": "1.1.0",
+      "title": "Control Statements",
+      "last-modified": "2026-02-21T21:03:42.127355+00:00",
+      "version": "0.0.0",
       "oscal-version": "1.2.0"
     },
     "components": [
       {
-        "uuid": "8520761f-48a6-57ed-b0c0-a11730d453a8",
+        "uuid": "2033536d-4dec-587c-90a7-bd33509cbe7f",
         "type": "policy",
-        "title": "Compound and Atomic Policy",
-        "description": "Documentary component representing the Compound and Atomic Policy policy document.",
+        "title": "Control Statements",
+        "description": "Documentary component representing the Control Statements policy document.",
         "props": [
           {
             "name": "source-file",
@@ -22,14 +22,14 @@
         ],
         "control-implementations": [
           {
-            "description": "Implementation narratives derived from Compound and Atomic Policy.",
+            "description": "Implementation narratives derived from Control Statements.",
             "implemented-requirements": [
               {
                 "control-id": "POL-CS-001",
                 "description": "Systems must encrypt data at rest",
                 "links": [
                   {
-                    "href": "input.md#line=9",
+                    "href": "input.md#line=3",
                     "rel": "source"
                   }
                 ],
@@ -47,21 +47,21 @@
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "9"
+                    "value": "3"
                   },
                   {
                     "name": "modality",
                     "value": "normative"
                   }
                 ],
-                "uuid": "6448aa26-c089-55b4-8952-a3c0069afeb3"
+                "uuid": "b53fbd2d-6545-59fb-8c5d-3149184c9035"
               },
               {
                 "control-id": "POL-CS-002",
                 "description": "Systems must encrypt data in transit.",
                 "links": [
                   {
-                    "href": "input.md#line=9",
+                    "href": "input.md#line=3",
                     "rel": "source"
                   }
                 ],
@@ -79,21 +79,21 @@
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "9"
+                    "value": "3"
                   },
                   {
                     "name": "modality",
                     "value": "normative"
                   }
                 ],
-                "uuid": "d2562eac-4dc7-59a3-bae6-c903d2f0027d"
+                "uuid": "ef85520e-5c4a-5ea9-8480-1097079803f9"
               },
               {
                 "control-id": "POL-CS-003",
                 "description": "Systems must retain audit logs for at least one year.",
                 "links": [
                   {
-                    "href": "input.md#line=10",
+                    "href": "input.md#line=4",
                     "rel": "source"
                   }
                 ],
@@ -111,18 +111,18 @@
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "10"
+                    "value": "4"
                   },
                   {
                     "name": "modality",
                     "value": "normative"
                   }
                 ],
-                "uuid": "66a97c67-5ec1-5266-9da6-61eabbad67b6"
+                "uuid": "87410706-4e16-5119-9b98-172d84a6201a"
               }
             ],
             "source": "tests/fixtures/edge-cases/source-profile.json",
-            "uuid": "754bfe39-b230-53ab-b5be-d7ccdeaf591e"
+            "uuid": "03cf6c89-40fa-586b-9d5c-c7de84768ea8"
           }
         ]
       }

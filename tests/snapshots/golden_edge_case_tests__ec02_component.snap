@@ -8,14 +8,14 @@ expression: normalize_for_comparison(&component_output)
       {
         "control-implementations": [
           {
-            "description": "Implementation narratives derived from Compound and Atomic Policy.",
+            "description": "Implementation narratives derived from Control Statements.",
             "implemented-requirements": [
               {
                 "control-id": "POL-CS-001",
                 "description": "Systems must encrypt data at rest",
                 "links": [
                   {
-                    "href": "input.md#line=9",
+                    "href": "input.md#line=3",
                     "rel": "source"
                   }
                 ],
@@ -33,7 +33,7 @@ expression: normalize_for_comparison(&component_output)
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "9"
+                    "value": "3"
                   },
                   {
                     "name": "modality",
@@ -47,7 +47,7 @@ expression: normalize_for_comparison(&component_output)
                 "description": "Systems must encrypt data in transit.",
                 "links": [
                   {
-                    "href": "input.md#line=9",
+                    "href": "input.md#line=3",
                     "rel": "source"
                   }
                 ],
@@ -65,7 +65,7 @@ expression: normalize_for_comparison(&component_output)
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "9"
+                    "value": "3"
                   },
                   {
                     "name": "modality",
@@ -79,7 +79,7 @@ expression: normalize_for_comparison(&component_output)
                 "description": "Systems must retain audit logs for at least one year.",
                 "links": [
                   {
-                    "href": "input.md#line=10",
+                    "href": "input.md#line=4",
                     "rel": "source"
                   }
                 ],
@@ -97,7 +97,7 @@ expression: normalize_for_comparison(&component_output)
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "10"
+                    "value": "4"
                   },
                   {
                     "name": "modality",
@@ -111,7 +111,7 @@ expression: normalize_for_comparison(&component_output)
             "uuid": "00000000-0000-0000-0000-000000000000"
           }
         ],
-        "description": "Documentary component representing the Compound and Atomic Policy policy document.",
+        "description": "Documentary component representing the Control Statements policy document.",
         "props": [
           {
             "name": "source-file",
@@ -119,7 +119,7 @@ expression: normalize_for_comparison(&component_output)
             "value": "input.md"
           }
         ],
-        "title": "Compound and Atomic Policy",
+        "title": "Control Statements",
         "type": "policy",
         "uuid": "00000000-0000-0000-0000-000000000000"
       }
@@ -127,8 +127,8 @@ expression: normalize_for_comparison(&component_output)
     "metadata": {
       "last-modified": "2026-01-01T00:00:00Z",
       "oscal-version": "1.2.0",
-      "title": "Compound and Atomic Policy",
-      "version": "1.1.0"
+      "title": "Control Statements",
+      "version": "0.0.0"
     },
     "uuid": "00000000-0000-0000-0000-000000000000"
   }

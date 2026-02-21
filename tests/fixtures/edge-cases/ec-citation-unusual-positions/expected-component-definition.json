@@ -1,18 +1,18 @@
 {
   "component-definition": {
-    "uuid": "7d3e9b8e-32b9-4f13-a514-3a613173161d",
+    "uuid": "6f17887e-211d-41d5-a2c8-8a578e71595a",
     "metadata": {
-      "title": "Citation Placement Edge Case",
-      "last-modified": "2026-02-21T19:52:10.147192+00:00",
-      "version": "1.0.0",
+      "title": "Citation Positions",
+      "last-modified": "2026-02-21T21:03:44.276876+00:00",
+      "version": "0.0.0",
       "oscal-version": "1.2.0"
     },
     "components": [
       {
-        "uuid": "639d4a90-ad16-51c4-b39a-72be1d76321c",
+        "uuid": "1466a82d-7c6e-5bff-b0a7-a704584c36fe",
         "type": "policy",
-        "title": "Citation Placement Edge Case",
-        "description": "Documentary component representing the Citation Placement Edge Case policy document.",
+        "title": "Citation Positions",
+        "description": "Documentary component representing the Citation Positions policy document.",
         "props": [
           {
             "name": "source-file",
@@ -22,14 +22,14 @@
         ],
         "control-implementations": [
           {
-            "description": "Implementation narratives derived from Citation Placement Edge Case.",
+            "description": "Implementation narratives derived from Citation Positions.",
             "implemented-requirements": [
               {
                 "control-id": "POL-CP-001",
                 "description": "Policy owners must maintain evidence trails audit source.",
                 "links": [
                   {
-                    "href": "input.md#line=9",
+                    "href": "input.md#line=3",
                     "rel": "source"
                   }
                 ],
@@ -47,21 +47,21 @@
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "9"
+                    "value": "3"
                   },
                   {
                     "name": "modality",
                     "value": "normative"
                   }
                 ],
-                "uuid": "d3a0166b-c917-5c22-bcce-53c2b75e4eb2"
+                "uuid": "542eed55-dec0-505f-b382-0b7728872c18"
               },
               {
                 "control-id": "POL-CP-002",
                 "description": "Teams must document exceptions exception guide.",
                 "links": [
                   {
-                    "href": "input.md#line=10",
+                    "href": "input.md#line=4",
                     "rel": "source"
                   }
                 ],
@@ -79,18 +79,18 @@
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "10"
+                    "value": "4"
                   },
                   {
                     "name": "modality",
                     "value": "normative"
                   }
                 ],
-                "uuid": "266e612d-6ca5-58de-912d-33ec583f7133"
+                "uuid": "b764b115-0cc6-56d0-8191-3d7cf2c78ba1"
               }
             ],
             "source": "tests/fixtures/edge-cases/source-profile.json",
-            "uuid": "fa596bb7-147e-53f0-9403-252f6ba7338d"
+            "uuid": "3ce5ec87-d926-5231-b6f2-5b6a57db7145"
           }
         ]
       }

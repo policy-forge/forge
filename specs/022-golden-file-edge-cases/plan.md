@@ -16,7 +16,7 @@ Implement WI-22 by extending the existing WI-21 golden-file test harness with ed
 **Target Platform**: Local CLI and CI (macOS/Linux/Windows)  
 **Project Type**: Single Rust crate (`forge`) with integration tests  
 **Performance Goals**: Performance benchmarking is explicitly out of scope for this feature (FR-012, PRD W-2)  
-**Constraints**: Markdown-only fixtures; EC-8 excluded; failure assertions use required substrings; metadata defaults are fixed (`title` filename stem, `version` `0.0.0`, `author` `Unknown`); malformed citations must keep `prop name="url-status" value="unvalidated"`; non-whitespace normative text changes must trigger new stable IDs  
+**Constraints**: Markdown fixtures for convert scenarios plus a JSON validation artifact for EC-10; EC-8 excluded; failure assertions use required substrings; metadata defaults are fixed (`title` filename stem, `version` `0.0.0`, `author` `Unknown`); malformed citations must keep `prop name="url-status" value="unvalidated"`; non-whitespace normative text changes must trigger new stable IDs  
 **Scale/Scope**: 9 parent edge cases total (8 dual-strategy + 1 strategy-agnostic), plus 2 supplemental Should-Have scenarios for citation placement and parameter-like content
 
 ## Constitution Check
@@ -89,7 +89,7 @@ tests/
 │       ├── ec09-file-not-found/
 │       │   └── expected-error.txt
 │       ├── ec10-multiple-errors/
-│           ├── input.md
+│           ├── input.json
 │           └── expected-errors.txt
 │       ├── ec-citation-unusual-positions/
 │       │   ├── input.md

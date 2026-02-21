@@ -1,18 +1,18 @@
 {
   "component-definition": {
-    "uuid": "65163a8b-59c2-4b4d-9209-a13ff21d0677",
+    "uuid": "3a65bfc1-b5e7-43cc-af2d-afc575a79cea",
     "metadata": {
-      "title": "Parameter-like Content Edge Case",
-      "last-modified": "2026-02-21T19:52:11.264425+00:00",
-      "version": "1.0.0",
+      "title": "Timelines",
+      "last-modified": "2026-02-21T21:03:45.354275+00:00",
+      "version": "0.0.0",
       "oscal-version": "1.2.0"
     },
     "components": [
       {
-        "uuid": "aeccc9ce-0575-5da3-8a3b-28ea4e188621",
+        "uuid": "64fe51df-9520-5897-bef8-cfcae3473e93",
         "type": "policy",
-        "title": "Parameter-like Content Edge Case",
-        "description": "Documentary component representing the Parameter-like Content Edge Case policy document.",
+        "title": "Timelines",
+        "description": "Documentary component representing the Timelines policy document.",
         "props": [
           {
             "name": "source-file",
@@ -22,14 +22,14 @@
         ],
         "control-implementations": [
           {
-            "description": "Implementation narratives derived from Parameter-like Content Edge Case.",
+            "description": "Implementation narratives derived from Timelines.",
             "implemented-requirements": [
               {
                 "control-id": "POL-T-001",
-                "description": "Teams must review access requests {{ insert: param, id-ref: p66ee0dea-e531-5ab4-abd0-aeb6f6ab3ed8_prm_0 }}.",
+                "description": "Teams must review access requests {{ insert: param, id-ref: p223d1187-cc60-54fe-bb73-38885ebdb515_prm_0 }}.",
                 "links": [
                   {
-                    "href": "input.md#line=9",
+                    "href": "input.md#line=3",
                     "rel": "source"
                   }
                 ],
@@ -47,21 +47,21 @@
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "9"
+                    "value": "3"
                   },
                   {
                     "name": "modality",
                     "value": "normative"
                   }
                 ],
-                "uuid": "efd2e049-d4a9-5350-8817-3f860bad6691"
+                "uuid": "e41a8efd-4b12-5388-973e-2e601732d8c8"
               },
               {
                 "control-id": "POL-T-002",
-                "description": "Systems must use {{ insert: param, id-ref: c7063cfe-7f2c-59d0-af09-454b6b3dff88_prm_0 }} keys for encrypted channels.",
+                "description": "Systems must use {{ insert: param, id-ref: c194d8e5-1b54-55bf-8f0b-b1332bd8bf2c_prm_0 }} keys for encrypted channels.",
                 "links": [
                   {
-                    "href": "input.md#line=10",
+                    "href": "input.md#line=4",
                     "rel": "source"
                   }
                 ],
@@ -79,18 +79,18 @@
                   {
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
-                    "value": "10"
+                    "value": "4"
                   },
                   {
                     "name": "modality",
                     "value": "normative"
                   }
                 ],
-                "uuid": "5c51a5c3-6428-50b9-a966-42dffd78e279"
+                "uuid": "bcbce80d-4b07-5557-a14a-56752e95d241"
               }
             ],
             "source": "tests/fixtures/edge-cases/source-profile.json",
-            "uuid": "7e7b8909-655e-5c75-a496-b916a10893ec"
+            "uuid": "a1bb8684-34a9-531a-8c51-75a073a6acc7"
           }
         ]
       }

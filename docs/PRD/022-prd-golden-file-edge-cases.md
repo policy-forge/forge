@@ -300,7 +300,7 @@ N/A — No state transitions in this work item. Edge case fixtures are stateless
 
 - **Language/Framework:** Rust (latest stable), Cargo build system and test framework
 - **Test Framework:** `cargo test` with golden-file comparison; must integrate with WI-21 harness
-- **Fixture Format:** Markdown input files in a dedicated test fixtures directory (e.g., `tests/fixtures/edge-cases/`)
+- **Fixture Format:** Markdown input files for convert scenarios plus a JSON artifact fixture for EC-10 validation aggregation, all in `tests/fixtures/edge-cases/`
 - **Expected Output Format:** JSON files for expected OSCAL output; text files for expected error messages
 - **Linting:** `cargo clippy -- -D warnings` must pass including test code
 - **Formatting:** `cargo fmt --check` must pass
@@ -351,7 +351,7 @@ N/A — No new data model introduced in this work item. Edge case fixtures use t
 //     // No input file — test passes a nonexistent path
 //     expected-error.txt                // Expected filesystem error message
 //   ec10-multiple-errors/
-//     input.md                          // Artifact with schema + semantic issues
+//     input.json                        // Artifact with schema + semantic issues
 //     expected-errors.txt               // All errors reported
 
 // Golden-file test helper (extends WI-21 harness)

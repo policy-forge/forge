@@ -111,7 +111,7 @@ graph TD
 
 **PRD Constraints inherited:**
 - From constitution: TDD mandatory; `cargo test` integration; `cargo clippy -- -D warnings`
-- From ADR-001: No PDF/DOCX edge cases (Markdown-only input; EC-8 skipped)
+- From ADR-001: No PDF/DOCX edge cases (Markdown convert fixtures; EC-8 skipped). EC-10 validation aggregation uses a JSON artifact fixture.
 
 ---
 
@@ -327,7 +327,7 @@ graph TD
 | capture_warnings | Run pipeline with warning capture, return warnings as Vec<String> | `fn capture_warnings(input: &str, strategy: Strategy) -> (Value, Vec<String>)` | FORGE library API |
 | assert_validation_issue_set | Run validation scenario and assert all expected issue categories are present in one result | `fn assert_validation_issue_set(input: &str, expected_issue_substrings: &[&str])` | FORGE library API |
 | golden_edge_case! macro | Generate test function from fixture path, strategy, and expected behavior | `golden_edge_case!(name, fixture_dir, strategy, behavior)` | All helpers above |
-| Edge Case Fixtures | Markdown inputs + expected outputs/errors per EC | File system in `tests/fixtures/edge-cases/` | None |
+| Edge Case Fixtures | Markdown convert inputs plus one JSON validation fixture (EC-10) and expected outputs/errors per EC | File system in `tests/fixtures/edge-cases/` | None |
 
 ### Data Flow 🟢 `@llm-autonomous`
 

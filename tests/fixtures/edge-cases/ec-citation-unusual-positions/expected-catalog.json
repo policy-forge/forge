@@ -1,17 +1,13 @@
 {
   "catalog": {
-    "uuid": "00d41ab6-28ad-4e27-9c54-978ba4145ef8",
+    "uuid": "01440451-c0d7-418e-a4a7-526430e55cd2",
     "metadata": {
-      "title": "Citation Placement Edge Case",
-      "last-modified": "2026-02-21T19:52:09.560555+00:00",
-      "version": "1.0.0",
+      "title": "Citation Positions",
+      "last-modified": "2026-02-21T21:03:43.736742+00:00",
+      "version": "0.0.0",
       "oscal-version": "1.2.0"
     },
     "groups": [
-      {
-        "id": "title-citation-placement-edge-case-version-1-0-0-author-reference-team",
-        "title": "title: \"Citation Placement Edge Case\"version: \"1.0.0\"author: \"Reference Team\""
-      },
       {
         "id": "citation-positions",
         "title": "Citation Positions",
@@ -28,7 +24,7 @@
             "title": "Policy owners must maintain evidence trails audit source.",
             "links": [
               {
-                "href": "input.md#line=9",
+                "href": "input.md#line=3",
                 "rel": "source"
               }
             ],
@@ -62,7 +58,7 @@
               {
                 "name": "source-line",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
-                "value": "9"
+                "value": "3"
               }
             ]
           },
@@ -71,7 +67,7 @@
             "title": "Teams must document exceptions exception guide.",
             "links": [
               {
-                "href": "input.md#line=10",
+                "href": "input.md#line=4",
                 "rel": "source"
               }
             ],
@@ -105,7 +101,7 @@
               {
                 "name": "source-line",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
-                "value": "10"
+                "value": "4"
               }
             ]
           }

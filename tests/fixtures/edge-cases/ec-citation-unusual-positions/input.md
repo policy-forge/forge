@@ -1,9 +1,3 @@
----
-title: "Citation Placement Edge Case"
-version: "1.0.0"
-author: "Reference Team"
----
-
 # Citation Positions
 
 - Policy owners must maintain evidence trails [audit source](https://example.com/audit).

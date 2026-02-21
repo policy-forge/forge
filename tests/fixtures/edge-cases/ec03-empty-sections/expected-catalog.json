@@ -1,17 +1,13 @@
 {
   "catalog": {
-    "uuid": "5e799516-c87e-4b70-8543-5b23acb0d1a0",
+    "uuid": "25b386a1-5eca-4bdb-8cdb-ec124d367000",
     "metadata": {
-      "title": "Informational Policy",
-      "last-modified": "2026-02-21T19:52:07.798838+00:00",
-      "version": "2.0.0",
+      "title": "Purpose",
+      "last-modified": "2026-02-21T21:03:42.682370+00:00",
+      "version": "0.0.0",
       "oscal-version": "1.2.0"
     },
     "groups": [
-      {
-        "id": "title-informational-policy-version-2-0-0-author-policy-office",
-        "title": "title: \"Informational Policy\"version: \"2.0.0\"author: \"Policy Office\""
-      },
       {
         "id": "purpose",
         "title": "Purpose"
@@ -36,7 +32,7 @@
             "title": "Teams must review privileged access every quarter.",
             "links": [
               {
-                "href": "input.md#line=17",
+                "href": "input.md#line=11",
                 "rel": "source"
               }
             ],
@@ -70,7 +66,7 @@
               {
                 "name": "source-line",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
-                "value": "17"
+                "value": "11"
               }
             ]
           }

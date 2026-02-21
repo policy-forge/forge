@@ -407,7 +407,7 @@ fn ec09_missing_file_is_strategy_agnostic_failure() {
 
 #[test]
 fn ec10_reports_schema_and_semantic_issues_together() {
-    let input = fixture_input("ec10-multiple-errors", "input.md");
+    let input = fixture_input("ec10-multiple-errors", "input.json");
     let report = run_validation_fixture(&input);
     assert!(!report.is_valid(), "EC-10 report should be invalid");
     assert!(report.schema_error_count() > 0, "EC-10 should include schema errors");
@@ -476,7 +476,7 @@ fn strategy_matrix_dual_strategy_and_agnostic_coverage() {
                 component_status.insert(slug.to_string(), "success".to_string());
             }
             "ec10-multiple-errors" => {
-                let report = run_validation_fixture(&fixture_input(slug, "input.md"));
+                let report = run_validation_fixture(&fixture_input(slug, "input.json"));
                 assert!(report.schema_error_count() > 0);
                 assert!(report.semantic_error_count() > 0);
                 catalog_status.insert(slug.to_string(), "validation-aggregate".to_string());

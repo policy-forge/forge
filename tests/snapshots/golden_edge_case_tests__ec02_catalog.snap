@@ -6,16 +6,12 @@ expression: normalize_for_comparison(&catalog_output)
   "catalog": {
     "groups": [
       {
-        "id": "title-compound-and-atomic-policy-version-1-1-0-author-compliance-team",
-        "title": "title: \"Compound and Atomic Policy\"version: \"1.1.0\"author: \"Compliance Team\""
-      },
-      {
         "controls": [
           {
             "id": "POL-CS-001",
             "links": [
               {
-                "href": "input.md#line=9",
+                "href": "input.md#line=3",
                 "rel": "source"
               }
             ],
@@ -49,7 +45,7 @@ expression: normalize_for_comparison(&catalog_output)
               {
                 "name": "source-line",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
-                "value": "9"
+                "value": "3"
               }
             ],
             "title": "Systems must encrypt data at rest"
@@ -58,7 +54,7 @@ expression: normalize_for_comparison(&catalog_output)
             "id": "POL-CS-002",
             "links": [
               {
-                "href": "input.md#line=9",
+                "href": "input.md#line=3",
                 "rel": "source"
               }
             ],
@@ -92,7 +88,7 @@ expression: normalize_for_comparison(&catalog_output)
               {
                 "name": "source-line",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
-                "value": "9"
+                "value": "3"
               }
             ],
             "title": "Systems must encrypt data in transit."
@@ -101,7 +97,7 @@ expression: normalize_for_comparison(&catalog_output)
             "id": "POL-CS-003",
             "links": [
               {
-                "href": "input.md#line=10",
+                "href": "input.md#line=4",
                 "rel": "source"
               }
             ],
@@ -135,7 +131,7 @@ expression: normalize_for_comparison(&catalog_output)
               {
                 "name": "source-line",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
-                "value": "10"
+                "value": "4"
               }
             ],
             "title": "Systems must retain audit logs for at least one year."
@@ -155,8 +151,8 @@ expression: normalize_for_comparison(&catalog_output)
     "metadata": {
       "last-modified": "2026-01-01T00:00:00Z",
       "oscal-version": "1.2.0",
-      "title": "Compound and Atomic Policy",
-      "version": "1.1.0"
+      "title": "Control Statements",
+      "version": "0.0.0"
     },
     "uuid": "00000000-0000-0000-0000-000000000000"
   }
