@@ -358,14 +358,14 @@ fn ec06_substantive_change_rotates_stable_ids() {
         .count();
     assert!(changed_count >= 1, "EC-6 should rotate at least one stable ID");
 
-    let synthetic_warning = format!(
-        "stable id changed for {changed_count} requirement(s) due to non-whitespace change"
-    );
     let expected_warnings = load_expected_substrings(&fixture_input(
         "ec06-substantive-change",
         "expected-warnings.txt",
     ));
-    assert_expected_warnings(&synthetic_warning, &expected_warnings, "EC-6 warnings");
+    let comparison_warning = format!(
+        "stable id changed for {changed_count} requirement(s) due to non-whitespace change"
+    );
+    assert_expected_warnings(&comparison_warning, &expected_warnings, "EC-6 warnings");
 }
 
 #[test]
@@ -430,8 +430,8 @@ fn strategy_matrix_dual_strategy_and_agnostic_coverage() {
         "ec05-whitespace-only",
         "ec06-substantive-change",
         "ec07-malformed-citation",
-        "ec10-multiple-errors",
     ];
+    let validation_only = ["ec10-multiple-errors"];
 
     let mut catalog_status = BTreeMap::new();
     let mut component_status = BTreeMap::new();
@@ -475,15 +475,16 @@ fn strategy_matrix_dual_strategy_and_agnostic_coverage() {
                 catalog_status.insert(slug.to_string(), "success".to_string());
                 component_status.insert(slug.to_string(), "success".to_string());
             }
-            "ec10-multiple-errors" => {
-                let report = run_validation_fixture(&fixture_input(slug, "input.json"));
-                assert!(report.schema_error_count() > 0);
-                assert!(report.semantic_error_count() > 0);
-                catalog_status.insert(slug.to_string(), "validation-aggregate".to_string());
-                component_status.insert(slug.to_string(), "validation-aggregate".to_string());
-            }
             _ => unreachable!("unexpected matrix slug"),
         }
+    }
+
+    for slug in validation_only {
+        let report = run_validation_fixture(&fixture_input(slug, "input.json"));
+        assert!(report.schema_error_count() > 0);
+        assert!(report.semantic_error_count() > 0);
+        catalog_status.insert(slug.to_string(), "validation-aggregate".to_string());
+        component_status.insert(slug.to_string(), "validation-aggregate".to_string());
     }
 
     let agnostic = fixture_input("ec09-file-not-found", "nonexistent.md");
@@ -524,7 +525,7 @@ fn supplemental_citation_positions_and_parameter_like_content() {
 
 #[test]
 fn strategy_constants_match_expected_scope() {
-    let dual: BTreeSet<&str> = [
+    let dual_convert_cases: BTreeSet<&str> = [
         "ec01-no-headings",
         "ec02-compound-atomic",
         "ec03-empty-sections",
@@ -532,11 +533,23 @@ fn strategy_constants_match_expected_scope() {
         "ec05-whitespace-only",
         "ec06-substantive-change",
         "ec07-malformed-citation",
-        "ec10-multiple-errors",
     ]
     .into_iter()
     .collect();
 
-    assert_eq!(dual.len(), 8, "dual-strategy set should contain 8 scenarios");
-    assert!(!dual.contains("ec09-file-not-found"), "EC-9 must remain strategy-agnostic");
+    let validation_only_cases: BTreeSet<&str> = ["ec10-multiple-errors"].into_iter().collect();
+    let strategy_applicable_cases: BTreeSet<&str> =
+        dual_convert_cases.union(&validation_only_cases).copied().collect();
+
+    assert_eq!(dual_convert_cases.len(), 7, "dual convert set should contain 7 scenarios");
+    assert_eq!(validation_only_cases.len(), 1, "validation-only set should contain EC-10");
+    assert_eq!(
+        strategy_applicable_cases.len(),
+        8,
+        "strategy-applicable set should contain 8 scenarios"
+    );
+    assert!(
+        !strategy_applicable_cases.contains("ec09-file-not-found"),
+        "EC-9 must remain strategy-agnostic"
+    );
 }
