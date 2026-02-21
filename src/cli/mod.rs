@@ -62,6 +62,14 @@ pub enum Commands {
         /// Source profile/baseline reference for component strategy (e.g., path to OSCAL profile JSON)
         #[arg(long)]
         source_profile: Option<String>,
+
+        /// Optional baseline policy used to compare stable IDs and emit substantive-change warnings.
+        ///
+        /// When provided, FORGE computes stable IDs for both documents and emits a warning if
+        /// matching requirement locations have different stable IDs (indicating non-whitespace
+        /// substantive text changes).
+        #[arg(long)]
+        stable_id_baseline: Option<PathBuf>,
     },
 
     /// Export an OSCAL artifact to a different format
@@ -158,16 +166,23 @@ pub enum OutputFormat {
 /// Returns `ForgeError` if the subcommand handler fails.
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     match &cli.command {
-        Commands::Convert { input, strategy, format, output, max_size, source_profile } => {
-            convert::execute(
-                input,
-                strategy,
-                format,
-                output.as_deref(),
-                *max_size,
-                source_profile.as_deref(),
-            )
-        }
+        Commands::Convert {
+            input,
+            strategy,
+            format,
+            output,
+            max_size,
+            source_profile,
+            stable_id_baseline,
+        } => convert::execute(
+            input,
+            strategy,
+            format,
+            output.as_deref(),
+            *max_size,
+            source_profile.as_deref(),
+            stable_id_baseline.as_deref(),
+        ),
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
         }
