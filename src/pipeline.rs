@@ -111,7 +111,10 @@ fn validate_component_json(
 ///
 /// # Errors
 /// * `Err(ForgeError)` if any pipeline stage fails (ingest, parse, atomize, etc.)
-fn prepare_document(input_path: &Path, max_size_bytes: u64) -> Result<PolicyDocument, ForgeError> {
+pub(crate) fn prepare_document(
+    input_path: &Path,
+    max_size_bytes: u64,
+) -> Result<PolicyDocument, ForgeError> {
     // Step 1: Ingest file
     let ingested = crate::ingest::ingest_file(input_path, max_size_bytes)?;
 
