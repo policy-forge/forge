@@ -392,6 +392,72 @@ fn finish_xml_document(buf: Vec<u8>) -> Result<String, ForgeError> {
     String::from_utf8(buf).map_err(map_utf8_err)
 }
 
+// ─── Profile-Specific Helpers ────────────────────────────────────────────
+
+/// Write an OSCAL `<import>` element for a Profile.
+///
+/// Writes: `<import href="...">` → include-all?, include-controls?, exclude-controls? → `</import>`
+fn write_profile_import<W: Write>(
+    writer: &mut Writer<W>,
+    import: &crate::oscal::profile::ProfileImport,
+) -> Result<(), ForgeError> {
+    let mut elem = BytesStart::new("import");
+    elem.push_attribute(("href", import.href.as_str()));
+    writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
+
+    if import.include_all.is_some() {
+        writer.write_event(Event::Empty(BytesStart::new("include-all"))).map_err(map_xml_err)?;
+    }
+
+    if let Some(include_controls) = &import.include_controls {
+        for selection in include_controls {
+            write_control_selection(writer, "include-controls", selection)?;
+        }
+    }
+
+    if let Some(exclude_controls) = &import.exclude_controls {
+        for selection in exclude_controls {
+            write_control_selection(writer, "exclude-controls", selection)?;
+        }
+    }
+
+    writer.write_event(Event::End(BytesEnd::new("import"))).map_err(map_xml_err)?;
+    Ok(())
+}
+
+/// Write an `<include-controls>` or `<exclude-controls>` element with `<with-id>` children.
+fn write_control_selection<W: Write>(
+    writer: &mut Writer<W>,
+    tag: &str,
+    selection: &crate::oscal::profile::ControlSelection,
+) -> Result<(), ForgeError> {
+    writer.write_event(Event::Start(BytesStart::new(tag))).map_err(map_xml_err)?;
+    for id in &selection.with_ids {
+        write_text_element(writer, "with-id", id)?;
+    }
+    writer.write_event(Event::End(BytesEnd::new(tag))).map_err(map_xml_err)?;
+    Ok(())
+}
+
+/// Write an OSCAL `<modify>` element with `<set-parameter>` children.
+fn write_profile_modify<W: Write>(
+    writer: &mut Writer<W>,
+    modify: &crate::oscal::profile::Modify,
+) -> Result<(), ForgeError> {
+    writer.write_event(Event::Start(BytesStart::new("modify"))).map_err(map_xml_err)?;
+    for set_param in &modify.set_parameters {
+        let mut elem = BytesStart::new("set-parameter");
+        elem.push_attribute(("param-id", set_param.param_id.as_str()));
+        writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
+        for value in &set_param.values {
+            write_text_element(writer, "value", value)?;
+        }
+        writer.write_event(Event::End(BytesEnd::new("set-parameter"))).map_err(map_xml_err)?;
+    }
+    writer.write_event(Event::End(BytesEnd::new("modify"))).map_err(map_xml_err)?;
+    Ok(())
+}
+
 // ─── Public Serialization Functions ──────────────────────────────────────
 
 /// Serialize an OSCAL Catalog to a valid OSCAL v1.2.0 XML string.
@@ -482,6 +548,51 @@ pub fn serialize_component_definition_to_xml(
 
     let xml = finish_xml_document(buf)?;
     debug!(artifact_type = "component-definition", "XML serialization complete");
+    Ok(xml)
+}
+
+/// Serialize an OSCAL Profile to a valid OSCAL v1.2.0 XML string.
+///
+/// Produces a complete XML document with:
+/// - XML declaration (`<?xml version="1.0" encoding="UTF-8"?>`)
+/// - Root `<profile>` element with OSCAL namespace and uuid attribute
+/// - Child elements in XSD-prescribed order: metadata, import*, modify?
+///
+/// # Arguments
+/// * `profile` — Reference to the `OscalProfile` to serialize
+///
+/// # Errors
+/// * `ForgeError::Serialization` — If XML writing or UTF-8 conversion fails
+pub fn serialize_profile_to_xml(
+    profile: &crate::oscal::profile::OscalProfile,
+) -> Result<String, ForgeError> {
+    debug!(artifact_type = "profile", "Starting XML serialization");
+
+    let mut buf = Vec::new();
+    let mut writer = create_xml_writer(&mut buf)?;
+
+    write_root_start(&mut writer, "profile", &profile.uuid.to_string())?;
+    let last_modified_str = profile.metadata.last_modified.to_rfc3339();
+    write_metadata(
+        &mut writer,
+        &profile.metadata.title,
+        &last_modified_str,
+        &profile.metadata.version,
+        &profile.metadata.oscal_version,
+    )?;
+
+    for import in &profile.imports {
+        write_profile_import(&mut writer, import)?;
+    }
+
+    if let Some(modify) = &profile.modify {
+        write_profile_modify(&mut writer, modify)?;
+    }
+
+    writer.write_event(Event::End(BytesEnd::new("profile"))).map_err(map_xml_err)?;
+
+    let xml = finish_xml_document(buf)?;
+    debug!(artifact_type = "profile", "XML serialization complete");
     Ok(xml)
 }
 

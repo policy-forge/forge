@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** Draft
+> **Status:** Released
 > **Last Updated:** 2026-02-10 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
-**Feature Branch**: `035-phase2-release`
+**Feature Branch**: `035-prd-phase2-release`
 **Created**: 2026-02-10
-**Status**: Draft
+**Status**: Released
 **Input**: Derived from FORGE Product Roadmap WI-35
 
 ---

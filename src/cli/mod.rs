@@ -47,7 +47,7 @@ pub enum Commands {
         #[arg(long)]
         strategy: Strategy,
 
-        /// Output format (currently only 'json' is supported)
+        /// Output format: json, xml, or yaml
         #[arg(long, default_value = "json")]
         format: OutputFormat,
 
@@ -114,7 +114,7 @@ pub enum Commands {
         #[arg(long, conflicts_with = "include")]
         exclude: Option<String>,
 
-        /// Output format (currently only 'json' is supported)
+        /// Output format: json, xml, or yaml
         #[arg(long, default_value = "json")]
         format: OutputFormat,
 

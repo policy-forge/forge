@@ -287,20 +287,24 @@ fn empty_include_string_returns_error() {
     assert_ne!(exit_code, 0, "Expected error for empty --include string.\nstderr: {stderr}");
 }
 
-// ─── Unsupported formats return a clear error ───────────────────────────
+// ─── S-2: --format xml and --format yaml produce valid output ─────────────
 
 #[test]
-fn unsupported_format_xml_returns_error() {
+fn format_xml_produces_xml_output() {
+    // XML format was added in WI-35 (S-2 defect fix); previously unsupported.
     let catalog = temp_catalog_file(minimal_catalog_json());
     let catalog_path = catalog.path().to_str().unwrap();
 
-    let (exit_code, _stdout, stderr) =
+    let (exit_code, stdout, stderr) =
         run_profile(&["--catalog", catalog_path, "--include", "AC-1", "--format", "xml"]);
 
-    assert_ne!(exit_code, 0, "Expected error for unsupported --format xml.\nstderr: {stderr}");
+    assert_eq!(
+        exit_code, 0,
+        "Expected success for --format xml.\nstdout: {stdout}\nstderr: {stderr}"
+    );
     assert!(
-        stderr.contains("unsupported") || stderr.contains("xml") || stderr.contains("WI-30"),
-        "Error message should mention unsupported format.\nstderr: {stderr}"
+        stdout.contains("<profile"),
+        "XML output must contain <profile element.\nstdout: {stdout}"
     );
 }
 
