@@ -201,6 +201,28 @@ See `docs/FORGE_PRODUCT_ROADMAP.md` for the full 50-item sprint plan.
 
 FORGE is built for the community. We welcome PRs for new language bindings, MCP adapters, and enhanced semantic validators.
 
+### Local quality gates
+
+```bash
+# Run the same checks used by CI
+./scripts/ci-local.sh
+
+# Install local git pre-commit hook
+./scripts/install-hooks.sh
+```
+
+You can bypass the local hook once with:
+
+```bash
+SKIP_FORGE_PRECOMMIT=1 git commit -m "your message"
+```
+
+And enable stricter hook checks (bench + audit + deny) with:
+
+```bash
+FORGE_PRECOMMIT_STRICT=1 git commit -m "your message"
+```
+
 Policy Forge: Forging the rules that power the agents.
 
 ## License
