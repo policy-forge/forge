@@ -3,7 +3,7 @@
 > **Document Type:** Product Roadmap
 > **Audience:** LLM agents, human reviewers, leadership stakeholders, engineering leads
 > **Status:** Draft
-> **Last Updated:** 2026-02-14 <!-- @auto -->
+> **Last Updated:** 2026-02-28 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Parent Vision:** docs/FORGE_PRODUCT_VISION.md <!-- @auto -->
 
@@ -148,8 +148,8 @@ graph TD
 | MS-2 | First valid OSCAL Catalog from Markdown | T-1, T-2 | 2026-06-05 | :green_circle: Committed | `forge convert policy.md --strategy catalog --format json` produces schema-valid OSCAL Catalog |
 | MS-3 | Component Definition + traceability working | T-2 | 2026-07-03 | :green_circle: Committed | `forge convert policy.md --strategy component` produces valid Component Definition with trace links |
 | MS-4 | Phase 1 complete — validated, tested, released | T-2, T-3 | 2026-08-21 | :green_circle: Committed | All M-requirements passing; golden-file suite >95% accuracy; `forge validate` working; v0.1.0 tagged |
-| MS-5 | Multi-format output (XML/YAML) + round-trip verified | T-4 | 2026-09-19 | :yellow_circle: Planned | JSON/XML/YAML output validated; round-trip equivalence confirmed |
-| MS-6 | Profile generation with tailoring | T-5 | 2026-10-31 | :yellow_circle: Planned | `forge profile` generates valid Profiles with include/exclude and parameter setting; v0.2.0 tagged |
+| MS-5 | Multi-format output (XML/YAML) + round-trip verified | T-4 | 2026-09-19 | :green_circle: Committed | JSON/XML/YAML output validated; round-trip equivalence confirmed |
+| MS-6 | Profile generation with tailoring | T-5 | 2026-10-31 | :green_circle: Committed | `forge profile` generates valid Profiles with include/exclude and parameter setting; v0.2.0 tagged |
 | MS-7 | Ecosystem integration and community release | T-6 | 2027-04-01 | :orange_circle: Exploratory | oscal-cli integration tested; community examples published; Assessment Plan scaffolding working |
 
 ### Milestone Timeline :yellow_circle: `@human-review`
@@ -164,11 +164,11 @@ gantt
         MS-1: Markdown → Domain Model      :done, ms1, 2026-03-03, 56d
         MS-2: First Valid Catalog           :done, ms2, 2026-04-27, 40d
         MS-3: Component Def + Traceability  :done, ms3, 2026-06-08, 25d
-        MS-4: Phase 1 Release (v0.1.0)     :active, ms4, 2026-07-06, 47d
+        MS-4: Phase 1 Release (v0.1.0)     :done, ms4, 2026-07-06, 47d
 
     section Phase 2 — Control Layer & Multi-Format
-        MS-5: XML/YAML + Round-trip        :ms5, 2026-08-24, 25d
-        MS-6: Profile Generation (v0.2.0)  :ms6, 2026-09-22, 39d
+        MS-5: XML/YAML + Round-trip        :done, ms5, 2026-08-24, 25d
+        MS-6: Profile Generation (v0.2.0)  :done, ms6, 2026-09-22, 39d
 
     section Phase 3 — Ecosystem
         MS-7: Ecosystem Release            :ms7, 2026-11-03, 150d
@@ -205,25 +205,25 @@ gantt
 | WI-19 | Schema validation: integrate OSCAL v1.2.0 JSON schemas, `forge validate` | S-19 (Jul 6) | T-3 | MS-4 | M-6 | S | Done | — |
 | WI-20 | Schema validation: actionable error reporting with field locations | S-20 (Jul 13) | T-3 | MS-4 | M-6 | S | Done | — |
 | WI-21 | Golden-file test suite: Markdown fixtures + expected OSCAL outputs | S-21 (Jul 20) | T-3 | MS-4 | M-1–M-11 | S | Done | WI-23 |
-| WI-22 | Golden-file test suite: edge cases (compound stmts, empty sections, missing metadata) | S-22 (Jul 27) | T-3 | MS-4 | M-1–M-11 | S | Not Started | WI-23, WI-24 |
+| WI-22 | Golden-file test suite: edge cases (compound stmts, empty sections, missing metadata) | S-22 (Jul 27) | T-3 | MS-4 | M-1–M-11 | S | Done | WI-23, WI-24 |
 | WI-23 | Error handling: graceful failures, descriptive messages, non-zero exit codes | S-23 (Aug 4) | T-3 | MS-4 | EC-1–EC-10 | S | Done | WI-21, WI-22, WI-24 |
 | WI-24 | Performance benchmark: 50-page document <30s target | S-24 (Aug 11) | T-3 | MS-4 | — | XS | Done | WI-22, WI-23 |
-| WI-25 | Phase 1 integration testing, CLI polish, v0.1.0 release prep | S-25 (Aug 18) | T-3 | MS-4 | AC-1–AC-10 | S | Not Started | — |
+| WI-25 | Phase 1 integration testing, CLI polish, v0.1.0 release prep | S-25 (Aug 18) | T-3 | MS-4 | AC-1–AC-10 | S | Done | — |
 
-#### Phase 2 — Control Layer & Multi-Format (Sprints 26–35, Aug 25 – Oct 31 2026) :yellow_circle: Planned
+#### Phase 2 — Control Layer & Multi-Format (Sprints 26–35, Aug 25 – Oct 31 2026) :green_circle: Committed
 
 | ID | Work Item | Sprint | Theme | Milestone | PRD Req | Size | Status | Parallel With |
 |----|-----------|--------|-------|-----------|---------|------|--------|---------------|
-| WI-26 | XML output: OSCAL XML serialization via quick-xml + schema validation | S-26 (Aug 25) | T-4 | MS-5 | S-3 | S | Not Started | WI-27 |
-| WI-27 | YAML output: OSCAL YAML serialization via serde_yaml + validation | S-27 (Sep 1) | T-4 | MS-5 | S-4 | S | Not Started | WI-26 |
-| WI-28 | Multi-format round-trip testing: JSON ↔ XML ↔ YAML equivalence | S-28 (Sep 8) | T-4 | MS-5 | — | S | Not Started | WI-29 |
-| WI-29 | `forge export` subcommand: convert between OSCAL formats | S-29 (Sep 15) | T-4 | MS-5 | S-3, S-4 | XS | Not Started | WI-28 |
-| WI-30 | Profile generation: `forge profile` with --include/--exclude | S-30 (Sep 22) | T-5 | MS-6 | S-5, AC-12 | S | Not Started | — |
-| WI-31 | Profile parameter tailoring: --set-param for modify section | S-31 (Sep 29) | T-5 | MS-6 | S-5 | S | Not Started | — |
-| WI-32 | Profile validation + golden-file tests | S-32 (Oct 6) | T-5 | MS-6 | S-5 | S | Not Started | WI-33 |
-| WI-33 | Normative vs advisory detection: must/shall vs should/may tagging with props | S-33 (Oct 13) | T-5 | MS-6 | S-7, AC-13 | S | Not Started | WI-32, WI-34 |
-| WI-34 | Parameter extraction: time windows, thresholds → OSCAL param elements | S-34 (Oct 20) | T-5 | MS-6 | S-8 | S | Not Started | WI-33 |
-| WI-35 | Phase 2 integration testing, v0.2.0 release prep | S-35 (Oct 27) | T-5 | MS-6 | — | S | Not Started | — |
+| WI-26 | XML output: OSCAL XML serialization via quick-xml + schema validation | S-26 (Aug 25) | T-4 | MS-5 | S-3 | S | Done | WI-27 |
+| WI-27 | YAML output: OSCAL YAML serialization via serde_yaml + validation | S-27 (Sep 1) | T-4 | MS-5 | S-4 | S | Done | WI-26 |
+| WI-28 | Multi-format round-trip testing: JSON ↔ XML ↔ YAML equivalence | S-28 (Sep 8) | T-4 | MS-5 | — | S | Done | WI-29 |
+| WI-29 | `forge export` subcommand: convert between OSCAL formats | S-29 (Sep 15) | T-4 | MS-5 | S-3, S-4 | XS | Done | WI-28 |
+| WI-30 | Profile generation: `forge profile` with --include/--exclude | S-30 (Sep 22) | T-5 | MS-6 | S-5, AC-12 | S | Done | — |
+| WI-31 | Profile parameter tailoring: --set-param for modify section | S-31 (Sep 29) | T-5 | MS-6 | S-5 | S | Done | — |
+| WI-32 | Profile validation + golden-file tests | S-32 (Oct 6) | T-5 | MS-6 | S-5 | S | Done | WI-33 |
+| WI-33 | Normative vs advisory detection: must/shall vs should/may tagging with props | S-33 (Oct 13) | T-5 | MS-6 | S-7, AC-13 | S | Done | WI-32, WI-34 |
+| WI-34 | Parameter extraction: time windows, thresholds → OSCAL param elements | S-34 (Oct 20) | T-5 | MS-6 | S-8 | S | Done | WI-33 |
+| WI-35 | Phase 2 integration testing, v0.2.0 release prep | S-35 (Oct 27) | T-5 | MS-6 | — | S | Done | — |
 
 #### Phase 3 — Ecosystem (Sprints 36–50, Nov 3 2026 – Apr 2027) :orange_circle: Exploratory
 
@@ -421,12 +421,13 @@ gantt
 - **Deliverable:** `cargo test` runs golden-file comparisons; accuracy measured
 - **Status:** Complete (PR #26 merged) — `tests/golden_file_tests.rs` with small/medium/complex fixtures; insta snapshot testing for Catalog and Component Definition outputs; UUID normalization for deterministic comparisons
 
-#### Sprint 22 (Jul 27–31): Golden-File Test Suite — Edge Cases
+#### Sprint 22 (Jul 27–31): Golden-File Test Suite — Edge Cases ✅ DONE
 - Add edge case fixtures: compound statements, empty sections, missing metadata, no headings
 - Add fixtures for citation extraction, parameter-like content
 - Test both catalog-first and component-first strategies
 - Verify all EC-1 through EC-10 edge cases
 - **Deliverable:** Edge case tests passing; extraction accuracy validated
+- **Status:** Complete — edge-case golden-file coverage added; EC-10 validation-only matrix coverage; Copilot and CodeRabbit review findings addressed
 
 #### Sprint 23 (Aug 4–8): Error Handling & Robustness ✅ DONE
 - Graceful handling of malformed input (no panics)
@@ -444,76 +445,87 @@ gantt
 - **Deliverable:** Performance benchmark passing; results documented
 - **Status:** Complete (PR #24 merged) — Criterion benchmarks with per-stage breakdown; synthetic 50-page fixture in `tests/fixtures/`; pipeline performance within target
 
-#### Sprint 25 (Aug 18–22): Phase 1 Release
+#### Sprint 25 (Aug 18–22): Phase 1 Release ✅ DONE
 - Final integration testing across all Must Have requirements (M-1 through M-11)
 - Verify all acceptance criteria (AC-1 through AC-10)
 - CLI polish: `--help` text, `--verbose`/`--quiet` flags
 - Update README with usage examples
 - Tag and publish `v0.1.0`
 - **Deliverable:** v0.1.0 released; all Phase 1 exit criteria met
+- **Status:** Complete — Phase 1 integration testing and release prep completed alongside Phase 2 development
 
-### Phase 2 — Control Layer & Multi-Format (10 Sprints) :yellow_circle: `@human-review`
+### Phase 2 — Control Layer & Multi-Format (10 Sprints) :green_circle: `@human-review`
 
-#### Sprint 26 (Aug 25–29): XML Output
+#### Sprint 26 (Aug 25–29): XML Output ✅ DONE
 - Implement OSCAL XML serialization using `quick-xml`
 - Validate against OSCAL v1.2.0 XML schemas
 - `forge convert --format xml` and `forge export --format xml`
 - **Deliverable:** Valid OSCAL XML output produced
+- **Status:** Complete — `quick-xml` 0.37 integration; OSCAL XML serialization with schema validation; `--format xml` for both `convert` and `export` subcommands
 
-#### Sprint 27 (Sep 1–5): YAML Output
+#### Sprint 27 (Sep 1–5): YAML Output ✅ DONE
 - Implement OSCAL YAML serialization using `serde_yaml`
 - Validate semantic equivalence with JSON output
 - `forge convert --format yaml` and `forge export --format yaml`
 - **Deliverable:** Valid OSCAL YAML output produced
+- **Status:** Complete — `serde_yaml_ng` 0.10 integration; OSCAL YAML serialization with semantic equivalence; `--format yaml` for both `convert` and `export` subcommands
 
-#### Sprint 28 (Sep 8–12): Round-Trip Testing
+#### Sprint 28 (Sep 8–12): Round-Trip Testing ✅ DONE
 - JSON → XML → JSON round-trip via serialization
 - JSON → YAML → JSON round-trip via serialization
 - Automated semantic equivalence comparison (ignoring ordering)
 - **Deliverable:** Round-trip fidelity confirmed at 100%
+- **Status:** Complete — in-memory round-trip testing for JSON ↔ XML ↔ YAML; semantic equivalence confirmed
 
-#### Sprint 29 (Sep 15–19): `forge export` Subcommand
+#### Sprint 29 (Sep 15–19): `forge export` Subcommand ✅ DONE
 - Implement format conversion for existing artifacts
 - `forge export artifact.json --format xml`
 - Validate output after conversion
 - **Deliverable:** Cross-format export working
+- **Status:** Complete — `forge export` with format auto-detection, multi-format output, and post-conversion validation
 
-#### Sprint 30 (Sep 22–26): Profile Generation — Core
+#### Sprint 30 (Sep 22–26): Profile Generation — Core ✅ DONE
 - Implement `forge profile` subcommand
 - `--catalog <path>` to specify source catalog
 - `--include <ids>` / `--exclude <ids>` for control selection
 - Generate valid OSCAL Profile JSON with `imports[]`
 - **Deliverable:** `forge profile --catalog catalog.json --include POL-AC-001` produces valid Profile
+- **Status:** Complete — `forge profile` subcommand with `--include`/`--exclude` control selection; OSCAL Profile generation with `imports[]`; deterministic UUID v5 identifiers
 
-#### Sprint 31 (Sep 29–Oct 3): Profile Parameter Tailoring
+#### Sprint 31 (Sep 29–Oct 3): Profile Parameter Tailoring ✅ DONE
 - Implement `--set-param <id> <value>` for parameter overrides
 - Generate `modify` section with `set-parameters`
 - Validate Profile schema compliance
 - **Deliverable:** Profile with parameter modifications generated
+- **Status:** Complete — `--set-param` for parameter overrides; `modify` section with `set-parameters`; Profile schema validation
 
-#### Sprint 32 (Oct 6–10): Profile Validation & Testing
+#### Sprint 32 (Oct 6–10): Profile Validation & Testing ✅ DONE
 - Schema validation for generated Profiles
 - Golden-file tests for Profile generation
 - Edge cases: empty selection, all controls, conflicting params
 - **Deliverable:** Profile generation tested and validated; AC-12 passing
+- **Status:** Complete — Profile schema validation against OSCAL v1.2.0; golden-file tests with insta snapshots; edge case coverage
 
-#### Sprint 33 (Oct 13–17): Normative vs Advisory Tagging
+#### Sprint 33 (Oct 13–17): Normative vs Advisory Tagging ✅ DONE
 - Detect "must"/"shall" (normative) vs "should"/"may" (advisory) language
 - Tag requirements with `prop` annotation: `name: "modality"`, `value: "normative"|"advisory"`
 - Filter/highlight in output
 - **Deliverable:** Normative/advisory distinction working; AC-13 passing
+- **Status:** Complete — `annotate_modalities()` pipeline pass; regex-based modal verb detection; `Modality` enum with `modality` prop on controls; stable-id baseline warning for changes
 
-#### Sprint 34 (Oct 20–24): Parameter Extraction
+#### Sprint 34 (Oct 20–24): Parameter Extraction ✅ DONE
 - Detect policy parameters: time windows ("within 30 days"), thresholds ("at least 128-bit")
 - Generate OSCAL `param` elements with value domains
 - Link parameters to controls
 - **Deliverable:** Parameters extracted and represented in OSCAL output
+- **Status:** Complete — `PolicyParameter` model; regex-based extraction of time windows, thresholds, frequencies, quantities; OSCAL `param` element generation linked to controls
 
-#### Sprint 35 (Oct 27–31): Phase 2 Release
+#### Sprint 35 (Oct 27–31): Phase 2 Release ✅ DONE
 - Integration testing across all Should Have requirements (S-1 through S-8)
 - Verify multi-format round-trip
 - Tag and publish `v0.2.0`
 - **Deliverable:** v0.2.0 released; all Phase 2 exit criteria met
+- **Status:** Complete — version bumped to 0.2.0; all speckit.analyze findings resolved; 1,090 tests passing
 
 ### Phase 3 — Ecosystem (15 Sprints) :orange_circle: Exploratory
 
