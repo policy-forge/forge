@@ -5,6 +5,15 @@
 **Status**: Draft
 **Input**: Derived from docs/PRD/036-prd-oscal-cli-profile-resolution.md, docs/AR/036-ar-oscal-cli-profile-resolution.md, docs/SEC/036-sec-oscal-cli-profile-resolution.md
 
+## Clarifications
+
+### Session 2026-03-10
+
+- Q: Should OscalCliDetector check for Java runtime availability separately? → A: No. Detect Java implicitly via `oscal-cli --version` — if it fails, report "oscal-cli found but not functional (Java may be missing)". Do not search for `java` on PATH (EDR systems may flag Java lookups as malicious).
+- Q: Should the child process environment be filtered to prevent env var leakage? → A: Yes. Use `Command::env_clear()` + explicit allowlist (PATH, HOME, JAVA_HOME, TMPDIR). Add more variables only if testing reveals need.
+- Q: What is the default output filename pattern when `--output` is omitted? → A: `<input-stem>-resolved.json` (e.g., `my-profile.json` → `my-profile-resolved.json`).
+- Q: Should WI-36 include a `--oscal-cli-path` flag for explicit binary path override? → A: Yes. Include `--oscal-cli-path` flag to allow users to specify the exact binary path, overriding PATH detection. Mitigates PATH manipulation risk and supports non-standard installations.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Resolve a Profile via oscal-cli (Priority: P1)
@@ -71,38 +80,38 @@ A developer troubleshooting FORGE wants to verify the oscal-cli integration stat
 ### Edge Cases
 
 - When oscal-cli is on PATH but not executable (permissions issue), a descriptive error indicates a permissions problem.
-- When oscal-cli is installed but the `resolve-profile` subcommand is not supported (old version), a descriptive error suggests an upgrade.
+- When oscal-cli is installed but the `profile resolve` subcommand is not supported (old version), a descriptive error suggests an upgrade. Note: no minimum version is enforced at detection time; version incompatibility is detected at invocation when `profile resolve` fails.
 - When oscal-cli produces stderr output but exits with code 0 (warnings), the resolution succeeds and warnings are forwarded to the user.
 - When the input file exists but is not valid JSON (e.g., a YAML Profile), a descriptive error indicates the expected format.
 - When oscal-cli execution exceeds the configured timeout, the process is terminated and a timeout error is displayed.
-- When `--output` is omitted, the resolved Catalog is written to a default path derived from the input filename (e.g., `profile-resolved.json`).
+- When `--output` is omitted, the resolved Catalog is written to `<input-stem>-resolved.json` in the same directory as the input file (e.g., `my-profile.json` → `my-profile-resolved.json`).
 - When the input file does not exist, a descriptive error is shown before invoking oscal-cli.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST detect whether oscal-cli is installed and available on the system PATH.
-- **FR-002**: System MUST invoke oscal-cli resolve-profile to resolve a given OSCAL Profile into a resolved Catalog.
-- **FR-003**: System MUST capture the resolved Catalog output from oscal-cli and write it to a specified output file (or a default path derived from the input filename).
+- **FR-001**: System MUST detect whether oscal-cli is installed and functional on the system PATH by running `oscal-cli --version`. If the binary is found but the version check fails (e.g., Java runtime missing), report "oscal-cli found but not functional" rather than searching for Java explicitly.
+- **FR-002**: System MUST invoke `oscal-cli profile resolve` to resolve a given OSCAL Profile into a resolved Catalog. Output format is always JSON (`-to=json`) for this work item.
+- **FR-003**: System MUST capture the resolved Catalog JSON output from oscal-cli and write it to a specified output file (or a default path derived from the input filename). Output is always JSON for this work item (C-1 defers XML/YAML input support).
 - **FR-004**: When oscal-cli is not installed, system MUST display a descriptive warning message with installation guidance and exit gracefully without panicking.
 - **FR-005**: When oscal-cli exits with a non-zero exit code, system MUST display a descriptive error message that includes relevant detail from oscal-cli's stderr output.
-- **FR-006**: System MUST provide a `forge resolve` subcommand that accepts a Profile file path and an optional `--output` flag.
+- **FR-006**: System MUST provide a `forge resolve` subcommand that accepts a Profile file path, an optional `--output` flag, and an optional `--oscal-cli-path` flag to explicitly specify the oscal-cli binary path (overriding PATH detection).
 - **FR-007**: The `forge resolve` subcommand MUST validate that the input file exists and is a JSON file before invoking oscal-cli.
 - **FR-008**: System SHOULD detect the installed oscal-cli version and log it for diagnostic purposes.
 - **FR-009**: System SHOULD provide a `--check` flag that reports oscal-cli detection status, version, and path without performing resolution.
 - **FR-010**: System SHOULD set a configurable timeout for oscal-cli execution (default: 60 seconds) to prevent indefinite hangs.
 - **FR-011**: When oscal-cli is not found, the warning message SHOULD include installation guidance (link to NIST oscal-cli repository).
 - **FR-012**: All process arguments MUST be passed via argument arrays. Shell string interpolation MUST NOT be used (command injection prevention).
-- **FR-013**: The child process environment SHOULD be filtered to minimize environment variable leakage, using explicit environment variable allowlisting.
+- **FR-013**: The child process environment MUST be filtered using `Command::env_clear()` with an explicit allowlist of PATH, HOME, JAVA_HOME, and TMPDIR. Additional variables may be added only if testing reveals they are required by oscal-cli.
 - **FR-014**: Input file paths MUST be canonicalized to resolve symlinks and relative paths before passing to oscal-cli.
 
 ### Key Entities
 
-- **OscalCliInfo**: Detection result containing availability status, version string (optional), and executable path (optional).
-- **ResolveResult**: Invocation result containing the path where the resolved Catalog was written.
+- **OscalCliInfo**: Detection result containing availability status, functional status (whether `--version` succeeded), version string (optional), and executable path (optional).
+- **ResolveResult**: Invocation result containing the path where the resolved Catalog was written and any stderr warnings.
 - **OscalCliDetector**: Component responsible for detecting oscal-cli on the system PATH and retrieving version information. Abstracted behind a trait for testability.
-- **OscalCliInvoker**: Component responsible for executing oscal-cli resolve-profile with proper argument passing, timeout enforcement, and error capture. Abstracted behind a trait for testability.
+- **OscalCliInvoker**: Component responsible for executing `oscal-cli profile resolve` with proper argument passing, timeout enforcement, and error capture. Abstracted behind a trait for testability.
 
 ## Success Criteria *(mandatory)*
 

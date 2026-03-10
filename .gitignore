@@ -39,6 +39,9 @@ coverage/
 # === Claude Code ===
 .claude/settings.local.json
 
+# === Agent Brain ===
+.agent-brain/
+
 # === Worktrees ===
 .worktrees/
 
