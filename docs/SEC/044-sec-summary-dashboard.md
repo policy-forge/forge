@@ -368,7 +368,7 @@ None -- no conditions required for this low-risk feature.
 |------------|------------|-----------|-----------|---------------|
 | SEC-1 | M-2, M-3, M-4 | AC-2, AC-3, AC-4 | Unit | tests/summary_dashboard_test.rs |
 | SEC-2 | M-6 | AC-6 | Unit | tests/summary_dashboard_test.rs |
-| SEC-3 | M-7 | AC-7 | Integration | tests/cli_integration_test.rs |
+| SEC-3 | M-7 | AC-7 | Integration | tests/summary_dashboard_test.rs |
 
 ---
 

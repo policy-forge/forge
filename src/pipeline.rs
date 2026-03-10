@@ -173,9 +173,14 @@ pub fn run_catalog_pipeline(
     output_path: Option<&Path>,
     max_size_bytes: u64,
     format: &OutputFormat,
-) -> Result<(), ForgeError> {
+) -> Result<crate::summary::ConversionStatistics, ForgeError> {
+    use crate::summary::{ValidationStatus, count_catalog_controls};
+
     // Steps 1-9: shared pipeline stages
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
+
+    let sections_parsed = doc_with_ids.total_sections();
+    let requirements_extracted = doc_with_ids.total_requirements();
 
     // Step 8: Build catalog (with trace link capture)
     let mut trace_links = crate::model::trace::TraceLinkCollection::new();
@@ -217,23 +222,39 @@ pub fn run_catalog_pipeline(
         back_matter,
     };
 
+    let controls_generated = count_catalog_controls(&oscal_catalog);
+
     // Step 12: Validate and serialize based on output format
     let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
 
     // Step 12b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
     let json = validate_catalog_json(&envelope)?;
 
+    let mut stats = crate::summary::ConversionStatistics {
+        sections_parsed,
+        requirements_extracted,
+        controls_generated,
+        validation_status: ValidationStatus::Passed,
+        strategy: "catalog".into(),
+        ..Default::default()
+    };
+
     match format {
-        OutputFormat::Json => write_output(&json, output_path),
+        OutputFormat::Json => write_output(&json, output_path)?,
         OutputFormat::Xml => {
             let xml = crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog)?;
-            write_output(&xml, output_path)
+            write_output(&xml, output_path)?;
         }
         OutputFormat::Yaml => {
             let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
-            write_output(&yaml, output_path)
+            write_output(&yaml, output_path)?;
         }
     }
+
+    stats.output_path =
+        output_path.map_or_else(|| "stdout".to_string(), |p| p.display().to_string());
+
+    Ok(stats)
 }
 
 /// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize → output.
@@ -254,12 +275,17 @@ pub fn run_component_pipeline(
     max_size_bytes: u64,
     source_profile: Option<&str>,
     format: &OutputFormat,
-) -> Result<(), ForgeError> {
+) -> Result<crate::summary::ConversionStatistics, ForgeError> {
+    use crate::summary::ValidationStatus;
+
     // S-3: Pipeline stage progress logging (visible with --verbose)
     tracing::info!("Ingesting and parsing policy document");
 
     // Steps 1-9: shared pipeline stages
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
+
+    let sections_parsed = doc_with_ids.total_sections();
+    let requirements_extracted = doc_with_ids.total_requirements();
 
     tracing::info!(
         source_profile = source_profile.unwrap_or("<none>"),
@@ -278,29 +304,56 @@ pub fn run_component_pipeline(
         Some(&source_file_str),
     )?;
 
+    // Count implemented-requirements as controls_generated for component strategy.
+    // Key must match the serde rename in OscalComponent::control_implementations
+    // and the structure produced by build_control_implementations().
+    let controls_generated: usize = envelope
+        .component_definition
+        .components
+        .iter()
+        .flat_map(|c| c.control_implementations.iter())
+        .filter_map(|ci| ci.get("implemented-requirements"))
+        .filter_map(serde_json::Value::as_array)
+        .map(std::vec::Vec::len)
+        .sum();
+
     // Step 11: Validate and serialize based on output format
 
     // Step 11b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
     let json = validate_component_json(&envelope)?;
 
+    let mut stats = crate::summary::ConversionStatistics {
+        sections_parsed,
+        requirements_extracted,
+        controls_generated,
+        validation_status: ValidationStatus::Passed,
+        strategy: "component".into(),
+        ..Default::default()
+    };
+
     match format {
         OutputFormat::Json => {
             tracing::info!("Serializing to JSON");
-            write_output(&json, output_path)
+            write_output(&json, output_path)?;
         }
         OutputFormat::Xml => {
             tracing::info!("Serializing to XML");
             let xml = crate::export::xml_serializer::serialize_component_definition_to_xml(
                 &envelope.component_definition,
             )?;
-            write_output(&xml, output_path)
+            write_output(&xml, output_path)?;
         }
         OutputFormat::Yaml => {
             tracing::info!("Serializing to YAML");
             let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
-            write_output(&yaml, output_path)
+            write_output(&yaml, output_path)?;
         }
     }
+
+    stats.output_path =
+        output_path.map_or_else(|| "stdout".to_string(), |p| p.display().to_string());
+
+    Ok(stats)
 }
 
 #[cfg(test)]
@@ -406,7 +459,7 @@ mod tests {
             &OutputFormat::Json,
         );
         match &result {
-            Ok(()) => {
+            Ok(_) => {
                 // If it succeeds, that's also fine — means schema accepts the output
                 assert!(output.exists(), "Output file should be written on success");
             }

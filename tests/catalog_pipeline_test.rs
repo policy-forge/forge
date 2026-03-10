@@ -306,7 +306,7 @@ fn pipeline_no_sections_produces_empty_groups() {
 
     // EC-6: Input with no sections should produce a NoStructureDetected error
     match result {
-        Ok(()) => {
+        Ok(_) => {
             let json_str = std::fs::read_to_string(&output_path).unwrap();
             let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
             // groups may be absent (null) or an empty array — both are acceptable (EC-6)

@@ -239,6 +239,12 @@ impl PolicySection {
         self.requirements.len()
             + self.children.iter().map(PolicySection::total_requirements).sum::<usize>()
     }
+
+    /// Recursively count this section and all its descendants.
+    #[must_use]
+    pub fn total_sections(&self) -> usize {
+        1 + self.children.iter().map(PolicySection::total_sections).sum::<usize>()
+    }
 }
 
 impl PolicyDocument {
@@ -246,6 +252,12 @@ impl PolicyDocument {
     #[must_use]
     pub fn total_requirements(&self) -> usize {
         self.sections.iter().map(PolicySection::total_requirements).sum()
+    }
+
+    /// Recursively count all sections across the document.
+    #[must_use]
+    pub fn total_sections(&self) -> usize {
+        self.sections.iter().map(PolicySection::total_sections).sum()
     }
 
     /// Recursively collect all citations from every requirement in this document.
@@ -425,5 +437,76 @@ mod tests {
         assert_eq!(parent.children.len(), 1);
         assert_eq!(parent.children[0].title, "Sub-section");
         assert_eq!(parent.children[0].heading_level, 3);
+    }
+
+    #[test]
+    fn total_sections_empty_doc() {
+        let doc = PolicyDocument {
+            id: "test".into(),
+            metadata: DocumentMetadata::default(),
+            sections: vec![],
+        };
+        assert_eq!(doc.total_sections(), 0);
+    }
+
+    #[test]
+    fn total_sections_flat() {
+        let doc = PolicyDocument {
+            id: "test".into(),
+            metadata: DocumentMetadata::default(),
+            sections: vec![
+                PolicySection {
+                    title: "A".into(),
+                    heading_level: 1,
+                    source_line: 1,
+                    body_text: None,
+                    children: vec![],
+                    requirements: vec![],
+                },
+                PolicySection {
+                    title: "B".into(),
+                    heading_level: 1,
+                    source_line: 5,
+                    body_text: None,
+                    children: vec![],
+                    requirements: vec![],
+                },
+            ],
+        };
+        assert_eq!(doc.total_sections(), 2);
+    }
+
+    #[test]
+    fn total_sections_nested() {
+        let doc = PolicyDocument {
+            id: "test".into(),
+            metadata: DocumentMetadata::default(),
+            sections: vec![PolicySection {
+                title: "Parent".into(),
+                heading_level: 1,
+                source_line: 1,
+                body_text: None,
+                children: vec![
+                    PolicySection {
+                        title: "Child1".into(),
+                        heading_level: 2,
+                        source_line: 3,
+                        body_text: None,
+                        children: vec![],
+                        requirements: vec![],
+                    },
+                    PolicySection {
+                        title: "Child2".into(),
+                        heading_level: 2,
+                        source_line: 5,
+                        body_text: None,
+                        children: vec![],
+                        requirements: vec![],
+                    },
+                ],
+                requirements: vec![],
+            }],
+        };
+        assert_eq!(doc.total_sections(), 3);
     }
 }

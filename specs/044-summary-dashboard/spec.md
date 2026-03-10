@@ -5,6 +5,14 @@
 **Status**: Draft
 **Input**: User description: "Summary dashboard for forge convert --summary flag showing conversion statistics"
 
+## Clarifications
+
+### Session 2026-03-10
+
+- Q: Should the summary dashboard include elapsed conversion time (PRD S-3)? → A: Yes, include elapsed time (aligns spec with PRD S-3).
+- Q: Should the dashboard use ANSI colors for status indicators? → A: Yes, colors with auto-detection (color when terminal, plain when piped).
+- Q: What level of detail should validation failures show? → A: Count plus up to 3 error messages, with "and N more..." overflow.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - View Conversion Statistics (Priority: P1)
@@ -83,21 +91,23 @@ A compliance engineer sees the conversion strategy used and output file path in 
 ### Functional Requirements
 
 - **FR-001**: System MUST accept a `--summary` flag on the `forge convert` subcommand.
-- **FR-002**: When `--summary` is provided, the system MUST print the number of sections parsed from the input document to stdout.
-- **FR-003**: When `--summary` is provided, the system MUST print the number of requirements extracted to stdout.
-- **FR-004**: When `--summary` is provided, the system MUST print the number of controls generated (Catalog controls or Component Definition implemented-requirements, depending on strategy) to stdout.
-- **FR-005**: When `--summary` is provided, the system MUST print the validation status (passed, passed with warnings, failed with error count, or not run) to stdout.
-- **FR-006**: When `--summary` is provided, the system MUST print the mapping coverage percentage (controls generated / requirements extracted * 100) to stdout, along with raw counts.
-- **FR-007**: The summary dashboard MUST be printed after the conversion artifact is written to the output file, as a visually distinct formatted section.
+- **FR-002**: When `--summary` is provided, the system MUST print the number of sections parsed from the input document to stderr.
+- **FR-003**: When `--summary` is provided, the system MUST print the number of requirements extracted to stderr.
+- **FR-004**: When `--summary` is provided, the system MUST print the number of controls generated (Catalog controls or Component Definition implemented-requirements, depending on strategy) to stderr.
+- **FR-005**: When `--summary` is provided, the system MUST print the validation status (passed, passed with warnings, failed with error count, or not run) to stderr. When validation fails, the dashboard MUST show up to 3 individual error messages below the status line, with an "and N more..." indicator if additional errors exist.
+- **FR-006**: When `--summary` is provided, the system MUST print the mapping coverage percentage (controls generated / requirements extracted * 100) to stderr, along with raw counts.
+- **FR-007**: The summary dashboard MUST be printed to stderr after the conversion artifact is written to the output file, as a visually distinct formatted section. Stderr is used to avoid polluting stdout when the artifact is written there (no `--output` flag).
 - **FR-008**: When `--summary` is not provided, no dashboard output MUST be printed and conversion behavior MUST be unchanged.
 - **FR-009**: The `--summary` flag MUST NOT alter the conversion pipeline's behavior — the generated artifact MUST be identical with or without the flag.
 - **FR-010**: The summary dashboard SHOULD include the conversion strategy used (catalog or component).
 - **FR-011**: The summary dashboard SHOULD include the output file path.
 - **FR-012**: When zero requirements are extracted, the system MUST handle the mapping coverage calculation without errors and display "0.0% (0/0)".
+- **FR-013**: The summary dashboard SHOULD include the elapsed conversion time (measured from pipeline start to artifact write completion).
+- **FR-014**: The summary dashboard SHOULD use ANSI color codes for status indicators (green for PASSED, red for FAILED, yellow for warnings) with automatic terminal detection — colors are applied when stderr is a terminal and omitted when piped or redirected.
 
 ### Key Entities
 
-- **ConversionStatistics**: Represents aggregate counts collected during a single conversion run — sections parsed, requirements extracted, controls generated, validation status (passed/failed/warnings/not run), validation error and warning counts, conversion strategy name, and output file path.
+- **ConversionStatistics**: Represents aggregate counts collected during a single conversion run — sections parsed, requirements extracted, controls generated, validation status (passed/failed/warnings/not run), validation error and warning counts, up to 3 validation error messages for display, conversion strategy name, output file path, and elapsed conversion time.
 - **ValidationStatus**: Represents the outcome of OSCAL schema validation — one of: passed, passed with warnings, failed, or not run.
 - **Mapping Coverage**: A derived metric calculated as (controls generated / requirements extracted) * 100, representing the percentage of requirements with an OSCAL representation.
 
@@ -105,7 +115,7 @@ A compliance engineer sees the conversion strategy used and output file path in 
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can assess conversion quality at a glance within 5 seconds of conversion completion when using `--summary`.
+- **SC-001**: Users can assess conversion quality at a glance upon conversion completion when using `--summary` — the dashboard is printed immediately after the artifact is written with no additional delay.
 - **SC-002**: All statistics (sections parsed, requirements extracted, controls generated) match the actual pipeline behavior with 100% accuracy for any input document.
 - **SC-003**: Mapping coverage percentage matches manual calculation (controls / requirements * 100) for all test fixtures.
 - **SC-004**: Validation status accurately reflects the actual validation result in all cases (passed, warnings, failed, not available).
@@ -119,7 +129,7 @@ A compliance engineer sees the conversion strategy used and output file path in 
 - Validation infrastructure from previous work items (WI-19+) is available, or the system gracefully falls back to "Not run" status.
 - The `--summary` flag does not affect artifact output — statistics are purely additive stdout content printed after the artifact is written to file.
 - Mapping coverage is calculated as a simple ratio (controls / requirements); some requirements may legitimately produce more or fewer than one control due to atomization.
-- No new external dependencies are needed — formatting uses standard string operations with box-drawing Unicode characters.
+- No new external dependencies are needed beyond terminal detection — formatting uses standard string operations with box-drawing Unicode characters and ANSI color codes with `std::io::IsTerminal` for auto-detection.
 
 ## Dependencies
 
@@ -130,13 +140,13 @@ A compliance engineer sees the conversion strategy used and output file path in 
 
 **In Scope:**
 - `--summary` flag on `forge convert`
-- Collecting and displaying: sections parsed, requirements extracted, controls generated, validation status, mapping coverage
+- Collecting and displaying: sections parsed, requirements extracted, controls generated, validation status, mapping coverage, elapsed conversion time
 - Human-readable formatted text output to stdout
 
 **Out of Scope:**
 - Persistent storage of statistics (database or file) — stdout only
 - Historical tracking or trend analysis across runs — single-run statistics only
 - Web-based or GUI dashboard — CLI stdout only
-- Performance benchmarking or timing metrics — content statistics focus
+- Performance benchmarking beyond elapsed time — content statistics focus
 - Structured JSON output of statistics (deferred as a future enhancement)
 - Automatic remediation suggestions based on low coverage — report only

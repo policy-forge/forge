@@ -70,6 +70,10 @@ pub enum Commands {
         /// substantive text changes).
         #[arg(long)]
         stable_id_baseline: Option<PathBuf>,
+
+        /// Print a conversion summary dashboard to stderr after conversion
+        #[arg(long)]
+        summary: bool,
     },
 
     /// Export an OSCAL artifact to a different format
@@ -174,15 +178,17 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             max_size,
             source_profile,
             stable_id_baseline,
-        } => convert::execute(
+            summary,
+        } => convert::execute(&convert::ConvertOptions {
             input,
             strategy,
             format,
-            output.as_deref(),
-            *max_size,
-            source_profile.as_deref(),
-            stable_id_baseline.as_deref(),
-        ),
+            output: output.as_deref(),
+            max_size: *max_size,
+            source_profile: source_profile.as_deref(),
+            stable_id_baseline: stable_id_baseline.as_deref(),
+            summary: *summary,
+        }),
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
         }
@@ -306,6 +312,35 @@ mod tests {
             .expect("Should succeed when --format is omitted (defaults to json)");
         if let Commands::Convert { format, .. } = cli.command {
             assert!(matches!(format, OutputFormat::Json), "Default format should be Json");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_with_summary_flag() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "test.md",
+            "--strategy",
+            "catalog",
+            "--summary",
+        ])
+        .unwrap();
+        if let Commands::Convert { summary, .. } = cli.command {
+            assert!(summary, "Expected --summary to be true");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_without_summary_flag_defaults_false() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]).unwrap();
+        if let Commands::Convert { summary, .. } = cli.command {
+            assert!(!summary, "Expected --summary to default to false");
         } else {
             panic!("Expected Convert command");
         }

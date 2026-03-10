@@ -143,13 +143,13 @@ graph TD
 ```mermaid
 graph TD
     subgraph "Option 1: Terminal Table"
-        Pipeline1[Conversion Pipeline] --> Stats1["ConversionStatistics struct (mutable ref)"]
-        Stats1 --> Ingest1[Ingest: sections_parsed++]
-        Stats1 --> Extract1[Extract: requirements_extracted++]
-        Stats1 --> Generate1[Generate: controls_generated++]
-        Stats1 --> Validate1[Validate: status captured]
+        Pipeline1[Conversion Pipeline] --> |"returns Result&lt;ConversionStatistics&gt;"| CLI1[CLI Handler]
+        Pipeline1 --> Ingest1[Ingest: count sections]
+        Pipeline1 --> Extract1[Extract: count requirements]
+        Pipeline1 --> Generate1[Generate: count controls]
+        Pipeline1 --> Validate1[Validate: capture status]
         Pipeline1 --> Export1[Export: write artifact to file]
-        Export1 --> Check1{--summary flag?}
+        CLI1 --> Check1{--summary flag?}
         Check1 -->|Yes| Format1[format_summary_dashboard]
         Format1 --> Print1["Print box-drawing table to stdout"]
         Check1 -->|No| Exit1[Exit]
@@ -264,13 +264,13 @@ Option 1 is the clear choice for an XS-sized Phase 3 feature. A `ConversionStati
 graph TD
     subgraph "Summary Dashboard"
         CLI[CLI: --summary flag] --> Pipeline[Conversion Pipeline]
-        Pipeline --> Stats["ConversionStatistics (mutable)"]
-        Stats --> |sections_parsed| IngestStage[Ingest Stage]
-        Stats --> |requirements_extracted| ExtractStage[Extract Stage]
-        Stats --> |controls_generated| GenerateStage[Generate Stage]
-        Stats --> |validation_status| ValidateStage[Validate Stage]
+        Pipeline --> |"returns Result&lt;ConversionStatistics&gt;"| CLI
+        Pipeline --> IngestStage[Ingest: count sections]
+        Pipeline --> ExtractStage[Extract: count requirements]
+        Pipeline --> GenerateStage[Generate: count controls]
+        Pipeline --> ValidateStage[Validate: capture status]
         Pipeline --> Export[Write artifact to file]
-        Export --> CheckFlag{--summary?}
+        CLI --> CheckFlag{--summary?}
         CheckFlag -->|Yes| FormatFn[format_summary_dashboard]
         FormatFn --> Stdout[Print to stdout]
         CheckFlag -->|No| Done[Exit]
@@ -286,9 +286,9 @@ graph TD
 | Component | Responsibility | Interface | Dependencies |
 |-----------|---------------|-----------|--------------|
 | ConversionStatistics | Accumulate pipeline stage counts | Data struct with counter fields | None |
-| format_summary_dashboard | Format statistics as box-drawing table | `(&ConversionStatistics) -> String` | std::fmt |
+| format_summary_dashboard | Format statistics as box-drawing table | `(&ConversionStatistics, bool) -> String` | std::fmt |
 | CLI --summary flag | Enable/disable dashboard output | clap 4.x bool flag | clap |
-| Pipeline instrumentation | Increment counters at stage boundaries | Mutable reference to stats struct | Existing pipeline stages |
+| Pipeline instrumentation | Populate counters at stage boundaries | Returns `Result<ConversionStatistics, ForgeError>` | Existing pipeline stages |
 
 ### Data Flow 🟢 `@llm-autonomous`
 
@@ -301,15 +301,12 @@ sequenceDiagram
     participant F as format_summary_dashboard
 
     U->>CLI: forge convert policy.md --strategy catalog --summary
-    CLI->>S: Create ConversionStatistics::default()
-    CLI->>P: Run pipeline with &mut stats
-    P->>S: stats.sections_parsed = 12
-    P->>S: stats.requirements_extracted = 47
-    P->>S: stats.controls_generated = 47
-    P->>S: stats.validation_status = Passed
-    P-->>CLI: Conversion result + artifact path
-    CLI->>CLI: Write artifact to file
-    CLI->>F: format_summary_dashboard(&stats)
+    CLI->>CLI: Start timer (Instant::now)
+    CLI->>P: Run pipeline (run_catalog_pipeline / run_component_pipeline)
+    P->>P: Ingest, extract, generate, validate, write artifact
+    P-->>CLI: Result<ConversionStatistics> (sections=12, requirements=47, controls=47, validation=Passed)
+    CLI->>CLI: Set elapsed, strategy, output_path on stats
+    CLI->>F: format_summary_dashboard(&stats, use_color)
     F-->>CLI: Formatted string
     CLI-->>U: Print dashboard to stdout
 ```
@@ -326,8 +323,12 @@ pub struct ConversionStatistics {
     pub validation_status: ValidationStatus,
     pub validation_errors: usize,
     pub validation_warnings: usize,
+    /// Up to 3 validation error messages for dashboard display (see spec FR-005).
+    pub validation_error_messages: Vec<String>,
     pub strategy: String,
     pub output_path: String,
+    /// Elapsed conversion time from pipeline start to artifact write (see S-3).
+    pub elapsed: Duration,
 }
 
 #[derive(Debug, Default)]
@@ -350,21 +351,23 @@ impl ConversionStatistics {
 }
 
 /// Format conversion statistics as a human-readable dashboard string.
-pub fn format_summary_dashboard(stats: &ConversionStatistics) -> String;
+/// When `use_color` is true, ANSI color codes are applied to status indicators.
+pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -> String;
 ```
 
 ### Key Algorithms/Patterns 🟡 `@human-review`
 
-**Pattern:** Accumulator struct with stage-boundary instrumentation
+**Pattern:** Pipeline returns `ConversionStatistics` alongside result
 ```
 Pipeline execution flow:
-1. Create ConversionStatistics::default()
+1. Pipeline function builds ConversionStatistics internally
 2. After ingestion:  stats.sections_parsed = sections.len()
 3. After extraction: stats.requirements_extracted = requirements.len()
 4. After generation: stats.controls_generated = controls.len()
 5. After validation: stats.validation_status = result; stats.validation_errors = errors.len()
-6. Set stats.strategy and stats.output_path from CLI args
-7. After file write: if --summary { format_summary_dashboard(&stats) → stdout }
+6. Pipeline returns Result<ConversionStatistics, ForgeError>
+7. CLI sets stats.strategy, stats.output_path, stats.elapsed from CLI context
+8. If --summary: format_summary_dashboard(&stats, use_color) → stdout
 ```
 
 **Pattern:** Box-drawing formatted output

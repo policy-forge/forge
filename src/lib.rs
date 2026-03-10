@@ -8,6 +8,7 @@ pub mod oscal;
 pub mod parameter;
 pub mod parse;
 pub mod pipeline;
+pub mod summary;
 #[doc(hidden)]
 pub mod testing;
 pub mod uuid;

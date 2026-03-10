@@ -191,7 +191,7 @@ N/A — No state transitions in this work item. Statistics are collected during 
 - [ ] **M-2:** When `--summary` is provided, the CLI shall print the number of sections parsed from the input document to stdout. *(Traces to: Parent PRD C-4)*
 - [ ] **M-3:** When `--summary` is provided, the CLI shall print the number of requirements extracted to stdout. *(Traces to: Parent PRD C-4)*
 - [ ] **M-4:** When `--summary` is provided, the CLI shall print the number of controls generated (Catalog controls or Component Definition implemented-requirements) to stdout. *(Traces to: Parent PRD C-4)*
-- [ ] **M-5:** When `--summary` is provided, the CLI shall print the validation status (passed/failed with error count) to stdout. *(Traces to: Parent PRD C-4)*
+- [ ] **M-5:** When `--summary` is provided, the CLI shall print the validation status (passed/failed with error count) to stdout. When validation fails, up to 3 individual error messages are shown with an "and N more..." overflow indicator (see spec FR-005 for display detail). *(Traces to: Parent PRD C-4)*
 - [ ] **M-6:** When `--summary` is provided, the CLI shall print the mapping coverage percentage (requirements with OSCAL representation / total requirements) to stdout. *(Traces to: Parent PRD C-4)*
 - [ ] **M-7:** The summary dashboard shall be printed after the conversion artifact is written, as a distinct section with clear formatting. *(Traces to: Parent PRD C-4)*
 
@@ -237,10 +237,11 @@ erDiagram
         string validation_status "passed/failed"
         int validation_errors "error count"
         int validation_warnings "warning count"
-        float mapping_coverage "percentage"
+        string[] validation_error_messages "up to 3 messages for display (FR-005)"
+        float mapping_coverage "percentage (derived)"
         string strategy "catalog or component"
         string output_path "artifact file path"
-        float elapsed_seconds "conversion time"
+        duration elapsed "conversion time (S-3)"
     }
 ```
 
@@ -257,8 +258,12 @@ pub struct ConversionStatistics {
     pub validation_status: ValidationStatus,
     pub validation_errors: usize,
     pub validation_warnings: usize,
+    /// Up to 3 validation error messages for dashboard display (see spec FR-005).
+    pub validation_error_messages: Vec<String>,
     pub strategy: String,
     pub output_path: String,
+    /// Elapsed conversion time from pipeline start to artifact write (see S-3).
+    pub elapsed: Duration,
 }
 
 pub enum ValidationStatus {
@@ -279,7 +284,8 @@ impl ConversionStatistics {
 }
 
 /// Format conversion statistics as a human-readable dashboard string.
-pub fn format_summary_dashboard(stats: &ConversionStatistics) -> String;
+/// When `use_color` is true, ANSI color codes are applied to status indicators.
+pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -> String;
 
 // Expected stdout output format:
 //
@@ -332,7 +338,7 @@ pub fn format_summary_dashboard(stats: &ConversionStatistics) -> String;
 |-------|-------------|------------|-------|------|------|
 | AC-1 | M-1 | US-1 | A valid policy document | Running `forge convert policy.md --strategy catalog --summary` | Conversion succeeds and summary dashboard is printed to stdout |
 | AC-2 | M-2 | US-1 | A policy with 5 sections | Running with `--summary` | Dashboard shows "Sections parsed: 5" |
-| AC-3 | M-3 | US-1 | A policy with 15 requirements | Running with `--summary` | Dashboard shows "Requirements extracted: 15" |
+| AC-3 | M-3 | US-1 | A policy with 15 requirements | Running with `--summary` | Dashboard shows "Requirements: 15" |
 | AC-4 | M-4 | US-1 | A conversion producing 15 controls | Running with `--summary` | Dashboard shows "Controls generated: 15" |
 | AC-5 | M-5 | US-2 | A valid conversion | Running with `--summary` | Dashboard shows "Validation: PASSED" |
 | AC-6 | M-6 | US-3 | 12 of 15 requirements mapped to controls | Running with `--summary` | Dashboard shows "Mapping coverage: 80.0% (12/15)" |
