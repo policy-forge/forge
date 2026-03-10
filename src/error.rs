@@ -114,6 +114,10 @@ pub enum ForgeError {
     #[error("Invalid argument: {0}")]
     InvalidArgument(String),
 
+    // --- Batch errors (exit code 1) ---
+    #[error("Batch conversion error: {0}")]
+    BatchConversion(String),
+
     // --- Other (exit code 1) ---
     #[error("Serialization error: {0}")]
     Serialization(String),
@@ -147,6 +151,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::ExportInvalidOscal { .. }
         | ForgeError::ExportEmptyInput { .. }
         | ForgeError::InvalidArgument(_)
+        | ForgeError::BatchConversion(_)
         | ForgeError::Serialization(_) => 1,
 
         // Exit 2: Parse/Structure errors
@@ -209,6 +214,17 @@ mod tests {
     }
 
     // --- T005: exit_code tests ---
+
+    #[test]
+    fn batch_conversion_error_display() {
+        let err = ForgeError::BatchConversion("thread pool failed".to_string());
+        assert_eq!(err.to_string(), "Batch conversion error: thread pool failed");
+    }
+
+    #[test]
+    fn batch_conversion_exit_code_is_1() {
+        assert_eq!(exit_code(&ForgeError::BatchConversion("test".into())), 1);
+    }
 
     #[test]
     fn exit_code_input_io_errors_return_1() {
