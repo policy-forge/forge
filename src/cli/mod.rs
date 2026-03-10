@@ -1,6 +1,7 @@
 pub mod convert;
 pub mod export;
 pub mod profile;
+pub mod trace;
 pub mod validate;
 
 use std::path::PathBuf;
@@ -100,6 +101,23 @@ pub enum Commands {
         format: ValidateOutputFormat,
     },
 
+    /// Show traceability between OSCAL elements and source policy locations.
+    ///
+    /// The report inherits the sensitivity classification of the source policy.
+    /// Treat the output with the same access controls as the source document.
+    Trace {
+        /// Path to the OSCAL artifact (JSON)
+        artifact: PathBuf,
+
+        /// Path to the source policy file
+        #[arg(long)]
+        source: PathBuf,
+
+        /// Write output to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+
     /// Generate an OSCAL Profile by selecting controls from a source Catalog
     Profile {
         /// Path to the source Catalog file (OSCAL Catalog JSON)
@@ -188,6 +206,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         }
         Commands::Validate { input, schema_type, format } => {
             validate::execute(input, schema_type.as_ref(), format)
+        }
+        Commands::Trace { artifact, source, output } => {
+            trace::execute(artifact, source, output.as_deref())
         }
         Commands::Profile { catalog, include, exclude, format, output, set_params } => {
             profile::execute(
@@ -309,6 +330,46 @@ mod tests {
         } else {
             panic!("Expected Convert command");
         }
+    }
+
+    // T050: CLI parsing tests for trace subcommand
+
+    #[test]
+    fn parse_trace_subcommand() {
+        let cli = Cli::try_parse_from(["forge", "trace", "artifact.json", "--source", "policy.md"])
+            .unwrap();
+        if let Commands::Trace { artifact, source, output } = cli.command {
+            assert_eq!(artifact, PathBuf::from("artifact.json"));
+            assert_eq!(source, PathBuf::from("policy.md"));
+            assert!(output.is_none());
+        } else {
+            panic!("Expected Trace command");
+        }
+    }
+
+    #[test]
+    fn parse_trace_with_output() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "trace",
+            "artifact.json",
+            "--source",
+            "policy.md",
+            "--output",
+            "report.txt",
+        ])
+        .unwrap();
+        if let Commands::Trace { output, .. } = cli.command {
+            assert_eq!(output, Some(PathBuf::from("report.txt")));
+        } else {
+            panic!("Expected Trace command");
+        }
+    }
+
+    #[test]
+    fn parse_trace_missing_source_fails() {
+        let result = Cli::try_parse_from(["forge", "trace", "artifact.json"]);
+        assert!(result.is_err(), "Should fail when --source is omitted");
     }
 
     #[test]

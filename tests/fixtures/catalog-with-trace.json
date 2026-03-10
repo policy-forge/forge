@@ -1,0 +1,67 @@
+{
+  "catalog": {
+    "uuid": "test-catalog-uuid",
+    "metadata": {
+      "title": "Test Policy Catalog",
+      "last-modified": "2026-01-15T10:30:00Z",
+      "version": "1.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "access-control",
+        "title": "Access Control",
+        "props": [
+          { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Access Control" }
+        ],
+        "controls": [
+          {
+            "id": "POL-AC-001",
+            "title": "Multi-Factor Authentication",
+            "props": [
+              { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+              { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Access Control" },
+              { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "5" }
+            ]
+          },
+          {
+            "id": "POL-AC-002",
+            "title": "Role-Based Access",
+            "props": [
+              { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+              { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Access Control" },
+              { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "9" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "data-protection",
+        "title": "Data Protection",
+        "props": [
+          { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Data Protection" }
+        ],
+        "controls": [
+          {
+            "id": "POL-DP-001",
+            "title": "Encryption at Rest",
+            "props": [
+              { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+              { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Data Protection" },
+              { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "13" }
+            ]
+          },
+          {
+            "id": "POL-DP-002",
+            "title": "Encryption in Transit",
+            "props": [
+              { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+              { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Data Protection" },
+              { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "17" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
