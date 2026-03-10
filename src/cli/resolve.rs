@@ -60,8 +60,13 @@ pub fn execute(
     }
 
     // FR-007 + FR-014: Canonicalize input path (validates existence implicitly)
-    let canonical_input =
-        input.canonicalize().map_err(|_| ForgeError::FileNotFound { path: input.to_path_buf() })?;
+    let canonical_input = input.canonicalize().map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: input.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: input.to_path_buf() }
+        }
+        _ => ForgeError::Io(e),
+    })?;
 
     // Derive default output path if not provided
     let output_path = match output {
@@ -78,7 +83,9 @@ pub fn execute(
 
     if !cli_info.functional {
         return Err(ForgeError::OscalCliNotFunctional {
-            path: cli_info.executable_path.unwrap_or_default(),
+            path: cli_info
+                .executable_path
+                .unwrap_or_else(|| PathBuf::from("oscal-cli")),
             detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
         });
     }

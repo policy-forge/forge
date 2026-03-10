@@ -34,13 +34,10 @@ impl Default for PathDetector {
 impl OscalCliDetect for PathDetector {
     fn detect(&self) -> OscalCliInfo {
         let executable_path = match &self.override_path {
-            Some(path) => {
-                if path.exists() {
-                    Some(path.clone())
-                } else {
-                    return OscalCliInfo::not_found();
-                }
-            }
+            Some(path) => match path.canonicalize() {
+                Ok(canonical) => Some(canonical),
+                Err(_) => return OscalCliInfo::not_found(),
+            },
             None => search_path_for_oscal_cli(),
         };
 

@@ -32,7 +32,7 @@ impl OscalCliInfo {
     }
 }
 
-/// Arguments for a resolve-profile invocation.
+/// Arguments for a `profile resolve` invocation.
 #[derive(Debug)]
 pub struct ResolveArgs {
     /// Canonicalized absolute path to input Profile JSON.

@@ -42,21 +42,20 @@ oscal-cli profile resolve [-to=<format>] <input-file> <output-file>
 
 ## R-3: Timeout Implementation
 
-**Decision**: Use `std::process::Child::wait()` with a separate thread-based watchdog that calls `Child::kill()` on timeout.
+**Decision**: Use polling with `Child::try_wait()` in a loop that checks elapsed time and calls `Child::kill()` on timeout.
 
-**Rationale**: `std::process::Command` has no built-in timeout. A thread-based approach is simpler than pulling in an async runtime for a synchronous CLI tool.
+**Rationale**: `std::process::Command` has no built-in timeout. A polling approach avoids the complexity of spawning a watchdog thread and is straightforward for a synchronous CLI tool. The 100ms poll interval adds negligible overhead for the expected subprocess durations (seconds).
 
 **Pattern**:
 ```rust
-// Spawn child, spawn watchdog thread with timeout
-// Watchdog kills child if timeout expires
-// Main thread waits for child exit
-// Join watchdog thread
+// Spawn child
+// Loop: try_wait() → if exited, break; if elapsed > timeout, kill + return error; else sleep 100ms
+// Read stderr after exit
 ```
 
 **Alternatives considered**:
 - `tokio::time::timeout` — rejected: adds async runtime dependency for one operation
-- Polling loop with `Child::try_wait()` — rejected: less precise, wastes CPU
+- Thread-based watchdog — considered but polling is simpler for this use case; a watchdog thread would be warranted if concurrent stderr draining is needed (see future improvement notes)
 
 ## R-4: Environment Variable Filtering
 
