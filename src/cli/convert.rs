@@ -193,9 +193,6 @@ pub fn execute_dispatch(
 
     let max_size_bytes = max_size_to_bytes(opts.max_size)?;
 
-    // Validate inputs
-    batch::orchestrator::validate_inputs(input)?;
-
     // Derive output paths
     let path_pairs = batch::output_naming::derive_output_paths(input, *opts.format, opts.output);
 
