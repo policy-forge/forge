@@ -1191,9 +1191,11 @@ fn test_verbose_quiet_conflict_error() {
 /// Test that --max-size with an overflow-inducing value produces a validation error, not a panic.
 #[test]
 fn test_convert_max_size_overflow_produces_error() {
+    let dir = TempDir::new().unwrap();
+    let input = create_temp_md(&dir, "test.md", "# Policy\nSome content");
     let output = forge_bin()
         .arg("convert")
-        .arg("test.md")
+        .arg(input.as_os_str())
         .arg("--strategy")
         .arg("catalog")
         .arg("--format")

@@ -1,35 +1,53 @@
 use crate::error::ForgeError;
 use crate::types::OscalModelType;
+use crate::validate;
 
 use super::extractor::extract_trace_metadata;
 use super::report::{ElementType, TraceEntry};
 
 /// Detect whether a parsed JSON value is a Catalog or Component Definition.
 ///
-/// Validates that exactly one supported top-level key is present and its value
-/// is a JSON object.
+/// Delegates to [`validate::detect_model_type`] for core detection, then applies
+/// trace-specific validation: rejects `Profile` artifacts and verifies the
+/// top-level value is a JSON object.
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::TraceUnsupportedArtifact` if neither key is found,
-/// both keys are present, or the value is not a JSON object.
+/// Returns `ForgeError::TraceUnsupportedArtifact` if the model type is not
+/// recognized, is a Profile, or the top-level value is not a JSON object.
 pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, ForgeError> {
-    let has_catalog = json.get("catalog").is_some_and(serde_json::Value::is_object);
-    let has_compdef = json.get("component-definition").is_some_and(serde_json::Value::is_object);
-
-    match (has_catalog, has_compdef) {
-        (true, false) => Ok(OscalModelType::Catalog),
-        (false, true) => Ok(OscalModelType::ComponentDefinition),
-        (true, true) => Err(ForgeError::TraceUnsupportedArtifact {
-            detail: "Ambiguous artifact: both 'catalog' and 'component-definition' keys present"
-                .to_string(),
-        }),
-        (false, false) => Err(ForgeError::TraceUnsupportedArtifact {
+    let model_type =
+        validate::detect_model_type(json).map_err(|_| ForgeError::TraceUnsupportedArtifact {
             detail:
                 "Expected top-level key 'catalog' or 'component-definition' with an object value"
                     .to_string(),
-        }),
+        })?;
+
+    if model_type == OscalModelType::Profile {
+        return Err(ForgeError::TraceUnsupportedArtifact {
+            detail: "Profile artifacts are not supported for traceability".to_string(),
+        });
     }
+
+    // Verify the top-level value is a JSON object (stricter than detect_model_type)
+    let key = model_type.as_str();
+    if !json.get(key).is_some_and(serde_json::Value::is_object) {
+        return Err(ForgeError::TraceUnsupportedArtifact {
+            detail: format!("Expected top-level key '{key}' with an object value"),
+        });
+    }
+
+    // Reject ambiguous artifacts with multiple supported top-level keys
+    let has_catalog = json.get("catalog").is_some_and(serde_json::Value::is_object);
+    let has_compdef = json.get("component-definition").is_some_and(serde_json::Value::is_object);
+    if has_catalog && has_compdef {
+        return Err(ForgeError::TraceUnsupportedArtifact {
+            detail: "Ambiguous artifact: both 'catalog' and 'component-definition' keys present"
+                .to_string(),
+        });
+    }
+
+    Ok(model_type)
 }
 
 /// Walk a Catalog's groups and controls, extracting trace entries.

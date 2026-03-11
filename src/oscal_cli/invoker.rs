@@ -48,7 +48,6 @@ impl OscalCliInvoke for ProcessInvoker {
         let mut child = cmd.spawn().map_err(|e| ForgeError::OscalCliExecution {
             exit_code: None,
             message: format!("Failed to spawn oscal-cli: {e}"),
-            stderr: String::new(),
         })?;
 
         // Drain stderr on a dedicated thread to prevent pipe buffer deadlock.
@@ -79,7 +78,6 @@ impl OscalCliInvoke for ProcessInvoker {
                     return Err(ForgeError::OscalCliExecution {
                         exit_code: None,
                         message: format!("Failed to wait for oscal-cli: {e}"),
-                        stderr: String::new(),
                     });
                 }
             }
@@ -91,20 +89,20 @@ impl OscalCliInvoke for ProcessInvoker {
         // Sanitize stderr to prevent terminal escape injection (SEC-5).
         let stderr_str = crate::sanitize::strip_control_chars(&stderr_str);
 
+        if !status.success() {
+            if !stderr_str.is_empty() {
+                tracing::warn!(stderr = %stderr_str, "oscal-cli failed with stderr output");
+            }
+            let message = extract_error_message(&stderr_str);
+            return Err(ForgeError::OscalCliExecution { exit_code: status.code(), message });
+        }
+
+        // Success — log stderr at debug level for diagnostics
         if !stderr_str.is_empty() {
             tracing::debug!(stderr = %stderr_str, "oscal-cli stderr output");
         }
 
-        if !status.success() {
-            let message = extract_error_message(&stderr_str);
-            return Err(ForgeError::OscalCliExecution {
-                exit_code: status.code(),
-                message,
-                stderr: stderr_str,
-            });
-        }
-
-        // Success — collect any stderr warnings
+        // Collect any stderr warnings
         let warnings = if stderr_str.trim().is_empty() {
             Vec::new()
         } else {

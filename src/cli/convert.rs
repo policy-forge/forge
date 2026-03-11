@@ -148,9 +148,8 @@ pub struct ConvertOptions<'a> {
 ///
 /// Returns `ForgeError` if the conversion fails.
 pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
-    if input.is_empty() {
-        return Err(ForgeError::BatchConversion("No input files provided".to_string()));
-    }
+    // Validate inputs upfront; the empty-input invariant is owned by validate_inputs.
+    batch::orchestrator::validate_inputs(input)?;
 
     if input.len() == 1 {
         // Single-file: delegate to existing execute() unchanged (R6 backward compat)
