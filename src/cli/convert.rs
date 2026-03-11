@@ -67,6 +67,30 @@ fn max_size_to_bytes(max_size_mb: u64) -> Result<u64, ForgeError> {
         .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))
 }
 
+/// Validate and resolve `--source-profile` for component strategy.
+///
+/// Returns `Ok(None)` if no profile was provided (with a warning),
+/// `Ok(Some(path))` if valid, or `Err` if empty/whitespace-only or file not found.
+fn resolve_source_profile(source_profile: Option<&str>) -> Result<Option<&str>, ForgeError> {
+    match source_profile {
+        None => {
+            tracing::warn!(
+                "--source-profile not provided; control-id mapping will be skipped. \
+                 The generated Component Definition will have empty control-implementations."
+            );
+            Ok(None)
+        }
+        Some(p) if p.trim().is_empty() => Err(ForgeError::Validation(
+            "--source-profile must not be empty".to_string(),
+        )),
+        Some(p) => {
+            let profile_path = Path::new(p);
+            validate_regular_file(profile_path, "--source-profile")?;
+            Ok(Some(p))
+        }
+    }
+}
+
 fn validate_regular_file(path: &Path, flag_name: &str) -> Result<(), ForgeError> {
     if !path.exists() {
         return Err(ForgeError::Validation(format!(
@@ -161,6 +185,13 @@ pub fn execute_dispatch(
         }
     }
 
+    // Validate --source-profile upfront for component strategy (SEC-3, SEC-4, EC-4)
+    let resolved_profile = if matches!(strategy, Strategy::Component) {
+        resolve_source_profile(source_profile)?
+    } else {
+        source_profile
+    };
+
     let max_size_bytes = max_size_to_bytes(max_size)?;
 
     // Validate inputs
@@ -175,7 +206,7 @@ pub fn execute_dispatch(
         *strategy,
         *format,
         max_size_bytes,
-        source_profile,
+        resolved_profile,
         usize::from(jobs),
     );
 
@@ -220,24 +251,7 @@ pub fn execute(
         }
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
-            let profile_ref = match source_profile {
-                None => {
-                    tracing::warn!(
-                        "--source-profile not provided; control-id mapping will be skipped. The generated Component Definition will have empty control-implementations."
-                    );
-                    None
-                }
-                Some(p) if p.trim().is_empty() => {
-                    return Err(ForgeError::Validation(
-                        "--source-profile must not be empty".to_string(),
-                    ));
-                }
-                Some(p) => {
-                    let profile_path = std::path::Path::new(p);
-                    validate_regular_file(profile_path, "--source-profile")?;
-                    Some(p)
-                }
-            };
+            let profile_ref = resolve_source_profile(source_profile)?;
             crate::pipeline::run_component_pipeline(
                 input,
                 output,
