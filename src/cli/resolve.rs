@@ -39,7 +39,7 @@ pub fn execute(
 
     // --check mode: report oscal-cli status and exit
     if check {
-        execute_check(&detector);
+        execute_check(&detector)?;
         return Ok(());
     }
 
@@ -119,22 +119,28 @@ pub fn execute(
 }
 
 /// Execute --check: report oscal-cli detection status.
-fn execute_check(detector: &dyn OscalCliDetect) {
+///
+/// # Errors
+///
+/// * `ForgeError::OscalCliNotFound` — oscal-cli not on PATH (exit code 4).
+/// * `ForgeError::OscalCliNotFunctional` — oscal-cli found but broken (exit code 4).
+fn execute_check(detector: &dyn OscalCliDetect) -> Result<(), ForgeError> {
     let info = detector.detect();
 
     if !info.available {
         println!("oscal-cli: not found");
         println!("Install from: https://github.com/usnistgov/oscal-cli");
-        return;
+        return Err(ForgeError::OscalCliNotFound);
     }
 
     if !info.functional {
-        println!(
-            "oscal-cli: found at {} but not functional",
-            info.executable_path.as_deref().unwrap_or(Path::new("unknown")).display()
-        );
+        let path = info.executable_path.unwrap_or_else(|| PathBuf::from("unknown"));
+        println!("oscal-cli: found at {} but not functional", path.display());
         println!("Check that Java runtime is installed and on PATH");
-        return;
+        return Err(ForgeError::OscalCliNotFunctional {
+            path,
+            detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
+        });
     }
 
     println!(
@@ -142,6 +148,7 @@ fn execute_check(detector: &dyn OscalCliDetect) {
         info.version.as_deref().unwrap_or("unknown version"),
         info.executable_path.as_deref().unwrap_or(Path::new("unknown")).display()
     );
+    Ok(())
 }
 
 /// Derive the default output path: `<stem>-resolved.json` in the same directory.
@@ -201,18 +208,19 @@ mod tests {
     // These are tested by the execute_check function with constructed OscalCliInfo.
 
     #[test]
-    fn check_mode_with_unavailable_oscal_cli() {
+    fn check_mode_with_unavailable_oscal_cli_returns_not_found() {
         struct MockDetector;
         impl OscalCliDetect for MockDetector {
             fn detect(&self) -> crate::oscal_cli::OscalCliInfo {
                 crate::oscal_cli::OscalCliInfo::not_found()
             }
         }
-        execute_check(&MockDetector);
+        let result = execute_check(&MockDetector);
+        assert!(matches!(result, Err(ForgeError::OscalCliNotFound)));
     }
 
     #[test]
-    fn check_mode_with_functional_oscal_cli() {
+    fn check_mode_with_functional_oscal_cli_returns_ok() {
         struct MockDetector;
         impl OscalCliDetect for MockDetector {
             fn detect(&self) -> crate::oscal_cli::OscalCliInfo {
@@ -224,11 +232,12 @@ mod tests {
                 }
             }
         }
-        execute_check(&MockDetector);
+        let result = execute_check(&MockDetector);
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn check_mode_with_nonfunctional_oscal_cli() {
+    fn check_mode_with_nonfunctional_oscal_cli_returns_not_functional() {
         struct MockDetector;
         impl OscalCliDetect for MockDetector {
             fn detect(&self) -> crate::oscal_cli::OscalCliInfo {
@@ -240,7 +249,8 @@ mod tests {
                 }
             }
         }
-        execute_check(&MockDetector);
+        let result = execute_check(&MockDetector);
+        assert!(matches!(result, Err(ForgeError::OscalCliNotFunctional { .. })));
     }
 
     // --- T037: Graceful degradation ---
