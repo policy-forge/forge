@@ -41,50 +41,24 @@ pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), For
     }
 }
 
-/// Validate a `CatalogEnvelope` against the OSCAL JSON schema.
+/// Validate a serializable OSCAL envelope against the appropriate JSON schema.
 ///
-/// Serializes the envelope to JSON, validates against the OSCAL catalog schema,
+/// Serializes the envelope to JSON, validates against the specified OSCAL schema,
 /// and returns the serialized JSON string on success. On validation failure,
 /// renders the error report to stderr and returns `ForgeError::SchemaValidation`.
-fn validate_catalog_json(envelope: &crate::oscal::CatalogEnvelope) -> Result<String, ForgeError> {
-    let json = serde_json::to_string_pretty(envelope)
-        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let json_value: serde_json::Value =
-        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let report = crate::validate::run_full_validation(
-        "generated catalog",
-        &json_value,
-        crate::validate::OscalModelType::Catalog,
-    )
-    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
-    if !report.is_valid() {
-        let rendered = crate::validate::report::render_text_report(&report);
-        eprintln!("{rendered}");
-        // PRD EC-7: do NOT write output file on validation failure
-        return Err(ForgeError::SchemaValidation(format!(
-            "{} validation error(s) in generated catalog",
-            report.errors().len()
-        )));
-    }
-    Ok(json)
-}
-
-/// Validate a `ComponentDefinitionEnvelope` against the OSCAL JSON schema.
-///
-/// Serializes the envelope to JSON, validates against the OSCAL component-definition
-/// schema, and returns the serialized JSON string on success. On validation failure,
-/// renders the error report to stderr and returns `ForgeError::SchemaValidation`.
-fn validate_component_json(
-    envelope: &crate::oscal::component_definition::ComponentDefinitionEnvelope,
+fn validate_and_serialize<T: serde::Serialize>(
+    envelope: &T,
+    label: &str,
+    model_type: crate::validate::OscalModelType,
 ) -> Result<String, ForgeError> {
     let json = serde_json::to_string_pretty(envelope)
         .map_err(|e| ForgeError::Serialization(e.to_string()))?;
     let json_value: serde_json::Value =
         serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
     let report = crate::validate::run_full_validation(
-        "generated component definition",
+        &format!("generated {label}"),
         &json_value,
-        crate::validate::OscalModelType::ComponentDefinition,
+        model_type,
     )
     .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
     if !report.is_valid() {
@@ -92,7 +66,7 @@ fn validate_component_json(
         eprintln!("{rendered}");
         // PRD EC-7: do NOT write output file on validation failure
         return Err(ForgeError::SchemaValidation(format!(
-            "{} validation error(s) in generated component definition",
+            "{} validation error(s) in generated {label}",
             report.errors().len()
         )));
     }
@@ -228,7 +202,11 @@ pub fn run_catalog_pipeline(
     let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
 
     // Step 12b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
-    let json = validate_catalog_json(&envelope)?;
+    let json = validate_and_serialize(
+        &envelope,
+        "catalog",
+        crate::validate::OscalModelType::Catalog,
+    )?;
 
     let mut stats = crate::summary::ConversionStatistics {
         sections_parsed,
@@ -319,7 +297,11 @@ pub fn run_component_pipeline(
     // Step 11: Validate and serialize based on output format
 
     // Step 11b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
-    let json = validate_component_json(&envelope)?;
+    let json = validate_and_serialize(
+        &envelope,
+        "component definition",
+        crate::validate::OscalModelType::ComponentDefinition,
+    )?;
 
     let mut stats = crate::summary::ConversionStatistics {
         sections_parsed,
