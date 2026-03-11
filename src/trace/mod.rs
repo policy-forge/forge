@@ -7,7 +7,8 @@ pub mod walker;
 use std::path::Path;
 
 use crate::error::ForgeError;
-use report::{ArtifactType, TraceReport, TraceSummary};
+use crate::types::OscalModelType;
+use report::{TraceReport, TraceSummary};
 
 /// Generate a complete traceability report from an OSCAL artifact and source policy.
 ///
@@ -38,13 +39,18 @@ pub fn generate_trace_report(
     // Detect artifact type and walk elements
     let art_type = walker::detect_artifact_type(&json)?;
     let entries = match art_type {
-        ArtifactType::Catalog => {
+        OscalModelType::Catalog => {
             let catalog = &json["catalog"];
             walker::walk_catalog_elements(catalog)
         }
-        ArtifactType::ComponentDefinition => {
+        OscalModelType::ComponentDefinition => {
             let compdef = &json["component-definition"];
             walker::walk_compdef_elements(compdef)
+        }
+        OscalModelType::Profile => {
+            return Err(ForgeError::TraceUnsupportedArtifact {
+                detail: "Profile artifacts are not supported for traceability".to_string(),
+            });
         }
     };
 

@@ -1,27 +1,4 @@
-/// Detected OSCAL artifact type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum ArtifactType {
-    Catalog,
-    ComponentDefinition,
-}
-
-impl ArtifactType {
-    /// OSCAL-standard string key for this artifact type.
-    #[must_use]
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Catalog => "catalog",
-            Self::ComponentDefinition => "component-definition",
-        }
-    }
-}
-
-impl std::fmt::Display for ArtifactType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
+use crate::types::OscalModelType;
 
 /// Type of OSCAL element in a traceability report entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,7 +85,7 @@ pub struct TraceReport {
     /// Path to the source policy file.
     pub source_path: std::path::PathBuf,
     /// Detected artifact type.
-    pub artifact_type: ArtifactType,
+    pub artifact_type: OscalModelType,
     /// All trace entries (one per walked OSCAL element).
     pub entries: Vec<TraceEntry>,
     /// Computed summary statistics.

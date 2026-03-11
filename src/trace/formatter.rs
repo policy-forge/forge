@@ -131,9 +131,8 @@ pub fn format_trace_table(report: &TraceReport) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::trace::report::{
-        ArtifactType, ElementType, TraceEntry, TraceMetadata, TraceReport, TraceSummary,
-    };
+    use crate::trace::report::{ElementType, TraceEntry, TraceMetadata, TraceReport, TraceSummary};
+    use crate::types::OscalModelType;
     use std::path::PathBuf;
 
     fn make_report(entries: Vec<TraceEntry>, source_stale: bool) -> TraceReport {
@@ -141,7 +140,7 @@ mod tests {
         TraceReport {
             artifact_path: PathBuf::from("artifact.json"),
             source_path: PathBuf::from("policy.md"),
-            artifact_type: ArtifactType::Catalog,
+            artifact_type: OscalModelType::Catalog,
             entries,
             summary,
             source_stale,

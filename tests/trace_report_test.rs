@@ -2,7 +2,8 @@ use std::path::Path;
 
 use forge::trace::formatter::format_trace_table;
 use forge::trace::generate_trace_report;
-use forge::trace::report::{ArtifactType, ElementType};
+use forge::trace::report::ElementType;
+use forge::types::OscalModelType;
 
 // T026: Integration test — generate_trace_report with catalog fixture
 #[test]
@@ -12,7 +13,7 @@ fn generate_report_from_catalog_fixture() {
 
     let report = generate_trace_report(artifact, source).unwrap();
 
-    assert_eq!(report.artifact_type, ArtifactType::Catalog);
+    assert_eq!(report.artifact_type, OscalModelType::Catalog);
     // 2 groups + 4 controls = 6 entries
     assert_eq!(report.entries.len(), 6);
     assert_eq!(report.summary.total_elements, 6);
@@ -41,7 +42,7 @@ fn generate_report_from_compdef_fixture() {
 
     let report = generate_trace_report(artifact, source).unwrap();
 
-    assert_eq!(report.artifact_type, ArtifactType::ComponentDefinition);
+    assert_eq!(report.artifact_type, OscalModelType::ComponentDefinition);
     assert_eq!(report.entries.len(), 3);
 
     for entry in &report.entries {
