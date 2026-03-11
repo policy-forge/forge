@@ -5,18 +5,28 @@ use super::report::{ArtifactType, ElementType, TraceEntry};
 
 /// Detect whether a parsed JSON value is a Catalog or Component Definition.
 ///
+/// Validates that exactly one supported top-level key is present and its value
+/// is a JSON object.
+///
 /// # Errors
 ///
-/// Returns `ForgeError::TraceUnsupportedArtifact` if neither top-level key is found.
+/// Returns `ForgeError::TraceUnsupportedArtifact` if neither key is found,
+/// both keys are present, or the value is not a JSON object.
 pub fn detect_artifact_type(json: &serde_json::Value) -> Result<ArtifactType, ForgeError> {
-    if json.get("catalog").is_some() {
-        Ok(ArtifactType::Catalog)
-    } else if json.get("component-definition").is_some() {
-        Ok(ArtifactType::ComponentDefinition)
-    } else {
-        Err(ForgeError::TraceUnsupportedArtifact {
-            detail: "Expected top-level key 'catalog' or 'component-definition'".to_string(),
-        })
+    let has_catalog = json.get("catalog").is_some_and(serde_json::Value::is_object);
+    let has_compdef =
+        json.get("component-definition").is_some_and(serde_json::Value::is_object);
+
+    match (has_catalog, has_compdef) {
+        (true, false) => Ok(ArtifactType::Catalog),
+        (false, true) => Ok(ArtifactType::ComponentDefinition),
+        (true, true) => Err(ForgeError::TraceUnsupportedArtifact {
+            detail: "Ambiguous artifact: both 'catalog' and 'component-definition' keys present"
+                .to_string(),
+        }),
+        (false, false) => Err(ForgeError::TraceUnsupportedArtifact {
+            detail: "Expected top-level key 'catalog' or 'component-definition' with an object value".to_string(),
+        }),
     }
 }
 
@@ -173,6 +183,24 @@ mod tests {
             detect_artifact_type(&json),
             Err(ForgeError::TraceUnsupportedArtifact { .. })
         ));
+    }
+
+    #[test]
+    fn detect_rejects_non_object_catalog() {
+        let json = json!({ "catalog": null });
+        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
+
+        let json = json!({ "catalog": "not-an-object" });
+        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
+
+        let json = json!({ "catalog": [1, 2, 3] });
+        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
+    }
+
+    #[test]
+    fn detect_rejects_ambiguous_artifact() {
+        let json = json!({ "catalog": { "uuid": "1" }, "component-definition": { "uuid": "2" } });
+        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
     }
 
     // T013: walk_catalog_elements tests
