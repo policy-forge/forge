@@ -9,6 +9,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
+pub use crate::types::{OutputFormat, Strategy};
+
 use crate::ForgeError;
 
 #[derive(Parser)]
@@ -194,31 +196,6 @@ pub enum SchemaType {
     Catalog,
     #[value(name = "component-definition")]
     ComponentDefinition,
-}
-
-#[derive(ValueEnum, Clone, Copy, Debug)]
-pub enum Strategy {
-    Catalog,
-    Component,
-}
-
-#[derive(ValueEnum, Clone, Copy, Debug)]
-pub enum OutputFormat {
-    Json,
-    Xml,
-    Yaml,
-}
-
-impl OutputFormat {
-    /// The canonical file extension for this output format.
-    #[must_use]
-    pub fn as_extension(self) -> &'static str {
-        match self {
-            Self::Json => "json",
-            Self::Xml => "xml",
-            Self::Yaml => "yaml",
-        }
-    }
 }
 
 /// Execute the CLI command, dispatching to the appropriate subcommand handler.

@@ -1,5 +1,7 @@
 //! Shared domain types used across multiple modules.
 
+use clap::ValueEnum;
+
 /// Detected OSCAL model type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OscalModelType {
@@ -22,7 +24,43 @@ impl OscalModelType {
 
 impl std::fmt::Display for OscalModelType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
+        f.pad(self.as_str())
+    }
+}
+
+/// Conversion strategy: which OSCAL model to produce.
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Strategy {
+    Catalog,
+    Component,
+}
+
+impl std::fmt::Display for Strategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Catalog => f.pad("catalog"),
+            Self::Component => f.pad("component"),
+        }
+    }
+}
+
+/// Output serialization format.
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OutputFormat {
+    Json,
+    Xml,
+    Yaml,
+}
+
+impl OutputFormat {
+    /// The canonical file extension for this output format.
+    #[must_use]
+    pub fn as_extension(self) -> &'static str {
+        match self {
+            Self::Json => "json",
+            Self::Xml => "xml",
+            Self::Yaml => "yaml",
+        }
     }
 }
 
@@ -42,5 +80,15 @@ mod tests {
         assert_eq!(OscalModelType::Catalog.as_str(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.as_str(), "component-definition");
         assert_eq!(OscalModelType::Profile.as_str(), "profile");
+    }
+
+    #[test]
+    fn strategy_display_catalog() {
+        assert_eq!(Strategy::Catalog.to_string(), "catalog");
+    }
+
+    #[test]
+    fn strategy_display_component() {
+        assert_eq!(Strategy::Component.to_string(), "component");
     }
 }

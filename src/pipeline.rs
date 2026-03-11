@@ -6,9 +6,9 @@
 
 use std::path::Path;
 
-use crate::cli::OutputFormat;
 use crate::error::ForgeError;
 use crate::model::PolicyDocument;
+use crate::types::{OutputFormat, Strategy};
 
 /// Writes serialized output to a file or stdout.
 ///
@@ -235,7 +235,7 @@ pub fn run_catalog_pipeline(
         requirements_extracted,
         controls_generated,
         validation_status: ValidationStatus::Passed,
-        strategy: "catalog".into(),
+        strategy: Strategy::Catalog,
         ..Default::default()
     };
 
@@ -327,7 +327,7 @@ pub fn run_component_pipeline(
         requirements_extracted,
         controls_generated,
         validation_status: ValidationStatus::Passed,
-        strategy: "component".into(),
+        strategy: Strategy::Component,
         ..Default::default()
     };
 

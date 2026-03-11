@@ -76,7 +76,7 @@ fn compute_width(
         .max()
         .unwrap_or(0);
     let longest_value = [
-        visible_len(&stats.strategy),
+        visible_len(&stats.strategy.to_string()),
         visible_len(&stats.output_path),
         format_elapsed(stats.elapsed).len(),
         coverage_str.len(),
@@ -208,6 +208,8 @@ pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -
 
 #[cfg(test)]
 mod tests {
+    use crate::types::Strategy;
+
     use super::*;
 
     // T007: format_elapsed() tests
@@ -285,7 +287,7 @@ mod tests {
             requirements_extracted: 10,
             controls_generated: 10,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
+            strategy: Strategy::Catalog,
             output_path: "out.json".into(),
             elapsed: Duration::from_secs_f64(0.42),
             ..Default::default()
@@ -314,7 +316,7 @@ mod tests {
             requirements_extracted: 47,
             controls_generated: 47,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
+            strategy: Strategy::Catalog,
             output_path: "output/catalog.json".into(),
             elapsed: Duration::from_secs_f64(0.42),
             ..Default::default()
@@ -330,7 +332,7 @@ mod tests {
             requirements_extracted: 10,
             controls_generated: 10,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
+            strategy: Strategy::Catalog,
             output_path: "out.json".into(),
             elapsed: Duration::from_secs_f64(1.0),
             ..Default::default()
@@ -349,7 +351,7 @@ mod tests {
             validation_status: ValidationStatus::Failed,
             validation_errors: 5,
             validation_error_messages: vec!["Error 1".into(), "Error 2".into(), "Error 3".into()],
-            strategy: "catalog".into(),
+            strategy: Strategy::Catalog,
             output_path: "out.json".into(),
             elapsed: Duration::from_secs_f64(0.5),
             ..Default::default()
@@ -500,7 +502,7 @@ mod tests {
             requirements_extracted: 47,
             controls_generated: 47,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
+            strategy: Strategy::Catalog,
             output_path: "output/catalog.json".into(),
             elapsed: Duration::from_secs_f64(0.42),
             ..Default::default()
@@ -517,7 +519,7 @@ mod tests {
             requirements_extracted: 0,
             controls_generated: 0,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
+            strategy: Strategy::Catalog,
             output_path: "out.json".into(),
             elapsed: Duration::from_secs_f64(1.0),
             ..Default::default()
@@ -536,7 +538,7 @@ mod tests {
             validation_status: ValidationStatus::Failed,
             validation_errors: 5,
             validation_error_messages: vec!["Error 1".into(), "Error 2".into(), "Error 3".into()],
-            strategy: "catalog".into(),
+            strategy: Strategy::Catalog,
             output_path: "out.json".into(),
             elapsed: Duration::from_secs_f64(0.5),
             ..Default::default()
