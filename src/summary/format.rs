@@ -66,6 +66,7 @@ pub fn format_elapsed(duration: Duration) -> String {
 
 fn compute_width(
     stats: &ConversionStatistics,
+    output_display: &str,
     coverage_str: &str,
     validation_label: &str,
     validation_details: &[String],
@@ -76,8 +77,8 @@ fn compute_width(
         .max()
         .unwrap_or(0);
     let longest_value = [
-        visible_len(&stats.strategy),
-        visible_len(&stats.output_path),
+        visible_len(stats.strategy.as_str()),
+        visible_len(output_display),
         format_elapsed(stats.elapsed).len(),
         coverage_str.len(),
         visible_len(validation_label),
@@ -141,12 +142,16 @@ fn format_mapping_coverage(
 /// Uses ANSI color codes when `use_color` is true.
 #[must_use]
 pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -> String {
+    let output_display = match &stats.output_path {
+        Some(p) => p.display().to_string(),
+        None => "stdout".into(),
+    };
     let pct = stats.mapping_coverage();
     let coverage_raw =
         format!("{pct:.1}% ({}/{})", stats.controls_generated, stats.requirements_extracted);
     let validation = format_validation_label(stats, use_color);
     let validation_details = format_validation_detail_lines(stats);
-    let w = compute_width(stats, &coverage_raw, &validation, &validation_details);
+    let w = compute_width(stats, &output_display, &coverage_raw, &validation, &validation_details);
     // LABEL_WIDTH includes the leading │ border char, so +1 to align
     // row total (LABEL_WIDTH + vw + 1 for closing │) with border total (1 + w + 1)
     let vw = w - LABEL_WIDTH + 1;
@@ -170,7 +175,7 @@ pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -
 
     let rows = [
         format!("│ Strategy:           {:<vw$}│", stats.strategy),
-        format!("│ Output:             {:<vw$}│", stats.output_path),
+        format!("│ Output:             {output_display:<vw$}│"),
         format!("│ Elapsed:            {:<vw$}│", format_elapsed(stats.elapsed)),
     ];
 
@@ -208,6 +213,10 @@ pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
+    use crate::types::Strategy;
+
     use super::*;
 
     // T007: format_elapsed() tests
@@ -285,8 +294,8 @@ mod tests {
             requirements_extracted: 10,
             controls_generated: 10,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
-            output_path: "out.json".into(),
+            strategy: Strategy::Catalog,
+            output_path: Some(PathBuf::from("out.json")),
             elapsed: Duration::from_secs_f64(0.42),
             ..Default::default()
         };
@@ -314,8 +323,8 @@ mod tests {
             requirements_extracted: 47,
             controls_generated: 47,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
-            output_path: "output/catalog.json".into(),
+            strategy: Strategy::Catalog,
+            output_path: Some(PathBuf::from("output/catalog.json")),
             elapsed: Duration::from_secs_f64(0.42),
             ..Default::default()
         };
@@ -330,8 +339,8 @@ mod tests {
             requirements_extracted: 10,
             controls_generated: 10,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
-            output_path: "out.json".into(),
+            strategy: Strategy::Catalog,
+            output_path: Some(PathBuf::from("out.json")),
             elapsed: Duration::from_secs_f64(1.0),
             ..Default::default()
         };
@@ -349,8 +358,8 @@ mod tests {
             validation_status: ValidationStatus::Failed,
             validation_errors: 5,
             validation_error_messages: vec!["Error 1".into(), "Error 2".into(), "Error 3".into()],
-            strategy: "catalog".into(),
-            output_path: "out.json".into(),
+            strategy: Strategy::Catalog,
+            output_path: Some(PathBuf::from("out.json")),
             elapsed: Duration::from_secs_f64(0.5),
             ..Default::default()
         };
@@ -500,8 +509,8 @@ mod tests {
             requirements_extracted: 47,
             controls_generated: 47,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
-            output_path: "output/catalog.json".into(),
+            strategy: Strategy::Catalog,
+            output_path: Some(PathBuf::from("output/catalog.json")),
             elapsed: Duration::from_secs_f64(0.42),
             ..Default::default()
         };
@@ -517,8 +526,8 @@ mod tests {
             requirements_extracted: 0,
             controls_generated: 0,
             validation_status: ValidationStatus::Passed,
-            strategy: "catalog".into(),
-            output_path: "out.json".into(),
+            strategy: Strategy::Catalog,
+            output_path: Some(PathBuf::from("out.json")),
             elapsed: Duration::from_secs_f64(1.0),
             ..Default::default()
         };
@@ -536,8 +545,8 @@ mod tests {
             validation_status: ValidationStatus::Failed,
             validation_errors: 5,
             validation_error_messages: vec!["Error 1".into(), "Error 2".into(), "Error 3".into()],
-            strategy: "catalog".into(),
-            output_path: "out.json".into(),
+            strategy: Strategy::Catalog,
+            output_path: Some(PathBuf::from("out.json")),
             elapsed: Duration::from_secs_f64(0.5),
             ..Default::default()
         };

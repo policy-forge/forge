@@ -2,7 +2,8 @@ use std::path::Path;
 
 use forge::trace::formatter::format_trace_table;
 use forge::trace::generate_trace_report;
-use forge::trace::report::{ArtifactType, ElementType};
+use forge::trace::report::ElementType;
+use forge::types::OscalModelType;
 
 // T026: Integration test — generate_trace_report with catalog fixture
 #[test]
@@ -12,12 +13,12 @@ fn generate_report_from_catalog_fixture() {
 
     let report = generate_trace_report(artifact, source).unwrap();
 
-    assert_eq!(report.artifact_type, ArtifactType::Catalog);
+    assert_eq!(report.artifact_type, OscalModelType::Catalog);
     // 2 groups + 4 controls = 6 entries
     assert_eq!(report.entries.len(), 6);
     assert_eq!(report.summary.total_elements, 6);
     assert_eq!(report.summary.mapped_elements, 6);
-    assert_eq!(report.summary.unmapped_elements, 0);
+    assert_eq!(report.summary.unmapped_elements(), 0);
 
     // Verify groups
     assert_eq!(report.entries[0].element_id, "access-control");
@@ -41,7 +42,7 @@ fn generate_report_from_compdef_fixture() {
 
     let report = generate_trace_report(artifact, source).unwrap();
 
-    assert_eq!(report.artifact_type, ArtifactType::ComponentDefinition);
+    assert_eq!(report.artifact_type, OscalModelType::ComponentDefinition);
     assert_eq!(report.entries.len(), 3);
 
     for entry in &report.entries {
@@ -148,8 +149,8 @@ fn partial_trace_coverage() {
     assert!(unmapped.trace.is_none());
 
     assert_eq!(report.summary.mapped_elements, 2); // group + POL-AC-001
-    assert_eq!(report.summary.unmapped_elements, 1);
-    assert!(report.summary.coverage_percent < 100.0);
+    assert_eq!(report.summary.unmapped_elements(), 1);
+    assert!(report.summary.coverage_percent() < 100.0);
 
     let table = format_trace_table(&report);
     assert!(table.contains("[unmapped]"));
@@ -166,8 +167,8 @@ fn no_trace_metadata() {
     // 1 group (no props, so unmapped) + 2 controls (no props, so unmapped) = 3 entries
     assert_eq!(report.entries.len(), 3);
     assert_eq!(report.summary.mapped_elements, 0);
-    assert_eq!(report.summary.unmapped_elements, 3);
-    assert!((report.summary.coverage_percent - 0.0).abs() < f64::EPSILON);
+    assert_eq!(report.summary.unmapped_elements(), 3);
+    assert!((report.summary.coverage_percent() - 0.0).abs() < f64::EPSILON);
 
     let table = format_trace_table(&report);
     assert!(table.contains("0.0% coverage"));

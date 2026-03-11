@@ -1,8 +1,8 @@
 use std::fmt::Write;
 
-use super::extractor::strip_control_chars;
 use super::report::{ElementType, TraceReport};
 use super::resolver::validate_line_reference;
+use crate::sanitize::strip_control_chars;
 
 /// Format a `TraceReport` as a column-aligned text table.
 ///
@@ -122,7 +122,10 @@ pub fn format_trace_table(report: &TraceReport) -> String {
     let _ = write!(
         output,
         "\nSummary: {} {elem_word}, {} mapped, {} unmapped ({:.1}% coverage)\n",
-        s.total_elements, s.mapped_elements, s.unmapped_elements, s.coverage_percent
+        s.total_elements,
+        s.mapped_elements,
+        s.unmapped_elements(),
+        s.coverage_percent()
     );
 
     output
@@ -131,9 +134,8 @@ pub fn format_trace_table(report: &TraceReport) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::trace::report::{
-        ArtifactType, ElementType, TraceEntry, TraceMetadata, TraceReport, TraceSummary,
-    };
+    use crate::trace::report::{ElementType, TraceEntry, TraceMetadata, TraceReport, TraceSummary};
+    use crate::types::OscalModelType;
     use std::path::PathBuf;
 
     fn make_report(entries: Vec<TraceEntry>, source_stale: bool) -> TraceReport {
@@ -141,7 +143,7 @@ mod tests {
         TraceReport {
             artifact_path: PathBuf::from("artifact.json"),
             source_path: PathBuf::from("policy.md"),
-            artifact_type: ArtifactType::Catalog,
+            artifact_type: OscalModelType::Catalog,
             entries,
             summary,
             source_stale,

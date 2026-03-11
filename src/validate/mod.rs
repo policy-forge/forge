@@ -21,26 +21,10 @@ use std::path::{Path, PathBuf};
 use serde_json::Value;
 use tracing::{debug, info};
 
+pub use crate::types::OscalModelType;
+
 /// Maximum file size for validation (50MB) — SEC-3.
 const MAX_VALIDATE_FILE_SIZE: u64 = 50 * 1024 * 1024;
-
-/// Supported OSCAL model types for schema validation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OscalModelType {
-    Catalog,
-    ComponentDefinition,
-    Profile,
-}
-
-impl std::fmt::Display for OscalModelType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Catalog => write!(f, "catalog"),
-            Self::ComponentDefinition => write!(f, "component-definition"),
-            Self::Profile => write!(f, "profile"),
-        }
-    }
-}
 
 /// Result of schema validation.
 #[derive(Debug)]

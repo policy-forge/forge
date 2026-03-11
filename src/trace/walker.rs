@@ -1,7 +1,8 @@
 use crate::error::ForgeError;
+use crate::types::OscalModelType;
 
 use super::extractor::extract_trace_metadata;
-use super::report::{ArtifactType, ElementType, TraceEntry};
+use super::report::{ElementType, TraceEntry};
 
 /// Detect whether a parsed JSON value is a Catalog or Component Definition.
 ///
@@ -12,13 +13,13 @@ use super::report::{ArtifactType, ElementType, TraceEntry};
 ///
 /// Returns `ForgeError::TraceUnsupportedArtifact` if neither key is found,
 /// both keys are present, or the value is not a JSON object.
-pub fn detect_artifact_type(json: &serde_json::Value) -> Result<ArtifactType, ForgeError> {
+pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, ForgeError> {
     let has_catalog = json.get("catalog").is_some_and(serde_json::Value::is_object);
     let has_compdef = json.get("component-definition").is_some_and(serde_json::Value::is_object);
 
     match (has_catalog, has_compdef) {
-        (true, false) => Ok(ArtifactType::Catalog),
-        (false, true) => Ok(ArtifactType::ComponentDefinition),
+        (true, false) => Ok(OscalModelType::Catalog),
+        (false, true) => Ok(OscalModelType::ComponentDefinition),
         (true, true) => Err(ForgeError::TraceUnsupportedArtifact {
             detail: "Ambiguous artifact: both 'catalog' and 'component-definition' keys present"
                 .to_string(),
@@ -160,13 +161,13 @@ mod tests {
     #[test]
     fn detect_catalog() {
         let json = json!({ "catalog": { "uuid": "123" } });
-        assert!(matches!(detect_artifact_type(&json), Ok(ArtifactType::Catalog)));
+        assert!(matches!(detect_artifact_type(&json), Ok(OscalModelType::Catalog)));
     }
 
     #[test]
     fn detect_component_definition() {
         let json = json!({ "component-definition": { "uuid": "456" } });
-        assert!(matches!(detect_artifact_type(&json), Ok(ArtifactType::ComponentDefinition)));
+        assert!(matches!(detect_artifact_type(&json), Ok(OscalModelType::ComponentDefinition)));
     }
 
     #[test]

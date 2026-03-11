@@ -1185,7 +1185,14 @@ mod tests {
             title: "Title".to_string(),
             description: "Desc".to_string(),
             props: vec![],
-            control_implementations: vec![serde_json::json!({"source": "test"})],
+            control_implementations: vec![
+                crate::oscal::implemented_requirements::ControlImplementation {
+                    uuid: "ci-uuid".to_string(),
+                    source: "test".to_string(),
+                    description: "Test".to_string(),
+                    implemented_requirements: vec![],
+                },
+            ],
         };
         write_component(&mut writer, &component).unwrap();
         let xml = String::from_utf8(buf).unwrap();

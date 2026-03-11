@@ -12,10 +12,19 @@ use super::summary::{BatchSummary, FileResult};
 ///
 /// Returns `Ok(())` if all valid, or `Err` listing all invalid paths with reasons.
 ///
+/// Note: Not called on the default batch conversion path (per issue #50, to avoid
+/// TOCTOU races). Retained as a public API for future `--dry-run` support.
+///
 /// # Errors
 ///
-/// Returns `ForgeError::BatchConversion` if any input path is missing or not a file.
+/// Returns `ForgeError::BatchConversion` if:
+/// - `input_paths` is empty ("No input files provided")
+/// - Any input path does not exist or is not a regular file
 pub fn validate_inputs(input_paths: &[PathBuf]) -> Result<(), ForgeError> {
+    if input_paths.is_empty() {
+        return Err(ForgeError::BatchConversion("No input files provided".to_string()));
+    }
+
     let mut invalid: Vec<String> = Vec::new();
 
     for path in input_paths {
@@ -170,9 +179,9 @@ mod tests {
     }
 
     #[test]
-    fn validate_inputs_empty_is_ok() {
-        // Empty input is valid at this layer — caller owns the emptiness check
+    fn validate_inputs_empty_returns_error() {
         let result = validate_inputs(&[]);
-        assert!(result.is_ok());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("No input files"));
     }
 }

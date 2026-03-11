@@ -5,9 +5,11 @@
 
 pub mod format;
 
+use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::oscal::catalog::OscalCatalog;
+use crate::types::Strategy;
 
 /// Outcome of OSCAL schema validation.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -45,8 +47,8 @@ pub struct ConversionStatistics {
     /// Up to 3 validation error messages for dashboard display.
     /// Currently always empty in production (see `validation_errors` note).
     pub validation_error_messages: Vec<String>,
-    pub strategy: String,
-    pub output_path: String,
+    pub strategy: Strategy,
+    pub output_path: Option<PathBuf>,
     pub elapsed: Duration,
 }
 
@@ -60,8 +62,8 @@ impl Default for ConversionStatistics {
             validation_errors: 0,
             validation_warnings: 0,
             validation_error_messages: Vec::new(),
-            strategy: String::new(),
-            output_path: String::new(),
+            strategy: Strategy::Catalog,
+            output_path: None,
             elapsed: Duration::ZERO,
         }
     }

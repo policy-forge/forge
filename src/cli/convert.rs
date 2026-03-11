@@ -139,6 +139,7 @@ pub struct ConvertOptions<'a> {
     pub stable_id_baseline: Option<&'a Path>,
     pub summary: bool,
     pub quiet: bool,
+    pub jobs: u16,
 }
 
 /// Dispatch convert command: single file → existing path, multiple files → batch mode.
@@ -146,46 +147,25 @@ pub struct ConvertOptions<'a> {
 /// # Errors
 ///
 /// Returns `ForgeError` if the conversion fails.
-#[allow(clippy::too_many_arguments)]
-pub fn execute_dispatch(
-    input: &[PathBuf],
-    strategy: &Strategy,
-    format: &OutputFormat,
-    output: Option<&Path>,
-    max_size: u64,
-    source_profile: Option<&str>,
-    stable_id_baseline: Option<&Path>,
-    jobs: u16,
-    summary: bool,
-    quiet: bool,
-) -> Result<(), ForgeError> {
+pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     if input.is_empty() {
         return Err(ForgeError::BatchConversion("No input files provided".to_string()));
     }
 
     if input.len() == 1 {
         // Single-file: delegate to existing execute() unchanged (R6 backward compat)
-        return execute(&ConvertOptions {
-            input: &input[0],
-            strategy,
-            format,
-            output,
-            max_size,
-            source_profile,
-            stable_id_baseline,
-            summary,
-            quiet,
-        });
+        let single_opts = ConvertOptions { input: &input[0], ..*opts };
+        return execute(&single_opts);
     }
 
     // Batch mode (2+ files)
     // Warn if --stable-id-baseline was provided (not supported in batch mode)
-    if stable_id_baseline.is_some() {
+    if opts.stable_id_baseline.is_some() {
         tracing::warn!("--stable-id-baseline is not supported in batch mode and will be ignored");
     }
 
     // Validate --output is a dir or absent (FR-014), create if needed (FR-015)
-    if let Some(out_path) = output {
+    if let Some(out_path) = opts.output {
         if out_path.exists() && !out_path.is_dir() {
             return Err(ForgeError::BatchConversion(format!(
                 "With multiple input files, --output must be a directory, not a file: '{}'",
@@ -203,28 +183,25 @@ pub fn execute_dispatch(
     }
 
     // Validate --source-profile upfront for component strategy (SEC-3, SEC-4, EC-4)
-    let resolved_profile = if matches!(strategy, Strategy::Component) {
-        resolve_source_profile(source_profile)?
+    let resolved_profile = if matches!(opts.strategy, Strategy::Component) {
+        resolve_source_profile(opts.source_profile)?
     } else {
-        source_profile
+        opts.source_profile
     };
 
-    let max_size_bytes = max_size_to_bytes(max_size)?;
-
-    // Validate inputs
-    batch::orchestrator::validate_inputs(input)?;
+    let max_size_bytes = max_size_to_bytes(opts.max_size)?;
 
     // Derive output paths
-    let path_pairs = batch::output_naming::derive_output_paths(input, *format, output);
+    let path_pairs = batch::output_naming::derive_output_paths(input, *opts.format, opts.output);
 
     // Run batch conversion
     let batch_summary = batch::orchestrator::run_batch_conversion(
         &path_pairs,
-        *strategy,
-        *format,
+        *opts.strategy,
+        *opts.format,
         max_size_bytes,
         resolved_profile,
-        usize::from(jobs),
+        usize::from(opts.jobs),
     );
 
     // Print summary to stderr (SEC-7)
@@ -342,6 +319,7 @@ mod tests {
             stable_id_baseline: None,
             summary: false,
             quiet: false,
+            jobs: 0,
         }
     }
 

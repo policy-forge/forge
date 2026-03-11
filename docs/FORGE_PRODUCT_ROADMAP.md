@@ -229,15 +229,15 @@ gantt
 
 | ID | Work Item | Sprint | Theme | Milestone | PRD Req | Size | Status | Parallel With |
 |----|-----------|--------|-------|-----------|---------|------|--------|---------------|
-| WI-36 | oscal-cli integration: profile resolution delegation | S-36 (Nov 3) | T-6 | MS-7 | W-3 | S | Not Started | WI-38, WI-40, WI-44 |
+| WI-36 | oscal-cli integration: profile resolution delegation | S-36 (Nov 3) | T-6 | MS-7 | W-3 | S | Done | WI-38, WI-40, WI-44 |
 | WI-37 | oscal-cli integration: round-trip validation (JSON→XML→JSON) | S-37 (Nov 10) | T-6 | MS-7 | — | S | Not Started | WI-38, WI-40, WI-44 |
-| WI-38 | Traceability report: `forge trace` with source-to-OSCAL mapping | S-38 (Nov 17) | T-6 | MS-7 | S-6 | S | Not Started | WI-36, WI-40, WI-44 |
+| WI-38 | Traceability report: `forge trace` with source-to-OSCAL mapping | S-38 (Nov 17) | T-6 | MS-7 | S-6 | S | Done | WI-36, WI-40, WI-44 |
 | WI-39 | Traceability report: source text excerpts + line numbers | S-39 (Nov 24) | T-6 | MS-7 | S-6 | S | Not Started | WI-40, WI-44 |
-| WI-40 | Batch conversion: multiple documents in single invocation | S-40 (Dec 1) | T-6 | MS-7 | C-1 | S | Not Started | WI-36, WI-38, WI-41, WI-43, WI-44 |
+| WI-40 | Batch conversion: multiple documents in single invocation | S-40 (Dec 1) | T-6 | MS-7 | C-1 | S | Done | WI-36, WI-38, WI-41, WI-43, WI-44 |
 | WI-41 | Assessment Plan scaffolding: reviewed-controls + tasks from policy | S-41 (Dec 8) | T-6 | MS-7 | C-2 | S | Not Started | WI-40, WI-43, WI-44 |
 | WI-42 | Assessment Plan scaffolding: assessment-subjects from components | S-42 (Dec 15) | T-6 | MS-7 | C-2 | S | Not Started | WI-43, WI-44 |
 | WI-43 | Diff report: changes between two conversions of same policy | S-43 (Dec 22) | T-6 | MS-7 | C-3 | S | Not Started | WI-40, WI-41, WI-44, WI-45 |
-| WI-44 | Summary dashboard: conversion statistics to stdout | S-44 (Jan 5) | T-6 | MS-7 | C-4 | XS | Not Started | WI-36, WI-40, WI-41, WI-43 |
+| WI-44 | Summary dashboard: conversion statistics to stdout | S-44 (Jan 5) | T-6 | MS-7 | C-4 | XS | Done | WI-36, WI-40, WI-41, WI-43 |
 | WI-45 | SSP template generation: placeholders + trace links from policy | S-45 (Jan 12) | T-6 | MS-7 | — | S | Not Started | WI-43, WI-44, WI-47 |
 | WI-46 | SSP template generation: system-specific placeholders for inventory/boundaries | S-46 (Jan 19) | T-6 | MS-7 | — | S | Not Started | WI-47, WI-48, WI-49 |
 | WI-47 | Community examples: sample Markdown policies + expected OSCAL outputs | S-47 (Jan 26) | T-6 | MS-7 | — | S | Not Started | WI-45, WI-46, WI-48, WI-49 |

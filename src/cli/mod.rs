@@ -9,6 +9,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
+pub use crate::types::{OutputFormat, Strategy};
+
 use crate::ForgeError;
 
 #[derive(Parser)]
@@ -196,31 +198,6 @@ pub enum SchemaType {
     ComponentDefinition,
 }
 
-#[derive(ValueEnum, Clone, Copy, Debug)]
-pub enum Strategy {
-    Catalog,
-    Component,
-}
-
-#[derive(ValueEnum, Clone, Copy, Debug)]
-pub enum OutputFormat {
-    Json,
-    Xml,
-    Yaml,
-}
-
-impl OutputFormat {
-    /// The canonical file extension for this output format.
-    #[must_use]
-    pub fn as_extension(self) -> &'static str {
-        match self {
-            Self::Json => "json",
-            Self::Xml => "xml",
-            Self::Yaml => "yaml",
-        }
-    }
-}
-
 /// Execute the CLI command, dispatching to the appropriate subcommand handler.
 ///
 /// # Errors
@@ -238,18 +215,24 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             jobs,
             stable_id_baseline,
             summary,
-        } => convert::execute_dispatch(
-            input,
-            strategy,
-            format,
-            output.as_deref(),
-            *max_size,
-            source_profile.as_deref(),
-            stable_id_baseline.as_deref(),
-            *jobs,
-            *summary,
-            cli.quiet,
-        ),
+        } => {
+            if input.is_empty() {
+                return Err(ForgeError::BatchConversion("No input files provided".to_string()));
+            }
+            let opts = convert::ConvertOptions {
+                input: &input[0],
+                strategy,
+                format,
+                output: output.as_deref(),
+                max_size: *max_size,
+                source_profile: source_profile.as_deref(),
+                stable_id_baseline: stable_id_baseline.as_deref(),
+                summary: *summary,
+                quiet: cli.quiet,
+                jobs: *jobs,
+            };
+            convert::execute_dispatch(input, &opts)
+        }
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
         }

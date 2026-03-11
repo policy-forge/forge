@@ -10,10 +10,12 @@ pub mod oscal_cli;
 pub mod parameter;
 pub mod parse;
 pub mod pipeline;
+pub mod sanitize;
 pub mod summary;
 #[doc(hidden)]
 pub mod testing;
 pub mod trace;
+pub mod types;
 pub mod uuid;
 pub mod validate;
 
@@ -31,7 +33,8 @@ pub use oscal::{
     OscalMetadata, OscalPart, OscalProp, assemble_metadata, build_component_definition,
     generate_back_matter, generate_control_links,
 };
+pub use types::{OscalModelType, OutputFormat, Strategy};
 pub use validate::{
-    OscalModelType, SchemaError, ValidateError, ValidationResult, check_file_size,
-    detect_model_type, load_schema, validate_artifact,
+    SchemaError, ValidateError, ValidationResult, check_file_size, detect_model_type, load_schema,
+    validate_artifact,
 };

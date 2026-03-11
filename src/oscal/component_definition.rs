@@ -88,9 +88,9 @@ pub struct DocumentaryComponent {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub props: Vec<crate::oscal::parts::OscalProp>,
 
-    /// Control implementations placeholder (empty for WI-14; populated by WI-15).
+    /// Control implementations (empty for WI-14; populated by WI-15).
     #[serde(default, rename = "control-implementations", skip_serializing_if = "Vec::is_empty")]
-    pub control_implementations: Vec<serde_json::Value>,
+    pub control_implementations: Vec<crate::oscal::implemented_requirements::ControlImplementation>,
 }
 
 // ─── Builder Function ───────────────────────────────────────────────────
@@ -130,20 +130,11 @@ pub fn build_component_definition(
     // Step 3: Build control-implementations (WI-15) when source_profile is provided
     let resolved_source_file = source_file.unwrap_or("");
     let control_implementations = match source_profile {
-        Some(profile) => {
-            let ci = crate::oscal::implemented_requirements::build_control_implementations(
-                document,
-                profile,
-                resolved_source_file,
-            )?;
-            ci.as_array()
-                .cloned()
-                .ok_or_else(|| {
-                    ForgeError::ComponentDefinitionBuild(
-                        "build_control_implementations returned non-array value for control-implementations".to_string(),
-                    )
-                })?
-        }
+        Some(profile) => crate::oscal::implemented_requirements::build_control_implementations(
+            document,
+            profile,
+            resolved_source_file,
+        )?,
         None => vec![],
     };
 
@@ -761,7 +752,7 @@ mod tests {
         );
 
         let ci = &comp.control_implementations[0];
-        assert_eq!(ci["source"], "./baseline.json");
+        assert_eq!(ci.source, "./baseline.json");
     }
 
     // ─── T022: No trace data in remarks (Component Definition) — SEC-1, SEC-2, M-7 ──
