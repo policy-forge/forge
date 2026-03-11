@@ -16,6 +16,10 @@ use super::summary::{BatchSummary, FileResult};
 ///
 /// Returns `ForgeError::BatchConversion` if any input path is missing or not a file.
 pub fn validate_inputs(input_paths: &[PathBuf]) -> Result<(), ForgeError> {
+    if input_paths.is_empty() {
+        return Err(ForgeError::BatchConversion("No input files provided".to_string()));
+    }
+
     let mut invalid: Vec<String> = Vec::new();
 
     for path in input_paths {
@@ -170,9 +174,9 @@ mod tests {
     }
 
     #[test]
-    fn validate_inputs_empty_is_ok() {
-        // Empty input is valid at this layer — caller owns the emptiness check
+    fn validate_inputs_empty_returns_error() {
         let result = validate_inputs(&[]);
-        assert!(result.is_ok());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("No input files"));
     }
 }
