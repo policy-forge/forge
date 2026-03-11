@@ -151,6 +151,12 @@ pub fn execute_dispatch(
     opts: &ConvertOptions<'_>,
     jobs: u16,
 ) -> Result<(), ForgeError> {
+    if input.is_empty() {
+        return Err(ForgeError::BatchConversion(
+            "No input files provided".to_string(),
+        ));
+    }
+
     if input.len() == 1 {
         // Single-file: delegate to existing execute() unchanged (R6 backward compat)
         let single_opts = ConvertOptions {
