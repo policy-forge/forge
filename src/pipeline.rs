@@ -251,8 +251,7 @@ pub fn run_catalog_pipeline(
         }
     }
 
-    stats.output_path =
-        output_path.map_or_else(|| "stdout".to_string(), |p| p.display().to_string());
+    stats.output_path = output_path.map(std::path::Path::to_path_buf);
 
     Ok(stats)
 }
@@ -350,8 +349,7 @@ pub fn run_component_pipeline(
         }
     }
 
-    stats.output_path =
-        output_path.map_or_else(|| "stdout".to_string(), |p| p.display().to_string());
+    stats.output_path = output_path.map(std::path::Path::to_path_buf);
 
     Ok(stats)
 }

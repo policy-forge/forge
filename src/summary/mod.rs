@@ -5,6 +5,7 @@
 
 pub mod format;
 
+use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::oscal::catalog::OscalCatalog;
@@ -47,7 +48,7 @@ pub struct ConversionStatistics {
     /// Currently always empty in production (see `validation_errors` note).
     pub validation_error_messages: Vec<String>,
     pub strategy: Strategy,
-    pub output_path: String,
+    pub output_path: Option<PathBuf>,
     pub elapsed: Duration,
 }
 
@@ -62,7 +63,7 @@ impl Default for ConversionStatistics {
             validation_warnings: 0,
             validation_error_messages: Vec::new(),
             strategy: Strategy::Catalog,
-            output_path: String::new(),
+            output_path: None,
             elapsed: Duration::ZERO,
         }
     }
