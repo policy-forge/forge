@@ -126,19 +126,35 @@ fn summary_flag_does_not_alter_artifact() {
     let content_with = std::fs::read_to_string(&output_with).unwrap();
     let content_without = std::fs::read_to_string(&output_without).unwrap();
 
-    // Parse both as JSON and compare (ignoring UUIDs which are generated fresh)
-    let json_with: serde_json::Value = serde_json::from_str(&content_with).unwrap();
-    let json_without: serde_json::Value = serde_json::from_str(&content_without).unwrap();
+    // Parse both as JSON, normalize volatile fields, and compare full structure
+    let mut json_with: serde_json::Value = serde_json::from_str(&content_with).unwrap();
+    let mut json_without: serde_json::Value = serde_json::from_str(&content_without).unwrap();
 
-    // Compare structure: same keys, same groups count, same controls count
-    let groups_with = json_with["catalog"]["groups"].as_array().unwrap();
-    let groups_without = json_without["catalog"]["groups"].as_array().unwrap();
-    assert_eq!(groups_with.len(), groups_without.len(), "Group count should match");
+    normalize_artifact(&mut json_with);
+    normalize_artifact(&mut json_without);
 
-    for (gw, gwo) in groups_with.iter().zip(groups_without.iter()) {
-        let cw = gw["controls"].as_array().map_or(0, |a| a.len());
-        let cwo = gwo["controls"].as_array().map_or(0, |a| a.len());
-        assert_eq!(cw, cwo, "Control count should match for group");
+    assert_eq!(json_with, json_without, "Artifacts should be identical with/without --summary");
+}
+
+/// Remove volatile fields (UUIDs, timestamps) so two independent conversions
+/// of the same input can be compared for structural equality.
+fn normalize_artifact(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            // Remove keys that change between runs
+            map.remove("uuid");
+            map.remove("last-modified");
+            // Recurse into remaining values
+            for v in map.values_mut() {
+                normalize_artifact(v);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for v in arr.iter_mut() {
+                normalize_artifact(v);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -257,4 +273,37 @@ fn conversion_error_suppresses_dashboard() {
         !stderr.contains("FORGE Conversion Summary"),
         "Dashboard should NOT appear on conversion error (EC-5). Got: {stderr}"
     );
+}
+
+// --quiet suppresses --summary dashboard
+#[test]
+fn quiet_suppresses_summary_dashboard() {
+    let fixture = Path::new("tests/fixtures/sample_policy.md");
+    assert!(fixture.exists(), "Fixture missing");
+
+    let dir = TempDir::new().unwrap();
+    let output_path = dir.path().join("output.json");
+
+    let result = forge_binary()
+        .args([
+            "-q",
+            "convert",
+            fixture.to_str().unwrap(),
+            "--strategy",
+            "catalog",
+            "--output",
+            output_path.to_str().unwrap(),
+            "--summary",
+        ])
+        .output()
+        .expect("Failed to execute forge");
+
+    let stderr = String::from_utf8_lossy(&result.stderr);
+
+    assert!(result.status.success(), "Command failed: {stderr}");
+    assert!(
+        !stderr.contains("FORGE Conversion Summary"),
+        "Dashboard should NOT appear when --quiet is set. Got: {stderr}"
+    );
+    assert!(output_path.exists(), "Output file should still be written");
 }

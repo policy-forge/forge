@@ -188,6 +188,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             source_profile: source_profile.as_deref(),
             stable_id_baseline: stable_id_baseline.as_deref(),
             summary: *summary,
+            quiet: cli.quiet,
         }),
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())

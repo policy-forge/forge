@@ -5,13 +5,13 @@
 
 ## Summary
 
-Add a `--summary` flag to `forge convert` that prints a box-drawing formatted dashboard to stdout after conversion, showing: sections parsed, requirements extracted, controls generated, validation status (with up to 3 error messages), mapping coverage percentage, elapsed time, strategy, and output path. Statistics are collected via a `ConversionStatistics` accumulator struct populated at pipeline stage boundaries. ANSI colors are used with automatic terminal detection. No new crate dependencies required (uses `std::io::IsTerminal`).
+Add a `--summary` flag to `forge convert` that prints a box-drawing formatted dashboard to stderr after conversion, showing: sections parsed, requirements extracted, controls generated, validation status (with up to 3 error messages), mapping coverage percentage, elapsed time, strategy, and output path. Statistics are collected via a `ConversionStatistics` accumulator struct populated at pipeline stage boundaries. ANSI colors are used with automatic terminal detection based on `stderr` terminal capability. No new crate dependencies required (uses `std::io::IsTerminal`).
 
 ## Technical Context
 
 **Language/Version**: Rust, Edition 2024, stable 1.93.0
 **Primary Dependencies**: clap 4.x (CLI), serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44 — all existing
-**Storage**: N/A — stdout only, no persistence
+**Storage**: N/A — dashboard writes to stderr, no persistence
 **Testing**: `cargo test` + insta 1.46.3 (snapshot testing for dashboard format), tempfile 3.25.0
 **Target Platform**: Cross-platform CLI (macOS, Linux, Windows)
 **Project Type**: Single Rust crate

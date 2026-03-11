@@ -106,6 +106,7 @@ pub struct ConvertOptions<'a> {
     pub source_profile: Option<&'a str>,
     pub stable_id_baseline: Option<&'a Path>,
     pub summary: bool,
+    pub quiet: bool,
 }
 
 /// Execute the convert subcommand.
@@ -163,7 +164,7 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
         }
     };
 
-    if opts.summary {
+    if opts.summary && !opts.quiet {
         stats.elapsed = start.elapsed();
         let use_color = std::io::IsTerminal::is_terminal(&std::io::stderr());
         let dashboard = crate::summary::format::format_summary_dashboard(&stats, use_color);
@@ -228,6 +229,7 @@ mod tests {
             source_profile,
             stable_id_baseline: None,
             summary: false,
+            quiet: false,
         }
     }
 

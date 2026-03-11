@@ -2,7 +2,7 @@
 
 ## What This Feature Does
 
-Adds a `--summary` flag to `forge convert` that prints a formatted statistics dashboard to stdout after conversion completes.
+Adds a `--summary` flag to `forge convert` that prints a formatted statistics dashboard to stderr after conversion completes.
 
 ## Files to Create
 

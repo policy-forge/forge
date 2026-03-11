@@ -138,7 +138,7 @@ graph TD
 
 ### Option 1: Terminal Table Output (Recommended)
 
-**Description:** Define a `ConversionStatistics` struct that is passed through the pipeline and populated at each stage boundary. After the artifact is written, if `--summary` is set, format the statistics as a box-drawing character table and print to stdout.
+**Description:** Define a `ConversionStatistics` struct that is passed through the pipeline and populated at each stage boundary. After the artifact is written, if `--summary` is set, format the statistics as a box-drawing character table and print to stderr.
 
 ```mermaid
 graph TD
@@ -151,7 +151,7 @@ graph TD
         Pipeline1 --> Export1[Export: write artifact to file]
         CLI1 --> Check1{--summary flag?}
         Check1 -->|Yes| Format1[format_summary_dashboard]
-        Format1 --> Print1["Print box-drawing table to stdout"]
+        Format1 --> Print1["Print box-drawing table to stderr"]
         Check1 -->|No| Exit1[Exit]
     end
 ```
@@ -272,7 +272,7 @@ graph TD
         Pipeline --> Export[Write artifact to file]
         CLI --> CheckFlag{--summary?}
         CheckFlag -->|Yes| FormatFn[format_summary_dashboard]
-        FormatFn --> Stdout[Print to stdout]
+        FormatFn --> Stdout[Print to stderr]
         CheckFlag -->|No| Done[Exit]
     end
 ```
@@ -308,7 +308,7 @@ sequenceDiagram
     CLI->>CLI: Set elapsed, strategy, output_path on stats
     CLI->>F: format_summary_dashboard(&stats, use_color)
     F-->>CLI: Formatted string
-    CLI-->>U: Print dashboard to stdout
+    CLI-->>U: Print dashboard to stderr
 ```
 
 ### Interface Definitions 🟡 `@human-review`
@@ -401,7 +401,7 @@ Pipeline execution flow:
 **Added by this Architecture:**
 - `ConversionStatistics` is a simple struct with usize/enum fields — no heap allocation during collection
 - Statistics are set at stage boundaries (5 assignments), not per-element — O(1) overhead
-- Dashboard is printed to stdout; artifact goes to file — no mixing
+- Dashboard is printed to stderr; artifact goes to file or stdout — no mixing
 - `--summary` flag has no effect on pipeline behavior — conversion is identical with or without it
 
 ### Architectural Boundaries 🟡 `@human-review`

@@ -96,7 +96,7 @@ See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
 - Rust 1.93.0 (Edition 2024) + `serde_json`, `quick-xml` 0.37, `serde_yaml_ng` 0.10, `clap` 4.x, `insta` 1.46.3, `tempfile` 3.25.0 (035-prd-phase2-release)
 - Local filesystem (OSCAL JSON/XML/YAML files, test fixtures) (035-prd-phase2-release)
 - Rust, Edition 2024, stable 1.93.0 + clap 4.x (CLI), serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44 — all existing (044-summary-dashboard)
-- N/A — stdout only, no persistence (044-summary-dashboard)
+- N/A — dashboard writes to stderr; artifact output behavior is unchanged (044-summary-dashboard)
 
 - Rust, Edition 2024, stable 1.93.0 + quick-xml (latest stable, MIT), existing: clap 4, serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44, uuid 1.20.0, chrono 0.4 (026-xml-output)
 - Rust 2024 edition, stable 1.93.0 + `serde_yaml_ng` 0.10 (aliased as `serde_yaml`, already in `Cargo.toml`), `serde` 1.0.228, `serde_json` 1.0.149 (027-yaml-output)

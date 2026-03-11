@@ -49,33 +49,39 @@ fn pad_right(text: &str, width: usize) -> String {
 /// - >= 60s: `"Xm Xs"`
 #[must_use]
 pub fn format_elapsed(duration: Duration) -> String {
-    let total_secs = duration.as_secs();
-    let secs_f64 = duration.as_secs_f64();
-    if total_secs >= 60 {
-        let minutes = total_secs / 60;
-        let remaining = total_secs % 60;
-        format!("{minutes}m {remaining}s")
-    } else if secs_f64 >= 1.0 {
-        format!("{secs_f64:.1}s")
+    let secs = duration.as_secs_f64();
+    // Round to 2dp first, then select display bucket based on the rounded value.
+    // This avoids boundary jumps (e.g. 0.999s displaying as "1.00s" or 59.95s as "60.0s").
+    let rounded = (secs * 100.0).round() / 100.0;
+    if rounded >= 60.0 {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let total = rounded as u64;
+        format!("{}m {}s", total / 60, total % 60)
+    } else if rounded >= 1.0 {
+        format!("{rounded:.1}s")
     } else {
-        format!("{secs_f64:.2}s")
+        format!("{rounded:.2}s")
     }
 }
 
-fn compute_width(stats: &ConversionStatistics, coverage_str: &str) -> usize {
-    let error_msg_max = stats
-        .validation_error_messages
+fn compute_width(
+    stats: &ConversionStatistics,
+    coverage_str: &str,
+    validation_label: &str,
+    validation_details: &[String],
+) -> usize {
+    let detail_max = validation_details
         .iter()
-        .take(3)
-        .map(|m| m.len() + 4) // "│   " prefix = 4 chars indentation
+        .map(|line| visible_len(line) + 3) // "│   " prefix = 3 chars inner indent
         .max()
         .unwrap_or(0);
     let longest_value = [
-        stats.strategy.len(),
-        stats.output_path.len(),
+        visible_len(&stats.strategy),
+        visible_len(&stats.output_path),
         format_elapsed(stats.elapsed).len(),
         coverage_str.len(),
-        error_msg_max,
+        visible_len(validation_label),
+        detail_max,
     ]
     .into_iter()
     .max()
@@ -136,11 +142,11 @@ fn format_mapping_coverage(
 #[must_use]
 pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -> String {
     let pct = stats.mapping_coverage();
-    let coverage_raw = format!(
-        "{pct:.1}% ({}/{})",
-        stats.controls_generated, stats.requirements_extracted
-    );
-    let w = compute_width(stats, &coverage_raw);
+    let coverage_raw =
+        format!("{pct:.1}% ({}/{})", stats.controls_generated, stats.requirements_extracted);
+    let validation = format_validation_label(stats, use_color);
+    let validation_details = format_validation_detail_lines(stats);
+    let w = compute_width(stats, &coverage_raw, &validation, &validation_details);
     // LABEL_WIDTH includes the leading │ border char, so +1 to align
     // row total (LABEL_WIDTH + vw + 1 for closing │) with border total (1 + w + 1)
     let vw = w - LABEL_WIDTH + 1;
@@ -160,7 +166,6 @@ pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -
         remaining = w - title_pad - title.len()
     );
 
-    let validation = format_validation_label(stats, use_color);
     let coverage = format_mapping_coverage(pct, &coverage_raw, stats, use_color);
 
     let rows = [
@@ -194,7 +199,7 @@ pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -
     // Render validation error detail lines with proper box alignment.
     // Format: "│   {detail}│" → border(1) + spaces(3) + detail(detail_vw) + border(1) = w + 2
     let detail_vw = w - 3; // 3 = inner indent (3 spaces after border │)
-    for detail in &format_validation_detail_lines(stats) {
+    for detail in &validation_details {
         writeln!(out, "│   {detail:<detail_vw$}│").unwrap();
     }
     write!(out, "{bot}").unwrap();
@@ -228,6 +233,48 @@ mod tests {
     fn format_elapsed_zero() {
         let d = Duration::ZERO;
         assert_eq!(format_elapsed(d), "0.00s");
+    }
+
+    #[test]
+    fn format_elapsed_boundary_rounds_up_to_1s() {
+        // 0.999s rounds to 1.00 at 2dp, so it enters the >=1s bucket.
+        // This is correct: round first, then format.
+        let d = Duration::from_secs_f64(0.999);
+        assert_eq!(format_elapsed(d), "1.0s");
+    }
+
+    #[test]
+    fn format_elapsed_boundary_stays_sub_second() {
+        // 0.994s rounds to 0.99 at 2dp, stays in sub-second bucket.
+        let d = Duration::from_secs_f64(0.994);
+        assert_eq!(format_elapsed(d), "0.99s");
+    }
+
+    #[test]
+    fn format_elapsed_boundary_just_over_1s() {
+        let d = Duration::from_secs_f64(1.001);
+        assert_eq!(format_elapsed(d), "1.0s");
+    }
+
+    #[test]
+    fn format_elapsed_boundary_just_under_60s() {
+        // 59.994s rounds to 59.99 at 2dp, stays in seconds bucket.
+        let d = Duration::from_secs_f64(59.994);
+        let result = format_elapsed(d);
+        assert!(!result.contains('m'), "59.994s should stay in seconds bucket: {result}");
+    }
+
+    #[test]
+    fn format_elapsed_boundary_rounds_up_to_60s() {
+        // 59.999s rounds to 60.00 at 2dp, enters minute bucket.
+        let d = Duration::from_secs_f64(59.999);
+        assert_eq!(format_elapsed(d), "1m 0s");
+    }
+
+    #[test]
+    fn format_elapsed_boundary_at_60s() {
+        let d = Duration::from_secs(60);
+        assert_eq!(format_elapsed(d), "1m 0s");
     }
 
     // T008: format_summary_dashboard() tests (no color)

@@ -84,7 +84,7 @@ A compliance engineer sees the conversion strategy used and output file path in 
 - What happens when the conversion fails with an error before completion? The summary is not printed; only the error message is shown.
 - What happens when `--strategy component` is used? "Controls generated" reflects implemented-requirements count, not Catalog controls.
 - What happens when atomization produces more controls than input requirements? Mapping coverage can exceed 100% and is displayed as-is (e.g., "120.0% (18/15)").
-- What happens when `--summary` is combined with different output formats (XML, YAML)? The summary is always plain text to stdout regardless of output format.
+- What happens when `--summary` is combined with different output formats (XML, YAML)? The summary is always plain text to stderr regardless of output format.
 
 ## Requirements *(mandatory)*
 
@@ -141,7 +141,7 @@ A compliance engineer sees the conversion strategy used and output file path in 
 **In Scope:**
 - `--summary` flag on `forge convert`
 - Collecting and displaying: sections parsed, requirements extracted, controls generated, validation status, mapping coverage, elapsed conversion time
-- Human-readable formatted text output to stdout
+- Human-readable formatted text output to stderr
 
 **Out of Scope:**
 - Persistent storage of statistics (database or file) — stdout only
