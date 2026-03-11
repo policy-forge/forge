@@ -64,19 +64,49 @@ impl OscalCliDetect for PathDetector {
 }
 
 /// Search the system PATH for the oscal-cli binary.
+///
+/// On Windows, respects the `PATHEXT` environment variable so that `.bat`, `.cmd`,
+/// and other wrapper scripts are discovered in addition to `.exe`.
+/// On Unix, searches for the bare `oscal-cli` name (no extension).
 fn search_path_for_oscal_cli() -> Option<PathBuf> {
     let path_var = std::env::var("PATH").ok()?;
     let separator = if cfg!(windows) { ';' } else { ':' };
-    let binary_name = format!("oscal-cli{}", std::env::consts::EXE_SUFFIX);
 
     for dir in path_var.split(separator) {
-        let candidate = Path::new(dir).join(&binary_name);
-        if candidate.exists() {
-            return candidate.canonicalize().ok().or(Some(candidate));
+        let dir_path = Path::new(dir);
+
+        if cfg!(windows) {
+            let pathext_var =
+                std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
+            for ext in parse_pathext(&pathext_var) {
+                let candidate = dir_path.join(format!("oscal-cli{ext}"));
+                if candidate.exists() {
+                    return candidate.canonicalize().ok().or(Some(candidate));
+                }
+            }
+        } else {
+            let candidate = dir_path.join("oscal-cli");
+            if candidate.exists() {
+                return candidate.canonicalize().ok().or(Some(candidate));
+            }
         }
     }
 
     None
+}
+
+/// Parse PATHEXT into a list of lowercased extensions.
+///
+/// Returns the default Windows extensions when the input is empty.
+fn parse_pathext(pathext: &str) -> Vec<String> {
+    let extensions: Vec<String> =
+        pathext.split(';').filter(|e| !e.is_empty()).map(str::to_lowercase).collect();
+
+    if extensions.is_empty() {
+        vec![".com".to_string(), ".exe".to_string(), ".bat".to_string(), ".cmd".to_string()]
+    } else {
+        extensions
+    }
 }
 
 /// Run `oscal-cli --version` and extract the version string from stdout.
@@ -186,5 +216,60 @@ mod tests {
     fn default_detector_creates_path_detector() {
         let detector = PathDetector::default();
         assert!(detector.override_path.is_none());
+    }
+
+    // --- PATHEXT parsing tests ---
+
+    #[test]
+    fn parse_pathext_standard_windows_value() {
+        let exts = parse_pathext(".COM;.EXE;.BAT;.CMD");
+        assert_eq!(exts, vec![".com", ".exe", ".bat", ".cmd"]);
+    }
+
+    #[test]
+    fn parse_pathext_lowercases_extensions() {
+        let exts = parse_pathext(".EXE;.Bat;.CMD");
+        assert_eq!(exts, vec![".exe", ".bat", ".cmd"]);
+    }
+
+    #[test]
+    fn parse_pathext_filters_empty_segments() {
+        let exts = parse_pathext(".EXE;;.BAT;");
+        assert_eq!(exts, vec![".exe", ".bat"]);
+    }
+
+    #[test]
+    fn parse_pathext_empty_string_returns_defaults() {
+        let exts = parse_pathext("");
+        assert_eq!(exts, vec![".com", ".exe", ".bat", ".cmd"]);
+    }
+
+    #[test]
+    fn parse_pathext_custom_extensions() {
+        let exts = parse_pathext(".EXE;.PS1;.VBS");
+        assert_eq!(exts, vec![".exe", ".ps1", ".vbs"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn search_path_finds_bare_binary_on_unix() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let bin_path = tmp.path().join("oscal-cli");
+        std::fs::write(&bin_path, "#!/bin/sh\necho test").unwrap();
+        std::fs::set_permissions(&bin_path, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        // SAFETY: This test is single-threaded and restores PATH immediately after.
+        let original_path = std::env::var("PATH").unwrap_or_default();
+        unsafe { std::env::set_var("PATH", tmp.path().to_str().unwrap()) };
+
+        let result = search_path_for_oscal_cli();
+
+        unsafe { std::env::set_var("PATH", &original_path) };
+
+        assert!(result.is_some());
+        let found = result.unwrap();
+        assert!(found.ends_with("oscal-cli"));
     }
 }
