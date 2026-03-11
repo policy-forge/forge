@@ -42,8 +42,9 @@ pub struct Cli {
 pub enum Commands {
     /// Convert a policy document to OSCAL format
     Convert {
-        /// Path to the input Markdown policy document (.md)
-        input: PathBuf,
+        /// Path(s) to the input Markdown policy document(s) (.md)
+        #[arg(num_args = 1..)]
+        input: Vec<PathBuf>,
 
         /// Conversion strategy: 'catalog' for OSCAL Catalog, 'component' for Component Definition
         #[arg(long)]
@@ -64,6 +65,10 @@ pub enum Commands {
         /// Source profile/baseline reference for component strategy (e.g., path to OSCAL profile JSON)
         #[arg(long)]
         source_profile: Option<String>,
+
+        /// Number of parallel jobs for batch conversion (0 = auto, 1 = sequential)
+        #[arg(long, default_value = "0", value_parser = clap::value_parser!(u16).range(0..=256))]
+        jobs: u16,
 
         /// Optional baseline policy used to compare stable IDs and emit substantive-change warnings.
         ///
@@ -187,7 +192,7 @@ pub enum SchemaType {
     ComponentDefinition,
 }
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Copy, Debug)]
 pub enum Strategy {
     Catalog,
     Component,
@@ -198,6 +203,18 @@ pub enum OutputFormat {
     Json,
     Xml,
     Yaml,
+}
+
+impl OutputFormat {
+    /// The canonical file extension for this output format.
+    #[must_use]
+    pub fn as_extension(self) -> &'static str {
+        match self {
+            Self::Json => "json",
+            Self::Xml => "xml",
+            Self::Yaml => "yaml",
+        }
+    }
 }
 
 /// Execute the CLI command, dispatching to the appropriate subcommand handler.
@@ -214,8 +231,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             output,
             max_size,
             source_profile,
+            jobs,
             stable_id_baseline,
-        } => convert::execute(
+        } => convert::execute_dispatch(
             input,
             strategy,
             format,
@@ -223,6 +241,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             *max_size,
             source_profile.as_deref(),
             stable_id_baseline.as_deref(),
+            *jobs,
         ),
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
@@ -272,7 +291,7 @@ mod tests {
         ])
         .unwrap();
         if let Commands::Convert { input, .. } = cli.command {
-            assert_eq!(input, PathBuf::from("test.md"));
+            assert_eq!(input, vec![PathBuf::from("test.md")]);
         } else {
             panic!("Expected Convert command");
         }
@@ -335,7 +354,7 @@ mod tests {
         .unwrap();
 
         if let Commands::Convert { input, strategy, format, output, .. } = cli.command {
-            assert_eq!(input, PathBuf::from("test.md"));
+            assert_eq!(input, vec![PathBuf::from("test.md")]);
             assert!(matches!(strategy, Strategy::Catalog));
             assert!(matches!(format, OutputFormat::Json));
             assert_eq!(output, Some(PathBuf::from("out.json")));
@@ -465,6 +484,103 @@ mod tests {
     fn parse_trace_missing_source_fails() {
         let result = Cli::try_parse_from(["forge", "trace", "artifact.json"]);
         assert!(result.is_err(), "Should fail when --source is omitted");
+    }
+
+    #[test]
+    fn parse_convert_multiple_inputs() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "a.md", "b.md", "--strategy", "catalog"])
+                .unwrap();
+        if let Commands::Convert { input, .. } = cli.command {
+            assert_eq!(input, vec![PathBuf::from("a.md"), PathBuf::from("b.md")]);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    // T037: --jobs flag parsing tests
+
+    #[test]
+    fn parse_jobs_flag_explicit_value() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "4",
+        ])
+        .unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 4);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_jobs_flag_one_is_sequential() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "1",
+        ])
+        .unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 1);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_jobs_flag_zero_accepted_as_auto() {
+        // 0 is valid — means auto (use all available cores)
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "0",
+        ])
+        .unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 0);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_jobs_flag_257_rejected() {
+        let result = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "257",
+        ]);
+        assert!(result.is_err(), "257 should be rejected (max 256)");
+    }
+
+    #[test]
+    fn parse_jobs_flag_default_is_zero() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "a.md", "--strategy", "catalog"]).unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 0, "Default should be 0 (auto)");
+        } else {
+            panic!("Expected Convert command");
+        }
     }
 
     #[test]
