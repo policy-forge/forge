@@ -51,6 +51,16 @@ impl OscalCliInvoke for ProcessInvoker {
             stderr: String::new(),
         })?;
 
+        // Drain stderr on a dedicated thread to prevent pipe buffer deadlock.
+        // Without this, if oscal-cli writes >4KB (macOS) or >64KB (Linux) to stderr,
+        // the child blocks on write and the parent blocks on try_wait — deadlock.
+        let mut stderr_handle = child.stderr.take().expect("stderr was piped");
+        let stderr_thread = std::thread::spawn(move || {
+            let mut buf = String::new();
+            let _ = std::io::Read::read_to_string(&mut stderr_handle, &mut buf);
+            buf
+        });
+
         // Poll-based timeout: check every 100ms
         let start = Instant::now();
         let timeout = args.timeout;
@@ -75,18 +85,8 @@ impl OscalCliInvoke for ProcessInvoker {
             }
         };
 
-        // Read stderr after process completes
-        let stderr_str = child
-            .stderr
-            .take()
-            .map(|mut stderr| {
-                let mut buf = String::new();
-                if let Err(e) = std::io::Read::read_to_string(&mut stderr, &mut buf) {
-                    tracing::warn!("Failed to read oscal-cli stderr: {e}");
-                }
-                buf
-            })
-            .unwrap_or_default();
+        // Join the stderr drain thread (process has exited, so this won't block long)
+        let stderr_str = stderr_thread.join().unwrap_or_default();
 
         if !status.success() {
             let message = extract_error_message(&stderr_str);
@@ -191,4 +191,17 @@ mod tests {
     // --- T044: timeout handling is tested via integration tests ---
     // The timeout mechanism uses polling with try_wait + kill.
     // Full timeout behavior requires a real long-running subprocess.
+
+    // --- T060: large stderr — documents intent of concurrent drain fix ---
+
+    #[test]
+    fn extract_error_message_handles_large_stderr() {
+        // Simulate stderr larger than macOS pipe buffer (4KB)
+        let mut stderr = String::new();
+        for i in 0..1000 {
+            stderr.push_str(&format!("WARNING: line {i}\n"));
+        }
+        stderr.push_str("ERROR: final meaningful error\n");
+        assert_eq!(extract_error_message(&stderr), "ERROR: final meaningful error");
+    }
 }
