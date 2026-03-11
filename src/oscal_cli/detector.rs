@@ -72,13 +72,20 @@ fn search_path_for_oscal_cli() -> Option<PathBuf> {
     let path_var = std::env::var("PATH").ok()?;
     let separator = if cfg!(windows) { ';' } else { ':' };
 
+    // Parse PATHEXT once before the loop (Windows only).
+    let extensions: Vec<String> = if cfg!(windows) {
+        let pathext_var =
+            std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
+        parse_pathext(&pathext_var)
+    } else {
+        vec![]
+    };
+
     for dir in path_var.split(separator) {
         let dir_path = Path::new(dir);
 
         if cfg!(windows) {
-            let pathext_var =
-                std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
-            for ext in parse_pathext(&pathext_var) {
+            for ext in &extensions {
                 let candidate = dir_path.join(format!("oscal-cli{ext}"));
                 if candidate.exists() {
                     return candidate.canonicalize().ok().or(Some(candidate));
