@@ -16,13 +16,12 @@ use super::report::{ElementType, TraceEntry};
 /// Returns `ForgeError::TraceUnsupportedArtifact` if the model type is not
 /// recognized, is a Profile, or the top-level value is not a JSON object.
 pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, ForgeError> {
-    let model_type = validate::detect_model_type(json).map_err(|_| {
-        ForgeError::TraceUnsupportedArtifact {
+    let model_type =
+        validate::detect_model_type(json).map_err(|_| ForgeError::TraceUnsupportedArtifact {
             detail:
                 "Expected top-level key 'catalog' or 'component-definition' with an object value"
                     .to_string(),
-        }
-    })?;
+        })?;
 
     if model_type == OscalModelType::Profile {
         return Err(ForgeError::TraceUnsupportedArtifact {
@@ -34,9 +33,7 @@ pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, 
     let key = model_type.as_str();
     if !json.get(key).is_some_and(serde_json::Value::is_object) {
         return Err(ForgeError::TraceUnsupportedArtifact {
-            detail: format!(
-                "Expected top-level key '{key}' with an object value"
-            ),
+            detail: format!("Expected top-level key '{key}' with an object value"),
         });
     }
 
