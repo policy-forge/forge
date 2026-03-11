@@ -88,6 +88,10 @@ impl OscalCliInvoke for ProcessInvoker {
         // Join the stderr drain thread (process has exited, so this won't block long)
         let stderr_str = stderr_thread.join().unwrap_or_default();
 
+        if !stderr_str.is_empty() {
+            tracing::debug!(stderr = %stderr_str, "oscal-cli stderr output");
+        }
+
         if !status.success() {
             let message = extract_error_message(&stderr_str);
             return Err(ForgeError::OscalCliExecution {

@@ -131,7 +131,7 @@ pub enum ForgeError {
     OscalCliNotFunctional { path: PathBuf, detail: String },
 
     // --- oscal-cli execution errors (exit code 1) ---
-    #[error("oscal-cli execution failed (exit code {exit_code:?}): {message}")]
+    #[error("oscal-cli execution failed (exit code {exit_code:?}): {message}\n\noscal-cli stderr:\n{stderr}")]
     OscalCliExecution { exit_code: Option<i32>, message: String, stderr: String },
 
     #[error("oscal-cli execution timed out after {timeout:?}")]
@@ -464,6 +464,19 @@ mod tests {
         };
         assert!(err.to_string().contains("oscal-cli execution failed"));
         assert!(err.to_string().contains("Invalid profile"));
+    }
+
+    #[test]
+    fn oscal_cli_execution_display_includes_stderr() {
+        let err = ForgeError::OscalCliExecution {
+            exit_code: Some(1),
+            message: "Invalid profile".to_string(),
+            stderr: "java.lang.Exception: bad input\n  at Main.run(Main.java:42)".to_string(),
+        };
+        let display = err.to_string();
+        assert!(display.contains("Invalid profile"), "should contain extracted message");
+        assert!(display.contains("oscal-cli stderr:"), "should contain stderr header");
+        assert!(display.contains("java.lang.Exception"), "should contain full stderr");
     }
 
     #[test]
