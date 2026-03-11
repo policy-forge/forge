@@ -21,21 +21,13 @@ impl FileResult {
     /// Create a successful result.
     #[must_use]
     pub fn success(input_path: PathBuf, output_path: PathBuf, duration: Duration) -> Self {
-        Self {
-            input_path,
-            outcome: FileOutcome::Success { output_path },
-            duration,
-        }
+        Self { input_path, outcome: FileOutcome::Success { output_path }, duration }
     }
 
     /// Create a failed result.
     #[must_use]
     pub fn failure(input_path: PathBuf, error_message: String, duration: Duration) -> Self {
-        Self {
-            input_path,
-            outcome: FileOutcome::Failure { error_message },
-            duration,
-        }
+        Self { input_path, outcome: FileOutcome::Failure { error_message }, duration }
     }
 
     /// Returns true if this file converted successfully.
@@ -57,13 +49,13 @@ pub struct BatchSummary {
 
 impl BatchSummary {
     /// Build summary from a list of results and total duration.
-    /// Results are sorted by input filename.
+    /// Results are sorted by input filename, with full path as tie-breaker.
     #[must_use]
     pub fn from_results(mut results: Vec<FileResult>, total_duration: Duration) -> Self {
         results.sort_by(|a, b| {
             let a_name = a.input_path.file_name().unwrap_or_default();
             let b_name = b.input_path.file_name().unwrap_or_default();
-            a_name.cmp(b_name)
+            a_name.cmp(b_name).then_with(|| a.input_path.cmp(&b.input_path))
         });
 
         let total_files = results.len();
@@ -94,7 +86,9 @@ mod tests {
             Duration::from_millis(100),
         );
         assert!(result.is_success());
-        assert!(matches!(result.outcome, FileOutcome::Success { ref output_path } if output_path == &PathBuf::from("output.json")));
+        assert!(
+            matches!(result.outcome, FileOutcome::Success { ref output_path } if output_path == &PathBuf::from("output.json"))
+        );
     }
 
     #[test]
@@ -105,7 +99,9 @@ mod tests {
             Duration::from_millis(50),
         );
         assert!(!result.is_success());
-        assert!(matches!(result.outcome, FileOutcome::Failure { ref error_message } if error_message == "parse error"));
+        assert!(
+            matches!(result.outcome, FileOutcome::Failure { ref error_message } if error_message == "parse error")
+        );
     }
 
     // T006: BatchSummary::from_results tests

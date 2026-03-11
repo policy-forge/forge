@@ -10,13 +10,20 @@ use crate::ForgeError;
 
 // --- Data Structures (batch/summary.rs) ---
 
+/// Outcome of processing a single file.
+#[derive(Debug)]
+pub enum FileOutcome {
+    /// File was converted successfully; contains the path to the output file.
+    Success { output_path: PathBuf },
+    /// File conversion failed; contains a human-readable error message.
+    Failure { error_message: String },
+}
+
 /// Result of converting a single file in a batch.
 #[derive(Debug)]
 pub struct FileResult {
     pub input_path: PathBuf,
-    pub output_path: Option<PathBuf>,
-    pub success: bool,
-    pub error_message: Option<String>,
+    pub outcome: FileOutcome,
     pub duration: Duration,
 }
 
@@ -26,6 +33,9 @@ impl FileResult {
 
     /// Create a failed result.
     pub fn failure(input_path: PathBuf, error_message: String, duration: Duration) -> Self;
+
+    /// Returns true if this file converted successfully.
+    pub fn is_success(&self) -> bool;
 }
 
 /// Aggregated summary of a batch conversion run.

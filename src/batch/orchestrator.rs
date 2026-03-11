@@ -8,7 +8,7 @@ use crate::cli::{OutputFormat, Strategy};
 
 use super::summary::{BatchSummary, FileResult};
 
-/// Validate that all input files exist and are readable.
+/// Validate that all input files exist and are regular files.
 ///
 /// Returns `Ok(())` if all valid, or `Err` listing all invalid paths with reasons.
 ///

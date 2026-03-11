@@ -383,8 +383,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_jobs_flag_zero_rejected() {
-        // 0 is valid — means auto
+    fn parse_jobs_flag_zero_accepted_as_auto() {
+        // 0 is valid — means auto (use all available cores)
         let cli = Cli::try_parse_from([
             "forge",
             "convert",

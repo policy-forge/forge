@@ -63,7 +63,7 @@
 ### Tests
 
 - [x] T013 [US1] Write unit test in `src/cli/mod.rs` for parsing multiple positional input files (`forge convert a.md b.md --strategy catalog`) — verify `Vec<PathBuf>` contains both
-- [x] T014 [P] [US1] Write unit test in `src/batch/orchestrator.rs` for `validate_inputs()`: (a) all valid files → Ok, (b) one missing → Err listing invalid path, (c) zero files → Err
+- [x] T014 [P] [US1] Write unit test in `src/batch/orchestrator.rs` for `validate_inputs()`: (a) all valid files → Ok, (b) one missing → Err listing invalid path, (c) zero files → Ok (caller owns emptiness check)
 - [x] T015 [P] [US1] Write integration test in `tests/batch_conversion_test.rs` for batch of 3 valid Markdown files → 3 output files in `--output` directory with correct names (AC-1, AC-2)
 - [x] T016 [P] [US1] Write integration test in `tests/batch_conversion_test.rs` for single-file backward compatibility — single input behaves identically to existing (EC-1, FR-011)
 - [x] T017 [P] [US1] Write integration test in `tests/batch_conversion_test.rs` for filename collision — two files with same stem from different dirs → `policy.json` and `policy_2.json` (EC-3, FR-012)

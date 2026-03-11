@@ -33,9 +33,13 @@ pub fn derive_output_paths(
 
         let output_path = if claimed.contains(&candidate) {
             let n = next_suffix.entry(stem.clone()).or_insert(2);
-            let suffixed = base_dir.join(format!("{stem}_{n}.{ext}"));
-            *n += 1;
-            suffixed
+            loop {
+                let suffixed = base_dir.join(format!("{stem}_{n}.{ext}"));
+                *n += 1;
+                if !claimed.contains(&suffixed) {
+                    break suffixed;
+                }
+            }
         } else {
             candidate
         };
@@ -101,5 +105,20 @@ mod tests {
         let inputs = vec![PathBuf::from("policy.md")];
         let pairs = derive_output_paths(&inputs, OutputFormat::Yaml, None);
         assert_eq!(pairs[0].1, PathBuf::from("./policy.yaml"));
+    }
+
+    #[test]
+    fn collision_suffix_skips_already_claimed_stem() {
+        // policy.md → policy.json, policy_2.md → policy_2.json,
+        // second policy.md collision must skip policy_2.json → policy_3.json
+        let inputs = vec![
+            PathBuf::from("/a/policy.md"),
+            PathBuf::from("/b/policy_2.md"),
+            PathBuf::from("/c/policy.md"),
+        ];
+        let pairs = derive_output_paths(&inputs, OutputFormat::Json, Some(Path::new("/out")));
+        assert_eq!(pairs[0].1, PathBuf::from("/out/policy.json"));
+        assert_eq!(pairs[1].1, PathBuf::from("/out/policy_2.json"));
+        assert_eq!(pairs[2].1, PathBuf::from("/out/policy_3.json"));
     }
 }
