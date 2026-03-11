@@ -131,7 +131,9 @@ pub enum ForgeError {
     OscalCliNotFunctional { path: PathBuf, detail: String },
 
     // --- oscal-cli execution errors (exit code 1) ---
-    #[error("oscal-cli execution failed (exit code {exit_code:?}): {message}\n\noscal-cli stderr:\n{stderr}")]
+    #[error(
+        "oscal-cli execution failed (exit code {exit_code:?}): {message}\n\noscal-cli stderr:\n{stderr}"
+    )]
     OscalCliExecution { exit_code: Option<i32>, message: String, stderr: String },
 
     #[error("oscal-cli execution timed out after {timeout:?}")]
