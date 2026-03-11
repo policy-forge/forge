@@ -43,7 +43,7 @@
 ### Background 🔴 `@human-required`
 This PRD covers **WI-40: Batch Conversion** from the FORGE Product Roadmap (Sprint S-40, Dec 1 2026, Theme T-6: Ecosystem, Milestone MS-7). Through WI-35, the FORGE CLI supports converting a single policy document per invocation (`forge convert policy.md --strategy catalog --format json`). Organizations typically maintain multiple policy documents (e.g., access control policy, incident response policy, data classification policy), and converting them one at a time is tedious and error-prone. WI-40 adds batch conversion support, allowing multiple input files in a single `forge convert` invocation. This fulfills Parent PRD requirement C-1: "The CLI could support batch conversion of multiple policy documents in a single invocation." Batch conversion should leverage parallel processing where possible and provide aggregated status output showing the result of each file conversion.
 
-**Confidence Level:** :orange_circle: Phase 3 — Exploratory. This work item is in the Phase 3 Ecosystem batch. Requirements may evolve as batch processing use cases are validated with real-world policy document sets.
+**Confidence Level:** :green_circle: Phase 3 — Implemented. This work item has been implemented and all tasks are complete. Requirements were validated during implementation.
 
 ### Scope Boundaries 🟡 `@human-review`
 
@@ -103,7 +103,7 @@ A compliance engineer converts multiple policy documents to OSCAL format in a si
 
 **Acceptance Scenarios**:
 1. **Given** three Markdown policy files and `--output output/`, **When** running `forge convert policy1.md policy2.md policy3.md --strategy catalog --format json --output output/`, **Then** three OSCAL Catalog JSON files are created in the `output/` directory with names derived from the input filenames.
-2. **Given** multiple input files and no `--output` flag, **When** running `forge convert policy1.md policy2.md --strategy catalog --format json`, **Then** each OSCAL Catalog JSON is printed to stdout separated by a delimiter or written to individual files with auto-generated names.
+2. **Given** multiple input files and no `--output` flag, **When** running `forge convert policy1.md policy2.md --strategy catalog --format json`, **Then** each OSCAL Catalog JSON is written to an individual file with an auto-generated name in the current directory (e.g., `policy1.json`, `policy2.json`).
 
 ---
 
@@ -235,9 +235,9 @@ stateDiagram-v2
 - [ ] **S-4:** The aggregated status summary should include total file count, success count, failure count, and total processing time.
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
-- [ ] **C-1:** A `--continue-on-error` flag could control whether batch conversion continues after a failure (default: continue) or stops at the first failure.
-- [ ] **C-2:** A `--dry-run` flag could list the files that would be converted without actually running the pipeline.
-- [ ] **C-3:** The aggregated status output could be available in JSON format via `--status-format json` for programmatic consumption.
+- [ ] **C-1:** A `--continue-on-error` flag could control whether batch conversion continues after a failure (default: continue) or stops at the first failure. *(Deferred to future enhancement — default behavior is always continue)*
+- [ ] **C-2:** A `--dry-run` flag could list the files that would be converted without actually running the pipeline. *(Deferred to future enhancement)*
+- [ ] **C-3:** The aggregated status output could be available in JSON format via `--status-format json` for programmatic consumption. *(Deferred to future enhancement)*
 
 ### Won't Have (W) — Explicitly deferred 🟡 `@human-review`
 - [ ] **W-1:** Merging multiple policy documents into a single OSCAL artifact — *Reason: Each document produces its own artifact; merging requires cross-document semantics*
@@ -337,12 +337,15 @@ pub fn run_batch_conversion(
     parallelism: usize,
 ) -> BatchSummary;
 
-/// Derive output filename from input path and format
-pub fn derive_output_path(
-    input_path: &Path,
+/// Derive output filenames for all inputs with collision avoidance
+///
+/// Returns a Vec of output paths, one per input. Handles collisions
+/// (same-name files from different directories) by appending numeric suffixes.
+pub fn derive_output_paths(
+    input_paths: &[PathBuf],
     format: &str,
     output_dir: Option<&Path>,
-) -> PathBuf;
+) -> Vec<PathBuf>;
 
 /// Format aggregated status summary for display
 pub fn format_batch_summary(summary: &BatchSummary) -> String;
@@ -385,7 +388,7 @@ pub fn format_batch_summary(summary: &BatchSummary) -> String;
 | AC-3 | M-4 | US-2 | Three input files where one has a parsing error | Running batch conversion | Aggregated status shows 2 successes, 1 failure with error message |
 | AC-4 | M-5 | US-2 | Three input files where the second fails | Running batch conversion | Files 1 and 3 are successfully converted despite file 2's failure |
 | AC-5 | M-6 | US-2 | A batch where one file fails | Checking exit code | The CLI exits with non-zero status code |
-| AC-6 | S-1 | US-3 | Ten independent Markdown policy files | Running batch conversion | Total time is less than 10x single-file time (parallel processing engaged) |
+| AC-6 | S-1 | US-3 | Ten independent Markdown policy files | Running batch conversion | Total time is at least 2x faster than sequential single-file conversions (parallel processing engaged) |
 | AC-7 | M-1 | US-4 | A `policies/` directory with 5 Markdown files | Running `forge convert policies/*.md --strategy catalog --format json --output output/` | 5 output files are produced |
 | AC-8 | S-4 | US-2 | A completed batch conversion | Inspecting the aggregated status | Summary shows total count, success count, failure count, and total time |
 

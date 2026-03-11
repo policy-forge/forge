@@ -1,0 +1,83 @@
+pub mod extractor;
+pub mod formatter;
+pub mod report;
+pub mod resolver;
+pub mod walker;
+
+use std::path::Path;
+
+use crate::error::ForgeError;
+use report::{ArtifactType, TraceReport, TraceSummary};
+
+/// Generate a complete traceability report from an OSCAL artifact and source policy.
+///
+/// 1. Reads and parses artifact JSON
+/// 2. Detects artifact type
+/// 3. Walks elements and extracts trace metadata
+/// 4. Computes summary statistics
+/// 5. Checks source staleness
+///
+/// # Errors
+///
+/// - `ForgeError::FileNotFound` if artifact or source file doesn't exist
+/// - `ForgeError::Parse` if artifact is invalid JSON
+/// - `ForgeError::TraceUnsupportedArtifact` if artifact type is unrecognized
+pub fn generate_trace_report(
+    artifact_path: &Path,
+    source_path: &Path,
+) -> Result<TraceReport, ForgeError> {
+    // Read and parse artifact JSON (handles FileNotFound via Io mapping)
+    let artifact_content = read_file(artifact_path)?;
+    let json: serde_json::Value = serde_json::from_str(&artifact_content)
+        .map_err(|e| ForgeError::Parse(format!("Invalid JSON in artifact: {e}")))?;
+
+    // Read source file for line count validation
+    let source_content = read_file(source_path)?;
+    let source_line_count = source_content.lines().count();
+
+    // Detect artifact type and walk elements
+    let art_type = walker::detect_artifact_type(&json)?;
+    let entries = match art_type {
+        ArtifactType::Catalog => {
+            let catalog = &json["catalog"];
+            walker::walk_catalog_elements(catalog)
+        }
+        ArtifactType::ComponentDefinition => {
+            let compdef = &json["component-definition"];
+            walker::walk_compdef_elements(compdef)
+        }
+    };
+
+    // Compute summary
+    let summary = TraceSummary::from_entries(&entries);
+
+    // Check source staleness
+    let metadata_last_modified = json
+        .get(art_type.as_str())
+        .and_then(|v| v.get("metadata"))
+        .and_then(|m| m.get("last-modified"))
+        .and_then(|v| v.as_str());
+    let source_stale = resolver::check_source_staleness(source_path, metadata_last_modified);
+
+    Ok(TraceReport {
+        artifact_path: artifact_path.to_path_buf(),
+        source_path: source_path.to_path_buf(),
+        artifact_type: art_type,
+        entries,
+        summary,
+        source_stale,
+        source_line_count,
+    })
+}
+
+/// Read a file, mapping `NotFound` to `ForgeError::FileNotFound`,
+/// `PermissionDenied` to `ForgeError::PermissionDenied`, and other I/O errors to `ForgeError::Io`.
+fn read_file(path: &Path) -> Result<String, ForgeError> {
+    std::fs::read_to_string(path).map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: path.to_path_buf() }
+        }
+        _ => ForgeError::Io(e),
+    })
+}

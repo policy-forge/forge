@@ -374,7 +374,7 @@ flowchart TD
 |--------|-------------|--------|---------------------|
 | SEC-6 | Per-file pipeline invocation must be wrapped in catch_unwind to prevent panics from terminating the batch | AC-4, M-5 | Integration test |
 | SEC-7 | Aggregated status must be printed to stderr, not stdout, to prevent mixing with OSCAL output | AC-8 | Integration test |
-| SEC-8 | The `--jobs` flag must accept only positive integers; rayon thread pool must be bounded | — | Clap argument validation |
+| SEC-8 | The `--jobs` flag must accept non-negative integers (0 = auto-detect CPU cores, 1–256 = explicit thread count); rayon thread pool must be bounded | — | Clap argument validation |
 
 ---
 
@@ -414,8 +414,8 @@ flowchart TD
 
 ## Open Questions 🟡 `@human-review`
 
-- [ ] **Q1:** Should there be a maximum batch size limit (e.g., 1000 files) to prevent resource exhaustion, or is rayon's CPU-bounded thread pool sufficient?
-- [ ] **Q2:** Should symlinks in the input file list be followed (current behavior) or should there be an option to reject or warn about them?
+- [x] **Q1:** Should there be a maximum batch size limit (e.g., 1000 files) to prevent resource exhaustion, or is rayon's CPU-bounded thread pool sufficient? → **Resolved**: Warn on stderr at 100 files but continue processing (spec clarification 2026-03-10; FR-016).
+- [x] **Q2:** Should symlinks in the input file list be followed (current behavior) or should there be an option to reject or warn about them? → **Resolved**: Follow symlinks silently — standard CLI behavior (spec clarification 2026-03-10).
 
 ---
 
@@ -447,13 +447,13 @@ flowchart TD
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
 | SEC-1 | M-5 | AC-4 | Integration | tests/batch_conversion_test.rs |
-| SEC-2 | M-1 | AC-3 | Unit | tests/batch_validation_test.rs |
-| SEC-3 | M-3 | EC-4 | Unit | tests/batch_output_test.rs |
-| SEC-4 | M-3 | EC-3 | Unit | tests/batch_output_naming_test.rs |
-| SEC-5 | M-1 | EC-2 | Unit | tests/batch_validation_test.rs |
-| SEC-6 | M-5 | AC-4 | Integration | tests/batch_error_isolation_test.rs |
-| SEC-7 | M-4 | AC-8 | Integration | tests/batch_summary_test.rs |
-| SEC-8 | S-2 | — | Unit | Clap argument validation |
+| SEC-2 | M-1 | AC-3 | Unit | src/batch/orchestrator.rs (unit tests) |
+| SEC-3 | M-3 | EC-4 | Integration | tests/batch_conversion_test.rs |
+| SEC-4 | M-3 | EC-3 | Unit | src/batch/output_naming.rs (unit tests) |
+| SEC-5 | M-1 | EC-2 | Integration | tests/batch_conversion_test.rs |
+| SEC-6 | M-5 | AC-4 | Integration | tests/batch_conversion_test.rs |
+| SEC-7 | M-4 | AC-8 | Integration | tests/batch_conversion_test.rs |
+| SEC-8 | S-2 | — | Unit | src/cli/mod.rs (clap argument validation) |
 
 ---
 

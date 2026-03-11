@@ -1,6 +1,8 @@
 pub mod convert;
 pub mod export;
 pub mod profile;
+pub mod resolve;
+pub mod trace;
 pub mod validate;
 
 use std::path::PathBuf;
@@ -40,8 +42,9 @@ pub struct Cli {
 pub enum Commands {
     /// Convert a policy document to OSCAL format
     Convert {
-        /// Path to the input Markdown policy document (.md)
-        input: PathBuf,
+        /// Path(s) to the input Markdown policy document(s) (.md)
+        #[arg(num_args = 1..)]
+        input: Vec<PathBuf>,
 
         /// Conversion strategy: 'catalog' for OSCAL Catalog, 'component' for Component Definition
         #[arg(long)]
@@ -62,6 +65,10 @@ pub enum Commands {
         /// Source profile/baseline reference for component strategy (e.g., path to OSCAL profile JSON)
         #[arg(long)]
         source_profile: Option<String>,
+
+        /// Number of parallel jobs for batch conversion (0 = auto, 1 = sequential)
+        #[arg(long, default_value = "0", value_parser = clap::value_parser!(u16).range(0..=256))]
+        jobs: u16,
 
         /// Optional baseline policy used to compare stable IDs and emit substantive-change warnings.
         ///
@@ -102,6 +109,45 @@ pub enum Commands {
         /// Output format for validation results (text or json)
         #[arg(long, value_enum, default_value = "text")]
         format: ValidateOutputFormat,
+    },
+
+    /// Resolve an OSCAL Profile into a flat Catalog baseline via oscal-cli
+    Resolve {
+        /// Path to the OSCAL Profile JSON file
+        input: Option<PathBuf>,
+
+        /// Output file path (default: <input-stem>-resolved.json)
+        #[arg(long)]
+        output: Option<PathBuf>,
+
+        /// Report oscal-cli detection status and exit
+        #[arg(long)]
+        check: bool,
+
+        /// Timeout for oscal-cli execution in seconds (default: 60)
+        #[arg(long, default_value = "60")]
+        timeout: u64,
+
+        /// Explicit path to oscal-cli binary (overrides PATH search)
+        #[arg(long)]
+        oscal_cli_path: Option<PathBuf>,
+    },
+
+    /// Show traceability between OSCAL elements and source policy locations.
+    ///
+    /// The report inherits the sensitivity classification of the source policy.
+    /// Treat the output with the same access controls as the source document.
+    Trace {
+        /// Path to the OSCAL artifact (JSON)
+        artifact: PathBuf,
+
+        /// Path to the source policy file
+        #[arg(long)]
+        source: PathBuf,
+
+        /// Write output to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
     },
 
     /// Generate an OSCAL Profile by selecting controls from a source Catalog
@@ -150,7 +196,7 @@ pub enum SchemaType {
     ComponentDefinition,
 }
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Copy, Debug)]
 pub enum Strategy {
     Catalog,
     Component,
@@ -161,6 +207,18 @@ pub enum OutputFormat {
     Json,
     Xml,
     Yaml,
+}
+
+impl OutputFormat {
+    /// The canonical file extension for this output format.
+    #[must_use]
+    pub fn as_extension(self) -> &'static str {
+        match self {
+            Self::Json => "json",
+            Self::Xml => "xml",
+            Self::Yaml => "yaml",
+        }
+    }
 }
 
 /// Execute the CLI command, dispatching to the appropriate subcommand handler.
@@ -177,24 +235,36 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             output,
             max_size,
             source_profile,
+            jobs,
             stable_id_baseline,
             summary,
-        } => convert::execute(&convert::ConvertOptions {
+        } => convert::execute_dispatch(
             input,
             strategy,
             format,
-            output: output.as_deref(),
-            max_size: *max_size,
-            source_profile: source_profile.as_deref(),
-            stable_id_baseline: stable_id_baseline.as_deref(),
-            summary: *summary,
-            quiet: cli.quiet,
-        }),
+            output.as_deref(),
+            *max_size,
+            source_profile.as_deref(),
+            stable_id_baseline.as_deref(),
+            *jobs,
+            *summary,
+            cli.quiet,
+        ),
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
         }
         Commands::Validate { input, schema_type, format } => {
             validate::execute(input, schema_type.as_ref(), format)
+        }
+        Commands::Resolve { input, output, check, timeout, oscal_cli_path } => resolve::execute(
+            input.as_deref(),
+            output.as_deref(),
+            *check,
+            *timeout,
+            oscal_cli_path.as_deref(),
+        ),
+        Commands::Trace { artifact, source, output } => {
+            trace::execute(artifact, source, output.as_deref())
         }
         Commands::Profile { catalog, include, exclude, format, output, set_params } => {
             profile::execute(
@@ -228,7 +298,7 @@ mod tests {
         ])
         .unwrap();
         if let Commands::Convert { input, .. } = cli.command {
-            assert_eq!(input, PathBuf::from("test.md"));
+            assert_eq!(input, vec![PathBuf::from("test.md")]);
         } else {
             panic!("Expected Convert command");
         }
@@ -291,7 +361,7 @@ mod tests {
         .unwrap();
 
         if let Commands::Convert { input, strategy, format, output, .. } = cli.command {
-            assert_eq!(input, PathBuf::from("test.md"));
+            assert_eq!(input, vec![PathBuf::from("test.md")]);
             assert!(matches!(strategy, Strategy::Catalog));
             assert!(matches!(format, OutputFormat::Json));
             assert_eq!(output, Some(PathBuf::from("out.json")));
@@ -313,6 +383,208 @@ mod tests {
             .expect("Should succeed when --format is omitted (defaults to json)");
         if let Commands::Convert { format, .. } = cli.command {
             assert!(matches!(format, OutputFormat::Json), "Default format should be Json");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    // --- T023: Parse forge resolve basic ---
+
+    #[test]
+    fn parse_resolve_subcommand() {
+        let cli = Cli::try_parse_from(["forge", "resolve", "profile.json"]).unwrap();
+        if let Commands::Resolve { input, output, check, timeout, oscal_cli_path } = cli.command {
+            assert_eq!(input, Some(PathBuf::from("profile.json")));
+            assert!(output.is_none());
+            assert!(!check);
+            assert_eq!(timeout, 60);
+            assert!(oscal_cli_path.is_none());
+        } else {
+            panic!("Expected Resolve command");
+        }
+    }
+
+    // --- T024: Parse forge resolve with all options ---
+
+    #[test]
+    fn parse_resolve_with_all_options() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "resolve",
+            "profile.json",
+            "--output",
+            "resolved.json",
+            "--timeout",
+            "30",
+            "--oscal-cli-path",
+            "/usr/local/bin/oscal-cli",
+        ])
+        .unwrap();
+        if let Commands::Resolve { input, output, check, timeout, oscal_cli_path } = cli.command {
+            assert_eq!(input, Some(PathBuf::from("profile.json")));
+            assert_eq!(output, Some(PathBuf::from("resolved.json")));
+            assert!(!check);
+            assert_eq!(timeout, 30);
+            assert_eq!(oscal_cli_path, Some(PathBuf::from("/usr/local/bin/oscal-cli")));
+        } else {
+            panic!("Expected Resolve command");
+        }
+    }
+
+    // --- T053: Parse forge resolve --check ---
+
+    #[test]
+    fn parse_resolve_check_flag() {
+        let cli = Cli::try_parse_from(["forge", "resolve", "--check"]).unwrap();
+        if let Commands::Resolve { input, check, .. } = cli.command {
+            assert!(check);
+            assert!(input.is_none());
+        } else {
+            panic!("Expected Resolve command");
+        }
+    }
+
+    // --- T038: Other commands don't check oscal-cli ---
+
+    #[test]
+    fn convert_command_unaffected_by_oscal_cli() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]).unwrap();
+        assert!(matches!(cli.command, Commands::Convert { .. }));
+    }
+
+    // T050: CLI parsing tests for trace subcommand
+
+    #[test]
+    fn parse_trace_subcommand() {
+        let cli = Cli::try_parse_from(["forge", "trace", "artifact.json", "--source", "policy.md"])
+            .unwrap();
+        if let Commands::Trace { artifact, source, output } = cli.command {
+            assert_eq!(artifact, PathBuf::from("artifact.json"));
+            assert_eq!(source, PathBuf::from("policy.md"));
+            assert!(output.is_none());
+        } else {
+            panic!("Expected Trace command");
+        }
+    }
+
+    #[test]
+    fn parse_trace_with_output() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "trace",
+            "artifact.json",
+            "--source",
+            "policy.md",
+            "--output",
+            "report.txt",
+        ])
+        .unwrap();
+        if let Commands::Trace { output, .. } = cli.command {
+            assert_eq!(output, Some(PathBuf::from("report.txt")));
+        } else {
+            panic!("Expected Trace command");
+        }
+    }
+
+    #[test]
+    fn parse_trace_missing_source_fails() {
+        let result = Cli::try_parse_from(["forge", "trace", "artifact.json"]);
+        assert!(result.is_err(), "Should fail when --source is omitted");
+    }
+
+    #[test]
+    fn parse_convert_multiple_inputs() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "a.md", "b.md", "--strategy", "catalog"])
+                .unwrap();
+        if let Commands::Convert { input, .. } = cli.command {
+            assert_eq!(input, vec![PathBuf::from("a.md"), PathBuf::from("b.md")]);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    // T037: --jobs flag parsing tests
+
+    #[test]
+    fn parse_jobs_flag_explicit_value() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "4",
+        ])
+        .unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 4);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_jobs_flag_one_is_sequential() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "1",
+        ])
+        .unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 1);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_jobs_flag_zero_accepted_as_auto() {
+        // 0 is valid — means auto (use all available cores)
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "0",
+        ])
+        .unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 0);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_jobs_flag_257_rejected() {
+        let result = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "a.md",
+            "--strategy",
+            "catalog",
+            "--jobs",
+            "257",
+        ]);
+        assert!(result.is_err(), "257 should be rejected (max 256)");
+    }
+
+    #[test]
+    fn parse_jobs_flag_default_is_zero() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "a.md", "--strategy", "catalog"]).unwrap();
+        if let Commands::Convert { jobs, .. } = cli.command {
+            assert_eq!(jobs, 0, "Default should be 0 (auto)");
         } else {
             panic!("Expected Convert command");
         }

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::ForgeError;
+use crate::batch;
 use crate::cli::{OutputFormat, Strategy};
 use crate::model::{PolicyDocument, PolicySection};
 
@@ -59,6 +60,37 @@ fn count_substantive_stable_id_changes(
         .count()
 }
 
+/// Convert a max-size value in MB to bytes, with overflow check.
+fn max_size_to_bytes(max_size_mb: u64) -> Result<u64, ForgeError> {
+    max_size_mb
+        .checked_mul(1024 * 1024)
+        .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))
+}
+
+/// Validate and resolve `--source-profile` for component strategy.
+///
+/// Returns `Ok(None)` if no profile was provided (with a warning),
+/// `Ok(Some(path))` if valid, or `Err` if empty/whitespace-only or file not found.
+fn resolve_source_profile(source_profile: Option<&str>) -> Result<Option<&str>, ForgeError> {
+    match source_profile {
+        None => {
+            tracing::warn!(
+                "--source-profile not provided; control-id mapping will be skipped. \
+                 The generated Component Definition will have empty control-implementations."
+            );
+            Ok(None)
+        }
+        Some(p) if p.trim().is_empty() => {
+            Err(ForgeError::Validation("--source-profile must not be empty".to_string()))
+        }
+        Some(p) => {
+            let profile_path = Path::new(p);
+            validate_regular_file(profile_path, "--source-profile")?;
+            Ok(Some(p))
+        }
+    }
+}
+
 fn validate_regular_file(path: &Path, flag_name: &str) -> Result<(), ForgeError> {
     if !path.exists() {
         return Err(ForgeError::Validation(format!(
@@ -109,16 +141,113 @@ pub struct ConvertOptions<'a> {
     pub quiet: bool,
 }
 
-/// Execute the convert subcommand.
+/// Dispatch convert command: single file → existing path, multiple files → batch mode.
+///
+/// # Errors
+///
+/// Returns `ForgeError` if the conversion fails.
+#[allow(clippy::too_many_arguments)]
+pub fn execute_dispatch(
+    input: &[PathBuf],
+    strategy: &Strategy,
+    format: &OutputFormat,
+    output: Option<&Path>,
+    max_size: u64,
+    source_profile: Option<&str>,
+    stable_id_baseline: Option<&Path>,
+    jobs: u16,
+    summary: bool,
+    quiet: bool,
+) -> Result<(), ForgeError> {
+    if input.is_empty() {
+        return Err(ForgeError::BatchConversion("No input files provided".to_string()));
+    }
+
+    if input.len() == 1 {
+        // Single-file: delegate to existing execute() unchanged (R6 backward compat)
+        return execute(&ConvertOptions {
+            input: &input[0],
+            strategy,
+            format,
+            output,
+            max_size,
+            source_profile,
+            stable_id_baseline,
+            summary,
+            quiet,
+        });
+    }
+
+    // Batch mode (2+ files)
+    // Warn if --stable-id-baseline was provided (not supported in batch mode)
+    if stable_id_baseline.is_some() {
+        tracing::warn!("--stable-id-baseline is not supported in batch mode and will be ignored");
+    }
+
+    // Validate --output is a dir or absent (FR-014), create if needed (FR-015)
+    if let Some(out_path) = output {
+        if out_path.exists() && !out_path.is_dir() {
+            return Err(ForgeError::BatchConversion(format!(
+                "With multiple input files, --output must be a directory, not a file: '{}'",
+                out_path.display()
+            )));
+        }
+        if !out_path.exists() {
+            std::fs::create_dir_all(out_path).map_err(|e| {
+                ForgeError::BatchConversion(format!(
+                    "Failed to create output directory '{}': {e}",
+                    out_path.display()
+                ))
+            })?;
+        }
+    }
+
+    // Validate --source-profile upfront for component strategy (SEC-3, SEC-4, EC-4)
+    let resolved_profile = if matches!(strategy, Strategy::Component) {
+        resolve_source_profile(source_profile)?
+    } else {
+        source_profile
+    };
+
+    let max_size_bytes = max_size_to_bytes(max_size)?;
+
+    // Validate inputs
+    batch::orchestrator::validate_inputs(input)?;
+
+    // Derive output paths
+    let path_pairs = batch::output_naming::derive_output_paths(input, *format, output);
+
+    // Run batch conversion
+    let batch_summary = batch::orchestrator::run_batch_conversion(
+        &path_pairs,
+        *strategy,
+        *format,
+        max_size_bytes,
+        resolved_profile,
+        usize::from(jobs),
+    );
+
+    // Print summary to stderr (SEC-7)
+    let formatted = batch::format_batch_summary(&batch_summary);
+    eprint!("{formatted}");
+
+    if batch_summary.has_failures() {
+        Err(ForgeError::BatchConversion(format!(
+            "{} of {} files failed",
+            batch_summary.failed, batch_summary.total_files
+        )))
+    } else {
+        Ok(())
+    }
+}
+
+/// Execute the convert subcommand (single file).
 ///
 /// # Errors
 ///
 /// Returns `ForgeError` if the conversion fails.
 pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
-    let max_size_bytes = opts
-        .max_size
-        .checked_mul(1024 * 1024)
-        .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))?;
+    let max_size_bytes = max_size_to_bytes(opts.max_size)?;
 
     if let Some(baseline) = opts.stable_id_baseline {
         validate_regular_file(baseline, "--stable-id-baseline")?;
@@ -136,24 +265,7 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
         )?,
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
-            let profile_ref = match opts.source_profile {
-                None => {
-                    tracing::warn!(
-                        "--source-profile not provided; control-id mapping will be skipped. The generated Component Definition will have empty control-implementations."
-                    );
-                    None
-                }
-                Some(p) if p.trim().is_empty() => {
-                    return Err(ForgeError::Validation(
-                        "--source-profile must not be empty".to_string(),
-                    ));
-                }
-                Some(p) => {
-                    let profile_path = std::path::Path::new(p);
-                    validate_regular_file(profile_path, "--source-profile")?;
-                    Some(p)
-                }
-            };
+            let profile_ref = resolve_source_profile(opts.source_profile)?;
             crate::pipeline::run_component_pipeline(
                 opts.input,
                 opts.output,

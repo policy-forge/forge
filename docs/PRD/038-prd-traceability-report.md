@@ -41,7 +41,7 @@
 ## Context
 
 ### Background 🔴 `@human-required`
-This PRD covers **WI-38: Traceability Report — Core** from the FORGE Product Roadmap (Sprint S-38, Nov 17 2026, Theme T-6: Ecosystem, Milestone MS-7). WI-16 established the TraceLink model mapping source locations to OSCAL elements, and WI-17 embedded trace metadata as props/links in generated OSCAL artifacts. WI-38 builds on that foundation by implementing a user-facing `forge trace` subcommand that produces a traceability report. The report maps each OSCAL element (group, control, implemented-requirement) back to its source policy section, paragraph, and line number. This fulfills Parent PRD requirement S-6: "The CLI shall produce a traceability report mapping source policy locations to OSCAL element identifiers." The traceability report is essential for compliance engineers who need to audit the conversion and demonstrate to assessors that every OSCAL element has a documented provenance in the source policy.
+This PRD covers **WI-38: Traceability Report — Core** from the FORGE Product Roadmap (Sprint S-38, Nov 17 2026, Theme T-6: Ecosystem, Milestone MS-7). WI-16 established the TraceLink model mapping source locations to OSCAL elements, and WI-17 embedded trace metadata as props/links in generated OSCAL artifacts. WI-38 builds on that foundation by implementing a user-facing `forge trace` subcommand that produces a traceability report. The report maps each OSCAL element (group, control, implemented-requirement) back to its source policy section and line number. This fulfills Parent PRD requirement S-6: "The CLI shall produce a traceability report mapping source policy locations to OSCAL element identifiers." The traceability report is essential for compliance engineers who need to audit the conversion and demonstrate to assessors that every OSCAL element has a documented provenance in the source policy.
 
 **Confidence Level:** :orange_circle: Phase 3 — Exploratory. This work item is in the Phase 3 Ecosystem batch. Requirements may evolve as traceability use cases are validated with real compliance workflows.
 
@@ -51,7 +51,7 @@ This PRD covers **WI-38: Traceability Report — Core** from the FORGE Product R
 - Implementing the `forge trace <artifact> --source <policy>` subcommand
 - Reading an OSCAL artifact (Catalog or Component Definition JSON) and extracting embedded trace metadata (props/links from WI-17)
 - Reading the source policy document and resolving trace references to source locations
-- Mapping each OSCAL element to its source section, paragraph, and line number
+- Mapping each OSCAL element to its source section and line number
 - Producing a structured table report to stdout or to a file
 - Supporting both Catalog and Component Definition artifacts
 
@@ -67,13 +67,13 @@ This PRD covers **WI-38: Traceability Report — Core** from the FORGE Product R
 
 | Term | Definition |
 |------|------------|
-| Traceability Report | A structured output mapping each OSCAL element to its originating source policy location (section, paragraph, line) |
+| Traceability Report | A structured output mapping each OSCAL element to its originating source policy location (section, line) |
 | TraceLink | The internal model (from WI-16) that associates a source location with an OSCAL element identifier |
 | Trace Metadata | Props and links embedded in OSCAL artifacts (by WI-17) that encode source location references |
 | forge trace | The CLI subcommand that produces the traceability report |
-| Source Location | A reference to a specific position in the source policy document, identified by section, paragraph, and line number |
-| OSCAL Element | A discrete unit in an OSCAL artifact (e.g., group, control, part, implemented-requirement) identified by a UUID or control-id |
-| Structured Table | A formatted text table with columns for OSCAL element, element type, source section, source line, and source paragraph |
+| Source Location | A reference to a specific position in the source policy document, identified by section and line number |
+| OSCAL Element | A discrete unit in an OSCAL artifact (e.g., group, control, implemented-requirement) identified by a UUID or control-id |
+| Structured Table | A formatted text table with columns for OSCAL element ID, element type, source section, and source line |
 
 ### Related Documents ⚪ `@auto`
 
@@ -90,7 +90,7 @@ This PRD covers **WI-38: Traceability Report — Core** from the FORGE Product R
 
 ## Problem Statement 🔴 `@human-required`
 
-WI-17 embeds trace metadata (source section, paragraph, and line references) within generated OSCAL artifacts as props and links, but there is no user-facing way to view or consume this traceability information. A compliance engineer who needs to verify the provenance of an OSCAL control — which source policy section it came from, what paragraph and line number — must currently inspect raw JSON and manually decode trace props. This is impractical for audits and does not satisfy Parent PRD requirement S-6 ("The CLI shall produce a traceability report mapping source policy locations to OSCAL element identifiers") or User Story US-7 (Traceability Report). WI-38 implements the `forge trace` subcommand that reads an OSCAL artifact, extracts embedded trace metadata, resolves it against the source policy, and produces a clear, structured table mapping every OSCAL element to its source location. This gives compliance engineers and assessors a single, auditable view of the conversion provenance.
+WI-17 embeds trace metadata (source section, paragraph, and line references) within generated OSCAL artifacts as props and links, but there is no user-facing way to view or consume this traceability information. A compliance engineer who needs to verify the provenance of an OSCAL control — which source policy section and line number it came from — must currently inspect raw JSON and manually decode trace props. This is impractical for audits and does not satisfy Parent PRD requirement S-6 ("The CLI shall produce a traceability report mapping source policy locations to OSCAL element identifiers") or User Story US-7 (Traceability Report). WI-38 implements the `forge trace` subcommand that reads an OSCAL artifact, extracts embedded trace metadata, resolves it against the source policy, and produces a clear, structured table mapping every OSCAL element to its source location. This gives compliance engineers and assessors a single, auditable view of the conversion provenance.
 
 ---
 
@@ -104,10 +104,10 @@ A compliance engineer generates a traceability report to audit the mapping betwe
 
 **Why this priority**: This is the core purpose of WI-38 and directly satisfies Parent PRD S-6 and US-7. Without this subcommand, traceability metadata embedded by WI-17 is inaccessible to users.
 
-**Independent Test**: Generate an OSCAL Catalog from a sample policy (with trace metadata embedded by WI-17), run `forge trace catalog.json --source policy.md`, and verify the output is a structured table with one row per OSCAL element, showing element ID, element type, source section, source paragraph, and source line number.
+**Independent Test**: Generate an OSCAL Catalog from a sample policy (with trace metadata embedded by WI-17), run `forge trace catalog.json --source policy.md`, and verify the output is a structured table with one row per OSCAL element, showing element ID, element type, source section, and source line number.
 
 **Acceptance Scenarios**:
-1. **Given** an OSCAL Catalog JSON with 3 groups and 10 controls containing trace metadata, **When** running `forge trace catalog.json --source policy.md`, **Then** a structured table is produced with 13 rows (3 groups + 10 controls), each showing the OSCAL element ID, type, source section title, paragraph reference, and line number.
+1. **Given** an OSCAL Catalog JSON with 3 groups and 10 controls containing trace metadata, **When** running `forge trace catalog.json --source policy.md`, **Then** a structured table is produced with 13 rows (3 groups + 10 controls), each showing the OSCAL element ID, type, source section title, and line number.
 2. **Given** an OSCAL Component Definition JSON with 5 implemented-requirements containing trace metadata, **When** running `forge trace compdef.json --source policy.md`, **Then** a structured table is produced with rows for each implemented-requirement, each mapped to its source location.
 
 ---
@@ -148,15 +148,15 @@ A compliance engineer verifies that every OSCAL element has a source mapping (no
 
 ### Assumptions
 - [A-1] WI-17 has embedded trace metadata (props/links) in OSCAL artifacts, and the metadata format is stable and documented.
-- [A-2] The trace metadata includes sufficient information to resolve source section, paragraph, and line number references.
+- [A-2] The trace metadata includes sufficient information to resolve source section and line number references.
 - [A-3] The source policy document is available at the path specified by `--source` and has not been modified since conversion (line numbers still match).
 - [A-4] The `forge trace` subcommand was scaffolded in WI-1 or can be added as a new subcommand using the existing clap CLI structure.
 
 ### Risks
 | ID | Risk | Likelihood | Impact | Mitigation |
 |----|------|------------|--------|------------|
-| R-1 | Trace metadata format from WI-17 does not contain enough information for full source resolution | Low | Med | WI-17 design includes section, paragraph, and line references; validate metadata completeness during integration |
-| R-2 | Source policy has been modified since conversion, causing line number mismatches | Med | Low | Report warns when source file hash does not match the hash recorded at conversion time (if available) |
+| R-1 | Trace metadata format from WI-17 does not contain enough information for full source resolution | Low | Med | WI-17 design includes section and line references; validate metadata completeness during integration |
+| R-2 | Source policy has been modified since conversion, causing line number mismatches | Med | Low | Report warns when source file mtime is newer than the OSCAL artifact's `metadata.last-modified` timestamp |
 | R-3 | Large OSCAL artifacts produce unwieldy table output | Low | Low | Provide summary statistics; detailed per-element output can be paginated or written to file |
 
 ---
@@ -193,8 +193,8 @@ N/A — No state transitions in this work item.
 
 ### Must Have (M) — MVP, launch blockers 🔴 `@human-required`
 - [ ] **M-1:** The CLI shall provide a `forge trace <artifact> --source <policy>` subcommand that produces a traceability report. *(Traces to: Parent PRD S-6, US-7)*
-- [ ] **M-2:** The traceability report shall map each OSCAL element (group, control, part, implemented-requirement) to its source section, paragraph, and line number. *(Traces to: Parent PRD S-6, AC-10)*
-- [ ] **M-3:** The report shall be output as a structured table with columns: OSCAL Element ID, Element Type, Source Section, Source Paragraph, Source Line. *(Traces to: Parent PRD S-6)*
+- [ ] **M-2:** The traceability report shall map each OSCAL element (group, control, implemented-requirement) to its source section and line number. Parts are excluded — WI-17 does not embed trace metadata on parts. *(Traces to: Parent PRD S-6, AC-10)*
+- [ ] **M-3:** The report shall be output as a structured table with columns: OSCAL Element ID, Element Type, Source Section, Source Line. *(Traces to: Parent PRD S-6)*
 - [ ] **M-4:** The `forge trace` subcommand shall support both Catalog and Component Definition OSCAL artifacts. *(Traces to: Parent PRD S-6)*
 - [ ] **M-5:** The report shall extract trace metadata from props/links embedded in the OSCAL artifact by WI-17. *(Traces to: WI-17 dependency)*
 - [ ] **M-6:** Elements without trace metadata shall be flagged as "unmapped" in the report with a coverage summary. *(Traces to: audit completeness)*
@@ -202,7 +202,7 @@ N/A — No state transitions in this work item.
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
 - [ ] **S-1:** The `forge trace` subcommand should support an `--output <path>` flag to write the report to a file instead of stdout.
 - [ ] **S-2:** The report should include a summary section showing total elements, mapped elements, unmapped elements, and coverage percentage.
-- [ ] **S-3:** The report should warn if the source policy file hash does not match the hash recorded in the OSCAL artifact metadata (indicating the source has been modified since conversion).
+- [ ] **S-3:** The report should warn if the source policy file appears to have been modified since conversion, by comparing the source file's modification time against the OSCAL artifact's `metadata.last-modified` timestamp.
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
 - [ ] **C-1:** The report could support a `--filter <element-type>` flag to show only specific element types (e.g., `--filter controls` to show only controls).
@@ -244,9 +244,8 @@ erDiagram
     }
     TraceEntry {
         string element_id "OSCAL element UUID or control-id"
-        string element_type "group, control, part, implemented-requirement"
+        string element_type "group, control, or implemented-requirement"
         string source_section "section title from source policy"
-        string source_paragraph "paragraph reference"
         int source_line "line number in source policy"
         boolean mapped "true if trace metadata exists"
     }
@@ -275,12 +274,10 @@ erDiagram
 pub struct TraceEntry {
     /// OSCAL element identifier (UUID or control-id)
     pub element_id: String,
-    /// Type of OSCAL element (group, control, part, implemented-requirement)
+    /// Type of OSCAL element (group, control, or implemented-requirement)
     pub element_type: String,
     /// Source policy section title
     pub source_section: String,
-    /// Source paragraph reference
-    pub source_paragraph: String,
     /// Source line number
     pub source_line: Option<usize>,
     /// Whether this element has trace metadata
@@ -321,7 +318,7 @@ pub fn format_trace_table(report: &TraceReport) -> String;
 | Criterion | Weight | Metric | Target | Notes |
 |-----------|--------|--------|--------|-------|
 | Element coverage | Critical | All OSCAL elements appear in the report | 100% | No elements silently omitted |
-| Source resolution accuracy | Critical | Source section, paragraph, and line match actual source locations | 100% | Verified against known test fixtures |
+| Source resolution accuracy | Critical | Source section and line match actual source locations | 100% | Verified against known test fixtures |
 | Unmapped detection | High | Elements without trace metadata are flagged | 100% detection | No false negatives |
 | Report readability | High | Table output is correctly aligned and readable | Manual review | Column widths and alignment |
 | CLI usability | High | `forge trace` follows established CLI patterns | Consistent with `forge convert` | Same flag conventions |
@@ -347,8 +344,8 @@ pub fn format_trace_table(report: &TraceReport) -> String;
 | AC ID | Requirement | User Story | Given | When | Then |
 |-------|-------------|------------|-------|------|------|
 | AC-1 | M-1 | US-1 | An OSCAL Catalog JSON with trace metadata and the source policy | Running `forge trace catalog.json --source policy.md` | A structured table is printed to stdout mapping each element to its source location |
-| AC-2 | M-2 | US-1 | A Catalog with 3 groups and 10 controls | Running `forge trace` | The report contains 13 rows, each with source section, paragraph, and line number |
-| AC-3 | M-3 | US-1 | The traceability report output | Inspecting the table | Columns include OSCAL Element ID, Element Type, Source Section, Source Paragraph, Source Line |
+| AC-2 | M-2 | US-1 | A Catalog with 3 groups and 10 controls | Running `forge trace` | The report contains 13 rows, each with source section and line number |
+| AC-3 | M-3 | US-1 | The traceability report output | Inspecting the table | Columns include OSCAL Element ID, Element Type, Source Section, Source Line |
 | AC-4 | M-4 | US-1 | An OSCAL Component Definition JSON with trace metadata | Running `forge trace compdef.json --source policy.md` | The report maps implemented-requirements to their source locations |
 | AC-5 | M-5 | US-1 | An OSCAL artifact with WI-17 trace props/links | Running `forge trace` | Trace metadata is correctly extracted and resolved to source locations |
 | AC-6 | M-6 | US-3 | An OSCAL artifact where one control lacks trace metadata | Running `forge trace` | The report flags the control as "unmapped" and the summary shows <100% coverage |
@@ -409,7 +406,7 @@ Additional security notes:
 ## Implementation Guidance 🟢 `@llm-autonomous`
 
 ### Suggested Approach
-Add a `trace` subcommand to the clap CLI definition with `<artifact>` positional argument, `--source <policy>` required flag, and `--output <path>` optional flag. Implement a `generate_trace_report` function that: (1) reads and parses the OSCAL artifact JSON using serde_json, (2) walks the OSCAL structure to find all elements (groups, controls, parts, implemented-requirements), (3) for each element, extracts trace metadata from its props/links (format defined by WI-17), (4) reads the source policy and resolves line number references, (5) builds a `TraceReport` with entries and summary. Implement a `format_trace_table` function that formats entries as an aligned text table with header row and column separators. Output to stdout by default or to a file if `--output` is specified.
+Add a `trace` subcommand to the clap CLI definition with `<artifact>` positional argument, `--source <policy>` required flag, and `--output <path>` optional flag. Implement a `generate_trace_report` function that: (1) reads and parses the OSCAL artifact JSON using serde_json, (2) walks the OSCAL structure to find all elements (groups, controls, implemented-requirements — parts excluded as WI-17 does not embed trace metadata on them), (3) for each element, extracts trace metadata from its props/links (format defined by WI-17), (4) reads the source policy and resolves line number references, (5) builds a `TraceReport` with entries and summary. Implement a `format_trace_table` function that formats entries as an aligned text table with header row and column separators. Output to stdout by default or to a file if `--output` is specified.
 
 ### Anti-patterns to Avoid
 - Hardcoding trace metadata prop names instead of using constants shared with WI-17
