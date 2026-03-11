@@ -95,6 +95,8 @@ See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
 - `schemas/oscal_profile_schema.json` (compile-time embedded via `include_str!`); `tests/snapshots/*.snap` (insta golden files checked into git) (032-profile-validation-tests)
 - Rust 1.93.0 (Edition 2024) + `serde_json`, `quick-xml` 0.37, `serde_yaml_ng` 0.10, `clap` 4.x, `insta` 1.46.3, `tempfile` 3.25.0 (035-prd-phase2-release)
 - Local filesystem (OSCAL JSON/XML/YAML files, test fixtures) (035-prd-phase2-release)
+- Rust, Edition 2024, stable 1.93.0 + clap 4.x (CLI), serde 1.0.228, serde_json 1.0.149, thiserror 2.0.18, tracing 0.1.44 — all existing (044-summary-dashboard)
+- N/A — dashboard writes to stderr; artifact output behavior is unchanged (044-summary-dashboard)
 - Rust, Edition 2024, stable 1.93.0 + clap 4.x (derive), serde 1.0.228, thiserror 2.0.18, rayon (new — MIT/Apache-2.0) (040-batch-conversion)
 - Local filesystem (read input .md files, write OSCAL JSON/XML/YAML output files) (040-batch-conversion)
 - Rust, Edition 2024, stable 1.93.0 + clap 4.x (derive), thiserror 2.0.18, tracing 0.1.44 — all existing in Cargo.toml (036-oscal-cli-profile-resolution)

@@ -77,6 +77,10 @@ pub enum Commands {
         /// substantive text changes).
         #[arg(long)]
         stable_id_baseline: Option<PathBuf>,
+
+        /// Print a conversion summary dashboard to stderr after conversion
+        #[arg(long)]
+        summary: bool,
     },
 
     /// Export an OSCAL artifact to a different format
@@ -233,6 +237,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             source_profile,
             jobs,
             stable_id_baseline,
+            summary,
         } => convert::execute_dispatch(
             input,
             strategy,
@@ -242,6 +247,8 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             source_profile.as_deref(),
             stable_id_baseline.as_deref(),
             *jobs,
+            *summary,
+            cli.quiet,
         ),
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
@@ -578,6 +585,35 @@ mod tests {
             Cli::try_parse_from(["forge", "convert", "a.md", "--strategy", "catalog"]).unwrap();
         if let Commands::Convert { jobs, .. } = cli.command {
             assert_eq!(jobs, 0, "Default should be 0 (auto)");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_with_summary_flag() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "test.md",
+            "--strategy",
+            "catalog",
+            "--summary",
+        ])
+        .unwrap();
+        if let Commands::Convert { summary, .. } = cli.command {
+            assert!(summary, "Expected --summary to be true");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_without_summary_flag_defaults_false() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]).unwrap();
+        if let Commands::Convert { summary, .. } = cli.command {
+            assert!(!summary, "Expected --summary to default to false");
         } else {
             panic!("Expected Convert command");
         }

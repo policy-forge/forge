@@ -1,0 +1,18 @@
+---
+source: src/summary/format.rs
+expression: output
+---
+┌──────────────────────────────────────────┐
+│         FORGE Conversion Summary         │
+├──────────────────────────────────────────┤
+│ Strategy:           catalog              │
+│ Output:             output/catalog.json  │
+│ Elapsed:            0.42s                │
+├──────────────────────────────────────────┤
+│ Sections parsed:    12                   │
+│ Requirements:       47                   │
+│ Controls generated: 47                   │
+│ Mapping coverage:   100.0% (47/47)       │
+├──────────────────────────────────────────┤
+│ Validation:         PASSED               │
+└──────────────────────────────────────────┘

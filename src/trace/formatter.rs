@@ -25,8 +25,7 @@ pub fn format_trace_table(report: &TraceReport) -> String {
             let (section, line) = match &entry.trace {
                 Some(meta) => {
                     let section = strip_control_chars(&meta.source_section);
-                    let line = if meta.source_line == 0
-                        && entry.element_type == ElementType::Group
+                    let line = if meta.source_line == 0 && entry.element_type == ElementType::Group
                     {
                         "\u{2014}".to_string() // em dash for groups
                     } else if meta.source_line == 0 {

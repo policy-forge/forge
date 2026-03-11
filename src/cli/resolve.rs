@@ -83,9 +83,7 @@ pub fn execute(
 
     if !cli_info.functional {
         return Err(ForgeError::OscalCliNotFunctional {
-            path: cli_info
-                .executable_path
-                .unwrap_or_else(|| PathBuf::from("oscal-cli")),
+            path: cli_info.executable_path.unwrap_or_else(|| PathBuf::from("oscal-cli")),
             detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
         });
     }

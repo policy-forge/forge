@@ -14,8 +14,7 @@ use super::report::{ArtifactType, ElementType, TraceEntry};
 /// both keys are present, or the value is not a JSON object.
 pub fn detect_artifact_type(json: &serde_json::Value) -> Result<ArtifactType, ForgeError> {
     let has_catalog = json.get("catalog").is_some_and(serde_json::Value::is_object);
-    let has_compdef =
-        json.get("component-definition").is_some_and(serde_json::Value::is_object);
+    let has_compdef = json.get("component-definition").is_some_and(serde_json::Value::is_object);
 
     match (has_catalog, has_compdef) {
         (true, false) => Ok(ArtifactType::Catalog),
@@ -25,7 +24,9 @@ pub fn detect_artifact_type(json: &serde_json::Value) -> Result<ArtifactType, Fo
                 .to_string(),
         }),
         (false, false) => Err(ForgeError::TraceUnsupportedArtifact {
-            detail: "Expected top-level key 'catalog' or 'component-definition' with an object value".to_string(),
+            detail:
+                "Expected top-level key 'catalog' or 'component-definition' with an object value"
+                    .to_string(),
         }),
     }
 }
@@ -56,8 +57,7 @@ pub fn walk_catalog_elements(catalog: &serde_json::Value) -> Vec<TraceEntry> {
 
 /// Recursively walk a group: emit its entry, then recurse into child groups and controls.
 fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let group_id =
-        group.get("id").and_then(|v| v.as_str()).unwrap_or("unknown-group").to_string();
+    let group_id = group.get("id").and_then(|v| v.as_str()).unwrap_or("unknown-group").to_string();
     entries.push(TraceEntry {
         element_id: group_id,
         element_type: ElementType::Group,
@@ -79,11 +79,8 @@ fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
 
 /// Recursively walk a control: emit its entry, then recurse into child controls.
 fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let control_id = control
-        .get("id")
-        .and_then(|v| v.as_str())
-        .unwrap_or("unknown-control")
-        .to_string();
+    let control_id =
+        control.get("id").and_then(|v| v.as_str()).unwrap_or("unknown-control").to_string();
     entries.push(TraceEntry {
         element_id: control_id,
         element_type: ElementType::Control,
@@ -121,12 +118,8 @@ pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
 }
 
 /// Collect implemented-requirements from a component or capability's control-implementations.
-fn collect_impl_requirements(
-    container: &serde_json::Value,
-    entries: &mut Vec<TraceEntry>,
-) {
-    let Some(control_impls) =
-        container.get("control-implementations").and_then(|ci| ci.as_array())
+fn collect_impl_requirements(container: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
+    let Some(control_impls) = container.get("control-implementations").and_then(|ci| ci.as_array())
     else {
         return;
     };
@@ -188,19 +181,31 @@ mod tests {
     #[test]
     fn detect_rejects_non_object_catalog() {
         let json = json!({ "catalog": null });
-        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
+        assert!(matches!(
+            detect_artifact_type(&json),
+            Err(ForgeError::TraceUnsupportedArtifact { .. })
+        ));
 
         let json = json!({ "catalog": "not-an-object" });
-        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
+        assert!(matches!(
+            detect_artifact_type(&json),
+            Err(ForgeError::TraceUnsupportedArtifact { .. })
+        ));
 
         let json = json!({ "catalog": [1, 2, 3] });
-        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
+        assert!(matches!(
+            detect_artifact_type(&json),
+            Err(ForgeError::TraceUnsupportedArtifact { .. })
+        ));
     }
 
     #[test]
     fn detect_rejects_ambiguous_artifact() {
         let json = json!({ "catalog": { "uuid": "1" }, "component-definition": { "uuid": "2" } });
-        assert!(matches!(detect_artifact_type(&json), Err(ForgeError::TraceUnsupportedArtifact { .. })));
+        assert!(matches!(
+            detect_artifact_type(&json),
+            Err(ForgeError::TraceUnsupportedArtifact { .. })
+        ));
     }
 
     // T013: walk_catalog_elements tests

@@ -80,9 +80,9 @@ fn resolve_source_profile(source_profile: Option<&str>) -> Result<Option<&str>, 
             );
             Ok(None)
         }
-        Some(p) if p.trim().is_empty() => Err(ForgeError::Validation(
-            "--source-profile must not be empty".to_string(),
-        )),
+        Some(p) if p.trim().is_empty() => {
+            Err(ForgeError::Validation("--source-profile must not be empty".to_string()))
+        }
         Some(p) => {
             let profile_path = Path::new(p);
             validate_regular_file(profile_path, "--source-profile")?;
@@ -128,6 +128,19 @@ fn emit_stable_id_change_warning_if_needed(
     Ok(())
 }
 
+/// Options for the convert subcommand.
+pub struct ConvertOptions<'a> {
+    pub input: &'a Path,
+    pub strategy: &'a Strategy,
+    pub format: &'a OutputFormat,
+    pub output: Option<&'a Path>,
+    pub max_size: u64,
+    pub source_profile: Option<&'a str>,
+    pub stable_id_baseline: Option<&'a Path>,
+    pub summary: bool,
+    pub quiet: bool,
+}
+
 /// Dispatch convert command: single file → existing path, multiple files → batch mode.
 ///
 /// # Errors
@@ -143,6 +156,8 @@ pub fn execute_dispatch(
     source_profile: Option<&str>,
     stable_id_baseline: Option<&Path>,
     jobs: u16,
+    summary: bool,
+    quiet: bool,
 ) -> Result<(), ForgeError> {
     if input.is_empty() {
         return Err(ForgeError::BatchConversion("No input files provided".to_string()));
@@ -150,15 +165,17 @@ pub fn execute_dispatch(
 
     if input.len() == 1 {
         // Single-file: delegate to existing execute() unchanged (R6 backward compat)
-        return execute(
-            &input[0],
+        return execute(&ConvertOptions {
+            input: &input[0],
             strategy,
             format,
             output,
             max_size,
             source_profile,
             stable_id_baseline,
-        );
+            summary,
+            quiet,
+        });
     }
 
     // Batch mode (2+ files)
@@ -201,7 +218,7 @@ pub fn execute_dispatch(
     let path_pairs = batch::output_naming::derive_output_paths(input, *format, output);
 
     // Run batch conversion
-    let summary = batch::orchestrator::run_batch_conversion(
+    let batch_summary = batch::orchestrator::run_batch_conversion(
         &path_pairs,
         *strategy,
         *format,
@@ -211,13 +228,13 @@ pub fn execute_dispatch(
     );
 
     // Print summary to stderr (SEC-7)
-    let formatted = batch::format_batch_summary(&summary);
+    let formatted = batch::format_batch_summary(&batch_summary);
     eprint!("{formatted}");
 
-    if summary.has_failures() {
+    if batch_summary.has_failures() {
         Err(ForgeError::BatchConversion(format!(
             "{} of {} files failed",
-            summary.failed, summary.total_files
+            batch_summary.failed, batch_summary.total_files
         )))
     } else {
         Ok(())
@@ -229,38 +246,44 @@ pub fn execute_dispatch(
 /// # Errors
 ///
 /// Returns `ForgeError` if the conversion fails.
-pub fn execute(
-    input: &Path,
-    strategy: &Strategy,
-    format: &OutputFormat,
-    output: Option<&Path>,
-    max_size: u64,
-    source_profile: Option<&str>,
-    stable_id_baseline: Option<&Path>,
-) -> Result<(), ForgeError> {
-    let max_size_bytes = max_size_to_bytes(max_size)?;
+pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
+    let max_size_bytes = max_size_to_bytes(opts.max_size)?;
 
-    if let Some(baseline) = stable_id_baseline {
+    if let Some(baseline) = opts.stable_id_baseline {
         validate_regular_file(baseline, "--stable-id-baseline")?;
-        emit_stable_id_change_warning_if_needed(input, baseline, max_size_bytes)?;
+        emit_stable_id_change_warning_if_needed(opts.input, baseline, max_size_bytes)?;
     }
 
-    match strategy {
-        Strategy::Catalog => {
-            crate::pipeline::run_catalog_pipeline(input, output, max_size_bytes, format)
-        }
+    let start = std::time::Instant::now();
+
+    let mut stats = match opts.strategy {
+        Strategy::Catalog => crate::pipeline::run_catalog_pipeline(
+            opts.input,
+            opts.output,
+            max_size_bytes,
+            opts.format,
+        )?,
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
-            let profile_ref = resolve_source_profile(source_profile)?;
+            let profile_ref = resolve_source_profile(opts.source_profile)?;
             crate::pipeline::run_component_pipeline(
-                input,
-                output,
+                opts.input,
+                opts.output,
                 max_size_bytes,
                 profile_ref,
-                format,
-            )
+                opts.format,
+            )?
         }
+    };
+
+    if opts.summary && !opts.quiet {
+        stats.elapsed = start.elapsed();
+        let use_color = std::io::IsTerminal::is_terminal(&std::io::stderr());
+        let dashboard = crate::summary::format::format_summary_dashboard(&stats, use_color);
+        eprintln!("{dashboard}");
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -303,22 +326,29 @@ mod tests {
         }
     }
 
+    fn make_opts<'a>(
+        input: &'a Path,
+        strategy: &'a Strategy,
+        format: &'a OutputFormat,
+        source_profile: Option<&'a str>,
+    ) -> ConvertOptions<'a> {
+        ConvertOptions {
+            input,
+            strategy,
+            format,
+            output: None,
+            max_size: 10,
+            source_profile,
+            stable_id_baseline: None,
+            summary: false,
+            quiet: false,
+        }
+    }
+
     #[test]
     fn component_strategy_none_source_profile_does_not_error_on_missing_profile() {
-        // T013: With source_profile: None, should NOT get source-profile-required error.
-        // It will fail on file-not-found (test.md doesn't exist), which proves the profile
-        // check is no longer blocking.
-        let result = execute(
-            Path::new("test.md"),
-            &Strategy::Component,
-            &OutputFormat::Json,
-            None,
-            10,
-            None,
-            None,
-        );
-        let err = result.unwrap_err();
-        // Should NOT be about source-profile — should be about the missing input file
+        let opts = make_opts(Path::new("test.md"), &Strategy::Component, &OutputFormat::Json, None);
+        let err = execute(&opts).unwrap_err();
         assert!(
             !err.to_string().contains("--source-profile is required"),
             "Should not require source-profile. Got: {err}"
@@ -327,16 +357,9 @@ mod tests {
 
     #[test]
     fn component_strategy_empty_source_profile_errors() {
-        let result = execute(
-            Path::new("test.md"),
-            &Strategy::Component,
-            &OutputFormat::Json,
-            None,
-            10,
-            Some(""),
-            None,
-        );
-        let err = result.unwrap_err();
+        let opts =
+            make_opts(Path::new("test.md"), &Strategy::Component, &OutputFormat::Json, Some(""));
+        let err = execute(&opts).unwrap_err();
         assert!(
             err.to_string().contains("--source-profile must not be empty"),
             "Expected empty source-profile error, got: {err}"
@@ -345,16 +368,9 @@ mod tests {
 
     #[test]
     fn component_strategy_whitespace_only_source_profile_errors() {
-        let result = execute(
-            Path::new("test.md"),
-            &Strategy::Component,
-            &OutputFormat::Json,
-            None,
-            10,
-            Some("   "),
-            None,
-        );
-        let err = result.unwrap_err();
+        let opts =
+            make_opts(Path::new("test.md"), &Strategy::Component, &OutputFormat::Json, Some("   "));
+        let err = execute(&opts).unwrap_err();
         assert!(
             err.to_string().contains("--source-profile must not be empty"),
             "Expected empty source-profile error for whitespace-only, got: {err}"
@@ -365,19 +381,8 @@ mod tests {
 
     #[test]
     fn catalog_strategy_xml_format_is_accepted() {
-        // T026: OutputFormat::Xml should NOT be rejected for catalog strategy.
-        // Will fail on file-not-found (test.md doesn't exist), proving the
-        // format check no longer blocks XML.
-        let result = execute(
-            Path::new("test.md"),
-            &Strategy::Catalog,
-            &OutputFormat::Xml,
-            None,
-            10,
-            None,
-            None,
-        );
-        let err = result.unwrap_err();
+        let opts = make_opts(Path::new("test.md"), &Strategy::Catalog, &OutputFormat::Xml, None);
+        let err = execute(&opts).unwrap_err();
         assert!(
             !err.to_string().contains("not yet supported"),
             "XML format should be accepted, not rejected. Got: {err}"
@@ -386,17 +391,8 @@ mod tests {
 
     #[test]
     fn component_strategy_xml_format_is_accepted() {
-        // T026: OutputFormat::Xml should NOT be rejected for component strategy.
-        let result = execute(
-            Path::new("test.md"),
-            &Strategy::Component,
-            &OutputFormat::Xml,
-            None,
-            10,
-            None,
-            None,
-        );
-        let err = result.unwrap_err();
+        let opts = make_opts(Path::new("test.md"), &Strategy::Component, &OutputFormat::Xml, None);
+        let err = execute(&opts).unwrap_err();
         assert!(
             !err.to_string().contains("not yet supported"),
             "XML format should be accepted for component strategy. Got: {err}"
@@ -405,19 +401,8 @@ mod tests {
 
     #[test]
     fn yaml_format_is_accepted() {
-        // WI-27: YAML format should be accepted (no longer rejected).
-        // Will fail on file-not-found (test.md doesn't exist), proving the
-        // format check no longer blocks YAML.
-        let result = execute(
-            Path::new("test.md"),
-            &Strategy::Catalog,
-            &OutputFormat::Yaml,
-            None,
-            10,
-            None,
-            None,
-        );
-        let err = result.unwrap_err();
+        let opts = make_opts(Path::new("test.md"), &Strategy::Catalog, &OutputFormat::Yaml, None);
+        let err = execute(&opts).unwrap_err();
         assert!(
             !err.to_string().contains("not yet supported"),
             "YAML format should be accepted, not rejected. Got: {err}"
