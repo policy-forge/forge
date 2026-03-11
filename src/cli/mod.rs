@@ -215,18 +215,20 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             jobs,
             stable_id_baseline,
             summary,
-        } => convert::execute_dispatch(
-            input,
-            strategy,
-            format,
-            output.as_deref(),
-            *max_size,
-            source_profile.as_deref(),
-            stable_id_baseline.as_deref(),
-            *jobs,
-            *summary,
-            cli.quiet,
-        ),
+        } => {
+            let opts = convert::ConvertOptions {
+                input: std::path::Path::new(""), // placeholder; execute_dispatch sets per-file
+                strategy,
+                format,
+                output: output.as_deref(),
+                max_size: *max_size,
+                source_profile: source_profile.as_deref(),
+                stable_id_baseline: stable_id_baseline.as_deref(),
+                summary: *summary,
+                quiet: cli.quiet,
+            };
+            convert::execute_dispatch(input, &opts, *jobs)
+        }
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
         }
