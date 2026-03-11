@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use super::extractor::strip_control_chars;
-use super::report::TraceReport;
+use super::report::{ElementType, TraceReport};
 use super::resolver::validate_line_reference;
 
 /// Format a `TraceReport` as a column-aligned text table.
@@ -25,8 +25,12 @@ pub fn format_trace_table(report: &TraceReport) -> String {
             let (section, line) = match &entry.trace {
                 Some(meta) => {
                     let section = strip_control_chars(&meta.source_section);
-                    let line = if meta.source_line == 0 {
+                    let line = if meta.source_line == 0
+                        && entry.element_type == ElementType::Group
+                    {
                         "\u{2014}".to_string() // em dash for groups
+                    } else if meta.source_line == 0 {
+                        "0 \u{26A0}".to_string() // missing line on non-group element
                     } else {
                         let line_str = meta.source_line.to_string();
                         if validate_line_reference(meta.source_line, source_line_count) {

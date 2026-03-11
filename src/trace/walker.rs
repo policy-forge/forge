@@ -22,87 +22,126 @@ pub fn detect_artifact_type(json: &serde_json::Value) -> Result<ArtifactType, Fo
 
 /// Walk a Catalog's groups and controls, extracting trace entries.
 ///
-/// Yields: groups (`element_type` "group") then controls (`element_type` "control")
-/// within each group. Parts are excluded.
+/// Recursively traverses nested groups and controls per the OSCAL catalog model.
+/// Parts are excluded.
 #[must_use]
 pub fn walk_catalog_elements(catalog: &serde_json::Value) -> Vec<TraceEntry> {
     let mut entries = Vec::new();
 
-    let Some(groups) = catalog.get("groups").and_then(|g| g.as_array()) else {
-        return entries;
-    };
+    if let Some(groups) = catalog.get("groups").and_then(|g| g.as_array()) {
+        for group in groups {
+            walk_group(group, &mut entries);
+        }
+    }
 
-    for group in groups {
-        let group_id =
-            group.get("id").and_then(|v| v.as_str()).unwrap_or("unknown-group").to_string();
-        let group_trace = extract_trace_metadata(group);
-        entries.push(TraceEntry {
-            element_id: group_id,
-            element_type: ElementType::Group,
-            trace: group_trace,
-        });
-
-        if let Some(controls) = group.get("controls").and_then(|c| c.as_array()) {
-            for control in controls {
-                let control_id = control
-                    .get("id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("unknown-control")
-                    .to_string();
-                let control_trace = extract_trace_metadata(control);
-                entries.push(TraceEntry {
-                    element_id: control_id,
-                    element_type: ElementType::Control,
-                    trace: control_trace,
-                });
-            }
+    // OSCAL allows controls directly under catalog (no group parent)
+    if let Some(controls) = catalog.get("controls").and_then(|c| c.as_array()) {
+        for control in controls {
+            walk_control(control, &mut entries);
         }
     }
 
     entries
 }
 
-/// Walk a Component Definition's components, control-implementations,
-/// and implemented-requirements, extracting trace entries.
+/// Recursively walk a group: emit its entry, then recurse into child groups and controls.
+fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
+    let group_id =
+        group.get("id").and_then(|v| v.as_str()).unwrap_or("unknown-group").to_string();
+    entries.push(TraceEntry {
+        element_id: group_id,
+        element_type: ElementType::Group,
+        trace: extract_trace_metadata(group),
+    });
+
+    if let Some(child_groups) = group.get("groups").and_then(|g| g.as_array()) {
+        for child in child_groups {
+            walk_group(child, entries);
+        }
+    }
+
+    if let Some(controls) = group.get("controls").and_then(|c| c.as_array()) {
+        for control in controls {
+            walk_control(control, entries);
+        }
+    }
+}
+
+/// Recursively walk a control: emit its entry, then recurse into child controls.
+fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
+    let control_id = control
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown-control")
+        .to_string();
+    entries.push(TraceEntry {
+        element_id: control_id,
+        element_type: ElementType::Control,
+        trace: extract_trace_metadata(control),
+    });
+
+    // OSCAL allows nested controls (e.g. control enhancements)
+    if let Some(children) = control.get("controls").and_then(|c| c.as_array()) {
+        for child in children {
+            walk_control(child, entries);
+        }
+    }
+}
+
+/// Walk a Component Definition's components and capabilities,
+/// extracting implemented-requirement trace entries from both contexts.
 #[must_use]
 pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
     let mut entries = Vec::new();
 
-    let Some(components) = compdef.get("components").and_then(|c| c.as_array()) else {
-        return entries;
-    };
+    if let Some(components) = compdef.get("components").and_then(|c| c.as_array()) {
+        for component in components {
+            collect_impl_requirements(component, &mut entries);
+        }
+    }
 
-    for component in components {
-        let Some(control_impls) =
-            component.get("control-implementations").and_then(|ci| ci.as_array())
-        else {
-            continue;
-        };
-
-        for impl_block in control_impls {
-            let Some(impl_reqs) =
-                impl_block.get("implemented-requirements").and_then(|ir| ir.as_array())
-            else {
-                continue;
-            };
-
-            for req in impl_reqs {
-                let control_id = req
-                    .get("control-id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("unknown-requirement")
-                    .to_string();
-                let trace = extract_trace_metadata(req);
-                entries.push(TraceEntry {
-                    element_id: control_id,
-                    element_type: ElementType::ImplementedRequirement,
-                    trace,
-                });
-            }
+    // OSCAL component-definitions may also group implementations under capabilities
+    if let Some(capabilities) = compdef.get("capabilities").and_then(|c| c.as_array()) {
+        for capability in capabilities {
+            collect_impl_requirements(capability, &mut entries);
         }
     }
 
     entries
+}
+
+/// Collect implemented-requirements from a component or capability's control-implementations.
+fn collect_impl_requirements(
+    container: &serde_json::Value,
+    entries: &mut Vec<TraceEntry>,
+) {
+    let Some(control_impls) =
+        container.get("control-implementations").and_then(|ci| ci.as_array())
+    else {
+        return;
+    };
+
+    for impl_block in control_impls {
+        let Some(impl_reqs) =
+            impl_block.get("implemented-requirements").and_then(|ir| ir.as_array())
+        else {
+            continue;
+        };
+
+        for req in impl_reqs {
+            let control_id = req
+                .get("control-id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown-requirement")
+                .to_string();
+            let trace = extract_trace_metadata(req);
+            entries.push(TraceEntry {
+                element_id: control_id,
+                element_type: ElementType::ImplementedRequirement,
+                trace,
+            });
+        }
+    }
 }
 
 #[cfg(test)]

@@ -176,17 +176,19 @@ fn no_trace_metadata() {
 // T048: Integration test — staleness warning with future-dated source
 #[test]
 fn staleness_warning_with_newer_source() {
+    use std::fs::FileTimes;
     use std::io::Write;
+    use std::time::{Duration, SystemTime};
 
-    // Create a temp source file (its mtime will be "now", which is after the artifact's
-    // last-modified of 2026-01-15T10:30:00Z — but only if "now" is after that date)
+    // Create a temp source file
     let mut temp_source = tempfile::NamedTempFile::new().unwrap();
     writeln!(temp_source, "# Policy\n\nSome content").unwrap();
 
     // Use the catalog fixture which has last-modified: "2026-01-15T10:30:00Z"
     // Set the temp file's mtime to a far-future date to guarantee staleness
-    let future_time = filetime::FileTime::from_unix_time(2_000_000_000, 0); // ~2033
-    filetime::set_file_mtime(temp_source.path(), future_time).unwrap();
+    let future_time = SystemTime::UNIX_EPOCH + Duration::from_secs(2_000_000_000); // ~2033
+    let times = FileTimes::new().set_modified(future_time);
+    temp_source.as_file().set_times(times).unwrap();
 
     let report = generate_trace_report(
         Path::new("tests/fixtures/catalog-with-trace.json"),

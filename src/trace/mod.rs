@@ -70,13 +70,14 @@ pub fn generate_trace_report(
     })
 }
 
-/// Read a file, mapping `NotFound` to `ForgeError::FileNotFound` and other I/O errors to `ForgeError::Io`.
+/// Read a file, mapping `NotFound` to `ForgeError::FileNotFound`,
+/// `PermissionDenied` to `ForgeError::PermissionDenied`, and other I/O errors to `ForgeError::Io`.
 fn read_file(path: &Path) -> Result<String, ForgeError> {
-    std::fs::read_to_string(path).map_err(|e| {
-        if e.kind() == std::io::ErrorKind::NotFound {
-            ForgeError::FileNotFound { path: path.to_path_buf() }
-        } else {
-            ForgeError::Io(e)
+    std::fs::read_to_string(path).map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: path.to_path_buf() }
         }
+        _ => ForgeError::Io(e),
     })
 }
