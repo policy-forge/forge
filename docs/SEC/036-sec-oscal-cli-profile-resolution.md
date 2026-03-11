@@ -175,7 +175,7 @@ flowchart TD
     end
 
     subgraph "Subprocess Boundary"
-        CMD -->|"Argument array"| OSCAL["oscal-cli resolve-profile --to=JSON"]
+        CMD -->|"Argument array"| OSCAL["oscal-cli profile resolve -to=json"]
         OSCAL -->|"Resolved catalog"| STDOUT_FILE[stdout or output file]
         OSCAL -->|"Error messages"| STDERR[stderr]
         OSCAL -->|"Status"| EXIT_CODE[exit code]
@@ -337,10 +337,10 @@ flowchart TD
 
 | ID | Risk Description | Severity | Mitigation | Status | Owner |
 |----|------------------|----------|------------|--------|-------|
-| R1 | **Command injection via shell string interpolation:** If file paths are passed through `sh -c` or similar shell invocation, metacharacters in file paths could execute arbitrary commands | Medium | **MUST** use `Command::new("oscal-cli").arg("resolve-profile").arg(path)` argument arrays. **MUST NOT** use `Command::new("sh").arg("-c").arg(format!(...))`. This is enforced by AR-036 implementation guardrails and must be verified via code review. | Mitigated (by design) | Brian Luby |
+| R1 | **Command injection via shell string interpolation:** If file paths are passed through `sh -c` or similar shell invocation, metacharacters in file paths could execute arbitrary commands | Medium | **MUST** use `Command::new("oscal-cli").args(["profile", "resolve"]).arg(path)` argument arrays. **MUST NOT** use `Command::new("sh").arg("-c").arg(format!(...))`. This is enforced by AR-036 implementation guardrails and must be verified via code review. | Mitigated (by design) | Brian Luby |
 | R2 | **PATH manipulation:** Attacker places a malicious binary named "oscal-cli" earlier in PATH, which executes instead of the legitimate oscal-cli | Medium | Log the full resolved path of the detected binary at INFO level so users can verify. Consider allowing `--oscal-cli-path` override for explicit binary specification. Version check (`--version`) provides a weak but non-zero signal of binary legitimacy. | Partially Mitigated | Brian Luby |
 | R3 | **TOCTOU between detection and invocation:** Binary is swapped between the `detect()` call and the `resolve_profile()` call | Low | Use the absolute path returned by detection for invocation (not a second PATH lookup). The race window is extremely small. Full mitigation would require binary hash verification, which is over-engineering for a local CLI tool. | Accepted | Brian Luby |
-| R4 | **Environment variable injection:** Child process inherits sensitive environment variables (API keys, tokens, credentials) from parent shell | Low | Consider filtering the child process environment to only include PATH, HOME, JAVA_HOME, and other variables required for oscal-cli/JVM execution. Use `Command::env_clear()` followed by explicit `Command::env()` calls for required variables. | Open | Brian Luby |
+| R4 | **Environment variable injection:** Child process inherits sensitive environment variables (API keys, tokens, credentials) from parent shell | Low | Implemented `Command::env_clear()` with explicit allowlist of PATH, HOME, JAVA_HOME, TMPDIR (+ USERPROFILE, SYSTEMROOT, TEMP, TMP on Windows) per FR-013 and task T030. | Mitigated | Brian Luby |
 | R5 | **Subprocess hang:** oscal-cli hangs indefinitely on malformed input, blocking the user and consuming system resources | Medium | **MUST** implement configurable timeout via `--timeout` flag with a default of 60 seconds. Timeout implementation uses a thread-based watchdog that kills the child process if the timeout expires. | Mitigated (by design) | Brian Luby |
 | R6 | **Symlink attack on output path:** Output path is a symlink to a sensitive file; oscal-cli overwrites the symlink target | Low | Validate output path is not a symlink before invocation. For a local CLI tool where the user controls the invocation, this is a low-priority concern (user is attacking themselves). | Accepted | Brian Luby |
 | R7 | **oscal-cli stderr leaks sensitive information:** Error messages from oscal-cli may contain file contents, internal paths, or Java stack traces | Low | oscal-cli stderr is displayed to the user (who already has local access) and logged at WARN level. No network exposure of stderr content. | Accepted | Brian Luby |
@@ -390,7 +390,7 @@ flowchart TD
 
 | Req ID | Requirement | PRD AC | Verification Method |
 |--------|-------------|--------|---------------------|
-| SEC-9 | Graceful degradation when oscal-cli is not found: informative error message with installation guidance, exit code 2 | M-4 | Integration test |
+| SEC-9 | Graceful degradation when oscal-cli is not found: informative error message with installation guidance, exit code 4 (distinct from existing exit codes 1-3) | M-4 | Integration test |
 | SEC-10 | Non-zero exit codes from oscal-cli shall be translated to descriptive ForgeError messages including the oscal-cli stderr content | M-5 | Unit test with mock invoker |
 
 ---
@@ -415,7 +415,7 @@ flowchart TD
 | ID | Finding | Severity | Category | Recommendation | Status |
 |----|---------|----------|----------|----------------|--------|
 | F1 | Subprocess invocation via `std::process::Command` must use argument arrays, never shell string interpolation | Medium | Command Injection | Enforce via code review and unit tests that verify `Command::new` is never called with `"sh"` or `"cmd"` as the program. AR-036 guardrails prohibit this pattern. | Open -- verify during implementation |
-| F2 | Environment variable leakage to child process | Low | Confidentiality | Consider `Command::env_clear()` with explicit re-addition of required variables (PATH, HOME, JAVA_HOME, TMPDIR) | Open -- implement during WI-36 |
+| F2 | Environment variable leakage to child process | Low | Confidentiality | Implemented `Command::env_clear()` with explicit allowlist (PATH, HOME, JAVA_HOME, TMPDIR; + USERPROFILE, SYSTEMROOT, TEMP, TMP on Windows) per FR-013/T030 | Mitigated |
 | F3 | Subprocess timeout must be enforced to prevent hangs | Medium | Availability | AR-036 specifies thread-based watchdog with configurable `--timeout` flag and 60-second default. Verify timeout kills child process (not just stops waiting). | Open -- verify during implementation |
 
 ### Positive Observations :green_circle: `@llm-autonomous`
@@ -430,7 +430,7 @@ flowchart TD
 
 ## Open Questions :yellow_circle: `@human-review`
 
-- [ ] **Q1:** Should FORGE use `Command::env_clear()` to filter environment variables passed to the child process? This prevents leaking sensitive env vars (API keys, tokens) but may break oscal-cli if it depends on unexpected environment variables. Recommendation: Start with env_clear + explicit PATH/HOME/JAVA_HOME/TMPDIR, and add variables as needed based on testing.
+- [x] **Q1:** ~~Should FORGE use `Command::env_clear()` to filter environment variables passed to the child process?~~ **Resolved:** Implemented `env_clear()` with explicit allowlist (PATH, HOME, JAVA_HOME, TMPDIR; + USERPROFILE, SYSTEMROOT, TEMP, TMP on Windows) per FR-013 and spec clarification.
 - [ ] **Q2:** Should FORGE verify the oscal-cli binary's integrity (e.g., check a known hash or signature) before invocation? This would fully mitigate PATH manipulation attacks but adds significant complexity. Recommendation: Defer to a future work item; log the binary path for now.
 
 ---
@@ -456,7 +456,7 @@ flowchart TD
 - [ ] Verify subprocess timeout is enforced with child process kill on expiry
 - [ ] Verify detected binary absolute path is logged at INFO level
 - [ ] Verify input file validation occurs before subprocess invocation
-- [ ] Decide on environment variable filtering approach (Q1)
+- [x] ~~Decide on environment variable filtering approach (Q1)~~ Resolved: `env_clear()` + explicit allowlist implemented per FR-013
 - [ ] Verify trait-based mock coverage includes timeout, failure, and success paths
 
 ---
