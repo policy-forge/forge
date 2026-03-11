@@ -120,9 +120,13 @@ pub fn build_control_implementations(
         );
     }
 
-    let ci_uuid = generate_control_impl_uuid(source_profile, &document.metadata.title);
-    let description =
-        format!("Implementation narratives derived from {}.", document.metadata.title);
+    let title = if document.metadata.title.is_empty() {
+        crate::oscal::component_definition::DEFAULT_COMPONENT_TITLE
+    } else {
+        &document.metadata.title
+    };
+    let ci_uuid = generate_control_impl_uuid(source_profile, title);
+    let description = format!("Implementation narratives derived from {title}.");
 
     Ok(vec![ControlImplementation {
         uuid: ci_uuid.to_string(),

@@ -72,7 +72,7 @@ impl TraceSummary {
     /// Number of elements without trace metadata.
     #[must_use]
     pub fn unmapped_elements(&self) -> usize {
-        self.total_elements - self.mapped_elements
+        self.total_elements.saturating_sub(self.mapped_elements)
     }
 
     /// Coverage percentage (0.0–100.0). Returns 0.0 if `total_elements` is 0.

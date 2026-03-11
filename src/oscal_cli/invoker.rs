@@ -88,6 +88,9 @@ impl OscalCliInvoke for ProcessInvoker {
         // Join the stderr drain thread (process has exited, so this won't block long)
         let stderr_str = stderr_thread.join().unwrap_or_default();
 
+        // Sanitize stderr to prevent terminal escape injection (SEC-5).
+        let stderr_str = crate::sanitize::strip_control_chars(&stderr_str);
+
         if !stderr_str.is_empty() {
             tracing::debug!(stderr = %stderr_str, "oscal-cli stderr output");
         }

@@ -17,7 +17,9 @@ use super::summary::{BatchSummary, FileResult};
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::BatchConversion` if any input path is missing or not a file.
+/// Returns `ForgeError::BatchConversion` if:
+/// - `input_paths` is empty ("No input files provided")
+/// - Any input path does not exist or is not a regular file
 pub fn validate_inputs(input_paths: &[PathBuf]) -> Result<(), ForgeError> {
     if input_paths.is_empty() {
         return Err(ForgeError::BatchConversion("No input files provided".to_string()));

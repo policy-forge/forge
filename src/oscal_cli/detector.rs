@@ -69,23 +69,21 @@ impl OscalCliDetect for PathDetector {
 /// and other wrapper scripts are discovered in addition to `.exe`.
 /// On Unix, searches for the bare `oscal-cli` name (no extension).
 fn search_path_for_oscal_cli() -> Option<PathBuf> {
-    let path_var = std::env::var("PATH").ok()?;
-    let separator = if cfg!(windows) { ';' } else { ':' };
-
-    // Parse PATHEXT once before the loop (Windows only).
-    let extensions: Vec<String> = if cfg!(windows) {
-        let pathext_var =
-            std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
-        parse_pathext(&pathext_var)
+    let path_var = std::env::var_os("PATH")?;
+    let pathext = if cfg!(windows) {
+        let raw = std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
+        parse_pathext(&raw)
     } else {
         vec![]
     };
+    search_path_with(&path_var, &pathext)
+}
 
-    for dir in path_var.split(separator) {
-        let dir_path = Path::new(dir);
-
+/// Inner search logic, separated for testability (avoids mutating process-global env).
+fn search_path_with(path_var: &std::ffi::OsStr, extensions: &[String]) -> Option<PathBuf> {
+    for dir_path in std::env::split_paths(path_var) {
         if cfg!(windows) {
-            for ext in &extensions {
+            for ext in extensions {
                 let candidate = dir_path.join(format!("oscal-cli{ext}"));
                 if candidate.exists() {
                     return candidate.canonicalize().ok().or(Some(candidate));
@@ -260,6 +258,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn search_path_finds_bare_binary_on_unix() {
+        use std::ffi::OsStr;
         use std::os::unix::fs::PermissionsExt;
 
         let tmp = tempfile::tempdir().unwrap();
@@ -267,13 +266,8 @@ mod tests {
         std::fs::write(&bin_path, "#!/bin/sh\necho test").unwrap();
         std::fs::set_permissions(&bin_path, std::fs::Permissions::from_mode(0o755)).unwrap();
 
-        // SAFETY: This test is single-threaded and restores PATH immediately after.
-        let original_path = std::env::var("PATH").unwrap_or_default();
-        unsafe { std::env::set_var("PATH", tmp.path().to_str().unwrap()) };
-
-        let result = search_path_for_oscal_cli();
-
-        unsafe { std::env::set_var("PATH", &original_path) };
+        let path_var = OsStr::new(tmp.path().to_str().unwrap());
+        let result = search_path_with(path_var, &[]);
 
         assert!(result.is_some());
         let found = result.unwrap();
