@@ -8,12 +8,14 @@ use crate::cli::{OutputFormat, Strategy};
 
 use super::summary::{BatchSummary, FileResult};
 
-/// Validate that all input files exist and are regular files.
+/// Validate input paths before conversion.
 ///
-/// Returns `Ok(())` if all valid, or `Err` listing all invalid paths with reasons.
+/// This is the **single owner** of the "no input files" invariant: callers must
+/// route through this function rather than duplicating the empty-input check.
+/// It is called by `execute_dispatch` at the top of every convert invocation.
 ///
-/// Note: Not called on the default batch conversion path (per issue #50, to avoid
-/// TOCTOU races). Retained as a public API for future `--dry-run` support.
+/// Returns `Ok(())` if all paths are valid, or `Err` listing all invalid paths
+/// with reasons.
 ///
 /// # Errors
 ///
