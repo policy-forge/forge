@@ -51,29 +51,39 @@ pub struct TraceEntry {
 }
 
 /// Aggregate statistics for the traceability report.
+///
+/// Only the two independent fields (`total_elements`, `mapped_elements`) are stored;
+/// `unmapped_elements` and `coverage_percent` are computed on access.
 #[derive(Debug, Clone)]
 pub struct TraceSummary {
     pub total_elements: usize,
     pub mapped_elements: usize,
-    pub unmapped_elements: usize,
-    /// Coverage percentage (0.0–100.0). 0.0 if `total_elements` == 0.
-    pub coverage_percent: f64,
 }
 
 impl TraceSummary {
     /// Compute summary statistics from a slice of trace entries.
-    #[allow(clippy::cast_precision_loss)]
     #[must_use]
     pub fn from_entries(entries: &[TraceEntry]) -> Self {
         let total_elements = entries.len();
         let mapped_elements = entries.iter().filter(|e| e.trace.is_some()).count();
-        let unmapped_elements = total_elements - mapped_elements;
-        let coverage_percent = if total_elements == 0 {
+        Self { total_elements, mapped_elements }
+    }
+
+    /// Number of elements without trace metadata.
+    #[must_use]
+    pub fn unmapped_elements(&self) -> usize {
+        self.total_elements - self.mapped_elements
+    }
+
+    /// Coverage percentage (0.0–100.0). Returns 0.0 if `total_elements` is 0.
+    #[allow(clippy::cast_precision_loss)]
+    #[must_use]
+    pub fn coverage_percent(&self) -> f64 {
+        if self.total_elements == 0 {
             0.0
         } else {
-            (mapped_elements as f64 / total_elements as f64) * 100.0
-        };
-        Self { total_elements, mapped_elements, unmapped_elements, coverage_percent }
+            (self.mapped_elements as f64 / self.total_elements as f64) * 100.0
+        }
     }
 }
 
@@ -163,8 +173,8 @@ mod tests {
         let summary = TraceSummary::from_entries(&entries);
         assert_eq!(summary.total_elements, 2);
         assert_eq!(summary.mapped_elements, 2);
-        assert_eq!(summary.unmapped_elements, 0);
-        assert!((summary.coverage_percent - 100.0).abs() < f64::EPSILON);
+        assert_eq!(summary.unmapped_elements(), 0);
+        assert!((summary.coverage_percent() - 100.0).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -188,8 +198,8 @@ mod tests {
         let summary = TraceSummary::from_entries(&entries);
         assert_eq!(summary.total_elements, 2);
         assert_eq!(summary.mapped_elements, 1);
-        assert_eq!(summary.unmapped_elements, 1);
-        assert!((summary.coverage_percent - 50.0).abs() < f64::EPSILON);
+        assert_eq!(summary.unmapped_elements(), 1);
+        assert!((summary.coverage_percent() - 50.0).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -202,8 +212,8 @@ mod tests {
         let summary = TraceSummary::from_entries(&entries);
         assert_eq!(summary.total_elements, 1);
         assert_eq!(summary.mapped_elements, 0);
-        assert_eq!(summary.unmapped_elements, 1);
-        assert!((summary.coverage_percent - 0.0).abs() < f64::EPSILON);
+        assert_eq!(summary.unmapped_elements(), 1);
+        assert!((summary.coverage_percent() - 0.0).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -212,7 +222,7 @@ mod tests {
         let summary = TraceSummary::from_entries(&entries);
         assert_eq!(summary.total_elements, 0);
         assert_eq!(summary.mapped_elements, 0);
-        assert_eq!(summary.unmapped_elements, 0);
-        assert!((summary.coverage_percent - 0.0).abs() < f64::EPSILON);
+        assert_eq!(summary.unmapped_elements(), 0);
+        assert!((summary.coverage_percent() - 0.0).abs() < f64::EPSILON);
     }
 }

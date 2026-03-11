@@ -18,7 +18,7 @@ fn generate_report_from_catalog_fixture() {
     assert_eq!(report.entries.len(), 6);
     assert_eq!(report.summary.total_elements, 6);
     assert_eq!(report.summary.mapped_elements, 6);
-    assert_eq!(report.summary.unmapped_elements, 0);
+    assert_eq!(report.summary.unmapped_elements(), 0);
 
     // Verify groups
     assert_eq!(report.entries[0].element_id, "access-control");
@@ -149,8 +149,8 @@ fn partial_trace_coverage() {
     assert!(unmapped.trace.is_none());
 
     assert_eq!(report.summary.mapped_elements, 2); // group + POL-AC-001
-    assert_eq!(report.summary.unmapped_elements, 1);
-    assert!(report.summary.coverage_percent < 100.0);
+    assert_eq!(report.summary.unmapped_elements(), 1);
+    assert!(report.summary.coverage_percent() < 100.0);
 
     let table = format_trace_table(&report);
     assert!(table.contains("[unmapped]"));
@@ -167,8 +167,8 @@ fn no_trace_metadata() {
     // 1 group (no props, so unmapped) + 2 controls (no props, so unmapped) = 3 entries
     assert_eq!(report.entries.len(), 3);
     assert_eq!(report.summary.mapped_elements, 0);
-    assert_eq!(report.summary.unmapped_elements, 3);
-    assert!((report.summary.coverage_percent - 0.0).abs() < f64::EPSILON);
+    assert_eq!(report.summary.unmapped_elements(), 3);
+    assert!((report.summary.coverage_percent() - 0.0).abs() < f64::EPSILON);
 
     let table = format_trace_table(&report);
     assert!(table.contains("0.0% coverage"));

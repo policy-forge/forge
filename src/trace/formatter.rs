@@ -122,7 +122,7 @@ pub fn format_trace_table(report: &TraceReport) -> String {
     let _ = write!(
         output,
         "\nSummary: {} {elem_word}, {} mapped, {} unmapped ({:.1}% coverage)\n",
-        s.total_elements, s.mapped_elements, s.unmapped_elements, s.coverage_percent
+        s.total_elements, s.mapped_elements, s.unmapped_elements(), s.coverage_percent()
     );
 
     output
