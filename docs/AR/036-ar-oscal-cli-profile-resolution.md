@@ -52,7 +52,7 @@
 > Use `std::process::Command` for subprocess invocation of NIST oscal-cli, with a dedicated `OscalCliDetector` and `OscalCliInvoker` abstraction behind a trait interface, enabling testability via mock implementations and graceful degradation when oscal-cli is unavailable.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> FORGE delegates Profile Resolution to NIST oscal-cli via subprocess invocation using `std::process::Command`. The integration is structured as two components: `OscalCliDetector` (finds and validates oscal-cli on PATH) and `OscalCliInvoker` (executes `resolve-profile` with timeout). Both sit behind trait abstractions for testability. Do NOT implement any Profile Resolution logic natively — delegation to oscal-cli is the deliberate architectural choice. Do NOT use shell string interpolation for process arguments — always use argument arrays to prevent command injection.
+> FORGE delegates Profile Resolution to NIST oscal-cli via subprocess invocation using `std::process::Command`. The integration is structured as two components: `OscalCliDetector` (finds and validates oscal-cli on PATH) and `OscalCliInvoker` (executes `profile resolve` with timeout). Both sit behind trait abstractions for testability. Do NOT implement any Profile Resolution logic natively — delegation to oscal-cli is the deliberate architectural choice. Do NOT use shell string interpolation for process arguments — always use argument arrays to prevent command injection.
 
 ---
 
@@ -98,7 +98,7 @@ graph TD
 | PRD Req ID | Requirement Summary | Architectural Implication |
 |------------|---------------------|---------------------------|
 | M-1 | Detect oscal-cli on system PATH | Need cross-platform executable detection mechanism |
-| M-2 | Invoke oscal-cli resolve-profile | Need subprocess management with argument passing |
+| M-2 | Invoke oscal-cli profile resolve | Need subprocess management with argument passing |
 | M-3 | Capture resolved Catalog output | Need stdout/file capture from subprocess |
 | M-4 | Graceful degradation when oscal-cli absent | Need detection-before-invocation pattern with fallback path |
 | M-5 | Descriptive error messages from oscal-cli failures | Need stderr parsing and error translation |
@@ -302,7 +302,7 @@ graph TD
 |-----------|---------------|-----------|--------------|
 | cli/resolve.rs | Clap subcommand definition and handler | CLI subcommand | OscalCliDetector, OscalCliInvoker |
 | OscalCliDetector | Detect oscal-cli on PATH, report version | `trait OscalCliDetect` | std::process::Command, optional `which` crate |
-| OscalCliInvoker | Execute oscal-cli resolve-profile, capture output | `trait OscalCliInvoke` | std::process::Command |
+| OscalCliInvoker | Execute oscal-cli profile resolve, capture output | `trait OscalCliInvoke` | std::process::Command |
 | OscalCliInfo | Data struct for detection results | Struct | None |
 | ResolveResult | Data struct for invocation results | Struct | None |
 | ForgeError::OscalCli | Error variants for oscal-cli integration | Error enum variant | thiserror |
@@ -323,16 +323,16 @@ sequenceDiagram
     Det->>Det: Search PATH for oscal-cli
     alt oscal-cli not found
         Det-->>CLI: OscalCliInfo { available: false }
-        CLI-->>U: Warning: oscal-cli not found (exit 2)
+        CLI-->>U: Warning: oscal-cli not found (exit 4)
     else oscal-cli found
         Det->>Proc: oscal-cli --version
         Proc-->>Det: version string
         Det-->>CLI: OscalCliInfo { available: true, version, path }
         CLI->>Inv: resolve(profile_path, output_path, timeout)
-        Inv->>Proc: oscal-cli resolve-profile --to=JSON profile.json
+        Inv->>Proc: oscal-cli profile resolve -to=json profile.json output.json
         alt oscal-cli succeeds
             Proc-->>Inv: resolved catalog (stdout/file)
-            Inv-->>CLI: ResolveResult { resolved_catalog, output_path }
+            Inv-->>CLI: ResolveResult { output_path, warnings }
             CLI-->>U: Success: resolved catalog written to output_path
         else oscal-cli fails
             Proc-->>Inv: stderr + non-zero exit code
@@ -353,17 +353,21 @@ use std::time::Duration;
 pub struct OscalCliInfo {
     /// Whether oscal-cli was found on the system
     pub available: bool,
+    /// Whether `oscal-cli --version` succeeded (binary is functional)
+    pub functional: bool,
     /// The version string (e.g., "1.0.3"), if detected
     pub version: Option<String>,
     /// The full path to the oscal-cli executable
     pub executable_path: Option<PathBuf>,
 }
 
-/// Result of an oscal-cli resolve-profile invocation
+/// Result of an oscal-cli profile resolve invocation
 #[derive(Debug)]
 pub struct ResolveResult {
     /// The path where the resolved Catalog was written
     pub output_path: PathBuf,
+    /// Any warnings from oscal-cli stderr (exit 0 with non-empty stderr)
+    pub warnings: Vec<String>,
 }
 
 /// Trait for detecting oscal-cli availability (enables mocking)
@@ -446,7 +450,7 @@ pub enum ForgeError {
 2. CLI handler receives parsed arguments
 3. Validate input file exists and is JSON
 4. Call OscalCliDetector.detect()
-5. If not available → warn and exit with code 2
+5. If not available → warn and exit with code 4
 6. If available → call OscalCliInvoker.resolve_profile()
 7. On success → write output path to stdout
 8. On failure → translate oscal-cli error to ForgeError
@@ -492,9 +496,12 @@ graph TD
         D[oscal_cli/mod.rs]
     end
 
+    subgraph "MODIFY: Extend Only"
+        E[Existing CLI structure: add Resolve variant]
+        F[Existing error.rs: add OscalCli error variants]
+    end
+
     subgraph "DO NOT MODIFY"
-        E[Existing CLI structure]
-        F[Existing error.rs]
         G[Profile generation WI-30 to WI-34]
     end
 
@@ -579,7 +586,7 @@ graph TD
 ### Anti-patterns to Avoid 🟡 `@human-review`
 - **Don't:** Use shell string interpolation for command arguments
   - **Why:** Command injection vulnerability
-  - **Instead:** Use `Command::new("oscal-cli").arg("resolve-profile").arg(path)` argument arrays
+  - **Instead:** Use `Command::new("oscal-cli").args(["profile", "resolve"]).arg(path)` argument arrays
 - **Don't:** Implement a "simplified" Profile Resolution as fallback
   - **Why:** Non-conformant resolution is worse than no resolution (Parent PRD W-3)
   - **Instead:** Return clear error when oscal-cli is unavailable
@@ -607,7 +614,7 @@ graph TD
 ### Error Handling Strategy 🟢 `@llm-autonomous`
 ```
 Error Category → Handling Approach
-├── oscal-cli not found → Warn with installation guidance, exit code 2
+├── oscal-cli not found → Warn with installation guidance, exit code 4
 ├── Input file not found → Descriptive error with path, exit code 1
 ├── Input file not JSON → Descriptive error, exit code 1
 ├── oscal-cli non-zero exit → Parse stderr, extract root cause, exit code 1

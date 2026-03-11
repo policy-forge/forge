@@ -41,15 +41,15 @@
 ## Context
 
 ### Background 🔴 `@human-required`
-This PRD covers **WI-36: oscal-cli Integration — Profile Resolution Delegation** from the FORGE Product Roadmap (Sprint S-36, Nov 3–7 2026, Theme T-6: Ecosystem & Community, Milestone MS-7). FORGE generates OSCAL Profiles (WI-30 through WI-34 in Phase 2), but Profile Resolution — the NIST-defined algorithm that processes import → merge → modify directives to produce a resolved catalog baseline — is explicitly deferred from native implementation (Parent PRD W-3: "Built-in Profile Resolution engine — Reason: Delegates to NIST oscal-cli; building a conformant resolver is a major effort better addressed later"). Rather than implementing this complex algorithm natively, FORGE delegates Profile Resolution to NIST's official `oscal-cli` tool by shelling out to `oscal-cli resolve-profile`. This work item establishes the integration layer: detecting whether oscal-cli is installed, invoking it with the correct arguments, parsing its output, and handling the case where oscal-cli is not available (graceful degradation). This is the first work item in Phase 3 (Exploratory confidence) and the first integration point with external NIST tooling.
+This PRD covers **WI-36: oscal-cli Integration — Profile Resolution Delegation** from the FORGE Product Roadmap (Sprint S-36, Nov 3–7 2026, Theme T-6: Ecosystem & Community, Milestone MS-7). FORGE generates OSCAL Profiles (WI-30 through WI-34 in Phase 2), but Profile Resolution — the NIST-defined algorithm that processes import → merge → modify directives to produce a resolved catalog baseline — is explicitly deferred from native implementation (Parent PRD W-3: "Built-in Profile Resolution engine — Reason: Delegates to NIST oscal-cli; building a conformant resolver is a major effort better addressed later"). Rather than implementing this complex algorithm natively, FORGE delegates Profile Resolution to NIST's official `oscal-cli` tool by shelling out to `oscal-cli profile resolve`. This work item establishes the integration layer: detecting whether oscal-cli is installed, invoking it with the correct arguments, parsing its output, and handling the case where oscal-cli is not available (graceful degradation). This is the first work item in Phase 3 (Exploratory confidence) and the first integration point with external NIST tooling.
 
 ### Scope Boundaries 🟡 `@human-review`
 
 **In Scope:**
 - Detecting whether `oscal-cli` is installed and available on the system PATH
-- Shelling out to `oscal-cli resolve-profile` to resolve a FORGE-generated Profile into a resolved Catalog
+- Shelling out to `oscal-cli profile resolve` to resolve a FORGE-generated Profile into a resolved Catalog
 - Capturing and parsing the resolved Catalog output from oscal-cli
-- Graceful degradation when oscal-cli is not installed (clear warning message, skip resolution, return unresolved Profile)
+- Graceful degradation when oscal-cli is not installed (clear warning message with installation guidance, exit gracefully with exit code 4)
 - A `forge resolve` subcommand (or `--resolve` flag on the profile workflow) that triggers profile resolution via oscal-cli
 - Reporting oscal-cli version information for diagnostics
 - Handling oscal-cli execution errors (non-zero exit code, stderr output) with descriptive error messages
@@ -128,23 +128,7 @@ A developer or compliance engineer runs FORGE on a system where oscal-cli is not
 
 ---
 
-### User Story 3 — Diagnostic oscal-cli Information (Priority: P2)
-
-A developer troubleshooting FORGE wants to verify the oscal-cli integration status and version.
-
-> As a developer working on FORGE, I want to check whether oscal-cli is detected and what version is available so that I can diagnose integration issues.
-
-**Why this priority**: Diagnostic capability is essential for troubleshooting integration issues, especially since oscal-cli is an external dependency with its own versioning.
-
-**Independent Test**: Run `forge resolve --check` and verify it prints the oscal-cli detection status and version (or "not found" message).
-
-**Acceptance Scenarios**:
-1. **Given** oscal-cli is installed, **When** running `forge resolve --check`, **Then** the output displays the oscal-cli version and path.
-2. **Given** oscal-cli is not installed, **When** running `forge resolve --check`, **Then** the output displays a message indicating oscal-cli was not found with installation guidance.
-
----
-
-### User Story 4 — Handle oscal-cli Execution Errors (Priority: P1)
+### User Story 3 — Handle oscal-cli Execution Errors (Priority: P1)
 
 A user runs profile resolution but oscal-cli encounters an error (e.g., invalid Profile input, unsupported OSCAL version).
 
@@ -160,21 +144,37 @@ A user runs profile resolution but oscal-cli encounters an error (e.g., invalid 
 
 ---
 
+### User Story 4 — Diagnostic oscal-cli Information (Priority: P2)
+
+A developer troubleshooting FORGE wants to verify the oscal-cli integration status and version.
+
+> As a developer working on FORGE, I want to check whether oscal-cli is detected and what version is available so that I can diagnose integration issues.
+
+**Why this priority**: Diagnostic capability is essential for troubleshooting integration issues, especially since oscal-cli is an external dependency with its own versioning.
+
+**Independent Test**: Run `forge resolve --check` and verify it prints the oscal-cli detection status and version (or "not found" message).
+
+**Acceptance Scenarios**:
+1. **Given** oscal-cli is installed, **When** running `forge resolve --check`, **Then** the output displays the oscal-cli version and path.
+2. **Given** oscal-cli is not installed, **When** running `forge resolve --check`, **Then** the output displays a message indicating oscal-cli was not found with installation guidance.
+
+---
+
 ## Assumptions & Risks 🟡 `@human-review`
 
 ### Assumptions
 - [A-1] NIST oscal-cli is available as a standalone executable that can be invoked via the system PATH (e.g., installed via Homebrew, direct download, or package manager).
-- [A-2] oscal-cli supports the `resolve-profile` subcommand with file path input and JSON output.
+- [A-2] oscal-cli supports the `profile resolve` subcommand with file path input and JSON output.
 - [A-3] WI-35 (Phase 2 release, v0.2.0) is complete, meaning FORGE can generate valid OSCAL Profiles that oscal-cli can process.
 - [A-4] oscal-cli outputs resolved Catalog JSON to stdout or a specified output file.
-- [A-5] The oscal-cli `resolve-profile` command operates synchronously and completes within a reasonable time for typical Profiles (< 30 seconds).
+- [A-5] The oscal-cli `profile resolve` command operates synchronously and completes within a reasonable time for typical Profiles (< 30 seconds for typical usage; safety timeout ceiling is 60 seconds, configurable via `--timeout`).
 - [A-6] oscal-cli uses OSCAL v1.2.0 or a compatible version that aligns with FORGE's target OSCAL version.
 
 ### Risks
 | ID | Risk | Likelihood | Impact | Mitigation |
 |----|------|------------|--------|------------|
 | R-1 | NIST oscal-cli is unavailable or discontinued | Low | High | Graceful degradation (M-4); document manual resolution workflow; monitor NIST releases. Corresponds to Roadmap risk D-9. |
-| R-2 | oscal-cli resolve-profile CLI interface changes between versions | Med | Med | Pin to a known-compatible version range; detect version at runtime and warn on untested versions |
+| R-2 | oscal-cli profile resolve CLI interface changes between versions | Med | Med | Pin to a known-compatible version range; detect version at runtime and warn on untested versions |
 | R-3 | oscal-cli produces output in an unexpected format or OSCAL version | Low | Med | Validate resolved Catalog output structure before returning to user; fail with descriptive error if unexpected |
 | R-4 | oscal-cli execution is slow for large Profiles with many imports | Low | Low | Set a configurable timeout; display progress indication; document performance expectations |
 | R-5 | oscal-cli requires Java runtime which may not be installed | Med | Med | Detect Java availability as part of oscal-cli detection; include Java requirement in user-facing messages |
@@ -192,7 +192,7 @@ flowchart TD
     C --> D[Exit with graceful degradation message]
     B -->|Yes| E[Validate input Profile exists]
     E -->|Invalid| F[Display error: invalid input file]
-    E -->|Valid| G["Shell out to oscal-cli resolve-profile"]
+    E -->|Valid| G["Shell out to oscal-cli profile resolve"]
     G --> H{oscal-cli exit code?}
     H -->|Non-zero| I[Parse stderr, display descriptive error]
     H -->|Zero| J[Capture resolved Catalog output]
@@ -208,7 +208,7 @@ stateDiagram-v2
     Detecting --> NotAvailable: oscal-cli not found
     Detecting --> Available: oscal-cli found
     NotAvailable --> [*]: warn and exit gracefully
-    Available --> Resolving: invoke resolve-profile
+    Available --> Resolving: invoke profile resolve
     Resolving --> Failed: non-zero exit code
     Resolving --> Succeeded: zero exit code
     Failed --> [*]: display error details
@@ -221,11 +221,11 @@ stateDiagram-v2
 
 ### Must Have (M) — MVP, launch blockers 🔴 `@human-required`
 - [ ] **M-1:** FORGE shall detect whether `oscal-cli` is installed and available on the system PATH. *(Traces to: Parent PRD W-3, Roadmap D-9)*
-- [ ] **M-2:** FORGE shall invoke `oscal-cli resolve-profile` to resolve a given OSCAL Profile into a resolved Catalog. *(Traces to: Parent PRD W-3)*
+- [ ] **M-2:** FORGE shall invoke `oscal-cli profile resolve` to resolve a given OSCAL Profile into a resolved Catalog. *(Traces to: Parent PRD W-3)*
 - [ ] **M-3:** FORGE shall capture the resolved Catalog output from oscal-cli and write it to a specified output file (or a default path derived from the input filename). *(Traces to: Parent PRD W-3)*
-- [ ] **M-4:** When oscal-cli is not installed, FORGE shall display a descriptive warning message and exit gracefully without panicking or producing a misleading error. *(Traces to: Parent PRD W-3, Roadmap D-9)*
+- [ ] **M-4:** When oscal-cli is not installed, FORGE shall display a descriptive warning message and exit with exit code 4 (optional dependency unavailable) without panicking or producing a misleading error. *(Traces to: Parent PRD W-3, Roadmap D-9)*
 - [ ] **M-5:** When oscal-cli exits with a non-zero exit code, FORGE shall display a descriptive error message that includes relevant detail from oscal-cli's stderr output. *(Traces to: Parent PRD W-3)*
-- [ ] **M-6:** FORGE shall provide a `forge resolve` subcommand (or equivalent CLI entry point) that accepts a Profile file path and an optional `--output` flag. *(Traces to: Parent PRD W-3)*
+- [ ] **M-6:** FORGE shall provide a `forge resolve` subcommand (or equivalent CLI entry point) that accepts a Profile file path, an optional `--output` flag, and an optional `--oscal-cli-path` flag to explicitly specify the oscal-cli binary path (overriding PATH detection). *(Traces to: Parent PRD W-3)*
 - [ ] **M-7:** The `forge resolve` subcommand shall validate that the input file exists and is a JSON file before invoking oscal-cli. *(Traces to: Parent PRD W-3)*
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
@@ -279,8 +279,9 @@ erDiagram
     }
     OscalCliInfo {
         bool available
+        bool functional
         string version "optional"
-        string executable_path "optional"
+        PathBuf executable_path "optional"
     }
     OscalCliInvoker {
         string executable_path
@@ -288,15 +289,15 @@ erDiagram
     }
 
     ProfileInput ||--|| OscalCliInvoker : "passed to"
-    OscalCliInvoker ||--o| ResolvedCatalog : "produces"
+    OscalCliInvoker ||--o| ResolveResult : "produces"
 
     ProfileInput {
         string file_path
         string format "json"
     }
-    ResolvedCatalog {
-        string file_path
-        string content "resolved catalog JSON"
+    ResolveResult {
+        PathBuf output_path
+        Vec warnings "stderr warnings"
     }
 ```
 
@@ -305,38 +306,48 @@ erDiagram
 ## Interface Contract (if applicable) 🟡 `@human-review`
 
 ```rust
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
 /// Information about the detected oscal-cli installation
+#[derive(Debug, Clone)]
 pub struct OscalCliInfo {
     /// Whether oscal-cli was found on the system
     pub available: bool,
+    /// Whether `oscal-cli --version` succeeded (binary is functional)
+    pub functional: bool,
     /// The version string (e.g., "1.0.3"), if detected
     pub version: Option<String>,
     /// The full path to the oscal-cli executable
-    pub executable_path: Option<String>,
+    pub executable_path: Option<PathBuf>,
 }
 
-/// Result of an oscal-cli resolve-profile invocation
+/// Result of an oscal-cli profile resolve invocation
+#[derive(Debug)]
 pub struct ResolveResult {
-    /// The resolved Catalog content (JSON string)
-    pub resolved_catalog: String,
     /// The path where the resolved Catalog was written
-    pub output_path: String,
+    pub output_path: PathBuf,
+    /// Any warnings from oscal-cli stderr (exit 0 with non-empty stderr)
+    pub warnings: Vec<String>,
 }
 
-/// Detect whether oscal-cli is installed and available
-pub fn detect_oscal_cli() -> OscalCliInfo;
+/// Trait for detecting oscal-cli availability (enables mocking)
+pub trait OscalCliDetect {
+    fn detect(&self) -> OscalCliInfo;
+}
 
-/// Resolve an OSCAL Profile using oscal-cli resolve-profile
-///
-/// Returns the resolved Catalog or an error describing what went wrong.
-pub fn resolve_profile(
-    profile_path: &str,
-    output_path: Option<&str>,
-    timeout_seconds: u64,
-) -> Result<ResolveResult, ForgeError>;
+/// Trait for invoking oscal-cli operations (enables mocking)
+pub trait OscalCliInvoke {
+    fn resolve_profile(
+        &self,
+        profile_path: &Path,
+        output_path: &Path,
+        timeout: Duration,
+    ) -> Result<ResolveResult, ForgeError>;
+}
 
 // CLI Interface:
-// forge resolve <profile-path> [--output <path>] [--check] [--timeout <seconds>]
+// forge resolve <profile-path> [--output <path>] [--check] [--timeout <seconds>] [--oscal-cli-path <path>]
 ```
 
 ---
@@ -372,18 +383,18 @@ pub fn resolve_profile(
 
 | AC ID | Requirement | User Story | Given | When | Then |
 |-------|-------------|------------|-------|------|------|
-| AC-1 | M-1 | US-2, US-3 | oscal-cli is installed on the system | Detecting oscal-cli | FORGE reports oscal-cli as available with its path |
+| AC-1 | M-1 | US-2, US-4 | oscal-cli is installed on the system | Detecting oscal-cli | FORGE reports oscal-cli as available with its path |
 | AC-2 | M-1, M-4 | US-2 | oscal-cli is not installed | Detecting oscal-cli | FORGE reports oscal-cli as not available |
 | AC-3 | M-2, M-3 | US-1 | A valid FORGE-generated Profile JSON and oscal-cli installed | Running `forge resolve profile.json` | A resolved Catalog JSON file is produced at the output path |
 | AC-4 | M-4 | US-2 | oscal-cli is not installed | Running `forge resolve profile.json` | A warning message is displayed indicating oscal-cli is not found, with installation guidance, and the command exits gracefully |
-| AC-5 | M-5 | US-4 | oscal-cli is installed but the input Profile is invalid | Running `forge resolve invalid.json` | A descriptive error is displayed including relevant oscal-cli error detail |
-| AC-6 | M-6 | US-1 | The `forge` binary is built | Running `forge resolve --help` | Usage text is printed showing the `resolve` subcommand with `<profile-path>`, `--output`, and `--check` options |
-| AC-7 | M-7 | US-4 | A non-existent file path is provided | Running `forge resolve nonexistent.json` | A descriptive error is displayed indicating the file does not exist (before invoking oscal-cli) |
-| AC-8 | S-1, S-2 | US-3 | oscal-cli is installed | Running `forge resolve --check` | The output displays oscal-cli version and executable path |
+| AC-5 | M-5 | US-3 | oscal-cli is installed but the input Profile is invalid | Running `forge resolve invalid.json` | A descriptive error is displayed including relevant oscal-cli error detail |
+| AC-6 | M-6 | US-1 | The `forge` binary is built | Running `forge resolve --help` | Usage text is printed showing the `resolve` subcommand with `<profile-path>`, `--output`, `--check`, and `--oscal-cli-path` options |
+| AC-7 | M-7 | US-3 | A non-existent file path is provided | Running `forge resolve nonexistent.json` | A descriptive error is displayed indicating the file does not exist (before invoking oscal-cli) |
+| AC-8 | S-1, S-2 | US-4 | oscal-cli is installed | Running `forge resolve --check` | The output displays oscal-cli version and executable path |
 
 ### Edge Cases 🟢 `@llm-autonomous`
 - [ ] **EC-1:** (M-1) When oscal-cli is on PATH but not executable (permissions issue), then a descriptive error is displayed indicating a permissions problem.
-- [ ] **EC-2:** (M-2) When oscal-cli is installed but the `resolve-profile` subcommand is not supported (old version), then a descriptive error is displayed suggesting an upgrade.
+- [ ] **EC-2:** (M-2) When oscal-cli is installed but the `profile resolve` subcommand is not supported (old version), then a descriptive error is displayed suggesting an upgrade.
 - [ ] **EC-3:** (M-5) When oscal-cli produces stderr output but exits with code 0 (warnings), then the resolution succeeds and warnings are forwarded to the user.
 - [ ] **EC-4:** (M-7) When the input file exists but is not valid JSON (e.g., a YAML Profile), then a descriptive error indicates the expected format.
 - [ ] **EC-5:** (S-3) When oscal-cli execution exceeds the configured timeout, then the process is terminated and a timeout error is displayed.
@@ -437,7 +448,7 @@ graph LR
 ## Implementation Guidance 🟢 `@llm-autonomous`
 
 ### Suggested Approach
-Implement a `resolve` module containing three components: (1) `OscalCliDetector` — uses `which`-style PATH lookup to find the `oscal-cli` executable, then runs `oscal-cli --version` to capture version information; returns an `OscalCliInfo` struct. (2) `OscalCliInvoker` — constructs a `std::process::Command` with `resolve-profile` as the subcommand, the input Profile path as an argument, and an output path flag; captures stdout, stderr, and exit code; applies a timeout using `std::process::Child::wait_with_output` or a thread-based timeout. (3) `ResolveCommand` — the clap-derived subcommand struct that wires detection and invocation together, handling the `--check` flag for diagnostics and the `--output` flag for specifying the output path. For graceful degradation, check `OscalCliInfo.available` before attempting invocation; if unavailable, emit a warning via the existing logging/output infrastructure and exit with a distinct non-zero exit code (e.g., exit code 2 for "dependency unavailable"). For error handling, parse oscal-cli stderr to extract the most relevant error line (oscal-cli often produces Java stack traces; extract the root cause message). Write integration tests that mock the external process using a test helper that creates a fake `oscal-cli` script on PATH during testing.
+Implement a `resolve` module containing three components: (1) `OscalCliDetector` — uses `which`-style PATH lookup to find the `oscal-cli` executable, then runs `oscal-cli --version` to capture version information; returns an `OscalCliInfo` struct. (2) `OscalCliInvoker` — constructs a `std::process::Command` with `profile resolve` as the subcommand, the input Profile path as an argument, and an output path flag; captures stdout, stderr, and exit code; applies a timeout using `std::process::Child::wait_with_output` or a thread-based timeout. (3) `ResolveCommand` — the clap-derived subcommand struct that wires detection and invocation together, handling the `--check` flag for diagnostics and the `--output` flag for specifying the output path. For graceful degradation, check `OscalCliInfo.available` before attempting invocation; if unavailable, emit a warning via the existing logging/output infrastructure and exit with a distinct non-zero exit code (e.g., exit code 4 for "dependency unavailable"). For error handling, parse oscal-cli stderr to extract the most relevant error line (oscal-cli often produces Java stack traces; extract the root cause message). Write integration tests that mock the external process using a test helper that creates a fake `oscal-cli` script on PATH during testing.
 
 ### Anti-patterns to Avoid
 - Using `std::process::Command::new("sh").arg("-c").arg(format!("oscal-cli ..."))` (shell injection risk) — always use argument arrays
@@ -458,7 +469,7 @@ Implement a `resolve` module containing three components: (1) `OscalCliDetector`
 
 | ID | Task | Purpose | Timebox | Output |
 |----|------|---------|---------|--------|
-| SP-1 | Verify oscal-cli resolve-profile CLI interface | Confirm exact command-line arguments, input/output formats, and exit code conventions for the `resolve-profile` subcommand | 2 hours | Documented CLI interface contract for oscal-cli integration |
+| SP-1 | Verify oscal-cli profile resolve CLI interface | Confirm exact command-line arguments, input/output formats, and exit code conventions for the `profile resolve` subcommand | 2 hours | Documented CLI interface contract for oscal-cli integration |
 | SP-2 | Test oscal-cli on Linux/macOS/Windows | Verify installation methods and PATH detection work on all target platforms | 2 hours | Cross-platform detection strategy confirmed |
 
 ---
@@ -522,7 +533,7 @@ Implement a `resolve` module containing three components: (1) `OscalCliDetector`
 
 | ID | Question | Impact | Owner | Status |
 |----|----------|--------|-------|--------|
-| OQ-1 | What is the exact oscal-cli `resolve-profile` command-line interface? (arguments, flags, output format) | Determines M-2 implementation | Brian Luby | Open — addressed by Spike SP-1 |
+| OQ-1 | What is the exact oscal-cli `profile resolve` command-line interface? (arguments, flags, output format) | Determines M-2 implementation | Brian Luby | Open — addressed by Spike SP-1 |
 | OQ-2 | Does oscal-cli require a Java runtime, and should FORGE detect Java availability as part of oscal-cli detection? | Affects M-1 detection logic and S-4 installation guidance | Brian Luby | Open — addressed by Spike SP-2 |
 
 ---

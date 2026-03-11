@@ -1,0 +1,27 @@
+{
+  "catalog": {
+    "uuid": "test-no-trace-catalog-uuid",
+    "metadata": {
+      "title": "No Trace Catalog",
+      "last-modified": "2026-01-15T10:30:00Z",
+      "version": "1.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "access-control",
+        "title": "Access Control",
+        "controls": [
+          {
+            "id": "POL-AC-001",
+            "title": "Multi-Factor Authentication"
+          },
+          {
+            "id": "POL-AC-002",
+            "title": "Role-Based Access"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -83,6 +83,9 @@ pub enum ForgeError {
     #[error("Parameter extraction error: {0}")]
     ParameterExtraction(String),
 
+    #[error("Unsupported OSCAL artifact type for tracing: {detail}")]
+    TraceUnsupportedArtifact { detail: String },
+
     // --- Validation/Config errors (exit code 3) ---
     #[error("Validation error: {0}")]
     Validation(String),
@@ -118,6 +121,28 @@ pub enum ForgeError {
     #[error("Batch conversion error: {0}")]
     BatchConversion(String),
 
+    // --- External dependency errors (exit code 4) ---
+    #[error(
+        "oscal-cli not found on system PATH. Install from: https://github.com/usnistgov/oscal-cli"
+    )]
+    OscalCliNotFound,
+
+    #[error("oscal-cli found at '{}' but is not functional: {detail}", path.display())]
+    OscalCliNotFunctional { path: PathBuf, detail: String },
+
+    // --- oscal-cli execution errors (exit code 1) ---
+    #[error("oscal-cli execution failed (exit code {exit_code:?}): {message}")]
+    OscalCliExecution { exit_code: Option<i32>, message: String, stderr: String },
+
+    #[error("oscal-cli execution timed out after {timeout:?}")]
+    OscalCliTimeout { timeout: std::time::Duration },
+
+    #[error(
+        "Expected JSON input file, got: '{}'. Only .json files are supported for profile resolution.",
+        path.display()
+    )]
+    ResolveInputNotJson { path: PathBuf },
+
     // --- Other (exit code 1) ---
     #[error("Serialization error: {0}")]
     Serialization(String),
@@ -133,6 +158,7 @@ pub enum ForgeError {
 /// - 1: Input/IO errors (file not found, permission denied, empty, binary, encoding, size, I/O)
 /// - 2: Parse/Structure errors (no structure, parse failure, build errors)
 /// - 3: Validation/Config errors (schema violations, config issues)
+/// - 4: External dependency unavailable (oscal-cli not found or not functional)
 #[must_use]
 pub fn exit_code(err: &ForgeError) -> u8 {
     match err {
@@ -152,6 +178,9 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::ExportEmptyInput { .. }
         | ForgeError::InvalidArgument(_)
         | ForgeError::BatchConversion(_)
+        | ForgeError::OscalCliExecution { .. }
+        | ForgeError::OscalCliTimeout { .. }
+        | ForgeError::ResolveInputNotJson { .. }
         | ForgeError::Serialization(_) => 1,
 
         // Exit 2: Parse/Structure errors
@@ -160,10 +189,14 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::CatalogBuild(_)
         | ForgeError::BackMatter(_)
         | ForgeError::ComponentDefinitionBuild(_)
-        | ForgeError::ParameterExtraction(_) => 2,
+        | ForgeError::ParameterExtraction(_)
+        | ForgeError::TraceUnsupportedArtifact { .. } => 2,
 
         // Exit 3: Validation/Config errors
         ForgeError::Validation(_) | ForgeError::Config(_) | ForgeError::SchemaValidation(_) => 3,
+
+        // Exit 4: External dependency unavailable
+        ForgeError::OscalCliNotFound | ForgeError::OscalCliNotFunctional { .. } => 4,
     }
 }
 
@@ -378,8 +411,115 @@ mod tests {
     }
 
     #[test]
+    fn trace_unsupported_artifact_display() {
+        let err = ForgeError::TraceUnsupportedArtifact {
+            detail: "Expected 'catalog' or 'component-definition'".to_string(),
+        };
+        assert_eq!(
+            err.to_string(),
+            "Unsupported OSCAL artifact type for tracing: Expected 'catalog' or 'component-definition'"
+        );
+    }
+
+    #[test]
+    fn trace_unsupported_artifact_exit_code() {
+        assert_eq!(
+            exit_code(&ForgeError::TraceUnsupportedArtifact { detail: "test".to_string() }),
+            2
+        );
+    }
+
+    #[test]
     fn schema_validation_error_display() {
         let err = ForgeError::SchemaValidation("3 errors found".to_string());
         assert_eq!(err.to_string(), "Schema validation failed: 3 errors found");
+    }
+
+    // --- T007: oscal-cli error variant Display tests ---
+
+    #[test]
+    fn oscal_cli_not_found_display() {
+        let err = ForgeError::OscalCliNotFound;
+        assert!(err.to_string().contains("oscal-cli not found"));
+        assert!(err.to_string().contains("https://github.com/usnistgov/oscal-cli"));
+    }
+
+    #[test]
+    fn oscal_cli_not_functional_display() {
+        let err = ForgeError::OscalCliNotFunctional {
+            path: PathBuf::from("/usr/bin/oscal-cli"),
+            detail: "Java runtime not found".to_string(),
+        };
+        assert!(err.to_string().contains("/usr/bin/oscal-cli"));
+        assert!(err.to_string().contains("not functional"));
+        assert!(err.to_string().contains("Java runtime not found"));
+    }
+
+    #[test]
+    fn oscal_cli_execution_display() {
+        let err = ForgeError::OscalCliExecution {
+            exit_code: Some(1),
+            message: "Invalid profile".to_string(),
+            stderr: "full error output".to_string(),
+        };
+        assert!(err.to_string().contains("oscal-cli execution failed"));
+        assert!(err.to_string().contains("Invalid profile"));
+    }
+
+    #[test]
+    fn oscal_cli_timeout_display() {
+        let err = ForgeError::OscalCliTimeout { timeout: std::time::Duration::from_secs(60) };
+        assert!(err.to_string().contains("timed out"));
+        assert!(err.to_string().contains("60"));
+    }
+
+    #[test]
+    fn resolve_input_not_json_display() {
+        let err = ForgeError::ResolveInputNotJson { path: PathBuf::from("profile.xml") };
+        assert!(err.to_string().contains("profile.xml"));
+        assert!(err.to_string().contains("Only .json files"));
+    }
+
+    // --- T008: oscal-cli exit code mapping tests ---
+
+    #[test]
+    fn exit_code_oscal_cli_not_found_returns_4() {
+        assert_eq!(exit_code(&ForgeError::OscalCliNotFound), 4);
+    }
+
+    #[test]
+    fn exit_code_oscal_cli_not_functional_returns_4() {
+        assert_eq!(
+            exit_code(&ForgeError::OscalCliNotFunctional {
+                path: PathBuf::from("/usr/bin/oscal-cli"),
+                detail: "broken".to_string(),
+            }),
+            4
+        );
+    }
+
+    #[test]
+    fn exit_code_oscal_cli_execution_returns_1() {
+        assert_eq!(
+            exit_code(&ForgeError::OscalCliExecution {
+                exit_code: Some(1),
+                message: "err".to_string(),
+                stderr: "stderr".to_string(),
+            }),
+            1
+        );
+    }
+
+    #[test]
+    fn exit_code_oscal_cli_timeout_returns_1() {
+        assert_eq!(
+            exit_code(&ForgeError::OscalCliTimeout { timeout: std::time::Duration::from_secs(60) }),
+            1
+        );
+    }
+
+    #[test]
+    fn exit_code_resolve_input_not_json_returns_1() {
+        assert_eq!(exit_code(&ForgeError::ResolveInputNotJson { path: PathBuf::from("x.xml") }), 1);
     }
 }

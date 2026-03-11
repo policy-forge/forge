@@ -1,0 +1,36 @@
+{
+  "catalog": {
+    "uuid": "test-partial-catalog-uuid",
+    "metadata": {
+      "title": "Partial Trace Catalog",
+      "last-modified": "2026-01-15T10:30:00Z",
+      "version": "1.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "access-control",
+        "title": "Access Control",
+        "props": [
+          { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Access Control" }
+        ],
+        "controls": [
+          {
+            "id": "POL-AC-001",
+            "title": "Multi-Factor Authentication",
+            "props": [
+              { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+              { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Access Control" },
+              { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "5" }
+            ]
+          },
+          {
+            "id": "POL-AC-002",
+            "title": "Role-Based Access — NO TRACE METADATA",
+            "props": []
+          }
+        ]
+      }
+    ]
+  }
+}

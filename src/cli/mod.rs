@@ -1,6 +1,8 @@
 pub mod convert;
 pub mod export;
 pub mod profile;
+pub mod resolve;
+pub mod trace;
 pub mod validate;
 
 use std::path::PathBuf;
@@ -105,6 +107,45 @@ pub enum Commands {
         format: ValidateOutputFormat,
     },
 
+    /// Resolve an OSCAL Profile into a flat Catalog baseline via oscal-cli
+    Resolve {
+        /// Path to the OSCAL Profile JSON file
+        input: Option<PathBuf>,
+
+        /// Output file path (default: <input-stem>-resolved.json)
+        #[arg(long)]
+        output: Option<PathBuf>,
+
+        /// Report oscal-cli detection status and exit
+        #[arg(long)]
+        check: bool,
+
+        /// Timeout for oscal-cli execution in seconds (default: 60)
+        #[arg(long, default_value = "60")]
+        timeout: u64,
+
+        /// Explicit path to oscal-cli binary (overrides PATH search)
+        #[arg(long)]
+        oscal_cli_path: Option<PathBuf>,
+    },
+
+    /// Show traceability between OSCAL elements and source policy locations.
+    ///
+    /// The report inherits the sensitivity classification of the source policy.
+    /// Treat the output with the same access controls as the source document.
+    Trace {
+        /// Path to the OSCAL artifact (JSON)
+        artifact: PathBuf,
+
+        /// Path to the source policy file
+        #[arg(long)]
+        source: PathBuf,
+
+        /// Write output to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+
     /// Generate an OSCAL Profile by selecting controls from a source Catalog
     Profile {
         /// Path to the source Catalog file (OSCAL Catalog JSON)
@@ -207,6 +248,16 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         }
         Commands::Validate { input, schema_type, format } => {
             validate::execute(input, schema_type.as_ref(), format)
+        }
+        Commands::Resolve { input, output, check, timeout, oscal_cli_path } => resolve::execute(
+            input.as_deref(),
+            output.as_deref(),
+            *check,
+            *timeout,
+            oscal_cli_path.as_deref(),
+        ),
+        Commands::Trace { artifact, source, output } => {
+            trace::execute(artifact, source, output.as_deref())
         }
         Commands::Profile { catalog, include, exclude, format, output, set_params } => {
             profile::execute(
@@ -328,6 +379,111 @@ mod tests {
         } else {
             panic!("Expected Convert command");
         }
+    }
+
+    // --- T023: Parse forge resolve basic ---
+
+    #[test]
+    fn parse_resolve_subcommand() {
+        let cli = Cli::try_parse_from(["forge", "resolve", "profile.json"]).unwrap();
+        if let Commands::Resolve { input, output, check, timeout, oscal_cli_path } = cli.command {
+            assert_eq!(input, Some(PathBuf::from("profile.json")));
+            assert!(output.is_none());
+            assert!(!check);
+            assert_eq!(timeout, 60);
+            assert!(oscal_cli_path.is_none());
+        } else {
+            panic!("Expected Resolve command");
+        }
+    }
+
+    // --- T024: Parse forge resolve with all options ---
+
+    #[test]
+    fn parse_resolve_with_all_options() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "resolve",
+            "profile.json",
+            "--output",
+            "resolved.json",
+            "--timeout",
+            "30",
+            "--oscal-cli-path",
+            "/usr/local/bin/oscal-cli",
+        ])
+        .unwrap();
+        if let Commands::Resolve { input, output, check, timeout, oscal_cli_path } = cli.command {
+            assert_eq!(input, Some(PathBuf::from("profile.json")));
+            assert_eq!(output, Some(PathBuf::from("resolved.json")));
+            assert!(!check);
+            assert_eq!(timeout, 30);
+            assert_eq!(oscal_cli_path, Some(PathBuf::from("/usr/local/bin/oscal-cli")));
+        } else {
+            panic!("Expected Resolve command");
+        }
+    }
+
+    // --- T053: Parse forge resolve --check ---
+
+    #[test]
+    fn parse_resolve_check_flag() {
+        let cli = Cli::try_parse_from(["forge", "resolve", "--check"]).unwrap();
+        if let Commands::Resolve { input, check, .. } = cli.command {
+            assert!(check);
+            assert!(input.is_none());
+        } else {
+            panic!("Expected Resolve command");
+        }
+    }
+
+    // --- T038: Other commands don't check oscal-cli ---
+
+    #[test]
+    fn convert_command_unaffected_by_oscal_cli() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]).unwrap();
+        assert!(matches!(cli.command, Commands::Convert { .. }));
+    }
+
+    // T050: CLI parsing tests for trace subcommand
+
+    #[test]
+    fn parse_trace_subcommand() {
+        let cli = Cli::try_parse_from(["forge", "trace", "artifact.json", "--source", "policy.md"])
+            .unwrap();
+        if let Commands::Trace { artifact, source, output } = cli.command {
+            assert_eq!(artifact, PathBuf::from("artifact.json"));
+            assert_eq!(source, PathBuf::from("policy.md"));
+            assert!(output.is_none());
+        } else {
+            panic!("Expected Trace command");
+        }
+    }
+
+    #[test]
+    fn parse_trace_with_output() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "trace",
+            "artifact.json",
+            "--source",
+            "policy.md",
+            "--output",
+            "report.txt",
+        ])
+        .unwrap();
+        if let Commands::Trace { output, .. } = cli.command {
+            assert_eq!(output, Some(PathBuf::from("report.txt")));
+        } else {
+            panic!("Expected Trace command");
+        }
+    }
+
+    #[test]
+    fn parse_trace_missing_source_fails() {
+        let result = Cli::try_parse_from(["forge", "trace", "artifact.json"]);
+        assert!(result.is_err(), "Should fail when --source is omitted");
     }
 
     #[test]

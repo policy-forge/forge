@@ -1,0 +1,56 @@
+{
+  "component-definition": {
+    "uuid": "test-compdef-uuid",
+    "metadata": {
+      "title": "Test Component Definition",
+      "last-modified": "2026-01-15T10:30:00Z",
+      "version": "1.0",
+      "oscal-version": "1.2.0"
+    },
+    "components": [
+      {
+        "uuid": "comp-uuid-1",
+        "type": "policy",
+        "title": "Security Policy Component",
+        "control-implementations": [
+          {
+            "uuid": "ci-uuid-1",
+            "source": "catalog-uuid",
+            "implemented-requirements": [
+              {
+                "uuid": "ir-uuid-1",
+                "control-id": "POL-AC-001",
+                "description": "MFA requirement",
+                "props": [
+                  { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+                  { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Access Control" },
+                  { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "5" }
+                ]
+              },
+              {
+                "uuid": "ir-uuid-2",
+                "control-id": "POL-AC-002",
+                "description": "RBAC requirement",
+                "props": [
+                  { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+                  { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Access Control" },
+                  { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "9" }
+                ]
+              },
+              {
+                "uuid": "ir-uuid-3",
+                "control-id": "POL-DP-001",
+                "description": "Encryption at rest",
+                "props": [
+                  { "name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "trace-sample-policy.md" },
+                  { "name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Data Protection" },
+                  { "name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "13" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
