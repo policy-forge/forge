@@ -128,15 +128,12 @@ fn execute_check(detector: &dyn OscalCliDetect) -> Result<(), ForgeError> {
     let info = detector.detect();
 
     if !info.available {
-        println!("oscal-cli: not found");
-        println!("Install from: https://github.com/usnistgov/oscal-cli");
+        // Error propagates to main.rs which prints to stderr; no stdout message needed.
         return Err(ForgeError::OscalCliNotFound);
     }
 
     if !info.functional {
         let path = info.executable_path.unwrap_or_else(|| PathBuf::from("unknown"));
-        println!("oscal-cli: found at {} but not functional", path.display());
-        println!("Check that Java runtime is installed and on PATH");
         return Err(ForgeError::OscalCliNotFunctional {
             path,
             detail: "oscal-cli --version check failed (Java may be missing)".to_string(),

@@ -12,6 +12,9 @@ use super::summary::{BatchSummary, FileResult};
 ///
 /// Returns `Ok(())` if all valid, or `Err` listing all invalid paths with reasons.
 ///
+/// Note: Not called on the default batch conversion path (per issue #50, to avoid
+/// TOCTOU races). Retained as a public API for future `--dry-run` support.
+///
 /// # Errors
 ///
 /// Returns `ForgeError::BatchConversion` if any input path is missing or not a file.
