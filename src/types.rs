@@ -35,12 +35,20 @@ pub enum Strategy {
     Component,
 }
 
+impl Strategy {
+    /// Human-readable label for this strategy.
+    #[must_use]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Catalog => "catalog",
+            Self::Component => "component",
+        }
+    }
+}
+
 impl std::fmt::Display for Strategy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Catalog => f.pad("catalog"),
-            Self::Component => f.pad("component"),
-        }
+        f.pad(self.as_str())
     }
 }
 

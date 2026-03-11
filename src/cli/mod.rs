@@ -216,8 +216,11 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             stable_id_baseline,
             summary,
         } => {
+            if input.is_empty() {
+                return Err(ForgeError::BatchConversion("No input files provided".to_string()));
+            }
             let opts = convert::ConvertOptions {
-                input: std::path::Path::new(""), // placeholder; execute_dispatch sets per-file
+                input: &input[0],
                 strategy,
                 format,
                 output: output.as_deref(),
@@ -226,8 +229,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 stable_id_baseline: stable_id_baseline.as_deref(),
                 summary: *summary,
                 quiet: cli.quiet,
+                jobs: *jobs,
             };
-            convert::execute_dispatch(input, &opts, *jobs)
+            convert::execute_dispatch(input, &opts)
         }
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())

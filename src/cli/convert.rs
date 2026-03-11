@@ -139,6 +139,7 @@ pub struct ConvertOptions<'a> {
     pub stable_id_baseline: Option<&'a Path>,
     pub summary: bool,
     pub quiet: bool,
+    pub jobs: u16,
 }
 
 /// Dispatch convert command: single file → existing path, multiple files → batch mode.
@@ -146,23 +147,14 @@ pub struct ConvertOptions<'a> {
 /// # Errors
 ///
 /// Returns `ForgeError` if the conversion fails.
-pub fn execute_dispatch(
-    input: &[PathBuf],
-    opts: &ConvertOptions<'_>,
-    jobs: u16,
-) -> Result<(), ForgeError> {
+pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     if input.is_empty() {
-        return Err(ForgeError::BatchConversion(
-            "No input files provided".to_string(),
-        ));
+        return Err(ForgeError::BatchConversion("No input files provided".to_string()));
     }
 
     if input.len() == 1 {
         // Single-file: delegate to existing execute() unchanged (R6 backward compat)
-        let single_opts = ConvertOptions {
-            input: &input[0],
-            ..*opts
-        };
+        let single_opts = ConvertOptions { input: &input[0], ..*opts };
         return execute(&single_opts);
     }
 
@@ -209,7 +201,7 @@ pub fn execute_dispatch(
         *opts.format,
         max_size_bytes,
         resolved_profile,
-        usize::from(jobs),
+        usize::from(opts.jobs),
     );
 
     // Print summary to stderr (SEC-7)
@@ -327,6 +319,7 @@ mod tests {
             stable_id_baseline: None,
             summary: false,
             quiet: false,
+            jobs: 0,
         }
     }
 

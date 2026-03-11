@@ -77,7 +77,7 @@ fn compute_width(
         .max()
         .unwrap_or(0);
     let longest_value = [
-        visible_len(&stats.strategy.to_string()),
+        visible_len(stats.strategy.as_str()),
         visible_len(output_display),
         format_elapsed(stats.elapsed).len(),
         coverage_str.len(),
@@ -142,10 +142,10 @@ fn format_mapping_coverage(
 /// Uses ANSI color codes when `use_color` is true.
 #[must_use]
 pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -> String {
-    let output_display = stats
-        .output_path
-        .as_ref()
-        .map_or_else(|| "stdout".to_string(), |p| p.display().to_string());
+    let output_display = match &stats.output_path {
+        Some(p) => p.display().to_string(),
+        None => "stdout".into(),
+    };
     let pct = stats.mapping_coverage();
     let coverage_raw =
         format!("{pct:.1}% ({}/{})", stats.controls_generated, stats.requirements_extracted);
