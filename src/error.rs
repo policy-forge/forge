@@ -83,6 +83,9 @@ pub enum ForgeError {
     #[error("Parameter extraction error: {0}")]
     ParameterExtraction(String),
 
+    #[error("Unsupported OSCAL artifact type for tracing: {detail}")]
+    TraceUnsupportedArtifact { detail: String },
+
     // --- Validation/Config errors (exit code 3) ---
     #[error("Validation error: {0}")]
     Validation(String),
@@ -181,7 +184,8 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::CatalogBuild(_)
         | ForgeError::BackMatter(_)
         | ForgeError::ComponentDefinitionBuild(_)
-        | ForgeError::ParameterExtraction(_) => 2,
+        | ForgeError::ParameterExtraction(_)
+        | ForgeError::TraceUnsupportedArtifact { .. } => 2,
 
         // Exit 3: Validation/Config errors
         ForgeError::Validation(_) | ForgeError::Config(_) | ForgeError::SchemaValidation(_) => 3,
@@ -388,6 +392,25 @@ mod tests {
     fn component_definition_build_error_display() {
         let err = ForgeError::ComponentDefinitionBuild("missing field".to_string());
         assert_eq!(err.to_string(), "Component definition build error: missing field");
+    }
+
+    #[test]
+    fn trace_unsupported_artifact_display() {
+        let err = ForgeError::TraceUnsupportedArtifact {
+            detail: "Expected 'catalog' or 'component-definition'".to_string(),
+        };
+        assert_eq!(
+            err.to_string(),
+            "Unsupported OSCAL artifact type for tracing: Expected 'catalog' or 'component-definition'"
+        );
+    }
+
+    #[test]
+    fn trace_unsupported_artifact_exit_code() {
+        assert_eq!(
+            exit_code(&ForgeError::TraceUnsupportedArtifact { detail: "test".to_string() }),
+            2
+        );
     }
 
     #[test]

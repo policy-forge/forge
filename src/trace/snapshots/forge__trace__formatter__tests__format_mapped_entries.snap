@@ -1,0 +1,11 @@
+---
+source: src/trace/formatter.rs
+expression: output
+---
+OSCAL Element ID  Element Type  Source Section  Source Line
+----------------  ------------  --------------  -----------
+access-control    group         Access Control  —          
+POL-AC-001        control       Access Control  10         
+POL-AC-002        control       Access Control  25         
+
+Summary: 3 elements, 3 mapped, 0 unmapped (100.0% coverage)

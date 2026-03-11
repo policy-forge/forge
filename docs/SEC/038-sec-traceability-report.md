@@ -142,7 +142,7 @@ flowchart LR
 |--------------|------------|----------------|--------|-------------|-----------|----------------|-------------------|-----------|
 | OSCAL artifact JSON | Catalog/CompDef | Internal | Local filesystem | Parsed into serde_json::Value (in-memory) | None (transient) | No | N/A | Local |
 | Source policy text | Source document | Internal | Local filesystem | Read into Vec of String lines (in-memory) | None (transient) | No | N/A | Local |
-| Trace metadata (section, paragraph, line) | TraceMetadata | Internal | Extracted from OSCAL props | TraceReport data structure | None (transient) | No | N/A | Local |
+| Trace metadata (file, section, line) | TraceMetadata | Internal | Extracted from OSCAL props | TraceReport data structure | None (transient) | No | N/A | Local |
 | Element IDs and types | TraceEntry | Internal | OSCAL artifact elements | TraceReport data structure | None (transient) | No | N/A | Local |
 | Coverage statistics | TraceSummary | Public | Computed from TraceReport entries | Report output (stdout or file) | Persistent if written to file | No | N/A | Local |
 | Formatted report table | Report output | Internal | Composed from TraceReport | stdout or output file | Persistent if written to file | No | N/A | Local |
@@ -167,7 +167,7 @@ flowchart TD
 
     subgraph Processing
         WALKER -->|"Element + props"| EXTRACTOR[Trace Metadata Extractor]
-        EXTRACTOR -->|"Section, paragraph, line"| RESOLVER
+        EXTRACTOR -->|"File, section, line"| RESOLVER
         RESOLVER -->|"Resolved location"| BUILDER[TraceReport Builder]
         BUILDER -->|"TraceReport"| FORMATTER[format_trace_table]
     end
@@ -320,7 +320,7 @@ flowchart TD
 |----|------------------|----------|------------|--------|-------|
 | R1 | **Output escaping -- terminal injection:** Source document content (section titles, element IDs) embedded in plain text output may contain terminal escape sequences (ANSI codes) that manipulate terminal behavior when output is displayed via stdout | Low | Plain text table output via `format!` macros does not interpret escape sequences -- they pass through as literal characters. However, terminal emulators interpret ANSI sequences. Consider stripping or escaping control characters (ASCII 0x00-0x1F except newline/tab) from source content before embedding in output. | Open | Brian Luby |
 | R2 | **Output escaping -- future HTML output (WI-39):** If WI-39 adds HTML output format, source content embedded without escaping could enable XSS if the report is served via a web browser | Low (current), Medium (future) | Current scope is plain text only -- no HTML output. When WI-39 adds HTML output, a new SEC review must be conducted, and all source content must be HTML-escaped before embedding in template output. AR-038 explicitly separates data (TraceReport) from formatting, making it straightforward to add escaping in the HTML formatter. | Accepted (current scope) | Brian Luby |
-| R3 | **Stale source locations:** Source file may have been modified after the OSCAL artifact was generated, causing line numbers in the trace report to point to incorrect content | Low | AR-038 specifies source file hash comparison (PRD S-3) -- if the source file has changed, warn the user that source locations may be inaccurate. | Mitigated (by design) | Brian Luby |
+| R3 | **Stale source locations:** Source file may have been modified after the OSCAL artifact was generated, causing line numbers in the trace report to point to incorrect content | Low | AR-038 specifies source file mtime comparison against OSCAL `metadata.last-modified` (PRD S-3) -- if the source file appears newer, warn the user that source locations may be inaccurate. | Mitigated (by design) | Brian Luby |
 | R4 | **Malformed OSCAL artifact:** Artifact JSON may have unexpected structure, missing props, or invalid trace metadata that causes the walker to produce incomplete reports | Low | AR-038 requires that elements without trace metadata appear as "unmapped" -- the walker must not crash or silently skip elements. Defensive parsing via serde_json handles unexpected structure. | Mitigated (by design) | Brian Luby |
 | R5 | **Large output file:** Very large artifacts could produce reports that consume significant disk space when written to `--output` file | Low | Linear relationship between artifact size and report size. No amplification. For extremely large artifacts, user should be aware of output size. | Accepted | Brian Luby |
 
@@ -366,7 +366,7 @@ flowchart TD
 
 | Req ID | Requirement | PRD AC | Verification Method |
 |--------|-------------|--------|---------------------|
-| SEC-7 | Source file hash comparison shall warn the user if the source file appears to have been modified since the OSCAL artifact was generated | S-3 | Unit test |
+| SEC-7 | Source file mtime comparison shall warn the user if the source file appears to have been modified since the OSCAL artifact was generated (source mtime newer than OSCAL `metadata.last-modified`) | S-3 | Unit test |
 
 ---
 
@@ -398,14 +398,14 @@ flowchart TD
 - TraceReport intermediate data structure cleanly separates data extraction from formatting, making it straightforward to add escaping in future formatters
 - Read-only operation -- no modification of source documents or OSCAL artifacts
 - Defensive handling of missing trace metadata (elements appear as "unmapped") prevents silent data loss
-- Source file hash comparison provides early warning of stale traceability data
+- Source file mtime comparison provides early warning of stale traceability data
 - No new dependencies introduced -- serde_json and clap are already in the dependency tree
 
 ---
 
 ## Open Questions :yellow_circle: `@human-review`
 
-- [ ] **Q1:** Should plain text output strip ASCII control characters from source content? The risk is low (terminal escape injection), but stripping is easy to implement and eliminates the concern entirely. Recommendation: Strip characters 0x00-0x1F (except newline 0x0A and tab 0x09) from any source-derived content embedded in table output.
+- [x] **Q1:** ~~Should plain text output strip ASCII control characters from source content?~~ **Resolved**: Yes — spec.md FR-012 mandates stripping ASCII control characters (0x00-0x1F, excluding 0x0A and 0x09) from source-derived content. Implemented via `strip_control_chars()` per contracts/trace_interfaces.rs (SEC-5).
 
 ---
 
@@ -442,7 +442,7 @@ flowchart TD
 | SEC-4 | -- | -- | Unit | Out-of-range line number test |
 | SEC-5 | -- | -- | Unit | Control character fixture test |
 | SEC-6 | -- | -- | Deferred | WI-39 HTML formatter |
-| SEC-7 | S-3 | -- | Unit | Source file hash comparison test |
+| SEC-7 | S-3 | -- | Unit | Source file mtime comparison test |
 
 ---
 

@@ -98,7 +98,7 @@ graph TD
 | PRD Req ID | Requirement Summary | Architectural Implication |
 |------------|---------------------|---------------------------|
 | M-1 | `forge trace <artifact> --source <policy>` subcommand | Need clap subcommand with two required inputs |
-| M-2 | Map each OSCAL element to source section, paragraph, line | Need OSCAL element tree walker + trace metadata extractor |
+| M-2 | Map each OSCAL element to source section and line | Need OSCAL element tree walker + trace metadata extractor |
 | M-3 | Structured table with specific columns | Need table formatting with column alignment |
 | M-4 | Support both Catalog and Component Definition | Need polymorphic OSCAL element walker |
 | M-5 | Extract trace metadata from WI-17 props/links | Need knowledge of WI-17 prop/link naming conventions |
@@ -142,12 +142,12 @@ graph TD
 
 ### Option 1: Structured Report Builder with Direct String Formatting (Recommended)
 
-**Description:** Implement a `TraceReportBuilder` that walks the OSCAL element tree, extracts trace metadata, resolves source locations, and builds a `TraceReport` data structure. A separate `format_trace_table` function produces the aligned text table using Rust's `format!` macros with fixed-width column specifications.
+**Description:** Implement a `generate_trace_report()` function that walks the OSCAL element tree, extracts trace metadata, resolves source locations, and builds a `TraceReport` data structure. A separate `format_trace_table` function produces the aligned text table using Rust's `format!` macros with fixed-width column specifications.
 
 ```mermaid
 graph TD
     subgraph "Option 1: Report Builder + format!"
-        TraceCmd[forge trace subcommand] --> Builder[TraceReportBuilder]
+        TraceCmd[forge trace subcommand] --> Builder[generate_trace_report]
         Builder --> Walker[OSCAL Element Walker]
         Walker --> |"Catalog"| CatWalk[Catalog Walker]
         Walker --> |"ComponentDef"| CompWalk[CompDef Walker]
@@ -279,9 +279,9 @@ graph TD
     end
 
     subgraph "trace module"
-        TraceCmd --> Builder[TraceReportBuilder]
-        Builder --> CatalogWalker[CatalogWalker]
-        Builder --> CompDefWalker[CompDefWalker]
+        TraceCmd --> Builder[generate_trace_report]
+        Builder --> CatalogWalker[walk_catalog_elements]
+        Builder --> CompDefWalker[walk_compdef_elements]
         CatalogWalker --> MetadataExtractor[TraceMetadataExtractor]
         CompDefWalker --> MetadataExtractor
         MetadataExtractor --> SourceResolver[SourceLocationResolver]
@@ -307,10 +307,10 @@ graph TD
 
 | Component | Responsibility | Interface | Dependencies |
 |-----------|---------------|-----------|--------------|
-| cli/trace.rs | Clap subcommand definition and handler | CLI subcommand | TraceReportBuilder, format_trace_table |
-| TraceReportBuilder | Orchestrate report generation from artifact + source | Builder function | CatalogWalker, CompDefWalker, SourceResolver |
-| CatalogWalker | Walk Catalog elements (groups, controls, parts) | Element iterator | serde_json |
-| CompDefWalker | Walk Component Definition elements (components, implemented-requirements) | Element iterator | serde_json |
+| cli/trace.rs | Clap subcommand definition and handler | CLI subcommand | generate_trace_report, format_trace_table |
+| trace/mod.rs (generate_trace_report) | Orchestrate report generation from artifact + source | Public function | walk_catalog_elements, walk_compdef_elements, check_source_staleness |
+| trace/walker.rs (walk_catalog_elements) | Walk Catalog elements (groups, controls — parts excluded) | Public function | serde_json |
+| trace/walker.rs (walk_compdef_elements) | Walk Component Definition elements (components, implemented-requirements) | Public function | serde_json |
 | TraceMetadataExtractor | Extract trace props/links from OSCAL element | Pure function | serde_json, WI-17 prop names |
 | SourceLocationResolver | Read source file, resolve line numbers to text | Pure function | std::fs |
 | TraceReport | Data structure holding all trace entries and summary | Struct | None |
@@ -336,7 +336,7 @@ sequenceDiagram
     B->>W: walk(parsed_json)
     loop For each OSCAL element
         W->>E: extract_trace_metadata(element)
-        E-->>W: TraceMetadata (section, paragraph, line) or None
+        E-->>W: TraceMetadata (file, section, line) or None
         W->>R: resolve(source_file, line_number)
         R-->>W: Resolved source location
         W->>W: Build TraceEntry (mapped or unmapped)
@@ -354,17 +354,15 @@ sequenceDiagram
 ```rust
 use std::path::{Path, PathBuf};
 
-/// Trace metadata extracted from an OSCAL element's props/links
-#[derive(Debug, Clone)]
+/// Trace metadata extracted from an OSCAL element's WI-17 trace props.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TraceMetadata {
-    /// Source section title
+    /// Source file name (from `source-file` prop).
+    pub source_file: String,
+    /// Source section title (from `source-section` prop).
     pub source_section: String,
-    /// Source paragraph reference
-    pub source_paragraph: String,
-    /// Source line number (start)
+    /// 1-based source line number (from `source-line` prop, parsed).
     pub source_line: usize,
-    /// Source line number (end, for multi-line requirements)
-    pub source_line_end: Option<usize>,
 }
 
 /// A single entry in the traceability report
@@ -372,7 +370,7 @@ pub struct TraceMetadata {
 pub struct TraceEntry {
     /// OSCAL element identifier (UUID or control-id)
     pub element_id: String,
-    /// Type of OSCAL element (group, control, part, implemented-requirement)
+    /// Type of OSCAL element (group, control, or implemented-requirement)
     pub element_type: String,
     /// Resolved trace metadata (None if unmapped)
     pub trace: Option<TraceMetadata>,
@@ -397,13 +395,9 @@ pub struct TraceReport {
     pub summary: TraceSummary,
 }
 
-/// Prop/link names used by WI-17 for trace metadata
-pub mod trace_props {
-    pub const SOURCE_SECTION: &str = "forge:trace:section";
-    pub const SOURCE_PARAGRAPH: &str = "forge:trace:paragraph";
-    pub const SOURCE_LINE: &str = "forge:trace:line";
-    pub const SOURCE_LINE_END: &str = "forge:trace:line-end";
-}
+// Trace prop names: imported from crate::oscal::trace_embedding
+// (FORGE_TRACE_NS, PROP_SOURCE_FILE, PROP_SOURCE_SECTION, PROP_SOURCE_LINE)
+// Do NOT hardcode — use shared WI-17 constants.
 
 /// Generate a traceability report from an OSCAL artifact and source policy
 pub fn generate_trace_report(
@@ -429,7 +423,7 @@ walk_oscal_elements(artifact_json):
   2. If Catalog:
      - Walk catalog.groups[] → yield group elements
      - For each group, walk controls[] → yield control elements
-     - For each control, walk parts[] → yield part elements
+     - Parts are excluded (WI-17 does not embed trace metadata on parts)
   3. If Component Definition:
      - Walk components[] → yield component elements
      - For each component, walk control-implementations[] →
@@ -477,11 +471,12 @@ format_trace_table(report):
 graph TD
     subgraph "This Architecture Owns"
         A[cli/trace.rs]
-        B[trace/builder.rs]
+        B[trace/mod.rs]
         C[trace/walker.rs]
         D[trace/extractor.rs]
         E[trace/resolver.rs]
         F[trace/formatter.rs]
+        FF[trace/report.rs]
     end
 
     subgraph "DO NOT MODIFY"
@@ -538,7 +533,7 @@ graph TD
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
 | WI-17 trace metadata format changes | Low | Med | Use shared constants; update both embedding and extraction together |
-| Source file modified since conversion (line numbers mismatch) | Med | Low | Check source file hash against recorded hash (PRD S-3); warn if mismatch |
+| Source file modified since conversion (line numbers mismatch) | Med | Low | Compare source file mtime against OSCAL `metadata.last-modified` timestamp (PRD S-3); warn if source is newer |
 | Large artifacts produce very long tables | Low | Low | PRD S-1 defers to WI-39 for this; file output via --output |
 
 ---
@@ -578,9 +573,9 @@ graph TD
 - **Don't:** Use tab-separated output without alignment
   - **Why:** Tabs produce inconsistent alignment across terminal widths
   - **Instead:** Calculate max column widths and use fixed-width padding
-- **Don't:** Walk only controls, ignoring groups and parts
-  - **Why:** Groups and parts may also have trace metadata; incomplete report
-  - **Instead:** Walk all OSCAL element types supported by WI-17
+- **Don't:** Walk only controls, ignoring groups
+  - **Why:** Groups also have trace metadata (source-section); incomplete report if omitted
+  - **Instead:** Walk groups and controls (parts excluded — WI-17 does not trace them)
 - **Don't:** Read the entire source policy for every trace entry
   - **Why:** O(n*m) file reads for n entries
   - **Instead:** Read source file once into Vec<String>, look up lines by index
@@ -657,7 +652,7 @@ No open questions for this work item.
 | M-6 | Completeness | Option 1: ✅ | TraceReport + TraceSummary | Unmapped elements flagged; coverage % calculated |
 | S-1 | Simplicity | Option 1: ✅ | cli/trace.rs | --output flag for file output |
 | S-2 | Readability | Option 1: ✅ | format_trace_table | Summary section appended to table |
-| S-3 | Accuracy | Option 1: ✅ | SourceResolver | File hash comparison (if hash recorded) |
+| S-3 | Accuracy | Option 1: ✅ | SourceResolver | Source file mtime comparison against OSCAL metadata.last-modified |
 
 ---
 
