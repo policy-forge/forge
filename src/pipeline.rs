@@ -202,11 +202,8 @@ pub fn run_catalog_pipeline(
     let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
 
     // Step 12b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
-    let json = validate_and_serialize(
-        &envelope,
-        "catalog",
-        crate::validate::OscalModelType::Catalog,
-    )?;
+    let json =
+        validate_and_serialize(&envelope, "catalog", crate::validate::OscalModelType::Catalog)?;
 
     let mut stats = crate::summary::ConversionStatistics {
         sections_parsed,
@@ -282,16 +279,12 @@ pub fn run_component_pipeline(
     )?;
 
     // Count implemented-requirements as controls_generated for component strategy.
-    // Key must match the serde rename in OscalComponent::control_implementations
-    // and the structure produced by build_control_implementations().
     let controls_generated: usize = envelope
         .component_definition
         .components
         .iter()
         .flat_map(|c| c.control_implementations.iter())
-        .filter_map(|ci| ci.get("implemented-requirements"))
-        .filter_map(serde_json::Value::as_array)
-        .map(std::vec::Vec::len)
+        .map(|ci| ci.implemented_requirements.len())
         .sum();
 
     // Step 11: Validate and serialize based on output format

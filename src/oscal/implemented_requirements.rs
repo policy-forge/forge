@@ -8,30 +8,80 @@
 
 use std::collections::HashMap;
 
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ForgeError;
 use crate::model::{PolicyDocument, PolicyRequirement};
+use crate::oscal::back_matter::OscalLink;
 use crate::oscal::catalog::{
     collect_requirements_with_section, generate_control_id, resolve_abbreviation,
 };
+use crate::oscal::parts::OscalProp;
 use crate::oscal::trace_embedding::{build_trace_link, build_trace_props};
 use crate::uuid::{CONTROL_IMPL_NAMESPACE, IMPL_REQ_NAMESPACE};
 
-/// Build the `control-implementations` JSON array for a Component Definition.
+// ─── Typed Structs ──────────────────────────────────────────────────────
+
+/// A single control-implementation entry within a Component Definition.
+///
+/// Contains the source profile reference and all implemented requirements
+/// derived from the policy document.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ControlImplementation {
+    /// Deterministic UUID v5 for the control-implementation entry.
+    pub uuid: String,
+
+    /// Source profile reference (e.g., `"./baseline.json"`).
+    pub source: String,
+
+    /// Human-readable description of the implementation.
+    pub description: String,
+
+    /// The implemented requirements mapped from policy requirements.
+    #[serde(rename = "implemented-requirements")]
+    pub implemented_requirements: Vec<ImplementedRequirement>,
+}
+
+/// A single implemented-requirement within a control-implementation.
+///
+/// Maps a [`PolicyRequirement`] to its OSCAL representation with
+/// traceability metadata (props and links).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImplementedRequirement {
+    /// Deterministic UUID v5 for the implemented-requirement.
+    pub uuid: String,
+
+    /// Control ID matching the Catalog builder's scheme (e.g., `"POL-AC-001"`).
+    #[serde(rename = "control-id")]
+    pub control_id: String,
+
+    /// Implementation narrative (raw requirement text or placeholder).
+    pub description: String,
+
+    /// Trace properties (source-file, source-section, source-line, modality).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub props: Vec<OscalProp>,
+
+    /// Source links for traceability.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub links: Vec<OscalLink>,
+}
+
+/// Build the `control-implementations` array for a Component Definition.
 ///
 /// Walks the document's sections to generate control-ids consistent with the
-/// Catalog builder (WI-9). Produces a JSON array containing one
-/// `control-implementations` entry with the source profile reference and all
-/// implemented-requirements mapped from [`PolicyRequirement`]s.
+/// Catalog builder (WI-9). Produces a `Vec<ControlImplementation>` containing
+/// one entry with the source profile reference and all implemented-requirements
+/// mapped from [`PolicyRequirement`]s.
 ///
 /// # Arguments
 /// * `document` - `PolicyDocument` with sections and requirements
 /// * `source_profile` - Value of the `--source-profile` CLI flag
+/// * `source_file` - Path to the source policy file (for trace props)
 ///
 /// # Returns
-/// A `serde_json::Value` array containing one control-implementations entry.
+/// A `Vec<ControlImplementation>` containing one control-implementations entry.
 ///
 /// # Errors
 /// Returns [`ForgeError::ComponentDefinitionBuild`] if mapping fails.
@@ -39,7 +89,7 @@ pub fn build_control_implementations(
     document: &PolicyDocument,
     source_profile: &str,
     source_file: &str,
-) -> Result<Value, ForgeError> {
+) -> Result<Vec<ControlImplementation>, ForgeError> {
     let mut abbrev_counts: HashMap<String, usize> = HashMap::new();
     let mut implemented_requirements = Vec::new();
     let mut global_index: usize = 0;
@@ -74,17 +124,15 @@ pub fn build_control_implementations(
     let description =
         format!("Implementation narratives derived from {}.", document.metadata.title);
 
-    let entry = serde_json::json!({
-        "uuid": ci_uuid.to_string(),
-        "source": source_profile,
-        "description": description,
-        "implemented-requirements": implemented_requirements,
-    });
-
-    Ok(serde_json::json!([entry]))
+    Ok(vec![ControlImplementation {
+        uuid: ci_uuid.to_string(),
+        source: source_profile.to_string(),
+        description,
+        implemented_requirements,
+    }])
 }
 
-/// Map a single [`PolicyRequirement`] to an OSCAL implemented-requirement JSON entry.
+/// Map a single [`PolicyRequirement`] to a typed [`ImplementedRequirement`].
 ///
 /// # Arguments
 /// * `requirement` - A single `PolicyRequirement` from the domain model
@@ -92,16 +140,13 @@ pub fn build_control_implementations(
 /// * `global_index` - The requirement's global index (for UUID seed uniqueness)
 /// * `source_file` - Path to the source policy file (for trace props)
 /// * `section_title` - Section title containing this requirement (for trace props)
-///
-/// # Returns
-/// A `serde_json::Value` object with `uuid`, `control-id`, `description`, `props`, and `links` fields.
 fn map_requirement_to_implemented(
     requirement: &PolicyRequirement,
     control_id: &str,
     global_index: usize,
     source_file: &str,
     section_title: &str,
-) -> Value {
+) -> ImplementedRequirement {
     let stable_id = requirement.stable_id.as_deref().unwrap_or("no-stable-id");
 
     let uuid = generate_impl_req_uuid(stable_id, &requirement.text, global_index);
@@ -118,7 +163,7 @@ fn map_requirement_to_implemented(
             crate::model::Modality::Normative => "normative",
             crate::model::Modality::Advisory => "advisory",
         };
-        props.push(crate::oscal::parts::OscalProp {
+        props.push(OscalProp {
             name: "modality".to_string(),
             ns: None,
             value: modality_value.to_string(),
@@ -126,13 +171,13 @@ fn map_requirement_to_implemented(
     }
     let link = build_trace_link(source_file, requirement.source_line);
 
-    serde_json::json!({
-        "uuid": uuid.to_string(),
-        "control-id": control_id,
-        "description": description,
-        "props": props,
-        "links": [link],
-    })
+    ImplementedRequirement {
+        uuid: uuid.to_string(),
+        control_id: control_id.to_string(),
+        description,
+        props,
+        links: vec![link],
+    }
 }
 
 /// Generate a deterministic UUID v5 for a control-implementation entry.
@@ -327,9 +372,9 @@ mod tests {
         let result =
             map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
 
-        assert!(result.get("uuid").is_some(), "Must have uuid field");
-        assert!(result.get("control-id").is_some(), "Must have control-id field");
-        assert!(result.get("description").is_some(), "Must have description field");
+        assert!(!result.uuid.is_empty(), "Must have uuid field");
+        assert!(!result.control_id.is_empty(), "Must have control-id field");
+        assert!(!result.description.is_empty(), "Must have description field");
     }
 
     #[test]
@@ -339,7 +384,7 @@ mod tests {
             map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
 
         assert_eq!(
-            result["description"], "All users must authenticate.",
+            result.description, "All users must authenticate.",
             "FR-008: description must be raw requirement text"
         );
     }
@@ -350,7 +395,7 @@ mod tests {
         let result =
             map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
 
-        assert_eq!(result["control-id"], "POL-AC-001");
+        assert_eq!(result.control_id, "POL-AC-001");
     }
 
     // ─── T007: build_control_implementations Tests [US1] ─────────────────
@@ -375,8 +420,7 @@ mod tests {
         ]);
 
         let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
-        let arr = result.as_array().expect("Must be a JSON array");
-        assert_eq!(arr.len(), 1, "Must produce exactly one control-implementations entry");
+        assert_eq!(result.len(), 1, "Must produce exactly one control-implementations entry");
     }
 
     #[test]
@@ -390,13 +434,10 @@ mod tests {
         let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         let entry = &result[0];
 
-        assert!(entry.get("uuid").is_some(), "Must have uuid");
-        assert!(entry.get("source").is_some(), "Must have source");
-        assert!(entry.get("description").is_some(), "Must have description");
-        assert!(
-            entry.get("implemented-requirements").is_some(),
-            "Must have implemented-requirements"
-        );
+        assert!(!entry.uuid.is_empty(), "Must have uuid");
+        assert!(!entry.source.is_empty(), "Must have source");
+        assert!(!entry.description.is_empty(), "Must have description");
+        // implemented_requirements field always exists on the struct
     }
 
     #[test]
@@ -409,7 +450,7 @@ mod tests {
 
         let result =
             build_control_implementations(&doc, "./baselines/nist.json", "test.md").unwrap();
-        assert_eq!(result[0]["source"], "./baselines/nist.json");
+        assert_eq!(result[0].source, "./baselines/nist.json");
     }
 
     #[test]
@@ -422,7 +463,7 @@ mod tests {
 
         let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
         assert_eq!(
-            result[0]["description"],
+            result[0].description,
             "Implementation narratives derived from Corporate Security Policy."
         );
     }
@@ -447,9 +488,8 @@ mod tests {
         ]);
 
         let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
-        let impl_reqs = result[0]["implemented-requirements"].as_array().unwrap();
         assert_eq!(
-            impl_reqs.len(),
+            result[0].implemented_requirements.len(),
             5,
             "Must have one implemented-requirement per PolicyRequirement"
         );
@@ -461,8 +501,10 @@ mod tests {
     fn zero_requirements_produces_empty_impl_reqs() {
         let doc = make_doc(vec![make_section("Empty Section", vec![], vec![])]);
         let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
-        let impl_reqs = result[0]["implemented-requirements"].as_array().unwrap();
-        assert!(impl_reqs.is_empty(), "Zero requirements must produce empty array");
+        assert!(
+            result[0].implemented_requirements.is_empty(),
+            "Zero requirements must produce empty array"
+        );
     }
 
     // ─── T019: Empty requirement text (EC-3, FR-014, SEC-5) ──────────────
@@ -473,7 +515,7 @@ mod tests {
         let result =
             map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
         assert_eq!(
-            result["description"], "No implementation narrative available.",
+            result.description, "No implementation narrative available.",
             "Empty text must produce placeholder description"
         );
     }
@@ -489,9 +531,9 @@ mod tests {
         )]);
 
         let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
-        let impl_reqs = result[0]["implemented-requirements"].as_array().unwrap();
-        assert_eq!(impl_reqs[0]["control-id"], "REQ-001");
-        assert_eq!(impl_reqs[1]["control-id"], "REQ-002");
+        let impl_reqs = &result[0].implemented_requirements;
+        assert_eq!(impl_reqs[0].control_id, "REQ-001");
+        assert_eq!(impl_reqs[1].control_id, "REQ-002");
     }
 
     // ─── T022: Identical text, different positions produce distinct UUIDs (EC-5) ──
@@ -507,7 +549,7 @@ mod tests {
             map_requirement_to_implemented(&req2, "POL-AC-002", 1, "test.md", "Access Control");
 
         assert_ne!(
-            result1["uuid"], result2["uuid"],
+            result1.uuid, result2.uuid,
             "Requirements with identical text but different positions must have distinct UUIDs"
         );
     }
@@ -535,20 +577,28 @@ mod tests {
             "Access Control",
         );
 
-        let props = result["props"].as_array().expect("Must have props array");
-        assert_eq!(props.len(), 3, "Must have exactly 3 trace props");
+        assert_eq!(result.props.len(), 3, "Must have exactly 3 trace props");
 
-        assert_eq!(props[0]["name"], "source-file");
-        assert_eq!(props[0]["ns"], "https://forge.policy-forge.github.io/ns/trace");
-        assert_eq!(props[0]["value"], "policies/security.md");
+        assert_eq!(result.props[0].name, "source-file");
+        assert_eq!(
+            result.props[0].ns.as_deref(),
+            Some("https://forge.policy-forge.github.io/ns/trace")
+        );
+        assert_eq!(result.props[0].value, "policies/security.md");
 
-        assert_eq!(props[1]["name"], "source-section");
-        assert_eq!(props[1]["ns"], "https://forge.policy-forge.github.io/ns/trace");
-        assert_eq!(props[1]["value"], "Access Control");
+        assert_eq!(result.props[1].name, "source-section");
+        assert_eq!(
+            result.props[1].ns.as_deref(),
+            Some("https://forge.policy-forge.github.io/ns/trace")
+        );
+        assert_eq!(result.props[1].value, "Access Control");
 
-        assert_eq!(props[2]["name"], "source-line");
-        assert_eq!(props[2]["ns"], "https://forge.policy-forge.github.io/ns/trace");
-        assert_eq!(props[2]["value"], "42");
+        assert_eq!(result.props[2].name, "source-line");
+        assert_eq!(
+            result.props[2].ns.as_deref(),
+            Some("https://forge.policy-forge.github.io/ns/trace")
+        );
+        assert_eq!(result.props[2].value, "42");
     }
 
     #[test]
@@ -572,10 +622,9 @@ mod tests {
             "Data Protection",
         );
 
-        let links = result["links"].as_array().expect("Must have links array");
-        assert_eq!(links.len(), 1, "Must have exactly 1 source link");
-        assert_eq!(links[0]["rel"], "source");
-        assert_eq!(links[0]["href"], "policies/security.md#line=99");
+        assert_eq!(result.links.len(), 1, "Must have exactly 1 source link");
+        assert_eq!(result.links[0].rel, "source");
+        assert_eq!(result.links[0].href, "policies/security.md#line=99");
     }
 
     // ─── T023: No remarks in output (SEC-1, SEC-2) ──────────────────────
@@ -588,6 +637,6 @@ mod tests {
         let json = serde_json::to_string(&result).unwrap();
 
         assert!(!json.contains("\"remarks\""), "Output must not contain 'remarks' key");
-        assert!(result.get("description").is_some(), "Must have 'description' field");
+        assert!(!result.description.is_empty(), "Must have 'description' field");
     }
 }
