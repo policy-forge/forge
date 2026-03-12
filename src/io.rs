@@ -23,6 +23,20 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
     Ok(())
 }
 
+/// Check that a file does not exceed `max_bytes` before reading.
+pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
+    let metadata = std::fs::metadata(path)?;
+    let size = metadata.len();
+    if size > max_bytes {
+        return Err(ForgeError::FileTooLarge {
+            path: path.to_path_buf(),
+            size_bytes: size,
+            limit_bytes: max_bytes,
+        });
+    }
+    Ok(size)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -48,5 +62,22 @@ mod tests {
     fn write_atomic_fails_on_nonexistent_parent() {
         let path = Path::new("/nonexistent_forge_test_dir/out.json");
         assert!(write_atomic(path, b"data").is_err());
+    }
+
+    #[test]
+    fn check_file_size_accepts_small_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("small.json");
+        std::fs::write(&path, "{}").unwrap();
+        assert!(check_file_size(&path, 1024).is_ok());
+    }
+
+    #[test]
+    fn check_file_size_rejects_oversized_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("big.json");
+        std::fs::write(&path, vec![b'x'; 100]).unwrap();
+        let result = check_file_size(&path, 50);
+        assert!(result.is_err());
     }
 }
