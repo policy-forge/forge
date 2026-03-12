@@ -335,12 +335,13 @@ fn snapshot_single_set_param_modify_section() {
         vec!["AC-1".to_string()],
         SelectionMode::Include,
         &pairs,
+        None,
     )
     .unwrap();
     let root = ProfileRoot { profile };
     let json = serde_json::to_value(&root).unwrap();
 
-    // Snapshot the modify section (UUID differs per run, so we check modify deterministically)
+    // Snapshot the modify section
     let modify = &json["profile"]["modify"];
     insta::assert_json_snapshot!("single_set_param_modify", modify);
 }
@@ -385,6 +386,7 @@ fn snapshot_multi_param_modify_section() {
         vec!["AC-1".to_string()],
         SelectionMode::Include,
         &pairs,
+        None,
     )
     .unwrap();
     let root = ProfileRoot { profile };

@@ -80,6 +80,18 @@ pub const IMPL_REQ_NAMESPACE: Uuid = Uuid::from_bytes([
     0x41, 0x39, 0x89, 0xA7, 0xB5, 0x5A, 0x53, 0xB2, 0xB9, 0x81, 0x11, 0x19, 0x28, 0x04, 0x29, 0x0F,
 ]);
 
+/// Fixed namespace UUID for profile identifier generation.
+///
+/// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"profile")`.
+///
+/// # Breaking Change Warning
+///
+/// Changing this value will change **ALL** generated profile UUIDs.
+/// Any change requires a documented migration path.
+pub const PROFILE_NAMESPACE: Uuid = Uuid::from_bytes([
+    0xA6, 0x5B, 0xF3, 0x31, 0x28, 0x1C, 0x55, 0x86, 0x9F, 0x2E, 0x61, 0x31, 0x2E, 0x38, 0x55, 0x2F,
+]);
+
 /// Normalize text for stable ID generation.
 ///
 /// Trims leading/trailing whitespace and collapses internal whitespace runs
@@ -335,6 +347,12 @@ mod tests {
     fn impl_req_namespace_matches_derivation() {
         let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"implemented-requirement");
         assert_eq!(IMPL_REQ_NAMESPACE, expected);
+    }
+
+    #[test]
+    fn profile_namespace_matches_derivation() {
+        let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"profile");
+        assert_eq!(PROFILE_NAMESPACE, expected);
     }
 
     // T011: All requirements populated (AC-4, M-3)

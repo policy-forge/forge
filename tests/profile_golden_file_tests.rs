@@ -28,6 +28,7 @@ fn golden_include_only() {
         vec!["AC-1".into(), "AC-2".into(), "AC-3".into()],
         SelectionMode::Include,
         &[],
+        None,
     )
     .expect("build_profile should succeed");
 
@@ -53,6 +54,7 @@ fn golden_exclude_only() {
         vec!["AC-9".into(), "AC-10".into()],
         SelectionMode::Exclude,
         &[],
+        None,
     )
     .expect("build_profile should succeed");
 

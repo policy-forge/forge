@@ -70,6 +70,7 @@ fn schema_include_only() {
         vec!["AC-1".into(), "AC-2".into()],
         SelectionMode::Include,
         &[],
+        None,
     )
     .expect("build_profile should succeed for include mode");
 
@@ -93,7 +94,7 @@ fn schema_exclude_only() {
     let catalog = make_catalog_file();
     let catalog_path = catalog.path().to_string_lossy().to_string();
 
-    let profile = build_profile(&catalog_path, vec!["AC-10".into()], SelectionMode::Exclude, &[])
+    let profile = build_profile(&catalog_path, vec!["AC-10".into()], SelectionMode::Exclude, &[], None)
         .expect("build_profile should succeed for exclude mode");
 
     let root = ProfileRoot { profile };
@@ -141,6 +142,7 @@ fn edge_empty_include_list() {
         &forge::cli::OutputFormat::Json,
         None,
         &[],
+        None,
     );
 
     assert!(result.is_err(), "Empty include list must return an error");
@@ -159,7 +161,7 @@ fn edge_all_controls_include() {
 
     let all_ids: Vec<String> = (1..=10).map(|i| format!("AC-{i}")).collect();
 
-    let profile = build_profile(&catalog_path, all_ids, SelectionMode::Include, &[])
+    let profile = build_profile(&catalog_path, all_ids, SelectionMode::Include, &[], None)
         .expect("build_profile should succeed with all 10 control IDs");
 
     let root = ProfileRoot { profile };
@@ -187,7 +189,7 @@ fn edge_duplicate_control_ids() {
     let ids = parse_control_ids("AC-1,AC-1,AC-2").expect("parse_control_ids should succeed");
     assert_eq!(ids.len(), 2, "parse_control_ids must deduplicate AC-1,AC-1,AC-2 → 2 entries");
 
-    let profile = build_profile(&catalog_path, ids, SelectionMode::Include, &[])
+    let profile = build_profile(&catalog_path, ids, SelectionMode::Include, &[], None)
         .expect("build_profile should succeed");
 
     let with_ids =
@@ -215,6 +217,7 @@ fn edge_both_flags_returns_error() {
         &forge::cli::OutputFormat::Json,
         None,
         &[],
+        None,
     );
 
     assert!(result.is_err(), "Providing both --include and --exclude must return an error");
@@ -240,6 +243,7 @@ fn edge_invalid_catalog_path() {
         &forge::cli::OutputFormat::Json,
         None,
         &[],
+        None,
     );
 
     assert!(result.is_err(), "Non-existent catalog path must return an error");
@@ -263,7 +267,7 @@ fn edge_nonexistent_control_id() {
 
     // "FAKE-999" does not exist in the test catalog, but build_profile does not
     // parse the catalog content — this call succeeds.
-    let result = build_profile(&catalog_path, vec!["FAKE-999".into()], SelectionMode::Include, &[]);
+    let result = build_profile(&catalog_path, vec!["FAKE-999".into()], SelectionMode::Include, &[], None);
 
     assert!(
         result.is_ok(),
@@ -302,6 +306,7 @@ fn e2e_ac12_profile_generation() {
         vec!["AC-1".into(), "AC-2".into(), "AC-3".into(), "AC-4".into(), "AC-5".into()],
         SelectionMode::Include,
         &[],
+        None,
     )
     .expect("build_profile should succeed for 5-control include list");
 
