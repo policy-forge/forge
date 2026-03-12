@@ -232,10 +232,9 @@ erDiagram
         string artifact_type "Catalog or ComponentDefinition"
         string source_path "FORGE-generated artifact"
         boolean passed "true if no divergences"
-        int divergence_count
     }
     Divergence {
-        string json_path "e.g. catalog.metadata.title"
+        string json_path "e.g. /catalog/metadata/title"
         string expected_value "from FORGE output"
         string actual_value "from round-tripped output"
         string classification "forge_fix, oscal_cli_diff, acceptable"
@@ -263,7 +262,7 @@ pub struct RoundTripResult {
 
 /// A single divergence between FORGE output and oscal-cli round-tripped output
 pub struct Divergence {
-    /// JSON path where the divergence occurs (e.g., "catalog.metadata.title")
+    /// RFC 6901 JSON Pointer path (e.g., "/catalog/metadata/title")
     pub json_path: String,
     /// Value from FORGE output
     pub expected: serde_json::Value,
@@ -273,6 +272,8 @@ pub struct Divergence {
     pub classification: DivergenceClass,
     /// Human-readable description
     pub description: String,
+    /// Resolution status; None until investigated, serializes as null
+    pub resolution: Option<ResolutionStatus>,
 }
 
 pub enum DivergenceClass {
@@ -281,17 +282,33 @@ pub enum DivergenceClass {
     Acceptable,     // Acceptable variation (ordering, whitespace)
 }
 
-/// Run round-trip validation on a FORGE-generated artifact
-pub fn validate_round_trip(
-    forge_output_path: &Path,
-    oscal_cli_path: Option<&Path>,
-) -> Result<RoundTripResult, ForgeError>;
+pub enum ResolutionStatus {
+    Fixed,            // FORGE output corrected
+    Accepted,         // Acceptable variation; no fix required
+    ReportedUpstream, // Caused by oscal-cli; reported to NIST
+}
 
-/// Compare two parsed JSON values semantically
+/// Execute the oscal-cli conversion chain: JSON → XML → YAML → JSON
+pub fn run_round_trip_chain(
+    input_json_path: &Path,
+    invoker: &dyn OscalCliInvoke,
+    temp_dir: &Path,
+    timeout: Duration,
+) -> Result<PathBuf, ForgeError>;
+
+/// Compare two parsed JSON values semantically with OSCAL-aware rules
 pub fn compare_oscal_json(
     expected: &serde_json::Value,
     actual: &serde_json::Value,
+    path: &str,
+    rules: &OscalComparisonRules,
 ) -> Vec<Divergence>;
+
+/// Write a RoundTripResult as a pretty-printed JSON file
+pub fn write_divergence_log(
+    result: &RoundTripResult,
+    output_path: &Path,
+) -> Result<(), ForgeError>;
 ```
 
 ---
@@ -456,6 +473,8 @@ N/A — oscal-cli integration infrastructure is established in WI-36. The round-
 | 2026-02-10 | Use semantic JSON comparison rather than string comparison | JSON field ordering is not significant per RFC 8259; string comparison produces false positives | String diff (too many false positives); schema-level comparison only (misses value differences) |
 | 2026-02-10 | Classify divergences into three categories (FORGE fix, oscal-cli diff, acceptable) | Not all divergences require FORGE changes; classification guides appropriate action | Binary pass/fail (loses nuance); ignore divergences (hides interoperability issues) |
 | 2026-02-10 | Conditionally skip round-trip tests when oscal-cli is unavailable | oscal-cli requires Java runtime which may not be present in all environments; failing tests on missing optional tool is disruptive | Require oscal-cli in all environments (blocks development); mock oscal-cli (defeats purpose of round-trip validation) |
+| 2026-03-12 | Elevate C-2 (machine-readable divergence log) to MUST-level requirement (FR-006) | `serde_json` is already a project dependency with no new cost; the clarification session confirmed JSON as the required format; a structured log enables automated tracking and the `resolution: null` sentinel for unresolved divergences is only expressible in a structured format | Treat as optional Could Have; plain-text log |
+| 2026-03-12 | Replace `validate_round_trip` entry point with `run_round_trip_chain` + `compare_oscal_json` | Separation of concerns: chain orchestration (subprocess management) and comparison (pure recursive function) are independently unit-testable; `validate_round_trip` was a monolithic entry point that combined both concerns and required oscal-cli for any test | Single `validate_round_trip` monolithic function |
 
 ---
 

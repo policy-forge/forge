@@ -1,0 +1,19 @@
+---
+source: src/round_trip/log.rs
+expression: content
+---
+{
+  "artifact_type": "ComponentDefinition",
+  "divergences": [
+    {
+      "actual": "1.0.0",
+      "classification": "OscalCliDiff",
+      "description": "Version string modified by oscal-cli",
+      "expected": "1.0",
+      "json_path": "/component-definition/metadata/version",
+      "resolution": null
+    }
+  ],
+  "passed": false,
+  "source_path": "/tmp/test/component.json"
+}
