@@ -64,6 +64,11 @@ pub fn diff_artifacts(old_path: &Path, new_path: &Path) -> Result<DiffReport, Fo
 }
 
 fn read_diff_file(path: &Path) -> Result<String, ForgeError> {
+    // Guard against oversized files; ignore metadata errors (e.g. NotFound) and let
+    // read_to_string produce the user-facing DiffError below.
+    if path.exists() {
+        crate::io::check_file_size(path, crate::io::MAX_FILE_SIZE)?;
+    }
     std::fs::read_to_string(path).map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => {
             ForgeError::DiffError(format!("File not found: '{}'", path.display()))
