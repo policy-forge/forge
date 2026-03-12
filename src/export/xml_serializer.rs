@@ -907,7 +907,7 @@ mod tests {
             uuid: uuid::Uuid::parse_str("a1b2c3d4-e5f6-7890-abcd-ef1234567890").unwrap(),
             title: "Bad ref".to_string(),
             description: None,
-            props: vec![Prop { name: "url-status".to_string(), value: "unvalidated".to_string() }],
+            props: vec![Prop { name: "url-status".to_string(), value: "unvalidated".to_string(), ns: None }],
             citation: None,
             rlinks: vec![Rlink { href: "not-a-url".to_string(), media_type: None }],
         };

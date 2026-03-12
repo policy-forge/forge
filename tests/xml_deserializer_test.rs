@@ -429,6 +429,7 @@ fn test_resource_with_props_round_trips() {
                 props: vec![Prop {
                     name: "url-status".to_string(),
                     value: "unvalidated".to_string(),
+                    ns: None,
                 }],
             }],
         }),

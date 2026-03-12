@@ -301,7 +301,7 @@ fn convert_resource(xml: XmlResource) -> BackMatterResource {
             .into_iter()
             .map(|r| Rlink { href: r.href, media_type: r.media_type })
             .collect(),
-        props: xml.props.into_iter().map(|p| Prop { name: p.name, value: p.value }).collect(),
+        props: xml.props.into_iter().map(|p| Prop { name: p.name, value: p.value, ns: None }).collect(),
     }
 }
 
