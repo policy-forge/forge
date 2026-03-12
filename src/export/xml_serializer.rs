@@ -679,6 +679,7 @@ mod tests {
                 props: vec![],
                 control_implementations: vec![],
             }],
+            capabilities: vec![],
             back_matter: None,
         }
     }

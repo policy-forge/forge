@@ -43,6 +43,10 @@ pub struct ComponentDefinition {
     /// Documentary components (exactly one for this WI).
     pub components: Vec<DocumentaryComponent>,
 
+    /// Capabilities grouping control implementations.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capabilities: Vec<Capability>,
+
     /// Back matter containing reference resources (WI-12).
     #[serde(default, rename = "back-matter", skip_serializing_if = "Option::is_none")]
     pub back_matter: Option<BackMatter>,
@@ -66,6 +70,24 @@ pub struct ComponentDefinitionMetadata {
     /// OSCAL specification version -- always "1.2.0".
     #[serde(rename = "oscal-version")]
     pub oscal_version: String,
+}
+
+/// OSCAL Capability within a Component Definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Capability {
+    /// Unique identifier for this capability.
+    pub uuid: String,
+    /// Capability name.
+    pub name: String,
+    /// Capability description.
+    pub description: String,
+    /// Control implementations under this capability.
+    #[serde(
+        default,
+        rename = "control-implementations",
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub control_implementations: Vec<crate::oscal::implemented_requirements::ControlImplementation>,
 }
 
 /// A documentary component of type "policy" within the Component Definition.
@@ -187,6 +209,7 @@ pub fn build_component_definition(
             uuid: assembled.uuid.to_string(),
             metadata,
             components: vec![component],
+            capabilities: vec![],
             back_matter,
         },
     })
@@ -843,6 +866,7 @@ mod tests {
                     version: "1.0.0".into(),
                     oscal_version: "1.2.0".into(),
                 },
+                capabilities: vec![],
                 components: vec![DocumentaryComponent {
                     uuid: "comp-uuid".into(),
                     component_type: "policy".into(),
@@ -890,6 +914,7 @@ mod tests {
                     version: "1.0.0".into(),
                     oscal_version: "1.2.0".into(),
                 },
+                capabilities: vec![],
                 components: vec![DocumentaryComponent {
                     uuid: "comp-uuid".into(),
                     component_type: "policy".into(),
@@ -904,5 +929,34 @@ mod tests {
 
         let ids = collect_control_ids_from_component_def(&envelope);
         assert!(ids.is_empty());
+    }
+
+    // ── Task 10: Capability struct and capabilities field ─
+
+    #[test]
+    fn component_definition_round_trips_capabilities() {
+        let json = r#"{
+            "component-definition": {
+                "uuid": "test-uuid",
+                "metadata": {
+                    "title": "Test",
+                    "last-modified": "2026-01-01T00:00:00Z",
+                    "version": "1.0",
+                    "oscal-version": "1.2.0"
+                },
+                "components": [],
+                "capabilities": [{
+                    "uuid": "cap-uuid",
+                    "name": "Encryption Capability",
+                    "description": "Provides data-at-rest encryption"
+                }]
+            }
+        }"#;
+        let envelope: ComponentDefinitionEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(envelope.component_definition.capabilities.len(), 1);
+        assert_eq!(envelope.component_definition.capabilities[0].name, "Encryption Capability");
+        let reserialized = serde_json::to_string(&envelope).unwrap();
+        let re_parsed: ComponentDefinitionEnvelope = serde_json::from_str(&reserialized).unwrap();
+        assert_eq!(re_parsed.component_definition.capabilities.len(), 1);
     }
 }

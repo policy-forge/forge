@@ -337,6 +337,7 @@ fn convert_component_definition(xml: XmlComponentDefinition) -> ComponentDefinit
             oscal_version: xml.metadata.oscal_version,
         },
         components: xml.components.into_iter().map(convert_component).collect(),
+        capabilities: vec![],
         back_matter: xml.back_matter.map(convert_back_matter),
     }
 }

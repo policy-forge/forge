@@ -149,6 +149,7 @@ fn test_component_def() -> ComponentDefinition {
             }],
             control_implementations: vec![],
         }],
+        capabilities: vec![],
         back_matter: None,
     }
 }
@@ -487,6 +488,7 @@ fn test_component_with_back_matter_round_trips() {
             props: vec![],
             control_implementations: vec![],
         }],
+        capabilities: vec![],
         back_matter: Some(BackMatter {
             resources: vec![BackMatterResource {
                 uuid: Uuid::parse_str("a1b2c3d4-e5f6-7890-abcd-ef1234567890").unwrap(),
