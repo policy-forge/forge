@@ -90,7 +90,7 @@ pub fn build_control_implementations(
     source_profile: &str,
     source_file: &str,
 ) -> Result<Vec<ControlImplementation>, ForgeError> {
-    let mut abbrev_counts: HashMap<String, usize> = HashMap::new();
+    let mut abbrev_counts: HashMap<String, Vec<String>> = HashMap::new();
     let mut implemented_requirements = Vec::new();
     let mut global_index: usize = 0;
 
