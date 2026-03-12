@@ -11,6 +11,7 @@ pub mod oscal_cli;
 pub mod parameter;
 pub mod parse;
 pub mod pipeline;
+pub mod round_trip;
 pub mod sanitize;
 pub mod summary;
 #[doc(hidden)]

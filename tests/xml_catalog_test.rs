@@ -18,6 +18,7 @@ fn run_catalog_xml(fixture: &Path) -> String {
         Some(&output_path),
         MAX_SIZE_BYTES,
         &OutputFormat::Xml,
+        None,
     )
     .unwrap_or_else(|e| panic!("Catalog XML pipeline failed: {e}"));
 
@@ -35,6 +36,7 @@ fn run_catalog_json(fixture: &Path) -> String {
         Some(&output_path),
         MAX_SIZE_BYTES,
         &OutputFormat::Json,
+        None,
     )
     .unwrap_or_else(|e| panic!("Catalog JSON pipeline failed: {e}"));
 

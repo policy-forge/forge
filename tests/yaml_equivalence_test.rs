@@ -33,6 +33,7 @@ fn catalog_json_and_yaml_values() -> (serde_json::Value, serde_json::Value) {
         Some(&json_path),
         10 * 1024 * 1024,
         &forge::cli::OutputFormat::Json,
+        None,
     )
     .expect("Catalog pipeline should succeed");
 
@@ -139,6 +140,7 @@ fn component_json_and_yaml_values() -> (serde_json::Value, serde_json::Value) {
         10 * 1024 * 1024,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Json,
+        None,
     )
     .expect("Component pipeline should succeed");
 
@@ -216,6 +218,7 @@ fn catalog_yaml_contains_params_arrays_for_parameterized_controls() {
         Some(&yaml_path),
         10 * 1024 * 1024,
         &OutputFormat::Yaml,
+        None,
     )
     .expect("Catalog YAML pipeline should succeed");
 

@@ -52,6 +52,48 @@ pub struct ResolveResult {
     pub warnings: Vec<String>,
 }
 
+/// Serialization format for an OSCAL document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OscalFormat {
+    Json,
+    Xml,
+    Yaml,
+}
+
+impl OscalFormat {
+    /// Returns the `--to=<fmt>` CLI flag value for oscal-cli.
+    #[must_use]
+    pub fn to_cli_flag(&self) -> &'static str {
+        match self {
+            Self::Json => "json",
+            Self::Xml => "xml",
+            Self::Yaml => "yaml",
+        }
+    }
+}
+
+/// Arguments for a single `oscal-cli convert` invocation.
+#[derive(Debug)]
+pub struct ConvertArgs {
+    /// Canonicalized absolute path to the input OSCAL file.
+    pub input_path: PathBuf,
+    /// Path where the converted output will be written.
+    pub output_path: PathBuf,
+    /// Target serialization format.
+    pub output_format: OscalFormat,
+    /// Per-invocation timeout (default: 30 seconds).
+    pub timeout: Duration,
+}
+
+/// Successful result of an `oscal-cli convert` invocation.
+#[derive(Debug)]
+pub struct ConvertResult {
+    /// Absolute path to the written output file.
+    pub output_path: PathBuf,
+    /// Any stderr lines from oscal-cli when exit code was 0.
+    pub warnings: Vec<String>,
+}
+
 /// Detect whether oscal-cli is installed and functional.
 pub trait OscalCliDetect {
     fn detect(&self) -> OscalCliInfo;
@@ -65,4 +107,12 @@ pub trait OscalCliInvoke {
     ///
     /// Returns `ForgeError` if the oscal-cli process fails, times out, or produces invalid output.
     fn resolve_profile(&self, args: &ResolveArgs) -> Result<ResolveResult, ForgeError>;
+
+    /// Convert an OSCAL document from one format to another via oscal-cli.
+    ///
+    /// # Errors
+    ///
+    /// - `ForgeError::OscalCliTimeout` if the subprocess exceeds `args.timeout`
+    /// - `ForgeError::OscalCliExecution` if oscal-cli exits with non-zero status
+    fn convert(&self, args: &ConvertArgs) -> Result<ConvertResult, ForgeError>;
 }

@@ -81,6 +81,13 @@ pub enum Commands {
         #[arg(long)]
         stable_id_baseline: Option<PathBuf>,
 
+        /// SSP reference for Assessment Plan generation.
+        /// When provided, an Assessment Plan skeleton is written to
+        /// {output_dir}/{policy_stem}-assessment-plan.json alongside the converted artifact.
+        /// Ignored in batch mode (2+ input files).
+        #[arg(long)]
+        import_ssp: Option<String>,
+
         /// Print a conversion summary dashboard to stderr after conversion
         #[arg(long)]
         summary: bool,
@@ -224,6 +231,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             source_profile,
             jobs,
             stable_id_baseline,
+            import_ssp,
             summary,
         } => {
             if input.is_empty() {
@@ -237,6 +245,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 max_size: *max_size,
                 source_profile: source_profile.as_deref(),
                 stable_id_baseline: stable_id_baseline.as_deref(),
+                import_ssp: import_ssp.as_deref(),
                 summary: *summary,
                 quiet: cli.quiet,
                 jobs: *jobs,
@@ -612,6 +621,61 @@ mod tests {
             Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]).unwrap();
         if let Commands::Convert { summary, .. } = cli.command {
             assert!(!summary, "Expected --summary to default to false");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    // ─── T012: --import-ssp CLI parsing tests ────────────────────────────
+
+    #[test]
+    fn parse_import_ssp_flag_with_value() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "test.md",
+            "--strategy",
+            "catalog",
+            "--import-ssp",
+            "./ssp.json",
+        ])
+        .unwrap();
+        if let Commands::Convert { import_ssp, .. } = cli.command {
+            assert_eq!(import_ssp, Some("./ssp.json".to_string()));
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_import_ssp_flag_absent() {
+        let cli =
+            Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]).unwrap();
+        if let Commands::Convert { import_ssp, .. } = cli.command {
+            assert!(import_ssp.is_none());
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_import_ssp_flag_empty_string() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "test.md",
+            "--strategy",
+            "catalog",
+            "--import-ssp",
+            "",
+        ])
+        .unwrap();
+        if let Commands::Convert { import_ssp, .. } = cli.command {
+            assert_eq!(
+                import_ssp,
+                Some(String::new()),
+                "Clap should pass through empty string as Some(\"\")"
+            );
         } else {
             panic!("Expected Convert command");
         }

@@ -2,9 +2,9 @@
 
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-use super::{OscalCliInvoke, ResolveArgs, ResolveResult};
+use super::{ConvertArgs, ConvertResult, OscalCliInvoke, ResolveArgs, ResolveResult};
 use crate::error::ForgeError;
 
 /// Invokes oscal-cli as a subprocess.
@@ -26,6 +26,103 @@ const ENV_ALLOWLIST: &[&str] = if cfg!(windows) {
     &["PATH", "HOME", "JAVA_HOME", "TMPDIR"]
 };
 
+/// Result of a successful subprocess execution.
+struct SubprocessOutput {
+    /// Sanitized stderr warnings (non-empty lines).
+    warnings: Vec<String>,
+}
+
+/// Prepare, spawn, and wait for an oscal-cli subprocess with timeout and stderr handling.
+///
+/// Handles: env allowlist, stderr drain thread, poll-based timeout, sanitization,
+/// error extraction, and warnings collection.
+fn run_oscal_cli(
+    cmd: &mut Command,
+    timeout: Duration,
+    context: &str,
+) -> Result<SubprocessOutput, ForgeError> {
+    // SEC-7: Clear environment and apply allowlist
+    cmd.env_clear();
+    for key in ENV_ALLOWLIST {
+        if let Ok(val) = std::env::var(key) {
+            cmd.env(key, val);
+        }
+    }
+
+    cmd.stdout(Stdio::null());
+    cmd.stderr(Stdio::piped());
+
+    let mut child = cmd.spawn().map_err(|e| ForgeError::OscalCliExecution {
+        exit_code: None,
+        message: format!("Failed to spawn oscal-cli {context}: {e}"),
+    })?;
+
+    // Drain stderr on a dedicated thread to prevent pipe buffer deadlock.
+    // Without this, if oscal-cli writes >4KB (macOS) or >64KB (Linux) to stderr,
+    // the child blocks on write and the parent blocks on try_wait — deadlock.
+    let mut stderr_handle = child.stderr.take().expect("stderr was piped");
+    let stderr_thread = std::thread::spawn(move || {
+        let mut buf = String::new();
+        let _ = std::io::Read::read_to_string(&mut stderr_handle, &mut buf);
+        buf
+    });
+
+    // Poll-based timeout: check every 100ms
+    let start = Instant::now();
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) => {
+                if start.elapsed() >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait(); // Reap the zombie
+                    let _ = stderr_thread.join(); // Prevent thread leak
+                    return Err(ForgeError::OscalCliTimeout { timeout });
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            Err(e) => {
+                return Err(ForgeError::OscalCliExecution {
+                    exit_code: None,
+                    message: format!("Failed to wait for oscal-cli {context}: {e}"),
+                });
+            }
+        }
+    };
+
+    // Join the stderr drain thread (process has exited, so this won't block long)
+    let stderr_str = stderr_thread.join().unwrap_or_default();
+
+    // Sanitize stderr to prevent terminal escape injection (SEC-5).
+    let stderr_str = crate::sanitize::strip_control_chars(&stderr_str);
+
+    if !status.success() {
+        if !stderr_str.is_empty() {
+            tracing::warn!(stderr = %stderr_str, "oscal-cli {context} failed with stderr output");
+        }
+        let message = extract_error_message(&stderr_str);
+        return Err(ForgeError::OscalCliExecution { exit_code: status.code(), message });
+    }
+
+    // Success — log stderr at debug level for diagnostics
+    if !stderr_str.is_empty() {
+        tracing::debug!(stderr = %stderr_str, "oscal-cli {context} stderr output");
+    }
+
+    let warnings = collect_warnings(&stderr_str);
+
+    Ok(SubprocessOutput { warnings })
+}
+
+/// Collect non-empty stderr lines as warning strings.
+fn collect_warnings(stderr: &str) -> Vec<String> {
+    if stderr.trim().is_empty() {
+        Vec::new()
+    } else {
+        stderr.lines().filter(|l| !l.trim().is_empty()).map(String::from).collect()
+    }
+}
+
 impl OscalCliInvoke for ProcessInvoker {
     fn resolve_profile(&self, args: &ResolveArgs) -> Result<ResolveResult, ForgeError> {
         let mut cmd = Command::new(&self.executable_path);
@@ -33,83 +130,22 @@ impl OscalCliInvoke for ProcessInvoker {
         cmd.arg(&args.profile_path);
         cmd.arg(&args.output_path);
 
-        // SEC-7: Clear environment and apply allowlist
-        cmd.env_clear();
-        for key in ENV_ALLOWLIST {
-            if let Ok(val) = std::env::var(key) {
-                cmd.env(key, val);
-            }
-        }
+        let output = run_oscal_cli(&mut cmd, args.timeout, "resolve")?;
 
-        // Capture stderr via pipe (stdout goes to file via oscal-cli's output arg)
-        cmd.stdout(Stdio::null());
-        cmd.stderr(Stdio::piped());
+        Ok(ResolveResult { output_path: args.output_path.clone(), warnings: output.warnings })
+    }
 
-        let mut child = cmd.spawn().map_err(|e| ForgeError::OscalCliExecution {
-            exit_code: None,
-            message: format!("Failed to spawn oscal-cli: {e}"),
-        })?;
+    fn convert(&self, args: &ConvertArgs) -> Result<ConvertResult, ForgeError> {
+        let to_flag = format!("-to={}", args.output_format.to_cli_flag());
 
-        // Drain stderr on a dedicated thread to prevent pipe buffer deadlock.
-        // Without this, if oscal-cli writes >4KB (macOS) or >64KB (Linux) to stderr,
-        // the child blocks on write and the parent blocks on try_wait — deadlock.
-        let mut stderr_handle = child.stderr.take().expect("stderr was piped");
-        let stderr_thread = std::thread::spawn(move || {
-            let mut buf = String::new();
-            let _ = std::io::Read::read_to_string(&mut stderr_handle, &mut buf);
-            buf
-        });
+        let mut cmd = Command::new(&self.executable_path);
+        cmd.args(["convert", &to_flag]);
+        cmd.arg(&args.input_path);
+        cmd.arg(&args.output_path);
 
-        // Poll-based timeout: check every 100ms
-        let start = Instant::now();
-        let timeout = args.timeout;
-        let status = loop {
-            match child.try_wait() {
-                Ok(Some(status)) => break status,
-                Ok(None) => {
-                    if start.elapsed() >= timeout {
-                        let _ = child.kill();
-                        let _ = child.wait(); // Reap the zombie
-                        return Err(ForgeError::OscalCliTimeout { timeout });
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(100));
-                }
-                Err(e) => {
-                    return Err(ForgeError::OscalCliExecution {
-                        exit_code: None,
-                        message: format!("Failed to wait for oscal-cli: {e}"),
-                    });
-                }
-            }
-        };
+        let output = run_oscal_cli(&mut cmd, args.timeout, "convert")?;
 
-        // Join the stderr drain thread (process has exited, so this won't block long)
-        let stderr_str = stderr_thread.join().unwrap_or_default();
-
-        // Sanitize stderr to prevent terminal escape injection (SEC-5).
-        let stderr_str = crate::sanitize::strip_control_chars(&stderr_str);
-
-        if !status.success() {
-            if !stderr_str.is_empty() {
-                tracing::warn!(stderr = %stderr_str, "oscal-cli failed with stderr output");
-            }
-            let message = extract_error_message(&stderr_str);
-            return Err(ForgeError::OscalCliExecution { exit_code: status.code(), message });
-        }
-
-        // Success — log stderr at debug level for diagnostics
-        if !stderr_str.is_empty() {
-            tracing::debug!(stderr = %stderr_str, "oscal-cli stderr output");
-        }
-
-        // Collect any stderr warnings
-        let warnings = if stderr_str.trim().is_empty() {
-            Vec::new()
-        } else {
-            stderr_str.lines().filter(|l| !l.trim().is_empty()).map(String::from).collect()
-        };
-
-        Ok(ResolveResult { output_path: args.output_path.clone(), warnings })
+        Ok(ConvertResult { output_path: args.output_path.clone(), warnings: output.warnings })
     }
 }
 
@@ -187,8 +223,7 @@ mod tests {
     #[test]
     fn warnings_collected_from_nonempty_stderr() {
         let stderr = "WARNING: deprecated feature used\nWARNING: old format\n";
-        let warnings: Vec<String> =
-            stderr.lines().filter(|l| !l.trim().is_empty()).map(String::from).collect();
+        let warnings = collect_warnings(stderr);
         assert_eq!(warnings.len(), 2);
         assert!(warnings[0].contains("deprecated"));
     }

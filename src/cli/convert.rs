@@ -137,6 +137,7 @@ pub struct ConvertOptions<'a> {
     pub max_size: u64,
     pub source_profile: Option<&'a str>,
     pub stable_id_baseline: Option<&'a Path>,
+    pub import_ssp: Option<&'a str>,
     pub summary: bool,
     pub quiet: bool,
     pub jobs: u16,
@@ -161,6 +162,10 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
     // Warn if --stable-id-baseline was provided (not supported in batch mode)
     if opts.stable_id_baseline.is_some() {
         tracing::warn!("--stable-id-baseline is not supported in batch mode and will be ignored");
+    }
+    // Warn if --import-ssp was provided (not supported in batch mode)
+    if opts.import_ssp.is_some() {
+        tracing::warn!("--import-ssp is not supported in batch mode and will be ignored");
     }
 
     // Validate --output is a dir or absent (FR-014), create if needed (FR-015)
@@ -238,6 +243,7 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
             opts.output,
             max_size_bytes,
             opts.format,
+            opts.import_ssp,
         )?,
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
@@ -248,6 +254,7 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
                 max_size_bytes,
                 profile_ref,
                 opts.format,
+                opts.import_ssp,
             )?
         }
     };
@@ -316,6 +323,7 @@ mod tests {
             max_size: 10,
             source_profile,
             stable_id_baseline: None,
+            import_ssp: None,
             summary: false,
             quiet: false,
             jobs: 0,

@@ -269,7 +269,7 @@ Option 1 is the simplest approach that meets all requirements while maximizing r
 ```mermaid
 graph TD
     subgraph "Round-Trip Test Harness"
-        TestModule[tests/round_trip.rs] --> ForgeGen[FORGE Pipeline]
+        TestModule[tests/oscal_cli_round_trip.rs] --> ForgeGen[FORGE Pipeline]
         ForgeGen --> |"Catalog JSON"| OrigJSON[Original JSON]
         TestModule --> OscalCliChain[OscalCliInvoker from AR-036]
         OscalCliChain --> |"JSON → XML"| XML[Intermediate XML]
@@ -298,11 +298,13 @@ graph TD
 
 | Component | Responsibility | Interface | Dependencies |
 |-----------|---------------|-----------|--------------|
-| tests/round_trip.rs | Integration test orchestration | `#[test]` functions | FORGE pipeline, OscalCliInvoker |
+| tests/oscal_cli_round_trip.rs | Integration test orchestration | `#[test]` functions | FORGE pipeline, `OscalCliInvoke` trait / `ProcessInvoker` |
 | round_trip/comparator.rs | Recursive serde_json::Value comparison | Library function | serde_json |
 | round_trip/rules.rs | OSCAL-specific comparison rules (unordered array paths) | Configuration data | None |
 | round_trip/divergence.rs | Divergence data structures and classification | Structs + enums | serde (for serialization) |
-| round_trip/chain.rs | oscal-cli conversion chain orchestration | Library function | OscalCliInvoker from AR-036 |
+| round_trip/chain.rs | oscal-cli conversion chain orchestration | Library function | `OscalCliInvoke` trait / `ProcessInvoker` from AR-036 |
+
+> **Naming note (I-005):** Throughout this AR, "OscalCliInvoker" refers to the oscal-cli invocation layer from AR-036. In the actual codebase this is split into the `OscalCliInvoke` *trait* (`src/oscal_cli/mod.rs`) and the `ProcessInvoker` concrete implementation (`src/oscal_cli/invoker.rs`). Both names refer to the same boundary.
 
 ### Data Flow 🟢 `@llm-autonomous`
 
@@ -405,6 +407,7 @@ pub fn run_round_trip_chain(
     input_json_path: &Path,
     invoker: &dyn OscalCliInvoke,
     temp_dir: &Path,
+    timeout: Duration,
 ) -> Result<PathBuf, ForgeError>;
 ```
 
@@ -469,7 +472,7 @@ graph TD
         B[round_trip/rules.rs]
         C[round_trip/divergence.rs]
         D[round_trip/chain.rs]
-        E[tests/round_trip.rs]
+        E[tests/oscal_cli_round_trip.rs]
     end
 
     subgraph "Uses from AR-036"
@@ -634,14 +637,14 @@ No open questions for this work item.
 
 | PRD Req ID | Decision Driver | Option Rating | Component | Notes |
 |------------|-----------------|---------------|-----------|-------|
-| M-1 | Reuse | Option 1: ✅ | chain.rs + tests/round_trip.rs | Reuses AR-036 OscalCliInvoker for Catalog conversion |
-| M-2 | Reuse | Option 1: ✅ | chain.rs + tests/round_trip.rs | Same chain for Component Definition |
+| M-1 | Reuse | Option 1: ✅ | chain.rs + tests/oscal_cli_round_trip.rs | Reuses AR-036 OscalCliInvoker for Catalog conversion |
+| M-2 | Reuse | Option 1: ✅ | chain.rs + tests/oscal_cli_round_trip.rs | Same chain for Component Definition |
 | M-3 | Comparison reliability | Option 1: ✅ | comparator.rs | serde_json::Value tree comparison ignores field order |
 | M-4 | Diagnostic clarity | Option 1: ✅ | comparator.rs + divergence.rs | Recursive walk tracks full JSON path |
 | M-5 | Comparison reliability | Option 1: ✅ | divergence.rs | Classification distinguishes FORGE bugs from acceptable variation |
 | M-6 | Maintainability | Option 1: ✅ | divergence.rs | Serializable divergence structs enable structured logging |
 | S-1 | Comparison reliability | Option 1: ✅ | chain.rs | Full JSON → XML → YAML → JSON chain supported |
-| S-2 | CI integration | Option 1: ✅ | tests/round_trip.rs | Conditional execution based on oscal-cli detection |
+| S-2 | CI integration | Option 1: ✅ | tests/oscal_cli_round_trip.rs | Conditional execution based on oscal-cli detection |
 | S-3 | Diagnostic clarity | Option 1: ✅ | divergence.rs | Three-way classification (ForgeFix, OscalCliDiff, Acceptable) |
 
 ---

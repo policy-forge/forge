@@ -459,6 +459,18 @@ pub(crate) fn resolve_abbreviation(title: &str, counts: &mut HashMap<String, usi
     }
 }
 
+// ─── Control ID Collector (WI-41, T008) ─────────────────────────────────
+
+/// Collect all control IDs from a built OSCAL Catalog.
+///
+/// Iterates `catalog.groups[].controls[].id` in declaration order.
+/// Returns an empty Vec if the catalog has no groups or controls.
+/// Does NOT deduplicate — deduplication is performed by `build_assessment_plan`.
+#[must_use]
+pub fn collect_control_ids_from_catalog(catalog: &OscalCatalog) -> Vec<String> {
+    catalog.groups.iter().flat_map(|g| g.controls.iter()).map(|c| c.id.clone()).collect()
+}
+
 // ─── Tests ──────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -1174,5 +1186,85 @@ mod tests {
             v["catalog"]["groups"][0]["controls"][0].get("props").is_none(),
             "props should be omitted when no trace embedding has been applied"
         );
+    }
+
+    // ─── T008: collect_control_ids_from_catalog ────────────────────────
+
+    #[test]
+    fn collect_control_ids_depth_first() {
+        let catalog = OscalCatalog {
+            uuid: "test".into(),
+            metadata: OscalMetadata {
+                title: "T".into(),
+                last_modified: "2026-01-01T00:00:00Z".into(),
+                version: "1.0.0".into(),
+                oscal_version: "1.2.0".into(),
+            },
+            groups: vec![
+                OscalGroup {
+                    id: "g1".into(),
+                    title: "Group 1".into(),
+                    props: vec![],
+                    links: vec![],
+                    controls: vec![
+                        OscalControl {
+                            id: "POL-AC-001".into(),
+                            uuid: "u1".into(),
+                            title: "C1".into(),
+                            parts: vec![],
+                            props: vec![],
+                            links: vec![],
+                            params: vec![],
+                        },
+                        OscalControl {
+                            id: "POL-AC-002".into(),
+                            uuid: "u2".into(),
+                            title: "C2".into(),
+                            parts: vec![],
+                            props: vec![],
+                            links: vec![],
+                            params: vec![],
+                        },
+                    ],
+                },
+                OscalGroup {
+                    id: "g2".into(),
+                    title: "Group 2".into(),
+                    props: vec![],
+                    links: vec![],
+                    controls: vec![OscalControl {
+                        id: "POL-DP-001".into(),
+                        uuid: "u3".into(),
+                        title: "C3".into(),
+                        parts: vec![],
+                        props: vec![],
+                        links: vec![],
+                        params: vec![],
+                    }],
+                },
+            ],
+            back_matter: None,
+        };
+
+        let ids = collect_control_ids_from_catalog(&catalog);
+        assert_eq!(ids, vec!["POL-AC-001", "POL-AC-002", "POL-DP-001"]);
+    }
+
+    #[test]
+    fn collect_control_ids_empty_catalog() {
+        let catalog = OscalCatalog {
+            uuid: "test".into(),
+            metadata: OscalMetadata {
+                title: "T".into(),
+                last_modified: "2026-01-01T00:00:00Z".into(),
+                version: "1.0.0".into(),
+                oscal_version: "1.2.0".into(),
+            },
+            groups: vec![],
+            back_matter: None,
+        };
+
+        let ids = collect_control_ids_from_catalog(&catalog);
+        assert!(ids.is_empty());
     }
 }

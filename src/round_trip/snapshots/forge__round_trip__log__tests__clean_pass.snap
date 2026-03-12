@@ -1,0 +1,10 @@
+---
+source: src/round_trip/log.rs
+expression: content
+---
+{
+  "artifact_type": "Catalog",
+  "divergences": [],
+  "passed": true,
+  "source_path": "/tmp/test/catalog.json"
+}

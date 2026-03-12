@@ -17,6 +17,7 @@ fn run_component_pipeline_on_fixture(source_profile: &str) -> serde_json::Value 
         10 * 1024 * 1024,
         Some(source_profile),
         &OutputFormat::Json,
+        None,
     );
     assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
@@ -286,6 +287,7 @@ fn control_ids_match_between_catalog_and_component() {
         Some(&catalog_path),
         10 * 1024 * 1024,
         &OutputFormat::Json,
+        None,
     )
     .expect("Catalog pipeline should succeed");
     let catalog_str = std::fs::read_to_string(&catalog_path).unwrap();
@@ -299,6 +301,7 @@ fn control_ids_match_between_catalog_and_component() {
         10 * 1024 * 1024,
         Some("./baselines/nist.json"),
         &OutputFormat::Json,
+        None,
     )
     .expect("Component pipeline should succeed");
     let component_str = std::fs::read_to_string(&component_path).unwrap();
@@ -386,6 +389,7 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
         10 * 1024 * 1024,
         None, // No source profile
         &OutputFormat::Json,
+        None,
     );
 
     // Empty control-implementations is omitted (skip_serializing_if),
@@ -416,6 +420,7 @@ fn modality_props_present_in_implemented_requirements_for_mixed_fixture() {
         10 * 1024 * 1024,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Json,
+        None,
     );
     assert!(result.is_ok(), "Pipeline failed: {:?}", result.unwrap_err());
 
