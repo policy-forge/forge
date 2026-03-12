@@ -18,10 +18,10 @@ Address 18 issues from code review organized into 6 themes, plus a clippy warnin
 
 **`src/oscal/catalog.rs`** — `OscalCatalog`:
 - Add `controls: Vec<OscalControl>` (root-level controls, `#[serde(default, skip_serializing_if = "Vec::is_empty")]`)
-- `OscalGroup`: Add `groups: Vec<OscalGroup>` for nested group trees (same serde attrs)
+- `OscalGroup`: Add `groups: Vec<OscalGroup>` for nested group trees (same serde attrs). Nested groups are valid per OSCAL v1.2.0 schema. All existing iteration code (e.g., `count_catalog_controls()` in `summary/mod.rs`) must be updated to recurse into nested groups.
 
-**`src/oscal/back_matter.rs`** — `Prop`:
-- Add `ns: Option<String>` with `#[serde(default, skip_serializing_if = "Option::is_none")]` to match `OscalProp` in `parts.rs`
+**`src/oscal/back_matter.rs`** — `back_matter::Prop` (lines 86-96, distinct from `parts::OscalProp` which already has `ns`):
+- Add `ns: Option<String>` with `#[serde(default, skip_serializing_if = "Option::is_none")]` to match the existing `OscalProp` pattern in `parts.rs`
 
 **`src/oscal/component_definition.rs`** — `ComponentDefinition`:
 - Add `capabilities: Vec<Capability>` (new struct with `uuid`, `name`, `description`, `control_implementations`)
@@ -37,7 +37,7 @@ Address 18 issues from code review organized into 6 themes, plus a clippy warnin
 
 ### Tests
 - Round-trip test: JSON with root-level controls survives export and re-import
-- Round-trip test: JSON with nested groups survives export and re-import
+- Round-trip test: JSON with 2-level nested groups survives export and re-import
 - Round-trip test: Component definition with capabilities survives export
 - Verify back-matter prop `ns` field preserved through JSON/YAML/XML round-trip
 
@@ -57,6 +57,7 @@ Address 18 issues from code review organized into 6 themes, plus a clippy warnin
 **`src/export/xml_deserializer.rs`** — `convert_component()`:
 - Add `XmlControlImplementation` and `XmlImplementedRequirement` deserialize structs (matching the XML schema)
 - Parse `<control-implementation>` elements within `<component>` and populate `control_implementations` instead of hardcoding `vec![]`
+- When deserializing `<control-implementation uuid="...">` elements, validate UUIDs per Theme 3 (#74) — return `ForgeError::ExportInvalidOscal` on invalid UUIDs instead of silently replacing
 
 **`src/cli/convert.rs`** — `resolve_source_profile()`:
 - Change from warning + `Ok(None)` to `Err(ForgeError::...)` when `--source-profile` is missing and `--strategy component` is used
