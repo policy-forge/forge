@@ -290,21 +290,31 @@ fn collect_citations_from_section(
 
 /// Collect all control IDs from a built Component Definition.
 ///
-/// Iterates all `components[].control_implementations[].implemented_requirements[].control_id`.
+/// Iterates both `components[].control_implementations[].implemented_requirements[].control_id`
+/// and `capabilities[].control_implementations[].implemented_requirements[].control_id`.
 /// Returns an empty Vec if the Component Definition has no implemented requirements.
 /// Does NOT deduplicate — deduplication is performed by `build_assessment_plan`.
 #[must_use]
 pub fn collect_control_ids_from_component_def(
     envelope: &ComponentDefinitionEnvelope,
 ) -> Vec<String> {
-    envelope
+    let from_components = envelope
         .component_definition
         .components
         .iter()
         .flat_map(|c| c.control_implementations.iter())
         .flat_map(|ci| ci.implemented_requirements.iter())
-        .map(|ir| ir.control_id.clone())
-        .collect()
+        .map(|ir| ir.control_id.clone());
+
+    let from_capabilities = envelope
+        .component_definition
+        .capabilities
+        .iter()
+        .flat_map(|cap| cap.control_implementations.iter())
+        .flat_map(|ci| ci.implemented_requirements.iter())
+        .map(|ir| ir.control_id.clone());
+
+    from_components.chain(from_capabilities).collect()
 }
 
 #[cfg(test)]
@@ -929,6 +939,73 @@ mod tests {
 
         let ids = collect_control_ids_from_component_def(&envelope);
         assert!(ids.is_empty());
+    }
+
+    // ── collect_control_ids includes capabilities ─
+
+    #[test]
+    fn collect_control_ids_from_capabilities() {
+        use crate::oscal::implemented_requirements::{
+            ControlImplementation, ImplementedRequirement,
+        };
+
+        let envelope = ComponentDefinitionEnvelope {
+            component_definition: ComponentDefinition {
+                uuid: "test-uuid".into(),
+                metadata: ComponentDefinitionMetadata {
+                    title: "Test".into(),
+                    last_modified: "2026-01-01T00:00:00Z".into(),
+                    version: "1.0.0".into(),
+                    oscal_version: "1.2.0".into(),
+                },
+                capabilities: vec![Capability {
+                    uuid: "cap-uuid".into(),
+                    name: "Encryption".into(),
+                    description: "Encryption capability".into(),
+                    control_implementations: vec![ControlImplementation {
+                        uuid: "ci-uuid".into(),
+                        source: "./baseline.json".into(),
+                        description: "CI".into(),
+                        implemented_requirements: vec![
+                            ImplementedRequirement {
+                                uuid: "ir-1".into(),
+                                control_id: "enc-1".into(),
+                                description: "Encrypt data".into(),
+                                props: vec![],
+                                links: vec![],
+                            },
+                        ],
+                    }],
+                }],
+                components: vec![DocumentaryComponent {
+                    uuid: "comp-uuid".into(),
+                    component_type: "policy".into(),
+                    title: "Test Component".into(),
+                    description: "Desc".into(),
+                    props: vec![],
+                    control_implementations: vec![ControlImplementation {
+                        uuid: "ci-uuid-2".into(),
+                        source: "./baseline.json".into(),
+                        description: "CI".into(),
+                        implemented_requirements: vec![
+                            ImplementedRequirement {
+                                uuid: "ir-2".into(),
+                                control_id: "ac-1".into(),
+                                description: "Access control".into(),
+                                props: vec![],
+                                links: vec![],
+                            },
+                        ],
+                    }],
+                }],
+                back_matter: None,
+            },
+        };
+
+        let ids = collect_control_ids_from_component_def(&envelope);
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&"ac-1".to_string()));
+        assert!(ids.contains(&"enc-1".to_string()));
     }
 
     // ── Task 10: Capability struct and capabilities field ─

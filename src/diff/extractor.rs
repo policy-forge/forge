@@ -81,41 +81,59 @@ fn extract_component_def_controls(json: &Value) -> HashMap<String, ControlSnapsh
         .and_then(Value::as_array)
         .map_or(EMPTY_ARRAY, Vec::as_slice);
     for component in components {
-        let cis = component
-            .get("control-implementations")
+        collect_impl_requirements_from_container(component, &mut map);
+    }
+
+    // OSCAL component-definitions may also group implementations under capabilities
+    let capabilities = json
+        .pointer("/component-definition/capabilities")
+        .and_then(Value::as_array)
+        .map_or(EMPTY_ARRAY, Vec::as_slice);
+    for capability in capabilities {
+        collect_impl_requirements_from_container(capability, &mut map);
+    }
+
+    map
+}
+
+/// Extract control snapshots from a component or capability's control-implementations.
+fn collect_impl_requirements_from_container(
+    container: &Value,
+    map: &mut HashMap<String, ControlSnapshot>,
+) {
+    let cis = container
+        .get("control-implementations")
+        .and_then(Value::as_array)
+        .map_or(EMPTY_ARRAY, Vec::as_slice);
+    for ci in cis {
+        let irs = ci
+            .get("implemented-requirements")
             .and_then(Value::as_array)
             .map_or(EMPTY_ARRAY, Vec::as_slice);
-        for ci in cis {
-            let irs = ci
-                .get("implemented-requirements")
-                .and_then(Value::as_array)
-                .map_or(EMPTY_ARRAY, Vec::as_slice);
-            for ir in irs {
-                let Some(control_id) = ir.get("control-id").and_then(Value::as_str) else {
-                    continue;
-                };
-                let uuid = ir.get("uuid").and_then(Value::as_str).unwrap_or("").to_string();
-                let description = ir.get("description").and_then(Value::as_str).map(String::from);
-                if map.contains_key(control_id) {
-                    tracing::warn!(
-                        control_id,
-                        "Duplicate control-id in component definition; last occurrence wins"
-                    );
-                }
-                map.insert(
-                    control_id.to_string(),
-                    ControlSnapshot {
-                        control_id: control_id.to_string(),
-                        uuid,
-                        title: None,
-                        description,
-                        parts_prose: vec![],
-                    },
+        for ir in irs {
+            let Some(control_id) = ir.get("control-id").and_then(Value::as_str) else {
+                continue;
+            };
+            let uuid = ir.get("uuid").and_then(Value::as_str).unwrap_or("").to_string();
+            let description = ir.get("description").and_then(Value::as_str).map(String::from);
+            if map.contains_key(control_id) {
+                tracing::warn!(
+                    control_id,
+                    "Duplicate control-id in component definition; last occurrence wins"
                 );
             }
+            map.insert(
+                control_id.to_string(),
+                ControlSnapshot {
+                    control_id: control_id.to_string(),
+                    uuid,
+                    title: None,
+                    description,
+                    parts_prose: vec![],
+                },
+            );
         }
     }
-    map
 }
 
 #[cfg(test)]
@@ -312,6 +330,69 @@ mod tests {
         let result = extract_controls(&json, &ArtifactType::ComponentDefinition);
         assert_eq!(result.len(), 1);
         assert!(result.contains_key("POL-VALID"));
+    }
+
+    #[test]
+    fn extract_component_def_from_capabilities() {
+        let json = serde_json::json!({
+            "component-definition": {
+                "uuid": "cd-uuid",
+                "metadata": {"title": "Test", "last-modified": "2026-01-01T00:00:00Z",
+                             "version": "1.0", "oscal-version": "1.2.0"},
+                "components": [],
+                "capabilities": [{
+                    "uuid": "cap-uuid",
+                    "name": "Encryption",
+                    "description": "Encryption capability",
+                    "control-implementations": [{
+                        "uuid": "ci-uuid", "source": "./b.json", "description": "CI",
+                        "implemented-requirements": [
+                            {"uuid": "u1", "control-id": "POL-ENC-001", "description": "Encrypt data"}
+                        ]
+                    }]
+                }]
+            }
+        });
+        let result = extract_controls(&json, &ArtifactType::ComponentDefinition);
+        assert_eq!(result.len(), 1);
+        assert!(result.contains_key("POL-ENC-001"));
+        assert_eq!(result["POL-ENC-001"].description.as_deref(), Some("Encrypt data"));
+    }
+
+    #[test]
+    fn extract_component_def_components_and_capabilities_combined() {
+        let json = serde_json::json!({
+            "component-definition": {
+                "uuid": "cd-uuid",
+                "metadata": {"title": "Test", "last-modified": "2026-01-01T00:00:00Z",
+                             "version": "1.0", "oscal-version": "1.2.0"},
+                "components": [{
+                    "uuid": "comp-uuid", "type": "policy", "title": "Test",
+                    "description": "Test",
+                    "control-implementations": [{
+                        "uuid": "ci-1", "source": "./b.json", "description": "CI",
+                        "implemented-requirements": [
+                            {"uuid": "u1", "control-id": "POL-AC-001", "description": "From component"}
+                        ]
+                    }]
+                }],
+                "capabilities": [{
+                    "uuid": "cap-uuid",
+                    "name": "Cap",
+                    "description": "Capability",
+                    "control-implementations": [{
+                        "uuid": "ci-2", "source": "./b.json", "description": "CI",
+                        "implemented-requirements": [
+                            {"uuid": "u2", "control-id": "POL-ENC-001", "description": "From capability"}
+                        ]
+                    }]
+                }]
+            }
+        });
+        let result = extract_controls(&json, &ArtifactType::ComponentDefinition);
+        assert_eq!(result.len(), 2);
+        assert!(result.contains_key("POL-AC-001"));
+        assert!(result.contains_key("POL-ENC-001"));
     }
 
     #[test]
