@@ -198,7 +198,7 @@ fn component_pipeline_generates_ap_with_import_ssp() {
 
     // Component pipeline may fail schema validation without a real profile,
     // but if it succeeds, verify the AP file was written
-    if let Ok(_) = result {
+    if result.is_ok() {
         let stem = fixture.file_stem().unwrap().to_str().unwrap();
         let ap_path = dir.path().join(format!("{stem}-assessment-plan.json"));
         assert!(

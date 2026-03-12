@@ -543,17 +543,14 @@ mod tests {
 
         // quick-xml should either error or not expand the entity
         let result = deserialize_catalog_from_xml(malicious_xml);
-        match result {
-            Ok(envelope) => {
-                // If parsing succeeds, entity must NOT have been expanded
-                assert_ne!(
-                    envelope.catalog.metadata.title, "INJECTED",
-                    "XXE entity expansion detected — security vulnerability!"
-                );
-            }
-            Err(_) => {
-                // Rejecting the document is also acceptable (safe behavior)
-            }
+        if let Ok(envelope) = result {
+            // If parsing succeeds, entity must NOT have been expanded
+            assert_ne!(
+                envelope.catalog.metadata.title, "INJECTED",
+                "XXE entity expansion detected — security vulnerability!"
+            );
+        } else {
+            // Rejecting the document is also acceptable (safe behavior)
         }
     }
 

@@ -216,7 +216,7 @@ fn catalog_json_fixture_round_trips_to_xml() {
 /// T033b: Verify that `<param>` elements appear within `<control>` blocks
 /// in the catalog XML output for requirements that contain extractable parameters.
 ///
-/// The sample_policy.md fixture contains "at least 12 characters" (threshold)
+/// The `sample_policy.md` fixture contains "at least 12 characters" (threshold)
 /// and "annually" (frequency), so the XML must contain at least one `<param>`.
 #[test]
 fn catalog_xml_contains_param_elements_for_parameterized_requirements() {

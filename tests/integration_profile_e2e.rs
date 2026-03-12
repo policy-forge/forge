@@ -2,7 +2,7 @@
 //!
 //! Verifies the complete `forge profile` pipeline: generate Profile → validate via `forge validate`.
 //! Covers include/exclude control selection, set-param, multi-format output, and schema validation.
-//! Uses the CLI subprocess pattern (env!("CARGO_BIN_EXE_forge")) for end-to-end coverage.
+//! Uses the CLI subprocess pattern (`env!("CARGO_BIN_EXE_forge")`) for end-to-end coverage.
 
 use serde_json::Value;
 use std::fs;
@@ -15,15 +15,13 @@ fn forge_bin() -> Command {
 
 fn run_forge(args: &[&str]) -> std::process::Output {
     let output = forge_bin().args(args).output().expect("failed to execute forge");
-    if !output.status.success() {
-        panic!(
-            "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
-            args,
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    assert!(output.status.success(),
+        "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
+        args,
+        output.status,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
     output
 }
 
@@ -57,7 +55,7 @@ fn extract_control_ids(catalog: &Value) -> Vec<String> {
                 .iter()
                 .take(2)
                 .filter_map(|c| c["id"].as_str())
-                .map(|s| s.to_string())
+                .map(std::string::ToString::to_string)
                 .collect();
             if !ids.is_empty() {
                 return ids;
@@ -183,7 +181,7 @@ fn profile_set_param_produces_modify_section() {
         .unwrap();
     let values = &entry["values"];
     assert!(
-        values.as_array().map(|a| a.iter().any(|v| v.as_str() == Some("16"))).unwrap_or(false),
+        values.as_array().is_some_and(|a| a.iter().any(|v| v.as_str() == Some("16"))),
         "expected value '16' in set-parameter, got: {values}"
     );
 }
@@ -262,8 +260,7 @@ fn profile_include_nonexistent_id_produces_error() {
     assert!(
         with_ids
             .as_array()
-            .map(|a| a.iter().any(|v| v.as_str() == Some("NONEXISTENT-CONTROL-999")))
-            .unwrap_or(false),
+            .is_some_and(|a| a.iter().any(|v| v.as_str() == Some("NONEXISTENT-CONTROL-999"))),
         "expected NONEXISTENT-CONTROL-999 in with-ids (permissive behavior)"
     );
 }
@@ -322,7 +319,7 @@ fn profile_set_param_nonexistent_id_exits_zero() {
         .unwrap();
     let values = &entry["values"];
     assert!(
-        values.as_array().map(|a| a.iter().any(|v| v.as_str() == Some("42"))).unwrap_or(false),
+        values.as_array().is_some_and(|a| a.iter().any(|v| v.as_str() == Some("42"))),
         "expected value '42' in nonexistent param entry, got: {values}"
     );
 }
@@ -346,7 +343,7 @@ fn profile_include_and_exclude_rejected() {
             "--include",
             &ids[0],
             "--exclude",
-            ids.get(1).map(String::as_str).unwrap_or(&ids[0]),
+            ids.get(1).map_or(&ids[0], String::as_str),
             "--format",
             "json",
         ])

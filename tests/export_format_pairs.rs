@@ -8,7 +8,7 @@ use std::path::Path;
 use forge::cli::OutputFormat;
 use forge::cli::export::export_artifact;
 
-/// Run export_artifact and return the output file contents.
+/// Run `export_artifact` and return the output file contents.
 fn export_and_read(input: &str, format: OutputFormat) -> String {
     let input = Path::new(input);
     let dir = tempfile::TempDir::new().unwrap();

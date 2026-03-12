@@ -7,13 +7,13 @@
 //!   3. Preserved after JSON→YAML→JSON round-trip (T026, T029)
 //!   4. Correctly assigned per atomized clause when a compound sentence is split (T045)
 //!
-//! MIXED_POLICY fixture design:
+//! `MIXED_POLICY` fixture design:
 //! - "must"  → modality:normative  (WI-33 normative pattern)
 //! - "should" → modality:advisory  (WI-33 advisory pattern)
 //! - "within 90 days" → time-window param (WI-34 pattern)
 //! - "must enforce MFA and should notify" → atomizer split at "and should" (WI-33 split pattern)
 //!
-//! Uses the CLI subprocess pattern (env!("CARGO_BIN_EXE_forge")) for end-to-end coverage.
+//! Uses the CLI subprocess pattern (`env!("CARGO_BIN_EXE_forge")`) for end-to-end coverage.
 
 use serde_json::Value;
 use std::fs;
@@ -54,15 +54,13 @@ fn forge_bin() -> Command {
 
 fn run_forge(args: &[&str]) -> std::process::Output {
     let output = forge_bin().args(args).output().expect("failed to execute forge");
-    if !output.status.success() {
-        panic!(
-            "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
-            args,
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    assert!(output.status.success(),
+        "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
+        args,
+        output.status,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
     output
 }
 
@@ -71,14 +69,14 @@ fn read_json(path: &std::path::Path) -> Value {
     serde_json::from_str(&content).expect("failed to parse JSON")
 }
 
-/// Write MIXED_POLICY to a temp file and return its path.
+/// Write `MIXED_POLICY` to a temp file and return its path.
 fn mixed_policy_file(dir: &TempDir) -> PathBuf {
     let path = dir.path().join("mixed_policy.md");
     fs::write(&path, MIXED_POLICY).expect("failed to write MIXED_POLICY fixture");
     path
 }
 
-/// Convert MIXED_POLICY to a catalog JSON and return the path.
+/// Convert `MIXED_POLICY` to a catalog JSON and return the path.
 fn catalog_from_mixed_policy(dir: &TempDir) -> PathBuf {
     let policy_path = mixed_policy_file(dir);
     let catalog_path = dir.path().join("catalog.json");
@@ -113,11 +111,10 @@ fn collect_modality_from_controls(controls: &[Value], out: &mut Vec<String>) {
     for control in controls {
         if let Some(props) = control["props"].as_array() {
             for prop in props {
-                if prop["name"].as_str() == Some("modality") {
-                    if let Some(v) = prop["value"].as_str() {
+                if prop["name"].as_str() == Some("modality")
+                    && let Some(v) = prop["value"].as_str() {
                         out.push(v.to_string());
                     }
-                }
             }
         }
         // Recurse into nested controls
@@ -150,7 +147,7 @@ fn collect_params_from_controls(controls: &[Value], out: &mut Vec<(String, Vec<S
                         .as_array()
                         .unwrap_or(&vec![])
                         .iter()
-                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .filter_map(|v| v.as_str().map(std::string::ToString::to_string))
                         .collect();
                     values.sort();
                     out.push((id.to_string(), values));
@@ -168,10 +165,9 @@ fn collect_params_from_controls(controls: &[Value], out: &mut Vec<(String, Vec<S
 fn count_controls(catalog: &Value) -> usize {
     catalog["catalog"]["groups"]
         .as_array()
-        .map(|groups| {
-            groups.iter().map(|g| g["controls"].as_array().map(|c| c.len()).unwrap_or(0)).sum()
+        .map_or(0, |groups| {
+            groups.iter().map(|g| g["controls"].as_array().map_or(0, Vec::len)).sum()
         })
-        .unwrap_or(0)
 }
 
 // ── M-5 / AC-6: normative and advisory props in JSON ────────────────────────

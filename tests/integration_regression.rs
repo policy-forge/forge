@@ -4,7 +4,7 @@
 //! Uses structural assertions only — no insta snapshots (existing `golden_file_tests.rs`
 //! covers snapshot-level regression). Additive Phase 2 `prop` and `param` elements
 //! are allowed and do not cause test failures.
-//! Uses the CLI subprocess pattern (env!("CARGO_BIN_EXE_forge")) for end-to-end coverage.
+//! Uses the CLI subprocess pattern (`env!("CARGO_BIN_EXE_forge")`) for end-to-end coverage.
 
 use serde_json::Value;
 use std::fs;
@@ -18,15 +18,13 @@ fn forge_bin() -> Command {
 
 fn run_forge(args: &[&str]) -> std::process::Output {
     let output = forge_bin().args(args).output().expect("failed to execute forge");
-    if !output.status.success() {
-        panic!(
-            "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
-            args,
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    assert!(output.status.success(),
+        "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
+        args,
+        output.status,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
     output
 }
 
@@ -69,7 +67,7 @@ fn phase1_catalog_structure_regression() {
 
     // at least one group must have controls
     let has_controls =
-        groups.iter().any(|g| g["controls"].as_array().map(|c| !c.is_empty()).unwrap_or(false));
+        groups.iter().any(|g| g["controls"].as_array().is_some_and(|c| !c.is_empty()));
     assert!(has_controls, "at least one group must have non-empty controls");
 }
 

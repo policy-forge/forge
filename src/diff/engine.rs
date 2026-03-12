@@ -136,7 +136,7 @@ mod tests {
             uuid: uuid.to_string(),
             title: Some(title.to_string()),
             description: None,
-            parts_prose: prose.iter().map(|s| s.to_string()).collect(),
+            parts_prose: prose.iter().map(std::string::ToString::to_string).collect(),
         }
     }
 
@@ -276,7 +276,7 @@ mod tests {
         assert!(entries.iter().all(|e| matches!(e, DiffEntry::Changed { .. })));
         let ids: Vec<_> = entries.iter().map(DiffEntry::control_id).collect();
         let mut sorted_ids = ids.clone();
-        sorted_ids.sort();
+        sorted_ids.sort_unstable();
         assert_eq!(ids, sorted_ids);
     }
 
@@ -383,14 +383,14 @@ mod tests {
     fn test_description_field_change_label() {
         let old = to_map(vec![ControlSnapshot {
             control_id: "IR-001".into(),
-            uuid: "".into(),
+            uuid: String::new(),
             title: None,
             description: Some("Old desc".into()),
             parts_prose: vec![],
         }]);
         let new = to_map(vec![ControlSnapshot {
             control_id: "IR-001".into(),
-            uuid: "".into(),
+            uuid: String::new(),
             title: None,
             description: Some("New desc".into()),
             parts_prose: vec![],

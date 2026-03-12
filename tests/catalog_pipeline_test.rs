@@ -362,10 +362,7 @@ fn modality_props_present_in_catalog_for_mixed_fixture() {
     let mut modality_count = 0;
 
     for group in groups {
-        let controls = match group["controls"].as_array() {
-            Some(c) => c,
-            None => continue,
-        };
+        let Some(controls) = group["controls"].as_array() else { continue };
         for control in controls {
             control_count += 1;
             let props = control["props"].as_array();

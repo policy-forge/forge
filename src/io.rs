@@ -8,6 +8,10 @@ use crate::error::ForgeError;
 pub const MAX_FILE_SIZE: u64 = 50 * 1024 * 1024;
 
 /// Write content to a file atomically using temp-file + rename.
+///
+/// # Errors
+///
+/// Returns `ForgeError::Io` if the temporary file cannot be created, written to, or persisted.
 pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
     use std::io::Write;
 
@@ -15,8 +19,7 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
     let mut tmp = tempfile::NamedTempFile::new_in(parent)?;
     tmp.write_all(content)?;
     tmp.persist(path).map_err(|e| {
-        ForgeError::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        ForgeError::Io(std::io::Error::other(
             format!("Failed to persist temp file to '{}': {e}", path.display()),
         ))
     })?;
@@ -24,6 +27,11 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
 }
 
 /// Check that a file does not exceed `max_bytes` before reading.
+///
+/// # Errors
+///
+/// Returns `ForgeError::FileTooLarge` if the file exceeds `max_bytes`, or
+/// `ForgeError::Io` if file metadata cannot be read.
 pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
     let metadata = std::fs::metadata(path)?;
     let size = metadata.len();
@@ -41,8 +49,7 @@ pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
 #[must_use]
 pub fn sanitize_artifact_path(path: &Path) -> String {
     path.file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| path.to_string_lossy().into_owned())
+        .map_or_else(|| path.to_string_lossy().into_owned(), |n| n.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]

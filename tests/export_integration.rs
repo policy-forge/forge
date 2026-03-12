@@ -6,7 +6,7 @@ use std::process::Command;
 
 use tempfile::TempDir;
 
-/// Helper: run `forge export` with given arguments, return (exit_code, stdout, stderr).
+/// Helper: run `forge export` with given arguments, return (`exit_code`, stdout, stderr).
 fn run_export(args: &[&str]) -> (i32, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_forge"))
         .args(["export"])

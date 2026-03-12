@@ -436,15 +436,9 @@ fn modality_props_present_in_implemented_requirements_for_mixed_fixture() {
     let mut modality_count = 0;
 
     for component in components {
-        let control_impls = match component["control-implementations"].as_array() {
-            Some(ci) => ci,
-            None => continue,
-        };
+        let Some(control_impls) = component["control-implementations"].as_array() else { continue };
         for ci in control_impls {
-            let impl_reqs = match ci["implemented-requirements"].as_array() {
-                Some(ir) => ir,
-                None => continue,
-            };
+            let Some(impl_reqs) = ci["implemented-requirements"].as_array() else { continue };
             for ir in impl_reqs {
                 impl_req_count += 1;
                 let props = ir["props"].as_array();
