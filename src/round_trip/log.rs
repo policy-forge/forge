@@ -12,14 +12,18 @@ use super::divergence::RoundTripResult;
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Io` if the file cannot be created or written.
+/// Returns `ForgeError::Io` on I/O failure, `ForgeError::Serialization` on serialization failure.
 pub fn write_divergence_log(
     result: &RoundTripResult,
     output_path: &Path,
 ) -> Result<(), ForgeError> {
     let file = std::fs::File::create(output_path)?;
-    serde_json::to_writer_pretty(file, result)
-        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    if let Err(e) = serde_json::to_writer_pretty(file, result) {
+        if e.is_io() {
+            return Err(ForgeError::Io(e.into()));
+        }
+        return Err(ForgeError::Serialization(e.to_string()));
+    }
     Ok(())
 }
 

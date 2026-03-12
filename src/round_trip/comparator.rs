@@ -217,7 +217,17 @@ fn find_matching_element(
     act_arr: &[Value],
     already_matched: &[bool],
 ) -> Option<usize> {
-    // Try uuid match
+    // 1. Try exact equality first (handles reordered links, duplicate identity props)
+    for (i, act_elem) in act_arr.iter().enumerate() {
+        if already_matched[i] {
+            continue;
+        }
+        if act_elem == exp_elem {
+            return Some(i);
+        }
+    }
+
+    // 2. Try uuid match
     if let Some(exp_uuid) = exp_elem.get("uuid").and_then(Value::as_str) {
         for (i, act_elem) in act_arr.iter().enumerate() {
             if already_matched[i] {
@@ -230,7 +240,7 @@ fn find_matching_element(
         return None; // uuid specified but not found
     }
 
-    // Try name+ns composite match (for props)
+    // 3. Try name+ns composite match (for props)
     if let Some(exp_name) = exp_elem.get("name").and_then(Value::as_str) {
         let exp_ns = exp_elem.get("ns").and_then(Value::as_str);
         for (i, act_elem) in act_arr.iter().enumerate() {
@@ -246,8 +256,8 @@ fn find_matching_element(
         return None; // name specified but not found
     }
 
-    // Positional fallback: match first unmatched element.
-    // Note: elements without uuid or name fields may be paired arbitrarily if reordered,
+    // 4. Positional fallback: match first unmatched element.
+    // Note: elements without identity keys or exact match may be paired arbitrarily,
     // producing confusing (but never silently acceptable) divergence descriptions.
     act_arr.iter().enumerate().map(|(i, _)| i).find(|&i| !already_matched[i])
 }
@@ -392,5 +402,49 @@ mod tests {
         let result = compare_oscal_json(&expected, &actual, "", &default_rules());
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].json_path, "/metadata/version");
+    }
+
+    // Regression: reordered links (no uuid/name) matched by exact equality
+    #[test]
+    fn reordered_links_matched_by_exact_equality() {
+        let expected = json!({
+            "links": [
+                {"href": "https://example.com/a", "rel": "reference"},
+                {"href": "https://example.com/b", "rel": "related"}
+            ]
+        });
+        let actual = json!({
+            "links": [
+                {"href": "https://example.com/b", "rel": "related"},
+                {"href": "https://example.com/a", "rel": "reference"}
+            ]
+        });
+        let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+        assert!(
+            result.is_empty(),
+            "Reordered links matched by exact equality should produce no divergences"
+        );
+    }
+
+    // Regression: duplicate props with same (name, ns) matched by exact equality
+    #[test]
+    fn duplicate_name_ns_props_matched_by_exact_equality() {
+        let expected = json!({
+            "props": [
+                {"name": "label", "ns": "https://example.com", "value": "A"},
+                {"name": "label", "ns": "https://example.com", "value": "B"}
+            ]
+        });
+        let actual = json!({
+            "props": [
+                {"name": "label", "ns": "https://example.com", "value": "B"},
+                {"name": "label", "ns": "https://example.com", "value": "A"}
+            ]
+        });
+        let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+        assert!(
+            result.is_empty(),
+            "Duplicate props matched by exact equality should produce no divergences"
+        );
     }
 }

@@ -17,9 +17,8 @@ use forge::types::OutputFormat;
 const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 const TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Helper: detect oscal-cli and return a ProcessInvoker, or None if unavailable.
-fn skip_if_no_oscal_cli() -> Option<ProcessInvoker> {
-    let detector = PathDetector::new();
+/// Build a ProcessInvoker from a detector, or None if oscal-cli is unavailable.
+fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<ProcessInvoker> {
     let info = detector.detect();
     if !info.available || !info.functional {
         eprintln!("SKIP: oscal-cli not available ({info:?})");
@@ -27,6 +26,11 @@ fn skip_if_no_oscal_cli() -> Option<ProcessInvoker> {
     }
     let path = info.executable_path.unwrap();
     Some(ProcessInvoker::new(path))
+}
+
+/// Helper: detect oscal-cli using system PATH and return a ProcessInvoker, or None.
+fn skip_if_no_oscal_cli() -> Option<ProcessInvoker> {
+    invoker_if_available(&PathDetector::new())
 }
 
 /// Generate a Catalog JSON artifact from a Markdown fixture via the FORGE pipeline.
@@ -118,17 +122,25 @@ fn validate_divergence_log(log_path: &Path) {
     assert!(content.get("divergences").is_some(), "Log should have divergences");
 
     // Verify each divergence has required fields
-    if let Some(divs) = content["divergences"].as_array() {
-        for div in divs {
-            assert!(div.get("json_path").is_some(), "Divergence should have json_path");
-            assert!(div.get("expected").is_some(), "Divergence should have expected");
-            assert!(div.get("actual").is_some(), "Divergence should have actual");
-            assert!(div.get("classification").is_some(), "Divergence should have classification");
-            assert!(div.get("description").is_some(), "Divergence should have description");
-            // resolution field must be present (even if null)
+    let divs = content["divergences"].as_array().expect("divergences must be a JSON array");
+    for div in divs {
+        assert!(div.get("json_path").is_some(), "Divergence should have json_path");
+        assert!(div.get("expected").is_some(), "Divergence should have expected");
+        assert!(div.get("actual").is_some(), "Divergence should have actual");
+        assert!(div.get("classification").is_some(), "Divergence should have classification");
+        assert!(div.get("description").is_some(), "Divergence should have description");
+        // resolution field must be present (even if null)
+        assert!(
+            div.get("resolution").is_some(),
+            "Divergence should have resolution field (even if null)"
+        );
+
+        // For ForgeFix and OscalCliDiff, resolution must be non-null (SC-004 / T019)
+        let classification = div.get("classification").and_then(|v| v.as_str()).unwrap_or("");
+        if classification == "ForgeFix" || classification == "OscalCliDiff" {
             assert!(
-                div.get("resolution").is_some(),
-                "Divergence should have resolution field (even if null)"
+                !div["resolution"].is_null(),
+                "Divergence with classification {classification} must have a non-null resolution"
             );
         }
     }
@@ -215,12 +227,11 @@ fn round_trip_skip_when_oscal_cli_unavailable() {
         }
     }
 
-    let detector = MockUnavailableDetector;
-    let info = detector.detect();
-    assert!(!info.available, "Mock detector should report unavailable");
-    assert!(!info.functional, "Mock detector should report non-functional");
-    assert!(info.executable_path.is_none(), "Mock detector should have no path");
-    // SC-005: the detection completes without panic and returns a clear "not found" state.
+    // SC-005: verify the actual skip helper returns None with a mock unavailable detector
+    assert!(
+        invoker_if_available(&MockUnavailableDetector).is_none(),
+        "Unavailable detector should cause skip helper to return None"
+    );
 }
 
 /// Log INFO-level summary after test run (T022).

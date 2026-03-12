@@ -76,6 +76,7 @@ fn run_oscal_cli(
                 if start.elapsed() >= timeout {
                     let _ = child.kill();
                     let _ = child.wait(); // Reap the zombie
+                    let _ = stderr_thread.join(); // Prevent thread leak
                     return Err(ForgeError::OscalCliTimeout { timeout });
                 }
                 std::thread::sleep(Duration::from_millis(100));
@@ -135,7 +136,7 @@ impl OscalCliInvoke for ProcessInvoker {
     }
 
     fn convert(&self, args: &ConvertArgs) -> Result<ConvertResult, ForgeError> {
-        let to_flag = format!("--to={}", args.output_format.to_cli_flag());
+        let to_flag = format!("-to={}", args.output_format.to_cli_flag());
 
         let mut cmd = Command::new(&self.executable_path);
         cmd.args(["convert", &to_flag]);
