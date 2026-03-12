@@ -40,6 +40,7 @@ fn generate_catalog_json(fixture: &Path, output: &Path) {
         Some(output),
         MAX_SIZE_BYTES,
         &OutputFormat::Json,
+        None,
     )
     .expect("Catalog pipeline should succeed");
 }
@@ -52,6 +53,7 @@ fn generate_component_json(fixture: &Path, output: &Path) {
         MAX_SIZE_BYTES,
         None,
         &OutputFormat::Json,
+        None,
     )
     .expect("Component pipeline should succeed");
 }

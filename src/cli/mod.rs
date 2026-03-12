@@ -1,4 +1,5 @@
 pub mod convert;
+pub mod diff;
 pub mod export;
 pub mod profile;
 pub mod resolve;
@@ -159,6 +160,15 @@ pub enum Commands {
         output: Option<PathBuf>,
     },
 
+    /// Compare two OSCAL artifacts and show differences
+    Diff {
+        /// Path to the old OSCAL artifact (JSON)
+        old_artifact: PathBuf,
+
+        /// Path to the new OSCAL artifact (JSON)
+        new_artifact: PathBuf,
+    },
+
     /// Generate an OSCAL Profile by selecting controls from a source Catalog
     Profile {
         /// Path to the source Catalog file (OSCAL Catalog JSON)
@@ -255,6 +265,11 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             *timeout,
             oscal_cli_path.as_deref(),
         ),
+        Commands::Diff { old_artifact, new_artifact } => {
+            diff::execute(old_artifact, new_artifact).and_then(|has_changes| {
+                if has_changes { Err(ForgeError::DiffHasChanges) } else { Ok(()) }
+            })
+        }
         Commands::Trace { artifact, source, output } => {
             trace::execute(artifact, source, output.as_deref())
         }
@@ -670,5 +685,22 @@ mod tests {
     fn verbose_and_quiet_conflict() {
         let result = Cli::try_parse_from(["forge", "-v", "-q", "convert", "test.md"]);
         assert!(result.is_err(), "Expected error when both --verbose and --quiet are provided");
+    }
+
+    #[test]
+    fn parse_diff_subcommand() {
+        let cli = Cli::try_parse_from(["forge", "diff", "old.json", "new.json"]).unwrap();
+        if let Commands::Diff { old_artifact, new_artifact } = cli.command {
+            assert_eq!(old_artifact, PathBuf::from("old.json"));
+            assert_eq!(new_artifact, PathBuf::from("new.json"));
+        } else {
+            panic!("Expected Diff command");
+        }
+    }
+
+    #[test]
+    fn parse_diff_missing_new_artifact_fails() {
+        let result = Cli::try_parse_from(["forge", "diff", "old.json"]);
+        assert!(result.is_err(), "Should fail when new_artifact is omitted");
     }
 }

@@ -1,6 +1,7 @@
 pub mod batch;
 pub mod citation;
 pub mod cli;
+pub mod diff;
 pub mod error;
 pub mod export;
 pub mod ingest;

@@ -73,7 +73,7 @@ Parent PRD C-3: "The CLI could produce a diff report showing changes between two
 | Added Control | A control present in the new conversion output but absent from the old |
 | Removed Control | A control present in the old conversion output but absent from the new |
 | Changed Control | A control with the same control-id in both outputs but with different content (title, description, parts, etc.) |
-| ID Stability Change | A case where a control's UUID changed between conversions, indicating content modification that affected the deterministic UUID seed |
+| UUID Stability Change | A case where a control's UUID changed between conversions, indicating content modification that affected the deterministic UUID seed |
 | control-id | The stable identifier for a control (e.g., "POL-AC-001") used as the primary key for matching controls across versions |
 | Conversion Output | An OSCAL JSON artifact (Catalog or Component Definition) produced by `forge convert` |
 
@@ -113,7 +113,7 @@ A compliance engineer compares an old and new conversion of the same policy to s
 
 ---
 
-### User Story 2 — Detect ID Stability Changes (Priority: P1)
+### User Story 2 — Detect UUID Stability Changes (Priority: P1)
 
 A compliance engineer needs to know when UUIDs have changed for the same logical control, as this affects downstream tool references.
 
@@ -124,8 +124,8 @@ A compliance engineer needs to know when UUIDs have changed for the same logical
 **Independent Test**: Convert two versions of a policy where one control's text has been substantively modified (changing its UUID v5), run `forge diff`, and verify the report flags the UUID change.
 
 **Acceptance Scenarios**:
-1. **Given** two Catalog JSONs where control "POL-AC-001" exists in both but has a different UUID (due to content change), **When** running `forge diff`, **Then** the report highlights "POL-AC-001" as having an ID stability change with old and new UUIDs.
-2. **Given** two Catalog JSONs where all UUIDs are identical, **When** running `forge diff`, **Then** no ID stability changes are reported.
+1. **Given** two Catalog JSONs where control "POL-AC-001" exists in both but has a different UUID (due to content change), **When** running `forge diff`, **Then** the report highlights "POL-AC-001" as having a UUID stability change with old and new UUIDs.
+2. **Given** two Catalog JSONs where all UUIDs are identical, **When** running `forge diff`, **Then** no UUID stability changes are reported.
 
 ---
 
@@ -195,7 +195,7 @@ N/A — No state transitions in this work item. The diff is a single-pass compar
 - [ ] **M-2:** The diff shall identify and report added controls (present in new but not old), matched by control-id. *(Traces to: Parent PRD C-3)*
 - [ ] **M-3:** The diff shall identify and report removed controls (present in old but not new), matched by control-id. *(Traces to: Parent PRD C-3)*
 - [ ] **M-4:** The diff shall identify and report changed controls (same control-id, different content), showing old and new values for changed fields. *(Traces to: Parent PRD C-3)*
-- [ ] **M-5:** The diff shall detect and highlight ID stability changes — cases where a control's UUID differs between versions for the same control-id. *(Traces to: Parent PRD C-3, M-8)*
+- [ ] **M-5:** The diff shall detect and highlight UUID stability changes — cases where a control's UUID differs between versions for the same control-id. *(Traces to: Parent PRD C-3, M-8)*
 - [ ] **M-6:** The diff report shall be printed to stdout in a human-readable format. *(Traces to: Parent PRD C-3)*
 - [ ] **M-7:** The diff shall support Catalog artifacts (comparing controls within `catalog.groups[].controls[]`). *(Traces to: Parent PRD C-3)*
 - [ ] **M-8:** The CLI shall produce a descriptive error when input files are invalid JSON, not OSCAL artifacts, or are different artifact types. *(Traces to: Parent PRD C-3)*
@@ -203,7 +203,7 @@ N/A — No state transitions in this work item. The diff is a single-pass compar
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
 - [ ] **S-1:** The diff shall support Component Definition artifacts (comparing `implemented-requirements[]` within `control-implementations[]`).
 - [ ] **S-2:** The diff report shall include a summary section at the top showing counts: total controls in old, total in new, added, removed, changed, unchanged, UUID changes.
-- [ ] **S-3:** The diff shall compare control properties (title, description, parts/statements) and report which specific fields changed.
+- [ ] **S-3:** The diff shall compare control properties (title, description, parts/statements) and report which specific fields changed. *(Note: Field-level comparison is also specified as Must Have in spec.md FR-004; S-3 is satisfied by FR-004 and retained here for PRD completeness.)*
 
 ### Could Have (C) — Nice to have, if time permits 🟡 `@human-review`
 - [ ] **C-1:** A `--format json` flag could produce the diff report as structured JSON for programmatic consumption.
@@ -301,6 +301,9 @@ pub enum DiffEntry {
         control_id: String,
         old_uuid: String,
         new_uuid: String,
+        /// True when the UUID also changed alongside field-level content changes.
+        /// The summary uuid_changes counter does NOT include these entries.
+        uuid_changed: bool,
         field_changes: Vec<FieldChange>,
     },
     UuidChanged {

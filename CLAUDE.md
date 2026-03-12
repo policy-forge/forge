@@ -103,6 +103,8 @@ See `docs/FORGE_PRODUCT_ROADMAP.md` for full roadmap details.
 - Local filesystem (reads Profile JSON, writes resolved Catalog JSON) (036-oscal-cli-profile-resolution)
 - Rust, Edition 2024, stable 1.93.0 + clap 4.x (CLI), serde 1.0.228, serde_json 1.0.149, chrono 0.4, thiserror 2.0.18, tracing 0.1.44 — all already in Cargo.toml. No new production dependencies. (038-traceability-report)
 - N/A — reads local files, outputs to stdout or file (038-traceability-report)
+- Rust 1.93.0 (Edition 2024) + `serde_json` (existing), `std::collections::HashMap` (stdlib), `clap 4.x` (existing), `thiserror 2.0.18` (existing), `tracing 0.1.44` (existing) (043-diff-report)
+- N/A — reads two local JSON files into memory; no writes (043-diff-report)
 - Rust, Edition 2024, stable 1.93.0 + clap 4.x, serde 1.0.228, serde_json 1.0.149, uuid 1.20.0, chrono 0.4, thiserror 2.0.18, tracing 0.1.44 — all existing in `Cargo.toml`; **no new dependencies** (041-assessment-plan-controls)
 - Local filesystem — reads Markdown, writes JSON (AP always JSON regardless of `--format`) (041-assessment-plan-controls)
 

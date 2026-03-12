@@ -78,7 +78,7 @@ This is a **lightweight security review** intended to catch obvious security con
 |---------------|---------|----------------|---------------|-------|
 | User Input Field | Old OSCAL file path (positional arg) | -- | -- | File path validated for existence; file content parsed as JSON |
 | User Input Field | New OSCAL file path (positional arg) | -- | -- | File path validated for existence; file content parsed as JSON |
-| User Input Field | `--summary-only` flag (optional, Could Have) | -- | -- | Boolean flag; no injection risk |
+| User Input Field | `--summary-only` flag (Could Have C-2 — **deferred, not in MVP scope**) | -- | -- | Boolean flag; no injection risk; attack surface entry retained for when C-2 is implemented |
 | **None** | **No network, API, or service exposure** | -- | -- | Local CLI tool; read-only operation |
 
 ### Attack Surface Diagram 🟢 `@llm-autonomous`

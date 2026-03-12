@@ -146,6 +146,13 @@ pub enum ForgeError {
     )]
     ResolveInputNotJson { path: PathBuf },
 
+    // --- Diff errors (exit code 2 for DiffError, exit code 1 for DiffHasChanges) ---
+    #[error("")]
+    DiffHasChanges,
+
+    #[error("Diff error: {0}")]
+    DiffError(String),
+
     // --- Other (exit code 1) ---
     #[error("Serialization error: {0}")]
     Serialization(String),
@@ -184,10 +191,12 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::OscalCliExecution { .. }
         | ForgeError::OscalCliTimeout { .. }
         | ForgeError::ResolveInputNotJson { .. }
-        | ForgeError::Serialization(_) => 1,
+        | ForgeError::Serialization(_)
+        | ForgeError::DiffHasChanges => 1,
 
-        // Exit 2: Parse/Structure errors
-        ForgeError::NoStructureDetected { .. }
+        // Exit 2: Parse/Structure errors + Diff errors
+        ForgeError::DiffError(_)
+        | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)
         | ForgeError::BackMatter(_)
@@ -536,5 +545,27 @@ mod tests {
     #[test]
     fn exit_code_resolve_input_not_json_returns_1() {
         assert_eq!(exit_code(&ForgeError::ResolveInputNotJson { path: PathBuf::from("x.xml") }), 1);
+    }
+
+    #[test]
+    fn diff_has_changes_display() {
+        let err = ForgeError::DiffHasChanges;
+        assert_eq!(err.to_string(), "");
+    }
+
+    #[test]
+    fn diff_has_changes_exit_code_is_1() {
+        assert_eq!(exit_code(&ForgeError::DiffHasChanges), 1);
+    }
+
+    #[test]
+    fn diff_error_display() {
+        let err = ForgeError::DiffError("type mismatch".to_string());
+        assert_eq!(err.to_string(), "Diff error: type mismatch");
+    }
+
+    #[test]
+    fn diff_error_exit_code_is_2() {
+        assert_eq!(exit_code(&ForgeError::DiffError("test".into())), 2);
     }
 }
