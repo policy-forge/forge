@@ -205,9 +205,11 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
         usize::from(opts.jobs),
     );
 
-    // Print summary to stderr (SEC-7)
-    let formatted = batch::format_batch_summary(&batch_summary);
-    eprint!("{formatted}");
+    // Print summary to stderr (SEC-7), unless --quiet was specified
+    if !opts.quiet {
+        let formatted = batch::format_batch_summary(&batch_summary);
+        eprint!("{formatted}");
+    }
 
     if batch_summary.has_failures() {
         Err(ForgeError::BatchConversion(format!(
