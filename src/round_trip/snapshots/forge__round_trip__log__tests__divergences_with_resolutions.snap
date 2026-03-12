@@ -1,0 +1,27 @@
+---
+source: src/round_trip/log.rs
+expression: content
+---
+{
+  "artifact_type": "Catalog",
+  "divergences": [
+    {
+      "actual": "my-security-policy",
+      "classification": "ForgeFix",
+      "description": "Title casing not preserved through XML serialization",
+      "expected": "My Security Policy",
+      "json_path": "/catalog/metadata/title",
+      "resolution": "Fixed"
+    },
+    {
+      "actual": null,
+      "classification": "Acceptable",
+      "description": "Empty array omitted by oscal-cli",
+      "expected": [],
+      "json_path": "/catalog/groups/0/controls",
+      "resolution": "Accepted"
+    }
+  ],
+  "passed": false,
+  "source_path": "/tmp/test/catalog.json"
+}
