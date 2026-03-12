@@ -9,7 +9,9 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::error::ForgeError;
-use crate::oscal::back_matter::{BackMatter, BackMatterResource, Prop, ResourceCitation, Rlink};
+use crate::oscal::back_matter::{
+    BackMatter, BackMatterResource, OscalLink, Prop, ResourceCitation, Rlink,
+};
 use crate::oscal::catalog::{
     CatalogEnvelope, OscalCatalog, OscalControl, OscalGroup, OscalMetadata, OscalParam,
     OscalParamConstraint,
@@ -18,6 +20,7 @@ use crate::oscal::component_definition::{
     ComponentDefinition, ComponentDefinitionEnvelope, ComponentDefinitionMetadata,
     DocumentaryComponent,
 };
+use crate::oscal::implemented_requirements::{ControlImplementation, ImplementedRequirement};
 use crate::oscal::parts::{OscalPart, OscalProp};
 
 // ─── XML Deserialization Structs ─────────────────────────────────────────
@@ -157,6 +160,34 @@ struct XmlComponent {
     description: Option<XmlDescription>,
     #[serde(default, rename = "prop")]
     props: Vec<XmlProp>,
+    #[serde(default, rename = "control-implementation")]
+    control_implementations: Vec<XmlControlImplementation>,
+}
+
+#[derive(Deserialize)]
+struct XmlControlImplementation {
+    #[serde(rename = "@uuid")]
+    uuid: String,
+    #[serde(rename = "@source")]
+    source: String,
+    #[serde(default)]
+    description: Option<XmlDescription>,
+    #[serde(default, rename = "implemented-requirement")]
+    implemented_requirements: Vec<XmlImplementedRequirement>,
+}
+
+#[derive(Deserialize)]
+struct XmlImplementedRequirement {
+    #[serde(rename = "@uuid")]
+    uuid: String,
+    #[serde(rename = "@control-id")]
+    control_id: String,
+    #[serde(default)]
+    description: Option<XmlDescription>,
+    #[serde(default, rename = "prop")]
+    props: Vec<XmlProp>,
+    #[serde(default, rename = "link")]
+    links: Vec<XmlLink>,
 }
 
 /// Handles `<description><p>text</p></description>` markup-multiline format.
@@ -315,20 +346,71 @@ fn convert_catalog(xml: XmlCatalog) -> OscalCatalog {
     }
 }
 
-fn convert_component(xml: XmlComponent) -> DocumentaryComponent {
+fn convert_component(xml: XmlComponent) -> Result<DocumentaryComponent, ForgeError> {
     let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
-    DocumentaryComponent {
+    let control_implementations = xml
+        .control_implementations
+        .into_iter()
+        .map(convert_control_implementation)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(DocumentaryComponent {
         uuid: xml.uuid,
         component_type: xml.component_type,
         title: xml.title,
         description,
         props: xml.props.into_iter().map(convert_prop).collect(),
-        control_implementations: vec![],
-    }
+        control_implementations,
+    })
 }
 
-fn convert_component_definition(xml: XmlComponentDefinition) -> ComponentDefinition {
-    ComponentDefinition {
+fn convert_control_implementation(
+    xml: XmlControlImplementation,
+) -> Result<ControlImplementation, ForgeError> {
+    Uuid::try_parse(&xml.uuid).map_err(|e| ForgeError::ExportInvalidOscal {
+        detail: format!("Invalid UUID in control-implementation: '{uuid}' — {e}", uuid = xml.uuid),
+    })?;
+    let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
+    let implemented_requirements = xml
+        .implemented_requirements
+        .into_iter()
+        .map(convert_implemented_requirement)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(ControlImplementation {
+        uuid: xml.uuid,
+        source: xml.source,
+        description,
+        implemented_requirements,
+    })
+}
+
+fn convert_implemented_requirement(
+    xml: XmlImplementedRequirement,
+) -> Result<ImplementedRequirement, ForgeError> {
+    Uuid::try_parse(&xml.uuid).map_err(|e| ForgeError::ExportInvalidOscal {
+        detail: format!(
+            "Invalid UUID in implemented-requirement: '{uuid}' — {e}",
+            uuid = xml.uuid
+        ),
+    })?;
+    let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
+    Ok(ImplementedRequirement {
+        uuid: xml.uuid,
+        control_id: xml.control_id,
+        description,
+        props: xml.props.into_iter().map(convert_prop).collect(),
+        links: xml.links.into_iter().map(convert_link).collect(),
+    })
+}
+
+fn convert_component_definition(
+    xml: XmlComponentDefinition,
+) -> Result<ComponentDefinition, ForgeError> {
+    let components = xml
+        .components
+        .into_iter()
+        .map(convert_component)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(ComponentDefinition {
         uuid: xml.uuid,
         metadata: ComponentDefinitionMetadata {
             title: xml.metadata.title,
@@ -336,10 +418,10 @@ fn convert_component_definition(xml: XmlComponentDefinition) -> ComponentDefinit
             version: xml.metadata.version,
             oscal_version: xml.metadata.oscal_version,
         },
-        components: xml.components.into_iter().map(convert_component).collect(),
+        components,
         capabilities: vec![],
         back_matter: xml.back_matter.map(convert_back_matter),
-    }
+    })
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────
@@ -371,7 +453,8 @@ pub fn deserialize_component_from_xml(
     let xml_cd: XmlComponentDefinition = quick_xml::de::from_str(xml).map_err(|e| {
         ForgeError::Serialization(format!("XML component-definition deserialization failed: {e}"))
     })?;
-    Ok(ComponentDefinitionEnvelope { component_definition: convert_component_definition(xml_cd) })
+    let component_definition = convert_component_definition(xml_cd)?;
+    Ok(ComponentDefinitionEnvelope { component_definition })
 }
 
 #[cfg(test)]
@@ -463,5 +546,187 @@ mod tests {
                 // Rejecting the document is also acceptable (safe behavior)
             }
         }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // T068: XML round-trip for control-implementations
+    // ══════════════════════════════════════════════════════
+
+    #[test]
+    fn xml_round_trip_control_implementations() {
+        use crate::export::xml_serializer::serialize_component_definition_to_xml;
+        use crate::oscal::component_definition::ComponentDefinitionMetadata;
+
+        let original = ComponentDefinitionEnvelope {
+            component_definition: ComponentDefinition {
+                uuid: "660e8400-e29b-41d4-a716-446655440000".to_string(),
+                metadata: ComponentDefinitionMetadata {
+                    title: "Round-Trip Test".to_string(),
+                    last_modified: "2026-03-12T00:00:00Z".to_string(),
+                    version: "1.0".to_string(),
+                    oscal_version: "1.2.0".to_string(),
+                },
+                components: vec![DocumentaryComponent {
+                    uuid: "770e8400-e29b-41d4-a716-446655440000".to_string(),
+                    component_type: "policy".to_string(),
+                    title: "Test Policy".to_string(),
+                    description: "A test policy.".to_string(),
+                    props: vec![],
+                    control_implementations: vec![ControlImplementation {
+                        uuid: "880e8400-e29b-41d4-a716-446655440000".to_string(),
+                        source: "./baseline.json".to_string(),
+                        description: "Implementation narratives.".to_string(),
+                        implemented_requirements: vec![
+                            ImplementedRequirement {
+                                uuid: "990e8400-e29b-41d4-a716-446655440000".to_string(),
+                                control_id: "POL-AC-001".to_string(),
+                                description: "All users must authenticate.".to_string(),
+                                props: vec![OscalProp {
+                                    name: "source-file".to_string(),
+                                    value: "policy.md".to_string(),
+                                    ns: Some(
+                                        "https://forge.policy-forge.github.io/ns/trace"
+                                            .to_string(),
+                                    ),
+                                }],
+                                links: vec![OscalLink {
+                                    href: "policy.md#line=10".to_string(),
+                                    rel: "source".to_string(),
+                                    text: None,
+                                }],
+                            },
+                            ImplementedRequirement {
+                                uuid: "aa0e8400-e29b-41d4-a716-446655440000".to_string(),
+                                control_id: "POL-AC-002".to_string(),
+                                description: "Passwords must be 12+ characters.".to_string(),
+                                props: vec![],
+                                links: vec![],
+                            },
+                        ],
+                    }],
+                }],
+                capabilities: vec![],
+                back_matter: None,
+            },
+        };
+
+        // Serialize to XML
+        let xml =
+            serialize_component_definition_to_xml(&original.component_definition).unwrap();
+
+        // Deserialize back
+        let round_tripped = deserialize_component_from_xml(&xml).unwrap();
+        let rt = &round_tripped.component_definition;
+
+        // Verify top-level fields
+        assert_eq!(rt.uuid, original.component_definition.uuid);
+        assert_eq!(rt.metadata.title, "Round-Trip Test");
+
+        // Verify component
+        assert_eq!(rt.components.len(), 1);
+        let comp = &rt.components[0];
+        assert_eq!(comp.uuid, "770e8400-e29b-41d4-a716-446655440000");
+        assert_eq!(comp.title, "Test Policy");
+        assert_eq!(comp.description, "A test policy.");
+
+        // Verify control-implementations survived
+        assert_eq!(comp.control_implementations.len(), 1);
+        let ci = &comp.control_implementations[0];
+        assert_eq!(ci.uuid, "880e8400-e29b-41d4-a716-446655440000");
+        assert_eq!(ci.source, "./baseline.json");
+        assert_eq!(ci.description, "Implementation narratives.");
+
+        // Verify implemented-requirements survived
+        assert_eq!(ci.implemented_requirements.len(), 2);
+
+        let ir0 = &ci.implemented_requirements[0];
+        assert_eq!(ir0.uuid, "990e8400-e29b-41d4-a716-446655440000");
+        assert_eq!(ir0.control_id, "POL-AC-001");
+        assert_eq!(ir0.description, "All users must authenticate.");
+        assert_eq!(ir0.props.len(), 1);
+        assert_eq!(ir0.props[0].name, "source-file");
+        assert_eq!(ir0.props[0].value, "policy.md");
+        assert_eq!(
+            ir0.props[0].ns.as_deref(),
+            Some("https://forge.policy-forge.github.io/ns/trace")
+        );
+        assert_eq!(ir0.links.len(), 1);
+        assert_eq!(ir0.links[0].href, "policy.md#line=10");
+        assert_eq!(ir0.links[0].rel, "source");
+
+        let ir1 = &ci.implemented_requirements[1];
+        assert_eq!(ir1.uuid, "aa0e8400-e29b-41d4-a716-446655440000");
+        assert_eq!(ir1.control_id, "POL-AC-002");
+        assert_eq!(ir1.description, "Passwords must be 12+ characters.");
+        assert!(ir1.props.is_empty());
+        assert!(ir1.links.is_empty());
+    }
+
+    #[test]
+    fn xml_deser_control_implementation_invalid_uuid_errors() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<component-definition xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e">
+  <metadata>
+    <title>Test</title>
+    <last-modified>2026-01-01T00:00:00Z</last-modified>
+    <version>1.0</version>
+    <oscal-version>1.2.0</oscal-version>
+  </metadata>
+  <component uuid="c3d4e5f6-a7b8-4c9d-ae1f-2a3b4c5d6e7f" type="policy">
+    <title>Test</title>
+    <control-implementation uuid="NOT-A-VALID-UUID" source="./profile.json">
+      <description><p>Test</p></description>
+    </control-implementation>
+  </component>
+</component-definition>"#;
+
+        let result = deserialize_component_from_xml(xml);
+        assert!(result.is_err(), "Invalid UUID in control-implementation should error");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("Invalid UUID"),
+            "Error should mention invalid UUID, got: {err}"
+        );
+    }
+
+    #[test]
+    fn xml_deser_implemented_requirement_invalid_uuid_errors() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<component-definition xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e">
+  <metadata>
+    <title>Test</title>
+    <last-modified>2026-01-01T00:00:00Z</last-modified>
+    <version>1.0</version>
+    <oscal-version>1.2.0</oscal-version>
+  </metadata>
+  <component uuid="c3d4e5f6-a7b8-4c9d-ae1f-2a3b4c5d6e7f" type="policy">
+    <title>Test</title>
+    <control-implementation uuid="880e8400-e29b-41d4-a716-446655440000" source="./p.json">
+      <description><p>Test</p></description>
+      <implemented-requirement uuid="BAD-UUID" control-id="AC-1">
+        <description><p>Test</p></description>
+      </implemented-requirement>
+    </control-implementation>
+  </component>
+</component-definition>"#;
+
+        let result = deserialize_component_from_xml(xml);
+        assert!(result.is_err(), "Invalid UUID in implemented-requirement should error");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("Invalid UUID"),
+            "Error should mention invalid UUID, got: {err}"
+        );
+    }
+
+    #[test]
+    fn xml_deser_component_without_control_implementations() {
+        let xml = include_str!("../../tests/fixtures/export/component.xml");
+        let result = deserialize_component_from_xml(xml).unwrap();
+        let comp = &result.component_definition.components[0];
+        assert!(
+            comp.control_implementations.is_empty(),
+            "Component without control-implementations should deserialize with empty vec"
+        );
     }
 }
