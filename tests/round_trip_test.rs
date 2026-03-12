@@ -325,6 +325,7 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "test".to_string(),
                     title: "Test".to_string(),
@@ -357,6 +358,7 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "deep".to_string(),
                     title: "Deep".to_string(),
@@ -427,6 +429,7 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "ac".to_string(),
                     title: "Access Control".to_string(),
@@ -522,6 +525,7 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "test".to_string(),
                     title: "Test".to_string(),
@@ -625,6 +629,7 @@ mod xml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "ac".to_string(),
                     title: "Access Control".to_string(),
@@ -708,6 +713,7 @@ mod xml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "deep".to_string(),
                     title: "Deep".to_string(),
@@ -824,6 +830,7 @@ mod xml_yaml_xml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "ns-test".to_string(),
                     title: "Namespace Test".to_string(),

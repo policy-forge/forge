@@ -56,6 +56,7 @@ fn build_catalog_from_fixture(fixture_path: &Path) -> forge::oscal::catalog::Osc
             version: metadata.version,
             oscal_version: metadata.oscal_version,
         },
+        controls: vec![],
         groups: catalog.groups,
         back_matter,
     }

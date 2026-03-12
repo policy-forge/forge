@@ -650,6 +650,7 @@ mod tests {
         OscalCatalog {
             uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![test_group(
                 "access-control",
                 "Access Control",
@@ -1265,6 +1266,7 @@ mod tests {
                 version: "1.0".to_string(),
                 oscal_version: "1.2.0".to_string(),
             },
+            controls: vec![],
             groups: vec![test_group(
                 "test",
                 "Test",
@@ -1308,6 +1310,7 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: r#"test"uuid<"#.to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![],
             back_matter: None,
         };
@@ -1326,6 +1329,7 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: "test-uuid".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![test_group(
                 "test",
                 "xmlns=http://evil.com",
@@ -1364,6 +1368,7 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: "test-uuid".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![OscalGroup {
                 id: "empty-group".to_string(),
                 title: "Empty Group".to_string(),
@@ -1388,6 +1393,7 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: "test-uuid".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![test_group(
                 "test",
                 "Test",

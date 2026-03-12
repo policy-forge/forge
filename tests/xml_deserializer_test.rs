@@ -55,6 +55,7 @@ fn test_catalog() -> OscalCatalog {
     OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "access-control".to_string(),
             title: "Access Control".to_string(),
@@ -380,6 +381,7 @@ fn test_catalog_no_back_matter_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "test".to_string(),
             title: "Test".to_string(),
@@ -399,6 +401,7 @@ fn test_catalog_empty_groups_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![],
         back_matter: None,
     };
@@ -412,6 +415,7 @@ fn test_resource_with_props_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![],
         back_matter: Some(BackMatter {
             resources: vec![BackMatterResource {
@@ -440,6 +444,7 @@ fn test_rlink_with_media_type_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![],
         back_matter: Some(BackMatter {
             resources: vec![BackMatterResource {
@@ -508,6 +513,7 @@ fn test_xml_escaped_content_round_trips() {
             version: "1.0".to_string(),
             oscal_version: "1.2.0".to_string(),
         },
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "test".to_string(),
             title: "Test & <Demo>".to_string(),
@@ -546,6 +552,7 @@ fn test_deeply_nested_parts_round_trip() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "test".to_string(),
             title: "Test".to_string(),

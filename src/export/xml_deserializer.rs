@@ -308,6 +308,7 @@ fn convert_catalog(xml: XmlCatalog) -> OscalCatalog {
     OscalCatalog {
         uuid: xml.uuid,
         metadata: convert_metadata(xml.metadata),
+        controls: vec![],
         groups: xml.groups.into_iter().map(convert_group).collect(),
         back_matter: xml.back_matter.map(convert_back_matter),
     }

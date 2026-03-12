@@ -302,6 +302,7 @@ mod tests {
         OscalCatalog {
             uuid: "cat-uuid".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups,
             back_matter: None,
         }

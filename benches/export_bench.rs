@@ -57,6 +57,7 @@ fn build_catalog_json(fixture_path: &Path) -> String {
             version: metadata.version,
             oscal_version: metadata.oscal_version,
         },
+        controls: vec![],
         groups: catalog.groups,
         back_matter,
     };

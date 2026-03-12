@@ -33,6 +33,9 @@ pub struct OscalCatalog {
     pub uuid: String,
     /// Placeholder metadata (WI-11).
     pub metadata: OscalMetadata,
+    /// Root-level controls (not inside any group). OSCAL v1.2.0 allows this.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub controls: Vec<OscalControl>,
     /// Groups mapped from `PolicySection`s.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub groups: Vec<OscalGroup>,
@@ -425,6 +428,7 @@ pub fn build_catalog(
             version: "0.0.0".to_string(),
             oscal_version: "1.2.0".to_string(),
         },
+        controls: vec![],
         groups,
         back_matter: None,
     })
@@ -878,6 +882,7 @@ mod tests {
                 version: "t".to_string(),
                 oscal_version: "t".to_string(),
             },
+            controls: vec![],
             groups: vec![],
             back_matter: None,
         };
@@ -1200,6 +1205,7 @@ mod tests {
                 version: "1.0.0".into(),
                 oscal_version: "1.2.0".into(),
             },
+            controls: vec![],
             groups: vec![
                 OscalGroup {
                     id: "g1".into(),
@@ -1260,11 +1266,38 @@ mod tests {
                 version: "1.0.0".into(),
                 oscal_version: "1.2.0".into(),
             },
+            controls: vec![],
             groups: vec![],
             back_matter: None,
         };
 
         let ids = collect_control_ids_from_catalog(&catalog);
         assert!(ids.is_empty());
+    }
+
+    // ── Task 6: root-level controls on OscalCatalog ─────
+
+    #[test]
+    fn catalog_round_trips_root_level_controls() {
+        let json = r#"{
+            "catalog": {
+                "uuid": "test-uuid",
+                "metadata": {
+                    "title": "Test",
+                    "last-modified": "2026-01-01T00:00:00Z",
+                    "version": "1.0",
+                    "oscal-version": "1.2.0"
+                },
+                "controls": [
+                    {"id": "ctrl-1", "title": "Root Control"}
+                ]
+            }
+        }"#;
+        let envelope: CatalogEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(envelope.catalog.controls.len(), 1);
+        assert_eq!(envelope.catalog.controls[0].id, "ctrl-1");
+        let reserialized = serde_json::to_string(&envelope).unwrap();
+        let re_parsed: CatalogEnvelope = serde_json::from_str(&reserialized).unwrap();
+        assert_eq!(re_parsed.catalog.controls.len(), 1);
     }
 }

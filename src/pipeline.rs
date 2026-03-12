@@ -218,6 +218,7 @@ pub fn run_catalog_pipeline(
             version: real_metadata.version,
             oscal_version: real_metadata.oscal_version,
         },
+        controls: vec![],
         groups: catalog.groups,
         back_matter,
     };

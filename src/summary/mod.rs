@@ -150,6 +150,7 @@ mod tests {
                 version: String::new(),
                 oscal_version: String::new(),
             },
+            controls: vec![],
             groups: vec![],
             back_matter: None,
         };
@@ -167,6 +168,7 @@ mod tests {
                 version: String::new(),
                 oscal_version: String::new(),
             },
+            controls: vec![],
             groups: vec![OscalGroup {
                 id: "g1".into(),
                 title: "Group 1".into(),
@@ -218,6 +220,7 @@ mod tests {
                 version: String::new(),
                 oscal_version: String::new(),
             },
+            controls: vec![],
             groups: vec![
                 OscalGroup {
                     id: "g1".into(),
