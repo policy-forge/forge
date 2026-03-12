@@ -89,6 +89,9 @@ pub enum ForgeError {
     #[error("Unsupported OSCAL artifact type for tracing: {detail}")]
     TraceUnsupportedArtifact { detail: String },
 
+    #[error("Ambiguous OSCAL artifact: file contains multiple model types ({detail}). Each file must contain exactly one OSCAL model.")]
+    AmbiguousArtifact { detail: String },
+
     // --- Validation/Config errors (exit code 3) ---
     #[error("Validation error: {0}")]
     Validation(String),
@@ -203,7 +206,8 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::ComponentDefinitionBuild(_)
         | ForgeError::AssessmentPlanBuild(_)
         | ForgeError::ParameterExtraction(_)
-        | ForgeError::TraceUnsupportedArtifact { .. } => 2,
+        | ForgeError::TraceUnsupportedArtifact { .. }
+        | ForgeError::AmbiguousArtifact { .. } => 2,
 
         // Exit 3: Validation/Config errors
         ForgeError::Validation(_) | ForgeError::Config(_) | ForgeError::SchemaValidation(_) => 3,
@@ -449,6 +453,23 @@ mod tests {
     fn trace_unsupported_artifact_exit_code() {
         assert_eq!(
             exit_code(&ForgeError::TraceUnsupportedArtifact { detail: "test".to_string() }),
+            2
+        );
+    }
+
+    #[test]
+    fn ambiguous_artifact_display() {
+        let err = ForgeError::AmbiguousArtifact {
+            detail: "catalog, component-definition".to_string(),
+        };
+        assert!(err.to_string().contains("Ambiguous OSCAL artifact"));
+        assert!(err.to_string().contains("catalog, component-definition"));
+    }
+
+    #[test]
+    fn ambiguous_artifact_exit_code_is_2() {
+        assert_eq!(
+            exit_code(&ForgeError::AmbiguousArtifact { detail: "test".to_string() }),
             2
         );
     }

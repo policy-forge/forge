@@ -69,6 +69,9 @@ pub enum ValidateError {
     #[error("Schema compilation failed for {model_type}: {message}")]
     SchemaCompilation { model_type: String, message: String },
 
+    #[error("Ambiguous OSCAL artifact: file contains multiple model types ({detail}). Each file must contain exactly one OSCAL model.")]
+    AmbiguousArtifact { detail: String },
+
     #[allow(clippy::cast_precision_loss)]
     #[error("Artifact file is too large ({size_mb:.1}MB, limit: {limit_mb}MB)")]
     FileTooLarge { size_mb: f64, limit_mb: u64 },
@@ -82,6 +85,21 @@ pub enum ValidateError {
 ///
 /// Returns `ValidateError::UnknownModelType` if no recognized top-level key is found.
 pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> {
+    // Check for ambiguity: multiple recognized OSCAL root keys
+    let mut found = Vec::new();
+    if json.get("catalog").is_some() {
+        found.push("catalog");
+    }
+    if json.get("component-definition").is_some() {
+        found.push("component-definition");
+    }
+    if json.get("profile").is_some() {
+        found.push("profile");
+    }
+    if found.len() > 1 {
+        return Err(ValidateError::AmbiguousArtifact { detail: found.join(", ") });
+    }
+
     if json.get("catalog").is_some() {
         Ok(OscalModelType::Catalog)
     } else if json.get("component-definition").is_some() {
@@ -420,6 +438,43 @@ mod tests {
         assert_eq!(OscalModelType::Catalog.to_string(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.to_string(), "component-definition");
         assert_eq!(OscalModelType::Profile.to_string(), "profile");
+    }
+
+    #[test]
+    fn detect_model_type_rejects_ambiguous_artifact() {
+        let json: serde_json::Value = serde_json::json!({
+            "catalog": {"uuid": "x", "metadata": {}},
+            "component-definition": {"uuid": "y", "metadata": {}}
+        });
+        let result = detect_model_type(&json);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), ValidateError::AmbiguousArtifact { .. }));
+    }
+
+    #[test]
+    fn detect_model_type_rejects_three_way_ambiguity() {
+        let json: serde_json::Value = serde_json::json!({
+            "catalog": {},
+            "component-definition": {},
+            "profile": {}
+        });
+        let result = detect_model_type(&json);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, ValidateError::AmbiguousArtifact { .. }));
+        let msg = err.to_string();
+        assert!(msg.contains("catalog"));
+        assert!(msg.contains("component-definition"));
+        assert!(msg.contains("profile"));
+    }
+
+    #[test]
+    fn validate_error_ambiguous_artifact_display() {
+        let err = ValidateError::AmbiguousArtifact {
+            detail: "catalog, profile".to_string(),
+        };
+        assert!(err.to_string().contains("catalog, profile"));
+        assert!(err.to_string().contains("Ambiguous"));
     }
 
     #[test]
