@@ -1,4 +1,5 @@
 pub mod convert;
+pub mod diff;
 pub mod export;
 pub mod profile;
 pub mod resolve;
@@ -152,6 +153,15 @@ pub enum Commands {
         output: Option<PathBuf>,
     },
 
+    /// Compare two OSCAL artifacts and show differences
+    Diff {
+        /// Path to the old OSCAL artifact (JSON)
+        old_artifact: PathBuf,
+
+        /// Path to the new OSCAL artifact (JSON)
+        new_artifact: PathBuf,
+    },
+
     /// Generate an OSCAL Profile by selecting controls from a source Catalog
     Profile {
         /// Path to the source Catalog file (OSCAL Catalog JSON)
@@ -246,6 +256,11 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             *timeout,
             oscal_cli_path.as_deref(),
         ),
+        Commands::Diff { old_artifact, new_artifact } => {
+            diff::execute(old_artifact, new_artifact).and_then(|has_changes| {
+                if has_changes { Err(ForgeError::DiffHasChanges) } else { Ok(()) }
+            })
+        }
         Commands::Trace { artifact, source, output } => {
             trace::execute(artifact, source, output.as_deref())
         }
