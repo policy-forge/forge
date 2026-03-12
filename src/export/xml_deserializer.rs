@@ -257,8 +257,8 @@ fn convert_prop(xml: XmlProp) -> OscalProp {
     OscalProp { name: xml.name, value: xml.value, ns: xml.ns }
 }
 
-fn convert_link(xml: XmlLink) -> crate::oscal::back_matter::OscalLink {
-    crate::oscal::back_matter::OscalLink {
+fn convert_link(xml: XmlLink) -> OscalLink {
+    OscalLink {
         href: xml.href,
         rel: xml.rel.unwrap_or_default(),
         text: xml.text,
