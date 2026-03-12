@@ -62,7 +62,7 @@ cargo build --release
 ./target/release/forge convert tests/fixtures/sample_policy.md --strategy catalog --format json
 
 # Convert to an OSCAL Component Definition
-./target/release/forge convert tests/fixtures/sample_policy.md --strategy component --format json
+./target/release/forge convert tests/fixtures/sample_policy.md --strategy component --format json --source-profile profile.json
 
 # Validate a generated OSCAL artifact
 ./target/release/forge validate catalog.json
