@@ -204,14 +204,16 @@ pub fn serialize_oscal(model: &OscalModel, format: OutputFormat) -> Result<Strin
     }
 }
 
-/// Validate an OSCAL model against the JSON schema.
+/// Validate an OSCAL model using full validation (schema + semantic checks).
 ///
-/// Serializes the model to JSON Value, then validates using `validate_artifact()`.
+/// Serializes the model to JSON Value, then validates using `run_full_validation()`
+/// which includes both JSON schema validation and semantic checks (orphaned
+/// back-matter links, missing references, etc.).
 ///
 /// # Errors
 /// - `ForgeError::SchemaValidation` if validation fails
 pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
-    debug!("Validating OSCAL model against JSON schema");
+    debug!("Validating OSCAL model (schema + semantic)");
     let (json_value, model_type) = match model {
         OscalModel::Catalog(envelope) => {
             let value = serde_json::to_value(envelope).map_err(|e| {
@@ -231,17 +233,19 @@ pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
         }
     };
 
-    let result = crate::validate::validate_artifact(&json_value, model_type)
-        .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    let report =
+        crate::validate::run_full_validation("export-artifact", &json_value, model_type)
+            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
 
-    if result.is_valid {
+    if report.is_valid() {
         info!("Export validation passed for {model_type}");
         Ok(())
     } else {
-        let error_messages: Vec<String> = result.errors.iter().map(|e| e.message.clone()).collect();
+        let error_messages: Vec<String> =
+            report.errors().iter().map(|e| e.message.clone()).collect();
         Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s): {}",
-            result.errors.len(),
+            report.errors().len(),
             error_messages.join("; ")
         )))
     }
