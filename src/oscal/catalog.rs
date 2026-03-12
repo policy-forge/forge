@@ -60,6 +60,9 @@ pub struct OscalGroup {
     /// Controls mapped from requirements.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub controls: Vec<OscalControl>,
+    /// Nested sub-groups. OSCAL v1.2.0 allows groups within groups.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub groups: Vec<OscalGroup>,
 }
 
 /// OSCAL `param` element within a catalog control (WI-34).
@@ -414,6 +417,7 @@ pub fn build_catalog(
             props: vec![],
             links: vec![],
             controls,
+            groups: vec![],
         });
     }
 
@@ -1232,6 +1236,7 @@ mod tests {
                             params: vec![],
                         },
                     ],
+                    groups: vec![],
                 },
                 OscalGroup {
                     id: "g2".into(),
@@ -1247,6 +1252,7 @@ mod tests {
                         links: vec![],
                         params: vec![],
                     }],
+                    groups: vec![],
                 },
             ],
             back_matter: None,
@@ -1273,6 +1279,38 @@ mod tests {
 
         let ids = collect_control_ids_from_catalog(&catalog);
         assert!(ids.is_empty());
+    }
+
+    // ── Task 7: nested groups on OscalGroup ────────────
+
+    #[test]
+    fn catalog_round_trips_nested_groups() {
+        let json = r#"{
+            "catalog": {
+                "uuid": "test-uuid",
+                "metadata": {
+                    "title": "Test",
+                    "last-modified": "2026-01-01T00:00:00Z",
+                    "version": "1.0",
+                    "oscal-version": "1.2.0"
+                },
+                "groups": [{
+                    "id": "parent",
+                    "title": "Parent",
+                    "groups": [{
+                        "id": "child",
+                        "title": "Child",
+                        "controls": [{"id": "ctrl-1", "title": "Nested"}]
+                    }]
+                }]
+            }
+        }"#;
+        let envelope: CatalogEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(envelope.catalog.groups[0].groups.len(), 1);
+        assert_eq!(envelope.catalog.groups[0].groups[0].controls.len(), 1);
+        let reserialized = serde_json::to_string(&envelope).unwrap();
+        let re_parsed: CatalogEnvelope = serde_json::from_str(&reserialized).unwrap();
+        assert_eq!(re_parsed.catalog.groups[0].groups.len(), 1);
     }
 
     // ── Task 6: root-level controls on OscalCatalog ─────

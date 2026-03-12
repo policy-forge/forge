@@ -194,6 +194,7 @@ mod tests {
                         props: vec![],
                     },
                 ],
+                groups: vec![],
             }],
             back_matter: None,
         };
@@ -228,6 +229,7 @@ mod tests {
                     props: vec![],
                     links: vec![],
                     controls: vec![make_control("c1"), make_control("c2")],
+                    groups: vec![],
                 },
                 OscalGroup {
                     id: "g2".into(),
@@ -235,6 +237,7 @@ mod tests {
                     props: vec![],
                     links: vec![],
                     controls: vec![make_control("c3")],
+                    groups: vec![],
                 },
             ],
             back_matter: None,

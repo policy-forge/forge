@@ -76,6 +76,7 @@ fn test_catalog() -> OscalCatalog {
                     text: Some("NIST SP 800-53".to_string()),
                 },
             ],
+            groups: vec![],
             controls: vec![OscalControl {
                 id: "POL-AC-001".to_string(),
                 uuid: "should-not-round-trip".to_string(),
@@ -388,6 +389,7 @@ fn test_catalog_no_back_matter_round_trips() {
             props: vec![],
             links: vec![],
             controls: vec![test_control("POL-T-001", "Test control.")],
+            groups: vec![],
         }],
         back_matter: None,
     };
@@ -519,6 +521,7 @@ fn test_xml_escaped_content_round_trips() {
             title: "Test & <Demo>".to_string(),
             props: vec![],
             links: vec![],
+            groups: vec![],
             controls: vec![OscalControl {
                 id: "POL-T-001".to_string(),
                 uuid: String::new(),
@@ -558,6 +561,7 @@ fn test_deeply_nested_parts_round_trip() {
             title: "Test".to_string(),
             props: vec![],
             links: vec![],
+            groups: vec![],
             controls: vec![OscalControl {
                 id: "POL-T-001".to_string(),
                 uuid: String::new(),

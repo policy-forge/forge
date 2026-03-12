@@ -280,6 +280,7 @@ fn convert_group(xml: XmlGroup) -> OscalGroup {
         props: xml.props.into_iter().map(convert_prop).collect(),
         links: xml.links.into_iter().map(convert_link).collect(),
         controls: xml.controls.into_iter().map(convert_control).collect(),
+        groups: vec![],
     }
 }
 

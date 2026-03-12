@@ -332,6 +332,7 @@ mod tests {
                 test_control("POL-AC-001", "uuid-1"),
                 test_control("POL-AC-002", "uuid-2"),
             ],
+            groups: vec![],
         }]);
 
         let mut tl = TraceLinkCollection::new();
@@ -375,6 +376,7 @@ mod tests {
                 test_control("POL-AC-001", "uuid-1"),
                 test_control("POL-AC-002", "uuid-no-match"),
             ],
+            groups: vec![],
         }]);
 
         let mut tl = TraceLinkCollection::new();
@@ -403,6 +405,7 @@ mod tests {
                 test_control("POL-AC-001", "uuid-1"),
                 test_control("POL-AC-002", "uuid-2"),
             ],
+            groups: vec![],
         }]);
 
         let mut tl = TraceLinkCollection::new();
@@ -426,6 +429,7 @@ mod tests {
             props: vec![],
             links: vec![],
             controls: vec![test_control("POL-EG-001", "uuid-no-match")],
+            groups: vec![],
         }]);
 
         let tl = TraceLinkCollection::new(); // empty — no trace links
@@ -457,6 +461,7 @@ mod tests {
             props: vec![],
             links: vec![],
             controls: vec![test_control("POL-AC-001", "uuid-1")],
+            groups: vec![],
         }]);
 
         let mut tl = TraceLinkCollection::new();
@@ -489,6 +494,7 @@ mod tests {
                 props: vec![],
                 links: vec![],
                 controls: vec![test_control("POL-AC-001", "uuid-ac1")],
+                groups: vec![],
             },
             OscalGroup {
                 id: "dp".to_string(),
@@ -496,6 +502,7 @@ mod tests {
                 props: vec![],
                 links: vec![],
                 controls: vec![test_control("POL-DP-001", "uuid-dp1")],
+                groups: vec![],
             },
         ]);
 

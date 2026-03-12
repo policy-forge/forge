@@ -643,6 +643,7 @@ mod tests {
             props: vec![],
             links: vec![],
             controls,
+            groups: vec![],
         }
     }
 
@@ -1059,6 +1060,7 @@ mod tests {
                 text: None,
             }],
             controls: vec![test_control("POL-AC-001", "MFA required.")],
+            groups: vec![],
         };
         write_group(&mut writer, &group).unwrap();
         let xml = String::from_utf8(buf).unwrap();
@@ -1375,6 +1377,7 @@ mod tests {
                 props: vec![],
                 links: vec![],
                 controls: vec![],
+                groups: vec![],
             }],
             back_matter: None,
         };
