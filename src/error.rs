@@ -531,4 +531,26 @@ mod tests {
     fn exit_code_resolve_input_not_json_returns_1() {
         assert_eq!(exit_code(&ForgeError::ResolveInputNotJson { path: PathBuf::from("x.xml") }), 1);
     }
+
+    #[test]
+    fn diff_has_changes_display() {
+        let err = ForgeError::DiffHasChanges;
+        assert_eq!(err.to_string(), "");
+    }
+
+    #[test]
+    fn diff_has_changes_exit_code_is_1() {
+        assert_eq!(exit_code(&ForgeError::DiffHasChanges), 1);
+    }
+
+    #[test]
+    fn diff_error_display() {
+        let err = ForgeError::DiffError("type mismatch".to_string());
+        assert_eq!(err.to_string(), "Diff error: type mismatch");
+    }
+
+    #[test]
+    fn diff_error_exit_code_is_2() {
+        assert_eq!(exit_code(&ForgeError::DiffError("test".into())), 2);
+    }
 }

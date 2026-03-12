@@ -622,4 +622,21 @@ mod tests {
         let result = Cli::try_parse_from(["forge", "-v", "-q", "convert", "test.md"]);
         assert!(result.is_err(), "Expected error when both --verbose and --quiet are provided");
     }
+
+    #[test]
+    fn parse_diff_subcommand() {
+        let cli = Cli::try_parse_from(["forge", "diff", "old.json", "new.json"]).unwrap();
+        if let Commands::Diff { old_artifact, new_artifact } = cli.command {
+            assert_eq!(old_artifact, PathBuf::from("old.json"));
+            assert_eq!(new_artifact, PathBuf::from("new.json"));
+        } else {
+            panic!("Expected Diff command");
+        }
+    }
+
+    #[test]
+    fn parse_diff_missing_new_artifact_fails() {
+        let result = Cli::try_parse_from(["forge", "diff", "old.json"]);
+        assert!(result.is_err(), "Should fail when new_artifact is omitted");
+    }
 }

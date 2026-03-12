@@ -100,11 +100,11 @@ mod tests {
     }
 
     fn make_catalog_json(controls: &[(&str, &str, &str)]) -> serde_json::Value {
-        super::tests::fixtures::catalog(controls)
+        fixtures::catalog(controls)
     }
 
     fn make_component_def_json(reqs: &[(&str, &str, &str)]) -> serde_json::Value {
-        super::tests::fixtures::component_def(reqs)
+        fixtures::component_def(reqs)
     }
 
     pub(crate) mod fixtures {

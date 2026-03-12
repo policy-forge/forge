@@ -5,7 +5,7 @@ use crate::error::ForgeError;
 
 /// # Errors
 ///
-/// Returns `ForgeError::DiffError` for any diff-related error.
+/// Returns `ForgeError::DiffError` for file I/O, JSON parsing, and artifact comparison errors.
 pub fn execute(old_path: &Path, new_path: &Path) -> Result<bool, ForgeError> {
     tracing::info!(old = %old_path.display(), new = %new_path.display(), "Starting diff");
 
