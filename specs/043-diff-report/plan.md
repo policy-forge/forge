@@ -87,7 +87,7 @@ See [`research.md`](research.md) for full findings. Key decisions:
 
 | Decision | Outcome |
 |----------|---------|
-| UUID availability in Catalog JSON | `OscalControl.uuid` has `skip_serializing` — not present in FORGE Catalog output. UUID stability tracking for Catalogs requires reading from props or is best-effort. Resolved: Extract UUID from `props` via stable forge trace prop if present; fall back to empty string. Tests use Component Definitions or manually-crafted Catalog fixtures with explicit UUIDs for UUID stability scenarios. |
+| UUID availability in Catalog JSON | `OscalControl.uuid` has `skip_serializing` — not present in FORGE Catalog output. The extractor reads only `control["uuid"]`; when that field is omitted (the common case for FORGE Catalogs), UUID stability cannot be recovered and is treated as empty/best-effort. Tests use Component Definitions or manually-crafted Catalog fixtures with explicit UUIDs for UUID stability scenarios. |
 | Exit code scheme | `0` = no diff, `1` = has changes (new `ForgeError::DiffHasChanges` sentinel, silent in main.rs), `2` = all diff errors (`ForgeError::DiffError` → exit_code 2) |
 | Catalog traversal depth | Recursive over nested `groups[]` at any depth (from spec clarification) |
 | Co-occurring UUID+field changes | Classified as `Changed` with UUID stability flag (from spec clarification) |

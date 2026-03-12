@@ -29,8 +29,8 @@ pub fn diff_artifacts(old_path: &Path, new_path: &Path) -> Result<DiffReport, Fo
     })?;
 
     // Detect artifact types (reuses validate::detect_model_type)
-    let old_type = to_artifact_type(&old_json)?;
-    let new_type = to_artifact_type(&new_json)?;
+    let old_type = to_artifact_type(&old_json, old_path)?;
+    let new_type = to_artifact_type(&new_json, new_path)?;
 
     // Validate same type
     if old_type != new_type {
@@ -72,18 +72,18 @@ fn read_diff_file(path: &Path) -> Result<String, ForgeError> {
     })
 }
 
-fn to_artifact_type(json: &serde_json::Value) -> Result<ArtifactType, ForgeError> {
+fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactType, ForgeError> {
     match detect_model_type(json) {
         Ok(OscalModelType::Catalog) => Ok(ArtifactType::Catalog),
         Ok(OscalModelType::ComponentDefinition) => Ok(ArtifactType::ComponentDefinition),
-        Ok(OscalModelType::Profile) => Err(ForgeError::DiffError(
-            "Profile artifacts are not supported by diff; expected Catalog or ComponentDefinition"
-                .to_string(),
-        )),
-        Err(_) => Err(ForgeError::DiffError(
-            "Not a recognized OSCAL artifact: expected 'catalog' or 'component-definition' root key"
-                .to_string(),
-        )),
+        Ok(OscalModelType::Profile) => Err(ForgeError::DiffError(format!(
+            "'{}': Profile artifacts are not supported by diff; expected Catalog or ComponentDefinition",
+            path.display()
+        ))),
+        Err(_) => Err(ForgeError::DiffError(format!(
+            "'{}': not a recognized OSCAL artifact; expected 'catalog' or 'component-definition' root key",
+            path.display()
+        ))),
     }
 }
 

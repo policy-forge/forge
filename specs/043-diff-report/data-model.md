@@ -4,7 +4,7 @@
 
 ## Module: `src/diff/types.rs`
 
-All types are pure data structs/enums with no methods. Comparison logic lives in `engine.rs`.
+Types are primarily data structs/enums with small helper methods (e.g., accessors, `Display`). Core comparison logic lives in `engine.rs`.
 
 ---
 

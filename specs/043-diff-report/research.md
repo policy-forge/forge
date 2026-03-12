@@ -107,12 +107,12 @@ pub struct ImplementedRequirement {
 `ControlSnapshot` for Component Definition will capture:
 - `control_id` = `ir["control-id"]`
 - `uuid` = `ir["uuid"]`
-- `description` = `ir["description"]` (maps to `parts_prose[0]` for comparison purposes)
+- `description` = `ir["description"]` (implementation narrative compared via `description`)
 - `title` = `None` (implemented-requirements don't have a title field)
-- `parts_prose` = `[]` (no parts; description IS the content)
+- `parts_prose` = `[]` (no parts; for Component Definitions the narrative lives in `description`)
 
 ### Decision
-`ControlSnapshot.parts_prose` will contain `[description]` when extracted from a Component Definition, so the unified comparison engine works identically for both artifact types. `FieldChange` for Component Definitions will report `description` as the field name when content changes.
+For Component Definitions, the extractor stores the implementation narrative in `ControlSnapshot.description` and leaves `parts_prose` empty. The diff engine compares `description` for these snapshots, and `FieldChange` for Component Definitions reports `description` as the field name when content changes.
 
 ---
 
