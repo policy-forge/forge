@@ -37,6 +37,14 @@ pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
     Ok(size)
 }
 
+/// Extract filename from a path to prevent absolute path leaks in OSCAL artifacts.
+#[must_use]
+pub fn sanitize_artifact_path(path: &Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string_lossy().into_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -79,5 +87,23 @@ mod tests {
         std::fs::write(&path, vec![b'x'; 100]).unwrap();
         let result = check_file_size(&path, 50);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn sanitize_extracts_filename_from_absolute_path() {
+        let path = Path::new("/home/user/docs/catalog.json");
+        assert_eq!(sanitize_artifact_path(path), "catalog.json");
+    }
+
+    #[test]
+    fn sanitize_preserves_bare_filename() {
+        let path = Path::new("catalog.json");
+        assert_eq!(sanitize_artifact_path(path), "catalog.json");
+    }
+
+    #[test]
+    fn sanitize_handles_relative_path() {
+        let path = Path::new("../docs/catalog.json");
+        assert_eq!(sanitize_artifact_path(path), "catalog.json");
     }
 }
