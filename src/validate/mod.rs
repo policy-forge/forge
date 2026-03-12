@@ -23,8 +23,8 @@ use tracing::{debug, info};
 
 pub use crate::types::OscalModelType;
 
-/// Maximum file size for validation (50MB) — SEC-3.
-const MAX_VALIDATE_FILE_SIZE: u64 = 50 * 1024 * 1024;
+/// Maximum file size for validation — reuses the shared constant from `io`.
+const MAX_VALIDATE_FILE_SIZE: u64 = crate::io::MAX_FILE_SIZE;
 
 /// Result of schema validation.
 #[derive(Debug)]
