@@ -73,6 +73,31 @@ fn validate_and_serialize<T: serde::Serialize>(
     Ok(json)
 }
 
+/// Build and write an Assessment Plan alongside the primary artifact (WI-41).
+///
+/// Called by both `run_catalog_pipeline` and `run_component_pipeline` when
+/// `--import-ssp` is provided. The zero-controls warning is owned by
+/// `build_assessment_plan`; callers do not need to check separately.
+fn write_assessment_plan(
+    control_ids: &[String],
+    import_ssp_href: &str,
+    policy_title: &str,
+    input_path: &Path,
+    output_path: Option<&Path>,
+) -> Result<(), ForgeError> {
+    let ap_envelope =
+        crate::oscal::build_assessment_plan(control_ids, import_ssp_href, policy_title)?;
+    let ap_json = serde_json::to_string_pretty(&ap_envelope)
+        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let ap_path = crate::oscal::derive_ap_output_path(input_path, output_path);
+    write_output(&ap_json, Some(&ap_path))?;
+    tracing::info!(
+        ap_path = %ap_path.display(),
+        "Assessment Plan written"
+    );
+    Ok(())
+}
+
 /// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations, extract parameters.
 ///
 /// Encapsulates the common steps (1-9) used by both the catalog and component
@@ -147,6 +172,7 @@ pub fn run_catalog_pipeline(
     output_path: Option<&Path>,
     max_size_bytes: u64,
     format: &OutputFormat,
+    import_ssp_href: Option<&str>,
 ) -> Result<crate::summary::ConversionStatistics, ForgeError> {
     use crate::summary::{ValidationStatus, count_catalog_controls};
 
@@ -228,6 +254,19 @@ pub fn run_catalog_pipeline(
 
     stats.output_path = output_path.map(std::path::Path::to_path_buf);
 
+    // WI-41: Generate Assessment Plan if --import-ssp was provided
+    if let Some(href) = import_ssp_href {
+        let control_ids =
+            crate::oscal::catalog::collect_control_ids_from_catalog(&envelope.catalog);
+        write_assessment_plan(
+            &control_ids,
+            href,
+            &envelope.catalog.metadata.title,
+            input_path,
+            output_path,
+        )?;
+    }
+
     Ok(stats)
 }
 
@@ -249,6 +288,7 @@ pub fn run_component_pipeline(
     max_size_bytes: u64,
     source_profile: Option<&str>,
     format: &OutputFormat,
+    import_ssp_href: Option<&str>,
 ) -> Result<crate::summary::ConversionStatistics, ForgeError> {
     use crate::summary::ValidationStatus;
 
@@ -326,6 +366,19 @@ pub fn run_component_pipeline(
 
     stats.output_path = output_path.map(std::path::Path::to_path_buf);
 
+    // WI-41: Generate Assessment Plan if --import-ssp was provided
+    if let Some(href) = import_ssp_href {
+        let control_ids =
+            crate::oscal::component_definition::collect_control_ids_from_component_def(&envelope);
+        write_assessment_plan(
+            &control_ids,
+            href,
+            &envelope.component_definition.metadata.title,
+            input_path,
+            output_path,
+        )?;
+    }
+
     Ok(stats)
 }
 
@@ -370,7 +423,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("empty.md");
         std::fs::write(&path, "").unwrap();
-        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json);
+        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json, None);
         match result.unwrap_err() {
             ForgeError::EmptyInput { .. } => {}
             other => panic!("Expected EmptyInput, got: {other:?}"),
@@ -382,7 +435,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("flat.md");
         std::fs::write(&path, "Just plain text without any structure.\n").unwrap();
-        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json);
+        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json, None);
         match result.unwrap_err() {
             ForgeError::NoStructureDetected { .. } => {}
             other => panic!("Expected NoStructureDetected, got: {other:?}"),
@@ -401,7 +454,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let output = dir.path().join("catalog.json");
         let result =
-            run_catalog_pipeline(fixture, Some(&output), 10 * 1_048_576, &OutputFormat::Json);
+            run_catalog_pipeline(fixture, Some(&output), 10 * 1_048_576, &OutputFormat::Json, None);
         assert!(
             result.is_ok(),
             "Catalog pipeline should succeed with valid input: {:?}",
@@ -430,6 +483,7 @@ mod tests {
             10 * 1_048_576,
             None,
             &OutputFormat::Json,
+            None,
         );
         match &result {
             Ok(_) => {

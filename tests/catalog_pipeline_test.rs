@@ -16,6 +16,7 @@ fn run_pipeline_on_fixture() -> serde_json::Value {
         Some(&output_path),
         10 * 1024 * 1024,
         &OutputFormat::Json,
+        None,
     );
     assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
@@ -302,6 +303,7 @@ fn pipeline_no_sections_produces_empty_groups() {
         Some(&output_path),
         10 * 1024 * 1024,
         &OutputFormat::Json,
+        None,
     );
 
     // EC-6: Input with no sections should produce a NoStructureDetected error
@@ -346,6 +348,7 @@ fn modality_props_present_in_catalog_for_mixed_fixture() {
         Some(&output_path),
         10 * 1024 * 1024,
         &forge::cli::OutputFormat::Json,
+        None,
     );
     assert!(result.is_ok(), "Pipeline failed: {:?}", result.unwrap_err());
 

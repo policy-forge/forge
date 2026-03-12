@@ -51,6 +51,23 @@ pub const CONTROL_IMPL_NAMESPACE: Uuid = Uuid::from_bytes([
     0x2B, 0x14, 0x50, 0xFE, 0xC1, 0x0F, 0x55, 0xAE, 0x98, 0x93, 0x9A, 0x4E, 0xA3, 0x05, 0x75, 0x0B,
 ]);
 
+/// Fixed namespace UUID for Assessment Plan identifier generation.
+///
+/// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"assessment-plan")`.
+///
+/// Currently reserved for future use (e.g., control-selection UUIDs in WI-42).
+/// The document-level AP UUID is generated via `generate_stable_id` which uses
+/// `FORGE_NAMESPACE_UUID` directly, with "assessment-plan" in the seed string
+/// for domain separation.
+///
+/// # Breaking Change Warning
+///
+/// Changing this value will change **ALL** generated Assessment Plan UUIDs.
+/// Any change requires a documented migration path.
+pub const ASSESSMENT_PLAN_NAMESPACE: Uuid = Uuid::from_bytes([
+    0x88, 0x8A, 0x85, 0x80, 0xE7, 0x7A, 0x58, 0xC7, 0x91, 0xF3, 0x3F, 0x22, 0xE2, 0xCA, 0x83, 0x3E,
+]);
+
 /// Fixed namespace UUID for implemented-requirement identifier generation.
 ///
 /// Derived from `Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"implemented-requirement")`.
@@ -306,6 +323,12 @@ mod tests {
     fn control_impl_namespace_matches_derivation() {
         let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"control-implementation");
         assert_eq!(CONTROL_IMPL_NAMESPACE, expected);
+    }
+
+    #[test]
+    fn assessment_plan_namespace_matches_derivation() {
+        let expected = Uuid::new_v5(&FORGE_NAMESPACE_UUID, b"assessment-plan");
+        assert_eq!(ASSESSMENT_PLAN_NAMESPACE, expected);
     }
 
     #[test]
