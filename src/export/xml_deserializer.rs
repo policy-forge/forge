@@ -315,14 +315,21 @@ fn convert_group(xml: XmlGroup) -> OscalGroup {
     }
 }
 
-fn convert_back_matter(xml: XmlBackMatter) -> BackMatter {
-    BackMatter { resources: xml.resources.into_iter().map(convert_resource).collect() }
+fn convert_back_matter(xml: XmlBackMatter) -> Result<BackMatter, ForgeError> {
+    let resources = xml
+        .resources
+        .into_iter()
+        .map(convert_resource)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(BackMatter { resources })
 }
 
-fn convert_resource(xml: XmlResource) -> BackMatterResource {
-    let uuid = Uuid::try_parse(&xml.uuid).unwrap_or_else(|_| Uuid::new_v4());
+fn convert_resource(xml: XmlResource) -> Result<BackMatterResource, ForgeError> {
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| ForgeError::ExportInvalidOscal {
+        detail: format!("invalid UUID '{}' in resource element", xml.uuid),
+    })?;
     let description = xml.description.map(|d| d.paragraphs.join("\n"));
-    BackMatterResource {
+    Ok(BackMatterResource {
         uuid,
         title: xml.title.unwrap_or_default(),
         description,
@@ -333,17 +340,18 @@ fn convert_resource(xml: XmlResource) -> BackMatterResource {
             .map(|r| Rlink { href: r.href, media_type: r.media_type })
             .collect(),
         props: xml.props.into_iter().map(|p| Prop { name: p.name, value: p.value, ns: None }).collect(),
-    }
+    })
 }
 
-fn convert_catalog(xml: XmlCatalog) -> OscalCatalog {
-    OscalCatalog {
+fn convert_catalog(xml: XmlCatalog) -> Result<OscalCatalog, ForgeError> {
+    let back_matter = xml.back_matter.map(convert_back_matter).transpose()?;
+    Ok(OscalCatalog {
         uuid: xml.uuid,
         metadata: convert_metadata(xml.metadata),
         controls: vec![],
         groups: xml.groups.into_iter().map(convert_group).collect(),
-        back_matter: xml.back_matter.map(convert_back_matter),
-    }
+        back_matter,
+    })
 }
 
 fn convert_component(xml: XmlComponent) -> Result<DocumentaryComponent, ForgeError> {
@@ -410,6 +418,7 @@ fn convert_component_definition(
         .into_iter()
         .map(convert_component)
         .collect::<Result<Vec<_>, _>>()?;
+    let back_matter = xml.back_matter.map(convert_back_matter).transpose()?;
     Ok(ComponentDefinition {
         uuid: xml.uuid,
         metadata: ComponentDefinitionMetadata {
@@ -420,7 +429,7 @@ fn convert_component_definition(
         },
         components,
         capabilities: vec![],
-        back_matter: xml.back_matter.map(convert_back_matter),
+        back_matter,
     })
 }
 
@@ -437,7 +446,7 @@ pub fn deserialize_catalog_from_xml(xml: &str) -> Result<CatalogEnvelope, ForgeE
     let xml_catalog: XmlCatalog = quick_xml::de::from_str(xml).map_err(|e| {
         ForgeError::Serialization(format!("XML catalog deserialization failed: {e}"))
     })?;
-    Ok(CatalogEnvelope { catalog: convert_catalog(xml_catalog) })
+    Ok(CatalogEnvelope { catalog: convert_catalog(xml_catalog)? })
 }
 
 /// Deserialize an OSCAL Component Definition from an XML string.
@@ -715,6 +724,58 @@ mod tests {
         let err = result.unwrap_err().to_string();
         assert!(
             err.contains("Invalid UUID"),
+            "Error should mention invalid UUID, got: {err}"
+        );
+    }
+
+    #[test]
+    fn xml_deserialize_rejects_invalid_resource_uuid() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d">
+  <metadata>
+    <title>Test</title>
+    <last-modified>2026-01-01T00:00:00Z</last-modified>
+    <version>1.0</version>
+    <oscal-version>1.2.0</oscal-version>
+  </metadata>
+  <back-matter>
+    <resource uuid="NOT-A-VALID-UUID">
+      <title>Bad Resource</title>
+    </resource>
+  </back-matter>
+</catalog>"#;
+
+        let result = deserialize_catalog_from_xml(xml);
+        assert!(result.is_err(), "Invalid UUID in resource should error");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("invalid UUID"),
+            "Error should mention invalid UUID, got: {err}"
+        );
+    }
+
+    #[test]
+    fn xml_deserialize_rejects_invalid_resource_uuid_in_component() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<component-definition xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e">
+  <metadata>
+    <title>Test</title>
+    <last-modified>2026-01-01T00:00:00Z</last-modified>
+    <version>1.0</version>
+    <oscal-version>1.2.0</oscal-version>
+  </metadata>
+  <back-matter>
+    <resource uuid="INVALID">
+      <title>Bad Resource</title>
+    </resource>
+  </back-matter>
+</component-definition>"#;
+
+        let result = deserialize_component_from_xml(xml);
+        assert!(result.is_err(), "Invalid UUID in resource should error");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("invalid UUID"),
             "Error should mention invalid UUID, got: {err}"
         );
     }
