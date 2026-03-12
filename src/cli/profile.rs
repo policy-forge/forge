@@ -118,7 +118,7 @@ pub fn execute(
 
     // Step 7: write to file or stdout
     match output {
-        Some(path) => std::fs::write(path, serialized)?,
+        Some(path) => crate::io::write_atomic(path, serialized.as_bytes())?,
         None => println!("{serialized}"),
     }
 

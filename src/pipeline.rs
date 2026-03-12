@@ -35,7 +35,7 @@ pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), For
                     parent.display()
                 )));
             }
-            std::fs::write(path, content)?;
+            crate::io::write_atomic(path, content.as_bytes())?;
             Ok(())
         }
     }
