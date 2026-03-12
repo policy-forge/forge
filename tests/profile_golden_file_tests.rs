@@ -57,13 +57,14 @@ fn make_catalog_file() -> NamedTempFile {
 ///
 /// Snapshot is normalized before comparison to eliminate dynamic fields
 /// (UUIDs and `last-modified` timestamps).
+///
+/// Note: `build_profile` does NOT read the catalog file (see guardrails),
+/// so we pass a fixed path. `sanitize_artifact_path` extracts the filename,
+/// producing a deterministic `href` in the output.
 #[test]
 fn golden_include_only() {
-    let catalog = make_catalog_file();
-    let catalog_path = catalog.path().to_string_lossy().to_string();
-
     let profile = build_profile(
-        &catalog_path,
+        "/fixed/path/catalog.json",
         vec!["AC-1".into(), "AC-2".into(), "AC-3".into()],
         SelectionMode::Include,
         &[],
@@ -81,13 +82,14 @@ fn golden_include_only() {
 ///
 /// Snapshot is normalized before comparison to eliminate dynamic fields
 /// (UUIDs and `last-modified` timestamps).
+///
+/// Note: `build_profile` does NOT read the catalog file (see guardrails),
+/// so we pass a fixed path. `sanitize_artifact_path` extracts the filename,
+/// producing a deterministic `href` in the output.
 #[test]
 fn golden_exclude_only() {
-    let catalog = make_catalog_file();
-    let catalog_path = catalog.path().to_string_lossy().to_string();
-
     let profile = build_profile(
-        &catalog_path,
+        "/fixed/path/catalog.json",
         vec!["AC-9".into(), "AC-10".into()],
         SelectionMode::Exclude,
         &[],

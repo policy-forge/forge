@@ -227,15 +227,17 @@ pub fn build_profile(
         vec![]
     } else {
         let selection = ControlSelection { with_ids: control_ids };
+        let sanitized_href =
+            crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
         let import = match mode {
             SelectionMode::Include => ProfileImport {
-                href: catalog_path.to_string(),
+                href: sanitized_href.clone(),
                 include_all: None,
                 include_controls: Some(vec![selection]),
                 exclude_controls: None,
             },
             SelectionMode::Exclude => ProfileImport {
-                href: catalog_path.to_string(),
+                href: sanitized_href,
                 // OSCAL v1.2.0 Profile schema requires `include-all` when using
                 // `exclude-controls` alone — an import must include all controls
                 // first, then exclude the specified subset.
@@ -414,7 +416,7 @@ mod tests {
         let json = serde_json::to_value(import).unwrap();
         assert!(json.get("include-controls").is_some());
         assert!(json.get("exclude-controls").is_none());
-        assert_eq!(json["href"], "/tmp/cat.json");
+        assert_eq!(json["href"], "cat.json");
     }
 
     #[test]
@@ -471,7 +473,7 @@ mod tests {
     // ── T007: build_profile unit tests ──────────────────────────────────────
 
     #[test]
-    fn build_profile_href_matches_catalog_path() {
+    fn build_profile_href_uses_filename_only() {
         let profile = build_profile(
             "/abs/path/catalog.json",
             vec!["AC-1".to_string()],
@@ -479,7 +481,8 @@ mod tests {
             &[],
         )
         .unwrap();
-        assert_eq!(profile.imports[0].href, "/abs/path/catalog.json");
+        assert_eq!(profile.imports[0].href, "catalog.json");
+        assert!(!profile.imports[0].href.contains('/'));
     }
 
     #[test]
@@ -512,15 +515,30 @@ mod tests {
         // Profile JSON must only reference the catalog by href, not embed content
         assert!(!json_str.contains("\"groups\""));
         assert!(!json_str.contains("\"controls\""));
-        assert!(json_str.contains("/tmp/c.json"));
+        assert!(json_str.contains("c.json"));
     }
 
     #[test]
-    fn build_profile_security_href_stored_as_is() {
+    fn build_profile_security_href_uses_filename_only() {
         let path = "/absolute/path/to catalog.json";
         let profile =
             build_profile(path, vec!["AC-1".to_string()], SelectionMode::Include, &[]).unwrap();
-        assert_eq!(profile.imports[0].href, path);
+        // sanitize_artifact_path extracts filename, handling spaces
+        assert_eq!(profile.imports[0].href, "to catalog.json");
+        assert!(!profile.imports[0].href.contains('/'));
+    }
+
+    #[test]
+    fn profile_import_href_uses_filename_only() {
+        let profile = build_profile(
+            "/absolute/path/to/catalog.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+        )
+        .unwrap();
+        assert_eq!(profile.imports[0].href, "catalog.json");
+        assert!(!profile.imports[0].href.contains('/'));
     }
 
     // ── T013: build_profile exclude path ────────────────────────────────────
