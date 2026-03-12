@@ -20,6 +20,7 @@ fn catalog_yaml_has_no_type_tags() {
         Some(&yaml_path),
         10 * 1024 * 1024,
         &forge::cli::OutputFormat::Yaml,
+        None,
     )
     .expect("Catalog YAML pipeline should succeed");
     let yaml_str = std::fs::read_to_string(&yaml_path).unwrap();
@@ -41,6 +42,7 @@ fn component_yaml_has_no_type_tags() {
         10 * 1024 * 1024,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Yaml,
+        None,
     )
     .expect("Component YAML pipeline should succeed");
     let yaml_str = std::fs::read_to_string(&yaml_path).unwrap();

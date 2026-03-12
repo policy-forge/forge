@@ -264,7 +264,7 @@ flowchart TD
     end
 
     subgraph "Trust Boundary: CLI Validation"
-        CLIVAL[Clap Required Flag Validation]
+        CLIVAL[Builder Empty-Value Validation]
     end
 
     subgraph "Trusted: Pipeline Data"
@@ -286,7 +286,7 @@ flowchart TD
 
 ### Trust Boundary Checklist 🟢 `@llm-autonomous`
 
-- [x] **All input from untrusted sources is validated** — `--import-ssp` is validated as non-empty by clap; control-ids come from trusted pipeline output
+- [x] **All input from untrusted sources is validated** — `--import-ssp` is an optional CLI flag; when provided, the builder validates non-empty (ForgeError::Validation on empty/whitespace); control-ids come from trusted pipeline output
 - [x] **External API responses are validated** — N/A: no external APIs
 - [x] **Authorization checked at data access, not just entry point** — N/A: local CLI, no authorization model
 - [x] **Service-to-service calls are authenticated** — N/A: no service calls
@@ -324,7 +324,7 @@ No risks require acceptance. All identified risks are mitigated through design d
 
 | Req ID | Requirement | PRD AC | Verification Method |
 |--------|-------------|--------|---------------------|
-| SEC-2 | `--import-ssp` must be validated as non-empty; empty string must produce descriptive error | AC-5 | Unit test |
+| SEC-2 | `--import-ssp` is optional; when provided with empty/whitespace value, `build_assessment_plan` returns `ForgeError::Validation` with descriptive message | EC-2 | Unit test |
 | SEC-3 | Control-ids must be deduplicated before populating include-controls | EC-3 | Unit test |
 
 ### Operational Security
@@ -399,8 +399,8 @@ No conditions. Low-risk feature with no identified security issues.
 | SEC Req ID | PRD Req ID | PRD AC ID | Test Type | Test Location |
 |------------|------------|-----------|-----------|---------------|
 | SEC-1 | — | — | Manual | Documentation review |
-| SEC-2 | M-6 | AC-5 | Unit | tests/assessment_plan_test.rs |
-| SEC-3 | M-5 | EC-3 | Unit | tests/assessment_plan_test.rs |
+| SEC-2 | M-6 | EC-2 | Unit | src/oscal/assessment_plan.rs (inline unit tests) |
+| SEC-3 | M-5 | EC-3 | Unit | src/oscal/assessment_plan.rs (inline unit tests) |
 | SEC-4 | M-7 | AC-6 | Unit | tests/assessment_plan_test.rs |
 
 ---

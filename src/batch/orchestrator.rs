@@ -133,7 +133,13 @@ fn run_pipeline(
 ) -> Result<(), ForgeError> {
     match strategy {
         Strategy::Catalog => {
-            crate::pipeline::run_catalog_pipeline(input, Some(output), max_size_bytes, &format)?;
+            crate::pipeline::run_catalog_pipeline(
+                input,
+                Some(output),
+                max_size_bytes,
+                &format,
+                None,
+            )?;
         }
         Strategy::Component => {
             crate::pipeline::run_component_pipeline(
@@ -142,6 +148,7 @@ fn run_pipeline(
                 max_size_bytes,
                 source_profile,
                 &format,
+                None,
             )?;
         }
     }

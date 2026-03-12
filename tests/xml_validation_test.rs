@@ -31,6 +31,7 @@ fn build_catalog_xml(fixture_path: &Path) -> String {
         Some(&output_path),
         MAX_SIZE_BYTES,
         &forge::cli::OutputFormat::Xml,
+        None,
     )
     .unwrap();
 
@@ -48,6 +49,7 @@ fn build_component_definition_xml(fixture_path: &Path) -> String {
         MAX_SIZE_BYTES,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Xml,
+        None,
     )
     .unwrap();
 

@@ -1,5 +1,6 @@
 //! OSCAL (Open Security Controls Assessment Language) output generation.
 
+pub mod assessment_plan;
 pub mod back_matter;
 pub mod catalog;
 pub mod component_definition;
@@ -12,6 +13,7 @@ pub mod trace_embedding;
 #[cfg(test)]
 pub(crate) mod test_utils;
 
+pub use assessment_plan::{AssessmentPlanEnvelope, build_assessment_plan, derive_ap_output_path};
 pub use back_matter::{
     BackMatter, BackMatterResource, OscalLink, generate_back_matter, generate_control_links,
 };

@@ -123,7 +123,7 @@ A compliance engineer specifies the SSP that the Assessment Plan references usin
 
 **Acceptance Scenarios**:
 1. **Given** an SSP path of `./ssp/system-ssp.json`, **When** generating the Assessment Plan, **Then** `import-ssp.href` equals `"./ssp/system-ssp.json"`.
-2. **Given** no `--import-ssp` flag provided, **When** generating an Assessment Plan, **Then** a descriptive error indicates that `--import-ssp` is required.
+2. **Given** no `--import-ssp` flag provided, **When** running `forge convert`, **Then** AP generation is skipped and the command completes normally without producing an AP file.
 
 ---
 
@@ -192,7 +192,7 @@ N/A — No state transitions in this work item. The builder produces the Assessm
 - [ ] **M-3:** The Assessment Plan shall include an `import-ssp` object with an `href` field set to the value of the `--import-ssp` CLI flag. *(Traces to: Parent PRD C-2)*
 - [ ] **M-4:** The Assessment Plan shall include a `reviewed-controls` object containing a `control-selections` array. *(Traces to: Parent PRD C-2)*
 - [ ] **M-5:** Each `control-selections` entry shall include an `include-controls` array populated with `control-id` values from the conversion output. *(Traces to: Parent PRD C-2)*
-- [ ] **M-6:** The `--import-ssp` flag shall be required when generating an Assessment Plan; omitting it shall produce a descriptive error. *(Traces to: Parent PRD C-2)*
+- [ ] **M-6:** The `--import-ssp` flag is optional; when omitted, AP generation is skipped and `forge convert` completes normally without producing an Assessment Plan (backward compatible, per plan.md D-5). When provided, the flag value must be non-empty. *(Traces to: Parent PRD C-2)*
 - [ ] **M-7:** All UUIDs in the Assessment Plan shall be generated deterministically using UUID v5, consistent with WI-7 patterns. *(Traces to: Parent PRD M-8)*
 
 ### Should Have (S) — High value, not blocking 🔴 `@human-required`
@@ -220,8 +220,8 @@ N/A — No state transitions in this work item. The builder produces the Assessm
 - **UUID Generation:** UUID v5 (deterministic, content-based) consistent with WI-7 pattern
 - **Metadata Assembly:** Must reuse the metadata builder from WI-11 (shared across all OSCAL artifacts)
 - **Serialization:** `serde` with `#[serde(rename)]` to produce OSCAL-compliant JSON keys (e.g., `assessment-plan`, `import-ssp`, `reviewed-controls`, `control-selections`, `include-controls`)
-- **CLI Integration:** `--import-ssp` flag via clap 4.x; new `assess` subcommand or extension to `convert`
-- **Error Handling:** `thiserror` for error types; descriptive error when `--import-ssp` is missing
+- **CLI Integration:** `--import-ssp` optional flag via clap 4.x on the `convert` subcommand; AP generation skipped when omitted
+- **Error Handling:** `thiserror` for error types; `ForgeError::Validation` when `--import-ssp` is provided with empty value; `ForgeError::AssessmentPlanBuild` for builder failures
 - **Linting:** `cargo clippy -- -D warnings` must pass
 - **Formatting:** `cargo fmt --check` must pass
 - **Testing:** TDD mandatory; unit tests for Assessment Plan construction and reviewed-controls population
@@ -276,7 +276,7 @@ pub fn build_assessment_plan(
     control_ids: &[String],
     import_ssp_href: &str,
     policy_title: &str,
-) -> Result<serde_json::Value, ForgeError>;
+) -> Result<AssessmentPlanEnvelope, ForgeError>;
 
 // Expected JSON output structure:
 // {
@@ -325,12 +325,12 @@ pub fn build_assessment_plan(
 
 | Option | License | Pros | Cons | Spike Result |
 |--------|---------|------|------|--------------|
-| serde_json Value builder | MIT/Apache-2.0 | Consistent with Catalog/Component Definition builders | No compile-time OSCAL shape enforcement | Selected — consistent with established pattern |
+| Typed OSCAL structs with serde | MIT/Apache-2.0 | Compile-time shape enforcement; consistent with Catalog/Component Definition builders | Requires struct definitions per OSCAL model | Selected — typed structs with `#[serde(rename)]` annotations |
 | uuid crate (v5) | MIT/Apache-2.0 | Deterministic UUID generation; already used across pipeline | Requires namespace UUID | Already selected in WI-7 |
 
 ### Selected Approach 🔴 `@human-required`
-> **Decision:** Use `serde_json::Value` builder pattern consistent with the Catalog and Component Definition builders (WI-9/WI-14), with shared metadata assembly from WI-11 and UUID v5 from WI-7.
-> **Rationale:** Maintains consistency with the established OSCAL generation pattern across all artifact types. The Assessment Plan is structurally simpler than Catalog or Component Definition, making the Value builder approach well-suited.
+> **Decision:** Use typed OSCAL structs (`AssessmentPlanEnvelope`, `AssessmentPlan`, `ApMetadata`, etc.) with `#[serde(rename)]` annotations, consistent with the Catalog and Component Definition builders (WI-9/WI-14), with shared metadata assembly from WI-11 and UUID v5 from WI-7.
+> **Rationale:** Maintains consistency with the established OSCAL generation pattern across all artifact types. Typed structs provide compile-time shape enforcement for the Assessment Plan structure.
 
 ---
 
@@ -342,7 +342,7 @@ pub fn build_assessment_plan(
 | AC-2 | M-2 | US-1 | A policy title and version | Building Assessment Plan | `metadata.title`, `metadata.version`, `metadata.oscal-version` = "1.2.0", `uuid`, and `last-modified` are present and correct |
 | AC-3 | M-3 | US-2 | An SSP path `./ssp/system-ssp.json` | Building Assessment Plan | `import-ssp.href` equals `"./ssp/system-ssp.json"` |
 | AC-4 | M-4, M-5 | US-1 | A conversion output with 10 control-ids | Building Assessment Plan | `reviewed-controls.control-selections[0].include-controls` contains all 10 control-ids |
-| AC-5 | M-6 | US-2 | No `--import-ssp` flag provided | Running Assessment Plan generation | A descriptive error indicates `--import-ssp` is required |
+| AC-5 | M-6 | US-2 | No `--import-ssp` flag provided | Running `forge convert` | AP generation is skipped; convert completes normally without producing an AP file |
 | AC-6 | M-7 | US-3 | The same conversion output and SSP reference | Generating the Assessment Plan twice | All UUIDs are identical across both runs |
 | AC-7 | S-1 | US-1 | A policy titled "Corporate Security Policy" | Building Assessment Plan | `reviewed-controls.description` references "Corporate Security Policy" |
 
@@ -396,7 +396,7 @@ graph LR
 ## Implementation Guidance 🟢 `@llm-autonomous`
 
 ### Suggested Approach
-Implement a `build_assessment_plan` function in the `oscal` module that follows the established builder pattern from Catalog (WI-9) and Component Definition (WI-14). Start by calling the shared metadata assembly function (WI-11) to produce the metadata block with a title like "Assessment Plan for {Policy Title}". Construct the `import-ssp` object from the `--import-ssp` CLI flag value. Then iterate over the control-ids from the conversion output and build `include-controls` entries within a `control-selections` array. Wrap everything in a `reviewed-controls` object with a description summarizing the assessment scope. Generate the document-level UUID using UUID v5 from the combination of policy content and SSP reference. Add CLI argument validation to enforce that `--import-ssp` is provided when generating an Assessment Plan.
+Implement a `build_assessment_plan` function in the `oscal` module that follows the established builder pattern from Catalog (WI-9) and Component Definition (WI-14). Start by calling the shared metadata assembly function (WI-11) to produce the metadata block with a title like "Assessment Plan for {Policy Title}". Construct the `import-ssp` object from the `--import-ssp` CLI flag value. Then iterate over the control-ids from the conversion output and build `include-controls` entries within a `control-selections` array. Wrap everything in a `reviewed-controls` object with a description summarizing the assessment scope. Generate the document-level UUID using UUID v5 from the combination of sorted control IDs and SSP reference. The `--import-ssp` flag is optional — when omitted, AP generation is skipped and `forge convert` completes normally. When provided with an empty value, the builder returns `ForgeError::Validation`. In batch mode (2+ input files), emit a warning and skip AP generation.
 
 ### Anti-patterns to Avoid
 - Generating random UUIDs (v4) for Assessment Plan elements — must use deterministic v5 for stability
@@ -465,9 +465,9 @@ N/A — No spike tasks for this work item. The Assessment Plan JSON structure is
 
 | Date | Decision | Rationale | Alternatives Considered |
 |------|----------|-----------|------------------------|
-| 2026-02-10 | Use serde_json::Value builder pattern (same as Catalog/Component Definition) | Maintains consistency with established OSCAL generation pattern across all artifact types | Typed Assessment Plan structs (more rigid, premature for exploratory phase) |
+| 2026-02-10 | Use typed OSCAL structs with serde rename annotations | Compile-time shape enforcement; consistent with established pattern across all artifact types | `serde_json::Value` builder (no compile-time enforcement); initially considered but upgraded to typed structs during implementation |
 | 2026-02-10 | Single control-selections entry for all controls | Simplest correct representation; one policy conversion = one selection group; aligns with OSCAL semantics | Multiple selection groups per section (over-fragments the mapping); nested selections (adds complexity without current use case) |
-| 2026-02-10 | Require --import-ssp for Assessment Plan generation | OSCAL Assessment Plan requires an SSP reference; generating without one produces structurally incomplete output | Default to a placeholder SSP (masks missing data); make SSP optional (produces invalid OSCAL) |
+| 2026-02-10 | Make --import-ssp optional (AP generation skipped when omitted) | Backward compatible; `forge convert` works identically without the flag; error only when value is empty | Require --import-ssp (breaks backward compatibility); default to placeholder SSP (masks missing data) |
 
 ---
 

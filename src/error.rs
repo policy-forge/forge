@@ -80,6 +80,9 @@ pub enum ForgeError {
     #[error("Component definition build error: {0}")]
     ComponentDefinitionBuild(String),
 
+    #[error("Assessment plan build error: {0}")]
+    AssessmentPlanBuild(String),
+
     #[error("Parameter extraction error: {0}")]
     ParameterExtraction(String),
 
@@ -189,6 +192,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::CatalogBuild(_)
         | ForgeError::BackMatter(_)
         | ForgeError::ComponentDefinitionBuild(_)
+        | ForgeError::AssessmentPlanBuild(_)
         | ForgeError::ParameterExtraction(_)
         | ForgeError::TraceUnsupportedArtifact { .. } => 2,
 
@@ -402,6 +406,17 @@ mod tests {
     fn serialization_error_display() {
         let err = ForgeError::Serialization("failed to serialize".to_string());
         assert_eq!(err.to_string(), "Serialization error: failed to serialize");
+    }
+
+    #[test]
+    fn assessment_plan_build_error_display() {
+        let err = ForgeError::AssessmentPlanBuild("metadata assembly failed".to_string());
+        assert_eq!(err.to_string(), "Assessment plan build error: metadata assembly failed");
+    }
+
+    #[test]
+    fn assessment_plan_build_exit_code_is_2() {
+        assert_eq!(exit_code(&ForgeError::AssessmentPlanBuild("test".into())), 2);
     }
 
     #[test]

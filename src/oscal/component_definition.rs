@@ -263,6 +263,27 @@ fn collect_citations_from_section(
     }
 }
 
+// ─── Control ID Collector (WI-41, T009) ─────────────────────────────────
+
+/// Collect all control IDs from a built Component Definition.
+///
+/// Iterates all `components[].control_implementations[].implemented_requirements[].control_id`.
+/// Returns an empty Vec if the Component Definition has no implemented requirements.
+/// Does NOT deduplicate — deduplication is performed by `build_assessment_plan`.
+#[must_use]
+pub fn collect_control_ids_from_component_def(
+    envelope: &ComponentDefinitionEnvelope,
+) -> Vec<String> {
+    envelope
+        .component_definition
+        .components
+        .iter()
+        .flat_map(|c| c.control_implementations.iter())
+        .flat_map(|ci| ci.implemented_requirements.iter())
+        .map(|ir| ir.control_id.clone())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -803,5 +824,85 @@ mod tests {
                 );
             }
         }
+    }
+
+    // ─── T009: collect_control_ids_from_component_def ──────────────────
+
+    #[test]
+    fn collect_control_ids_from_component_def_basic() {
+        use crate::oscal::implemented_requirements::{
+            ControlImplementation, ImplementedRequirement,
+        };
+
+        let envelope = ComponentDefinitionEnvelope {
+            component_definition: ComponentDefinition {
+                uuid: "test-uuid".into(),
+                metadata: ComponentDefinitionMetadata {
+                    title: "Test".into(),
+                    last_modified: "2026-01-01T00:00:00Z".into(),
+                    version: "1.0.0".into(),
+                    oscal_version: "1.2.0".into(),
+                },
+                components: vec![DocumentaryComponent {
+                    uuid: "comp-uuid".into(),
+                    component_type: "policy".into(),
+                    title: "Test Component".into(),
+                    description: "Desc".into(),
+                    props: vec![],
+                    control_implementations: vec![ControlImplementation {
+                        uuid: "ci-uuid".into(),
+                        source: "./profile.json".into(),
+                        description: "impl".into(),
+                        implemented_requirements: vec![
+                            ImplementedRequirement {
+                                uuid: "ir1".into(),
+                                control_id: "ac-1".into(),
+                                description: "d1".into(),
+                                props: vec![],
+                                links: vec![],
+                            },
+                            ImplementedRequirement {
+                                uuid: "ir2".into(),
+                                control_id: "ac-2".into(),
+                                description: "d2".into(),
+                                props: vec![],
+                                links: vec![],
+                            },
+                        ],
+                    }],
+                }],
+                back_matter: None,
+            },
+        };
+
+        let ids = collect_control_ids_from_component_def(&envelope);
+        assert_eq!(ids, vec!["ac-1", "ac-2"]);
+    }
+
+    #[test]
+    fn collect_control_ids_from_component_def_empty() {
+        let envelope = ComponentDefinitionEnvelope {
+            component_definition: ComponentDefinition {
+                uuid: "test-uuid".into(),
+                metadata: ComponentDefinitionMetadata {
+                    title: "Test".into(),
+                    last_modified: "2026-01-01T00:00:00Z".into(),
+                    version: "1.0.0".into(),
+                    oscal_version: "1.2.0".into(),
+                },
+                components: vec![DocumentaryComponent {
+                    uuid: "comp-uuid".into(),
+                    component_type: "policy".into(),
+                    title: "Test Component".into(),
+                    description: "Desc".into(),
+                    props: vec![],
+                    control_implementations: vec![],
+                }],
+                back_matter: None,
+            },
+        };
+
+        let ids = collect_control_ids_from_component_def(&envelope);
+        assert!(ids.is_empty());
     }
 }

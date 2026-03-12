@@ -19,6 +19,7 @@ fn run_component_xml(fixture: &Path, source_profile: Option<&str>) -> String {
         MAX_SIZE_BYTES,
         source_profile,
         &OutputFormat::Xml,
+        None,
     )
     .unwrap_or_else(|e| panic!("Component XML pipeline failed: {e}"));
 
@@ -37,6 +38,7 @@ fn run_component_json(fixture: &Path, source_profile: Option<&str>) -> String {
         MAX_SIZE_BYTES,
         source_profile,
         &OutputFormat::Json,
+        None,
     )
     .unwrap_or_else(|e| panic!("Component JSON pipeline failed: {e}"));
 

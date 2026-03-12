@@ -49,10 +49,10 @@
 ## Summary
 
 ### Decision 🔴 `@human-required`
-> Use a profile-resolved control list approach: traverse the Catalog or Component Definition output to collect control-ids, then build `reviewed-controls` with `control-selections` using the established `serde_json::Value` builder pattern, with shared metadata assembly from WI-11 and UUID v5 from WI-7.
+> Use a profile-resolved control list approach: traverse the Catalog or Component Definition output to collect control-ids, then build `reviewed-controls` with `control-selections` using typed OSCAL structs with serde rename annotations, with shared metadata assembly from WI-11 and UUID v5 from WI-7.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> The Assessment Plan builder receives a list of control-ids from the conversion output (Catalog groups/controls or Component Definition implemented-requirements) and constructs a `reviewed-controls` structure with a single `control-selections` entry containing all control-ids in `include-controls`. The `import-ssp` href comes from a required `--import-ssp` CLI flag. Use `serde_json::Value` builder, NOT typed OSCAL structs. Do NOT read or validate the SSP file content — it is a reference only. Do NOT generate tasks or subjects — that is WI-42's scope.
+> The Assessment Plan builder receives a list of control-ids from the conversion output (Catalog groups/controls or Component Definition implemented-requirements) and constructs a `reviewed-controls` structure with a single `control-selections` entry containing all control-ids in `include-controls`. The `import-ssp` href comes from an optional `--import-ssp` CLI flag (AP generation is skipped when the flag is omitted; an error is returned only if the flag is provided with an empty value). Use typed OSCAL structs (`AssessmentPlanEnvelope`, `AssessmentPlan`, `ApMetadata`, `ImportSsp`, `ReviewedControls`, `ApControlSelection`, `ApIncludeControl`) with serde rename annotations — see `contracts/assessment_plan.rs` for the authoritative struct definitions. Do NOT use dynamic `serde_json::Value` builders. Do NOT read or validate the SSP file content — it is a reference only. Do NOT generate tasks or subjects — that is WI-42's scope.
 
 ---
 
@@ -73,10 +73,10 @@ FORGE's pipeline produces Catalogs and Component Definitions, but no Assessment 
 - Assessment task or subject generation — deferred to 042-ar-assessment-plan-subjects
 - Full OSCAL AP schema validation — deferred to future validation work
 - SSP generation or content reading — import-ssp is a reference only
-- Whether to use typed OSCAL structs vs `serde_json::Value` globally — that is a cross-cutting decision
+- Whether to migrate all OSCAL builders to typed structs globally — that is a cross-cutting decision (WI-41 uses typed structs for the AP builder)
 
 ### Current State 🟢 `@llm-autonomous`
-The FORGE pipeline currently produces OSCAL Catalogs (WI-9/WI-10/WI-13) and Component Definitions (WI-14/WI-15/WI-18). Shared infrastructure exists for metadata assembly (WI-11), UUID v5 generation (WI-7), and back matter (WI-12). No Assessment Plan generation capability exists. The `oscal` module contains builders for Catalog and Component Definition using `serde_json::Value`.
+The FORGE pipeline currently produces OSCAL Catalogs (WI-9/WI-10/WI-13) and Component Definitions (WI-14/WI-15/WI-18). Shared infrastructure exists for metadata assembly (WI-11), UUID v5 generation (WI-7), and back matter (WI-12). No Assessment Plan generation capability exists. The `oscal` module contains builders for Catalog and Component Definition using typed OSCAL structs with serde annotations.
 
 ```mermaid
 graph TD
@@ -103,7 +103,7 @@ graph TD
 | M-3 | Include `import-ssp` with href from CLI | Requires new CLI flag; builder accepts href string |
 | M-4 | Include `reviewed-controls` with `control-selections` | Core assembly logic — extract and organize control-ids |
 | M-5 | Populate `include-controls` from conversion output | Must traverse Catalog groups or Component Definition implemented-requirements |
-| M-6 | `--import-ssp` is required; error if missing | CLI validation and error handling |
+| M-6 | `--import-ssp` is optional; when omitted AP generation is skipped (backward compatible); when provided value must be non-empty | CLI optional flag handling; error only when value is empty string |
 | M-7 | Deterministic UUID v5 for all AP elements | Reuse WI-7 UUID generation infrastructure |
 
 **PRD Constraints inherited:**
@@ -281,7 +281,7 @@ graph TD
 
 | Component | Responsibility | Interface | Dependencies |
 |-----------|---------------|-----------|--------------|
-| build_assessment_plan | Assemble AP JSON from control-ids, SSP href, and policy title | Library fn: `(&[String], &str, &str) -> Result<Value>` | serde_json, uuid, shared metadata |
+| build_assessment_plan | Assemble AP JSON from control-ids, SSP href, and policy title | Library fn: `(&[String], &str, &str) -> Result<AssessmentPlanEnvelope, ForgeError>` | serde_json, uuid, shared metadata |
 | CLI handler (assess or convert extension) | Parse --import-ssp flag, invoke builder | CLI subcommand or strategy | clap 4.x |
 | Control-id collector | Collect control-ids during pipeline execution | Internal pipeline extension | Catalog/Component builders |
 
@@ -321,15 +321,17 @@ sequenceDiagram
 /// * `policy_title` - Title of the source policy document
 ///
 /// # Returns
-/// A `serde_json::Value` representing the complete Assessment Plan JSON.
+/// An `AssessmentPlanEnvelope` ready for `serde_json::to_string_pretty`.
 pub fn build_assessment_plan(
     control_ids: &[String],
     import_ssp_href: &str,
     policy_title: &str,
-) -> Result<serde_json::Value, ForgeError>;
+) -> Result<AssessmentPlanEnvelope, ForgeError>;
 
-/// CLI integration: new flag on convert or new subcommand
-/// --import-ssp <path>  Required SSP reference for Assessment Plan generation
+/// CLI integration: optional flag on convert subcommand
+/// --import-ssp <path>  Optional SSP reference for Assessment Plan generation
+///                      When omitted, AP generation is skipped (backward compatible).
+///                      When provided with empty value, returns ForgeError::Validation.
 ```
 
 ### Key Algorithms/Patterns 🟡 `@human-review`
@@ -343,8 +345,8 @@ pub fn build_assessment_plan(
 5. Build import-ssp object from href
 6. Build control-selections with include-controls from control_ids
 7. Build reviewed-controls wrapping control-selections
-8. Assemble root assessment-plan object
-9. Return serde_json::Value
+8. Assemble root AssessmentPlanEnvelope
+9. Return AssessmentPlanEnvelope
 ```
 
 ---
@@ -380,7 +382,7 @@ pub fn build_assessment_plan(
 - [x] **DO NOT** use random UUID v4 — all UUIDs must be deterministic v5 *(PRD M-7)*
 - [x] **MUST** reuse shared metadata assembly from WI-11 *(PRD S-2)*
 - [x] **MUST** deduplicate control-ids before populating include-controls *(PRD EC-3)*
-- [x] **MUST** produce a descriptive error when --import-ssp is missing *(PRD M-6)*
+- [x] **MUST** skip AP generation when --import-ssp is omitted (backward compatible); produce a descriptive error when --import-ssp value is empty *(PRD M-6)*
 
 ---
 
@@ -420,7 +422,7 @@ pub fn build_assessment_plan(
 |-------|-----------|-----------------|-------|
 | Unit | build_assessment_plan | 90% | All AC-1 through AC-7 and EC-1 through EC-5 |
 | Unit | Control-id deduplication | 100% | EC-3 edge case |
-| Integration | CLI --import-ssp flag | Key paths | Missing flag error (AC-5) |
+| Integration | CLI --import-ssp flag | Key paths | Flag omitted → AP skipped (AC-5); empty value → error (EC-2) |
 
 ### Anti-patterns to Avoid 🟡 `@human-review`
 - **Don't:** Read SSP file content to validate or extract data
@@ -447,8 +449,9 @@ pub fn build_assessment_plan(
 ### Error Handling Strategy 🟢 `@llm-autonomous`
 ```
 Error Category → Handling Approach
-├── Missing --import-ssp → Descriptive error message + non-zero exit
-├── Empty import-ssp value → Descriptive error message + non-zero exit
+├── Missing --import-ssp → AP generation skipped; convert completes normally (backward compatible)
+├── Empty import-ssp value → ForgeError::Validation + non-zero exit
+├── Batch mode + --import-ssp → Warning emitted; AP generation skipped
 ├── Zero control-ids → Warning emitted; empty include-controls array
 └── Serialization failure → ForgeError::Serialization + non-zero exit
 ```
@@ -496,7 +499,7 @@ No open questions for this work item.
 | M-3 | Simplicity | Option 2: ✅ | build_assessment_plan | import-ssp.href from CLI flag |
 | M-4 | Control source flexibility | Option 2: ✅ | build_assessment_plan | reviewed-controls with control-selections |
 | M-5 | Control source flexibility | Option 2: ✅ | Control-id collector | Pipeline provides control-ids |
-| M-6 | Simplicity | Option 2: ✅ | CLI handler | Clap required flag validation |
+| M-6 | Simplicity | Option 2: ✅ | CLI handler + builder | Optional flag; builder validates non-empty when provided |
 | M-7 | Determinism | Option 2: ✅ | UUID v5 WI-7 | Deterministic from content |
 
 ---

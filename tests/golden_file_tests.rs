@@ -493,6 +493,7 @@ mod golden_catalog_tests {
             Some(&output_path),
             MAX_INPUT_SIZE,
             &OutputFormat::Json,
+            None,
         )
         .unwrap_or_else(|e| panic!("Catalog pipeline failed on {fixture_dir}: {e}"));
 
@@ -578,6 +579,7 @@ mod golden_component_tests {
             MAX_INPUT_SIZE,
             Some(SOURCE_PROFILE),
             &OutputFormat::Json,
+            None,
         )
         .unwrap_or_else(|e| panic!("Component pipeline failed on {fixture_dir}: {e}"));
 
@@ -725,6 +727,7 @@ mod determinism_tests {
             Some(&out1),
             MAX_INPUT_SIZE,
             &OutputFormat::Json,
+            None,
         )
         .expect("First run failed");
 
@@ -735,6 +738,7 @@ mod determinism_tests {
             Some(&out2),
             MAX_INPUT_SIZE,
             &OutputFormat::Json,
+            None,
         )
         .expect("Second run failed");
 
