@@ -83,7 +83,7 @@ pub enum Commands {
         /// SSP reference for Assessment Plan generation.
         /// When provided, an Assessment Plan skeleton is written to
         /// {output_dir}/{policy_stem}-assessment-plan.json alongside the converted artifact.
-        /// Mutually exclusive with batch mode (2+ input files).
+        /// Ignored in batch mode (2+ input files).
         #[arg(long)]
         import_ssp: Option<String>,
 

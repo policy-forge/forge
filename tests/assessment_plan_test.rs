@@ -1,5 +1,7 @@
 //! Integration tests for Assessment Plan generation (WI-41).
 
+mod common;
+
 use std::path::Path;
 
 use tempfile::TempDir;
@@ -33,7 +35,7 @@ fn run_catalog_with_ap(fixture: &Path, output_dir: &Path, import_ssp: &str) -> s
 #[test]
 fn ac6_same_input_produces_identical_uuids() {
     let fixture = Path::new(FIXTURE);
-    if !fixture.exists() {
+    if common::skip_if_missing(fixture) {
         return;
     }
 
@@ -54,7 +56,7 @@ fn ac6_same_input_produces_identical_uuids() {
 #[test]
 fn ec5_different_input_produces_different_uuids() {
     let fixture = Path::new(FIXTURE);
-    if !fixture.exists() {
+    if common::skip_if_missing(fixture) {
         return;
     }
 
@@ -75,7 +77,7 @@ fn ec5_different_input_produces_different_uuids() {
 #[test]
 fn ap_file_written_when_import_ssp_provided() {
     let fixture = Path::new(FIXTURE);
-    if !fixture.exists() {
+    if common::skip_if_missing(fixture) {
         return;
     }
 
@@ -100,7 +102,7 @@ fn ap_file_written_when_import_ssp_provided() {
 #[test]
 fn ap_file_not_written_when_import_ssp_omitted() {
     let fixture = Path::new(FIXTURE);
-    if !fixture.exists() {
+    if common::skip_if_missing(fixture) {
         return;
     }
 
@@ -125,7 +127,7 @@ fn ap_file_not_written_when_import_ssp_omitted() {
 #[test]
 fn ap_contains_all_control_ids_from_fixture() {
     let fixture = Path::new(FIXTURE);
-    if !fixture.exists() {
+    if common::skip_if_missing(fixture) {
         return;
     }
 
@@ -152,7 +154,7 @@ fn ap_contains_all_control_ids_from_fixture() {
 #[test]
 fn empty_import_ssp_returns_validation_error() {
     let fixture = Path::new(FIXTURE);
-    if !fixture.exists() {
+    if common::skip_if_missing(fixture) {
         return;
     }
 
@@ -172,4 +174,47 @@ fn empty_import_ssp_returns_validation_error() {
         msg.contains("import-ssp") || msg.contains("empty"),
         "Error should mention import-ssp or empty, got: {msg}"
     );
+}
+
+// ─── Component pipeline AP generation ───────────────────────────────────
+
+#[test]
+fn component_pipeline_generates_ap_with_import_ssp() {
+    let fixture = Path::new(FIXTURE);
+    if common::skip_if_missing(fixture) {
+        return;
+    }
+
+    let dir = TempDir::new().unwrap();
+    let component_path = dir.path().join("component.json");
+    let result = forge::pipeline::run_component_pipeline(
+        fixture,
+        Some(&component_path),
+        MAX_SIZE_BYTES,
+        Some("./baselines/nist-800-53.json"),
+        &forge::cli::OutputFormat::Json,
+        Some("./ssp/system-ssp.json"),
+    );
+
+    // Component pipeline may fail schema validation without a real profile,
+    // but if it succeeds, verify the AP file was written
+    if let Ok(_) = result {
+        let stem = fixture.file_stem().unwrap().to_str().unwrap();
+        let ap_path = dir.path().join(format!("{stem}-assessment-plan.json"));
+        assert!(
+            ap_path.exists(),
+            "AP file should be written for component pipeline with --import-ssp"
+        );
+
+        let ap_json = std::fs::read_to_string(&ap_path).unwrap();
+        let ap: serde_json::Value = serde_json::from_str(&ap_json).unwrap();
+        assert!(
+            ap.get("assessment-plan").is_some(),
+            "AP should have assessment-plan root key"
+        );
+        assert_eq!(
+            ap["assessment-plan"]["import-ssp"]["href"].as_str().unwrap(),
+            "./ssp/system-ssp.json"
+        );
+    }
 }

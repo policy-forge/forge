@@ -113,7 +113,8 @@ pub fn build_assessment_plan(
         version: "1.0.0".to_string(),
         ..Default::default()
     };
-    let real_metadata = crate::oscal::assemble_metadata(&doc_meta, None)?;
+    let real_metadata = crate::oscal::assemble_metadata(&doc_meta, None)
+        .map_err(|e| ForgeError::AssessmentPlanBuild(e.to_string()))?;
 
     // UUID v5 seed: deterministic from sorted control IDs + SSP href (SEC-4)
     let seed = format!("assessment-plan|{}|{}", sorted_ids.join(","), import_ssp_href);
