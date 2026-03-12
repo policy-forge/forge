@@ -69,7 +69,9 @@ pub enum ValidateError {
     #[error("Schema compilation failed for {model_type}: {message}")]
     SchemaCompilation { model_type: String, message: String },
 
-    #[error("Ambiguous OSCAL artifact: file contains multiple model types ({detail}). Each file must contain exactly one OSCAL model.")]
+    #[error(
+        "Ambiguous OSCAL artifact: file contains multiple model types ({detail}). Each file must contain exactly one OSCAL model."
+    )]
     AmbiguousArtifact { detail: String },
 
     #[allow(clippy::cast_precision_loss)]
@@ -470,9 +472,7 @@ mod tests {
 
     #[test]
     fn validate_error_ambiguous_artifact_display() {
-        let err = ValidateError::AmbiguousArtifact {
-            detail: "catalog, profile".to_string(),
-        };
+        let err = ValidateError::AmbiguousArtifact { detail: "catalog, profile".to_string() };
         assert!(err.to_string().contains("catalog, profile"));
         assert!(err.to_string().contains("Ambiguous"));
     }

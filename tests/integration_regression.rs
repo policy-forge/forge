@@ -18,7 +18,8 @@ fn forge_bin() -> Command {
 
 fn run_forge(args: &[&str]) -> std::process::Output {
     let output = forge_bin().args(args).output().expect("failed to execute forge");
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
         args,
         output.status,

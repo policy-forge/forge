@@ -494,10 +494,7 @@ fn convert_strategy_component_without_source_profile_errors() {
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     // Must fail with an error about --source-profile being required
-    assert!(
-        !output.status.success(),
-        "Should fail without --source-profile, stderr: {stderr}"
-    );
+    assert!(!output.status.success(), "Should fail without --source-profile, stderr: {stderr}");
     assert!(
         stderr.contains("--source-profile is required"),
         "Error should mention --source-profile is required, stderr: {stderr}"

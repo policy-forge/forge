@@ -258,11 +258,7 @@ fn convert_prop(xml: XmlProp) -> OscalProp {
 }
 
 fn convert_link(xml: XmlLink) -> OscalLink {
-    OscalLink {
-        href: xml.href,
-        rel: xml.rel.unwrap_or_default(),
-        text: xml.text,
-    }
+    OscalLink { href: xml.href, rel: xml.rel.unwrap_or_default(), text: xml.text }
 }
 
 fn convert_part(xml: XmlPart) -> OscalPart {
@@ -316,11 +312,8 @@ fn convert_group(xml: XmlGroup) -> OscalGroup {
 }
 
 fn convert_back_matter(xml: XmlBackMatter) -> Result<BackMatter, ForgeError> {
-    let resources = xml
-        .resources
-        .into_iter()
-        .map(convert_resource)
-        .collect::<Result<Vec<_>, _>>()?;
+    let resources =
+        xml.resources.into_iter().map(convert_resource).collect::<Result<Vec<_>, _>>()?;
     Ok(BackMatter { resources })
 }
 
@@ -339,7 +332,11 @@ fn convert_resource(xml: XmlResource) -> Result<BackMatterResource, ForgeError> 
             .into_iter()
             .map(|r| Rlink { href: r.href, media_type: r.media_type })
             .collect(),
-        props: xml.props.into_iter().map(|p| Prop { name: p.name, value: p.value, ns: None }).collect(),
+        props: xml
+            .props
+            .into_iter()
+            .map(|p| Prop { name: p.name, value: p.value, ns: None })
+            .collect(),
     })
 }
 
@@ -395,10 +392,7 @@ fn convert_implemented_requirement(
     xml: XmlImplementedRequirement,
 ) -> Result<ImplementedRequirement, ForgeError> {
     Uuid::try_parse(&xml.uuid).map_err(|e| ForgeError::ExportInvalidOscal {
-        detail: format!(
-            "Invalid UUID in implemented-requirement: '{uuid}' — {e}",
-            uuid = xml.uuid
-        ),
+        detail: format!("Invalid UUID in implemented-requirement: '{uuid}' — {e}", uuid = xml.uuid),
     })?;
     let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
     Ok(ImplementedRequirement {
@@ -413,11 +407,8 @@ fn convert_implemented_requirement(
 fn convert_component_definition(
     xml: XmlComponentDefinition,
 ) -> Result<ComponentDefinition, ForgeError> {
-    let components = xml
-        .components
-        .into_iter()
-        .map(convert_component)
-        .collect::<Result<Vec<_>, _>>()?;
+    let components =
+        xml.components.into_iter().map(convert_component).collect::<Result<Vec<_>, _>>()?;
     let back_matter = xml.back_matter.map(convert_back_matter).transpose()?;
     Ok(ComponentDefinition {
         uuid: xml.uuid,
@@ -591,8 +582,7 @@ mod tests {
                                     name: "source-file".to_string(),
                                     value: "policy.md".to_string(),
                                     ns: Some(
-                                        "https://forge.policy-forge.github.io/ns/trace"
-                                            .to_string(),
+                                        "https://forge.policy-forge.github.io/ns/trace".to_string(),
                                     ),
                                 }],
                                 links: vec![OscalLink {
@@ -617,8 +607,7 @@ mod tests {
         };
 
         // Serialize to XML
-        let xml =
-            serialize_component_definition_to_xml(&original.component_definition).unwrap();
+        let xml = serialize_component_definition_to_xml(&original.component_definition).unwrap();
 
         // Deserialize back
         let round_tripped = deserialize_component_from_xml(&xml).unwrap();
@@ -689,10 +678,7 @@ mod tests {
         let result = deserialize_component_from_xml(xml);
         assert!(result.is_err(), "Invalid UUID in control-implementation should error");
         let err = result.unwrap_err().to_string();
-        assert!(
-            err.contains("Invalid UUID"),
-            "Error should mention invalid UUID, got: {err}"
-        );
+        assert!(err.contains("Invalid UUID"), "Error should mention invalid UUID, got: {err}");
     }
 
     #[test]
@@ -719,10 +705,7 @@ mod tests {
         let result = deserialize_component_from_xml(xml);
         assert!(result.is_err(), "Invalid UUID in implemented-requirement should error");
         let err = result.unwrap_err().to_string();
-        assert!(
-            err.contains("Invalid UUID"),
-            "Error should mention invalid UUID, got: {err}"
-        );
+        assert!(err.contains("Invalid UUID"), "Error should mention invalid UUID, got: {err}");
     }
 
     #[test]
@@ -745,10 +728,7 @@ mod tests {
         let result = deserialize_catalog_from_xml(xml);
         assert!(result.is_err(), "Invalid UUID in resource should error");
         let err = result.unwrap_err().to_string();
-        assert!(
-            err.contains("invalid UUID"),
-            "Error should mention invalid UUID, got: {err}"
-        );
+        assert!(err.contains("invalid UUID"), "Error should mention invalid UUID, got: {err}");
     }
 
     #[test]
@@ -771,10 +751,7 @@ mod tests {
         let result = deserialize_component_from_xml(xml);
         assert!(result.is_err(), "Invalid UUID in resource should error");
         let err = result.unwrap_err().to_string();
-        assert!(
-            err.contains("invalid UUID"),
-            "Error should mention invalid UUID, got: {err}"
-        );
+        assert!(err.contains("invalid UUID"), "Error should mention invalid UUID, got: {err}");
     }
 
     #[test]

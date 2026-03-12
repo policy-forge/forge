@@ -82,11 +82,7 @@ pub struct Capability {
     /// Capability description.
     pub description: String,
     /// Control implementations under this capability.
-    #[serde(
-        default,
-        rename = "control-implementations",
-        skip_serializing_if = "Vec::is_empty"
-    )]
+    #[serde(default, rename = "control-implementations", skip_serializing_if = "Vec::is_empty")]
     pub control_implementations: Vec<crate::oscal::implemented_requirements::ControlImplementation>,
 }
 
@@ -966,15 +962,13 @@ mod tests {
                         uuid: "ci-uuid".into(),
                         source: "./baseline.json".into(),
                         description: "CI".into(),
-                        implemented_requirements: vec![
-                            ImplementedRequirement {
-                                uuid: "ir-1".into(),
-                                control_id: "enc-1".into(),
-                                description: "Encrypt data".into(),
-                                props: vec![],
-                                links: vec![],
-                            },
-                        ],
+                        implemented_requirements: vec![ImplementedRequirement {
+                            uuid: "ir-1".into(),
+                            control_id: "enc-1".into(),
+                            description: "Encrypt data".into(),
+                            props: vec![],
+                            links: vec![],
+                        }],
                     }],
                 }],
                 components: vec![DocumentaryComponent {
@@ -987,15 +981,13 @@ mod tests {
                         uuid: "ci-uuid-2".into(),
                         source: "./baseline.json".into(),
                         description: "CI".into(),
-                        implemented_requirements: vec![
-                            ImplementedRequirement {
-                                uuid: "ir-2".into(),
-                                control_id: "ac-1".into(),
-                                description: "Access control".into(),
-                                props: vec![],
-                                links: vec![],
-                            },
-                        ],
+                        implemented_requirements: vec![ImplementedRequirement {
+                            uuid: "ir-2".into(),
+                            control_id: "ac-1".into(),
+                            description: "Access control".into(),
+                            props: vec![],
+                            links: vec![],
+                        }],
                     }],
                 }],
                 back_matter: None,

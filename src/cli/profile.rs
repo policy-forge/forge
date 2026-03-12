@@ -96,10 +96,11 @@ pub fn execute(
     // Step 3: parse optional timestamp override
     let ts_override = match timestamp {
         Some(ts_str) => {
-            let parsed = chrono::DateTime::parse_from_rfc3339(ts_str)
-                .map_err(|e| ForgeError::InvalidArgument(format!(
+            let parsed = chrono::DateTime::parse_from_rfc3339(ts_str).map_err(|e| {
+                ForgeError::InvalidArgument(format!(
                     "--timestamp must be a valid ISO 8601 / RFC 3339 string: {e}"
-                )))?;
+                ))
+            })?;
             Some(parsed.with_timezone(&chrono::Utc))
         }
         None => None,

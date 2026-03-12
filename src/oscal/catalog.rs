@@ -443,8 +443,12 @@ pub fn build_catalog(
 /// The first title to claim a base group ID keeps it bare. Subsequent
 /// titles that produce the same base group ID receive a hash suffix
 /// derived from their content (first 2 bytes of SHA-256, hex-encoded).
-fn resolve_group_id(title: &str, index: usize, counts: &mut HashMap<String, Vec<String>>) -> String {
-    use sha2::{Sha256, Digest};
+fn resolve_group_id(
+    title: &str,
+    index: usize,
+    counts: &mut HashMap<String, Vec<String>>,
+) -> String {
+    use sha2::{Digest, Sha256};
 
     let base = generate_group_id(title);
     if base.is_empty() {
@@ -469,8 +473,11 @@ fn resolve_group_id(title: &str, index: usize, counts: &mut HashMap<String, Vec<
 /// titles that produce the same base abbreviation receive a hash suffix
 /// derived from their content (first 2 bytes of SHA-256, hex-encoded).
 /// This makes the disambiguation stable regardless of encounter order.
-pub(crate) fn resolve_abbreviation(title: &str, counts: &mut HashMap<String, Vec<String>>) -> String {
-    use sha2::{Sha256, Digest};
+pub(crate) fn resolve_abbreviation(
+    title: &str,
+    counts: &mut HashMap<String, Vec<String>>,
+) -> String {
+    use sha2::{Digest, Sha256};
 
     let base = generate_section_abbreviation(title);
     let titles = counts.entry(base.clone()).or_default();

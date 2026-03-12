@@ -94,8 +94,9 @@ fn schema_exclude_only() {
     let catalog = make_catalog_file();
     let catalog_path = catalog.path().to_string_lossy().to_string();
 
-    let profile = build_profile(&catalog_path, vec!["AC-10".into()], SelectionMode::Exclude, &[], None)
-        .expect("build_profile should succeed for exclude mode");
+    let profile =
+        build_profile(&catalog_path, vec!["AC-10".into()], SelectionMode::Exclude, &[], None)
+            .expect("build_profile should succeed for exclude mode");
 
     let root = ProfileRoot { profile };
     let value = serde_json::to_value(&root).expect("Serialization must succeed");
@@ -267,7 +268,8 @@ fn edge_nonexistent_control_id() {
 
     // "FAKE-999" does not exist in the test catalog, but build_profile does not
     // parse the catalog content — this call succeeds.
-    let result = build_profile(&catalog_path, vec!["FAKE-999".into()], SelectionMode::Include, &[], None);
+    let result =
+        build_profile(&catalog_path, vec!["FAKE-999".into()], SelectionMode::Include, &[], None);
 
     assert!(
         result.is_ok(),

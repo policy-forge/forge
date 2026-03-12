@@ -241,8 +241,11 @@ pub fn generate_back_matter(
                     "Malformed or non-http/https URL preserved with unvalidated annotation"
                 );
                 let rlinks = vec![Rlink { href: raw_url, media_type: None }];
-                let props =
-                    vec![Prop { name: "url-status".to_string(), value: "unvalidated".to_string(), ns: None }];
+                let props = vec![Prop {
+                    name: "url-status".to_string(),
+                    value: "unvalidated".to_string(),
+                    ns: None,
+                }];
                 let citation_field = if citation.text.is_empty() {
                     None
                 } else {

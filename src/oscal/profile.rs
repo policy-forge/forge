@@ -222,11 +222,9 @@ pub fn build_profile(
         version: "1.0.0".to_string(),
         ..Default::default()
     };
-    let meta_opts = timestamp_override.map(|ts| {
-        crate::oscal::metadata::MetadataOptions {
-            timestamp_override: Some(ts),
-            ..Default::default()
-        }
+    let meta_opts = timestamp_override.map(|ts| crate::oscal::metadata::MetadataOptions {
+        timestamp_override: Some(ts),
+        ..Default::default()
     });
     let metadata = assemble_metadata(&doc_meta, meta_opts)?;
 
@@ -241,8 +239,7 @@ pub fn build_profile(
         vec![]
     } else {
         let selection = ControlSelection { with_ids: control_ids };
-        let sanitized_href =
-            crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
+        let sanitized_href = crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
         let import = match mode {
             SelectionMode::Include => ProfileImport {
                 href: sanitized_href.clone(),
@@ -424,9 +421,14 @@ mod tests {
 
     #[test]
     fn profile_import_include_produces_include_controls_key() {
-        let profile =
-            build_profile("/tmp/cat.json", vec!["POL-1".to_string()], SelectionMode::Include, &[], None)
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/cat.json",
+            vec!["POL-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         let import = &profile.imports[0];
         let json = serde_json::to_value(import).unwrap();
         assert!(json.get("include-controls").is_some());
@@ -436,9 +438,14 @@ mod tests {
 
     #[test]
     fn profile_import_exclude_produces_exclude_controls_key() {
-        let profile =
-            build_profile("/tmp/cat.json", vec!["POL-1".to_string()], SelectionMode::Exclude, &[], None)
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/cat.json",
+            vec!["POL-1".to_string()],
+            SelectionMode::Exclude,
+            &[],
+            None,
+        )
+        .unwrap();
         let import = &profile.imports[0];
         let json = serde_json::to_value(import).unwrap();
         assert!(json.get("exclude-controls").is_some());
@@ -503,9 +510,14 @@ mod tests {
 
     #[test]
     fn build_profile_include_sets_include_controls_none_exclude() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["AC-1".to_string()], SelectionMode::Include, &[], None)
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         assert!(profile.imports[0].include_controls.is_some());
         assert!(profile.imports[0].exclude_controls.is_none());
         let ids = &profile.imports[0].include_controls.as_ref().unwrap()[0].with_ids;
@@ -514,18 +526,28 @@ mod tests {
 
     #[test]
     fn build_profile_metadata_title_and_oscal_version() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["AC-1".to_string()], SelectionMode::Include, &[], None)
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         assert_eq!(profile.metadata.title, "Policy Baseline Profile");
         assert_eq!(profile.metadata.oscal_version, "1.2.0");
     }
 
     #[test]
     fn build_profile_security_no_catalog_content_in_json() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["AC-1".to_string()], SelectionMode::Include, &[], None)
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         let root = ProfileRoot { profile };
         let json_str = serde_json::to_string(&root).unwrap();
         // Profile JSON must only reference the catalog by href, not embed content
@@ -538,7 +560,8 @@ mod tests {
     fn build_profile_security_href_uses_filename_only() {
         let path = "/absolute/path/to catalog.json";
         let profile =
-            build_profile(path, vec!["AC-1".to_string()], SelectionMode::Include, &[], None).unwrap();
+            build_profile(path, vec!["AC-1".to_string()], SelectionMode::Include, &[], None)
+                .unwrap();
         // sanitize_artifact_path extracts filename, handling spaces
         assert_eq!(profile.imports[0].href, "to catalog.json");
         assert!(!profile.imports[0].href.contains('/'));
@@ -578,9 +601,14 @@ mod tests {
 
     #[test]
     fn build_profile_exclude_json_omits_include_controls_key() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["X-1".to_string()], SelectionMode::Exclude, &[], None)
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["X-1".to_string()],
+            SelectionMode::Exclude,
+            &[],
+            None,
+        )
+        .unwrap();
         let json = serde_json::to_value(&profile.imports[0]).unwrap();
         assert!(json.get("exclude-controls").is_some());
         assert!(json.get("include-controls").is_none());

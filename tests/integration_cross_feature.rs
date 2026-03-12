@@ -54,7 +54,8 @@ fn forge_bin() -> Command {
 
 fn run_forge(args: &[&str]) -> std::process::Output {
     let output = forge_bin().args(args).output().expect("failed to execute forge");
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
         args,
         output.status,
@@ -112,9 +113,10 @@ fn collect_modality_from_controls(controls: &[Value], out: &mut Vec<String>) {
         if let Some(props) = control["props"].as_array() {
             for prop in props {
                 if prop["name"].as_str() == Some("modality")
-                    && let Some(v) = prop["value"].as_str() {
-                        out.push(v.to_string());
-                    }
+                    && let Some(v) = prop["value"].as_str()
+                {
+                    out.push(v.to_string());
+                }
             }
         }
         // Recurse into nested controls
@@ -163,11 +165,9 @@ fn collect_params_from_controls(controls: &[Value], out: &mut Vec<(String, Vec<S
 
 /// Count all controls across all groups in a catalog JSON.
 fn count_controls(catalog: &Value) -> usize {
-    catalog["catalog"]["groups"]
-        .as_array()
-        .map_or(0, |groups| {
-            groups.iter().map(|g| g["controls"].as_array().map_or(0, Vec::len)).sum()
-        })
+    catalog["catalog"]["groups"].as_array().map_or(0, |groups| {
+        groups.iter().map(|g| g["controls"].as_array().map_or(0, Vec::len)).sum()
+    })
 }
 
 // ── M-5 / AC-6: normative and advisory props in JSON ────────────────────────

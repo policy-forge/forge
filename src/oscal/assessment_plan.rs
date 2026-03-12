@@ -306,8 +306,7 @@ mod tests {
     #[test]
     fn assessment_plan_import_ssp_uses_filename_only() {
         let ids = vec!["AC-001".to_string()];
-        let envelope =
-            build_assessment_plan(&ids, "/absolute/path/to/ssp.json", "Policy").unwrap();
+        let envelope = build_assessment_plan(&ids, "/absolute/path/to/ssp.json", "Policy").unwrap();
         assert_eq!(envelope.assessment_plan.import_ssp.href, "ssp.json");
         assert!(!envelope.assessment_plan.import_ssp.href.contains('/'));
     }

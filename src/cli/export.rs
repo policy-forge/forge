@@ -233,9 +233,8 @@ pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
         }
     };
 
-    let report =
-        crate::validate::run_full_validation("export-artifact", &json_value, model_type)
-            .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    let report = crate::validate::run_full_validation("export-artifact", &json_value, model_type)
+        .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
 
     if report.is_valid() {
         info!("Export validation passed for {model_type}");

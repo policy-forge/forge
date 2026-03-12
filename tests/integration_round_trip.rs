@@ -16,7 +16,8 @@ fn forge_bin() -> Command {
 
 fn run_forge(args: &[&str]) -> std::process::Output {
     let output = forge_bin().args(args).output().expect("failed to execute forge");
-    assert!(output.status.success(),
+    assert!(
+        output.status.success(),
         "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
         args,
         output.status,
@@ -36,13 +37,14 @@ fn read_json(path: &std::path::Path) -> Value {
 /// XML serialization intentionally omits this field (WI-28 normalization pattern, EC-5).
 fn clear_control_implementations(value: &mut Value) {
     if let Some(comp_def) = value.pointer_mut("/component-definition")
-        && let Some(components) = comp_def.get_mut("components").and_then(Value::as_array_mut) {
-            for component in components {
-                if let Some(obj) = component.as_object_mut() {
-                    obj.remove("control-implementations");
-                }
+        && let Some(components) = comp_def.get_mut("components").and_then(Value::as_array_mut)
+    {
+        for component in components {
+            if let Some(obj) = component.as_object_mut() {
+                obj.remove("control-implementations");
             }
         }
+    }
 }
 
 // ── M-1 / AC-1: Catalog JSON → XML → JSON ────────────────────────────────────

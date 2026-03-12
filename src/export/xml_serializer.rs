@@ -963,7 +963,11 @@ mod tests {
             uuid: uuid::Uuid::parse_str("a1b2c3d4-e5f6-7890-abcd-ef1234567890").unwrap(),
             title: "Bad ref".to_string(),
             description: None,
-            props: vec![Prop { name: "url-status".to_string(), value: "unvalidated".to_string(), ns: None }],
+            props: vec![Prop {
+                name: "url-status".to_string(),
+                value: "unvalidated".to_string(),
+                ns: None,
+            }],
             citation: None,
             rlinks: vec![Rlink { href: "not-a-url".to_string(), media_type: None }],
         };
@@ -1286,9 +1290,7 @@ mod tests {
 
         // implemented-requirement element with attributes
         assert!(
-            xml.contains(
-                r#"<implemented-requirement uuid="ir-uuid-456" control-id="POL-AC-001">"#
-            ),
+            xml.contains(r#"<implemented-requirement uuid="ir-uuid-456" control-id="POL-AC-001">"#),
             "Must serialize implemented-requirement with uuid and control-id"
         );
         assert!(

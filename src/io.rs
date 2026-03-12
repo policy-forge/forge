@@ -19,9 +19,10 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
     let mut tmp = tempfile::NamedTempFile::new_in(parent)?;
     tmp.write_all(content)?;
     tmp.persist(path).map_err(|e| {
-        ForgeError::Io(std::io::Error::other(
-            format!("Failed to persist temp file to '{}': {e}", path.display()),
-        ))
+        ForgeError::Io(std::io::Error::other(format!(
+            "Failed to persist temp file to '{}': {e}",
+            path.display()
+        )))
     })?;
     Ok(())
 }
