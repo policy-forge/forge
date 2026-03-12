@@ -806,7 +806,7 @@ mod tests {
         );
 
         let ci = &comp.control_implementations[0];
-        assert_eq!(ci.source, "./baseline.json");
+        assert_eq!(ci.source, "baseline.json");
     }
 
     // ─── T022: No trace data in remarks (Component Definition) — SEC-1, SEC-2, M-7 ──

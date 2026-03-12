@@ -137,7 +137,7 @@
                 "uuid": "b4c2e62d-07d0-519c-a7ad-2cbf3a403a9f"
               }
             ],
-            "source": "./baselines/nist-800-53.json",
+            "source": "nist-800-53.json",
             "uuid": "5f939f7d-bedf-5d5d-90a3-1e2431320888"
           }
         ]

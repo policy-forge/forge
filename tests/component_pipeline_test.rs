@@ -81,8 +81,8 @@ fn component_pipeline_has_populated_control_implementations() {
 
     let entry = &ci[0];
 
-    // source matches provided source_profile
-    assert_eq!(entry["source"], "./baselines/nist-800-53.json");
+    // source uses filename-only (sanitize_artifact_path)
+    assert_eq!(entry["source"], "nist-800-53.json");
 
     // description follows expected pattern
     let desc = entry["description"].as_str().unwrap();

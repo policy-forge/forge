@@ -214,7 +214,7 @@ fn component_pipeline_generates_ap_with_import_ssp() {
         );
         assert_eq!(
             ap["assessment-plan"]["import-ssp"]["href"].as_str().unwrap(),
-            "./ssp/system-ssp.json"
+            "system-ssp.json"
         );
     }
 }

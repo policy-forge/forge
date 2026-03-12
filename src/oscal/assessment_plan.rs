@@ -133,7 +133,9 @@ pub fn build_assessment_plan(
                 version: real_metadata.version,
                 oscal_version: real_metadata.oscal_version,
             },
-            import_ssp: ImportSsp { href: import_ssp_href.to_string() },
+            import_ssp: ImportSsp {
+                href: crate::io::sanitize_artifact_path(std::path::Path::new(import_ssp_href)),
+            },
             reviewed_controls: ReviewedControls {
                 description: Some(format!(
                     "Controls derived from {policy_title} for assessment review."
@@ -295,10 +297,19 @@ mod tests {
     // ─── T011: AC-3 — import-ssp.href equals provided path ────────────
 
     #[test]
-    fn ac3_import_ssp_href_matches_input() {
+    fn ac3_import_ssp_href_uses_filename_only() {
         let ids = vec!["AC-001".to_string()];
         let envelope = build_assessment_plan(&ids, "./ssp/system-ssp.json", "Policy").unwrap();
-        assert_eq!(envelope.assessment_plan.import_ssp.href, "./ssp/system-ssp.json");
+        assert_eq!(envelope.assessment_plan.import_ssp.href, "system-ssp.json");
+    }
+
+    #[test]
+    fn assessment_plan_import_ssp_uses_filename_only() {
+        let ids = vec!["AC-001".to_string()];
+        let envelope =
+            build_assessment_plan(&ids, "/absolute/path/to/ssp.json", "Policy").unwrap();
+        assert_eq!(envelope.assessment_plan.import_ssp.href, "ssp.json");
+        assert!(!envelope.assessment_plan.import_ssp.href.contains('/'));
     }
 
     // ─── T011: EC-2 — Empty or whitespace-only href → Validation error ─

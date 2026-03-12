@@ -89,7 +89,7 @@
                 "uuid": "b764b115-0cc6-56d0-8191-3d7cf2c78ba1"
               }
             ],
-            "source": "tests/fixtures/edge-cases/source-profile.json",
+            "source": "source-profile.json",
             "uuid": "3ce5ec87-d926-5231-b6f2-5b6a57db7145"
           }
         ]

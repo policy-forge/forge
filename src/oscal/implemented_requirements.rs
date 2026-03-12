@@ -128,9 +128,12 @@ pub fn build_control_implementations(
     let ci_uuid = generate_control_impl_uuid(source_profile, title);
     let description = format!("Implementation narratives derived from {title}.");
 
+    let sanitized_source =
+        crate::io::sanitize_artifact_path(std::path::Path::new(source_profile));
+
     Ok(vec![ControlImplementation {
         uuid: ci_uuid.to_string(),
-        source: source_profile.to_string(),
+        source: sanitized_source,
         description,
         implemented_requirements,
     }])
@@ -445,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn build_control_impl_source_matches_profile() {
+    fn build_control_impl_source_uses_filename_only() {
         let doc = make_doc(vec![make_section(
             "Access Control",
             vec![make_req("R1.", Some("id1"), 0)],
@@ -454,7 +457,25 @@ mod tests {
 
         let result =
             build_control_implementations(&doc, "./baselines/nist.json", "test.md").unwrap();
-        assert_eq!(result[0].source, "./baselines/nist.json");
+        assert_eq!(result[0].source, "nist.json");
+    }
+
+    #[test]
+    fn control_implementation_source_uses_filename_only() {
+        let doc = make_doc(vec![make_section(
+            "Access Control",
+            vec![make_req("R1.", Some("id1"), 0)],
+            vec![],
+        )]);
+
+        let result = build_control_implementations(
+            &doc,
+            "/absolute/path/to/baseline.json",
+            "test.md",
+        )
+        .unwrap();
+        assert_eq!(result[0].source, "baseline.json");
+        assert!(!result[0].source.contains('/'));
     }
 
     #[test]
