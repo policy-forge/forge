@@ -41,6 +41,7 @@ coverage/
 
 # === Agent Brain ===
 .agent-brain/
+.rusty-brain/
 
 # === Worktrees ===
 .worktrees/
