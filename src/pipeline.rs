@@ -17,13 +17,8 @@ pub struct PipelineOutput {
     pub content: String,
     /// The format of the content.
     pub format: OutputFormat,
-    /// Optional rendered validation report (when validation produced warnings/errors
-    /// but did not block output — currently always None since validation failure aborts).
-    pub validation_report: Option<String>,
     /// Optional secondary artifacts (e.g., assessment plan).
     pub secondary_outputs: Vec<SecondaryOutput>,
-    /// Optional summary dashboard text (when --summary is enabled).
-    pub dashboard: Option<String>,
     /// Conversion statistics (requirements extracted, controls generated, etc.).
     pub statistics: crate::summary::ConversionStatistics,
 }
@@ -40,13 +35,13 @@ pub struct SecondaryOutput {
 /// Validate a serializable OSCAL envelope against the appropriate JSON schema.
 ///
 /// Serializes the envelope to JSON, validates against the specified OSCAL schema,
-/// and returns `(json_string, None)` on success. On validation failure,
+/// and returns the serialized JSON string on success. On validation failure,
 /// returns `ForgeError::SchemaValidation`.
 fn validate_and_serialize<T: serde::Serialize>(
     envelope: &T,
     label: &str,
     model_type: crate::validate::OscalModelType,
-) -> Result<(String, Option<String>), ForgeError> {
+) -> Result<String, ForgeError> {
     let json = serde_json::to_string_pretty(envelope)
         .map_err(|e| ForgeError::Serialization(e.to_string()))?;
     let json_value: serde_json::Value =
@@ -58,13 +53,12 @@ fn validate_and_serialize<T: serde::Serialize>(
     )
     .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
     if !report.is_valid() {
-        // Validation failure aborts the pipeline — no output is produced
         return Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s) in generated {label}",
             report.errors().len()
         )));
     }
-    Ok((json, None))
+    Ok(json)
 }
 
 /// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations, extract parameters.
@@ -200,7 +194,7 @@ pub fn run_catalog_pipeline(
     let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
 
     // Step 12b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
-    let (json, validation_report) =
+    let json =
         validate_and_serialize(&envelope, "catalog", crate::validate::OscalModelType::Catalog)?;
 
     let stats = crate::summary::ConversionStatistics {
@@ -233,22 +227,24 @@ pub fn run_catalog_pipeline(
         )?;
         let ap_json = serde_json::to_string_pretty(&ap_envelope)
             .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-        let ap_path = crate::oscal::derive_ap_output_path(input_path, None);
-        let filename = ap_path.file_name().map_or_else(
-            || "assessment-plan.json".to_owned(),
-            |f| f.to_string_lossy().into_owned(),
-        );
+        let filename = derive_ap_filename(input_path);
         secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
     }
 
     Ok(PipelineOutput {
         content,
         format: *format,
-        validation_report,
         secondary_outputs,
-        dashboard: None,
         statistics: stats,
     })
+}
+
+/// Derive the suggested filename for an assessment plan based on the input path.
+fn derive_ap_filename(input_path: &Path) -> String {
+    let ap_path = crate::oscal::derive_ap_output_path(input_path, None);
+    ap_path
+        .file_name()
+        .map_or_else(|| "assessment-plan.json".to_owned(), |f| f.to_string_lossy().into_owned())
 }
 
 /// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize.
@@ -313,7 +309,7 @@ pub fn run_component_pipeline(
     // Step 11: Validate and serialize based on output format
 
     // Step 11b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
-    let (json, validation_report) = validate_and_serialize(
+    let json = validate_and_serialize(
         &envelope,
         "component definition",
         crate::validate::OscalModelType::ComponentDefinition,
@@ -358,20 +354,14 @@ pub fn run_component_pipeline(
         )?;
         let ap_json = serde_json::to_string_pretty(&ap_envelope)
             .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-        let ap_path = crate::oscal::derive_ap_output_path(input_path, None);
-        let filename = ap_path.file_name().map_or_else(
-            || "assessment-plan.json".to_owned(),
-            |f| f.to_string_lossy().into_owned(),
-        );
+        let filename = derive_ap_filename(input_path);
         secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
     }
 
     Ok(PipelineOutput {
         content,
         format: *format,
-        validation_report,
         secondary_outputs,
-        dashboard: None,
         statistics: stats,
     })
 }

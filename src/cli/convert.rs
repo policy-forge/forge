@@ -271,6 +271,7 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     }
 
     if opts.summary && !opts.quiet {
+        result.statistics.output_path = opts.output.map(std::path::Path::to_path_buf);
         result.statistics.elapsed = start.elapsed();
         let use_color = std::io::IsTerminal::is_terminal(&std::io::stderr());
         let dashboard =
