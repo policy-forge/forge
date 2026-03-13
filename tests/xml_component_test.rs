@@ -6,44 +6,31 @@ use std::path::Path;
 
 use common::MAX_SIZE_BYTES;
 use forge::cli::OutputFormat;
-use tempfile::TempDir;
 
 /// Helper: run component pipeline with XML format, return XML string.
 fn run_component_xml(fixture: &Path, source_profile: Option<&str>) -> String {
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("component.xml");
-
     forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&output_path),
         MAX_SIZE_BYTES,
         source_profile,
         &OutputFormat::Xml,
         None,
     )
-    .unwrap_or_else(|e| panic!("Component XML pipeline failed: {e}"));
-
-    std::fs::read_to_string(&output_path)
-        .unwrap_or_else(|e| panic!("Failed to read XML output: {e}"))
+    .unwrap_or_else(|e| panic!("Component XML pipeline failed: {e}"))
+    .content
 }
 
 /// Helper: run component pipeline with JSON format, return JSON string.
 fn run_component_json(fixture: &Path, source_profile: Option<&str>) -> String {
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("component.json");
-
     forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&output_path),
         MAX_SIZE_BYTES,
         source_profile,
         &OutputFormat::Json,
         None,
     )
-    .unwrap_or_else(|e| panic!("Component JSON pipeline failed: {e}"));
-
-    std::fs::read_to_string(&output_path)
-        .unwrap_or_else(|e| panic!("Failed to read JSON output: {e}"))
+    .unwrap_or_else(|e| panic!("Component JSON pipeline failed: {e}"))
+    .content
 }
 
 // ─── T031: Component XML Integration Test ─────────────────────────────────

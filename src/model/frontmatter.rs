@@ -66,7 +66,7 @@ pub(crate) fn parse_frontmatter(content: &str) -> Option<FrontmatterData> {
     match serde_yaml::from_str(yaml_str) {
         Ok(data) => Some(data),
         Err(e) => {
-            eprintln!("Warning: failed to parse YAML frontmatter: {e}");
+            tracing::warn!("Failed to parse YAML frontmatter: {e}");
             None
         }
     }

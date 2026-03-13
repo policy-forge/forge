@@ -1,6 +1,7 @@
 pub mod convert;
 pub mod diff;
 pub mod export;
+pub mod output;
 pub mod profile;
 pub mod resolve;
 pub mod trace;

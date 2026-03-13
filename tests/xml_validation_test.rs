@@ -23,37 +23,27 @@ fn xmllint_available() -> bool {
 
 /// Build catalog XML from the sample policy fixture using the pipeline API.
 fn build_catalog_xml(fixture_path: &Path) -> String {
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("catalog.xml");
-
     forge::pipeline::run_catalog_pipeline(
         fixture_path,
-        Some(&output_path),
         MAX_SIZE_BYTES,
         &forge::cli::OutputFormat::Xml,
         None,
     )
-    .unwrap();
-
-    std::fs::read_to_string(&output_path).unwrap()
+    .unwrap()
+    .content
 }
 
 /// Build component definition XML from the sample policy fixture using the pipeline API.
 fn build_component_definition_xml(fixture_path: &Path) -> String {
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("component-definition.xml");
-
     forge::pipeline::run_component_pipeline(
         fixture_path,
-        Some(&output_path),
         MAX_SIZE_BYTES,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Xml,
         None,
     )
-    .unwrap();
-
-    std::fs::read_to_string(&output_path).unwrap()
+    .unwrap()
+    .content
 }
 
 /// T035: Validate catalog XML against OSCAL v1.2.0 catalog XSD.

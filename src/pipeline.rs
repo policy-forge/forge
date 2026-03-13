@@ -10,47 +10,43 @@ use crate::error::ForgeError;
 use crate::model::PolicyDocument;
 use crate::types::{OutputFormat, Strategy};
 
-/// Writes serialized output to a file or stdout.
-///
-/// # Arguments
-/// * `content` - The serialized output string (JSON, YAML, etc.)
-/// * `output_path` - If Some, writes to file (validates parent dir exists); if None, prints to stdout
-///
-/// # Errors
-/// * `ForgeError::Validation` if parent directory does not exist
-/// * `ForgeError::Io` if file write fails
-pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), ForgeError> {
-    match output_path {
-        None => {
-            println!("{content}");
-            Ok(())
-        }
-        Some(path) => {
-            if let Some(parent) = path.parent()
-                && !parent.as_os_str().is_empty()
-                && !parent.exists()
-            {
-                return Err(ForgeError::Validation(format!(
-                    "Output directory '{}' does not exist",
-                    parent.display()
-                )));
-            }
-            crate::io::write_atomic(path, content.as_bytes())?;
-            Ok(())
-        }
-    }
+/// The serialized OSCAL artifact content produced by a pipeline run.
+#[derive(Debug)]
+pub struct PipelineOutput {
+    /// Serialized content (JSON, XML, or YAML string).
+    pub content: String,
+    /// The format of the content.
+    pub format: OutputFormat,
+    /// Optional rendered validation report (when validation produced warnings/errors
+    /// but did not block output — currently always None since validation failure aborts).
+    pub validation_report: Option<String>,
+    /// Optional secondary artifacts (e.g., assessment plan).
+    pub secondary_outputs: Vec<SecondaryOutput>,
+    /// Optional summary dashboard text (when --summary is enabled).
+    pub dashboard: Option<String>,
+    /// Conversion statistics (requirements extracted, controls generated, etc.).
+    pub statistics: crate::summary::ConversionStatistics,
+}
+
+/// A secondary artifact produced alongside the primary output.
+#[derive(Debug)]
+pub struct SecondaryOutput {
+    /// Suggested filename for this artifact.
+    pub filename: String,
+    /// Serialized content.
+    pub content: String,
 }
 
 /// Validate a serializable OSCAL envelope against the appropriate JSON schema.
 ///
 /// Serializes the envelope to JSON, validates against the specified OSCAL schema,
-/// and returns the serialized JSON string on success. On validation failure,
-/// renders the error report to stderr and returns `ForgeError::SchemaValidation`.
+/// and returns `(json_string, None)` on success. On validation failure,
+/// returns `ForgeError::SchemaValidation`.
 fn validate_and_serialize<T: serde::Serialize>(
     envelope: &T,
     label: &str,
     model_type: crate::validate::OscalModelType,
-) -> Result<String, ForgeError> {
+) -> Result<(String, Option<String>), ForgeError> {
     let json = serde_json::to_string_pretty(envelope)
         .map_err(|e| ForgeError::Serialization(e.to_string()))?;
     let json_value: serde_json::Value =
@@ -62,40 +58,13 @@ fn validate_and_serialize<T: serde::Serialize>(
     )
     .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
     if !report.is_valid() {
-        let rendered = crate::validate::report::render_text_report(&report);
-        eprintln!("{rendered}");
-        // PRD EC-7: do NOT write output file on validation failure
+        // Validation failure aborts the pipeline — no output is produced
         return Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s) in generated {label}",
             report.errors().len()
         )));
     }
-    Ok(json)
-}
-
-/// Build and write an Assessment Plan alongside the primary artifact (WI-41).
-///
-/// Called by both `run_catalog_pipeline` and `run_component_pipeline` when
-/// `--import-ssp` is provided. The zero-controls warning is owned by
-/// `build_assessment_plan`; callers do not need to check separately.
-fn write_assessment_plan(
-    control_ids: &[String],
-    import_ssp_href: &str,
-    policy_title: &str,
-    input_path: &Path,
-    output_path: Option<&Path>,
-) -> Result<(), ForgeError> {
-    let ap_envelope =
-        crate::oscal::build_assessment_plan(control_ids, import_ssp_href, policy_title)?;
-    let ap_json = serde_json::to_string_pretty(&ap_envelope)
-        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let ap_path = crate::oscal::derive_ap_output_path(input_path, output_path);
-    write_output(&ap_json, Some(&ap_path))?;
-    tracing::info!(
-        ap_path = %ap_path.display(),
-        "Assessment Plan written"
-    );
-    Ok(())
+    Ok((json, None))
 }
 
 /// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations, extract parameters.
@@ -157,23 +126,25 @@ pub(crate) fn prepare_document(
     Ok(doc_with_params)
 }
 
-/// Orchestrates the full catalog pipeline: ingest → parse → normalize → map → serialize → output.
+/// Orchestrates the full catalog pipeline: ingest → parse → normalize → map → serialize.
+///
+/// Returns a `PipelineOutput` containing the serialized content and metadata.
+/// The caller is responsible for writing output to disk or stdout.
 ///
 /// # Arguments
 /// * `input_path` - Path to the Markdown policy document
-/// * `output_path` - Optional output file path; if None, writes to stdout
 /// * `max_size_bytes` - Maximum allowed input file size in bytes
 /// * `format` - Output format (JSON, YAML, or XML)
+/// * `import_ssp_href` - Optional SSP reference for assessment plan generation
 ///
 /// # Errors
 /// * `Err(ForgeError)` if any pipeline stage fails
 pub fn run_catalog_pipeline(
     input_path: &Path,
-    output_path: Option<&Path>,
     max_size_bytes: u64,
     format: &OutputFormat,
     import_ssp_href: Option<&str>,
-) -> Result<crate::summary::ConversionStatistics, ForgeError> {
+) -> Result<PipelineOutput, ForgeError> {
     use crate::summary::{ValidationStatus, count_catalog_controls};
 
     // Steps 1-9: shared pipeline stages
@@ -229,10 +200,10 @@ pub fn run_catalog_pipeline(
     let envelope = crate::oscal::CatalogEnvelope { catalog: oscal_catalog };
 
     // Step 12b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
-    let json =
+    let (json, validation_report) =
         validate_and_serialize(&envelope, "catalog", crate::validate::OscalModelType::Catalog)?;
 
-    let mut stats = crate::summary::ConversionStatistics {
+    let stats = crate::summary::ConversionStatistics {
         sections_parsed,
         requirements_extracted,
         controls_generated,
@@ -241,56 +212,67 @@ pub fn run_catalog_pipeline(
         ..Default::default()
     };
 
-    match format {
-        OutputFormat::Json => write_output(&json, output_path)?,
+    // Serialize to the requested format
+    let content = match format {
+        OutputFormat::Json => json,
         OutputFormat::Xml => {
-            let xml = crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog)?;
-            write_output(&xml, output_path)?;
+            crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog)?
         }
-        OutputFormat::Yaml => {
-            let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
-            write_output(&yaml, output_path)?;
-        }
-    }
+        OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(&envelope)?,
+    };
 
-    stats.output_path = output_path.map(std::path::Path::to_path_buf);
-
-    // WI-41: Generate Assessment Plan if --import-ssp was provided
+    // WI-41: Build Assessment Plan secondary output if --import-ssp was provided
+    let mut secondary_outputs = Vec::new();
     if let Some(href) = import_ssp_href {
         let control_ids =
             crate::oscal::catalog::collect_control_ids_from_catalog(&envelope.catalog);
-        write_assessment_plan(
+        let ap_envelope = crate::oscal::build_assessment_plan(
             &control_ids,
             href,
             &envelope.catalog.metadata.title,
-            input_path,
-            output_path,
         )?;
+        let ap_json = serde_json::to_string_pretty(&ap_envelope)
+            .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+        let ap_path = crate::oscal::derive_ap_output_path(input_path, None);
+        let filename = ap_path.file_name().map_or_else(
+            || "assessment-plan.json".to_owned(),
+            |f| f.to_string_lossy().into_owned(),
+        );
+        secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
     }
 
-    Ok(stats)
+    Ok(PipelineOutput {
+        content,
+        format: *format,
+        validation_report,
+        secondary_outputs,
+        dashboard: None,
+        statistics: stats,
+    })
 }
 
-/// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize → output.
+/// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize.
+///
+/// Returns a `PipelineOutput` containing the serialized content and metadata.
+/// The caller is responsible for writing output to disk or stdout.
 ///
 /// # Arguments
 /// * `input_path` - Path to the Markdown policy document
-/// * `output_path` - Optional output file path; if None, writes to stdout
 /// * `max_size_bytes` - Maximum allowed input file size in bytes
 /// * `source_profile` - Optional baseline profile reference for control-implementations;
 ///   when `None`, produces a Component Definition with empty `control-implementations`
 /// * `format` - Output format (JSON, YAML, or XML)
+/// * `import_ssp_href` - Optional SSP reference for assessment plan generation
 ///
 /// # Errors
 /// * `Err(ForgeError)` if any pipeline stage fails
 pub fn run_component_pipeline(
     input_path: &Path,
-    output_path: Option<&Path>,
     max_size_bytes: u64,
     source_profile: Option<&str>,
     format: &OutputFormat,
     import_ssp_href: Option<&str>,
-) -> Result<crate::summary::ConversionStatistics, ForgeError> {
+) -> Result<PipelineOutput, ForgeError> {
     use crate::summary::ValidationStatus;
 
     // S-3: Pipeline stage progress logging (visible with --verbose)
@@ -331,13 +313,13 @@ pub fn run_component_pipeline(
     // Step 11: Validate and serialize based on output format
 
     // Step 11b: Auto-validate OSCAL model (schema + semantic) (WI-20, PRD M-5)
-    let json = validate_and_serialize(
+    let (json, validation_report) = validate_and_serialize(
         &envelope,
         "component definition",
         crate::validate::OscalModelType::ComponentDefinition,
     )?;
 
-    let mut stats = crate::summary::ConversionStatistics {
+    let stats = crate::summary::ConversionStatistics {
         sections_parsed,
         requirements_extracted,
         controls_generated,
@@ -346,76 +328,58 @@ pub fn run_component_pipeline(
         ..Default::default()
     };
 
-    match format {
+    // Serialize to the requested format
+    let content = match format {
         OutputFormat::Json => {
             tracing::info!("Serializing to JSON");
-            write_output(&json, output_path)?;
+            json
         }
         OutputFormat::Xml => {
             tracing::info!("Serializing to XML");
-            let xml = crate::export::xml_serializer::serialize_component_definition_to_xml(
+            crate::export::xml_serializer::serialize_component_definition_to_xml(
                 &envelope.component_definition,
-            )?;
-            write_output(&xml, output_path)?;
+            )?
         }
         OutputFormat::Yaml => {
             tracing::info!("Serializing to YAML");
-            let yaml = crate::export::yaml::serialize_to_yaml(&envelope)?;
-            write_output(&yaml, output_path)?;
+            crate::export::yaml::serialize_to_yaml(&envelope)?
         }
-    }
+    };
 
-    stats.output_path = output_path.map(std::path::Path::to_path_buf);
-
-    // WI-41: Generate Assessment Plan if --import-ssp was provided
+    // WI-41: Build Assessment Plan secondary output if --import-ssp was provided
+    let mut secondary_outputs = Vec::new();
     if let Some(href) = import_ssp_href {
         let control_ids =
             crate::oscal::component_definition::collect_control_ids_from_component_def(&envelope);
-        write_assessment_plan(
+        let ap_envelope = crate::oscal::build_assessment_plan(
             &control_ids,
             href,
             &envelope.component_definition.metadata.title,
-            input_path,
-            output_path,
         )?;
+        let ap_json = serde_json::to_string_pretty(&ap_envelope)
+            .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+        let ap_path = crate::oscal::derive_ap_output_path(input_path, None);
+        let filename = ap_path.file_name().map_or_else(
+            || "assessment-plan.json".to_owned(),
+            |f| f.to_string_lossy().into_owned(),
+        );
+        secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
     }
 
-    Ok(stats)
+    Ok(PipelineOutput {
+        content,
+        format: *format,
+        validation_report,
+        secondary_outputs,
+        dashboard: None,
+        statistics: stats,
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use tempfile::TempDir;
-
-    #[test]
-    fn write_output_none_prints_to_stdout() {
-        // Should not error when writing to stdout
-        let result = write_output("{}", None);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn write_output_some_creates_file() {
-        let dir = TempDir::new().unwrap();
-        let path = dir.path().join("output.json");
-        let result = write_output(r#"{"test": true}"#, Some(&path));
-        assert!(result.is_ok());
-        let content = std::fs::read_to_string(&path).unwrap();
-        assert_eq!(content, r#"{"test": true}"#);
-    }
-
-    #[test]
-    fn write_output_nonexistent_parent_dir_returns_error() {
-        let path = std::path::Path::new("/nonexistent/dir/output.json");
-        let result = write_output("{}", Some(path));
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(
-            err.to_string().contains("does not exist"),
-            "Expected validation error about nonexistent dir, got: {err}"
-        );
-    }
 
     // --- US2: Pipeline integration tests (T019) ---
 
@@ -424,7 +388,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("empty.md");
         std::fs::write(&path, "").unwrap();
-        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json, None);
+        let result = run_catalog_pipeline(&path, 10 * 1_048_576, &OutputFormat::Json, None);
         match result.unwrap_err() {
             ForgeError::EmptyInput { .. } => {}
             other => panic!("Expected EmptyInput, got: {other:?}"),
@@ -436,7 +400,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("flat.md");
         std::fs::write(&path, "Just plain text without any structure.\n").unwrap();
-        let result = run_catalog_pipeline(&path, None, 10 * 1_048_576, &OutputFormat::Json, None);
+        let result = run_catalog_pipeline(&path, 10 * 1_048_576, &OutputFormat::Json, None);
         match result.unwrap_err() {
             ForgeError::NoStructureDetected { .. } => {}
             other => panic!("Expected NoStructureDetected, got: {other:?}"),
@@ -452,16 +416,15 @@ mod tests {
         if !fixture.exists() {
             return; // Skip if fixture not available
         }
-        let dir = TempDir::new().unwrap();
-        let output = dir.path().join("catalog.json");
-        let result =
-            run_catalog_pipeline(fixture, Some(&output), 10 * 1_048_576, &OutputFormat::Json, None);
+        let result = run_catalog_pipeline(fixture, 10 * 1_048_576, &OutputFormat::Json, None);
         assert!(
             result.is_ok(),
             "Catalog pipeline should succeed with valid input: {:?}",
             result.err()
         );
-        assert!(output.exists(), "Output file should be written");
+        // Pipeline now returns content instead of writing files
+        let output = result.unwrap();
+        assert!(!output.content.is_empty(), "Output content should not be empty");
     }
 
     // --- T035: Component pipeline auto-validation uses ValidationReport (WI-20) ---
@@ -476,20 +439,12 @@ mod tests {
         if !fixture.exists() {
             return;
         }
-        let dir = TempDir::new().unwrap();
-        let output = dir.path().join("component.json");
-        let result = run_component_pipeline(
-            fixture,
-            Some(&output),
-            10 * 1_048_576,
-            None,
-            &OutputFormat::Json,
-            None,
-        );
+        let result =
+            run_component_pipeline(fixture, 10 * 1_048_576, None, &OutputFormat::Json, None);
         match &result {
-            Ok(_) => {
+            Ok(output) => {
                 // If it succeeds, that's also fine — means schema accepts the output
-                assert!(output.exists(), "Output file should be written on success");
+                assert!(!output.content.is_empty(), "Output content should not be empty");
             }
             Err(ForgeError::SchemaValidation(msg)) => {
                 // Verify error uses the new report-based format ("N validation error(s)")
@@ -497,8 +452,6 @@ mod tests {
                     msg.contains("validation error(s)"),
                     "SchemaValidation error should use report format, got: {msg}"
                 );
-                // EC-7: output file should NOT be written on validation failure
-                assert!(!output.exists(), "Output file must not be written on validation failure");
             }
             Err(other) => {
                 panic!("Expected Ok or SchemaValidation error, got: {other:?}");
@@ -507,8 +460,7 @@ mod tests {
     }
 
     // --- T036: Auto-validation errors go to stderr only (SEC-7) ---
-    // Note: stderr-only behavior is enforced by the pipeline using eprintln!()
-    // for the rendered report and returning Err() before write_output().
-    // This is a structural guarantee, not a runtime assertion, since capturing
-    // stderr in unit tests requires spawning a process.
+    // Note: stderr-only behavior is enforced by the pipeline returning Err()
+    // on validation failure, preventing any output from being produced.
+    // The CLI layer is responsible for rendering error messages to stderr.
 }

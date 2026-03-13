@@ -35,27 +35,23 @@ fn skip_if_no_oscal_cli() -> Option<ProcessInvoker> {
 
 /// Generate a Catalog JSON artifact from a Markdown fixture via the FORGE pipeline.
 fn generate_catalog_json(fixture: &Path, output: &Path) {
-    forge::pipeline::run_catalog_pipeline(
-        fixture,
-        Some(output),
-        MAX_SIZE_BYTES,
-        &OutputFormat::Json,
-        None,
-    )
-    .expect("Catalog pipeline should succeed");
+    let result =
+        forge::pipeline::run_catalog_pipeline(fixture, MAX_SIZE_BYTES, &OutputFormat::Json, None)
+            .expect("Catalog pipeline should succeed");
+    std::fs::write(output, &result.content).expect("Failed to write catalog JSON");
 }
 
 /// Generate a Component Definition JSON artifact from a Markdown fixture.
 fn generate_component_json(fixture: &Path, output: &Path) {
-    forge::pipeline::run_component_pipeline(
+    let result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(output),
         MAX_SIZE_BYTES,
         None,
         &OutputFormat::Json,
         None,
     )
     .expect("Component pipeline should succeed");
+    std::fs::write(output, &result.content).expect("Failed to write component JSON");
 }
 
 /// Reclassify divergences based on investigation (T018).

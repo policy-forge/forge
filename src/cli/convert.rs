@@ -236,10 +236,9 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
 
     let start = std::time::Instant::now();
 
-    let mut stats = match opts.strategy {
+    let mut result = match opts.strategy {
         Strategy::Catalog => crate::pipeline::run_catalog_pipeline(
             opts.input,
-            opts.output,
             max_size_bytes,
             opts.format,
             opts.import_ssp,
@@ -249,7 +248,6 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
             let profile_ref = resolve_source_profile(opts.source_profile)?;
             crate::pipeline::run_component_pipeline(
                 opts.input,
-                opts.output,
                 max_size_bytes,
                 profile_ref,
                 opts.format,
@@ -258,10 +256,25 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
         }
     };
 
+    // Write primary output
+    crate::cli::output::write_output(&result.content, opts.output)?;
+
+    // Write secondary artifacts (e.g., assessment plan)
+    for secondary in &result.secondary_outputs {
+        let ap_dir = opts.output.and_then(|p| p.parent());
+        let ap_path = ap_dir.map_or_else(
+            || std::path::PathBuf::from(&secondary.filename),
+            |d| d.join(&secondary.filename),
+        );
+        crate::cli::output::write_output(&secondary.content, Some(&ap_path))?;
+        tracing::info!(path = %ap_path.display(), "Secondary artifact written");
+    }
+
     if opts.summary && !opts.quiet {
-        stats.elapsed = start.elapsed();
+        result.statistics.elapsed = start.elapsed();
         let use_color = std::io::IsTerminal::is_terminal(&std::io::stderr());
-        let dashboard = crate::summary::format::format_summary_dashboard(&stats, use_color);
+        let dashboard =
+            crate::summary::format::format_summary_dashboard(&result.statistics, use_color);
         eprintln!("{dashboard}");
     }
 

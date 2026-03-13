@@ -1,19 +1,14 @@
 use std::path::Path;
 
 use forge::cli::OutputFormat;
-use tempfile::TempDir;
 
 /// Helper: run component pipeline on `full_policy.md` fixture, return parsed JSON.
 fn run_component_pipeline_on_fixture(source_profile: &str) -> serde_json::Value {
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists(), "Fixture file must exist: {}", fixture.display());
 
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("component.json");
-
     let result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&output_path),
         10 * 1024 * 1024,
         Some(source_profile),
         &OutputFormat::Json,
@@ -21,10 +16,9 @@ fn run_component_pipeline_on_fixture(source_profile: &str) -> serde_json::Value 
     );
     assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
-    let json_str = std::fs::read_to_string(&output_path)
-        .unwrap_or_else(|e| panic!("Failed to read output {}: {e}", output_path.display()));
-    serde_json::from_str(&json_str)
-        .unwrap_or_else(|e| panic!("Output is not valid JSON: {e}\nContent: {json_str}"))
+    let output = result.unwrap();
+    serde_json::from_str(&output.content)
+        .unwrap_or_else(|e| panic!("Output is not valid JSON: {e}\nContent: {}", output.content))
 }
 
 // ─── T024: Component Pipeline End-to-End Integration Test ────────────────
@@ -278,34 +272,23 @@ fn control_ids_match_between_catalog_and_component() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists());
 
-    let dir = TempDir::new().unwrap();
-
     // Generate Catalog
-    let catalog_path = dir.path().join("catalog.json");
-    forge::pipeline::run_catalog_pipeline(
-        fixture,
-        Some(&catalog_path),
-        10 * 1024 * 1024,
-        &OutputFormat::Json,
-        None,
-    )
-    .expect("Catalog pipeline should succeed");
-    let catalog_str = std::fs::read_to_string(&catalog_path).unwrap();
-    let catalog_json: serde_json::Value = serde_json::from_str(&catalog_str).unwrap();
+    let catalog_result =
+        forge::pipeline::run_catalog_pipeline(fixture, 10 * 1024 * 1024, &OutputFormat::Json, None)
+            .expect("Catalog pipeline should succeed");
+    let catalog_json: serde_json::Value = serde_json::from_str(&catalog_result.content).unwrap();
 
     // Generate Component Definition
-    let component_path = dir.path().join("component.json");
-    forge::pipeline::run_component_pipeline(
+    let component_result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&component_path),
         10 * 1024 * 1024,
         Some("./baselines/nist.json"),
         &OutputFormat::Json,
         None,
     )
     .expect("Component pipeline should succeed");
-    let component_str = std::fs::read_to_string(&component_path).unwrap();
-    let component_json: serde_json::Value = serde_json::from_str(&component_str).unwrap();
+    let component_json: serde_json::Value =
+        serde_json::from_str(&component_result.content).unwrap();
 
     // Extract control-ids from Catalog (groups → controls → id)
     let mut catalog_ids: Vec<String> = Vec::new();
@@ -380,12 +363,8 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists());
 
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("component.json");
-
     let result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&output_path),
         10 * 1024 * 1024,
         None, // No source profile
         &OutputFormat::Json,
@@ -399,7 +378,8 @@ fn component_pipeline_none_source_profile_produces_empty_control_implementations
         "Pipeline should succeed: empty control-implementations omitted, err: {:?}",
         result.err()
     );
-    assert!(output_path.exists(), "Output file should be written");
+    let output = result.unwrap();
+    assert!(!output.content.is_empty(), "Output content should not be empty");
 }
 
 // ─── T021: Modality props in component definition output (WI-33) ──────────
@@ -411,12 +391,8 @@ fn modality_props_present_in_implemented_requirements_for_mixed_fixture() {
     let fixture = std::path::Path::new("tests/fixtures/033-mixed-modality.md");
     assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
 
-    let dir = tempfile::TempDir::new().unwrap();
-    let output_path = dir.path().join("component.json");
-
     let result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&output_path),
         10 * 1024 * 1024,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Json,
@@ -424,8 +400,8 @@ fn modality_props_present_in_implemented_requirements_for_mixed_fixture() {
     );
     assert!(result.is_ok(), "Pipeline failed: {:?}", result.unwrap_err());
 
-    let json_str = std::fs::read_to_string(&output_path).unwrap();
-    let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    let output = result.unwrap();
+    let json: serde_json::Value = serde_json::from_str(&output.content).unwrap();
 
     let components = json["component-definition"]["components"]
         .as_array()

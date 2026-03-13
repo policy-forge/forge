@@ -300,7 +300,7 @@ pub fn export_artifact(
     debug!("Serialization complete");
 
     // Step 9: Write output
-    crate::pipeline::write_output(&output_content, output)?;
+    crate::cli::output::write_output(&output_content, output)?;
     info!("Export complete");
 
     Ok(())

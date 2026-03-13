@@ -6,42 +6,19 @@ use std::path::Path;
 
 use common::MAX_SIZE_BYTES;
 use forge::cli::OutputFormat;
-use tempfile::TempDir;
 
 /// Helper: run catalog pipeline with XML format, return XML string.
 fn run_catalog_xml(fixture: &Path) -> String {
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("catalog.xml");
-
-    forge::pipeline::run_catalog_pipeline(
-        fixture,
-        Some(&output_path),
-        MAX_SIZE_BYTES,
-        &OutputFormat::Xml,
-        None,
-    )
-    .unwrap_or_else(|e| panic!("Catalog XML pipeline failed: {e}"));
-
-    std::fs::read_to_string(&output_path)
-        .unwrap_or_else(|e| panic!("Failed to read XML output: {e}"))
+    forge::pipeline::run_catalog_pipeline(fixture, MAX_SIZE_BYTES, &OutputFormat::Xml, None)
+        .unwrap_or_else(|e| panic!("Catalog XML pipeline failed: {e}"))
+        .content
 }
 
 /// Helper: run catalog pipeline with JSON format, return JSON string.
 fn run_catalog_json(fixture: &Path) -> String {
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("catalog.json");
-
-    forge::pipeline::run_catalog_pipeline(
-        fixture,
-        Some(&output_path),
-        MAX_SIZE_BYTES,
-        &OutputFormat::Json,
-        None,
-    )
-    .unwrap_or_else(|e| panic!("Catalog JSON pipeline failed: {e}"));
-
-    std::fs::read_to_string(&output_path)
-        .unwrap_or_else(|e| panic!("Failed to read JSON output: {e}"))
+    forge::pipeline::run_catalog_pipeline(fixture, MAX_SIZE_BYTES, &OutputFormat::Json, None)
+        .unwrap_or_else(|e| panic!("Catalog JSON pipeline failed: {e}"))
+        .content
 }
 
 // ─── T030: Catalog XML Integration Test ───────────────────────────────────
