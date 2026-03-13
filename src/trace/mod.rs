@@ -79,10 +79,10 @@ pub fn generate_trace_report(
 /// Read a file, mapping `NotFound` to `ForgeError::FileNotFound`,
 /// `PermissionDenied` to `ForgeError::PermissionDenied`, and other I/O errors to `ForgeError::Io`.
 fn read_file(path: &Path) -> Result<String, ForgeError> {
-    // Guard against oversized files; skip when path doesn't exist so that
-    // read_to_string maps NotFound to the appropriate ForgeError variant.
-    if path.exists() {
-        crate::io::check_file_size(path, crate::io::MAX_FILE_SIZE)?;
+    // Guard against oversized files; ignore NotFound so read_to_string maps it.
+    match crate::io::check_file_size(path, crate::io::MAX_FILE_SIZE) {
+        Ok(_) | Err(ForgeError::Io(_)) => {}
+        Err(e) => return Err(e),
     }
     std::fs::read_to_string(path).map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },

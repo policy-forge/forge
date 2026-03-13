@@ -228,10 +228,18 @@ pub fn build_profile(
     });
     let metadata = assemble_metadata(&doc_meta, meta_opts)?;
 
-    // Compute deterministic UUID v5 from catalog path and control IDs
-    // before control_ids is moved into the selection.
-    let mut seed_parts: Vec<&str> = vec![catalog_path];
+    // Compute deterministic UUID v5 from catalog path, mode, control IDs,
+    // and param overrides — before control_ids is moved into the selection.
+    let mode_str = match mode {
+        SelectionMode::Include => "include",
+        SelectionMode::Exclude => "exclude",
+    };
+    let mut seed_parts: Vec<&str> = vec![catalog_path, mode_str];
     seed_parts.extend(control_ids.iter().map(String::as_str));
+    for (param_id, value) in param_overrides {
+        seed_parts.push(param_id.as_str());
+        seed_parts.push(value.as_str());
+    }
     let seed = seed_parts.join("|");
     let uuid = Uuid::new_v5(&crate::uuid::PROFILE_NAMESPACE, seed.as_bytes());
 
