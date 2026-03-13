@@ -48,6 +48,7 @@ pub struct ConversionStatistics {
     /// Currently always empty in production (see `validation_errors` note).
     pub validation_error_messages: Vec<String>,
     pub strategy: Strategy,
+    /// Output path for dashboard display. Set by the CLI layer after pipeline returns.
     pub output_path: Option<PathBuf>,
     pub elapsed: Duration,
 }

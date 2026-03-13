@@ -36,7 +36,6 @@ use std::sync::LazyLock;
 use forge::cli::OutputFormat;
 use regex::Regex;
 use serde_json::{Map, Value, json};
-use tempfile::TempDir;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -485,22 +484,16 @@ mod golden_catalog_tests {
         let input_path = Path::new("tests/fixtures/golden").join(fixture_dir).join("input.md");
         assert!(input_path.exists(), "Fixture missing: {}", input_path.display());
 
-        let dir = TempDir::new().expect("create temp dir");
-        let output_path = dir.path().join("catalog.json");
-
-        forge::pipeline::run_catalog_pipeline(
+        let result = forge::pipeline::run_catalog_pipeline(
             &input_path,
-            Some(&output_path),
             MAX_INPUT_SIZE,
             &OutputFormat::Json,
             None,
         )
         .unwrap_or_else(|e| panic!("Catalog pipeline failed on {fixture_dir}: {e}"));
 
-        let json_str = std::fs::read_to_string(&output_path)
-            .unwrap_or_else(|e| panic!("Failed to read output: {e}"));
-        let actual: Value =
-            serde_json::from_str(&json_str).unwrap_or_else(|e| panic!("Invalid JSON output: {e}"));
+        let actual: Value = serde_json::from_str(&result.content)
+            .unwrap_or_else(|e| panic!("Invalid JSON output: {e}"));
         let normalized = normalize_for_comparison(&actual);
 
         (normalized, actual)
@@ -570,12 +563,8 @@ mod golden_component_tests {
         let input_path = Path::new("tests/fixtures/golden").join(fixture_dir).join("input.md");
         assert!(input_path.exists(), "Fixture missing: {}", input_path.display());
 
-        let dir = TempDir::new().expect("create temp dir");
-        let output_path = dir.path().join("component.json");
-
-        forge::pipeline::run_component_pipeline(
+        let result = forge::pipeline::run_component_pipeline(
             &input_path,
-            Some(&output_path),
             MAX_INPUT_SIZE,
             Some(SOURCE_PROFILE),
             &OutputFormat::Json,
@@ -583,10 +572,8 @@ mod golden_component_tests {
         )
         .unwrap_or_else(|e| panic!("Component pipeline failed on {fixture_dir}: {e}"));
 
-        let json_str = std::fs::read_to_string(&output_path)
-            .unwrap_or_else(|e| panic!("Failed to read output: {e}"));
-        let actual: Value =
-            serde_json::from_str(&json_str).unwrap_or_else(|e| panic!("Invalid JSON output: {e}"));
+        let actual: Value = serde_json::from_str(&result.content)
+            .unwrap_or_else(|e| panic!("Invalid JSON output: {e}"));
         let normalized = normalize_for_comparison(&actual);
 
         (normalized, actual)
@@ -720,30 +707,24 @@ mod determinism_tests {
     fn catalog_pipeline_produces_identical_output_across_runs() {
         let input_path = Path::new("tests/fixtures/golden/small/input.md");
 
-        let dir1 = TempDir::new().unwrap();
-        let out1 = dir1.path().join("run1.json");
-        forge::pipeline::run_catalog_pipeline(
+        let result1 = forge::pipeline::run_catalog_pipeline(
             input_path,
-            Some(&out1),
             MAX_INPUT_SIZE,
             &OutputFormat::Json,
             None,
         )
         .expect("First run failed");
 
-        let dir2 = TempDir::new().unwrap();
-        let out2 = dir2.path().join("run2.json");
-        forge::pipeline::run_catalog_pipeline(
+        let result2 = forge::pipeline::run_catalog_pipeline(
             input_path,
-            Some(&out2),
             MAX_INPUT_SIZE,
             &OutputFormat::Json,
             None,
         )
         .expect("Second run failed");
 
-        let json1: Value = serde_json::from_str(&std::fs::read_to_string(&out1).unwrap()).unwrap();
-        let json2: Value = serde_json::from_str(&std::fs::read_to_string(&out2).unwrap()).unwrap();
+        let json1: Value = serde_json::from_str(&result1.content).unwrap();
+        let json2: Value = serde_json::from_str(&result2.content).unwrap();
 
         let norm1 = normalize_for_comparison(&json1);
         let norm2 = normalize_for_comparison(&json2);

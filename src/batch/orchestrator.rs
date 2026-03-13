@@ -131,27 +131,19 @@ fn run_pipeline(
     max_size_bytes: u64,
     source_profile: Option<&str>,
 ) -> Result<(), ForgeError> {
-    match strategy {
+    let result = match strategy {
         Strategy::Catalog => {
-            crate::pipeline::run_catalog_pipeline(
-                input,
-                Some(output),
-                max_size_bytes,
-                &format,
-                None,
-            )?;
+            crate::pipeline::run_catalog_pipeline(input, max_size_bytes, &format, None)?
         }
-        Strategy::Component => {
-            crate::pipeline::run_component_pipeline(
-                input,
-                Some(output),
-                max_size_bytes,
-                source_profile,
-                &format,
-                None,
-            )?;
-        }
-    }
+        Strategy::Component => crate::pipeline::run_component_pipeline(
+            input,
+            max_size_bytes,
+            source_profile,
+            &format,
+            None,
+        )?,
+    };
+    crate::cli::output::write_output(&result.content, Some(output))?;
     Ok(())
 }
 

@@ -130,10 +130,7 @@ pub fn execute(
     };
 
     // Step 7: write to file or stdout
-    match output {
-        Some(path) => crate::io::write_atomic(path, serialized.as_bytes())?,
-        None => println!("{serialized}"),
-    }
+    crate::cli::output::write_output(&serialized, output)?;
 
     Ok(())
 }

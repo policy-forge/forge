@@ -9,17 +9,25 @@ use tempfile::TempDir;
 const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 const FIXTURE: &str = "tests/fixtures/sample_policy.md";
 
-/// Helper: run catalog pipeline with --import-ssp and return the AP JSON value.
+/// Helper: run catalog pipeline with --import-ssp, write outputs, return AP JSON value.
 fn run_catalog_with_ap(fixture: &Path, output_dir: &Path, import_ssp: &str) -> serde_json::Value {
     let catalog_path = output_dir.join("catalog.json");
-    forge::pipeline::run_catalog_pipeline(
+    let result = forge::pipeline::run_catalog_pipeline(
         fixture,
-        Some(&catalog_path),
         MAX_SIZE_BYTES,
         &forge::cli::OutputFormat::Json,
         Some(import_ssp),
     )
     .expect("Catalog pipeline should succeed");
+
+    // Write primary output
+    std::fs::write(&catalog_path, &result.content).unwrap();
+
+    // Write secondary outputs (AP file)
+    for secondary in &result.secondary_outputs {
+        let ap_path = output_dir.join(&secondary.filename);
+        std::fs::write(&ap_path, &secondary.content).unwrap();
+    }
 
     // AP file: {input_stem}-assessment-plan.json in same dir
     let stem = fixture.file_stem().unwrap().to_str().unwrap();
@@ -82,15 +90,19 @@ fn ap_file_written_when_import_ssp_provided() {
     }
 
     let dir = TempDir::new().unwrap();
-    let catalog_path = dir.path().join("catalog.json");
-    forge::pipeline::run_catalog_pipeline(
+    let result = forge::pipeline::run_catalog_pipeline(
         fixture,
-        Some(&catalog_path),
         MAX_SIZE_BYTES,
         &forge::cli::OutputFormat::Json,
         Some("./ssp.json"),
     )
     .unwrap();
+
+    // Write secondary outputs to verify AP file creation
+    for secondary in &result.secondary_outputs {
+        let ap_path = dir.path().join(&secondary.filename);
+        std::fs::write(&ap_path, &secondary.content).unwrap();
+    }
 
     let stem = fixture.file_stem().unwrap().to_str().unwrap();
     let ap_path = dir.path().join(format!("{stem}-assessment-plan.json"));
@@ -106,20 +118,18 @@ fn ap_file_not_written_when_import_ssp_omitted() {
         return;
     }
 
-    let dir = TempDir::new().unwrap();
-    let catalog_path = dir.path().join("catalog.json");
-    forge::pipeline::run_catalog_pipeline(
+    let result = forge::pipeline::run_catalog_pipeline(
         fixture,
-        Some(&catalog_path),
         MAX_SIZE_BYTES,
         &forge::cli::OutputFormat::Json,
         None,
     )
     .unwrap();
 
-    let stem = fixture.file_stem().unwrap().to_str().unwrap();
-    let ap_path = dir.path().join(format!("{stem}-assessment-plan.json"));
-    assert!(!ap_path.exists(), "AP file should NOT be written when --import-ssp omitted");
+    assert!(
+        result.secondary_outputs.is_empty(),
+        "AP should NOT be generated when --import-ssp omitted"
+    );
 }
 
 // ─── T020: AP JSON contains all control IDs from fixture ────────────────
@@ -158,11 +168,8 @@ fn empty_import_ssp_returns_validation_error() {
         return;
     }
 
-    let dir = TempDir::new().unwrap();
-    let catalog_path = dir.path().join("catalog.json");
     let result = forge::pipeline::run_catalog_pipeline(
         fixture,
-        Some(&catalog_path),
         MAX_SIZE_BYTES,
         &forge::cli::OutputFormat::Json,
         Some(""),
@@ -185,11 +192,8 @@ fn component_pipeline_generates_ap_with_import_ssp() {
         return;
     }
 
-    let dir = TempDir::new().unwrap();
-    let component_path = dir.path().join("component.json");
     let result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&component_path),
         MAX_SIZE_BYTES,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Json,
@@ -197,17 +201,15 @@ fn component_pipeline_generates_ap_with_import_ssp() {
     );
 
     // Component pipeline may fail schema validation without a real profile,
-    // but if it succeeds, verify the AP file was written
-    if result.is_ok() {
-        let stem = fixture.file_stem().unwrap().to_str().unwrap();
-        let ap_path = dir.path().join(format!("{stem}-assessment-plan.json"));
+    // but if it succeeds, verify the AP secondary output was generated
+    if let Ok(output) = result {
         assert!(
-            ap_path.exists(),
-            "AP file should be written for component pipeline with --import-ssp"
+            !output.secondary_outputs.is_empty(),
+            "AP should be generated for component pipeline with --import-ssp"
         );
 
-        let ap_json = std::fs::read_to_string(&ap_path).unwrap();
-        let ap: serde_json::Value = serde_json::from_str(&ap_json).unwrap();
+        let ap_content = &output.secondary_outputs[0].content;
+        let ap: serde_json::Value = serde_json::from_str(ap_content).unwrap();
         assert!(ap.get("assessment-plan").is_some(), "AP should have assessment-plan root key");
         assert_eq!(
             ap["assessment-plan"]["import-ssp"]["href"].as_str().unwrap(),

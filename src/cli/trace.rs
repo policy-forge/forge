@@ -15,14 +15,9 @@ pub fn execute(artifact: &Path, source: &Path, output: Option<&Path>) -> Result<
     let report = generate_trace_report(artifact, source)?;
     let table = format_trace_table(&report);
 
-    match output {
-        Some(path) => {
-            crate::io::write_atomic(path, table.as_bytes())?;
-            eprintln!("Trace report written to {}", path.display());
-        }
-        None => {
-            print!("{table}");
-        }
+    crate::cli::output::write_output(&table, output)?;
+    if let Some(path) = output {
+        eprintln!("Trace report written to {}", path.display());
     }
 
     Ok(())

@@ -8,22 +8,13 @@ fn run_pipeline_on_fixture() -> serde_json::Value {
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists(), "Fixture file must exist: {}", fixture.display());
 
-    let dir = TempDir::new().unwrap();
-    let output_path = dir.path().join("catalog.json");
-
-    let result = forge::pipeline::run_catalog_pipeline(
-        fixture,
-        Some(&output_path),
-        10 * 1024 * 1024,
-        &OutputFormat::Json,
-        None,
-    );
+    let result =
+        forge::pipeline::run_catalog_pipeline(fixture, 10 * 1024 * 1024, &OutputFormat::Json, None);
     assert!(result.is_ok(), "Pipeline failed on {}: {:?}", fixture.display(), result.unwrap_err());
 
-    let json_str = std::fs::read_to_string(&output_path)
-        .unwrap_or_else(|e| panic!("Failed to read output {}: {e}", output_path.display()));
-    serde_json::from_str(&json_str)
-        .unwrap_or_else(|e| panic!("Output is not valid JSON: {e}\nContent: {json_str}"))
+    let output = result.unwrap();
+    serde_json::from_str(&output.content)
+        .unwrap_or_else(|e| panic!("Output is not valid JSON: {e}\nContent: {}", output.content))
 }
 
 /// T005 [US1] End-to-end smoke test: call `run_catalog_pipeline` with `full_policy.md` fixture,
@@ -297,20 +288,13 @@ fn pipeline_no_sections_produces_empty_groups() {
     // Content with no headings — just plain text requirements
     std::fs::write(&path, "Some requirement without any section heading.\n").unwrap();
 
-    let output_path = dir.path().join("output.json");
-    let result = forge::pipeline::run_catalog_pipeline(
-        &path,
-        Some(&output_path),
-        10 * 1024 * 1024,
-        &OutputFormat::Json,
-        None,
-    );
+    let result =
+        forge::pipeline::run_catalog_pipeline(&path, 10 * 1024 * 1024, &OutputFormat::Json, None);
 
     // EC-6: Input with no sections should produce a NoStructureDetected error
     match result {
-        Ok(_) => {
-            let json_str = std::fs::read_to_string(&output_path).unwrap();
-            let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        Ok(output) => {
+            let json: serde_json::Value = serde_json::from_str(&output.content).unwrap();
             // groups may be absent (null) or an empty array — both are acceptable (EC-6)
             let groups = json["catalog"]["groups"].as_array();
             match groups {
@@ -340,20 +324,16 @@ fn modality_props_present_in_catalog_for_mixed_fixture() {
     let fixture = std::path::Path::new("tests/fixtures/033-mixed-modality.md");
     assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
 
-    let dir = tempfile::TempDir::new().unwrap();
-    let output_path = dir.path().join("catalog.json");
-
     let result = forge::pipeline::run_catalog_pipeline(
         fixture,
-        Some(&output_path),
         10 * 1024 * 1024,
         &forge::cli::OutputFormat::Json,
         None,
     );
     assert!(result.is_ok(), "Pipeline failed: {:?}", result.unwrap_err());
 
-    let json_str = std::fs::read_to_string(&output_path).unwrap();
-    let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    let output = result.unwrap();
+    let json: serde_json::Value = serde_json::from_str(&output.content).unwrap();
 
     let groups = json["catalog"]["groups"].as_array().expect("groups should be array");
     assert!(!groups.is_empty(), "Expected at least one group");

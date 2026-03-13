@@ -11,8 +11,6 @@
 
 use std::path::Path;
 
-use tempfile::TempDir;
-
 use forge::export::{deserialize_from_yaml, serialize_to_yaml};
 
 // ---------------------------------------------------------------------------
@@ -24,21 +22,16 @@ fn catalog_json_and_yaml_values() -> (serde_json::Value, serde_json::Value) {
     let fixture = Path::new("tests/fixtures/sample_policy.md");
     assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
 
-    let dir = TempDir::new().unwrap();
-    let json_path = dir.path().join("catalog.json");
-
-    // Run pipeline once → JSON
-    forge::pipeline::run_catalog_pipeline(
+    // Run pipeline once -> JSON
+    let result = forge::pipeline::run_catalog_pipeline(
         fixture,
-        Some(&json_path),
         10 * 1024 * 1024,
         &forge::cli::OutputFormat::Json,
         None,
     )
     .expect("Catalog pipeline should succeed");
 
-    let json_str = std::fs::read_to_string(&json_path).unwrap();
-    let json_value: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    let json_value: serde_json::Value = serde_json::from_str(&result.content).unwrap();
 
     // Serialize same Value to YAML, then parse back
     let yaml_str = serialize_to_yaml(&json_value).unwrap();
@@ -130,13 +123,9 @@ fn component_json_and_yaml_values() -> (serde_json::Value, serde_json::Value) {
     let fixture = Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
 
-    let dir = TempDir::new().unwrap();
-    let json_path = dir.path().join("component.json");
-
-    // Run pipeline once → JSON
-    forge::pipeline::run_component_pipeline(
+    // Run pipeline once -> JSON
+    let result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&json_path),
         10 * 1024 * 1024,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Json,
@@ -144,8 +133,7 @@ fn component_json_and_yaml_values() -> (serde_json::Value, serde_json::Value) {
     )
     .expect("Component pipeline should succeed");
 
-    let json_str = std::fs::read_to_string(&json_path).unwrap();
-    let json_value: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    let json_value: serde_json::Value = serde_json::from_str(&result.content).unwrap();
 
     // Serialize same Value to YAML, then parse back
     let yaml_str = serialize_to_yaml(&json_value).unwrap();
@@ -210,19 +198,11 @@ fn catalog_yaml_contains_params_arrays_for_parameterized_controls() {
     let fixture = Path::new("tests/fixtures/sample_policy.md");
     assert!(fixture.exists(), "Fixture must exist: {}", fixture.display());
 
-    let dir = TempDir::new().unwrap();
-    let yaml_path = dir.path().join("catalog.yaml");
+    let result =
+        forge::pipeline::run_catalog_pipeline(fixture, 10 * 1024 * 1024, &OutputFormat::Yaml, None)
+            .expect("Catalog YAML pipeline should succeed");
 
-    forge::pipeline::run_catalog_pipeline(
-        fixture,
-        Some(&yaml_path),
-        10 * 1024 * 1024,
-        &OutputFormat::Yaml,
-        None,
-    )
-    .expect("Catalog YAML pipeline should succeed");
-
-    let yaml_str = std::fs::read_to_string(&yaml_path).unwrap();
+    let yaml_str = &result.content;
 
     // At least one `params:` key must be present
     assert!(

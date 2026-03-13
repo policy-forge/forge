@@ -13,17 +13,14 @@ use forge::export::{deserialize_from_yaml, serialize_to_yaml};
 fn catalog_yaml_has_no_type_tags() {
     let fixture = std::path::Path::new("tests/fixtures/sample_policy.md");
     assert!(fixture.exists(), "Test fixture missing: {}", fixture.display());
-    let dir = tempfile::TempDir::new().unwrap();
-    let yaml_path = dir.path().join("catalog.yaml");
-    forge::pipeline::run_catalog_pipeline(
+    let result = forge::pipeline::run_catalog_pipeline(
         fixture,
-        Some(&yaml_path),
         10 * 1024 * 1024,
         &forge::cli::OutputFormat::Yaml,
         None,
     )
     .expect("Catalog YAML pipeline should succeed");
-    let yaml_str = std::fs::read_to_string(&yaml_path).unwrap();
+    let yaml_str = &result.content;
     assert!(
         !yaml_str.contains("!!"),
         "SEC-1: Catalog YAML must not contain type tags (!!). Found in:\n{yaml_str}"
@@ -34,18 +31,15 @@ fn catalog_yaml_has_no_type_tags() {
 fn component_yaml_has_no_type_tags() {
     let fixture = std::path::Path::new("tests/fixtures/full_policy.md");
     assert!(fixture.exists(), "Test fixture missing: {}", fixture.display());
-    let dir = tempfile::TempDir::new().unwrap();
-    let yaml_path = dir.path().join("component.yaml");
-    forge::pipeline::run_component_pipeline(
+    let result = forge::pipeline::run_component_pipeline(
         fixture,
-        Some(&yaml_path),
         10 * 1024 * 1024,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Yaml,
         None,
     )
     .expect("Component YAML pipeline should succeed");
-    let yaml_str = std::fs::read_to_string(&yaml_path).unwrap();
+    let yaml_str = &result.content;
     assert!(
         !yaml_str.contains("!!"),
         "SEC-1: Component YAML must not contain type tags (!!). Found in:\n{yaml_str}"
