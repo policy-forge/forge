@@ -76,8 +76,9 @@ mod tests {
 
     #[test]
     fn write_atomic_fails_on_nonexistent_parent() {
-        let path = Path::new("/nonexistent_forge_test_dir/out.json");
-        assert!(write_atomic(path, b"data").is_err());
+        let dir = tempfile::tempdir().unwrap();
+        let missing_child = dir.path().join("nonexistent_subdir").join("out.json");
+        assert!(write_atomic(&missing_child, b"data").is_err());
     }
 
     #[test]

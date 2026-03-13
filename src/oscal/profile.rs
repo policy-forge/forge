@@ -234,7 +234,8 @@ pub fn build_profile(
         SelectionMode::Include => "include",
         SelectionMode::Exclude => "exclude",
     };
-    let mut seed_parts: Vec<&str> = vec![catalog_path, mode_str];
+    let sanitized_href = crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
+    let mut seed_parts: Vec<&str> = vec![&sanitized_href, mode_str];
     seed_parts.extend(control_ids.iter().map(String::as_str));
     for (param_id, value) in param_overrides {
         seed_parts.push(param_id.as_str());

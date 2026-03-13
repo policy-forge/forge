@@ -34,6 +34,8 @@ struct XmlCatalog {
     #[serde(rename = "@uuid")]
     uuid: String,
     metadata: XmlMetadata,
+    #[serde(default, rename = "control")]
+    controls: Vec<XmlControl>,
     #[serde(default, rename = "group")]
     groups: Vec<XmlGroup>,
     #[serde(default, rename = "back-matter")]
@@ -47,6 +49,8 @@ struct XmlComponentDefinition {
     metadata: XmlMetadata,
     #[serde(default, rename = "component")]
     components: Vec<XmlComponent>,
+    #[serde(default, rename = "capability")]
+    capabilities: Vec<XmlCapability>,
     #[serde(default, rename = "back-matter")]
     back_matter: Option<XmlBackMatter>,
 }
@@ -72,6 +76,8 @@ struct XmlGroup {
     links: Vec<XmlLink>,
     #[serde(default, rename = "control")]
     controls: Vec<XmlControl>,
+    #[serde(default, rename = "group")]
+    groups: Vec<XmlGroup>,
 }
 
 #[derive(Deserialize)]
@@ -199,6 +205,18 @@ struct XmlDescription {
 }
 
 #[derive(Deserialize)]
+struct XmlCapability {
+    #[serde(rename = "@uuid")]
+    uuid: String,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    description: Option<XmlDescription>,
+    #[serde(default, rename = "control-implementation")]
+    control_implementations: Vec<XmlControlImplementation>,
+}
+
+#[derive(Deserialize)]
 struct XmlBackMatter {
     #[serde(default, rename = "resource")]
     resources: Vec<XmlResource>,
@@ -226,6 +244,8 @@ struct XmlBackMatterProp {
     name: String,
     #[serde(rename = "@value")]
     value: String,
+    #[serde(default, rename = "@ns")]
+    ns: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -307,7 +327,7 @@ fn convert_group(xml: XmlGroup) -> OscalGroup {
         props: xml.props.into_iter().map(convert_prop).collect(),
         links: xml.links.into_iter().map(convert_link).collect(),
         controls: xml.controls.into_iter().map(convert_control).collect(),
-        groups: vec![],
+        groups: xml.groups.into_iter().map(convert_group).collect(),
     }
 }
 
@@ -335,7 +355,7 @@ fn convert_resource(xml: XmlResource) -> Result<BackMatterResource, ForgeError> 
         props: xml
             .props
             .into_iter()
-            .map(|p| Prop { name: p.name, value: p.value, ns: None })
+            .map(|p| Prop { name: p.name, value: p.value, ns: p.ns })
             .collect(),
     })
 }
@@ -345,7 +365,7 @@ fn convert_catalog(xml: XmlCatalog) -> Result<OscalCatalog, ForgeError> {
     Ok(OscalCatalog {
         uuid: xml.uuid,
         metadata: convert_metadata(xml.metadata),
-        controls: vec![],
+        controls: xml.controls.into_iter().map(convert_control).collect(),
         groups: xml.groups.into_iter().map(convert_group).collect(),
         back_matter,
     })
@@ -364,6 +384,25 @@ fn convert_component(xml: XmlComponent) -> Result<DocumentaryComponent, ForgeErr
         title: xml.title,
         description,
         props: xml.props.into_iter().map(convert_prop).collect(),
+        control_implementations,
+    })
+}
+
+fn convert_capability(
+    xml: XmlCapability,
+) -> Result<crate::oscal::component_definition::Capability, ForgeError> {
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| ForgeError::ExportInvalidOscal {
+        detail: format!("invalid UUID '{}' in capability element", xml.uuid),
+    })?;
+    let control_implementations = xml
+        .control_implementations
+        .into_iter()
+        .map(convert_control_implementation)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(crate::oscal::component_definition::Capability {
+        uuid: uuid.to_string(),
+        name: xml.name.unwrap_or_default(),
+        description: xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default(),
         control_implementations,
     })
 }
@@ -419,7 +458,11 @@ fn convert_component_definition(
             oscal_version: xml.metadata.oscal_version,
         },
         components,
-        capabilities: vec![],
+        capabilities: xml
+            .capabilities
+            .into_iter()
+            .map(convert_capability)
+            .collect::<Result<Vec<_>, _>>()?,
         back_matter,
     })
 }

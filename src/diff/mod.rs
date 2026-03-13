@@ -68,7 +68,7 @@ fn read_diff_file(path: &Path) -> Result<String, ForgeError> {
     // read_to_string produces the user-facing DiffError below.
     match crate::io::check_file_size(path, crate::io::MAX_FILE_SIZE) {
         Ok(_) | Err(ForgeError::Io(_)) => {}
-        Err(e) => return Err(e),
+        Err(e) => return Err(ForgeError::DiffError(e.to_string())),
     }
     std::fs::read_to_string(path).map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => {
