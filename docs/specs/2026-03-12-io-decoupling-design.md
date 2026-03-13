@@ -46,7 +46,7 @@ pub struct SecondaryOutput {
 
 **Current**: Accept `output: Option<&Path>`, write to file/stdout, return `Result<ConversionStatistics, ForgeError>`.
 
-**New**: Remove `output` parameter, return `Result<PipelineOutput, ForgeError>`. The `ConversionStatistics` data (requirements_extracted, controls_generated, etc.) moves into `PipelineOutput` as an optional field for consumers that need it.
+**New**: Remove `output` parameter, return `Result<PipelineOutput, ForgeError>`. The `ConversionStatistics` data (requirements_extracted, controls_generated, etc.) is always present in `PipelineOutput.statistics`.
 
 ### `validate_and_serialize`
 
@@ -70,7 +70,7 @@ pub struct SecondaryOutput {
 
 ### `write_output()` moves from `pipeline.rs` to CLI
 
-`write_output(content, output_path)` is purely a CLI concern — it decides between stdout and file. Move it to `src/cli/convert.rs` (or a shared `src/cli/io.rs` if multiple commands need it).
+`write_output(content, output_path)` is purely a CLI concern — it decides between stdout and file. Moved to `src/cli/output.rs` as a shared utility used by all CLI commands.
 
 Remove from public API exports in `src/lib.rs`.
 
@@ -125,7 +125,11 @@ Currently calls `run_catalog_pipeline`/`run_component_pipeline` which write to f
 
 - **`tracing` calls** (`debug!`, `info!`, `warn!`) — these are already properly decoupled. Library consumers attach their own tracing subscriber.
 - **`main.rs` error printing** — `eprintln!("Error: {e}")` in the binary entrypoint is appropriate.
-- **`model/frontmatter.rs` warning** — `eprintln!("Warning: ...")` will be migrated to `tracing::warn!` as part of this refactor (small, isolated change).
+- **`main.rs` error printing** — `eprintln!("Error: {e}")` in the binary entrypoint is appropriate.
+
+### Migrated as Part of This Refactor
+
+- **`model/frontmatter.rs` warning** — `eprintln!("Warning: ...")` migrated to `tracing::warn!`.
 
 ## Callers to Update
 
@@ -133,7 +137,7 @@ Currently calls `run_catalog_pipeline`/`run_component_pipeline` which write to f
 |--------|------|---------|
 | CLI convert (single) | `src/cli/convert.rs:240,250` | Receive `PipelineOutput`, handle I/O |
 | CLI convert (batch) | `src/batch/orchestrator.rs:136,145` | Receive `PipelineOutput`, write files |
-| CLI export | `src/cli/export.rs:303` | Use local `write_output` instead of `pipeline::write_output` |
+| CLI export | `src/cli/export.rs:303` | Use `cli::output::write_output` instead of `pipeline::write_output` |
 | Integration tests (~20) | `tests/*.rs` | Update to handle `PipelineOutput` return type |
 
 ## Testing
