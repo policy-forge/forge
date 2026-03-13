@@ -12,7 +12,7 @@ use crate::error::ForgeError;
 pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), ForgeError> {
     match output_path {
         None => {
-            println!("{content}");
+            print!("{content}");
             Ok(())
         }
         Some(path) => {

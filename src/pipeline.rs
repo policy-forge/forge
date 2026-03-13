@@ -231,12 +231,7 @@ pub fn run_catalog_pipeline(
         secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
     }
 
-    Ok(PipelineOutput {
-        content,
-        format: *format,
-        secondary_outputs,
-        statistics: stats,
-    })
+    Ok(PipelineOutput { content, format: *format, secondary_outputs, statistics: stats })
 }
 
 /// Derive the suggested filename for an assessment plan based on the input path.
@@ -358,12 +353,7 @@ pub fn run_component_pipeline(
         secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
     }
 
-    Ok(PipelineOutput {
-        content,
-        format: *format,
-        secondary_outputs,
-        statistics: stats,
-    })
+    Ok(PipelineOutput { content, format: *format, secondary_outputs, statistics: stats })
 }
 
 #[cfg(test)]

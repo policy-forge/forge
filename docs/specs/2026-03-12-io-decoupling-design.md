@@ -21,12 +21,8 @@ pub struct PipelineOutput {
     pub content: String,
     /// The format of the content.
     pub format: OutputFormat,
-    /// Optional rendered validation report (when validation had warnings/errors).
-    pub validation_report: Option<String>,
     /// Optional secondary artifacts (e.g., assessment plan).
     pub secondary_outputs: Vec<SecondaryOutput>,
-    /// Optional summary dashboard (when --summary is enabled).
-    pub dashboard: Option<String>,
     /// Conversion statistics (requirements extracted, controls generated, etc.).
     pub statistics: ConversionStatistics,
 }
@@ -52,7 +48,7 @@ pub struct SecondaryOutput {
 
 **Current**: Prints validation error report to stderr via `eprintln!`, returns `Result<String, ForgeError>` (serialized JSON string).
 
-**New**: Returns `Result<(String, Option<String>), ForgeError>` — serialized content and optional rendered validation report. No I/O.
+**New**: Returns `Result<String, ForgeError>` — same return type, but the `eprintln!` removed. Validation failure still returns `Err(ForgeError::SchemaValidation(...))`. No I/O.
 
 ### `write_assessment_plan`
 
