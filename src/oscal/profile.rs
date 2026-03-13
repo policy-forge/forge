@@ -228,18 +228,26 @@ pub fn build_profile(
     });
     let metadata = assemble_metadata(&doc_meta, meta_opts)?;
 
-    // Compute deterministic UUID v5 from catalog path, mode, control IDs,
-    // and param overrides — before control_ids is moved into the selection.
+    // Compute deterministic UUID v5 from normalized inputs so that
+    // different input orderings of the same logical profile produce
+    // the same UUID.
     let mode_str = match mode {
         SelectionMode::Include => "include",
         SelectionMode::Exclude => "exclude",
     };
     let sanitized_href = crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
+    let mut sorted_ids = control_ids.clone();
+    sorted_ids.sort_unstable();
+    let mut sorted_params: Vec<(&str, &str)> = param_overrides
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    sorted_params.sort_unstable();
     let mut seed_parts: Vec<&str> = vec![&sanitized_href, mode_str];
-    seed_parts.extend(control_ids.iter().map(String::as_str));
-    for (param_id, value) in param_overrides {
-        seed_parts.push(param_id.as_str());
-        seed_parts.push(value.as_str());
+    seed_parts.extend(sorted_ids.iter().map(String::as_str));
+    for (param_id, value) in &sorted_params {
+        seed_parts.push(param_id);
+        seed_parts.push(value);
     }
     let seed = seed_parts.join("|");
     let uuid = Uuid::new_v5(&crate::uuid::PROFILE_NAMESPACE, seed.as_bytes());
