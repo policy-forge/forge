@@ -238,10 +238,8 @@ pub fn build_profile(
     let sanitized_href = crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
     let mut sorted_ids = control_ids.clone();
     sorted_ids.sort_unstable();
-    let mut sorted_params: Vec<(&str, &str)> = param_overrides
-        .iter()
-        .map(|(k, v)| (k.as_str(), v.as_str()))
-        .collect();
+    let mut sorted_params: Vec<(&str, &str)> =
+        param_overrides.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
     sorted_params.sort_unstable();
     let mut seed_parts: Vec<&str> = vec![&sanitized_href, mode_str];
     seed_parts.extend(sorted_ids.iter().map(String::as_str));
