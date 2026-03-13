@@ -35,7 +35,7 @@ pub(crate) struct FrontmatterData {
 ///
 /// Frontmatter must be delimited by `---\n` at the very start of the document.
 /// Returns `None` if no frontmatter is present or if parsing fails.
-/// Malformed YAML causes a warning to stderr, not a panic *(SEC-1, SEC-6)*.
+/// Malformed YAML emits a warning via tracing, not a panic *(SEC-1, SEC-6)*.
 ///
 /// # Arguments
 ///
