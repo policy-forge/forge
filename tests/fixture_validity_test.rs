@@ -69,6 +69,7 @@ fn fixture_produces_valid_oscal_output() {
                 version: real_metadata.version,
                 oscal_version: real_metadata.oscal_version,
             },
+            controls: vec![],
             groups: catalog.groups,
             back_matter,
         },

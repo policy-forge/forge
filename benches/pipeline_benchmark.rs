@@ -120,6 +120,7 @@ fn build_catalog_envelope(
                 version: metadata.version,
                 oscal_version: metadata.oscal_version,
             },
+            controls: vec![],
             groups: catalog.groups,
             back_matter,
         },

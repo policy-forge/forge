@@ -107,7 +107,7 @@ expression: normalize_for_comparison(&component_output)
                 "uuid": "00000000-0000-0000-0000-000000000000"
               }
             ],
-            "source": "tests/fixtures/edge-cases/source-profile.json",
+            "source": "source-profile.json",
             "uuid": "00000000-0000-0000-0000-000000000000"
           }
         ],

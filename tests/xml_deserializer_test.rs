@@ -55,6 +55,7 @@ fn test_catalog() -> OscalCatalog {
     OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "access-control".to_string(),
             title: "Access Control".to_string(),
@@ -75,6 +76,7 @@ fn test_catalog() -> OscalCatalog {
                     text: Some("NIST SP 800-53".to_string()),
                 },
             ],
+            groups: vec![],
             controls: vec![OscalControl {
                 id: "POL-AC-001".to_string(),
                 uuid: "should-not-round-trip".to_string(),
@@ -147,6 +149,7 @@ fn test_component_def() -> ComponentDefinition {
             }],
             control_implementations: vec![],
         }],
+        capabilities: vec![],
         back_matter: None,
     }
 }
@@ -380,12 +383,14 @@ fn test_catalog_no_back_matter_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "test".to_string(),
             title: "Test".to_string(),
             props: vec![],
             links: vec![],
             controls: vec![test_control("POL-T-001", "Test control.")],
+            groups: vec![],
         }],
         back_matter: None,
     };
@@ -399,6 +404,7 @@ fn test_catalog_empty_groups_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![],
         back_matter: None,
     };
@@ -412,6 +418,7 @@ fn test_resource_with_props_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![],
         back_matter: Some(BackMatter {
             resources: vec![BackMatterResource {
@@ -423,6 +430,7 @@ fn test_resource_with_props_round_trips() {
                 props: vec![Prop {
                     name: "url-status".to_string(),
                     value: "unvalidated".to_string(),
+                    ns: None,
                 }],
             }],
         }),
@@ -440,6 +448,7 @@ fn test_rlink_with_media_type_round_trips() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![],
         back_matter: Some(BackMatter {
             resources: vec![BackMatterResource {
@@ -479,6 +488,7 @@ fn test_component_with_back_matter_round_trips() {
             props: vec![],
             control_implementations: vec![],
         }],
+        capabilities: vec![],
         back_matter: Some(BackMatter {
             resources: vec![BackMatterResource {
                 uuid: Uuid::parse_str("a1b2c3d4-e5f6-7890-abcd-ef1234567890").unwrap(),
@@ -508,11 +518,13 @@ fn test_xml_escaped_content_round_trips() {
             version: "1.0".to_string(),
             oscal_version: "1.2.0".to_string(),
         },
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "test".to_string(),
             title: "Test & <Demo>".to_string(),
             props: vec![],
             links: vec![],
+            groups: vec![],
             controls: vec![OscalControl {
                 id: "POL-T-001".to_string(),
                 uuid: String::new(),
@@ -546,11 +558,13 @@ fn test_deeply_nested_parts_round_trip() {
     let catalog = OscalCatalog {
         uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
         metadata: test_metadata(),
+        controls: vec![],
         groups: vec![OscalGroup {
             id: "test".to_string(),
             title: "Test".to_string(),
             props: vec![],
             links: vec![],
+            groups: vec![],
             controls: vec![OscalControl {
                 id: "POL-T-001".to_string(),
                 uuid: String::new(),

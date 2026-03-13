@@ -43,6 +43,10 @@ pub struct ComponentDefinition {
     /// Documentary components (exactly one for this WI).
     pub components: Vec<DocumentaryComponent>,
 
+    /// Capabilities grouping control implementations.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capabilities: Vec<Capability>,
+
     /// Back matter containing reference resources (WI-12).
     #[serde(default, rename = "back-matter", skip_serializing_if = "Option::is_none")]
     pub back_matter: Option<BackMatter>,
@@ -66,6 +70,20 @@ pub struct ComponentDefinitionMetadata {
     /// OSCAL specification version -- always "1.2.0".
     #[serde(rename = "oscal-version")]
     pub oscal_version: String,
+}
+
+/// OSCAL Capability within a Component Definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Capability {
+    /// Unique identifier for this capability.
+    pub uuid: String,
+    /// Capability name.
+    pub name: String,
+    /// Capability description.
+    pub description: String,
+    /// Control implementations under this capability.
+    #[serde(default, rename = "control-implementations", skip_serializing_if = "Vec::is_empty")]
+    pub control_implementations: Vec<crate::oscal::implemented_requirements::ControlImplementation>,
 }
 
 /// A documentary component of type "policy" within the Component Definition.
@@ -187,6 +205,7 @@ pub fn build_component_definition(
             uuid: assembled.uuid.to_string(),
             metadata,
             components: vec![component],
+            capabilities: vec![],
             back_matter,
         },
     })
@@ -267,21 +286,31 @@ fn collect_citations_from_section(
 
 /// Collect all control IDs from a built Component Definition.
 ///
-/// Iterates all `components[].control_implementations[].implemented_requirements[].control_id`.
+/// Iterates both `components[].control_implementations[].implemented_requirements[].control_id`
+/// and `capabilities[].control_implementations[].implemented_requirements[].control_id`.
 /// Returns an empty Vec if the Component Definition has no implemented requirements.
 /// Does NOT deduplicate — deduplication is performed by `build_assessment_plan`.
 #[must_use]
 pub fn collect_control_ids_from_component_def(
     envelope: &ComponentDefinitionEnvelope,
 ) -> Vec<String> {
-    envelope
+    let from_components = envelope
         .component_definition
         .components
         .iter()
         .flat_map(|c| c.control_implementations.iter())
         .flat_map(|ci| ci.implemented_requirements.iter())
-        .map(|ir| ir.control_id.clone())
-        .collect()
+        .map(|ir| ir.control_id.clone());
+
+    let from_capabilities = envelope
+        .component_definition
+        .capabilities
+        .iter()
+        .flat_map(|cap| cap.control_implementations.iter())
+        .flat_map(|ci| ci.implemented_requirements.iter())
+        .map(|ir| ir.control_id.clone());
+
+    from_components.chain(from_capabilities).collect()
 }
 
 #[cfg(test)]
@@ -773,7 +802,7 @@ mod tests {
         );
 
         let ci = &comp.control_implementations[0];
-        assert_eq!(ci.source, "./baseline.json");
+        assert_eq!(ci.source, "baseline.json");
     }
 
     // ─── T022: No trace data in remarks (Component Definition) — SEC-1, SEC-2, M-7 ──
@@ -843,6 +872,7 @@ mod tests {
                     version: "1.0.0".into(),
                     oscal_version: "1.2.0".into(),
                 },
+                capabilities: vec![],
                 components: vec![DocumentaryComponent {
                     uuid: "comp-uuid".into(),
                     component_type: "policy".into(),
@@ -890,6 +920,7 @@ mod tests {
                     version: "1.0.0".into(),
                     oscal_version: "1.2.0".into(),
                 },
+                capabilities: vec![],
                 components: vec![DocumentaryComponent {
                     uuid: "comp-uuid".into(),
                     component_type: "policy".into(),
@@ -904,5 +935,97 @@ mod tests {
 
         let ids = collect_control_ids_from_component_def(&envelope);
         assert!(ids.is_empty());
+    }
+
+    // ── collect_control_ids includes capabilities ─
+
+    #[test]
+    fn collect_control_ids_from_capabilities() {
+        use crate::oscal::implemented_requirements::{
+            ControlImplementation, ImplementedRequirement,
+        };
+
+        let envelope = ComponentDefinitionEnvelope {
+            component_definition: ComponentDefinition {
+                uuid: "test-uuid".into(),
+                metadata: ComponentDefinitionMetadata {
+                    title: "Test".into(),
+                    last_modified: "2026-01-01T00:00:00Z".into(),
+                    version: "1.0.0".into(),
+                    oscal_version: "1.2.0".into(),
+                },
+                capabilities: vec![Capability {
+                    uuid: "cap-uuid".into(),
+                    name: "Encryption".into(),
+                    description: "Encryption capability".into(),
+                    control_implementations: vec![ControlImplementation {
+                        uuid: "ci-uuid".into(),
+                        source: "./baseline.json".into(),
+                        description: "CI".into(),
+                        implemented_requirements: vec![ImplementedRequirement {
+                            uuid: "ir-1".into(),
+                            control_id: "enc-1".into(),
+                            description: "Encrypt data".into(),
+                            props: vec![],
+                            links: vec![],
+                        }],
+                    }],
+                }],
+                components: vec![DocumentaryComponent {
+                    uuid: "comp-uuid".into(),
+                    component_type: "policy".into(),
+                    title: "Test Component".into(),
+                    description: "Desc".into(),
+                    props: vec![],
+                    control_implementations: vec![ControlImplementation {
+                        uuid: "ci-uuid-2".into(),
+                        source: "./baseline.json".into(),
+                        description: "CI".into(),
+                        implemented_requirements: vec![ImplementedRequirement {
+                            uuid: "ir-2".into(),
+                            control_id: "ac-1".into(),
+                            description: "Access control".into(),
+                            props: vec![],
+                            links: vec![],
+                        }],
+                    }],
+                }],
+                back_matter: None,
+            },
+        };
+
+        let ids = collect_control_ids_from_component_def(&envelope);
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&"ac-1".to_string()));
+        assert!(ids.contains(&"enc-1".to_string()));
+    }
+
+    // ── Task 10: Capability struct and capabilities field ─
+
+    #[test]
+    fn component_definition_round_trips_capabilities() {
+        let json = r#"{
+            "component-definition": {
+                "uuid": "test-uuid",
+                "metadata": {
+                    "title": "Test",
+                    "last-modified": "2026-01-01T00:00:00Z",
+                    "version": "1.0",
+                    "oscal-version": "1.2.0"
+                },
+                "components": [],
+                "capabilities": [{
+                    "uuid": "cap-uuid",
+                    "name": "Encryption Capability",
+                    "description": "Provides data-at-rest encryption"
+                }]
+            }
+        }"#;
+        let envelope: ComponentDefinitionEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(envelope.component_definition.capabilities.len(), 1);
+        assert_eq!(envelope.component_definition.capabilities[0].name, "Encryption Capability");
+        let reserialized = serde_json::to_string(&envelope).unwrap();
+        let re_parsed: ComponentDefinitionEnvelope = serde_json::from_str(&reserialized).unwrap();
+        assert_eq!(re_parsed.component_definition.capabilities.len(), 1);
     }
 }

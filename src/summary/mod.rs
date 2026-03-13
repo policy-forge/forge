@@ -84,14 +84,13 @@ impl ConversionStatistics {
     }
 }
 
-/// Count total controls in an OSCAL Catalog (across groups).
+/// Count total controls in an OSCAL Catalog (root-level + all groups, recursively).
 #[must_use]
 pub fn count_catalog_controls(catalog: &OscalCatalog) -> usize {
-    use crate::oscal::catalog::OscalGroup;
-    fn count_group_controls(groups: &[OscalGroup]) -> usize {
-        groups.iter().map(|g| g.controls.len()).sum()
+    fn count_group_controls(groups: &[crate::oscal::catalog::OscalGroup]) -> usize {
+        groups.iter().map(|g| g.controls.len() + count_group_controls(&g.groups)).sum()
     }
-    count_group_controls(&catalog.groups)
+    catalog.controls.len() + count_group_controls(&catalog.groups)
 }
 
 #[cfg(test)]
@@ -150,6 +149,7 @@ mod tests {
                 version: String::new(),
                 oscal_version: String::new(),
             },
+            controls: vec![],
             groups: vec![],
             back_matter: None,
         };
@@ -167,6 +167,7 @@ mod tests {
                 version: String::new(),
                 oscal_version: String::new(),
             },
+            controls: vec![],
             groups: vec![OscalGroup {
                 id: "g1".into(),
                 title: "Group 1".into(),
@@ -192,6 +193,7 @@ mod tests {
                         props: vec![],
                     },
                 ],
+                groups: vec![],
             }],
             back_matter: None,
         };
@@ -218,6 +220,7 @@ mod tests {
                 version: String::new(),
                 oscal_version: String::new(),
             },
+            controls: vec![],
             groups: vec![
                 OscalGroup {
                     id: "g1".into(),
@@ -225,6 +228,7 @@ mod tests {
                     props: vec![],
                     links: vec![],
                     controls: vec![make_control("c1"), make_control("c2")],
+                    groups: vec![],
                 },
                 OscalGroup {
                     id: "g2".into(),
@@ -232,8 +236,67 @@ mod tests {
                     props: vec![],
                     links: vec![],
                     controls: vec![make_control("c3")],
+                    groups: vec![],
                 },
             ],
+            back_matter: None,
+        };
+        assert_eq!(count_catalog_controls(&catalog), 3);
+    }
+
+    // ── Task 8: count_catalog_controls with root + nested ─
+
+    #[test]
+    fn count_catalog_controls_includes_root_and_nested() {
+        use crate::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadata};
+        let catalog = OscalCatalog {
+            uuid: "test".to_string(),
+            metadata: OscalMetadata {
+                title: "T".to_string(),
+                last_modified: "2026-01-01T00:00:00Z".to_string(),
+                version: "1.0".to_string(),
+                oscal_version: "1.2.0".to_string(),
+            },
+            controls: vec![OscalControl {
+                id: "root-1".to_string(),
+                uuid: String::new(),
+                title: "Root".to_string(),
+                links: vec![],
+                params: vec![],
+                parts: vec![],
+                props: vec![],
+            }],
+            groups: vec![OscalGroup {
+                id: "g1".to_string(),
+                title: "G1".to_string(),
+                props: vec![],
+                links: vec![],
+                controls: vec![OscalControl {
+                    id: "g1-1".to_string(),
+                    uuid: String::new(),
+                    title: "G1C1".to_string(),
+                    links: vec![],
+                    params: vec![],
+                    parts: vec![],
+                    props: vec![],
+                }],
+                groups: vec![OscalGroup {
+                    id: "g1-sub".to_string(),
+                    title: "G1 Sub".to_string(),
+                    props: vec![],
+                    links: vec![],
+                    controls: vec![OscalControl {
+                        id: "g1s-1".to_string(),
+                        uuid: String::new(),
+                        title: "Nested".to_string(),
+                        links: vec![],
+                        params: vec![],
+                        parts: vec![],
+                        props: vec![],
+                    }],
+                    groups: vec![],
+                }],
+            }],
             back_matter: None,
         };
         assert_eq!(count_catalog_controls(&catalog), 3);

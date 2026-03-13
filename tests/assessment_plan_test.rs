@@ -198,7 +198,7 @@ fn component_pipeline_generates_ap_with_import_ssp() {
 
     // Component pipeline may fail schema validation without a real profile,
     // but if it succeeds, verify the AP file was written
-    if let Ok(_) = result {
+    if result.is_ok() {
         let stem = fixture.file_stem().unwrap().to_str().unwrap();
         let ap_path = dir.path().join(format!("{stem}-assessment-plan.json"));
         assert!(
@@ -208,13 +208,10 @@ fn component_pipeline_generates_ap_with_import_ssp() {
 
         let ap_json = std::fs::read_to_string(&ap_path).unwrap();
         let ap: serde_json::Value = serde_json::from_str(&ap_json).unwrap();
-        assert!(
-            ap.get("assessment-plan").is_some(),
-            "AP should have assessment-plan root key"
-        );
+        assert!(ap.get("assessment-plan").is_some(), "AP should have assessment-plan root key");
         assert_eq!(
             ap["assessment-plan"]["import-ssp"]["href"].as_str().unwrap(),
-            "./ssp/system-ssp.json"
+            "system-ssp.json"
         );
     }
 }

@@ -43,6 +43,9 @@ coverage/
 .agent-brain/
 .rusty-brain/
 
+# === Superpowers Docs ===
+docs/superpowers/
+
 # === Worktrees ===
 .worktrees/
 

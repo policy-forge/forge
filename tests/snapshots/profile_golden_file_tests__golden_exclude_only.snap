@@ -14,7 +14,7 @@ expression: "&normalized"
             ]
           }
         ],
-        "href": "NORMALIZED_PATH",
+        "href": "catalog.json",
         "include-all": {}
       }
     ],

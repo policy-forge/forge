@@ -93,6 +93,10 @@ pub struct Prop {
 
     /// Property value (e.g., `"unvalidated"`).
     pub value: String,
+
+    /// Optional namespace URI for the property.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ns: Option<String>,
 }
 
 // ─── URL Classification ─────────────────────────────────────────────────
@@ -237,8 +241,11 @@ pub fn generate_back_matter(
                     "Malformed or non-http/https URL preserved with unvalidated annotation"
                 );
                 let rlinks = vec![Rlink { href: raw_url, media_type: None }];
-                let props =
-                    vec![Prop { name: "url-status".to_string(), value: "unvalidated".to_string() }];
+                let props = vec![Prop {
+                    name: "url-status".to_string(),
+                    value: "unvalidated".to_string(),
+                    ns: None,
+                }];
                 let citation_field = if citation.text.is_empty() {
                     None
                 } else {
@@ -255,6 +262,7 @@ pub fn generate_back_matter(
                 let props = vec![Prop {
                     name: "url-status".to_string(),
                     value: "dangerous-scheme-removed".to_string(),
+                    ns: None,
                 }];
                 let citation_field = if citation.text.is_empty() {
                     None
@@ -773,5 +781,23 @@ mod tests {
         assert!(links[0].href.starts_with('#'));
         assert_eq!(resource_map.len(), 1);
         assert!(resource_map.contains_key("cit-1"));
+    }
+
+    // ── Task 9: ns field on Prop ─────────────────────────
+
+    #[test]
+    fn prop_round_trips_namespace() {
+        let json = r#"{"name":"custom","value":"val","ns":"https://example.com/ns"}"#;
+        let prop: Prop = serde_json::from_str(json).unwrap();
+        assert_eq!(prop.ns.as_deref(), Some("https://example.com/ns"));
+        let reserialized = serde_json::to_string(&prop).unwrap();
+        assert!(reserialized.contains("https://example.com/ns"));
+    }
+
+    #[test]
+    fn prop_omits_ns_when_none() {
+        let prop = Prop { name: "x".to_string(), value: "y".to_string(), ns: None };
+        let json = serde_json::to_string(&prop).unwrap();
+        assert!(!json.contains("ns"));
     }
 }

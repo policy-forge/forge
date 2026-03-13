@@ -44,6 +44,7 @@ pub fn execute(
     format: &OutputFormat,
     output: Option<&Path>,
     set_params: &[String],
+    timestamp: Option<&str>,
 ) -> Result<(), ForgeError> {
     // Parse param overrides from flat [id, value, id, value, ...] slice
     let pairs = parse_set_param_pairs(set_params)?;
@@ -92,11 +93,23 @@ pub fn execute(
         return Err(ForgeError::FileNotFound { path: catalog.to_path_buf() });
     }
 
-    // Step 3: build profile with param overrides
+    // Step 3: parse optional timestamp override
+    let ts_override = match timestamp {
+        Some(ts_str) => {
+            let parsed = chrono::DateTime::parse_from_rfc3339(ts_str).map_err(|e| {
+                ForgeError::InvalidArgument(format!(
+                    "--timestamp must be a valid ISO 8601 / RFC 3339 string: {e}"
+                ))
+            })?;
+            Some(parsed.with_timezone(&chrono::Utc))
+        }
+        None => None,
+    };
+
+    // Step 4: build profile with param overrides
     let catalog_str = catalog.to_string_lossy();
     let control_count = control_ids.len();
-    // Step 4: call build_profile with param overrides
-    let oscal_profile = build_profile(&catalog_str, control_ids, mode, &pairs)?;
+    let oscal_profile = build_profile(&catalog_str, control_ids, mode, &pairs, ts_override)?;
 
     info!(
         catalog = %catalog.display(),
@@ -118,7 +131,7 @@ pub fn execute(
 
     // Step 7: write to file or stdout
     match output {
-        Some(path) => std::fs::write(path, serialized)?,
+        Some(path) => crate::io::write_atomic(path, serialized.as_bytes())?,
         None => println!("{serialized}"),
     }
 

@@ -200,7 +200,7 @@ fn component_control_implementations_vec_fidelity() {
 /// T033c: Verify that `params` arrays appear within catalog controls in YAML output
 /// for requirements that contain extractable parameters.
 ///
-/// The sample_policy.md fixture contains "at least 12 characters" (threshold)
+/// The `sample_policy.md` fixture contains "at least 12 characters" (threshold)
 /// and "annually" (frequency), so each parameterized control's YAML must include
 /// a non-empty `params` key serialized by serde (via `skip_serializing_if`).
 #[test]
@@ -245,7 +245,7 @@ fn catalog_yaml_contains_params_arrays_for_parameterized_controls() {
 }
 
 /// T033c (round-trip): Verify that `params` in YAML catalog output round-trip
-/// through serde_json::Value identity — YAML params must equal JSON params.
+/// through `serde_json::Value` identity — YAML params must equal JSON params.
 #[test]
 fn catalog_yaml_params_match_json_params() {
     let (json_value, yaml_value) = catalog_json_and_yaml_values();

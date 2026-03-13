@@ -473,8 +473,9 @@ fn strategy_matrix_dual_strategy_and_agnostic_coverage() {
             | "ec05-whitespace-only"
             | "ec06-substantive-change" => {
                 let input = match slug {
-                    "ec05-whitespace-only" => fixture_input(slug, "input-original.md"),
-                    "ec06-substantive-change" => fixture_input(slug, "input-original.md"),
+                    "ec05-whitespace-only" | "ec06-substantive-change" => {
+                        fixture_input(slug, "input-original.md")
+                    }
                     _ => fixture_input(slug, "input.md"),
                 };
                 let cat = run_convert(&input, Strategy::Catalog);

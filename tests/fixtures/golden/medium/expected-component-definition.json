@@ -389,7 +389,7 @@
                 "uuid": "c8a010fe-5562-5066-99b2-bc9c62a1f9da"
               }
             ],
-            "source": "./baselines/nist-800-53.json",
+            "source": "nist-800-53.json",
             "uuid": "1ac6ae15-7ccd-5b6e-91f9-db559567845a"
           }
         ]

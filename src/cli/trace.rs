@@ -17,7 +17,7 @@ pub fn execute(artifact: &Path, source: &Path, output: Option<&Path>) -> Result<
 
     match output {
         Some(path) => {
-            std::fs::write(path, &table).map_err(ForgeError::Io)?;
+            crate::io::write_atomic(path, table.as_bytes())?;
             eprintln!("Trace report written to {}", path.display());
         }
         None => {

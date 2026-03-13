@@ -325,12 +325,14 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "test".to_string(),
                     title: "Test".to_string(),
                     props: vec![],
                     links: vec![],
                     controls: vec![], // empty array
+                    groups: vec![],
                 }],
                 back_matter: None,
             },
@@ -357,6 +359,7 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "deep".to_string(),
                     title: "Deep".to_string(),
@@ -401,6 +404,7 @@ mod yaml_round_trip {
                         }],
                         props: vec![],
                     }],
+                    groups: vec![],
                 }],
                 back_matter: None,
             },
@@ -427,11 +431,13 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "ac".to_string(),
                     title: "Access Control".to_string(),
                     props: vec![],
                     links: vec![],
+                    groups: vec![],
                     controls: vec![
                         OscalControl {
                             id: "POL-AC-001".to_string(),
@@ -522,6 +528,7 @@ mod yaml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "test".to_string(),
                     title: "Test".to_string(),
@@ -542,6 +549,7 @@ mod yaml_round_trip {
                         }],
                         props: vec![],
                     }],
+                    groups: vec![],
                 }],
                 back_matter: None,
             },
@@ -625,11 +633,13 @@ mod xml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "ac".to_string(),
                     title: "Access Control".to_string(),
                     props: vec![],
                     links: vec![],
+                    groups: vec![],
                     controls: vec![
                         OscalControl {
                             id: "POL-AC-001".to_string(),
@@ -708,6 +718,7 @@ mod xml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "deep".to_string(),
                     title: "Deep".to_string(),
@@ -752,6 +763,7 @@ mod xml_round_trip {
                         }],
                         props: vec![],
                     }],
+                    groups: vec![],
                 }],
                 back_matter: None,
             },
@@ -824,11 +836,13 @@ mod xml_yaml_xml_round_trip {
                     version: "1.0".to_string(),
                     oscal_version: "1.2.0".to_string(),
                 },
+                controls: vec![],
                 groups: vec![OscalGroup {
                     id: "ns-test".to_string(),
                     title: "Namespace Test".to_string(),
                     props: vec![],
                     links: vec![],
+                    groups: vec![],
                     controls: vec![OscalControl {
                         id: "POL-NS-001".to_string(),
                         uuid: String::new(),

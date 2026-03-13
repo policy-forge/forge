@@ -2,7 +2,7 @@
 //!
 //! Verifies that `forge export` round-trips preserve all semantic content for both
 //! Catalog and Component Definition artifacts across JSON→XML→JSON and JSON→YAML→JSON paths.
-//! Uses the CLI subprocess pattern (env!("CARGO_BIN_EXE_forge")) for end-to-end coverage.
+//! Uses the CLI subprocess pattern (`env!("CARGO_BIN_EXE_forge")`) for end-to-end coverage.
 
 use forge::testing::assert_semantic_equivalence;
 use serde_json::Value;
@@ -16,15 +16,14 @@ fn forge_bin() -> Command {
 
 fn run_forge(args: &[&str]) -> std::process::Output {
     let output = forge_bin().args(args).output().expect("failed to execute forge");
-    if !output.status.success() {
-        panic!(
-            "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
-            args,
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    assert!(
+        output.status.success(),
+        "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
+        args,
+        output.status,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
     output
 }
 
@@ -37,12 +36,12 @@ fn read_json(path: &std::path::Path) -> Value {
 ///
 /// XML serialization intentionally omits this field (WI-28 normalization pattern, EC-5).
 fn clear_control_implementations(value: &mut Value) {
-    if let Some(comp_def) = value.pointer_mut("/component-definition") {
-        if let Some(components) = comp_def.get_mut("components").and_then(Value::as_array_mut) {
-            for component in components {
-                if let Some(obj) = component.as_object_mut() {
-                    obj.remove("control-implementations");
-                }
+    if let Some(comp_def) = value.pointer_mut("/component-definition")
+        && let Some(components) = comp_def.get_mut("components").and_then(Value::as_array_mut)
+    {
+        for component in components {
+            if let Some(obj) = component.as_object_mut() {
+                obj.remove("control-implementations");
             }
         }
     }

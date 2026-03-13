@@ -302,9 +302,7 @@ fn write_group<W: Write>(writer: &mut Writer<W>, group: &OscalGroup) -> Result<(
 
 /// Write a single OSCAL component element with children in XSD order.
 ///
-/// Writes: `<component uuid="..." type="...">` → title, description, prop* → `</component>`
-///
-/// Note: `control_implementations` is SKIPPED for WI-26 (complex nested structure).
+/// Writes: `<component uuid="..." type="...">` → title, description, prop*, control-implementation* → `</component>`
 fn write_component<W: Write>(
     writer: &mut Writer<W>,
     component: &DocumentaryComponent,
@@ -325,7 +323,64 @@ fn write_component<W: Write>(
         write_prop(writer, prop)?;
     }
 
+    // Control implementations (position 6)
+    for ci in &component.control_implementations {
+        write_control_implementation(writer, ci)?;
+    }
+
     writer.write_event(Event::End(BytesEnd::new("component"))).map_err(map_xml_err)?;
+    Ok(())
+}
+
+/// Write a single OSCAL `<control-implementation>` element with children.
+///
+/// Writes: `<control-implementation uuid="..." source="...">` → description, implemented-requirement* → `</control-implementation>`
+fn write_control_implementation<W: Write>(
+    writer: &mut Writer<W>,
+    ci: &crate::oscal::implemented_requirements::ControlImplementation,
+) -> Result<(), ForgeError> {
+    let mut elem = BytesStart::new("control-implementation");
+    elem.push_attribute(("uuid", ci.uuid.as_str()));
+    elem.push_attribute(("source", ci.source.as_str()));
+    writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
+
+    // Description is markup-multiline per OSCAL XSD — must be wrapped in <p>
+    write_markup_element(writer, "description", &ci.description)?;
+
+    for ir in &ci.implemented_requirements {
+        write_implemented_requirement(writer, ir)?;
+    }
+
+    writer.write_event(Event::End(BytesEnd::new("control-implementation"))).map_err(map_xml_err)?;
+    Ok(())
+}
+
+/// Write a single OSCAL `<implemented-requirement>` element with children.
+///
+/// Writes: `<implemented-requirement uuid="..." control-id="...">` → description, prop*, link* → `</implemented-requirement>`
+fn write_implemented_requirement<W: Write>(
+    writer: &mut Writer<W>,
+    ir: &crate::oscal::implemented_requirements::ImplementedRequirement,
+) -> Result<(), ForgeError> {
+    let mut elem = BytesStart::new("implemented-requirement");
+    elem.push_attribute(("uuid", ir.uuid.as_str()));
+    elem.push_attribute(("control-id", ir.control_id.as_str()));
+    writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
+
+    // Description is markup-multiline per OSCAL XSD — must be wrapped in <p>
+    write_markup_element(writer, "description", &ir.description)?;
+
+    for prop in &ir.props {
+        write_prop(writer, prop)?;
+    }
+
+    for link in &ir.links {
+        write_link(writer, link)?;
+    }
+
+    writer
+        .write_event(Event::End(BytesEnd::new("implemented-requirement")))
+        .map_err(map_xml_err)?;
     Ok(())
 }
 
@@ -643,6 +698,7 @@ mod tests {
             props: vec![],
             links: vec![],
             controls,
+            groups: vec![],
         }
     }
 
@@ -650,6 +706,7 @@ mod tests {
         OscalCatalog {
             uuid: "550e8400-e29b-41d4-a716-446655440000".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![test_group(
                 "access-control",
                 "Access Control",
@@ -677,6 +734,7 @@ mod tests {
                 props: vec![],
                 control_implementations: vec![],
             }],
+            capabilities: vec![],
             back_matter: None,
         }
     }
@@ -905,7 +963,11 @@ mod tests {
             uuid: uuid::Uuid::parse_str("a1b2c3d4-e5f6-7890-abcd-ef1234567890").unwrap(),
             title: "Bad ref".to_string(),
             description: None,
-            props: vec![Prop { name: "url-status".to_string(), value: "unvalidated".to_string() }],
+            props: vec![Prop {
+                name: "url-status".to_string(),
+                value: "unvalidated".to_string(),
+                ns: None,
+            }],
             citation: None,
             rlinks: vec![Rlink { href: "not-a-url".to_string(), media_type: None }],
         };
@@ -1058,6 +1120,7 @@ mod tests {
                 text: None,
             }],
             controls: vec![test_control("POL-AC-001", "MFA required.")],
+            groups: vec![],
         };
         write_group(&mut writer, &group).unwrap();
         let xml = String::from_utf8(buf).unwrap();
@@ -1176,7 +1239,7 @@ mod tests {
     }
 
     #[test]
-    fn test_write_component_control_implementations_skipped() {
+    fn test_write_component_serializes_control_implementations() {
         let mut buf = Vec::new();
         let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
         let component = DocumentaryComponent {
@@ -1187,18 +1250,92 @@ mod tests {
             props: vec![],
             control_implementations: vec![
                 crate::oscal::implemented_requirements::ControlImplementation {
-                    uuid: "ci-uuid".to_string(),
-                    source: "test".to_string(),
-                    description: "Test".to_string(),
-                    implemented_requirements: vec![],
+                    uuid: "ci-uuid-123".to_string(),
+                    source: "./baseline.json".to_string(),
+                    description: "Test implementation".to_string(),
+                    implemented_requirements: vec![
+                        crate::oscal::implemented_requirements::ImplementedRequirement {
+                            uuid: "ir-uuid-456".to_string(),
+                            control_id: "POL-AC-001".to_string(),
+                            description: "All users must authenticate.".to_string(),
+                            props: vec![OscalProp {
+                                name: "source-file".to_string(),
+                                value: "test.md".to_string(),
+                                ns: Some(
+                                    "https://forge.policy-forge.github.io/ns/trace".to_string(),
+                                ),
+                            }],
+                            links: vec![crate::oscal::back_matter::OscalLink {
+                                href: "test.md#line=10".to_string(),
+                                rel: "source".to_string(),
+                                text: None,
+                            }],
+                        },
+                    ],
                 },
             ],
         };
         write_component(&mut writer, &component).unwrap();
         let xml = String::from_utf8(buf).unwrap();
+
+        // control-implementation element with attributes
         assert!(
-            !xml.contains("control-implementations"),
-            "control_implementations must be skipped in WI-26"
+            xml.contains(r#"<control-implementation uuid="ci-uuid-123" source="./baseline.json">"#),
+            "Must serialize control-implementation with uuid and source attributes"
+        );
+        assert!(
+            xml.contains("<p>Test implementation</p>"),
+            "Must serialize control-implementation description as markup-multiline"
+        );
+
+        // implemented-requirement element with attributes
+        assert!(
+            xml.contains(r#"<implemented-requirement uuid="ir-uuid-456" control-id="POL-AC-001">"#),
+            "Must serialize implemented-requirement with uuid and control-id"
+        );
+        assert!(
+            xml.contains("<p>All users must authenticate.</p>"),
+            "Must serialize implemented-requirement description as markup-multiline"
+        );
+
+        // Props and links within implemented-requirement
+        assert!(
+            xml.contains(r#"<prop name="source-file""#),
+            "Must serialize props inside implemented-requirement"
+        );
+        assert!(
+            xml.contains(r#"<link href="test.md#line=10""#),
+            "Must serialize links inside implemented-requirement"
+        );
+
+        // Closing tags
+        assert!(
+            xml.contains("</control-implementation>"),
+            "Must close control-implementation element"
+        );
+        assert!(
+            xml.contains("</implemented-requirement>"),
+            "Must close implemented-requirement element"
+        );
+    }
+
+    #[test]
+    fn test_write_component_empty_control_implementations() {
+        let mut buf = Vec::new();
+        let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
+        let component = DocumentaryComponent {
+            uuid: "comp-uuid".to_string(),
+            component_type: "policy".to_string(),
+            title: "Title".to_string(),
+            description: "Desc".to_string(),
+            props: vec![],
+            control_implementations: vec![],
+        };
+        write_component(&mut writer, &component).unwrap();
+        let xml = String::from_utf8(buf).unwrap();
+        assert!(
+            !xml.contains("control-implementation"),
+            "Empty control_implementations must not produce any elements"
         );
     }
 
@@ -1265,6 +1402,7 @@ mod tests {
                 version: "1.0".to_string(),
                 oscal_version: "1.2.0".to_string(),
             },
+            controls: vec![],
             groups: vec![test_group(
                 "test",
                 "Test",
@@ -1308,6 +1446,7 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: r#"test"uuid<"#.to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![],
             back_matter: None,
         };
@@ -1326,6 +1465,7 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: "test-uuid".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![test_group(
                 "test",
                 "xmlns=http://evil.com",
@@ -1364,12 +1504,14 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: "test-uuid".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![OscalGroup {
                 id: "empty-group".to_string(),
                 title: "Empty Group".to_string(),
                 props: vec![],
                 links: vec![],
                 controls: vec![],
+                groups: vec![],
             }],
             back_matter: None,
         };
@@ -1388,6 +1530,7 @@ mod tests {
         let catalog = OscalCatalog {
             uuid: "test-uuid".to_string(),
             metadata: test_metadata(),
+            controls: vec![],
             groups: vec![test_group(
                 "test",
                 "Test",

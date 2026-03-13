@@ -949,7 +949,7 @@
                 "uuid": "b976334c-9d14-5496-a5cf-3975779cc120"
               }
             ],
-            "source": "./baselines/nist-800-53.json",
+            "source": "nist-800-53.json",
             "uuid": "be2dfbce-e4ec-5b12-aa30-c75a40004557"
           }
         ]

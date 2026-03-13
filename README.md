@@ -62,7 +62,7 @@ cargo build --release
 ./target/release/forge convert tests/fixtures/sample_policy.md --strategy catalog --format json
 
 # Convert to an OSCAL Component Definition
-./target/release/forge convert tests/fixtures/sample_policy.md --strategy component --format json
+./target/release/forge convert tests/fixtures/sample_policy.md --strategy component --format json --source-profile profile.json
 
 # Validate a generated OSCAL artifact
 ./target/release/forge validate catalog.json
@@ -78,10 +78,7 @@ Convert a Markdown policy document into an OSCAL artifact.
 # OSCAL Catalog (groups, controls, statements)
 forge convert policy.md --strategy catalog --format json
 
-# OSCAL Component Definition (implemented requirements)
-forge convert policy.md --strategy component --format json
-
-# With a source profile reference for component strategy
+# OSCAL Component Definition (--source-profile required)
 forge convert policy.md --strategy component --source-profile baseline.json --format json
 
 # Output as XML or YAML

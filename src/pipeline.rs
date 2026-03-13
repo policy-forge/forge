@@ -35,7 +35,7 @@ pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), For
                     parent.display()
                 )));
             }
-            std::fs::write(path, content)?;
+            crate::io::write_atomic(path, content.as_bytes())?;
             Ok(())
         }
     }
@@ -218,6 +218,7 @@ pub fn run_catalog_pipeline(
             version: real_metadata.version,
             oscal_version: real_metadata.oscal_version,
         },
+        controls: vec![],
         groups: catalog.groups,
         back_matter,
     };

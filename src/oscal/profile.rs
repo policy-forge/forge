@@ -34,7 +34,7 @@ pub struct ProfileRoot {
 /// WI-31 adds the optional [`Modify`] section for parameter tailoring.
 #[derive(Debug, Serialize)]
 pub struct OscalProfile {
-    /// UUID v4 — unique per generation.
+    /// Deterministic UUID v5 — derived from catalog path and selected control IDs.
     pub uuid: Uuid,
 
     /// OSCAL metadata (title, last-modified, version, oscal-version).
@@ -215,13 +215,40 @@ pub fn build_profile(
     control_ids: Vec<String>,
     mode: SelectionMode,
     param_overrides: &[(String, String)],
+    timestamp_override: Option<chrono::DateTime<chrono::Utc>>,
 ) -> Result<OscalProfile, ForgeError> {
     let doc_meta = DocumentMetadata {
         title: "Policy Baseline Profile".to_string(),
         version: "1.0.0".to_string(),
         ..Default::default()
     };
-    let metadata = assemble_metadata(&doc_meta, None)?;
+    let meta_opts = timestamp_override.map(|ts| crate::oscal::metadata::MetadataOptions {
+        timestamp_override: Some(ts),
+        ..Default::default()
+    });
+    let metadata = assemble_metadata(&doc_meta, meta_opts)?;
+
+    // Compute deterministic UUID v5 from normalized inputs so that
+    // different input orderings of the same logical profile produce
+    // the same UUID.
+    let mode_str = match mode {
+        SelectionMode::Include => "include",
+        SelectionMode::Exclude => "exclude",
+    };
+    let sanitized_href = crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
+    let mut sorted_ids = control_ids.clone();
+    sorted_ids.sort_unstable();
+    let mut sorted_params: Vec<(&str, &str)> =
+        param_overrides.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+    sorted_params.sort_unstable();
+    let mut seed_parts: Vec<&str> = vec![&sanitized_href, mode_str];
+    seed_parts.extend(sorted_ids.iter().map(String::as_str));
+    for (param_id, value) in &sorted_params {
+        seed_parts.push(param_id);
+        seed_parts.push(value);
+    }
+    let seed = seed_parts.join("|");
+    let uuid = Uuid::new_v5(&crate::uuid::PROFILE_NAMESPACE, seed.as_bytes());
 
     let imports = if control_ids.is_empty() {
         vec![]
@@ -229,13 +256,13 @@ pub fn build_profile(
         let selection = ControlSelection { with_ids: control_ids };
         let import = match mode {
             SelectionMode::Include => ProfileImport {
-                href: catalog_path.to_string(),
+                href: sanitized_href.clone(),
                 include_all: None,
                 include_controls: Some(vec![selection]),
                 exclude_controls: None,
             },
             SelectionMode::Exclude => ProfileImport {
-                href: catalog_path.to_string(),
+                href: sanitized_href,
                 // OSCAL v1.2.0 Profile schema requires `include-all` when using
                 // `exclude-controls` alone — an import must include all controls
                 // first, then exclude the specified subset.
@@ -249,7 +276,7 @@ pub fn build_profile(
 
     let modify = build_modify_section(param_overrides);
 
-    Ok(OscalProfile { uuid: Uuid::new_v4(), metadata, imports, modify })
+    Ok(OscalProfile { uuid, metadata, imports, modify })
 }
 
 // ---------------------------------------------------------------------------
@@ -397,6 +424,7 @@ mod tests {
             vec!["AC-1".to_string()],
             SelectionMode::Include,
             &[],
+            None,
         )
         .unwrap();
         let root = ProfileRoot { profile };
@@ -407,21 +435,31 @@ mod tests {
 
     #[test]
     fn profile_import_include_produces_include_controls_key() {
-        let profile =
-            build_profile("/tmp/cat.json", vec!["POL-1".to_string()], SelectionMode::Include, &[])
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/cat.json",
+            vec!["POL-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         let import = &profile.imports[0];
         let json = serde_json::to_value(import).unwrap();
         assert!(json.get("include-controls").is_some());
         assert!(json.get("exclude-controls").is_none());
-        assert_eq!(json["href"], "/tmp/cat.json");
+        assert_eq!(json["href"], "cat.json");
     }
 
     #[test]
     fn profile_import_exclude_produces_exclude_controls_key() {
-        let profile =
-            build_profile("/tmp/cat.json", vec!["POL-1".to_string()], SelectionMode::Exclude, &[])
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/cat.json",
+            vec!["POL-1".to_string()],
+            SelectionMode::Exclude,
+            &[],
+            None,
+        )
+        .unwrap();
         let import = &profile.imports[0];
         let json = serde_json::to_value(import).unwrap();
         assert!(json.get("exclude-controls").is_some());
@@ -471,22 +509,29 @@ mod tests {
     // ── T007: build_profile unit tests ──────────────────────────────────────
 
     #[test]
-    fn build_profile_href_matches_catalog_path() {
+    fn build_profile_href_uses_filename_only() {
         let profile = build_profile(
             "/abs/path/catalog.json",
             vec!["AC-1".to_string()],
             SelectionMode::Include,
             &[],
+            None,
         )
         .unwrap();
-        assert_eq!(profile.imports[0].href, "/abs/path/catalog.json");
+        assert_eq!(profile.imports[0].href, "catalog.json");
+        assert!(!profile.imports[0].href.contains('/'));
     }
 
     #[test]
     fn build_profile_include_sets_include_controls_none_exclude() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["AC-1".to_string()], SelectionMode::Include, &[])
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         assert!(profile.imports[0].include_controls.is_some());
         assert!(profile.imports[0].exclude_controls.is_none());
         let ids = &profile.imports[0].include_controls.as_ref().unwrap()[0].with_ids;
@@ -495,32 +540,59 @@ mod tests {
 
     #[test]
     fn build_profile_metadata_title_and_oscal_version() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["AC-1".to_string()], SelectionMode::Include, &[])
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         assert_eq!(profile.metadata.title, "Policy Baseline Profile");
         assert_eq!(profile.metadata.oscal_version, "1.2.0");
     }
 
     #[test]
     fn build_profile_security_no_catalog_content_in_json() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["AC-1".to_string()], SelectionMode::Include, &[])
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
         let root = ProfileRoot { profile };
         let json_str = serde_json::to_string(&root).unwrap();
         // Profile JSON must only reference the catalog by href, not embed content
         assert!(!json_str.contains("\"groups\""));
         assert!(!json_str.contains("\"controls\""));
-        assert!(json_str.contains("/tmp/c.json"));
+        assert!(json_str.contains("c.json"));
     }
 
     #[test]
-    fn build_profile_security_href_stored_as_is() {
+    fn build_profile_security_href_uses_filename_only() {
         let path = "/absolute/path/to catalog.json";
         let profile =
-            build_profile(path, vec!["AC-1".to_string()], SelectionMode::Include, &[]).unwrap();
-        assert_eq!(profile.imports[0].href, path);
+            build_profile(path, vec!["AC-1".to_string()], SelectionMode::Include, &[], None)
+                .unwrap();
+        // sanitize_artifact_path extracts filename, handling spaces
+        assert_eq!(profile.imports[0].href, "to catalog.json");
+        assert!(!profile.imports[0].href.contains('/'));
+    }
+
+    #[test]
+    fn profile_import_href_uses_filename_only() {
+        let profile = build_profile(
+            "/absolute/path/to/catalog.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        assert_eq!(profile.imports[0].href, "catalog.json");
+        assert!(!profile.imports[0].href.contains('/'));
     }
 
     // ── T013: build_profile exclude path ────────────────────────────────────
@@ -532,6 +604,7 @@ mod tests {
             vec!["POL-AC-003".to_string()],
             SelectionMode::Exclude,
             &[],
+            None,
         )
         .unwrap();
         assert!(profile.imports[0].exclude_controls.is_some());
@@ -542,11 +615,77 @@ mod tests {
 
     #[test]
     fn build_profile_exclude_json_omits_include_controls_key() {
-        let profile =
-            build_profile("/tmp/c.json", vec!["X-1".to_string()], SelectionMode::Exclude, &[])
-                .unwrap();
+        let profile = build_profile(
+            "/tmp/c.json",
+            vec!["X-1".to_string()],
+            SelectionMode::Exclude,
+            &[],
+            None,
+        )
+        .unwrap();
         let json = serde_json::to_value(&profile.imports[0]).unwrap();
         assert!(json.get("exclude-controls").is_some());
         assert!(json.get("include-controls").is_none());
+    }
+
+    // ── Task 23: deterministic profile UUIDs ─────────────────────────────────
+
+    #[test]
+    fn profile_same_inputs_produce_same_uuid() {
+        let p1 = build_profile(
+            "catalog.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        let p2 = build_profile(
+            "catalog.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        assert_eq!(p1.uuid, p2.uuid, "Same inputs should produce same UUID");
+    }
+
+    #[test]
+    fn profile_different_inputs_produce_different_uuid() {
+        let p1 = build_profile(
+            "catalog.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        let p2 = build_profile(
+            "catalog.json",
+            vec!["AC-2".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        assert_ne!(p1.uuid, p2.uuid, "Different control IDs should produce different UUID");
+    }
+
+    #[test]
+    fn profile_uuid_is_v5() {
+        let profile = build_profile(
+            "catalog.json",
+            vec!["AC-1".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            profile.uuid.get_version(),
+            Some(uuid::Version::Sha1),
+            "Profile UUID should be v5 (SHA1-based)"
+        );
     }
 }

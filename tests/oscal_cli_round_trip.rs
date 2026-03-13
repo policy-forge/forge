@@ -17,7 +17,7 @@ use forge::types::OutputFormat;
 const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 const TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Build a ProcessInvoker from a detector, or None if oscal-cli is unavailable.
+/// Build a `ProcessInvoker` from a detector, or None if oscal-cli is unavailable.
 fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<ProcessInvoker> {
     let info = detector.detect();
     if !info.available || !info.functional {
@@ -28,7 +28,7 @@ fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<ProcessInvoker>
     Some(ProcessInvoker::new(path))
 }
 
-/// Helper: detect oscal-cli using system PATH and return a ProcessInvoker, or None.
+/// Helper: detect oscal-cli using system PATH and return a `ProcessInvoker`, or None.
 fn skip_if_no_oscal_cli() -> Option<ProcessInvoker> {
     invoker_if_available(&PathDetector::new())
 }
@@ -151,10 +151,7 @@ fn validate_divergence_log(log_path: &Path) {
 // SC-001: Catalog JSON → XML → YAML → JSON round-trip
 #[test]
 fn catalog_json_xml_yaml_json_round_trip() {
-    let invoker = match skip_if_no_oscal_cli() {
-        Some(inv) => inv,
-        None => return,
-    };
+    let Some(invoker) = skip_if_no_oscal_cli() else { return };
 
     let temp_dir = tempfile::tempdir().unwrap();
     let fixture = Path::new("tests/fixtures/full_policy.md");
@@ -182,10 +179,7 @@ fn catalog_json_xml_yaml_json_round_trip() {
 // SC-002: Component Definition JSON → XML → YAML → JSON round-trip
 #[test]
 fn component_json_xml_yaml_json_round_trip() {
-    let invoker = match skip_if_no_oscal_cli() {
-        Some(inv) => inv,
-        None => return,
-    };
+    let Some(invoker) = skip_if_no_oscal_cli() else { return };
 
     let temp_dir = tempfile::tempdir().unwrap();
     let fixture = Path::new("tests/fixtures/full_policy.md");

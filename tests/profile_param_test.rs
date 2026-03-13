@@ -13,7 +13,7 @@ use forge::cli::{Cli, Commands};
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/// Run `forge profile` with the given arguments and return (exit_code, stdout, stderr).
+/// Run `forge profile` with the given arguments and return (`exit_code`, stdout, stderr).
 fn run_profile(args: &[&str]) -> (i32, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_forge"))
         .arg("profile")
@@ -335,12 +335,13 @@ fn snapshot_single_set_param_modify_section() {
         vec!["AC-1".to_string()],
         SelectionMode::Include,
         &pairs,
+        None,
     )
     .unwrap();
     let root = ProfileRoot { profile };
     let json = serde_json::to_value(&root).unwrap();
 
-    // Snapshot the modify section (UUID differs per run, so we check modify deterministically)
+    // Snapshot the modify section
     let modify = &json["profile"]["modify"];
     insta::assert_json_snapshot!("single_set_param_modify", modify);
 }
@@ -385,6 +386,7 @@ fn snapshot_multi_param_modify_section() {
         vec!["AC-1".to_string()],
         SelectionMode::Include,
         &pairs,
+        None,
     )
     .unwrap();
     let root = ProfileRoot { profile };

@@ -5,6 +5,7 @@ pub mod diff;
 pub mod error;
 pub mod export;
 pub mod ingest;
+pub mod io;
 pub mod model;
 pub mod oscal;
 pub mod oscal_cli;

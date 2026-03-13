@@ -81,8 +81,8 @@ fn component_pipeline_has_populated_control_implementations() {
 
     let entry = &ci[0];
 
-    // source matches provided source_profile
-    assert_eq!(entry["source"], "./baselines/nist-800-53.json");
+    // source uses filename-only (sanitize_artifact_path)
+    assert_eq!(entry["source"], "nist-800-53.json");
 
     // description follows expected pattern
     let desc = entry["description"].as_str().unwrap();
@@ -436,15 +436,9 @@ fn modality_props_present_in_implemented_requirements_for_mixed_fixture() {
     let mut modality_count = 0;
 
     for component in components {
-        let control_impls = match component["control-implementations"].as_array() {
-            Some(ci) => ci,
-            None => continue,
-        };
+        let Some(control_impls) = component["control-implementations"].as_array() else { continue };
         for ci in control_impls {
-            let impl_reqs = match ci["implemented-requirements"].as_array() {
-                Some(ir) => ir,
-                None => continue,
-            };
+            let Some(impl_reqs) = ci["implemented-requirements"].as_array() else { continue };
             for ir in impl_reqs {
                 impl_req_count += 1;
                 let props = ir["props"].as_array();

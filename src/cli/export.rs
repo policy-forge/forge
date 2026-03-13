@@ -204,14 +204,16 @@ pub fn serialize_oscal(model: &OscalModel, format: OutputFormat) -> Result<Strin
     }
 }
 
-/// Validate an OSCAL model against the JSON schema.
+/// Validate an OSCAL model using full validation (schema + semantic checks).
 ///
-/// Serializes the model to JSON Value, then validates using `validate_artifact()`.
+/// Serializes the model to JSON Value, then validates using `run_full_validation()`
+/// which includes both JSON schema validation and semantic checks (orphaned
+/// back-matter links, missing references, etc.).
 ///
 /// # Errors
 /// - `ForgeError::SchemaValidation` if validation fails
 pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
-    debug!("Validating OSCAL model against JSON schema");
+    debug!("Validating OSCAL model (schema + semantic)");
     let (json_value, model_type) = match model {
         OscalModel::Catalog(envelope) => {
             let value = serde_json::to_value(envelope).map_err(|e| {
@@ -231,17 +233,18 @@ pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
         }
     };
 
-    let result = crate::validate::validate_artifact(&json_value, model_type)
+    let report = crate::validate::run_full_validation("export-artifact", &json_value, model_type)
         .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
 
-    if result.is_valid {
+    if report.is_valid() {
         info!("Export validation passed for {model_type}");
         Ok(())
     } else {
-        let error_messages: Vec<String> = result.errors.iter().map(|e| e.message.clone()).collect();
+        let error_messages: Vec<String> =
+            report.errors().iter().map(|e| e.message.clone()).collect();
         Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s): {}",
-            result.errors.len(),
+            report.errors().len(),
             error_messages.join("; ")
         )))
     }
@@ -263,7 +266,10 @@ pub fn export_artifact(
         return Err(ForgeError::FileNotFound { path: input_path.to_path_buf() });
     }
 
-    // Step 2: Read input file (read bytes first for actionable encoding errors)
+    // Step 2: Guard against oversized files before reading
+    crate::io::check_file_size(input_path, crate::io::MAX_FILE_SIZE)?;
+
+    // Step 3: Read input file (read bytes first for actionable encoding errors)
     let bytes = std::fs::read(input_path)?;
     let content = String::from_utf8(bytes).map_err(|_| ForgeError::ExportInvalidOscal {
         detail: format!(
@@ -272,28 +278,28 @@ pub fn export_artifact(
         ),
     })?;
 
-    // Step 3: Check non-empty
+    // Step 4: Check non-empty
     if content.is_empty() {
         return Err(ForgeError::ExportEmptyInput { path: input_path.to_path_buf() });
     }
 
-    // Step 4: Detect input format
+    // Step 5: Detect input format
     let source_format = detect_format(input_path)?;
     info!(source = ?source_format, target = ?target_format, "Format detection complete");
 
-    // Step 5: Deserialize to internal model
+    // Step 6: Deserialize to internal model
     let model = deserialize_oscal(&content, &source_format)?;
     debug!("Deserialization complete");
 
-    // Step 6: Validate model against OSCAL schema
+    // Step 7: Validate model against OSCAL schema
     validate_oscal_model(&model)?;
     debug!("Validation passed");
 
-    // Step 7: Serialize to target format
+    // Step 8: Serialize to target format
     let output_content = serialize_oscal(&model, target_format)?;
     debug!("Serialization complete");
 
-    // Step 8: Write output
+    // Step 9: Write output
     crate::pipeline::write_output(&output_content, output)?;
     info!("Export complete");
 

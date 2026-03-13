@@ -73,13 +73,10 @@ fn max_size_to_bytes(max_size_mb: u64) -> Result<u64, ForgeError> {
 /// `Ok(Some(path))` if valid, or `Err` if empty/whitespace-only or file not found.
 fn resolve_source_profile(source_profile: Option<&str>) -> Result<Option<&str>, ForgeError> {
     match source_profile {
-        None => {
-            tracing::warn!(
-                "--source-profile not provided; control-id mapping will be skipped. \
-                 The generated Component Definition will have empty control-implementations."
-            );
-            Ok(None)
-        }
+        None => Err(ForgeError::InvalidArgument(
+            "--source-profile is required for component definitions to produce schema-valid output"
+                .to_string(),
+        )),
         Some(p) if p.trim().is_empty() => {
             Err(ForgeError::Validation("--source-profile must not be empty".to_string()))
         }
@@ -208,9 +205,11 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
         usize::from(opts.jobs),
     );
 
-    // Print summary to stderr (SEC-7)
-    let formatted = batch::format_batch_summary(&batch_summary);
-    eprint!("{formatted}");
+    // Print summary to stderr (SEC-7), unless --quiet was specified
+    if !opts.quiet {
+        let formatted = batch::format_batch_summary(&batch_summary);
+        eprint!("{formatted}");
+    }
 
     if batch_summary.has_failures() {
         Err(ForgeError::BatchConversion(format!(
@@ -331,12 +330,12 @@ mod tests {
     }
 
     #[test]
-    fn component_strategy_none_source_profile_does_not_error_on_missing_profile() {
+    fn component_strategy_none_source_profile_errors_with_required_message() {
         let opts = make_opts(Path::new("test.md"), &Strategy::Component, &OutputFormat::Json, None);
         let err = execute(&opts).unwrap_err();
         assert!(
-            !err.to_string().contains("--source-profile is required"),
-            "Should not require source-profile. Got: {err}"
+            err.to_string().contains("--source-profile is required"),
+            "Missing --source-profile must produce required error. Got: {err}"
         );
     }
 
@@ -376,7 +375,14 @@ mod tests {
 
     #[test]
     fn component_strategy_xml_format_is_accepted() {
-        let opts = make_opts(Path::new("test.md"), &Strategy::Component, &OutputFormat::Xml, None);
+        // Use a nonexistent source-profile to bypass the --source-profile required check
+        // and trigger a file-not-found error (not a "format not yet supported" error).
+        let opts = make_opts(
+            Path::new("test.md"),
+            &Strategy::Component,
+            &OutputFormat::Xml,
+            Some("nonexistent-profile.json"),
+        );
         let err = execute(&opts).unwrap_err();
         assert!(
             !err.to_string().contains("not yet supported"),

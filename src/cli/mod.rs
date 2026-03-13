@@ -195,6 +195,10 @@ pub enum Commands {
         /// Takes exactly two arguments: `<PARAM_ID>` `<VALUE>`. Repeatable.
         #[arg(long = "set-param", num_args = 2, action = clap::ArgAction::Append, value_names = ["PARAM_ID", "VALUE"])]
         set_params: Vec<String>,
+
+        /// Override the last-modified timestamp (ISO 8601) for reproducible output.
+        #[arg(long)]
+        timestamp: Option<String>,
     },
 }
 
@@ -273,7 +277,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         Commands::Trace { artifact, source, output } => {
             trace::execute(artifact, source, output.as_deref())
         }
-        Commands::Profile { catalog, include, exclude, format, output, set_params } => {
+        Commands::Profile { catalog, include, exclude, format, output, set_params, timestamp } => {
             profile::execute(
                 catalog,
                 include.as_deref(),
@@ -281,6 +285,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 format,
                 output.as_deref(),
                 set_params,
+                timestamp.as_deref(),
             )
         }
     }

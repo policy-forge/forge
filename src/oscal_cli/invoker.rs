@@ -239,7 +239,8 @@ mod tests {
         // Simulate stderr larger than macOS pipe buffer (4KB)
         let mut stderr = String::new();
         for i in 0..1000 {
-            stderr.push_str(&format!("WARNING: line {i}\n"));
+            use std::fmt::Write;
+            let _ = writeln!(stderr, "WARNING: line {i}");
         }
         stderr.push_str("ERROR: final meaningful error\n");
         assert_eq!(extract_error_message(&stderr), "ERROR: final meaningful error");

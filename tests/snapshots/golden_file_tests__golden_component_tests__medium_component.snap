@@ -427,7 +427,7 @@ expression: normalized
                 "uuid": "00000000-0000-0000-0000-000000000000"
               }
             ],
-            "source": "./baselines/nist-800-53.json",
+            "source": "nist-800-53.json",
             "uuid": "00000000-0000-0000-0000-000000000000"
           }
         ],

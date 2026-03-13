@@ -6,7 +6,7 @@ expression: "&normalized"
   "profile": {
     "imports": [
       {
-        "href": "NORMALIZED_PATH",
+        "href": "catalog.json",
         "include-controls": [
           {
             "with-ids": [

@@ -7,7 +7,7 @@ use std::process::Command;
 
 use tempfile::NamedTempFile;
 
-/// Helper: run `forge profile` with given arguments, return (exit_code, stdout, stderr).
+/// Helper: run `forge profile` with given arguments, return (`exit_code`, stdout, stderr).
 fn run_profile(args: &[&str]) -> (i32, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_forge"))
         .arg("profile")

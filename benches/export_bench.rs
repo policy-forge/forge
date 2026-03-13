@@ -57,6 +57,7 @@ fn build_catalog_json(fixture_path: &Path) -> String {
             version: metadata.version,
             oscal_version: metadata.oscal_version,
         },
+        controls: vec![],
         groups: catalog.groups,
         back_matter,
     };
@@ -83,7 +84,7 @@ fn bench_export_pipeline(c: &mut Criterion) {
     let mut group = c.benchmark_group("export_pipeline");
 
     let xml_output = temp_dir.path().join("out.xml");
-    group.bench_function(&format!("json_to_xml_{}kb", json_size_kb), |b| {
+    group.bench_function(format!("json_to_xml_{json_size_kb}kb"), |b| {
         b.iter(|| {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
@@ -95,7 +96,7 @@ fn bench_export_pipeline(c: &mut Criterion) {
     });
 
     let yaml_output = temp_dir.path().join("out.yaml");
-    group.bench_function(&format!("json_to_yaml_{}kb", json_size_kb), |b| {
+    group.bench_function(format!("json_to_yaml_{json_size_kb}kb"), |b| {
         b.iter(|| {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
