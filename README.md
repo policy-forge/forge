@@ -78,10 +78,7 @@ Convert a Markdown policy document into an OSCAL artifact.
 # OSCAL Catalog (groups, controls, statements)
 forge convert policy.md --strategy catalog --format json
 
-# OSCAL Component Definition (implemented requirements)
-forge convert policy.md --strategy component --source-profile baseline.json --format json
-
-# With a source profile reference for component strategy
+# OSCAL Component Definition (--source-profile required)
 forge convert policy.md --strategy component --source-profile baseline.json --format json
 
 # Output as XML or YAML

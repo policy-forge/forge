@@ -278,7 +278,11 @@ fn convert_prop(xml: XmlProp) -> OscalProp {
 }
 
 fn convert_link(xml: XmlLink) -> OscalLink {
-    OscalLink { href: xml.href, rel: xml.rel.unwrap_or_default(), text: xml.text }
+    OscalLink {
+        href: xml.href,
+        rel: xml.rel.unwrap_or_else(|| "reference".to_string()),
+        text: xml.text,
+    }
 }
 
 fn convert_part(xml: XmlPart) -> OscalPart {

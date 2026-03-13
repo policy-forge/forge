@@ -256,7 +256,6 @@ pub fn build_profile(
         vec![]
     } else {
         let selection = ControlSelection { with_ids: control_ids };
-        let sanitized_href = crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
         let import = match mode {
             SelectionMode::Include => ProfileImport {
                 href: sanitized_href.clone(),
