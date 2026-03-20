@@ -155,6 +155,9 @@ pub enum ForgeError {
     #[error("")]
     DiffHasChanges,
 
+    #[error("Round-trip validation failed: {0} unresolved divergence(s)")]
+    RoundTripFailed(usize),
+
     #[error("Diff error: {0}")]
     DiffError(String),
 
@@ -197,7 +200,8 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::OscalCliTimeout { .. }
         | ForgeError::ResolveInputNotJson { .. }
         | ForgeError::Serialization(_)
-        | ForgeError::DiffHasChanges => 1,
+        | ForgeError::DiffHasChanges
+        | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + Diff errors
         ForgeError::DiffError(_)
@@ -586,5 +590,16 @@ mod tests {
     #[test]
     fn diff_error_exit_code_is_2() {
         assert_eq!(exit_code(&ForgeError::DiffError("test".into())), 2);
+    }
+
+    #[test]
+    fn round_trip_failed_display() {
+        let err = ForgeError::RoundTripFailed(3);
+        assert_eq!(err.to_string(), "Round-trip validation failed: 3 unresolved divergence(s)");
+    }
+
+    #[test]
+    fn round_trip_failed_exit_code_is_1() {
+        assert_eq!(exit_code(&ForgeError::RoundTripFailed(1)), 1);
     }
 }
