@@ -21,5 +21,6 @@ run_step "cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measureme
     cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3
 run_step "cargo audit" cargo audit
 run_step "cargo deny check" cargo deny check
+run_step "cargo vet --locked" cargo vet --locked
 
 echo "[ci-local] all checks passed"
