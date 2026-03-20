@@ -1,7 +1,18 @@
 use std::path::Path;
+use std::time::Duration;
+
+use tracing::info;
 
 use crate::ForgeError;
-use crate::cli::{SchemaType, ValidateOutputFormat};
+use crate::cli::SchemaType;
+use crate::cli::ValidateOutputFormat;
+use crate::oscal_cli::OscalCliDetect;
+use crate::oscal_cli::detector::PathDetector;
+use crate::oscal_cli::invoker::ProcessInvoker;
+use crate::round_trip::{
+    DivergenceClass, OscalComparisonRules, RoundTripResult, compare_oscal_json,
+    run_round_trip_chain, write_divergence_log,
+};
 use crate::validate::{self, OscalModelType, ValidateError};
 
 /// Convert CLI `SchemaType` to validation module `OscalModelType`.
@@ -25,6 +36,7 @@ pub fn execute(
     input: &Path,
     schema_type: Option<&SchemaType>,
     format: &ValidateOutputFormat,
+    output: Option<&Path>,
 ) -> Result<(), ForgeError> {
     // Step 1: Check file size (SEC-3)
     validate::check_file_size(input).map_err(|e| match e {
@@ -71,24 +83,186 @@ pub fn execute(
 
     // Step 7: Render report and exit
     if report.is_valid() {
-        match format {
+        let rendered = match format {
             ValidateOutputFormat::Text => {
-                println!("Valid: {model_type} artifact passes all validation.");
+                format!("Valid: {model_type} artifact passes all validation.")
             }
-            ValidateOutputFormat::Json => {
-                println!("{}", validate::report::render_json_report(&report));
-            }
-        }
+            ValidateOutputFormat::Json => validate::report::render_json_report(&report),
+        };
+        crate::cli::output::write_output(&rendered, output)?;
         Ok(())
     } else {
         let rendered = match format {
             ValidateOutputFormat::Text => validate::report::render_text_report(&report),
             ValidateOutputFormat::Json => validate::report::render_json_report(&report),
         };
-        eprintln!("{rendered}");
+        crate::cli::output::write_output(&rendered, output)?;
         Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s) in {model_type} artifact",
             report.errors().len()
         )))
+    }
+}
+
+/// Execute the `forge validate --round-trip` subcommand.
+///
+/// Runs the oscal-cli round-trip conversion chain (JSON → XML → YAML → JSON),
+/// compares the original artifact against the round-tripped result, and reports
+/// any divergences.
+///
+/// # Errors
+///
+/// * `ForgeError::OscalCliNotFound` — oscal-cli not on PATH (exit 4)
+/// * `ForgeError::OscalCliNotFunctional` — oscal-cli found but broken (exit 4)
+/// * `ForgeError::RoundTripFailed` — unresolved divergences found (exit 1)
+/// * `ForgeError::Validation` — input file issues
+///
+/// # Panics
+///
+/// Panics if oscal-cli is detected as functional but has no executable path (invariant violation).
+pub fn execute_round_trip(
+    input: &Path,
+    format: &ValidateOutputFormat,
+    output: Option<&Path>,
+    timeout_secs: u64,
+    oscal_cli_path: Option<&Path>,
+) -> Result<(), ForgeError> {
+    // Step 1: Validate input is JSON and canonicalize (validates existence)
+    match input.extension().and_then(|e| e.to_str()) {
+        Some("json") => {}
+        _ => {
+            return Err(ForgeError::Validation(
+                "Round-trip validation requires a JSON input file".to_string(),
+            ));
+        }
+    }
+    let canonical_input = input.canonicalize().map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: input.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: input.to_path_buf() }
+        }
+        _ => ForgeError::Io(e),
+    })?;
+
+    // Step 2: Read and parse original JSON
+    let content = std::fs::read_to_string(&canonical_input).map_err(|e| {
+        ForgeError::Validation(format!("Failed to read artifact file '{}': {e}", input.display()))
+    })?;
+    if content.trim().is_empty() {
+        return Err(ForgeError::Validation(format!(
+            "Artifact file '{}' is empty",
+            input.display()
+        )));
+    }
+    let original_json: serde_json::Value = serde_json::from_str(&content).map_err(|e| {
+        ForgeError::Validation(format!("Failed to parse '{}' as JSON: {e}", input.display()))
+    })?;
+
+    // Step 3: Detect oscal-cli
+    let detector = match oscal_cli_path {
+        Some(path) => PathDetector::with_path(path.to_path_buf()),
+        None => PathDetector::new(),
+    };
+    let cli_info = detector.detect();
+
+    if !cli_info.available {
+        return Err(ForgeError::OscalCliNotFound);
+    }
+    if !cli_info.functional {
+        return Err(ForgeError::OscalCliNotFunctional {
+            path: cli_info.executable_path.unwrap_or_else(|| std::path::PathBuf::from("oscal-cli")),
+            detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
+        });
+    }
+
+    info!(
+        oscal_cli_path = %cli_info.executable_path.as_deref().unwrap_or(Path::new("unknown")).display(),
+        oscal_cli_version = cli_info.version.as_deref().unwrap_or("unknown"),
+        "Detected oscal-cli for round-trip validation"
+    );
+
+    let invoker = ProcessInvoker::new(
+        cli_info.executable_path.expect("functional oscal-cli must have a path"),
+    );
+
+    // Step 4: Run round-trip chain in a temp directory
+    let temp_dir = tempfile::tempdir().map_err(ForgeError::Io)?;
+    let timeout = Duration::from_secs(timeout_secs);
+
+    let rt_json_path = run_round_trip_chain(&canonical_input, &invoker, temp_dir.path(), timeout)?;
+
+    // Step 5: Parse round-tripped JSON and compare
+    let rt_content = std::fs::read_to_string(&rt_json_path).map_err(ForgeError::Io)?;
+    let rt_json: serde_json::Value =
+        serde_json::from_str(&rt_content).map_err(|e| ForgeError::Validation(e.to_string()))?;
+
+    let rules = OscalComparisonRules::default();
+    let divergences = compare_oscal_json(&original_json, &rt_json, "", &rules);
+
+    // Step 6: Build result
+    let unresolved_count =
+        divergences.iter().filter(|d| d.classification != DivergenceClass::Acceptable).count();
+    let passed = unresolved_count == 0;
+
+    let artifact_type = validate::detect_model_type(&original_json)
+        .map_or_else(|_| "Unknown".to_string(), |m| m.to_string());
+
+    let result =
+        RoundTripResult { artifact_type, source_path: input.to_path_buf(), passed, divergences };
+
+    // Step 7: Output results
+    match output {
+        Some(output_path) => {
+            write_divergence_log(&result, output_path)?;
+            if passed {
+                println!("PASS: round-trip validation succeeded (0 divergences)");
+            } else {
+                eprintln!(
+                    "FAIL: {unresolved_count} unresolved divergence(s). Details written to: {}",
+                    output_path.display()
+                );
+            }
+        }
+        None => match format {
+            ValidateOutputFormat::Text => {
+                render_round_trip_text(&result, unresolved_count);
+            }
+            ValidateOutputFormat::Json => {
+                let json = serde_json::to_string_pretty(&result)
+                    .unwrap_or_else(|e| format!("{{\"error\": \"{e}\"}}"));
+                println!("{json}");
+            }
+        },
+    }
+
+    if passed { Ok(()) } else { Err(ForgeError::RoundTripFailed(unresolved_count)) }
+}
+
+/// Render a human-readable round-trip validation summary to stdout/stderr.
+fn render_round_trip_text(result: &RoundTripResult, unresolved_count: usize) {
+    if result.passed {
+        println!(
+            "PASS: round-trip validation of {} artifact '{}' succeeded",
+            result.artifact_type,
+            result.source_path.display()
+        );
+        if !result.divergences.is_empty() {
+            println!("  ({} acceptable divergence(s) noted)", result.divergences.len());
+        }
+    } else {
+        eprintln!(
+            "FAIL: round-trip validation of {} artifact '{}' — {} unresolved divergence(s)",
+            result.artifact_type,
+            result.source_path.display(),
+            unresolved_count
+        );
+        for d in &result.divergences {
+            let marker = match d.classification {
+                DivergenceClass::ForgeFix => "FORGE-FIX",
+                DivergenceClass::OscalCliDiff => "OSCAL-CLI",
+                DivergenceClass::Acceptable => "ACCEPT",
+            };
+            eprintln!("  [{marker}] {}: {}", d.json_path, d.description);
+        }
     }
 }

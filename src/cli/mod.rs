@@ -114,12 +114,28 @@ pub enum Commands {
         input: PathBuf,
 
         /// Override auto-detected OSCAL model type (catalog or component-definition)
-        #[arg(long, value_enum)]
+        #[arg(long, value_enum, conflicts_with = "round_trip")]
         schema_type: Option<SchemaType>,
 
         /// Output format for validation results (text or json)
         #[arg(long, value_enum, default_value = "text")]
         format: ValidateOutputFormat,
+
+        /// Run round-trip validation (JSON → XML → YAML → JSON) via oscal-cli
+        #[arg(long)]
+        round_trip: bool,
+
+        /// Write validation results to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+
+        /// Timeout for each oscal-cli conversion step in seconds (default: 30)
+        #[arg(long, default_value = "30", requires = "round_trip")]
+        timeout: u64,
+
+        /// Explicit path to oscal-cli binary (overrides PATH search)
+        #[arg(long, requires = "round_trip")]
+        oscal_cli_path: Option<PathBuf>,
     },
 
     /// Resolve an OSCAL Profile into a flat Catalog baseline via oscal-cli
@@ -260,8 +276,26 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
         }
-        Commands::Validate { input, schema_type, format } => {
-            validate::execute(input, schema_type.as_ref(), format)
+        Commands::Validate {
+            input,
+            schema_type,
+            format,
+            round_trip,
+            output,
+            timeout,
+            oscal_cli_path,
+        } => {
+            if *round_trip {
+                validate::execute_round_trip(
+                    input,
+                    format,
+                    output.as_deref(),
+                    *timeout,
+                    oscal_cli_path.as_deref(),
+                )
+            } else {
+                validate::execute(input, schema_type.as_ref(), format, output.as_deref())
+            }
         }
         Commands::Resolve { input, output, check, timeout, oscal_cli_path } => resolve::execute(
             input.as_deref(),
@@ -320,10 +354,23 @@ mod tests {
     #[test]
     fn parse_validate_subcommand() {
         let cli = Cli::try_parse_from(["forge", "validate", "artifact.json"]).unwrap();
-        if let Commands::Validate { input, schema_type, format } = cli.command {
+        if let Commands::Validate {
+            input,
+            schema_type,
+            format,
+            round_trip,
+            output,
+            timeout,
+            oscal_cli_path,
+        } = cli.command
+        {
             assert_eq!(input, PathBuf::from("artifact.json"));
             assert!(schema_type.is_none());
             assert_eq!(format, ValidateOutputFormat::Text);
+            assert!(!round_trip);
+            assert!(output.is_none());
+            assert_eq!(timeout, 30);
+            assert!(oscal_cli_path.is_none());
         } else {
             panic!("Expected Validate command");
         }
@@ -708,5 +755,173 @@ mod tests {
     fn parse_diff_missing_new_artifact_fails() {
         let result = Cli::try_parse_from(["forge", "diff", "old.json"]);
         assert!(result.is_err(), "Should fail when new_artifact is omitted");
+    }
+
+    // ─── Issue #64: --round-trip CLI parsing tests ─────────────────────
+
+    #[test]
+    fn parse_validate_round_trip_flag() {
+        let cli =
+            Cli::try_parse_from(["forge", "validate", "artifact.json", "--round-trip"]).unwrap();
+        if let Commands::Validate { input, round_trip, output, timeout, oscal_cli_path, .. } =
+            cli.command
+        {
+            assert_eq!(input, PathBuf::from("artifact.json"));
+            assert!(round_trip);
+            assert!(output.is_none());
+            assert_eq!(timeout, 30);
+            assert!(oscal_cli_path.is_none());
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_round_trip_with_output() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "validate",
+            "artifact.json",
+            "--round-trip",
+            "--output",
+            "divergences.json",
+        ])
+        .unwrap();
+        if let Commands::Validate { round_trip, output, .. } = cli.command {
+            assert!(round_trip);
+            assert_eq!(output, Some(PathBuf::from("divergences.json")));
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_round_trip_with_timeout() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "validate",
+            "artifact.json",
+            "--round-trip",
+            "--timeout",
+            "120",
+        ])
+        .unwrap();
+        if let Commands::Validate { round_trip, timeout, .. } = cli.command {
+            assert!(round_trip);
+            assert_eq!(timeout, 120);
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_round_trip_with_oscal_cli_path() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "validate",
+            "artifact.json",
+            "--round-trip",
+            "--oscal-cli-path",
+            "/usr/local/bin/oscal-cli",
+        ])
+        .unwrap();
+        if let Commands::Validate { round_trip, oscal_cli_path, .. } = cli.command {
+            assert!(round_trip);
+            assert_eq!(oscal_cli_path, Some(PathBuf::from("/usr/local/bin/oscal-cli")));
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_round_trip_with_all_options() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "validate",
+            "artifact.json",
+            "--round-trip",
+            "--output",
+            "div.json",
+            "--timeout",
+            "45",
+            "--oscal-cli-path",
+            "/opt/oscal-cli",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+        if let Commands::Validate {
+            input,
+            round_trip,
+            output,
+            timeout,
+            oscal_cli_path,
+            format,
+            ..
+        } = cli.command
+        {
+            assert_eq!(input, PathBuf::from("artifact.json"));
+            assert!(round_trip);
+            assert_eq!(output, Some(PathBuf::from("div.json")));
+            assert_eq!(timeout, 45);
+            assert_eq!(oscal_cli_path, Some(PathBuf::from("/opt/oscal-cli")));
+            assert_eq!(format, ValidateOutputFormat::Json);
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_without_round_trip_defaults_false() {
+        let cli = Cli::try_parse_from(["forge", "validate", "artifact.json"]).unwrap();
+        if let Commands::Validate { round_trip, .. } = cli.command {
+            assert!(!round_trip, "Expected --round-trip to default to false");
+        } else {
+            panic!("Expected Validate command");
+        }
+    }
+
+    #[test]
+    fn parse_validate_timeout_without_round_trip_fails() {
+        let result = Cli::try_parse_from(["forge", "validate", "artifact.json", "--timeout", "60"]);
+        assert!(result.is_err(), "--timeout without --round-trip should fail");
+    }
+
+    #[test]
+    fn parse_validate_oscal_cli_path_without_round_trip_fails() {
+        let result = Cli::try_parse_from([
+            "forge",
+            "validate",
+            "artifact.json",
+            "--oscal-cli-path",
+            "/usr/bin/oscal-cli",
+        ]);
+        assert!(result.is_err(), "--oscal-cli-path without --round-trip should fail");
+    }
+
+    #[test]
+    fn parse_validate_schema_type_with_round_trip_fails() {
+        let result = Cli::try_parse_from([
+            "forge",
+            "validate",
+            "artifact.json",
+            "--round-trip",
+            "--schema-type",
+            "catalog",
+        ]);
+        assert!(result.is_err(), "--schema-type with --round-trip should conflict");
+    }
+
+    #[test]
+    fn parse_validate_output_without_round_trip_succeeds() {
+        let cli =
+            Cli::try_parse_from(["forge", "validate", "artifact.json", "--output", "report.json"])
+                .unwrap();
+        if let Commands::Validate { output, round_trip, .. } = cli.command {
+            assert!(!round_trip);
+            assert_eq!(output, Some(PathBuf::from("report.json")));
+        } else {
+            panic!("Expected Validate command");
+        }
     }
 }
