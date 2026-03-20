@@ -169,47 +169,46 @@ fn assert_expected_output(actual: &Value, expected_path: &Path, context: &str) {
     );
 }
 
-fn extract_stable_ids(output: &Value) -> BTreeMap<String, String> {
+fn extract_catalog_stable_ids(output: &Value) -> BTreeMap<String, String> {
     let mut ids = BTreeMap::new();
+    let groups = output.pointer("/catalog/groups").and_then(Value::as_array);
+    for group in groups.into_iter().flatten() {
+        let controls = group.get("controls").and_then(Value::as_array);
+        for control in controls.into_iter().flatten() {
+            if let (Some(id), Some(uuid)) = (
+                control.get("id").and_then(Value::as_str),
+                control.get("uuid").and_then(Value::as_str),
+            ) {
+                ids.insert(id.to_string(), uuid.to_string());
+            }
+        }
+    }
+    ids
+}
 
-    if let Some(groups) = output.pointer("/catalog/groups").and_then(Value::as_array) {
-        for group in groups {
-            if let Some(controls) = group.get("controls").and_then(Value::as_array) {
-                for control in controls {
-                    if let (Some(id), Some(uuid)) = (
-                        control.get("id").and_then(Value::as_str),
-                        control.get("uuid").and_then(Value::as_str),
-                    ) {
-                        ids.insert(id.to_string(), uuid.to_string());
-                    }
+fn extract_component_stable_ids(output: &Value) -> BTreeMap<String, String> {
+    let mut ids = BTreeMap::new();
+    let components = output.pointer("/component-definition/components").and_then(Value::as_array);
+    for component in components.into_iter().flatten() {
+        let impls = component.get("control-implementations").and_then(Value::as_array);
+        for ci in impls.into_iter().flatten() {
+            let reqs = ci.get("implemented-requirements").and_then(Value::as_array);
+            for req in reqs.into_iter().flatten() {
+                if let (Some(control_id), Some(uuid)) = (
+                    req.get("control-id").and_then(Value::as_str),
+                    req.get("uuid").and_then(Value::as_str),
+                ) {
+                    ids.insert(control_id.to_string(), uuid.to_string());
                 }
             }
         }
     }
+    ids
+}
 
-    if let Some(components) =
-        output.pointer("/component-definition/components").and_then(Value::as_array)
-    {
-        for component in components {
-            if let Some(impls) = component.get("control-implementations").and_then(Value::as_array)
-            {
-                for ci in impls {
-                    if let Some(reqs) = ci.get("implemented-requirements").and_then(Value::as_array)
-                    {
-                        for req in reqs {
-                            if let (Some(control_id), Some(uuid)) = (
-                                req.get("control-id").and_then(Value::as_str),
-                                req.get("uuid").and_then(Value::as_str),
-                            ) {
-                                ids.insert(control_id.to_string(), uuid.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
+fn extract_stable_ids(output: &Value) -> BTreeMap<String, String> {
+    let mut ids = extract_catalog_stable_ids(output);
+    ids.extend(extract_component_stable_ids(output));
     ids
 }
 

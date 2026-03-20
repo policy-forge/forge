@@ -149,6 +149,54 @@ fn classify_url(url_opt: Option<&String>) -> UrlClassification {
     }
 }
 
+fn citation_field(text: &str) -> Option<ResourceCitation> {
+    if text.is_empty() { None } else { Some(ResourceCitation { text: text.to_string() }) }
+}
+
+fn build_resource_parts(
+    classification: UrlClassification,
+    citation: &Citation,
+) -> (Vec<Rlink>, Option<ResourceCitation>, Vec<Prop>) {
+    match classification {
+        UrlClassification::Valid(parsed_url) => {
+            let media_type = infer_media_type(&parsed_url);
+            let href = citation.url.as_deref().unwrap_or_default().to_string();
+            let rlinks = vec![Rlink { href, media_type }];
+            (rlinks, citation_field(&citation.text), vec![])
+        }
+        UrlClassification::Malformed(raw_url) => {
+            tracing::warn!(
+                citation_id = %citation.id,
+                url = %raw_url,
+                "Malformed or non-http/https URL preserved with unvalidated annotation"
+            );
+            let rlinks = vec![Rlink { href: raw_url, media_type: None }];
+            let props = vec![Prop {
+                name: "url-status".to_string(),
+                value: "unvalidated".to_string(),
+                ns: None,
+            }];
+            (rlinks, citation_field(&citation.text), props)
+        }
+        UrlClassification::Dangerous(raw_url) => {
+            tracing::warn!(
+                citation_id = %citation.id,
+                url = %raw_url,
+                "Dangerous URL scheme stripped from rlink href (SEC-2)"
+            );
+            let props = vec![Prop {
+                name: "url-status".to_string(),
+                value: "dangerous-scheme-removed".to_string(),
+                ns: None,
+            }];
+            (vec![], citation_field(&citation.text), props)
+        }
+        UrlClassification::None => {
+            (vec![], Some(ResourceCitation { text: citation.text.clone() }), vec![])
+        }
+    }
+}
+
 /// Infer IANA media type from URL path extension.
 fn infer_media_type(url: &url::Url) -> Option<String> {
     let path = std::path::Path::new(url.path());
@@ -221,61 +269,7 @@ pub fn generate_back_matter(
             .map(|req_id| format!("Referenced by requirement {req_id}"));
 
         let classification = classify_url(citation.url.as_ref());
-
-        let (rlinks, citation_field, props) = match classification {
-            UrlClassification::Valid(parsed_url) => {
-                let media_type = infer_media_type(&parsed_url);
-                let href = citation.url.as_deref().unwrap_or_default().to_string();
-                let rlinks = vec![Rlink { href, media_type }];
-                let citation_field = if citation.text.is_empty() {
-                    None
-                } else {
-                    Some(ResourceCitation { text: citation.text.clone() })
-                };
-                (rlinks, citation_field, vec![])
-            }
-            UrlClassification::Malformed(raw_url) => {
-                tracing::warn!(
-                    citation_id = %citation.id,
-                    url = %raw_url,
-                    "Malformed or non-http/https URL preserved with unvalidated annotation"
-                );
-                let rlinks = vec![Rlink { href: raw_url, media_type: None }];
-                let props = vec![Prop {
-                    name: "url-status".to_string(),
-                    value: "unvalidated".to_string(),
-                    ns: None,
-                }];
-                let citation_field = if citation.text.is_empty() {
-                    None
-                } else {
-                    Some(ResourceCitation { text: citation.text.clone() })
-                };
-                (rlinks, citation_field, props)
-            }
-            UrlClassification::Dangerous(raw_url) => {
-                tracing::warn!(
-                    citation_id = %citation.id,
-                    url = %raw_url,
-                    "Dangerous URL scheme stripped from rlink href (SEC-2)"
-                );
-                let props = vec![Prop {
-                    name: "url-status".to_string(),
-                    value: "dangerous-scheme-removed".to_string(),
-                    ns: None,
-                }];
-                let citation_field = if citation.text.is_empty() {
-                    None
-                } else {
-                    Some(ResourceCitation { text: citation.text.clone() })
-                };
-                (vec![], citation_field, props)
-            }
-            UrlClassification::None => {
-                let citation_field = Some(ResourceCitation { text: citation.text.clone() });
-                (vec![], citation_field, vec![])
-            }
-        };
+        let (rlinks, citation_field, props) = build_resource_parts(classification, citation);
 
         resources.push(BackMatterResource {
             uuid,

@@ -25,19 +25,8 @@ pub fn format_trace_table(report: &TraceReport) -> String {
             let (section, line) = match &entry.trace {
                 Some(meta) => {
                     let section = strip_control_chars(&meta.source_section);
-                    let line = if meta.source_line == 0 && entry.element_type == ElementType::Group
-                    {
-                        "\u{2014}".to_string() // em dash for groups
-                    } else if meta.source_line == 0 {
-                        "0 \u{26A0}".to_string() // missing line on non-group element
-                    } else {
-                        let line_str = meta.source_line.to_string();
-                        if validate_line_reference(meta.source_line, source_line_count) {
-                            line_str
-                        } else {
-                            format!("{line_str} \u{26A0}")
-                        }
-                    };
+                    let line =
+                        format_source_line(meta.source_line, entry.element_type, source_line_count);
                     (section, line)
                 }
                 None => ("[unmapped]".to_string(), "[unmapped]".to_string()),
@@ -129,6 +118,25 @@ pub fn format_trace_table(report: &TraceReport) -> String {
     );
 
     output
+}
+
+fn format_source_line(
+    source_line: usize,
+    element_type: ElementType,
+    source_line_count: usize,
+) -> String {
+    if source_line == 0 && element_type == ElementType::Group {
+        return "\u{2014}".to_string();
+    }
+    if source_line == 0 {
+        return "0 \u{26A0}".to_string();
+    }
+    let line_str = source_line.to_string();
+    if validate_line_reference(source_line, source_line_count) {
+        line_str
+    } else {
+        format!("{line_str} \u{26A0}")
+    }
 }
 
 #[cfg(test)]

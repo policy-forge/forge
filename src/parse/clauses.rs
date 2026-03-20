@@ -156,6 +156,231 @@ pub struct ExtractedContent {
     pub paragraphs: Vec<ExtractedParagraph>,
 }
 
+// ── Mutable state containers for event-loop helpers ──────────────────
+
+struct ListState {
+    list_type_stack: Vec<ListType>,
+    item_stack: Vec<(String, usize)>,
+    exclude_depth: usize,
+}
+
+struct TableState {
+    in_table: bool,
+    current_table_source_line: usize,
+    headers: Vec<String>,
+    rows: Vec<Vec<String>>,
+    current_row: Vec<String>,
+    current_cell: String,
+}
+
+struct ParagraphState {
+    in_standalone: bool,
+    text: String,
+    source_line: usize,
+}
+
+// ── Event-handling helpers ───────────────────────────────────────────
+
+fn handle_list_event(
+    event: &Event<'_>,
+    range: &std::ops::Range<usize>,
+    state: &mut ListState,
+    list_items: &mut Vec<ExtractedListItem>,
+    line_starts: &[usize],
+) -> bool {
+    match event {
+        Event::Start(Tag::List(start_num)) => {
+            let list_type =
+                if start_num.is_some() { ListType::Ordered } else { ListType::Unordered };
+            state.list_type_stack.push(list_type);
+            true
+        }
+        Event::End(TagEnd::List(_)) => {
+            state.list_type_stack.pop();
+            true
+        }
+        Event::Start(Tag::Item) => {
+            let source_line = offset_to_line(range.start, line_starts);
+            state.item_stack.push((String::new(), source_line));
+            true
+        }
+        Event::End(TagEnd::Item) => {
+            finalize_list_item(state, list_items);
+            true
+        }
+        Event::Start(Tag::CodeBlock(_) | Tag::BlockQuote(_)) if !state.item_stack.is_empty() => {
+            state.exclude_depth += 1;
+            true
+        }
+        Event::End(TagEnd::CodeBlock | TagEnd::BlockQuote(_)) if !state.item_stack.is_empty() => {
+            state.exclude_depth = state.exclude_depth.saturating_sub(1);
+            true
+        }
+        _ => false,
+    }
+}
+
+fn finalize_list_item(state: &mut ListState, list_items: &mut Vec<ExtractedListItem>) {
+    if let Some((text, source_line)) = state.item_stack.pop() {
+        let trimmed = text.trim();
+        if !trimmed.is_empty() && !state.list_type_stack.is_empty() {
+            let list_type = *state.list_type_stack.last().unwrap();
+            let depth = state.list_type_stack.len() - 1;
+            #[allow(clippy::cast_possible_truncation)]
+            let nesting_depth = depth.min(255) as u8;
+
+            list_items.push(ExtractedListItem {
+                text: trimmed.to_string(),
+                source_line,
+                nesting_depth,
+                list_type,
+            });
+        }
+    }
+}
+
+fn handle_item_text(event: &Event<'_>, state: &mut ListState) -> bool {
+    if state.item_stack.is_empty() || state.exclude_depth != 0 {
+        return false;
+    }
+    match event {
+        Event::Text(text) => {
+            if let Some((item_text, _)) = state.item_stack.last_mut() {
+                item_text.push_str(text);
+            }
+            true
+        }
+        Event::Code(code) => {
+            if let Some((item_text, _)) = state.item_stack.last_mut() {
+                item_text.push_str(code);
+            }
+            true
+        }
+        Event::SoftBreak | Event::HardBreak => {
+            if let Some((item_text, _)) = state.item_stack.last_mut() {
+                item_text.push(' ');
+            }
+            true
+        }
+        Event::End(TagEnd::Paragraph) => {
+            if let Some((item_text, _)) = state.item_stack.last_mut() {
+                let last_is_whitespace =
+                    item_text.chars().next_back().is_some_and(char::is_whitespace);
+                if !last_is_whitespace {
+                    item_text.push(' ');
+                }
+            }
+            true
+        }
+        _ => false,
+    }
+}
+
+fn handle_table_event(
+    event: &Event<'_>,
+    range: &std::ops::Range<usize>,
+    state: &mut TableState,
+    tables: &mut Vec<ExtractedTable>,
+    line_starts: &[usize],
+) -> bool {
+    match event {
+        Event::Start(Tag::Table(_)) => {
+            state.in_table = true;
+            state.current_table_source_line = offset_to_line(range.start, line_starts);
+            state.headers.clear();
+            state.rows.clear();
+            state.current_row.clear();
+            state.current_cell.clear();
+            true
+        }
+        Event::End(TagEnd::Table) => {
+            tables.push(ExtractedTable {
+                headers: std::mem::take(&mut state.headers),
+                rows: std::mem::take(&mut state.rows),
+                source_line: state.current_table_source_line,
+            });
+            state.in_table = false;
+            true
+        }
+        Event::Start(Tag::TableHead | Tag::TableRow) => {
+            state.current_row.clear();
+            true
+        }
+        Event::End(TagEnd::TableHead) => {
+            state.headers.clone_from(&state.current_row);
+            state.current_row.clear();
+            true
+        }
+        Event::End(TagEnd::TableRow) => {
+            state.rows.push(std::mem::take(&mut state.current_row));
+            true
+        }
+        Event::Start(Tag::TableCell) => {
+            state.current_cell.clear();
+            true
+        }
+        Event::End(TagEnd::TableCell) => {
+            state.current_row.push(state.current_cell.trim().to_string());
+            state.current_cell.clear();
+            true
+        }
+        Event::Text(text) if state.in_table => {
+            state.current_cell.push_str(text);
+            true
+        }
+        Event::Code(code) if state.in_table => {
+            state.current_cell.push_str(code);
+            true
+        }
+        Event::SoftBreak if state.in_table => {
+            state.current_cell.push(' ');
+            true
+        }
+        _ => false,
+    }
+}
+
+fn handle_paragraph_event(
+    event: &Event<'_>,
+    range: &std::ops::Range<usize>,
+    state: &mut ParagraphState,
+    paragraphs: &mut Vec<ExtractedParagraph>,
+    in_item: bool,
+    in_table: bool,
+    line_starts: &[usize],
+) -> bool {
+    match event {
+        Event::Start(Tag::Paragraph) if !in_item && !in_table => {
+            state.in_standalone = true;
+            state.text.clear();
+            state.source_line = offset_to_line(range.start, line_starts);
+            true
+        }
+        Event::End(TagEnd::Paragraph) if state.in_standalone => {
+            let trimmed = state.text.trim().to_string();
+            if !trimmed.is_empty() {
+                paragraphs
+                    .push(ExtractedParagraph { text: trimmed, source_line: state.source_line });
+            }
+            state.in_standalone = false;
+            true
+        }
+        Event::Text(text) if state.in_standalone => {
+            state.text.push_str(text);
+            true
+        }
+        Event::Code(code) if state.in_standalone => {
+            state.text.push_str(code);
+            true
+        }
+        Event::SoftBreak if state.in_standalone => {
+            state.text.push(' ');
+            true
+        }
+        _ => false,
+    }
+}
+
 // ── Functions ──────────────────────────────────────────────────────────
 
 /// Extract list items, tables, and paragraphs from Markdown content.
@@ -195,186 +420,47 @@ pub struct ExtractedContent {
 /// 5. Capture standalone paragraphs (not inside items or tables)
 /// 6. Strip inline formatting by processing only Text/Code/SoftBreak events
 /// 7. Map byte offsets to 1-based line numbers via line-starts lookup table
-#[allow(clippy::too_many_lines)]
 pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
-    // Enable GFM table support (SEC-7)
     let options = Options::ENABLE_TABLES;
     let parser = Parser::new_ext(content, options).into_offset_iter();
-
-    // Build line-starts lookup table for O(log n) line number mapping (M-4)
     let line_starts = build_line_starts(content);
 
-    // Initialize result vectors
     let mut list_items: Vec<ExtractedListItem> = Vec::new();
     let mut tables: Vec<ExtractedTable> = Vec::new();
     let mut paragraphs: Vec<ExtractedParagraph> = Vec::new();
 
-    // List extraction state (T017)
-    let mut list_type_stack: Vec<ListType> = Vec::new(); // Depth tracking via stack
-    let mut item_stack: Vec<(String, usize)> = Vec::new(); // Stack of (text, source_line) for nested items
-    let mut exclude_depth: usize = 0; // T019: Track CodeBlock/BlockQuote nesting
+    let mut list_state =
+        ListState { list_type_stack: Vec::new(), item_stack: Vec::new(), exclude_depth: 0 };
+    let mut table_state = TableState {
+        in_table: false,
+        current_table_source_line: 0,
+        headers: Vec::new(),
+        rows: Vec::new(),
+        current_row: Vec::new(),
+        current_cell: String::new(),
+    };
+    let mut para_state =
+        ParagraphState { in_standalone: false, text: String::new(), source_line: 0 };
 
-    // Table extraction state (T028)
-    let mut in_table = false;
-    let mut current_table_source_line: usize = 0;
-    let mut table_headers: Vec<String> = Vec::new();
-    let mut table_rows: Vec<Vec<String>> = Vec::new();
-    let mut current_row: Vec<String> = Vec::new();
-    let mut current_cell: String = String::new();
-
-    // Paragraph extraction state (T035)
-    let mut in_standalone_paragraph = false;
-    let mut para_text = String::new();
-    let mut para_source_line: usize = 0;
-    // Process events (SEC-5: single-pass O(n))
     for (event, range) in parser {
-        match event {
-            // T017: List start/end — push/pop list type for depth tracking
-            Event::Start(Tag::List(start_num)) => {
-                let list_type =
-                    if start_num.is_some() { ListType::Ordered } else { ListType::Unordered };
-                list_type_stack.push(list_type);
-            }
-            Event::End(TagEnd::List(_)) => {
-                list_type_stack.pop();
-            }
-
-            // T017: Item start/end — accumulate text within items
-            Event::Start(Tag::Item) => {
-                // Push a new item onto the stack
-                let source_line = offset_to_line(range.start, &line_starts);
-                item_stack.push((String::new(), source_line));
-            }
-            Event::End(TagEnd::Item) => {
-                // Pop and save the completed item
-                if let Some((text, source_line)) = item_stack.pop() {
-                    // T016: Exclude empty items (only whitespace)
-                    let trimmed = text.trim();
-                    if !trimmed.is_empty() && !list_type_stack.is_empty() {
-                        // SAFETY: guarded by !list_type_stack.is_empty() check on previous line
-                        let list_type = *list_type_stack.last().unwrap();
-                        // T017: nesting_depth with saturation at 255 (SEC-4)
-                        let depth = list_type_stack.len() - 1;
-                        #[allow(clippy::cast_possible_truncation)]
-                        let nesting_depth = depth.min(255) as u8;
-
-                        list_items.push(ExtractedListItem {
-                            text: trimmed.to_string(),
-                            source_line,
-                            nesting_depth,
-                            list_type,
-                        });
-                    }
-                }
-            }
-
-            // T019: Exclude code blocks and blockquotes within items (EC-8)
-            Event::Start(Tag::CodeBlock(_) | Tag::BlockQuote(_)) if !item_stack.is_empty() => {
-                exclude_depth += 1;
-            }
-            Event::End(TagEnd::CodeBlock | TagEnd::BlockQuote(_)) if !item_stack.is_empty() => {
-                exclude_depth = exclude_depth.saturating_sub(1);
-            }
-
-            // T018: Text accumulation within list items (SEC-3: strip formatting)
-            // Accumulate text into the current (deepest) item
-            Event::Text(text) if !item_stack.is_empty() && exclude_depth == 0 => {
-                if let Some((item_text, _)) = item_stack.last_mut() {
-                    item_text.push_str(&text);
-                }
-            }
-            Event::Code(code) if !item_stack.is_empty() && exclude_depth == 0 => {
-                if let Some((item_text, _)) = item_stack.last_mut() {
-                    item_text.push_str(&code);
-                }
-            }
-            Event::SoftBreak if !item_stack.is_empty() && exclude_depth == 0 => {
-                if let Some((item_text, _)) = item_stack.last_mut() {
-                    item_text.push(' '); // T018: SoftBreak → space
-                }
-            }
-            Event::HardBreak if !item_stack.is_empty() && exclude_depth == 0 => {
-                if let Some((item_text, _)) = item_stack.last_mut() {
-                    item_text.push(' '); // T018: HardBreak → space
-                }
-            }
-            Event::End(TagEnd::Paragraph) if !item_stack.is_empty() && exclude_depth == 0 => {
-                if let Some((item_text, _)) = item_stack.last_mut() {
-                    // Add space between paragraphs if text doesn't already end with whitespace
-                    let last_is_whitespace =
-                        item_text.chars().next_back().is_some_and(char::is_whitespace);
-                    if !last_is_whitespace {
-                        item_text.push(' '); // T018: Paragraph boundary → space
-                    }
-                }
-            }
-
-            // T028: Table extraction — track table/head/row/cell events
-            Event::Start(Tag::Table(_)) => {
-                in_table = true;
-                current_table_source_line = offset_to_line(range.start, &line_starts);
-                table_headers.clear();
-                table_rows.clear();
-                current_row.clear();
-                current_cell.clear();
-            }
-            Event::End(TagEnd::Table) => {
-                tables.push(ExtractedTable {
-                    headers: std::mem::take(&mut table_headers),
-                    rows: std::mem::take(&mut table_rows),
-                    source_line: current_table_source_line,
-                });
-                in_table = false;
-            }
-            Event::Start(Tag::TableHead | Tag::TableRow) => {
-                current_row.clear();
-            }
-            Event::End(TagEnd::TableHead) => {
-                table_headers.clone_from(&current_row);
-                current_row.clear();
-            }
-            Event::End(TagEnd::TableRow) => {
-                table_rows.push(std::mem::take(&mut current_row));
-            }
-            Event::Start(Tag::TableCell) => {
-                current_cell.clear();
-            }
-            Event::End(TagEnd::TableCell) => {
-                current_row.push(current_cell.trim().to_string());
-                current_cell.clear();
-            }
-            // Text/Code within table cells (SEC-3: inline formatting stripped)
-            Event::Text(text) if in_table => {
-                current_cell.push_str(&text);
-            }
-            Event::Code(code) if in_table => {
-                current_cell.push_str(&code);
-            }
-            Event::SoftBreak if in_table => {
-                current_cell.push(' ');
-            }
-
-            // T035: Standalone paragraph capture (S-2, SEC-3)
-            Event::Start(Tag::Paragraph) if item_stack.is_empty() && !in_table => {
-                in_standalone_paragraph = true;
-                para_text.clear();
-                para_source_line = offset_to_line(range.start, &line_starts);
-            }
-            Event::End(TagEnd::Paragraph) if in_standalone_paragraph => {
-                let trimmed = para_text.trim().to_string();
-                if !trimmed.is_empty() {
-                    paragraphs
-                        .push(ExtractedParagraph { text: trimmed, source_line: para_source_line });
-                }
-                in_standalone_paragraph = false;
-            }
-            Event::Text(text) if in_standalone_paragraph => para_text.push_str(&text),
-            Event::Code(code) if in_standalone_paragraph => para_text.push_str(&code),
-            Event::SoftBreak if in_standalone_paragraph => para_text.push(' '),
-
-            // Ignore all other events (formatting tags, etc.)
-            _ => {}
+        if handle_list_event(&event, &range, &mut list_state, &mut list_items, &line_starts) {
+            continue;
         }
+        if handle_item_text(&event, &mut list_state) {
+            continue;
+        }
+        if handle_table_event(&event, &range, &mut table_state, &mut tables, &line_starts) {
+            continue;
+        }
+        handle_paragraph_event(
+            &event,
+            &range,
+            &mut para_state,
+            &mut paragraphs,
+            !list_state.item_stack.is_empty(),
+            table_state.in_table,
+            &line_starts,
+        );
     }
 
     // Sort items by source_line to maintain document order.

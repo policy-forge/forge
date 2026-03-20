@@ -267,6 +267,36 @@ fn component_pipeline_source_file_prop_is_filename_only() {
 
 // ─── T025: Cross-Artifact Consistency Test ───────────────────────────────
 
+fn extract_catalog_control_ids(catalog_json: &serde_json::Value) -> Vec<String> {
+    catalog_json["catalog"]["groups"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(|group| {
+            group["controls"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|control| control["id"].as_str().map(String::from))
+        })
+        .collect()
+}
+
+fn extract_component_control_ids(component_json: &serde_json::Value) -> Vec<String> {
+    component_json["component-definition"]["components"][0]["control-implementations"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(|entry| {
+            entry["implemented-requirements"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|req| req["control-id"].as_str().map(String::from))
+        })
+        .collect()
+}
+
 #[test]
 fn control_ids_match_between_catalog_and_component() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
@@ -290,36 +320,8 @@ fn control_ids_match_between_catalog_and_component() {
     let component_json: serde_json::Value =
         serde_json::from_str(&component_result.content).unwrap();
 
-    // Extract control-ids from Catalog (groups → controls → id)
-    let mut catalog_ids: Vec<String> = Vec::new();
-    if let Some(groups) = catalog_json["catalog"]["groups"].as_array() {
-        for group in groups {
-            if let Some(controls) = group["controls"].as_array() {
-                for control in controls {
-                    if let Some(id) = control["id"].as_str() {
-                        catalog_ids.push(id.to_string());
-                    }
-                }
-            }
-        }
-    }
-
-    // Extract control-ids from Component Definition (control-implementations → implemented-requirements → control-id)
-    let mut component_ids: Vec<String> = Vec::new();
-    if let Some(ci) =
-        component_json["component-definition"]["components"][0]["control-implementations"]
-            .as_array()
-    {
-        for entry in ci {
-            if let Some(impl_reqs) = entry["implemented-requirements"].as_array() {
-                for req in impl_reqs {
-                    if let Some(id) = req["control-id"].as_str() {
-                        component_ids.push(id.to_string());
-                    }
-                }
-            }
-        }
-    }
+    let catalog_ids = extract_catalog_control_ids(&catalog_json);
+    let component_ids = extract_component_control_ids(&component_json);
 
     assert_eq!(
         catalog_ids.len(),

@@ -177,59 +177,7 @@ fn extract_section_parameters(
     total_params: &mut usize,
 ) -> Result<(), ForgeError> {
     for req in &mut section.requirements {
-        let Some(stable_id) = req.stable_id.clone() else {
-            // Skip requirements without a stable_id (cannot generate param IDs)
-            continue;
-        };
-
-        if req.text.is_empty() {
-            continue;
-        }
-
-        // Idempotence: if parameters were already extracted, skip (SEC-6).
-        // OSCAL placeholders in `req.text` won't match any pattern, so a second
-        // extraction would produce zero params — we preserve the original result.
-        if !req.parameters.is_empty() {
-            *total_params += req.parameters.len();
-            continue;
-        }
-
-        // OSCAL TokenDatatype requires IDs to start with a letter or underscore.
-        // UUID stable_ids may start with a hex digit; prefix with 'p' if needed.
-        let requirement_id = if stable_id.starts_with(|c: char| c.is_alphabetic() || c == '_') {
-            stable_id.clone()
-        } else {
-            format!("p{stable_id}")
-        };
-
-        let (updated_text, mut params) = extract_parameters_from_text(&requirement_id, &req.text)
-            .map_err(|e| {
-            ForgeError::ParameterExtraction(format!(
-                "Failed to extract parameters from requirement '{stable_id}': {e}"
-            ))
-        })?;
-
-        // PolicyParameter.requirement_id must reference the original stable_id for
-        // traceability. The OSCAL-safe prefixed id is only for parameter ID generation.
-        if requirement_id != stable_id {
-            for param in &mut params {
-                param.requirement_id.clone_from(&stable_id);
-            }
-        }
-
-        let param_count = params.len();
-        *total_params += param_count;
-
-        if param_count > 0 {
-            tracing::debug!(
-                requirement_id = %stable_id,
-                param_count,
-                "Parameters extracted from requirement"
-            );
-        }
-
-        req.text = updated_text;
-        req.parameters = params;
+        *total_params += extract_requirement_parameters(req)?;
     }
 
     for child in &mut section.children {
@@ -237,6 +185,56 @@ fn extract_section_parameters(
     }
 
     Ok(())
+}
+
+fn extract_requirement_parameters(
+    req: &mut crate::model::PolicyRequirement,
+) -> Result<usize, ForgeError> {
+    let Some(stable_id) = req.stable_id.clone() else {
+        return Ok(0);
+    };
+
+    if req.text.is_empty() {
+        return Ok(0);
+    }
+
+    if !req.parameters.is_empty() {
+        return Ok(req.parameters.len());
+    }
+
+    let requirement_id = if stable_id.starts_with(|c: char| c.is_alphabetic() || c == '_') {
+        stable_id.clone()
+    } else {
+        format!("p{stable_id}")
+    };
+
+    let (updated_text, mut params) = extract_parameters_from_text(&requirement_id, &req.text)
+        .map_err(|e| {
+            ForgeError::ParameterExtraction(format!(
+                "Failed to extract parameters from requirement '{stable_id}': {e}"
+            ))
+        })?;
+
+    if requirement_id != stable_id {
+        for param in &mut params {
+            param.requirement_id.clone_from(&stable_id);
+        }
+    }
+
+    let param_count = params.len();
+
+    if param_count > 0 {
+        tracing::debug!(
+            requirement_id = %stable_id,
+            param_count,
+            "Parameters extracted from requirement"
+        );
+    }
+
+    req.text = updated_text;
+    req.parameters = params;
+
+    Ok(param_count)
 }
 
 /// Map a `ConstraintType` to its lowercase string label for OSCAL descriptions.

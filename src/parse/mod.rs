@@ -130,7 +130,6 @@ pub fn extract_sections(content: &str) -> Result<Vec<SectionNode>, ForgeError> {
                     children: Vec::new(),
                 };
 
-                // Pop stack until top has level < current_level
                 pop_to_parent(&mut stack, &mut roots, current_level);
 
                 stack.push((current_level, node));
@@ -141,38 +140,23 @@ pub fn extract_sections(content: &str) -> Result<Vec<SectionNode>, ForgeError> {
             Event::Code(code) if in_heading => {
                 title_buf.push_str(&code);
             }
-            // Body text accumulation (between headings, per R-6)
-            Event::Text(text) if !in_heading => {
-                if let Some((_, node)) = stack.last_mut() {
-                    node.body_text.get_or_insert_with(String::new).push_str(&text);
-                }
+            Event::Text(ref text) if !in_heading => {
+                accumulate_body_text(&Event::Text(text.clone()), &mut stack);
             }
-            Event::Code(code) if !in_heading => {
-                if let Some((_, node)) = stack.last_mut() {
-                    let body = node.body_text.get_or_insert_with(String::new);
-                    body.push('`');
-                    body.push_str(&code);
-                    body.push('`');
-                }
+            Event::Code(ref code) if !in_heading => {
+                accumulate_body_text(&Event::Code(code.clone()), &mut stack);
             }
-            Event::SoftBreak | Event::HardBreak if !in_heading => {
-                if let Some((_, node)) = stack.last_mut() {
-                    node.body_text.get_or_insert_with(String::new).push('\n');
-                }
-            }
-            Event::End(TagEnd::Paragraph | TagEnd::Item | TagEnd::List(_)) if !in_heading => {
-                if let Some((_, node)) = stack.last_mut() {
-                    let body = node.body_text.get_or_insert_with(String::new);
-                    if !body.is_empty() && !body.ends_with('\n') {
-                        body.push('\n');
-                    }
-                }
+            Event::SoftBreak
+            | Event::HardBreak
+            | Event::End(TagEnd::Paragraph | TagEnd::Item | TagEnd::List(_))
+                if !in_heading =>
+            {
+                accumulate_body_text(&event, &mut stack);
             }
             _ => {}
         }
     }
 
-    // Drain remaining stack
     drain_stack(&mut stack, &mut roots);
 
     for root in &mut roots {
@@ -180,6 +164,33 @@ pub fn extract_sections(content: &str) -> Result<Vec<SectionNode>, ForgeError> {
     }
 
     Ok(roots)
+}
+
+fn accumulate_body_text(event: &Event<'_>, stack: &mut [(u8, SectionNode)]) {
+    let Some((_, node)) = stack.last_mut() else {
+        return;
+    };
+    match event {
+        Event::Text(text) => {
+            node.body_text.get_or_insert_with(String::new).push_str(text);
+        }
+        Event::Code(code) => {
+            let body = node.body_text.get_or_insert_with(String::new);
+            body.push('`');
+            body.push_str(code);
+            body.push('`');
+        }
+        Event::SoftBreak | Event::HardBreak => {
+            node.body_text.get_or_insert_with(String::new).push('\n');
+        }
+        Event::End(TagEnd::Paragraph | TagEnd::Item | TagEnd::List(_)) => {
+            let body = node.body_text.get_or_insert_with(String::new);
+            if !body.is_empty() && !body.ends_with('\n') {
+                body.push('\n');
+            }
+        }
+        _ => {}
+    }
 }
 
 /// Pop stack entries with level >= `current_level`, attaching them to their

@@ -35,7 +35,6 @@ fn compare_values(
 ) {
     match (expected, actual) {
         (Value::Object(exp_map), Value::Object(act_map)) => {
-            // Keys in expected but missing in actual
             for key in exp_map.keys() {
                 let child_path = format!("{path}/{key}");
                 match act_map.get(key) {
@@ -43,61 +42,32 @@ fn compare_values(
                         compare_values(&exp_map[key], act_val, &child_path, rules, divergences);
                     }
                     None => {
-                        // EC-2: empty array vs absent key is Acceptable
-                        if exp_map[key].as_array().is_some_and(Vec::is_empty) {
-                            divergences.push(Divergence {
-                                json_path: child_path,
-                                expected: exp_map[key].clone(),
-                                actual: Value::Null,
-                                classification: DivergenceClass::Acceptable,
-                                description: "Empty array in expected vs absent key in actual"
-                                    .to_string(),
-                                resolution: None,
-                            });
-                        } else {
-                            divergences.push(Divergence {
-                                json_path: child_path,
-                                expected: exp_map[key].clone(),
-                                actual: Value::Null,
-                                classification: DivergenceClass::ForgeFix,
-                                description: "Key present in expected but absent in actual"
-                                    .to_string(),
-                                resolution: None,
-                            });
-                        }
+                        divergences.push(missing_key_divergence(
+                            child_path,
+                            exp_map[key].clone(),
+                            Value::Null,
+                            &exp_map[key],
+                            "Empty array in expected vs absent key in actual",
+                            "Key present in expected but absent in actual",
+                        ));
                     }
                 }
             }
-            // Keys in actual but missing in expected
             for key in act_map.keys() {
                 if !exp_map.contains_key(key) {
                     let child_path = format!("{path}/{key}");
-                    // Absent key in expected vs empty array in actual is also Acceptable
-                    if act_map[key].as_array().is_some_and(Vec::is_empty) {
-                        divergences.push(Divergence {
-                            json_path: child_path,
-                            expected: Value::Null,
-                            actual: act_map[key].clone(),
-                            classification: DivergenceClass::Acceptable,
-                            description: "Absent key in expected vs empty array in actual"
-                                .to_string(),
-                            resolution: None,
-                        });
-                    } else {
-                        divergences.push(Divergence {
-                            json_path: child_path,
-                            expected: Value::Null,
-                            actual: act_map[key].clone(),
-                            classification: DivergenceClass::ForgeFix,
-                            description: "Extra key in actual not present in expected".to_string(),
-                            resolution: None,
-                        });
-                    }
+                    divergences.push(missing_key_divergence(
+                        child_path,
+                        Value::Null,
+                        act_map[key].clone(),
+                        &act_map[key],
+                        "Absent key in expected vs empty array in actual",
+                        "Extra key in actual not present in expected",
+                    ));
                 }
             }
         }
         (Value::Array(exp_arr), Value::Array(act_arr)) => {
-            // Determine if this is an unordered array path
             let key_name = path.rsplit('/').next().unwrap_or("");
             if rules.unordered_array_paths.contains(key_name) {
                 compare_unordered_array(exp_arr, act_arr, path, rules, divergences);
@@ -122,6 +92,23 @@ fn compare_values(
             }
         }
     }
+}
+
+fn missing_key_divergence(
+    json_path: String,
+    expected: Value,
+    actual: Value,
+    present_value: &Value,
+    empty_array_desc: &str,
+    non_empty_desc: &str,
+) -> Divergence {
+    let is_empty_array = present_value.as_array().is_some_and(Vec::is_empty);
+    let (classification, description) = if is_empty_array {
+        (DivergenceClass::Acceptable, empty_array_desc.to_string())
+    } else {
+        (DivergenceClass::ForgeFix, non_empty_desc.to_string())
+    };
+    Divergence { json_path, expected, actual, classification, description, resolution: None }
 }
 
 fn compare_ordered_array(
@@ -217,49 +204,63 @@ fn find_matching_element(
     act_arr: &[Value],
     already_matched: &[bool],
 ) -> Option<usize> {
-    // 1. Try exact equality first (handles reordered links, duplicate identity props)
-    for (i, act_elem) in act_arr.iter().enumerate() {
-        if already_matched[i] {
-            continue;
-        }
-        if act_elem == exp_elem {
-            return Some(i);
-        }
+    if let Some(i) = find_by_exact_equality(exp_elem, act_arr, already_matched) {
+        return Some(i);
     }
 
-    // 2. Try uuid match
     if let Some(exp_uuid) = exp_elem.get("uuid").and_then(Value::as_str) {
-        for (i, act_elem) in act_arr.iter().enumerate() {
-            if already_matched[i] {
-                continue;
-            }
-            if act_elem.get("uuid").and_then(Value::as_str) == Some(exp_uuid) {
-                return Some(i);
-            }
-        }
-        return None; // uuid specified but not found
+        return find_by_uuid(exp_uuid, act_arr, already_matched);
     }
 
-    // 3. Try name+ns composite match (for props)
     if let Some(exp_name) = exp_elem.get("name").and_then(Value::as_str) {
         let exp_ns = exp_elem.get("ns").and_then(Value::as_str);
-        for (i, act_elem) in act_arr.iter().enumerate() {
-            if already_matched[i] {
-                continue;
-            }
-            let act_name = act_elem.get("name").and_then(Value::as_str);
-            let act_ns = act_elem.get("ns").and_then(Value::as_str);
-            if act_name == Some(exp_name) && act_ns == exp_ns {
-                return Some(i);
-            }
-        }
-        return None; // name specified but not found
+        return find_by_name_ns(exp_name, exp_ns, act_arr, already_matched);
     }
 
-    // 4. Positional fallback: match first unmatched element.
-    // Note: elements without identity keys or exact match may be paired arbitrarily,
-    // producing confusing (but never silently acceptable) divergence descriptions.
-    act_arr.iter().enumerate().map(|(i, _)| i).find(|&i| !already_matched[i])
+    find_positional_fallback(already_matched)
+}
+
+fn find_by_exact_equality(
+    exp_elem: &Value,
+    act_arr: &[Value],
+    already_matched: &[bool],
+) -> Option<usize> {
+    act_arr
+        .iter()
+        .enumerate()
+        .find(|(i, act_elem)| !already_matched[*i] && *act_elem == exp_elem)
+        .map(|(i, _)| i)
+}
+
+fn find_by_uuid(exp_uuid: &str, act_arr: &[Value], already_matched: &[bool]) -> Option<usize> {
+    act_arr
+        .iter()
+        .enumerate()
+        .find(|(i, act_elem)| {
+            !already_matched[*i] && act_elem.get("uuid").and_then(Value::as_str) == Some(exp_uuid)
+        })
+        .map(|(i, _)| i)
+}
+
+fn find_by_name_ns(
+    exp_name: &str,
+    exp_ns: Option<&str>,
+    act_arr: &[Value],
+    already_matched: &[bool],
+) -> Option<usize> {
+    act_arr
+        .iter()
+        .enumerate()
+        .find(|(i, act_elem)| {
+            !already_matched[*i]
+                && act_elem.get("name").and_then(Value::as_str) == Some(exp_name)
+                && act_elem.get("ns").and_then(Value::as_str) == exp_ns
+        })
+        .map(|(i, _)| i)
+}
+
+fn find_positional_fallback(already_matched: &[bool]) -> Option<usize> {
+    already_matched.iter().position(|matched| !matched)
 }
 
 fn summarize_value(v: &Value) -> String {
