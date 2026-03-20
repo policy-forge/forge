@@ -140,13 +140,9 @@ pub fn extract_sections(content: &str) -> Result<Vec<SectionNode>, ForgeError> {
             Event::Code(code) if in_heading => {
                 title_buf.push_str(&code);
             }
-            Event::Text(ref text) if !in_heading => {
-                accumulate_body_text(&Event::Text(text.clone()), &mut stack);
-            }
-            Event::Code(ref code) if !in_heading => {
-                accumulate_body_text(&Event::Code(code.clone()), &mut stack);
-            }
-            Event::SoftBreak
+            Event::Text(_)
+            | Event::Code(_)
+            | Event::SoftBreak
             | Event::HardBreak
             | Event::End(TagEnd::Paragraph | TagEnd::Item | TagEnd::List(_))
                 if !in_heading =>
