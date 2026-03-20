@@ -16,7 +16,6 @@ Cargo.lock
 
 # === Testing ===
 **/mutants.out*/
-lcov.info
 tarpaulin-report.html
 coverage/
 
