@@ -420,6 +420,22 @@ fn test_m11_no_arbitrary_remarks() {
 // User Story 2 — Component E2E
 // =========================================================================
 
+fn collect_all_prose(catalog_json: &serde_json::Value) -> Vec<String> {
+    let groups = catalog_json["catalog"]["groups"].as_array().expect("catalog should have groups");
+    groups
+        .iter()
+        .flat_map(|group| {
+            group["controls"].as_array().into_iter().flatten().flat_map(|control| {
+                control["parts"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|part| part["prose"].as_str().map(String::from))
+            })
+        })
+        .collect()
+}
+
 /// T017 [US2] M-2, AC-2: Atomize compound statements into separate controls.
 #[test]
 fn test_m2_atomize_compound_statements() {
@@ -428,24 +444,7 @@ fn test_m2_atomize_compound_statements() {
     assert!(input.exists(), "full_policy.md fixture should exist");
 
     let json = convert_catalog_json(input);
-
-    let groups = json["catalog"]["groups"].as_array().expect("catalog should have groups");
-
-    // Collect all control prose
-    let mut all_prose: Vec<String> = Vec::new();
-    for group in groups {
-        if let Some(controls) = group["controls"].as_array() {
-            for control in controls {
-                if let Some(parts) = control["parts"].as_array() {
-                    for part in parts {
-                        if let Some(prose) = part["prose"].as_str() {
-                            all_prose.push(prose.to_string());
-                        }
-                    }
-                }
-            }
-        }
-    }
+    let all_prose = collect_all_prose(&json);
 
     // full_policy.md line 39: "Systems must log all authentication attempts and must log all privilege escalation events"
     // This compound statement should be atomized into separate controls

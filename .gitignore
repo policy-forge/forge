@@ -39,6 +39,9 @@ coverage/
 # === Claude Code ===
 .claude/settings.local.json
 
+# === SonarQube Issues ===
+.sq/
+
 # === Agent Brain ===
 .agent-brain/
 .rusty-brain/

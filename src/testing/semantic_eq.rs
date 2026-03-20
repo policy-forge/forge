@@ -56,73 +56,98 @@ fn escape_json_pointer_token(token: &str) -> String {
 fn compare_values(expected: &Value, actual: &Value, path: &str, diffs: &mut Vec<EquivalenceDiff>) {
     match (expected, actual) {
         (Value::Object(exp_map), Value::Object(act_map)) => {
-            // Check for missing keys (in expected but not in actual)
-            for key in exp_map.keys() {
-                let child_path = format!("{path}/{}", escape_json_pointer_token(key));
-                if let Some(act_val) = act_map.get(key) {
-                    compare_values(&exp_map[key], act_val, &child_path, diffs);
-                } else {
-                    diffs.push(EquivalenceDiff {
-                        path: child_path,
-                        description: format!("missing key \"{key}\""),
-                        expected: Some(format_value(&exp_map[key])),
-                        actual: None,
-                    });
-                }
-            }
-            // Check for extra keys (in actual but not in expected)
-            for key in act_map.keys() {
-                if !exp_map.contains_key(key) {
-                    let child_path = format!("{path}/{}", escape_json_pointer_token(key));
-                    diffs.push(EquivalenceDiff {
-                        path: child_path,
-                        description: format!("extra key \"{key}\""),
-                        expected: None,
-                        actual: Some(format_value(&act_map[key])),
-                    });
-                }
-            }
+            compare_objects(exp_map, act_map, path, diffs);
         }
         (Value::Array(exp_arr), Value::Array(act_arr)) => {
-            if exp_arr.len() != act_arr.len() {
-                diffs.push(EquivalenceDiff {
-                    path: path.to_string(),
-                    description: format!(
-                        "array length mismatch: expected {}, got {}",
-                        exp_arr.len(),
-                        act_arr.len()
-                    ),
-                    expected: Some(exp_arr.len().to_string()),
-                    actual: Some(act_arr.len().to_string()),
-                });
-            }
-            let min_len = exp_arr.len().min(act_arr.len());
-            for i in 0..min_len {
-                let child_path = format!("{path}/{i}");
-                compare_values(&exp_arr[i], &act_arr[i], &child_path, diffs);
-            }
+            compare_arrays(exp_arr, act_arr, path, diffs);
         }
         _ => {
-            // Type mismatch or value mismatch for primitives (String, Number, Bool, Null)
-            if expected != actual {
-                let description = if discriminant_name(expected) == discriminant_name(actual) {
-                    "value mismatch".to_string()
-                } else {
-                    format!(
-                        "type mismatch: expected {}, got {}",
-                        discriminant_name(expected),
-                        discriminant_name(actual)
-                    )
-                };
-                diffs.push(EquivalenceDiff {
-                    path: path.to_string(),
-                    description,
-                    expected: Some(format_value(expected)),
-                    actual: Some(format_value(actual)),
-                });
-            }
+            compare_primitives(expected, actual, path, diffs);
         }
     }
+}
+
+fn compare_objects(
+    exp_map: &serde_json::Map<String, Value>,
+    act_map: &serde_json::Map<String, Value>,
+    path: &str,
+    diffs: &mut Vec<EquivalenceDiff>,
+) {
+    for key in exp_map.keys() {
+        let child_path = format!("{path}/{}", escape_json_pointer_token(key));
+        if let Some(act_val) = act_map.get(key) {
+            compare_values(&exp_map[key], act_val, &child_path, diffs);
+        } else {
+            diffs.push(EquivalenceDiff {
+                path: child_path,
+                description: format!("missing key \"{key}\""),
+                expected: Some(format_value(&exp_map[key])),
+                actual: None,
+            });
+        }
+    }
+    for key in act_map.keys() {
+        if !exp_map.contains_key(key) {
+            let child_path = format!("{path}/{}", escape_json_pointer_token(key));
+            diffs.push(EquivalenceDiff {
+                path: child_path,
+                description: format!("extra key \"{key}\""),
+                expected: None,
+                actual: Some(format_value(&act_map[key])),
+            });
+        }
+    }
+}
+
+fn compare_arrays(
+    exp_arr: &[Value],
+    act_arr: &[Value],
+    path: &str,
+    diffs: &mut Vec<EquivalenceDiff>,
+) {
+    if exp_arr.len() != act_arr.len() {
+        diffs.push(EquivalenceDiff {
+            path: path.to_string(),
+            description: format!(
+                "array length mismatch: expected {}, got {}",
+                exp_arr.len(),
+                act_arr.len()
+            ),
+            expected: Some(exp_arr.len().to_string()),
+            actual: Some(act_arr.len().to_string()),
+        });
+    }
+    let min_len = exp_arr.len().min(act_arr.len());
+    for i in 0..min_len {
+        let child_path = format!("{path}/{i}");
+        compare_values(&exp_arr[i], &act_arr[i], &child_path, diffs);
+    }
+}
+
+fn compare_primitives(
+    expected: &Value,
+    actual: &Value,
+    path: &str,
+    diffs: &mut Vec<EquivalenceDiff>,
+) {
+    if expected == actual {
+        return;
+    }
+    let description = if discriminant_name(expected) == discriminant_name(actual) {
+        "value mismatch".to_string()
+    } else {
+        format!(
+            "type mismatch: expected {}, got {}",
+            discriminant_name(expected),
+            discriminant_name(actual)
+        )
+    };
+    diffs.push(EquivalenceDiff {
+        path: path.to_string(),
+        description,
+        expected: Some(format_value(expected)),
+        actual: Some(format_value(actual)),
+    });
 }
 
 /// Return a human-readable type name for a `serde_json::Value` variant.

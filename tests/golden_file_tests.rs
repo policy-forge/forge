@@ -90,31 +90,30 @@ fn normalize_for_comparison(json: &Value) -> Value {
     normalize_value(json, None)
 }
 
+fn normalize_string_value(s: &str, parent_key: Option<&str>) -> Value {
+    if parent_key == Some("last-modified") {
+        return Value::String(NORMALIZED_TIMESTAMP.to_string());
+    }
+    if UUID_RE.is_match(s) {
+        return Value::String(NORMALIZED_UUID.to_string());
+    }
+    if parent_key == Some("href") {
+        let (path_part, fragment) = match s.find('#') {
+            Some(idx) => (&s[..idx], &s[idx..]),
+            None => (s, ""),
+        };
+        if Path::new(path_part).is_absolute() {
+            return Value::String(format!("{NORMALIZED_PATH}{fragment}"));
+        }
+    }
+    Value::String(s.to_string())
+}
+
 /// Recursively normalize a JSON value, with optional parent key context.
 fn normalize_value(value: &Value, parent_key: Option<&str>) -> Value {
     match value {
-        Value::String(s) => {
-            if parent_key == Some("last-modified") {
-                Value::String(NORMALIZED_TIMESTAMP.to_string())
-            } else if UUID_RE.is_match(s) {
-                Value::String(NORMALIZED_UUID.to_string())
-            } else if parent_key == Some("href") {
-                // Normalize absolute path hrefs (Unix and Windows): keep #fragment, replace path
-                let (path_part, fragment) = match s.find('#') {
-                    Some(idx) => (&s[..idx], &s[idx..]),
-                    None => (s.as_str(), ""),
-                };
-                if Path::new(path_part).is_absolute() {
-                    Value::String(format!("{NORMALIZED_PATH}{fragment}"))
-                } else {
-                    value.clone()
-                }
-            } else {
-                value.clone()
-            }
-        }
+        Value::String(s) => normalize_string_value(s, parent_key),
         Value::Object(map) => {
-            // Check if this is a prop object with name="source-file" — normalize its value
             let is_source_file_prop =
                 map.get("name").and_then(Value::as_str).is_some_and(|n| n == "source-file");
 
@@ -151,53 +150,47 @@ struct AccuracyReport {
     missed_requirements: Vec<String>,
 }
 
+fn extract_catalog_control_ids(json: &Value) -> Vec<String> {
+    let mut ids = Vec::new();
+    let groups = json.pointer("/catalog/groups").and_then(Value::as_array);
+    for group in groups.into_iter().flatten() {
+        let controls = group.get("controls").and_then(Value::as_array);
+        for control in controls.into_iter().flatten() {
+            if let Some(id) = control.get("id").and_then(Value::as_str) {
+                ids.push(id.to_string());
+            }
+        }
+    }
+    ids
+}
+
+fn extract_component_control_ids(json: &Value) -> Vec<String> {
+    let mut ids = Vec::new();
+    let components = json.pointer("/component-definition/components").and_then(Value::as_array);
+    for component in components.into_iter().flatten() {
+        let impls = component.get("control-implementations").and_then(Value::as_array);
+        for ci in impls.into_iter().flatten() {
+            let reqs = ci.get("implemented-requirements").and_then(Value::as_array);
+            for req in reqs.into_iter().flatten() {
+                if let Some(id) = req.get("control-id").and_then(Value::as_str) {
+                    ids.push(id.to_string());
+                }
+            }
+        }
+    }
+    ids
+}
+
 /// Extract control IDs from an OSCAL JSON value based on strategy.
 ///
 /// - Catalog: `$.catalog.groups[*].controls[*].id`
 /// - Component: `$.component-definition.components[*].control-implementations[*].implemented-requirements[*].control-id`
 fn extract_control_ids(json: &Value, strategy: &str) -> Vec<String> {
-    let mut ids = Vec::new();
     match strategy {
-        "catalog" => {
-            if let Some(groups) = json.pointer("/catalog/groups").and_then(Value::as_array) {
-                for group in groups {
-                    if let Some(controls) = group.get("controls").and_then(Value::as_array) {
-                        for control in controls {
-                            if let Some(id) = control.get("id").and_then(Value::as_str) {
-                                ids.push(id.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        "component" => {
-            if let Some(components) =
-                json.pointer("/component-definition/components").and_then(Value::as_array)
-            {
-                for component in components {
-                    if let Some(impls) =
-                        component.get("control-implementations").and_then(Value::as_array)
-                    {
-                        for ci in impls {
-                            if let Some(reqs) =
-                                ci.get("implemented-requirements").and_then(Value::as_array)
-                            {
-                                for req in reqs {
-                                    if let Some(id) = req.get("control-id").and_then(Value::as_str)
-                                    {
-                                        ids.push(id.to_string());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        _ => {}
+        "catalog" => extract_catalog_control_ids(json),
+        "component" => extract_component_control_ids(json),
+        _ => Vec::new(),
     }
-    ids
 }
 
 /// Measure extraction accuracy by comparing control IDs in expected vs actual.
