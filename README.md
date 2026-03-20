@@ -4,6 +4,12 @@
 
 Framework for OSCAL Risk & Governance Execution
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=policy-forge_forge&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=policy-forge_forge)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=policy-forge_forge&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=policy-forge_forge)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=policy-forge_forge&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=policy-forge_forge)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=policy-forge_forge&metric=coverage)](https://sonarcloud.io/summary/new_code?id=policy-forge_forge)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=policy-forge_forge&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=policy-forge_forge)
+
 FORGE is a high-performance Rust CLI designed for the Agent-Native software era. It bridges the gap between human-written security policies and autonomous execution by converting Markdown governance into OSCAL (Open Security Controls Assessment Language)—the industry standard for machine-readable compliance.
 
 ## 🚀 Why FORGE?
