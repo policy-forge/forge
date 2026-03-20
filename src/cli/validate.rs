@@ -85,7 +85,7 @@ pub fn execute(
     if report.is_valid() {
         let rendered = match format {
             ValidateOutputFormat::Text => {
-                format!("Valid: {model_type} artifact passes all validation.")
+                format!("Valid: {model_type} artifact passes all validation.\n")
             }
             ValidateOutputFormat::Json => validate::report::render_json_report(&report),
         };
@@ -96,7 +96,11 @@ pub fn execute(
             ValidateOutputFormat::Text => validate::report::render_text_report(&report),
             ValidateOutputFormat::Json => validate::report::render_json_report(&report),
         };
-        crate::cli::output::write_output(&rendered, output)?;
+        if let Some(path) = output {
+            crate::cli::output::write_output(&rendered, Some(path))?;
+        } else {
+            eprintln!("{rendered}");
+        }
         Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s) in {model_type} artifact",
             report.errors().len()
@@ -116,10 +120,6 @@ pub fn execute(
 /// * `ForgeError::OscalCliNotFunctional` — oscal-cli found but broken (exit 4)
 /// * `ForgeError::RoundTripFailed` — unresolved divergences found (exit 1)
 /// * `ForgeError::Validation` — input file issues
-///
-/// # Panics
-///
-/// Panics if oscal-cli is detected as functional but has no executable path (invariant violation).
 pub fn execute_round_trip(
     input: &Path,
     format: &ValidateOutputFormat,
@@ -144,7 +144,19 @@ pub fn execute_round_trip(
         _ => ForgeError::Io(e),
     })?;
 
-    // Step 2: Read and parse original JSON
+    // Step 2: Check file size (SEC-3)
+    validate::check_file_size(&canonical_input).map_err(|e| match e {
+        ValidateError::FileTooLarge { size_mb, limit_mb } => ForgeError::Validation(format!(
+            "Artifact file is too large ({size_mb:.1}MB, limit: {limit_mb}MB)"
+        )),
+        ValidateError::FileRead { path, source } => ForgeError::Validation(format!(
+            "Failed to read artifact file '{}': {source}",
+            path.display()
+        )),
+        other => ForgeError::Validation(other.to_string()),
+    })?;
+
+    // Step 3: Read and parse original JSON
     let content = std::fs::read_to_string(&canonical_input).map_err(|e| {
         ForgeError::Validation(format!("Failed to read artifact file '{}': {e}", input.display()))
     })?;
@@ -181,9 +193,16 @@ pub fn execute_round_trip(
         "Detected oscal-cli for round-trip validation"
     );
 
-    let invoker = ProcessInvoker::new(
-        cli_info.executable_path.expect("functional oscal-cli must have a path"),
-    );
+    let invoker = match cli_info.executable_path {
+        Some(path) => ProcessInvoker::new(path),
+        None => {
+            return Err(ForgeError::OscalCliNotFunctional {
+                path: std::path::PathBuf::from("oscal-cli"),
+                detail: "oscal-cli reported as functional but no executable path provided"
+                    .to_string(),
+            });
+        }
+    };
 
     // Step 4: Run round-trip chain in a temp directory
     let temp_dir = tempfile::tempdir().map_err(ForgeError::Io)?;
@@ -193,8 +212,12 @@ pub fn execute_round_trip(
 
     // Step 5: Parse round-tripped JSON and compare
     let rt_content = std::fs::read_to_string(&rt_json_path).map_err(ForgeError::Io)?;
-    let rt_json: serde_json::Value =
-        serde_json::from_str(&rt_content).map_err(|e| ForgeError::Validation(e.to_string()))?;
+    let rt_json: serde_json::Value = serde_json::from_str(&rt_content).map_err(|e| {
+        ForgeError::Validation(format!(
+            "round-tripped artifact parse failure for {}: {e}",
+            rt_json_path.display()
+        ))
+    })?;
 
     let rules = OscalComparisonRules::default();
     let divergences = compare_oscal_json(&original_json, &rt_json, "", &rules);
@@ -211,10 +234,22 @@ pub fn execute_round_trip(
         RoundTripResult { artifact_type, source_path: input.to_path_buf(), passed, divergences };
 
     // Step 7: Output results
+    output_round_trip_results(&result, unresolved_count, output, format)?;
+
+    if passed { Ok(()) } else { Err(ForgeError::RoundTripFailed(unresolved_count)) }
+}
+
+/// Write round-trip validation results to the appropriate output destination.
+fn output_round_trip_results(
+    result: &RoundTripResult,
+    unresolved_count: usize,
+    output: Option<&Path>,
+    format: &ValidateOutputFormat,
+) -> Result<(), ForgeError> {
     match output {
         Some(output_path) => {
-            write_divergence_log(&result, output_path)?;
-            if passed {
+            write_divergence_log(result, output_path)?;
+            if result.passed {
                 println!("PASS: round-trip validation succeeded (0 divergences)");
             } else {
                 eprintln!(
@@ -225,17 +260,16 @@ pub fn execute_round_trip(
         }
         None => match format {
             ValidateOutputFormat::Text => {
-                render_round_trip_text(&result, unresolved_count);
+                render_round_trip_text(result, unresolved_count);
             }
             ValidateOutputFormat::Json => {
-                let json = serde_json::to_string_pretty(&result)
-                    .unwrap_or_else(|e| format!("{{\"error\": \"{e}\"}}"));
+                let json = serde_json::to_string_pretty(result)
+                    .map_err(|e| ForgeError::Serialization(e.to_string()))?;
                 println!("{json}");
             }
         },
     }
-
-    if passed { Ok(()) } else { Err(ForgeError::RoundTripFailed(unresolved_count)) }
+    Ok(())
 }
 
 /// Render a human-readable round-trip validation summary to stdout/stderr.

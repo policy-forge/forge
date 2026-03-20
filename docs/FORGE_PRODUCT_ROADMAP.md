@@ -230,7 +230,7 @@ gantt
 | ID | Work Item | Sprint | Theme | Milestone | PRD Req | Size | Status | Parallel With |
 |----|-----------|--------|-------|-----------|---------|------|--------|---------------|
 | WI-36 | oscal-cli integration: profile resolution delegation | S-36 (Nov 3) | T-6 | MS-7 | W-3 | S | Done | WI-38, WI-40, WI-44 |
-| WI-37 | oscal-cli integration: round-trip validation (JSON→XML→JSON) | S-37 (Nov 10) | T-6 | MS-7 | — | S | Done | WI-38, WI-40, WI-44 |
+| WI-37 | oscal-cli integration: round-trip validation (JSON → XML → YAML → JSON) | S-37 (Nov 10) | T-6 | MS-7 | — | S | Done | WI-38, WI-40, WI-44 |
 | WI-38 | Traceability report: `forge trace` with source-to-OSCAL mapping | S-38 (Nov 17) | T-6 | MS-7 | S-6 | S | Done | WI-36, WI-40, WI-44 |
 | WI-39 | Traceability report: source text excerpts + line numbers | S-39 (Nov 24) | T-6 | MS-7 | S-6 | S | Done | WI-40, WI-44 |
 | WI-40 | Batch conversion: multiple documents in single invocation | S-40 (Dec 1) | T-6 | MS-7 | C-1 | S | Done | WI-36, WI-38, WI-41, WI-43, WI-44 |
