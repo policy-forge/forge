@@ -273,4 +273,41 @@ mod tests {
         let found = result.unwrap();
         assert!(found.ends_with("oscal-cli"));
     }
+
+    #[cfg(windows)]
+    #[test]
+    fn search_path_finds_exe_on_windows() {
+        use std::ffi::OsStr;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let bin_path = tmp.path().join("oscal-cli.exe");
+        std::fs::write(&bin_path, "placeholder").unwrap();
+
+        let path_var = OsStr::new(tmp.path().to_str().unwrap());
+        let extensions = vec![".exe".to_string(), ".bat".to_string(), ".cmd".to_string()];
+        let result = search_path_with(path_var, &extensions);
+
+        assert!(result.is_some());
+        let found = result.unwrap();
+        assert!(found.to_string_lossy().ends_with("oscal-cli.exe"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn search_path_finds_bat_wrapper_on_windows() {
+        use std::ffi::OsStr;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let bin_path = tmp.path().join("oscal-cli.bat");
+        std::fs::write(&bin_path, "@echo off\necho oscal-cli").unwrap();
+
+        let path_var = OsStr::new(tmp.path().to_str().unwrap());
+        // .exe first, then .bat — should still find .bat since .exe doesn't exist
+        let extensions = vec![".exe".to_string(), ".bat".to_string()];
+        let result = search_path_with(path_var, &extensions);
+
+        assert!(result.is_some());
+        let found = result.unwrap();
+        assert!(found.to_string_lossy().ends_with("oscal-cli.bat"));
+    }
 }

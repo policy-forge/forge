@@ -249,6 +249,19 @@ mod tests {
         assert_eq!(doc.lines[0].text, "symlinked content");
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn symlink_to_valid_md_is_followed() {
+        let dir = TempDir::new().unwrap();
+        let target = create_temp_md(&dir, "real.md", "symlinked content\n");
+        let link = dir.path().join("link.md");
+        std::os::windows::fs::symlink_file(&target, &link).unwrap();
+
+        let doc = ingest_file(&link, 10 * 1_048_576).unwrap();
+        assert_eq!(doc.lines.len(), 1);
+        assert_eq!(doc.lines[0].text, "symlinked content");
+    }
+
     #[test]
     fn file_path_with_spaces_is_handled() {
         let dir = TempDir::new().unwrap();
