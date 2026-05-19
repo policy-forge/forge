@@ -61,6 +61,9 @@ jobs:
       - name: Generate test coverage (LCOV)
         run: cargo llvm-cov --lcov --output-path lcov.info
 
+      - name: Fix LCOV source paths
+        run: sed -i "s|SF:$PWD/|SF:|g" lcov.info
+
       - name: Analyze with SonarCloud
 
         # You can pin the exact commit or the version.
