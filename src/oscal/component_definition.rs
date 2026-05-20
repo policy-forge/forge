@@ -1,4 +1,4 @@
-//! OSCAL Component Definition builder: maps [`PolicyDocument`] to OSCAL
+//! OSCAL Component Definition builder: maps [`crate::model::PolicyDocument`] to OSCAL
 //! Component Definition JSON.
 //!
 //! Converts the domain model to an OSCAL Component Definition structure

@@ -220,11 +220,20 @@ pub fn run_catalog_pipeline(
     if let Some(href) = import_ssp_href {
         let control_ids =
             crate::oscal::catalog::collect_control_ids_from_catalog(&envelope.catalog);
-        let ap_envelope = crate::oscal::build_assessment_plan(
+        // Build the WI-41 skeleton with reviewed-controls
+        let mut ap_envelope = crate::oscal::build_assessment_plan(
             &control_ids,
             href,
             &envelope.catalog.metadata.title,
         )?;
+        // WI-42: Wire in assessment tasks and subjects
+        let requirements = collect_all_requirements(&doc_with_ids);
+        let tasks = crate::oscal::generate_assessment_tasks(&requirements);
+        let subjects = crate::oscal::create_assessment_subjects(
+            None, // Catalog pipeline: no component definition UUID available
+            &envelope.catalog.metadata.title,
+        );
+        crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects);
         let ap_json = serde_json::to_string_pretty(&ap_envelope)
             .map_err(|e| ForgeError::Serialization(e.to_string()))?;
         let filename = derive_ap_filename(input_path);
@@ -240,6 +249,28 @@ fn derive_ap_filename(input_path: &Path) -> String {
     ap_path
         .file_name()
         .map_or_else(|| "assessment-plan.json".to_owned(), |f| f.to_string_lossy().into_owned())
+}
+
+/// Recursively collect all PolicyRequirements from a PolicyDocument's section tree.
+///
+/// Traverses sections in depth-first order, collecting owned clones of every
+/// requirement. Used to feed `generate_assessment_tasks` at the end of catalog
+/// and component pipelines.
+fn collect_all_requirements(doc: &PolicyDocument) -> Vec<crate::model::PolicyRequirement> {
+    fn collect_section(
+        section: &crate::model::PolicySection,
+        out: &mut Vec<crate::model::PolicyRequirement>,
+    ) {
+        out.extend(section.requirements.iter().cloned());
+        for child in &section.children {
+            collect_section(child, out);
+        }
+    }
+    let mut reqs = Vec::new();
+    for section in &doc.sections {
+        collect_section(section, &mut reqs);
+    }
+    reqs
 }
 
 /// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize.
@@ -342,11 +373,20 @@ pub fn run_component_pipeline(
     if let Some(href) = import_ssp_href {
         let control_ids =
             crate::oscal::component_definition::collect_control_ids_from_component_def(&envelope);
-        let ap_envelope = crate::oscal::build_assessment_plan(
+        // Build the WI-41 skeleton with reviewed-controls
+        let mut ap_envelope = crate::oscal::build_assessment_plan(
             &control_ids,
             href,
             &envelope.component_definition.metadata.title,
         )?;
+        // WI-42: Wire in assessment tasks and subjects
+        let requirements = collect_all_requirements(&doc_with_ids);
+        let tasks = crate::oscal::generate_assessment_tasks(&requirements);
+        let subjects = crate::oscal::create_assessment_subjects(
+            Some(&envelope.component_definition.uuid),
+            &envelope.component_definition.metadata.title,
+        );
+        crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects);
         let ap_json = serde_json::to_string_pretty(&ap_envelope)
             .map_err(|e| ForgeError::Serialization(e.to_string()))?;
         let filename = derive_ap_filename(input_path);

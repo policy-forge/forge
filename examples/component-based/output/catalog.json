@@ -1,0 +1,1161 @@
+{
+  "catalog": {
+    "uuid": "a2e32b37-b8c7-4b70-9a9f-fe4e29ed3a2f",
+    "metadata": {
+      "title": "Component-Based Security Policy",
+      "last-modified": "2026-05-19T01:28:13.183544+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-component-based-security-policy-version-1-0-0-author-security-engineering-team-date-2026-05-18",
+        "title": "title: \"Component-Based Security Policy\"version: \"1.0.0\"author: \"Security Engineering Team\"date: \"2026-05-18\""
+      },
+      {
+        "id": "component-based-security-policy",
+        "title": "Component-Based Security Policy",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "AC-1: Authentication"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-CSP-001",
+            "title": "The application component SHALL enforce multi-factor authentication for all user logins",
+            "links": [
+              {
+                "href": "policy.md#line=16",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-001_smt",
+                "name": "statement",
+                "prose": "The application component SHALL enforce multi-factor authentication for all user logins"
+              },
+              {
+                "id": "POL-CSP-001_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL enforce multi-factor authentication for all user logins\nThe application component SHALL implement session tokens with a maximum lifetime of 8 hours\nUsers SHALL be locked out after 5 consecutive failed authentication attempts"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-1: Authentication"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "16"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-002",
+            "title": "The application component SHALL implement session tokens with a maximum lifetime of 8 hours",
+            "links": [
+              {
+                "href": "policy.md#line=17",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-002_smt",
+                "name": "statement",
+                "prose": "The application component SHALL implement session tokens with a maximum lifetime of 8 hours"
+              },
+              {
+                "id": "POL-CSP-002_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL enforce multi-factor authentication for all user logins\nThe application component SHALL implement session tokens with a maximum lifetime of 8 hours\nUsers SHALL be locked out after 5 consecutive failed authentication attempts"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-1: Authentication"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "17"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-003",
+            "title": "Users SHALL be locked out after 5 consecutive failed authentication attempts",
+            "links": [
+              {
+                "href": "policy.md#line=18",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-003_smt",
+                "name": "statement",
+                "prose": "Users SHALL be locked out after 5 consecutive failed authentication attempts"
+              },
+              {
+                "id": "POL-CSP-003_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL enforce multi-factor authentication for all user logins\nThe application component SHALL implement session tokens with a maximum lifetime of 8 hours\nUsers SHALL be locked out after 5 consecutive failed authentication attempts"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-1: Authentication"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "18"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-004",
+            "title": "The application component SHALL enforce role-based access control (RBAC) with at least three roles: admin, editor, and v...",
+            "links": [
+              {
+                "href": "policy.md#line=22",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-004_smt",
+                "name": "statement",
+                "prose": "The application component SHALL enforce role-based access control (RBAC) with at least three roles: admin, editor, and viewer"
+              },
+              {
+                "id": "POL-CSP-004_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL enforce role-based access control (RBAC) with at least three roles: admin, editor, and viewer\nThe application component SHALL validate authorization on every API request\nAdministrative functions SHALL require an additional approval workflow"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-2: Authorization"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "22"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-005",
+            "title": "The application component SHALL validate authorization on every API request",
+            "links": [
+              {
+                "href": "policy.md#line=23",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-005_smt",
+                "name": "statement",
+                "prose": "The application component SHALL validate authorization on every API request"
+              },
+              {
+                "id": "POL-CSP-005_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL enforce role-based access control (RBAC) with at least three roles: admin, editor, and viewer\nThe application component SHALL validate authorization on every API request\nAdministrative functions SHALL require an additional approval workflow"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-2: Authorization"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "23"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-006",
+            "title": "Administrative functions SHALL require an additional approval workflow",
+            "links": [
+              {
+                "href": "policy.md#line=24",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-006_smt",
+                "name": "statement",
+                "prose": "Administrative functions SHALL require an additional approval workflow"
+              },
+              {
+                "id": "POL-CSP-006_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL enforce role-based access control (RBAC) with at least three roles: admin, editor, and viewer\nThe application component SHALL validate authorization on every API request\nAdministrative functions SHALL require an additional approval workflow"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-2: Authorization"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "24"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-007",
+            "title": "The database component SHALL encrypt all stored data using AES-256 encryption",
+            "links": [
+              {
+                "href": "policy.md#line=30",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-007_smt",
+                "name": "statement",
+                "prose": "The database component SHALL encrypt all stored data using AES-256 encryption"
+              },
+              {
+                "id": "POL-CSP-007_gdn",
+                "name": "guidance",
+                "prose": "The database component SHALL encrypt all stored data using AES-256 encryption\nThe database component SHALL manage encryption keys through a dedicated key management service\nEncryption keys SHALL be rotated at least every 90 days"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "DP-1: Encryption at Rest"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "30"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-008",
+            "title": "The database component SHALL manage encryption keys through a dedicated key management service",
+            "links": [
+              {
+                "href": "policy.md#line=31",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-008_smt",
+                "name": "statement",
+                "prose": "The database component SHALL manage encryption keys through a dedicated key management service"
+              },
+              {
+                "id": "POL-CSP-008_gdn",
+                "name": "guidance",
+                "prose": "The database component SHALL encrypt all stored data using AES-256 encryption\nThe database component SHALL manage encryption keys through a dedicated key management service\nEncryption keys SHALL be rotated at least every 90 days"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "DP-1: Encryption at Rest"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "31"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-009",
+            "title": "Encryption keys SHALL be rotated at least {{ insert: param, id-ref: p9fd74af1-6b2a-5631-80f4-b7869adbee13_prm_0 }}",
+            "links": [
+              {
+                "href": "policy.md#line=32",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "p9fd74af1-6b2a-5631-80f4-b7869adbee13_prm_0",
+                "label": "every 90 days",
+                "values": [
+                  "90 days"
+                ],
+                "constraints": [
+                  {
+                    "description": "exact: 90 days"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-009_smt",
+                "name": "statement",
+                "prose": "Encryption keys SHALL be rotated at least {{ insert: param, id-ref: p9fd74af1-6b2a-5631-80f4-b7869adbee13_prm_0 }}"
+              },
+              {
+                "id": "POL-CSP-009_gdn",
+                "name": "guidance",
+                "prose": "The database component SHALL encrypt all stored data using AES-256 encryption\nThe database component SHALL manage encryption keys through a dedicated key management service\nEncryption keys SHALL be rotated at least every 90 days"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "DP-1: Encryption at Rest"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "32"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-010",
+            "title": "The application component SHALL require TLS 1.",
+            "links": [
+              {
+                "href": "policy.md#line=36",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-010_smt",
+                "name": "statement",
+                "prose": "The application component SHALL require TLS 1.3 for all external communications"
+              },
+              {
+                "id": "POL-CSP-010_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL require TLS 1.3 for all external communications\nThe application component and database component SHALL communicate over mutually authenticated TLS (mTLS)\nAll internal API calls SHALL use certificate-based authentication"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "DP-2: Encryption in Transit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "36"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-011",
+            "title": "The application component and database component SHALL communicate over mutually authenticated TLS (mTLS)",
+            "links": [
+              {
+                "href": "policy.md#line=37",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-011_smt",
+                "name": "statement",
+                "prose": "The application component and database component SHALL communicate over mutually authenticated TLS (mTLS)"
+              },
+              {
+                "id": "POL-CSP-011_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL require TLS 1.3 for all external communications\nThe application component and database component SHALL communicate over mutually authenticated TLS (mTLS)\nAll internal API calls SHALL use certificate-based authentication"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "DP-2: Encryption in Transit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "37"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-012",
+            "title": "All internal API calls SHALL use certificate-based authentication",
+            "links": [
+              {
+                "href": "policy.md#line=38",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-012_smt",
+                "name": "statement",
+                "prose": "All internal API calls SHALL use certificate-based authentication"
+              },
+              {
+                "id": "POL-CSP-012_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL require TLS 1.3 for all external communications\nThe application component and database component SHALL communicate over mutually authenticated TLS (mTLS)\nAll internal API calls SHALL use certificate-based authentication"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "DP-2: Encryption in Transit"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "38"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-013",
+            "title": "The application component SHALL log all authentication events including successes and failures",
+            "links": [
+              {
+                "href": "policy.md#line=44",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-013_smt",
+                "name": "statement",
+                "prose": "The application component SHALL log all authentication events including successes and failures"
+              },
+              {
+                "id": "POL-CSP-013_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL log all authentication events including successes and failures\nThe database component SHALL log all direct database access and administrative queries\nAudit logs SHALL be retained for a minimum of 365 days\nThe application component SHALL forward all logs to a centralized logging system within 5 minutes of generation"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AL-1: Audit Logging"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "44"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-014",
+            "title": "The database component SHALL log all direct database access and administrative queries",
+            "links": [
+              {
+                "href": "policy.md#line=45",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-014_smt",
+                "name": "statement",
+                "prose": "The database component SHALL log all direct database access and administrative queries"
+              },
+              {
+                "id": "POL-CSP-014_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL log all authentication events including successes and failures\nThe database component SHALL log all direct database access and administrative queries\nAudit logs SHALL be retained for a minimum of 365 days\nThe application component SHALL forward all logs to a centralized logging system within 5 minutes of generation"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AL-1: Audit Logging"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "45"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-015",
+            "title": "Audit logs SHALL be retained for a minimum of 365 days",
+            "links": [
+              {
+                "href": "policy.md#line=46",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-015_smt",
+                "name": "statement",
+                "prose": "Audit logs SHALL be retained for a minimum of 365 days"
+              },
+              {
+                "id": "POL-CSP-015_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL log all authentication events including successes and failures\nThe database component SHALL log all direct database access and administrative queries\nAudit logs SHALL be retained for a minimum of 365 days\nThe application component SHALL forward all logs to a centralized logging system within 5 minutes of generation"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AL-1: Audit Logging"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "46"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-016",
+            "title": "The application component SHALL forward all logs to a centralized logging system within 5 minutes of generation",
+            "links": [
+              {
+                "href": "policy.md#line=47",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-016_smt",
+                "name": "statement",
+                "prose": "The application component SHALL forward all logs to a centralized logging system within 5 minutes of generation"
+              },
+              {
+                "id": "POL-CSP-016_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL log all authentication events including successes and failures\nThe database component SHALL log all direct database access and administrative queries\nAudit logs SHALL be retained for a minimum of 365 days\nThe application component SHALL forward all logs to a centralized logging system within 5 minutes of generation"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AL-1: Audit Logging"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "47"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-017",
+            "title": "The application component SHALL generate alerts for any authentication failures exceeding 10 per minute",
+            "links": [
+              {
+                "href": "policy.md#line=51",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-017_smt",
+                "name": "statement",
+                "prose": "The application component SHALL generate alerts for any authentication failures exceeding 10 per minute"
+              },
+              {
+                "id": "POL-CSP-017_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL generate alerts for any authentication failures exceeding 10 per minute\nThe database component SHALL alert on any unauthorized access attempts or privilege escalation events\nSecurity alerts SHALL be delivered to the security operations team within 15 minutes of detection"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AL-2: Monitoring and Alerting"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "51"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-018",
+            "title": "The database component SHALL alert on any unauthorized access attempts or privilege escalation events",
+            "links": [
+              {
+                "href": "policy.md#line=52",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-018_smt",
+                "name": "statement",
+                "prose": "The database component SHALL alert on any unauthorized access attempts or privilege escalation events"
+              },
+              {
+                "id": "POL-CSP-018_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL generate alerts for any authentication failures exceeding 10 per minute\nThe database component SHALL alert on any unauthorized access attempts or privilege escalation events\nSecurity alerts SHALL be delivered to the security operations team within 15 minutes of detection"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AL-2: Monitoring and Alerting"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "52"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-019",
+            "title": "Security alerts SHALL be delivered to the security operations team within 15 minutes of detection",
+            "links": [
+              {
+                "href": "policy.md#line=53",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-019_smt",
+                "name": "statement",
+                "prose": "Security alerts SHALL be delivered to the security operations team within 15 minutes of detection"
+              },
+              {
+                "id": "POL-CSP-019_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL generate alerts for any authentication failures exceeding 10 per minute\nThe database component SHALL alert on any unauthorized access attempts or privilege escalation events\nSecurity alerts SHALL be delivered to the security operations team within 15 minutes of detection"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AL-2: Monitoring and Alerting"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "53"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-020",
+            "title": "The database component SHALL perform automated backups every 6 hours",
+            "links": [
+              {
+                "href": "policy.md#line=59",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-020_smt",
+                "name": "statement",
+                "prose": "The database component SHALL perform automated backups every 6 hours"
+              },
+              {
+                "id": "POL-CSP-020_gdn",
+                "name": "guidance",
+                "prose": "The database component SHALL perform automated backups every 6 hours\nThe database component SHALL maintain at least 30 days of backup history\nBackup integrity SHALL be verified through automated restore testing monthly"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "SI-1: Backup and Recovery"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "59"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-021",
+            "title": "The database component SHALL maintain {{ insert: param, id-ref: ef24731c-cc3f-55ea-a082-7e35a7bcda87_prm_0 }} of backup ...",
+            "links": [
+              {
+                "href": "policy.md#line=60",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "ef24731c-cc3f-55ea-a082-7e35a7bcda87_prm_0",
+                "label": "at least 30 days",
+                "values": [
+                  "30"
+                ],
+                "constraints": [
+                  {
+                    "description": "minimum: 30"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-021_smt",
+                "name": "statement",
+                "prose": "The database component SHALL maintain {{ insert: param, id-ref: ef24731c-cc3f-55ea-a082-7e35a7bcda87_prm_0 }} of backup history"
+              },
+              {
+                "id": "POL-CSP-021_gdn",
+                "name": "guidance",
+                "prose": "The database component SHALL perform automated backups every 6 hours\nThe database component SHALL maintain at least 30 days of backup history\nBackup integrity SHALL be verified through automated restore testing monthly"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "SI-1: Backup and Recovery"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "60"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-022",
+            "title": "Backup integrity SHALL be verified through automated restore testing {{ insert: param, id-ref: p7bc6fb2f-376d-57ab-97c1-...",
+            "links": [
+              {
+                "href": "policy.md#line=61",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "p7bc6fb2f-376d-57ab-97c1-46fbdb109150_prm_0",
+                "label": "monthly",
+                "values": [
+                  "monthly"
+                ],
+                "constraints": [
+                  {
+                    "description": "exact: monthly"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-022_smt",
+                "name": "statement",
+                "prose": "Backup integrity SHALL be verified through automated restore testing {{ insert: param, id-ref: p7bc6fb2f-376d-57ab-97c1-46fbdb109150_prm_0 }}"
+              },
+              {
+                "id": "POL-CSP-022_gdn",
+                "name": "guidance",
+                "prose": "The database component SHALL perform automated backups every 6 hours\nThe database component SHALL maintain at least 30 days of backup history\nBackup integrity SHALL be verified through automated restore testing monthly"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "SI-1: Backup and Recovery"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "61"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-023",
+            "title": "The application component SHALL undergo automated security scanning on every code deployment",
+            "links": [
+              {
+                "href": "policy.md#line=65",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-023_smt",
+                "name": "statement",
+                "prose": "The application component SHALL undergo automated security scanning on every code deployment"
+              },
+              {
+                "id": "POL-CSP-023_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL undergo automated security scanning on every code deployment\nBoth the application and database components SHALL be patched for critical vulnerabilities within 48 hours of release\nThe application component SHALL run dependency vulnerability checks weekly"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "SI-2: Vulnerability Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "65"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-024",
+            "title": "Both the application and database components SHALL be patched for critical vulnerabilities within 48 hours of release",
+            "links": [
+              {
+                "href": "policy.md#line=66",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-024_smt",
+                "name": "statement",
+                "prose": "Both the application and database components SHALL be patched for critical vulnerabilities within 48 hours of release"
+              },
+              {
+                "id": "POL-CSP-024_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL undergo automated security scanning on every code deployment\nBoth the application and database components SHALL be patched for critical vulnerabilities within 48 hours of release\nThe application component SHALL run dependency vulnerability checks weekly"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "SI-2: Vulnerability Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "66"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSP-025",
+            "title": "The application component SHALL run dependency vulnerability checks {{ insert: param, id-ref: c2ca747e-337b-57b9-96a7-33...",
+            "links": [
+              {
+                "href": "policy.md#line=67",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "c2ca747e-337b-57b9-96a7-33701f41a629_prm_0",
+                "label": "weekly",
+                "values": [
+                  "weekly"
+                ],
+                "constraints": [
+                  {
+                    "description": "exact: weekly"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSP-025_smt",
+                "name": "statement",
+                "prose": "The application component SHALL run dependency vulnerability checks {{ insert: param, id-ref: c2ca747e-337b-57b9-96a7-33701f41a629_prm_0 }}"
+              },
+              {
+                "id": "POL-CSP-025_gdn",
+                "name": "guidance",
+                "prose": "The application component SHALL undergo automated security scanning on every code deployment\nBoth the application and database components SHALL be patched for critical vulnerabilities within 48 hours of release\nThe application component SHALL run dependency vulnerability checks weekly"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "SI-2: Vulnerability Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "67"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

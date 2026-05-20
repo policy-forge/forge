@@ -60,7 +60,7 @@ pub struct ModalityResult {
 
 /// Detect modality for a single policy requirement.
 ///
-/// Scans `requirement.text` against [`NORMATIVE_PATTERN`] and [`ADVISORY_PATTERN`].
+/// Scans `requirement.text` against `NORMATIVE_PATTERN` and `ADVISORY_PATTERN`.
 /// Returns a [`ModalityResult`] with the classification and diagnostic metadata.
 ///
 /// Classification rules:

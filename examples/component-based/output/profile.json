@@ -1,0 +1,32 @@
+{
+  "profile": {
+    "uuid": "b8b2c8a2-9cf1-4579-8449-6d39c906ed09",
+    "metadata": {
+      "title": "Policy Baseline Profile",
+      "last-modified": "2026-05-19T01:29:26.233881Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "imports": [
+      {
+        "href": "output/catalog.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "POL-CSP-001",
+              "POL-CSP-002",
+              "POL-CSP-004",
+              "POL-CSP-005",
+              "POL-CSP-007",
+              "POL-CSP-008",
+              "POL-CSP-009",
+              "POL-CSP-010",
+              "POL-CSP-012",
+              "POL-CSP-014"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

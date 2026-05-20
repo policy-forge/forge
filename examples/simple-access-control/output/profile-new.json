@@ -1,0 +1,32 @@
+{
+  "profile": {
+    "uuid": "febf1281-75ef-5604-a9bf-757af28abf93",
+    "metadata": {
+      "title": "Policy Baseline Profile",
+      "last-modified": "2026-05-19T04:03:45.972152Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "imports": [
+      {
+        "href": "catalog-new.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "access-control",
+              "POL-AC-001",
+              "POL-AC-001_smt",
+              "POL-AC-001_gdn",
+              "POL-AC-002",
+              "p98774a9d-5795-532e-a53c-f30395d63345_prm_0",
+              "POL-AC-002_smt",
+              "POL-AC-002_gdn",
+              "POL-AC-003",
+              "POL-AC-003_smt"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

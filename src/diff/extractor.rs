@@ -4,6 +4,13 @@ use serde_json::Value;
 
 use super::types::{ArtifactType, ControlSnapshot};
 
+/// Extract control snapshots from an OSCAL artifact JSON value.
+///
+/// Dispatches to the appropriate extractor based on [`ArtifactType`],
+/// producing a map of control ID → [`ControlSnapshot`].
+///
+/// For Catalogs, walks groups recursively (including nested groups).
+/// For Component Definitions, walks components and capabilities.
 #[must_use]
 pub fn extract_controls(
     json: &Value,

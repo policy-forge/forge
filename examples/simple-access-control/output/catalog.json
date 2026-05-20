@@ -1,0 +1,431 @@
+{
+  "catalog": {
+    "uuid": "ccf03a88-dd59-4bf5-8522-19cb4ceab589",
+    "metadata": {
+      "title": "Simple Access Control Policy",
+      "last-modified": "2026-05-19T01:25:05.503047+00:00",
+      "version": "1.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "title-simple-access-control-policy-version-1-0-author-security-team-date-2026-05-18",
+        "title": "title: \"Simple Access Control Policy\"version: \"1.0\"author: \"Security Team\"date: \"2026-05-18\""
+      },
+      {
+        "id": "access-control",
+        "title": "Access Control",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "AC-1 Access Control Policy and Procedures"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-AC-001",
+            "title": "The organization SHALL develop, document, and disseminate an access control policy",
+            "links": [
+              {
+                "href": "policy.md#line=14",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-001_smt",
+                "name": "statement",
+                "prose": "The organization SHALL develop, document, and disseminate an access control policy"
+              },
+              {
+                "id": "POL-AC-001_gdn",
+                "name": "guidance",
+                "prose": "The organization SHALL develop, document, and disseminate an access control policy\nThe organization SHALL review and update the access control policy at least annually"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-1 Access Control Policy and Procedures"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "14"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-002",
+            "title": "The organization SHALL review and update the access control policy {{ insert: param, id-ref: p98774a9d-5795-532e-a53c-f3...",
+            "links": [
+              {
+                "href": "policy.md#line=15",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "p98774a9d-5795-532e-a53c-f30395d63345_prm_0",
+                "label": "at least annually",
+                "values": [
+                  "annually"
+                ],
+                "constraints": [
+                  {
+                    "description": "minimum: annually"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-002_smt",
+                "name": "statement",
+                "prose": "The organization SHALL review and update the access control policy {{ insert: param, id-ref: p98774a9d-5795-532e-a53c-f30395d63345_prm_0 }}"
+              },
+              {
+                "id": "POL-AC-002_gdn",
+                "name": "guidance",
+                "prose": "The organization SHALL develop, document, and disseminate an access control policy\nThe organization SHALL review and update the access control policy at least annually"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-1 Access Control Policy and Procedures"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "15"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-003",
+            "title": "The organization SHALL manage information system accounts including establishing, activating, modifying, reviewing, disa...",
+            "links": [
+              {
+                "href": "policy.md#line=19",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-003_smt",
+                "name": "statement",
+                "prose": "The organization SHALL manage information system accounts including establishing, activating, modifying, reviewing, disabling, and removing accounts"
+              },
+              {
+                "id": "POL-AC-003_gdn",
+                "name": "guidance",
+                "prose": "The organization SHALL manage information system accounts including establishing, activating, modifying, reviewing, disabling, and removing accounts\nThe organization SHALL identify authorized users of the information system and specify access privileges\nThe organization SHALL require approvals by authorized personnel for requests to create information system accounts"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-2 Account Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "19"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-004",
+            "title": "The organization SHALL identify authorized users of the information system and specify access privileges",
+            "links": [
+              {
+                "href": "policy.md#line=20",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-004_smt",
+                "name": "statement",
+                "prose": "The organization SHALL identify authorized users of the information system and specify access privileges"
+              },
+              {
+                "id": "POL-AC-004_gdn",
+                "name": "guidance",
+                "prose": "The organization SHALL manage information system accounts including establishing, activating, modifying, reviewing, disabling, and removing accounts\nThe organization SHALL identify authorized users of the information system and specify access privileges\nThe organization SHALL require approvals by authorized personnel for requests to create information system accounts"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-2 Account Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "20"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-005",
+            "title": "The organization SHALL require approvals by authorized personnel for requests to create information system accounts",
+            "links": [
+              {
+                "href": "policy.md#line=21",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-005_smt",
+                "name": "statement",
+                "prose": "The organization SHALL require approvals by authorized personnel for requests to create information system accounts"
+              },
+              {
+                "id": "POL-AC-005_gdn",
+                "name": "guidance",
+                "prose": "The organization SHALL manage information system accounts including establishing, activating, modifying, reviewing, disabling, and removing accounts\nThe organization SHALL identify authorized users of the information system and specify access privileges\nThe organization SHALL require approvals by authorized personnel for requests to create information system accounts"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-2 Account Management"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "21"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-006",
+            "title": "The information system SHALL enforce approved authorizations for logical access to information and system resources",
+            "links": [
+              {
+                "href": "policy.md#line=25",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-006_smt",
+                "name": "statement",
+                "prose": "The information system SHALL enforce approved authorizations for logical access to information and system resources"
+              },
+              {
+                "id": "POL-AC-006_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL enforce approved authorizations for logical access to information and system resources\nThe information system SHALL enforce approved authorizations for controlling the flow of information between interconnected systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-3 Access Enforcement"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "25"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-007",
+            "title": "The information system SHALL enforce approved authorizations for controlling the flow of information between interconnec...",
+            "links": [
+              {
+                "href": "policy.md#line=26",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-007_smt",
+                "name": "statement",
+                "prose": "The information system SHALL enforce approved authorizations for controlling the flow of information between interconnected systems"
+              },
+              {
+                "id": "POL-AC-007_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL enforce approved authorizations for logical access to information and system resources\nThe information system SHALL enforce approved authorizations for controlling the flow of information between interconnected systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "AC-3 Access Enforcement"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "26"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-008",
+            "title": "The organization SHALL develop, document, and disseminate an identification and authentication policy",
+            "links": [
+              {
+                "href": "policy.md#line=30",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-008_smt",
+                "name": "statement",
+                "prose": "The organization SHALL develop, document, and disseminate an identification and authentication policy"
+              },
+              {
+                "id": "POL-AC-008_gdn",
+                "name": "guidance",
+                "prose": "The organization SHALL develop, document, and disseminate an identification and authentication policy\nThe organization SHALL require identification and authentication of organizational users before granting access to information systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "IA-1 Identification and Authentication Policy"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "30"
+              }
+            ]
+          },
+          {
+            "id": "POL-AC-009",
+            "title": "The organization SHALL require identification and authentication of organizational users before granting access to infor...",
+            "links": [
+              {
+                "href": "policy.md#line=31",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AC-009_smt",
+                "name": "statement",
+                "prose": "The organization SHALL require identification and authentication of organizational users before granting access to information systems"
+              },
+              {
+                "id": "POL-AC-009_gdn",
+                "name": "guidance",
+                "prose": "The organization SHALL develop, document, and disseminate an identification and authentication policy\nThe organization SHALL require identification and authentication of organizational users before granting access to information systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "IA-1 Identification and Authentication Policy"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "31"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 //! OSCAL Profile generation for WI-30 and WI-31.
 //!
-//! Provides [`build_profile`], [`parse_control_ids`], and [`build_modify_section`]
+//! Provides `build_profile`, `parse_control_ids`, and `build_modify_section`
 //! plus the structs required to produce a valid OSCAL v1.2.0 Profile JSON artifact.
 
 use std::collections::BTreeMap;
@@ -21,6 +21,7 @@ use crate::oscal::metadata::{OscalMetadata, assemble_metadata};
 /// Serializes with the OSCAL-required `"profile"` root key.
 #[derive(Debug, Serialize)]
 pub struct ProfileRoot {
+    /// The OSCAL Profile object (serialized under key `profile`).
     pub profile: OscalProfile,
 }
 
@@ -110,7 +111,9 @@ pub struct ControlSelection {
 /// `Exclude` → populates `exclude_controls`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SelectionMode {
+    /// Include the specified control IDs in the Profile.
     Include,
+    /// Exclude the specified control IDs from the Profile.
     Exclude,
 }
 

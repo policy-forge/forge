@@ -1,9 +1,9 @@
-//! OSCAL implemented-requirements builder: maps [`PolicyRequirement`]s to
+//! OSCAL implemented-requirements builder: maps [`crate::model::PolicyRequirement`]s to
 //! OSCAL `implemented-requirement` JSON entries within a `control-implementations` array.
 //!
-//! Walks the [`PolicyDocument`]'s section tree depth-first (matching the Catalog
+//! Walks the [`crate::model::PolicyDocument`]'s section tree depth-first (matching the Catalog
 //! builder's traversal order) and produces one `implemented-requirement` per
-//! [`PolicyRequirement`] with a deterministic UUID v5 and a `control-id` matching
+//! [`crate::model::PolicyRequirement`] with a deterministic UUID v5 and a `control-id` matching
 //! the Catalog builder's scheme (e.g., `POL-AC-001`).
 
 use std::collections::HashMap;

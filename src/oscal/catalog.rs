@@ -1,4 +1,4 @@
-//! OSCAL Catalog builder: maps [`PolicyDocument`] to OSCAL Catalog JSON.
+//! OSCAL Catalog builder: maps [`crate::model::PolicyDocument`] to OSCAL Catalog JSON.
 //!
 //! Converts the domain model (`PolicyDocument` → `PolicySection` →
 //! `PolicyRequirement`) to OSCAL Catalog structures (`OscalCatalog` →

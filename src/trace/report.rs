@@ -4,8 +4,11 @@ use crate::types::OscalModelType;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ElementType {
+    /// An OSCAL group element (groups controls together).
     Group,
+    /// An OSCAL control element (a single control statement).
     Control,
+    /// An OSCAL implemented-requirement element (component definition).
     ImplementedRequirement,
 }
 
@@ -56,7 +59,9 @@ pub struct TraceEntry {
 /// `unmapped_elements` and `coverage_percent` are computed on access.
 #[derive(Debug, Clone)]
 pub struct TraceSummary {
+    /// Total number of OSCAL elements walked in the artifact.
     pub total_elements: usize,
+    /// Number of elements that resolved to a source policy location.
     pub mapped_elements: usize,
 }
 

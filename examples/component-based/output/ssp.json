@@ -1,0 +1,412 @@
+{
+  "system-security-plan": {
+    "uuid": "c2e60556-14b5-5ee8-be9f-0a4422e76e21",
+    "metadata": {
+      "title": "System Security Plan for Component-Based Security Policy",
+      "last-modified": "2026-05-20T03:33:53.302+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.1.3"
+    },
+    "system-id": {
+      "identifier-type": "http://example.org/system-id",
+      "id": "system-csp-001"
+    },
+    "system-implementation": {
+      "components": [
+        {
+          "uuid": "895e13fb-c041-593d-a571-55b167922209",
+          "type": "software",
+          "title": "Web Application Component",
+          "description": "The primary web application handling user authentication, authorization, and API requests. Implements TLS 1.3, MFA, RBAC, and audit logging.",
+          "responsible-roles": [
+            {
+              "role-id": "system-admin",
+              "responsible-party": "Application Engineering Team"
+            },
+            {
+              "role-id": "security-officer",
+              "responsible-party": "Security Engineering Team"
+            }
+          ],
+          "status": {
+            "state": "operational"
+          }
+        },
+        {
+          "uuid": "6114bc33-cbbd-5547-80f3-22ee2261df34",
+          "type": "software",
+          "title": "Database Component",
+          "description": "PostgreSQL database server with AES-256 encryption at rest, automated backups, and direct access audit logging. Communicates with the application component over mTLS.",
+          "responsible-roles": [
+            {
+              "role-id": "database-admin",
+              "responsible-party": "Database Operations Team"
+            },
+            {
+              "role-id": "security-officer",
+              "responsible-party": "Security Engineering Team"
+            }
+          ],
+          "status": {
+            "state": "operational"
+          }
+        }
+      ],
+      "users": [
+        {
+          "uuid": "12b05a1c-c898-56ad-acb4-164b4085b533",
+          "title": "System Administrator",
+          "short-name": "sysadmin",
+          "description": "Full system administration access with privileged role assignment capabilities",
+          "role-ids": [
+            "system-admin",
+            "security-officer"
+          ],
+          "authorized-date": "2026-01-01T00:00:00Z",
+          "status": {
+            "state": "active"
+          }
+        },
+        {
+          "uuid": "1481988d-2e2b-59be-bb5b-687fb78d0e11",
+          "title": "Security Analyst",
+          "short-name": "analyst-01",
+          "description": "Read-only access to security logs and audit reports",
+          "role-ids": [
+            "analyst"
+          ],
+          "authorized-date": "2026-01-01T00:00:00Z",
+          "status": {
+            "state": "active"
+          }
+        },
+        {
+          "uuid": "35b9b87c-702e-51c4-a2ce-03d4711eadf6",
+          "title": "Service Account",
+          "short-name": "svc-ingest",
+          "description": "Automated service account for data ingestion pipeline",
+          "role-ids": [
+            "service-account"
+          ],
+          "authorized-date": "2026-01-01T00:00:00Z",
+          "status": {
+            "state": "active",
+            "reason": "automated system process, no interactive login"
+          }
+        }
+      ],
+      "leveraged-authorizations": [
+        {
+          "uuid": "6a3793d9-8cb0-51ed-9285-27d763bd0f98",
+          "title": "AWS GovCloud Infrastructure",
+          "href": "https://aws.amazon.com/compliance/fedramp/",
+          "description": "Physical security, hypervisor, and infrastructure controls inherited from AWS GovCloud (FedRAMP Moderate)"
+        }
+      ]
+    },
+    "control-implementation": {
+      "description": "Control implementations for the Component-Based Security Policy, mapped from policy requirements to system components.",
+      "implemented-requirements": [
+        {
+          "uuid": "ea7a8154-26cd-58a6-bc18-9b6864d1ff5d",
+          "control-id": "POL-CSP-001",
+          "description": "Implementation statement for POL-CSP-001 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "15dcc513-a915-5e0e-8df3-3b320253ba6b",
+          "control-id": "POL-CSP-002",
+          "description": "Implementation statement for POL-CSP-002 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "767630ed-23e9-5db3-8e1e-211bd3fc8d11",
+          "control-id": "POL-CSP-003",
+          "description": "Implementation statement for POL-CSP-003 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "46726d45-ba5f-5b0d-890b-6a265bebe860",
+          "control-id": "POL-CSP-004",
+          "description": "Implementation statement for POL-CSP-004 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "b89d3de1-9a8d-5a0d-a3b3-7462793ba69e",
+          "control-id": "POL-CSP-005",
+          "description": "Implementation statement for POL-CSP-005 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "4c592fb3-59c6-5558-acbf-4ebc731561e8",
+          "control-id": "POL-CSP-006",
+          "description": "Implementation statement for POL-CSP-006 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "ca345b8f-786b-5e18-8ea3-57c01004536c",
+          "control-id": "POL-CSP-007",
+          "description": "Implementation statement for POL-CSP-007 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "1e70f3ab-69c9-5581-a26a-78ef0c437be9",
+          "control-id": "POL-CSP-008",
+          "description": "Implementation statement for POL-CSP-008 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "03ff7078-8f29-55e2-942e-aeac9497ea92",
+          "control-id": "POL-CSP-009",
+          "description": "Implementation statement for POL-CSP-009 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "ee37a905-a3ca-530d-a498-20eaf5c5cefb",
+          "control-id": "POL-CSP-010",
+          "description": "Implementation statement for POL-CSP-010 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "d0909dfc-34f0-5171-b465-02aaf5429713",
+          "control-id": "POL-CSP-011",
+          "description": "Implementation statement for POL-CSP-011 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "79ee01c7-4da1-5380-ba37-ae94d7ad08d4",
+          "control-id": "POL-CSP-012",
+          "description": "Implementation statement for POL-CSP-012 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "d8d026ec-9484-57f8-b310-40ae25083a8e",
+          "control-id": "POL-CSP-013",
+          "description": "Implementation statement for POL-CSP-013 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "5951c260-d6b2-5ac9-970f-2ee17d015387",
+          "control-id": "POL-CSP-014",
+          "description": "Implementation statement for POL-CSP-014 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "7d8aaa48-b3fd-56c0-af1e-66a3e18a8cc4",
+          "control-id": "POL-CSP-015",
+          "description": "Implementation statement for POL-CSP-015 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "088978f6-fea3-51e1-8078-55fad6010743",
+          "control-id": "POL-CSP-016",
+          "description": "Implementation statement for POL-CSP-016 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "63d11c84-7b29-5407-9a19-4fd4c5d470fc",
+          "control-id": "POL-CSP-017",
+          "description": "Implementation statement for POL-CSP-017 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "ffc82a42-b88b-5b16-bfd9-9e32821a9e5d",
+          "control-id": "POL-CSP-018",
+          "description": "Implementation statement for POL-CSP-018 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "e116ee37-183e-5f25-88bd-0a34a1eea729",
+          "control-id": "POL-CSP-019",
+          "description": "Implementation statement for POL-CSP-019 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "f74f29a7-7a57-59a3-b16b-4e31c14715e8",
+          "control-id": "POL-CSP-020",
+          "description": "Implementation statement for POL-CSP-020 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "1ae3735f-7555-58bd-bc4f-cabe1bb8fab6",
+          "control-id": "POL-CSP-021",
+          "description": "Implementation statement for POL-CSP-021 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "b18a7cb7-d057-5b90-86d4-04e00b965dd7",
+          "control-id": "POL-CSP-022",
+          "description": "Implementation statement for POL-CSP-022 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "ff9fc3e6-a2af-5db3-a43d-230d9ab1375c",
+          "control-id": "POL-CSP-023",
+          "description": "Implementation statement for POL-CSP-023 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "8370bca1-4b77-5e75-affd-ceced01232da",
+          "control-id": "POL-CSP-024",
+          "description": "Implementation statement for POL-CSP-024 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        },
+        {
+          "uuid": "837dc898-8dc1-5f2d-8d71-accdceefbcf1",
+          "control-id": "POL-CSP-025",
+          "description": "Implementation statement for POL-CSP-025 - see component definition for details.",
+          "links": [
+            {
+              "href": "#component-web-application",
+              "rel": "implements"
+            }
+          ]
+        }
+      ]
+    },
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "0ecf632b-7d5a-5f2c-8a07-9e1bc527ddd7",
+          "title": "Component-Based Security Policy",
+          "description": "Source policy document defining security controls for the two-tier architecture",
+          "rlinks": [
+            {
+              "href": "../policy.md"
+            }
+          ]
+        },
+        {
+          "uuid": "ffc59f71-82d9-532b-9c75-15139c687fd5",
+          "title": "Component Definition",
+          "description": "OSCAL Component Definition mapping policy controls to system components",
+          "rlinks": [
+            {
+              "href": "./component-definition.json"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

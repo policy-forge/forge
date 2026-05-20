@@ -1,0 +1,169 @@
+---
+source: tests/assessment_plan_test.rs
+expression: "&normalized"
+---
+{
+  "assessment-plan": {
+    "assessment-subjects": [
+      {
+        "description": "Policy document: Sample Security Policy",
+        "include-subjects": [
+          {
+            "subject-uuid": "00000000-0000-0000-0000-000000000000",
+            "type": "component"
+          }
+        ],
+        "type": "component"
+      }
+    ],
+    "import-ssp": {
+      "href": "system-ssp.json"
+    },
+    "metadata": {
+      "last-modified": "2026-01-01T00:00:00Z",
+      "oscal-version": "1.2.0",
+      "title": "Assessment Plan for Sample Security Policy",
+      "version": "1.0.0"
+    },
+    "reviewed-controls": {
+      "control-selections": [
+        {
+          "include-controls": [
+            {
+              "control-id": "POL-AC-001"
+            },
+            {
+              "control-id": "POL-AC-002"
+            },
+            {
+              "control-id": "POL-AC-003"
+            },
+            {
+              "control-id": "POL-AC-004"
+            },
+            {
+              "control-id": "POL-AC-005"
+            },
+            {
+              "control-id": "POL-DP-001"
+            },
+            {
+              "control-id": "POL-DP-002"
+            },
+            {
+              "control-id": "POL-DP-003"
+            }
+          ]
+        }
+      ],
+      "description": "Controls derived from Sample Security Policy for assessment review."
+    },
+    "tasks": [
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Users must use multi-factor authentication is implemented and operating effectively.",
+            "title": "Review: Users must use multi-factor authentication",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Users must use multi-factor authentication is implemented as specified in the policy.",
+        "title": "Assess: Users must use multi-factor authentication",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Passwords must be {{ insert: param, id-ref: f3fe7101-906c-5594-86c9-9765991999cc_prm_0 }} is implemented and operating effectively.",
+            "title": "Review: Passwords must be {{ insert: param, id-ref: f3fe7101-906c-55",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Passwords must be {{ insert: param, id-ref: f3fe7101-906c-5594-86c9-9765991999cc_prm_0 }} is implemented as specified in the policy.",
+        "title": "Assess: Passwords must be {{ insert: param, id-ref: f3fe7101-906c-5594-86c9-976599199...",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Sessions must timeout after 30 minutes of inactivity is implemented and operating effectively.",
+            "title": "Review: Sessions must timeout after 30 minutes of inactivity",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Sessions must timeout after 30 minutes of inactivity is implemented as specified in the policy.",
+        "title": "Assess: Sessions must timeout after 30 minutes of inactivity",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Access must follow principle of least privilege is implemented and operating effectively.",
+            "title": "Review: Access must follow principle of least privilege",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Access must follow principle of least privilege is implemented as specified in the policy.",
+        "title": "Assess: Access must follow principle of least privilege",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Role-based access control must be enforced is implemented and operating effectively.",
+            "title": "Review: Role-based access control must be enforced",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Role-based access control must be enforced is implemented as specified in the policy.",
+        "title": "Assess: Role-based access control must be enforced",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Data at rest must be encrypted using AES-256 is implemented and operating effectively.",
+            "title": "Review: Data at rest must be encrypted using AES-256",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Data at rest must be encrypted using AES-256 is implemented as specified in the policy.",
+        "title": "Assess: Data at rest must be encrypted using AES-256",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Data in transit must use TLS 1.2 or higher is implemented and operating effectively.",
+            "title": "Review: Data in transit must use TLS 1.2 or higher",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Data in transit must use TLS 1.2 or higher is implemented as specified in the policy.",
+        "title": "Assess: Data in transit must use TLS 1.2 or higher",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      },
+      {
+        "associated-activities": [
+          {
+            "description": "Examine evidence that Encryption keys must be rotated {{ insert: param, id-ref: b0b9910b-9162-5eaa-b49b-40869b0134c2_prm_0 }} is implemented and operating effectively.",
+            "title": "Review: Encryption keys must be rotated {{ insert: param, id-ref: b0",
+            "uuid": "00000000-0000-0000-0000-000000000000"
+          }
+        ],
+        "description": "Verify that Encryption keys must be rotated {{ insert: param, id-ref: b0b9910b-9162-5eaa-b49b-40869b0134c2_prm_0 }} is implemented as specified in the policy.",
+        "title": "Assess: Encryption keys must be rotated {{ insert: param, id-ref: b0b9910b-9162-5eaa-...",
+        "type": "action",
+        "uuid": "00000000-0000-0000-0000-000000000000"
+      }
+    ],
+    "uuid": "00000000-0000-0000-0000-000000000000"
+  }
+}

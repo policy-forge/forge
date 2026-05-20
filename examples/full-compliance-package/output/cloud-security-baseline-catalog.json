@@ -1,0 +1,1178 @@
+{
+  "catalog": {
+    "uuid": "5a4e0a29-edf4-4931-ace2-0799d9ec8323",
+    "metadata": {
+      "title": "Cloud Security Baseline Policy",
+      "last-modified": "2026-05-19T01:45:00.039064+00:00",
+      "version": "0.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "groups": [
+      {
+        "id": "cloud-security-baseline-policy",
+        "title": "Cloud Security Baseline Policy",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Access Enforcement"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-CSBP-001",
+            "title": "The information system SHALL enforce approved authorizations for controlling access to the system.",
+            "links": [
+              {
+                "href": "policy.md#line=23",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-001_smt",
+                "name": "statement",
+                "prose": "The information system SHALL enforce approved authorizations for controlling access to the system. Role-Based Access Control (RBAC) SHALL be implemented for all cloud resources, and least privilege SHALL be enforced by default."
+              },
+              {
+                "id": "POL-CSBP-001_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL enforce approved authorizations for controlling access to the system. Role-Based Access Control (RBAC) SHALL be implemented for all cloud resources, and least privilege SHALL be enforced by default.\nProduction workloads SHALL be isolated from development and testing environments using network segmentation, security groups, or virtual private cloud (VPC) boundaries.\nCross-environment access SHALL require explicit approval from the environment owner."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Enforcement"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "23"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-002",
+            "title": "Production workloads SHALL be isolated from development and testing environments using network segmentation, security gr...",
+            "links": [
+              {
+                "href": "policy.md#line=24",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-002_smt",
+                "name": "statement",
+                "prose": "Production workloads SHALL be isolated from development and testing environments using network segmentation, security groups, or virtual private cloud (VPC) boundaries."
+              },
+              {
+                "id": "POL-CSBP-002_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL enforce approved authorizations for controlling access to the system. Role-Based Access Control (RBAC) SHALL be implemented for all cloud resources, and least privilege SHALL be enforced by default.\nProduction workloads SHALL be isolated from development and testing environments using network segmentation, security groups, or virtual private cloud (VPC) boundaries.\nCross-environment access SHALL require explicit approval from the environment owner."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Enforcement"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "24"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-003",
+            "title": "Cross-environment access SHALL require explicit approval from the environment owner.",
+            "links": [
+              {
+                "href": "policy.md#line=25",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-003_smt",
+                "name": "statement",
+                "prose": "Cross-environment access SHALL require explicit approval from the environment owner."
+              },
+              {
+                "id": "POL-CSBP-003_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL enforce approved authorizations for controlling access to the system. Role-Based Access Control (RBAC) SHALL be implemented for all cloud resources, and least privilege SHALL be enforced by default.\nProduction workloads SHALL be isolated from development and testing environments using network segmentation, security groups, or virtual private cloud (VPC) boundaries.\nCross-environment access SHALL require explicit approval from the environment owner."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Enforcement"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "25"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-004",
+            "title": "Successful and unsuccessful logon attempts",
+            "links": [
+              {
+                "href": "policy.md#line=31",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-004_smt",
+                "name": "statement",
+                "prose": "Successful and unsuccessful logon attempts"
+              },
+              {
+                "id": "POL-CSBP-004_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL determine that the information system is capable of auditing the following events:\nSuccessful and unsuccessful logon attempts\nAccount creation and modification\nPrivilege escalation\nResource provisioning and deprovisioning\nSecurity group changes\nData export operations\nEach auditable event SHALL include the timestamp, source IP address, user or service account identity, action performed, and outcome (success or failure)."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Audit Events"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "31"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-005",
+            "title": "Account creation and modification",
+            "links": [
+              {
+                "href": "policy.md#line=32",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-005_smt",
+                "name": "statement",
+                "prose": "Account creation and modification"
+              },
+              {
+                "id": "POL-CSBP-005_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL determine that the information system is capable of auditing the following events:\nSuccessful and unsuccessful logon attempts\nAccount creation and modification\nPrivilege escalation\nResource provisioning and deprovisioning\nSecurity group changes\nData export operations\nEach auditable event SHALL include the timestamp, source IP address, user or service account identity, action performed, and outcome (success or failure)."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Audit Events"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "32"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-006",
+            "title": "Privilege escalation",
+            "links": [
+              {
+                "href": "policy.md#line=33",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-006_smt",
+                "name": "statement",
+                "prose": "Privilege escalation"
+              },
+              {
+                "id": "POL-CSBP-006_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL determine that the information system is capable of auditing the following events:\nSuccessful and unsuccessful logon attempts\nAccount creation and modification\nPrivilege escalation\nResource provisioning and deprovisioning\nSecurity group changes\nData export operations\nEach auditable event SHALL include the timestamp, source IP address, user or service account identity, action performed, and outcome (success or failure)."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Audit Events"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "33"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-007",
+            "title": "Resource provisioning and deprovisioning",
+            "links": [
+              {
+                "href": "policy.md#line=34",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-007_smt",
+                "name": "statement",
+                "prose": "Resource provisioning and deprovisioning"
+              },
+              {
+                "id": "POL-CSBP-007_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL determine that the information system is capable of auditing the following events:\nSuccessful and unsuccessful logon attempts\nAccount creation and modification\nPrivilege escalation\nResource provisioning and deprovisioning\nSecurity group changes\nData export operations\nEach auditable event SHALL include the timestamp, source IP address, user or service account identity, action performed, and outcome (success or failure)."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Audit Events"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "34"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-008",
+            "title": "Security group changes",
+            "links": [
+              {
+                "href": "policy.md#line=35",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-008_smt",
+                "name": "statement",
+                "prose": "Security group changes"
+              },
+              {
+                "id": "POL-CSBP-008_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL determine that the information system is capable of auditing the following events:\nSuccessful and unsuccessful logon attempts\nAccount creation and modification\nPrivilege escalation\nResource provisioning and deprovisioning\nSecurity group changes\nData export operations\nEach auditable event SHALL include the timestamp, source IP address, user or service account identity, action performed, and outcome (success or failure)."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Audit Events"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "35"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-009",
+            "title": "Data export operations",
+            "links": [
+              {
+                "href": "policy.md#line=36",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-009_smt",
+                "name": "statement",
+                "prose": "Data export operations"
+              },
+              {
+                "id": "POL-CSBP-009_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL determine that the information system is capable of auditing the following events:\nSuccessful and unsuccessful logon attempts\nAccount creation and modification\nPrivilege escalation\nResource provisioning and deprovisioning\nSecurity group changes\nData export operations\nEach auditable event SHALL include the timestamp, source IP address, user or service account identity, action performed, and outcome (success or failure)."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Audit Events"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "36"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-010",
+            "title": "The Organization SHALL configure the information system to provide only essential capabilities.",
+            "links": [
+              {
+                "href": "policy.md#line=54",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-010_smt",
+                "name": "statement",
+                "prose": "The Organization SHALL configure the information system to provide only essential capabilities."
+              },
+              {
+                "id": "POL-CSBP-010_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL configure the information system to provide only essential capabilities.\nUnnecessary services, daemons, protocols, and ports SHALL be disabled.\nDefault credentials SHALL be changed before any system goes into production.\nOnly software approved by the Organization's software catalog SHALL be installed on production systems."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Least Functionality"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "54"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-011",
+            "title": "Unnecessary services, daemons, protocols, and ports SHALL be disabled.",
+            "links": [
+              {
+                "href": "policy.md#line=55",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-011_smt",
+                "name": "statement",
+                "prose": "Unnecessary services, daemons, protocols, and ports SHALL be disabled."
+              },
+              {
+                "id": "POL-CSBP-011_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL configure the information system to provide only essential capabilities.\nUnnecessary services, daemons, protocols, and ports SHALL be disabled.\nDefault credentials SHALL be changed before any system goes into production.\nOnly software approved by the Organization's software catalog SHALL be installed on production systems."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Least Functionality"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "55"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-012",
+            "title": "Default credentials SHALL be changed before any system goes into production.",
+            "links": [
+              {
+                "href": "policy.md#line=56",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-012_smt",
+                "name": "statement",
+                "prose": "Default credentials SHALL be changed before any system goes into production."
+              },
+              {
+                "id": "POL-CSBP-012_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL configure the information system to provide only essential capabilities.\nUnnecessary services, daemons, protocols, and ports SHALL be disabled.\nDefault credentials SHALL be changed before any system goes into production.\nOnly software approved by the Organization's software catalog SHALL be installed on production systems."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Least Functionality"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "56"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-013",
+            "title": "Only software approved by the Organization's software catalog SHALL be installed on production systems.",
+            "links": [
+              {
+                "href": "policy.md#line=57",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-013_smt",
+                "name": "statement",
+                "prose": "Only software approved by the Organization's software catalog SHALL be installed on production systems."
+              },
+              {
+                "id": "POL-CSBP-013_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL configure the information system to provide only essential capabilities.\nUnnecessary services, daemons, protocols, and ports SHALL be disabled.\nDefault credentials SHALL be changed before any system goes into production.\nOnly software approved by the Organization's software catalog SHALL be installed on production systems."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Least Functionality"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "57"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-014",
+            "title": "The information system SHALL monitor and control communications at the external boundary of the system and at key intern...",
+            "links": [
+              {
+                "href": "policy.md#line=77",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-014_smt",
+                "name": "statement",
+                "prose": "The information system SHALL monitor and control communications at the external boundary of the system and at key internal boundaries."
+              },
+              {
+                "id": "POL-CSBP-014_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL monitor and control communications at the external boundary of the system and at key internal boundaries.\nA default-deny firewall policy SHALL be enforced, with only explicitly approved traffic permitted.\nAll communications crossing trust boundaries SHALL be encrypted using TLS 1.2 or higher.\nInternal service-to-service communications within the production environment SHALL use mutual TLS (mTLS) where technically feasible."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Boundary Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "77"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-015",
+            "title": "A default-deny firewall policy SHALL be enforced, with only explicitly approved traffic permitted.",
+            "links": [
+              {
+                "href": "policy.md#line=78",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-015_smt",
+                "name": "statement",
+                "prose": "A default-deny firewall policy SHALL be enforced, with only explicitly approved traffic permitted."
+              },
+              {
+                "id": "POL-CSBP-015_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL monitor and control communications at the external boundary of the system and at key internal boundaries.\nA default-deny firewall policy SHALL be enforced, with only explicitly approved traffic permitted.\nAll communications crossing trust boundaries SHALL be encrypted using TLS 1.2 or higher.\nInternal service-to-service communications within the production environment SHALL use mutual TLS (mTLS) where technically feasible."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Boundary Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "78"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-016",
+            "title": "All communications crossing trust boundaries SHALL be encrypted using TLS 1.",
+            "links": [
+              {
+                "href": "policy.md#line=79",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-016_smt",
+                "name": "statement",
+                "prose": "All communications crossing trust boundaries SHALL be encrypted using TLS 1.2 or higher."
+              },
+              {
+                "id": "POL-CSBP-016_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL monitor and control communications at the external boundary of the system and at key internal boundaries.\nA default-deny firewall policy SHALL be enforced, with only explicitly approved traffic permitted.\nAll communications crossing trust boundaries SHALL be encrypted using TLS 1.2 or higher.\nInternal service-to-service communications within the production environment SHALL use mutual TLS (mTLS) where technically feasible."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Boundary Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "79"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-017",
+            "title": "Internal service-to-service communications within the production environment SHALL use mutual TLS (mTLS) where technical...",
+            "links": [
+              {
+                "href": "policy.md#line=80",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-017_smt",
+                "name": "statement",
+                "prose": "Internal service-to-service communications within the production environment SHALL use mutual TLS (mTLS) where technically feasible."
+              },
+              {
+                "id": "POL-CSBP-017_gdn",
+                "name": "guidance",
+                "prose": "The information system SHALL monitor and control communications at the external boundary of the system and at key internal boundaries.\nA default-deny firewall policy SHALL be enforced, with only explicitly approved traffic permitted.\nAll communications crossing trust boundaries SHALL be encrypted using TLS 1.2 or higher.\nInternal service-to-service communications within the production environment SHALL use mutual TLS (mTLS) where technically feasible."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Boundary Protection"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "80"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-018",
+            "title": "The Organization SHALL identify, report, and correct information system flaws.",
+            "links": [
+              {
+                "href": "policy.md#line=88",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-018_smt",
+                "name": "statement",
+                "prose": "The Organization SHALL identify, report, and correct information system flaws."
+              },
+              {
+                "id": "POL-CSBP-018_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL identify, report, and correct information system flaws.\nCritical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery.\nMedium severity vulnerabilities SHALL be remediated within 30 business days.\nSecurity patches SHALL be applied to all production systems within 14 days of release.\nEmergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Flaw Remediation"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "88"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-019",
+            "title": "Critical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery.",
+            "links": [
+              {
+                "href": "policy.md#line=89",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-019_smt",
+                "name": "statement",
+                "prose": "Critical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery."
+              },
+              {
+                "id": "POL-CSBP-019_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL identify, report, and correct information system flaws.\nCritical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery.\nMedium severity vulnerabilities SHALL be remediated within 30 business days.\nSecurity patches SHALL be applied to all production systems within 14 days of release.\nEmergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Flaw Remediation"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "89"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-020",
+            "title": "Medium severity vulnerabilities SHALL be remediated within 30 business days.",
+            "links": [
+              {
+                "href": "policy.md#line=90",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-020_smt",
+                "name": "statement",
+                "prose": "Medium severity vulnerabilities SHALL be remediated within 30 business days."
+              },
+              {
+                "id": "POL-CSBP-020_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL identify, report, and correct information system flaws.\nCritical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery.\nMedium severity vulnerabilities SHALL be remediated within 30 business days.\nSecurity patches SHALL be applied to all production systems within 14 days of release.\nEmergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Flaw Remediation"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "90"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-021",
+            "title": "Security patches SHALL be applied to all production systems {{ insert: param, id-ref: ee5d6b13-2e6c-5512-9c56-fba6455438...",
+            "links": [
+              {
+                "href": "policy.md#line=91",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "ee5d6b13-2e6c-5512-9c56-fba6455438da_prm_0",
+                "label": "within 14 days",
+                "values": [
+                  "14 days"
+                ],
+                "constraints": [
+                  {
+                    "description": "minimum: 14 days"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-021_smt",
+                "name": "statement",
+                "prose": "Security patches SHALL be applied to all production systems {{ insert: param, id-ref: ee5d6b13-2e6c-5512-9c56-fba6455438da_prm_0 }} of release."
+              },
+              {
+                "id": "POL-CSBP-021_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL identify, report, and correct information system flaws.\nCritical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery.\nMedium severity vulnerabilities SHALL be remediated within 30 business days.\nSecurity patches SHALL be applied to all production systems within 14 days of release.\nEmergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Flaw Remediation"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "91"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-022",
+            "title": "Emergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours.",
+            "links": [
+              {
+                "href": "policy.md#line=92",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-022_smt",
+                "name": "statement",
+                "prose": "Emergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours."
+              },
+              {
+                "id": "POL-CSBP-022_gdn",
+                "name": "guidance",
+                "prose": "The Organization SHALL identify, report, and correct information system flaws.\nCritical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery.\nMedium severity vulnerabilities SHALL be remediated within 30 business days.\nSecurity patches SHALL be applied to all production systems within 14 days of release.\nEmergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Flaw Remediation"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "92"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-023",
+            "title": ": Security and Privacy Controls for Information Systems and Organizations",
+            "links": [
+              {
+                "href": "policy.md#line=100",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-023_smt",
+                "name": "statement",
+                "prose": ": Security and Privacy Controls for Information Systems and Organizations"
+              },
+              {
+                "id": "POL-CSBP-023_gdn",
+                "name": "guidance",
+                "prose": "NIST SP 800-53 Rev. 5: Security and Privacy Controls for Information Systems and Organizations\nNIST SP 800-137: Continuous Monitoring\nCIS Controls v8: Implementation Groups 1 and 2\nISO/IEC 27001:2022: Information Security Management Systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "References"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "100"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-024",
+            "title": ": Continuous Monitoring",
+            "links": [
+              {
+                "href": "policy.md#line=101",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-024_smt",
+                "name": "statement",
+                "prose": ": Continuous Monitoring"
+              },
+              {
+                "id": "POL-CSBP-024_gdn",
+                "name": "guidance",
+                "prose": "NIST SP 800-53 Rev. 5: Security and Privacy Controls for Information Systems and Organizations\nNIST SP 800-137: Continuous Monitoring\nCIS Controls v8: Implementation Groups 1 and 2\nISO/IEC 27001:2022: Information Security Management Systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "References"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "101"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-025",
+            "title": "CIS Controls v8: Implementation Groups 1 and 2",
+            "links": [
+              {
+                "href": "policy.md#line=102",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-025_smt",
+                "name": "statement",
+                "prose": "CIS Controls v8: Implementation Groups 1 and 2"
+              },
+              {
+                "id": "POL-CSBP-025_gdn",
+                "name": "guidance",
+                "prose": "NIST SP 800-53 Rev. 5: Security and Privacy Controls for Information Systems and Organizations\nNIST SP 800-137: Continuous Monitoring\nCIS Controls v8: Implementation Groups 1 and 2\nISO/IEC 27001:2022: Information Security Management Systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "References"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "102"
+              }
+            ]
+          },
+          {
+            "id": "POL-CSBP-026",
+            "title": "ISO/IEC 27001:2022: Information Security Management Systems",
+            "links": [
+              {
+                "href": "policy.md#line=103",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-CSBP-026_smt",
+                "name": "statement",
+                "prose": "ISO/IEC 27001:2022: Information Security Management Systems"
+              },
+              {
+                "id": "POL-CSBP-026_gdn",
+                "name": "guidance",
+                "prose": "NIST SP 800-53 Rev. 5: Security and Privacy Controls for Information Systems and Organizations\nNIST SP 800-137: Continuous Monitoring\nCIS Controls v8: Implementation Groups 1 and 2\nISO/IEC 27001:2022: Information Security Management Systems"
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "policy.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "References"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "103"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "f53d477c-bdb6-5daf-9e73-783a0e80ee33",
+          "title": "NIST SP 800-53 Rev. 5",
+          "description": "Referenced by requirement b61974d3-85a3-54f0-8b5f-faffee26c041",
+          "citation": {
+            "text": "NIST SP 800-53 Rev. 5"
+          }
+        },
+        {
+          "uuid": "d599aec6-6481-58c5-b287-e5f80cfa594e",
+          "title": "NIST SP 800-137",
+          "description": "Referenced by requirement 3d2fc520-e4c2-5262-80d0-72d2058b91ac",
+          "citation": {
+            "text": "NIST SP 800-137"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -2,6 +2,16 @@ use std::collections::HashMap;
 
 use super::types::{ControlSnapshot, DiffEntry, DiffSummary, FieldChange};
 
+/// Compare two control maps and produce a list of diff entries.
+///
+/// Walks both `old_map` and `new_map` to detect:
+/// - **Added** controls: present in `new_map` but not `old_map`
+/// - **Removed** controls: present in `old_map` but not `new_map`
+/// - **Changed** controls: match on control ID but differ in title, description,
+///   or statement prose
+/// - **UuidChanged**: same control ID, no field changes, but different UUID
+///
+/// Results are sorted by control ID for deterministic output.
 #[must_use]
 #[allow(clippy::implicit_hasher)]
 pub fn compare_controls(
@@ -104,6 +114,10 @@ fn compute_field_changes(old: &ControlSnapshot, new: &ControlSnapshot) -> Vec<Fi
     changes
 }
 
+/// Build a [`DiffSummary`] from a list of diff entries.
+///
+/// Counts added, removed, changed, and UUID-change entries.
+/// Computes `unchanged` as `total_old - (removed + changed + uuid_changes)`.
 #[must_use]
 pub fn build_summary(entries: &[DiffEntry], total_old: usize, total_new: usize) -> DiffSummary {
     let mut added = 0;

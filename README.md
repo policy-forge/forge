@@ -137,6 +137,45 @@ forge -v convert policy.md --strategy catalog --format json
 forge -q convert policy.md --strategy catalog --format json
 ```
 
+## 📦 Installation
+
+### From crates.io
+
+```bash
+cargo install forge
+```
+
+### Pre-built binaries
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/policy-forge/forge/releases):
+
+| Platform | Architecture | Archive |
+|---|---|---|
+| Linux | x86_64 | `forge-*-x86_64-unknown-linux-gnu.tar.gz` |
+| macOS | x86_64 (Intel) | `forge-*-x86_64-apple-darwin.tar.gz` |
+| macOS | aarch64 (Apple Silicon) | `forge-*-aarch64-apple-darwin.tar.gz` |
+| Windows | x86_64 | `forge-*-x86_64-pc-windows-msvc.zip` |
+
+**Linux / macOS (one-liner):**
+```bash
+curl -fsSL https://github.com/policy-forge/forge/releases/latest/download/forge-$(uname -m)-$(uname -s | tr '[:upper:]' '[:lower:]').tar.gz | tar xz && sudo mv forge /usr/local/bin/
+```
+
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest -Uri "https://github.com/policy-forge/forge/releases/latest/download/forge-x86_64-pc-windows-msvc.zip" -OutFile forge.zip; Expand-Archive forge.zip -DestinationPath .; Remove-Item forge.zip
+```
+
+Each release includes SHA-256 checksums and [SLSA Level 3](https://slsa.dev/) provenance attestation.
+
+### From source
+
+```bash
+git clone https://github.com/policy-forge/forge.git
+cd forge
+cargo build --release
+```
+
 ## Input Format
 
 FORGE accepts Markdown files (`.md` / `.markdown`) with optional YAML frontmatter:

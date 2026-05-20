@@ -1,20 +1,27 @@
+/// Convert subcommand: policy document → OSCAL artifact.
 pub mod convert;
+/// Diff subcommand: compare two OSCAL artifacts.
 pub mod diff;
 pub mod export;
 pub mod output;
 pub mod profile;
 pub mod resolve;
+/// Trace subcommand: traceability report generator.
 pub mod trace;
+/// Validate subcommand: OSCAL schema validation.
 pub mod validate;
 
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-pub use crate::types::{OutputFormat, Strategy};
+pub use crate::types::{OutputFormat, OutputType, Strategy};
 
 use crate::ForgeError;
 
+/// Top-level CLI configuration for the `forge` tool.
+///
+/// Holds global flags (verbose, quiet) and the active subcommand.
 #[derive(Parser)]
 #[command(
     name = "forge",
@@ -30,6 +37,7 @@ use crate::ForgeError;
     arg_required_else_help = true
 )]
 pub struct Cli {
+    /// The subcommand to execute (convert, export, validate, resolve, diff, trace, profile).
     #[command(subcommand)]
     pub command: Commands,
 
@@ -42,6 +50,9 @@ pub struct Cli {
     pub quiet: bool,
 }
 
+/// CLI subcommands for the `forge` tool.
+///
+/// Each variant maps to a distinct pipeline or utility operation.
 #[derive(Subcommand)]
 pub enum Commands {
     /// Convert a policy document to OSCAL format
@@ -81,6 +92,13 @@ pub enum Commands {
         /// substantive text changes).
         #[arg(long)]
         stable_id_baseline: Option<PathBuf>,
+
+        /// Output artifact type: catalog, component-definition, or ssp.
+        ///
+        /// When omitted, `--strategy` determines the output type (catalog or component-definition).
+        /// Use `--to ssp` to generate a System Security Plan skeleton from the policy document.
+        #[arg(long, value_enum)]
+        to: Option<OutputType>,
 
         /// SSP reference for Assessment Plan generation.
         /// When provided, an Assessment Plan skeleton is written to
@@ -143,7 +161,7 @@ pub enum Commands {
         /// Path to the OSCAL Profile JSON file
         input: Option<PathBuf>,
 
-        /// Output file path (default: <input-stem>-resolved.json)
+        /// Output file path (default: `&lt;input-stem&gt;-resolved.json`)
         #[arg(long)]
         output: Option<PathBuf>,
 
@@ -229,9 +247,14 @@ pub enum ValidateOutputFormat {
 }
 
 /// CLI enum for --schema-type override.
+///
+/// Allows explicitly specifying the OSCAL model type when auto-detection
+/// is ambiguous or incorrect.
 #[derive(ValueEnum, Clone, Debug)]
 pub enum SchemaType {
+    /// Validate against the OSCAL Catalog schema.
     Catalog,
+    /// Validate against the OSCAL Component Definition schema.
     #[value(name = "component-definition")]
     ComponentDefinition,
 }
@@ -253,6 +276,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             jobs,
             stable_id_baseline,
             import_ssp,
+            to,
             summary,
         } => {
             if input.is_empty() {
@@ -270,6 +294,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 summary: *summary,
                 quiet: cli.quiet,
                 jobs: *jobs,
+                to: to.as_ref(),
             };
             convert::execute_dispatch(input, &opts)
         }
@@ -922,6 +947,98 @@ mod tests {
             assert_eq!(output, Some(PathBuf::from("report.json")));
         } else {
             panic!("Expected Validate command");
+        }
+    }
+
+    // T0XX: --to ssp flag parsing tests
+
+    #[test]
+    fn parse_convert_to_ssp() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "policy.md",
+            "--strategy",
+            "catalog",
+            "--to",
+            "ssp",
+        ])
+        .unwrap();
+        if let Commands::Convert { to, .. } = cli.command {
+            assert_eq!(to, Some(OutputType::Ssp));
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_to_component_definition() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "policy.md",
+            "--strategy",
+            "catalog",
+            "--to",
+            "component-definition",
+        ])
+        .unwrap();
+        if let Commands::Convert { to, .. } = cli.command {
+            assert_eq!(to, Some(OutputType::ComponentDefinition));
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_to_catalog() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "policy.md",
+            "--strategy",
+            "component",
+            "--to",
+            "catalog",
+        ])
+        .unwrap();
+        if let Commands::Convert { to, .. } = cli.command {
+            assert_eq!(to, Some(OutputType::Catalog));
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_without_to_defaults_to_none() {
+        let cli = Cli::try_parse_from(["forge", "convert", "policy.md", "--strategy", "catalog"])
+            .unwrap();
+        if let Commands::Convert { to, .. } = cli.command {
+            assert!(to.is_none(), "--to should default to None when not provided");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_to_ssp_with_output_file() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "policy.md",
+            "--strategy",
+            "catalog",
+            "--to",
+            "ssp",
+            "--output",
+            "ssp.json",
+        ])
+        .unwrap();
+        if let Commands::Convert { to, output, .. } = cli.command {
+            assert_eq!(to, Some(OutputType::Ssp));
+            assert_eq!(output, Some(PathBuf::from("ssp.json")));
+        } else {
+            panic!("Expected Convert command");
         }
     }
 }

@@ -1,0 +1,42 @@
+{
+  "profile": {
+    "uuid": "071ecc7f-b11f-58c2-97be-05ceb082a8d2",
+    "metadata": {
+      "title": "Policy Baseline Profile",
+      "last-modified": "2026-05-19T04:04:20.741583Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "imports": [
+      {
+        "href": "catalog-new.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "component-based-security-policy",
+              "POL-CSP-001",
+              "POL-CSP-001_smt",
+              "POL-CSP-001_gdn",
+              "POL-CSP-002",
+              "POL-CSP-002_smt",
+              "POL-CSP-002_gdn",
+              "POL-CSP-003",
+              "POL-CSP-003_smt",
+              "POL-CSP-003_gdn",
+              "POL-CSP-004",
+              "POL-CSP-004_smt",
+              "POL-CSP-004_gdn",
+              "POL-CSP-005",
+              "POL-CSP-005_smt",
+              "POL-CSP-005_gdn",
+              "POL-CSP-006",
+              "POL-CSP-006_smt",
+              "POL-CSP-006_gdn",
+              "POL-CSP-007"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

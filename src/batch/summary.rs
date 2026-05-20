@@ -5,15 +5,26 @@ use std::time::Duration;
 /// or failure with an error message.
 #[derive(Debug)]
 pub enum FileOutcome {
-    Success { output_path: PathBuf },
-    Failure { error_message: String },
+    /// The file was converted successfully.
+    Success {
+        /// Path to the generated output artifact.
+        output_path: PathBuf,
+    },
+    /// The file could not be converted.
+    Failure {
+        /// Human-readable error message describing what went wrong.
+        error_message: String,
+    },
 }
 
 /// Result of converting a single file in a batch.
 #[derive(Debug)]
 pub struct FileResult {
+    /// Path to the input Markdown file.
     pub input_path: PathBuf,
+    /// The conversion outcome (success or failure).
     pub outcome: FileOutcome,
+    /// Wall-clock duration of the conversion attempt.
     pub duration: Duration,
 }
 
@@ -40,10 +51,15 @@ impl FileResult {
 /// Aggregated summary of a batch conversion run.
 #[derive(Debug)]
 pub struct BatchSummary {
+    /// Total number of files processed.
     pub total_files: usize,
+    /// Number of files that converted successfully.
     pub succeeded: usize,
+    /// Number of files that failed conversion.
     pub failed: usize,
+    /// Total wall-clock duration of the entire batch run.
     pub total_duration: Duration,
+    /// Per-file results, sorted by input filename (full path as tie-breaker).
     pub results: Vec<FileResult>,
 }
 

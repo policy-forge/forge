@@ -1,6 +1,15 @@
+//! OSCAL artifact diffing: compare two OSCAL JSON artifacts and produce
+//! structured change reports with added/removed/modified control tracking.
+//!
+//! Supports Catalog and Component Definition model types.
+
+/// Diff engine: compute a `DiffReport` between two artifact snapshots.
 pub mod engine;
+/// Snapshot extraction: build `ControlSnapshot` lists from OSCAL JSON.
 pub mod extractor;
+/// Human-readable diff report formatting.
 pub mod formatter;
+/// Diff domain types: `DiffReport`, `ControlSnapshot`, `DiffEntry`, `FieldChange`.
 pub mod types;
 
 use std::path::Path;

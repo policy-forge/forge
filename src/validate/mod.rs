@@ -51,32 +51,53 @@ pub struct SchemaError {
 /// Errors from validation operations.
 #[derive(Debug, thiserror::Error)]
 pub enum ValidateError {
+    /// Failed to read the artifact file from disk.
     #[error("Failed to read artifact file: {}", path.display())]
     FileRead {
+        /// Path to the artifact file that could not be read.
         path: PathBuf,
+        /// Underlying I/O error.
         #[source]
         source: std::io::Error,
     },
 
+    /// Failed to parse the artifact as valid JSON.
     #[error("Failed to parse JSON: {0}")]
     JsonParse(#[from] serde_json::Error),
 
+    /// The JSON artifact does not contain a recognized OSCAL root key.
     #[error(
         "Unable to detect OSCAL model type from JSON structure. Use --schema-type to specify the model type."
     )]
     UnknownModelType,
 
+    /// The embedded OSCAL schema could not be compiled for validation.
     #[error("Schema compilation failed for {model_type}: {message}")]
-    SchemaCompilation { model_type: String, message: String },
+    SchemaCompilation {
+        /// The OSCAL model type for which the schema failed.
+        model_type: String,
+        /// The error message from the schema compiler.
+        message: String,
+    },
 
+    /// The artifact contains multiple OSCAL model types in one file.
     #[error(
         "Ambiguous OSCAL artifact: file contains multiple model types ({detail}). Each file must contain exactly one OSCAL model."
     )]
-    AmbiguousArtifact { detail: String },
+    AmbiguousArtifact {
+        /// Comma-separated list of the model types detected.
+        detail: String,
+    },
 
+    /// The artifact file exceeds the maximum allowed size for validation.
     #[allow(clippy::cast_precision_loss)]
     #[error("Artifact file is too large ({size_mb:.1}MB, limit: {limit_mb}MB)")]
-    FileTooLarge { size_mb: f64, limit_mb: u64 },
+    FileTooLarge {
+        /// Actual file size in megabytes.
+        size_mb: f64,
+        /// Maximum allowed size in megabytes.
+        limit_mb: u64,
+    },
 }
 
 /// Detect the OSCAL model type from a parsed JSON value.

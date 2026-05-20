@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::ForgeError;
 use crate::batch;
-use crate::cli::{OutputFormat, Strategy};
+use crate::cli::{OutputFormat, OutputType, Strategy};
 use crate::model::{PolicyDocument, PolicySection};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -127,17 +127,75 @@ fn emit_stable_id_change_warning_if_needed(
 
 /// Options for the convert subcommand.
 pub struct ConvertOptions<'a> {
+    /// Path to the input Markdown policy file.
     pub input: &'a Path,
+    /// Conversion strategy: `Catalog` or `Component`.
     pub strategy: &'a Strategy,
+    /// Output format: JSON, XML, or YAML.
     pub format: &'a OutputFormat,
+    /// Optional custom output file path.
     pub output: Option<&'a Path>,
+    /// Maximum allowed input file size in bytes.
     pub max_size: u64,
+    /// Optional path to a source OSCAL Profile for resolution.
     pub source_profile: Option<&'a str>,
+    /// Optional baseline file for stable ID generation.
     pub stable_id_baseline: Option<&'a Path>,
+    /// Optional path to an SSP for import during conversion.
     pub import_ssp: Option<&'a str>,
+    /// Show a summary dashboard after conversion.
     pub summary: bool,
+    /// Suppress non-error output.
     pub quiet: bool,
+    /// Number of parallel jobs for batch conversion.
     pub jobs: u16,
+    /// Output artifact type override (e.g. `ssp`). When `None`, determined by `strategy`.
+    pub to: Option<&'a OutputType>,
+}
+
+/// Execute SSP conversion: read policy metadata → build SSP skeleton → serialize to JSON.
+///
+/// # Errors
+///
+/// Returns `ForgeError` if the pipeline fails or SSP construction fails.
+fn execute_ssp(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
+    let max_size_bytes = max_size_to_bytes(opts.max_size)?;
+
+    if let Some(baseline) = opts.stable_id_baseline {
+        validate_regular_file(baseline, "--stable-id-baseline")?;
+    }
+
+    let start = std::time::Instant::now();
+
+    // Steps 1-7: shared pipeline stages to extract document metadata
+    let doc = crate::pipeline::prepare_document(opts.input, max_size_bytes)?;
+
+    let title = doc.metadata.title.clone();
+    let version = doc.metadata.version.clone();
+
+    // Build SSP skeleton
+    let envelope = crate::oscal::build_ssp(&title, &version)?;
+
+    // Serialize to JSON (SSP is JSON-only)
+    let content = serde_json::to_string_pretty(&envelope)
+        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
+
+    // Write output
+    crate::cli::output::write_output(&content, opts.output)?;
+
+    if !opts.quiet {
+        let elapsed = start.elapsed();
+        let path_label = opts.output.map_or("stdout", |_| "file");
+        eprintln!(
+            "SSP skeleton written to {path_label} in {:.2}ms",
+            elapsed.as_secs_f64() * 1000.0
+        );
+        eprintln!("  Title:   {}", envelope.system_security_plan.metadata.title);
+        eprintln!("  Version: {}", envelope.system_security_plan.metadata.version);
+        eprintln!("  Users:   {}", envelope.system_security_plan.system_implementation.users.len());
+    }
+
+    Ok(())
 }
 
 /// Dispatch convert command: single file → existing path, multiple files → batch mode.
@@ -148,6 +206,17 @@ pub struct ConvertOptions<'a> {
 pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     // Validate inputs upfront; the empty-input invariant is owned by validate_inputs.
     batch::orchestrator::validate_inputs(input)?;
+
+    // --to ssp: single-file only (SSP is per-policy, not batchable)
+    if opts.to == Some(&OutputType::Ssp) {
+        if input.len() > 1 {
+            return Err(ForgeError::InvalidArgument(
+                "--to ssp does not support batch mode (multiple input files)".to_string(),
+            ));
+        }
+        let single_opts = ConvertOptions { input: &input[0], ..*opts };
+        return execute_ssp(&single_opts);
+    }
 
     if input.len() == 1 {
         // Single-file: delegate to existing execute() unchanged (R6 backward compat)
@@ -340,6 +409,7 @@ mod tests {
             summary: false,
             quiet: false,
             jobs: 0,
+            to: None,
         }
     }
 

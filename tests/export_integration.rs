@@ -6,6 +6,10 @@ use std::process::Command;
 
 use tempfile::TempDir;
 
+const CATALOG_JSON: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/export/catalog.json");
+const CATALOG_XML: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/export/catalog.xml");
+const CATALOG_YAML: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/export/catalog.yaml");
+
 /// Helper: run `forge export` with given arguments, return (`exit_code`, stdout, stderr).
 fn run_export(args: &[&str]) -> (i32, String, String) {
     let output = Command::new(env!("CARGO_BIN_EXE_forge"))
@@ -25,7 +29,7 @@ fn run_export(args: &[&str]) -> (i32, String, String) {
 #[test]
 fn cli_export_json_to_xml_stdout() {
     let (exit_code, stdout, _stderr) =
-        run_export(&["tests/fixtures/export/catalog.json", "--format", "xml"]);
+        run_export(&[CATALOG_JSON, "--format", "xml"]);
     assert_eq!(exit_code, 0, "Expected exit code 0");
     assert!(stdout.contains("<catalog"), "stdout should contain XML catalog");
     assert!(stdout.contains("xmlns"), "stdout should contain OSCAL namespace");
@@ -34,7 +38,7 @@ fn cli_export_json_to_xml_stdout() {
 #[test]
 fn cli_export_json_to_yaml_stdout() {
     let (exit_code, stdout, _stderr) =
-        run_export(&["tests/fixtures/export/catalog.json", "--format", "yaml"]);
+        run_export(&[CATALOG_JSON, "--format", "yaml"]);
     assert_eq!(exit_code, 0, "Expected exit code 0");
     assert!(stdout.contains("catalog:"), "stdout should contain YAML catalog key");
 }
@@ -46,7 +50,7 @@ fn cli_export_json_to_xml_output_file() {
     let output_str = output.to_str().unwrap();
 
     let (exit_code, _stdout, _stderr) = run_export(&[
-        "tests/fixtures/export/catalog.json",
+        CATALOG_JSON,
         "--format",
         "xml",
         "--output",
@@ -61,7 +65,7 @@ fn cli_export_json_to_xml_output_file() {
 #[test]
 fn cli_export_xml_to_json() {
     let (exit_code, stdout, _stderr) =
-        run_export(&["tests/fixtures/export/catalog.xml", "--format", "json"]);
+        run_export(&[CATALOG_XML, "--format", "json"]);
     assert_eq!(exit_code, 0, "Expected exit code 0");
     assert!(stdout.contains("\"catalog\""), "stdout should contain JSON catalog key");
 }
@@ -69,7 +73,7 @@ fn cli_export_xml_to_json() {
 #[test]
 fn cli_export_yaml_to_json() {
     let (exit_code, stdout, _stderr) =
-        run_export(&["tests/fixtures/export/catalog.yaml", "--format", "json"]);
+        run_export(&[CATALOG_YAML, "--format", "json"]);
     assert_eq!(exit_code, 0, "Expected exit code 0");
     assert!(stdout.contains("\"catalog\""), "stdout should contain JSON catalog key");
 }
@@ -102,7 +106,7 @@ fn cli_export_nonexistent_file_nonzero_exit() {
 #[test]
 fn cli_export_missing_format_arg() {
     let output = Command::new(env!("CARGO_BIN_EXE_forge"))
-        .args(["export", "tests/fixtures/export/catalog.json"])
+        .args(["export", CATALOG_JSON])
         .output()
         .expect("Failed to execute forge binary");
 
@@ -126,7 +130,7 @@ fn cli_export_read_only_output_path() {
     let output_str = output.to_str().unwrap();
 
     let (exit_code, _stdout, stderr) = run_export(&[
-        "tests/fixtures/export/catalog.json",
+        CATALOG_JSON,
         "--format",
         "xml",
         "--output",

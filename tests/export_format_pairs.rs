@@ -9,8 +9,8 @@ use forge::cli::OutputFormat;
 use forge::cli::export::export_artifact;
 
 /// Run `export_artifact` and return the output file contents.
-fn export_and_read(input: &str, format: OutputFormat) -> String {
-    let input = Path::new(input);
+fn export_and_read(relative_path: &str, format: OutputFormat) -> String {
+    let input = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative_path);
     let dir = tempfile::TempDir::new().unwrap();
     let ext = match format {
         OutputFormat::Json => "json",

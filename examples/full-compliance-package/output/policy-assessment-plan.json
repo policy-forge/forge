@@ -1,0 +1,101 @@
+{
+  "assessment-plan": {
+    "uuid": "f9c55d35-d782-586c-8682-71bf76c926b4",
+    "metadata": {
+      "title": "Assessment Plan for Cloud Security Baseline Policy",
+      "last-modified": "2026-05-19T01:45:14.391212+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "import-ssp": {
+      "href": "system-ssp.json"
+    },
+    "reviewed-controls": {
+      "description": "Controls derived from Cloud Security Baseline Policy for assessment review.",
+      "control-selections": [
+        {
+          "include-controls": [
+            {
+              "control-id": "POL-CSBP-001"
+            },
+            {
+              "control-id": "POL-CSBP-002"
+            },
+            {
+              "control-id": "POL-CSBP-003"
+            },
+            {
+              "control-id": "POL-CSBP-004"
+            },
+            {
+              "control-id": "POL-CSBP-005"
+            },
+            {
+              "control-id": "POL-CSBP-006"
+            },
+            {
+              "control-id": "POL-CSBP-007"
+            },
+            {
+              "control-id": "POL-CSBP-008"
+            },
+            {
+              "control-id": "POL-CSBP-009"
+            },
+            {
+              "control-id": "POL-CSBP-010"
+            },
+            {
+              "control-id": "POL-CSBP-011"
+            },
+            {
+              "control-id": "POL-CSBP-012"
+            },
+            {
+              "control-id": "POL-CSBP-013"
+            },
+            {
+              "control-id": "POL-CSBP-014"
+            },
+            {
+              "control-id": "POL-CSBP-015"
+            },
+            {
+              "control-id": "POL-CSBP-016"
+            },
+            {
+              "control-id": "POL-CSBP-017"
+            },
+            {
+              "control-id": "POL-CSBP-018"
+            },
+            {
+              "control-id": "POL-CSBP-019"
+            },
+            {
+              "control-id": "POL-CSBP-020"
+            },
+            {
+              "control-id": "POL-CSBP-021"
+            },
+            {
+              "control-id": "POL-CSBP-022"
+            },
+            {
+              "control-id": "POL-CSBP-023"
+            },
+            {
+              "control-id": "POL-CSBP-024"
+            },
+            {
+              "control-id": "POL-CSBP-025"
+            },
+            {
+              "control-id": "POL-CSBP-026"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

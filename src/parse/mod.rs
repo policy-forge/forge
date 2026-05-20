@@ -573,7 +573,7 @@ mod tests {
 
     #[test]
     fn all_example_policy_documents_produce_non_empty_sections() {
-        let example_dir = std::path::Path::new("example_data");
+        let example_dir = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/example_data"));
         assert!(example_dir.exists(), "example_data/ directory must exist");
 
         let mut md_count = 0;

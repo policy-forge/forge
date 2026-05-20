@@ -34,9 +34,13 @@ pub enum ValidationStatus {
 /// regardless of whether `--summary` is set.
 #[derive(Debug, Clone)]
 pub struct ConversionStatistics {
+    /// Number of top-level policy sections parsed from the input document.
     pub sections_parsed: usize,
+    /// Number of individual policy requirements extracted across all sections.
     pub requirements_extracted: usize,
+    /// Number of OSCAL controls generated from extracted requirements.
     pub controls_generated: usize,
+    /// Outcome of OSCAL schema validation on the generated artifact.
     pub validation_status: ValidationStatus,
     /// Currently always 0 in production: pipeline aborts on validation failure (EC-5)
     /// before stats are constructed. Retained for formatter unit tests and future
@@ -47,9 +51,12 @@ pub struct ConversionStatistics {
     /// Up to 3 validation error messages for dashboard display.
     /// Currently always empty in production (see `validation_errors` note).
     pub validation_error_messages: Vec<String>,
+    /// Conversion strategy used for this pipeline run
+    /// ([crate::types::Strategy::Catalog] or [crate::types::Strategy::Component]).
     pub strategy: Strategy,
     /// Output path for dashboard display. Set by the CLI layer after pipeline returns.
     pub output_path: Option<PathBuf>,
+    /// Total wall-clock duration of the conversion pipeline.
     pub elapsed: Duration,
 }
 

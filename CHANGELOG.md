@@ -1,51 +1,85 @@
 # Changelog
 
-All notable changes to FORGE are documented in this file.
+All notable changes to FORGE will be documented in this file.
 
-## [0.2.0] — 2026-02-19
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-### Phase 2 Features
+## [1.0.0] — 2026-05-18
 
-#### WI-26 — XML Output
-Added XML serialization for Catalog and Component Definition artifacts via `forge convert --format xml` and `forge export --format xml`.
+FORGE v1.0.0 marks the completion of the Markdown-to-OSCAL pipeline. This release represents the journey from a proof-of-concept v0.1.0 through a production-ready tool that converts Markdown security policy documents into validated OSCAL artifacts across all major model types.
 
-#### WI-27 — YAML Output
-Added YAML serialization for Catalog and Component Definition artifacts via `forge convert --format yaml` and `forge export --format yaml`.
+### Added
 
-#### WI-28 — Round-Trip Testing
-Added bidirectional format conversion verification infrastructure (`forge::testing::assert_semantic_equivalence`) confirming JSON↔XML↔YAML round-trips preserve all semantic content.
+#### Complete OSCAL Model Support
+- **OSCAL Catalog** generation from Markdown policy documents with full control hierarchies, groups, statement parts, and back-matter resources
+- **OSCAL Component Definition** generation with documentary components and implemented requirements mapped from policy controls
+- **OSCAL Profile** generation for control selection from source catalogs
+- **OSCAL Assessment Plan** generation with reviewed-controls and assessment-subjects derived from component definitions
+- **OSCAL System Security Plan (SSP)** template generation with system characteristics, control implementation skeleton, inventory items, users, metadata, and back-matter placeholders
 
-#### WI-29 — `forge export` Subcommand
-New `forge export <INPUT> --format <json|xml|yaml>` subcommand for converting existing OSCAL artifacts between formats. Auto-detects input format from file extension.
+#### Markdown-to-OSCAL Pipeline
+- Full 7-stage pipeline: ingest → parse → assemble → atomize → UUID assignment → citation extraction → modality detection → parameter extraction
+- Event-based Markdown parsing using `pulldown-cmark` with stack-based O(n) heading tree construction
+- Compound requirement atomization — splits "must X and must Y" into atomic controls via regex-based conjunction detection
+- Deterministic UUID v5 assignment (content-addressed, stable across re-conversions)
+- RFC 2119 verb detection for normative (must/shall) vs advisory (should/may) modality classification
+- Parameter extraction for configurable values (time windows, thresholds, frequencies, quantities)
+- URL and bibliographic citation extraction from requirement prose
 
-#### WI-30 — Profile Generation
-New `forge profile --catalog <path> [--include <ids>] [--exclude <ids>]` subcommand that generates OSCAL v1.2.0 Profile JSON/XML/YAML from a source Catalog.
+#### CLI — 7 Subcommands
+- `forge convert` — Markdown to OSCAL conversion (single file and batch mode with `--jobs` parallelism via rayon)
+- `forge export` — Format conversion between JSON, XML, and YAML
+- `forge validate` — Schema validation against embedded NIST OSCAL v1.2.0 JSON schemas, with optional `--round-trip` fidelity check
+- `forge resolve` — OSCAL Profile resolution into flat Catalog via NIST oscal-cli integration
+- `forge profile` — Generate OSCAL Profile by selecting controls from a source Catalog
+- `forge diff` — Semantic diff between two OSCAL artifacts
+- `forge trace` — Source-to-OSCAL traceability reporting with provenance links
 
-#### WI-31 — Profile Parameter Tailoring
-Extended `forge profile` with `--set-param <id> <value>` flag (repeatable) that populates `modify.set-parameters` in the generated Profile.
+#### Validation & Reliability
+- Embedded NIST OSCAL v1.2.0 JSON schemas for offline validation (no network required)
+- Semantic validation checks (orphaned links, missing references)
+- Round-trip validation chain: JSON → XML → YAML → JSON with semantic equality comparison
+- Human-readable and JSON-formatted validation error reports
+- `ForgeError` error taxonomy with categorized exit codes (0–5)
+- 1,450+ test suite covering unit, integration, golden-file (insta snapshots), property-based (proptest), and benchmark (criterion) tests
 
-#### WI-32 — Profile Schema Validation
-`forge validate` now supports OSCAL Profile artifacts in addition to Catalog and Component Definition. Added golden-file snapshot tests for Profile schema conformance.
+#### Cross-Platform Support
+- CI test matrix across ubuntu-latest, macos-latest, and windows-latest
+- Pre-built binary releases for all 4 platforms (Linux, macOS, Windows, plus additional target)
+- SLSA provenance for release artifacts
+- Platform-specific binary naming (`.exe` on Windows)
+- Installation via `cargo install forge` or pre-built binary download from GitHub Releases
 
-#### WI-33 — Normative/Advisory Detection
-Pipeline enrichment pass that classifies each policy requirement as normative (must/shall/will/required) or advisory (should/may/recommended/optional) using RFC 2119 modal verb detection. Classification stored as `prop[name=modality]` on OSCAL controls.
+#### Developer Experience
+- Comprehensive architecture documentation (`docs/architecture.md`) covering pipeline stages, crate structure, and data flow
+- Usage guide (`docs/usage-guide.md`) with end-to-end walkthroughs for all 7 CLI subcommands
+- Community examples (`examples/`) with annotated sample policies demonstrating the full pipeline
+- CONTRIBUTING.md with dev setup, spec-driven workflow, test conventions, and PR process
+- Full API documentation via `cargo doc`
+- Structured logging via `tracing` with `env-filter` support
 
-#### WI-34 — Parameter Extraction
-Pipeline enrichment pass that detects parameterized values in policy text (time windows, thresholds, frequencies, quantities) and emits OSCAL `param` elements on the corresponding controls.
+### Changed
 
-#### WI-35 — Phase 2 Integration Testing
-21 new integration tests across 4 files verifying end-to-end behavior of all Phase 2 features:
-- `tests/integration_round_trip.rs` — multi-format round-trip semantic equivalence (US1)
-- `tests/integration_profile_e2e.rs` — full Profile generation pipeline (US2)
-- `tests/integration_regression.rs` — Phase 1 structural regression verification (US5)
-- `tests/integration_cross_feature.rs` — normative/advisory and param cross-feature verification (US3, US4)
+- Upgraded from Rust edition 2021 to 2024
+- Migrated from minimal dependency set to full production dependencies: clap (CLI), pulldown-cmark (Markdown parsing), quick-xml (XML serialization), serde_yaml_ng (YAML), jsonschema (validation), rayon (parallelism), chrono (timestamps), url (citation parsing), tempfile (test fixtures)
+- Replaced ad-hoc serialization with comprehensive serde-based OSCAL data models
+- Stabilized model output — deterministic UUID v5 ensures identical inputs produce identical outputs across runs
 
-### Quality Gates (v0.2.0)
-- `cargo test`: 1091 passed, 0 failed, 3 ignored
-- `cargo clippy -- -D warnings`: 0 warnings
-- `cargo fmt --check`: 0 violations
-- `cargo deny check`: 0 violations
+### Fixed
 
-## [0.1.0] — Phase 1
+- Platform-specific test failures (path separators, line endings, `#[cfg]` gates) across macOS and Windows
+- Assessment subjects generation from component definitions (WI-42)
+- SSP system placeholder population — inventory items, users, metadata, back-matter, leveraged-authorizations (WI-45/46)
 
-Initial release covering WI-1 through WI-24: Markdown ingestion, OSCAL Catalog and Component Definition generation, control atomization, citation extraction, `forge convert`, `forge validate`, and foundational pipeline infrastructure.
+### Removed
+
+- Empty/stub OSCAL model implementations replaced with fully generated and validated outputs
+
+---
+
+## [0.1.0] — Initial Release
+
+- Proof-of-concept Markdown-to-OSCAL conversion
+- Basic Catalog and Component Definition generation
+- Core parsing and atomization pipeline
+- Initial test suite

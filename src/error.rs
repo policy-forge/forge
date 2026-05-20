@@ -1,3 +1,16 @@
+//! Error types for the FORGE Markdown-to-OSCAL pipeline.
+//!
+//! This module defines [`ForgeError`], a comprehensive error enum covering
+//! all failure modes in the pipeline: input/IO errors, parse/structure errors,
+//! validation/config errors, export errors, argument errors, batch errors,
+//! external dependency errors, and diff errors.
+//!
+//! The [`exit_code`] function maps each variant to a CLI exit code:
+//! - `1`: Input/IO errors
+//! - `2`: Parse/Structure errors
+//! - `3`: Validation/Config errors
+//! - `4`: External dependency unavailable
+
 use std::path::PathBuf;
 
 use thiserror::Error;
@@ -13,170 +26,302 @@ fn format_size(bytes: &u64) -> String {
     }
 }
 
+/// Comprehensive error type for all FORGE pipeline failures.
+///
+/// Each variant is annotated with `#[error("...")]` (via [`thiserror`]) for
+/// automatic [`Display`](std::fmt::Display) and [`Error`](std::error::Error) impls. Variants are organized into
+/// logical groups matching CLI exit code categories.
 #[derive(Debug, Error)]
 pub enum ForgeError {
     // --- Input/IO errors (exit code 1) ---
+    /// The specified input file does not exist.
     #[error("File not found: '{}'", path.display())]
-    FileNotFound { path: PathBuf },
+    FileNotFound {
+        /// The path that could not be found.
+        path: PathBuf,
+    },
 
+    /// The current user lacks read permission for the specified file.
     #[error("Permission denied: '{}'", path.display())]
-    PermissionDenied { path: PathBuf },
+    PermissionDenied {
+        /// The path with insufficient permissions.
+        path: PathBuf,
+    },
 
+    /// The input file exists but contains no content.
     #[error(
         "File is empty: '{}' — provide a non-empty Markdown policy document",
         path.display()
     )]
-    EmptyInput { path: PathBuf },
+    EmptyInput {
+        /// The path to the empty file.
+        path: PathBuf,
+    },
 
+    /// The file appears to contain binary data rather than UTF-8 text.
     #[error(
         "File appears to be binary, not a text document: '{}'. \
          FORGE accepts UTF-8 Markdown (.md) files.",
         path.display()
     )]
-    BinaryFile { path: PathBuf },
+    BinaryFile {
+        /// The path to the binary file.
+        path: PathBuf,
+    },
 
+    /// The file extension is not a supported Markdown format.
     #[error(
         "Unsupported file format '.{extension}'. Only Markdown files (.md, .markdown) are supported. \
          Consider converting with pandoc or markitdown."
     )]
-    UnsupportedFormat { extension: String },
+    UnsupportedFormat {
+        /// The unsupported file extension (without leading dot).
+        extension: String,
+    },
 
+    /// The input file exceeds the maximum allowed size.
     #[error(
         "File '{}' is {}, exceeding the {} limit. Use --max-size to increase the limit.",
         path.display(),
         format_size(.size_bytes),
         format_size(.limit_bytes)
     )]
-    FileTooLarge { path: PathBuf, size_bytes: u64, limit_bytes: u64 },
+    FileTooLarge {
+        /// The path to the oversized file.
+        path: PathBuf,
+        /// The actual file size in bytes.
+        size_bytes: u64,
+        /// The configured size limit in bytes.
+        limit_bytes: u64,
+    },
 
+    /// The file is not valid UTF-8 text.
     #[error(
         "File '{}' is not valid UTF-8 text. FORGE requires UTF-8 encoded Markdown files.",
         path.display()
     )]
-    InvalidEncoding { path: PathBuf },
+    InvalidEncoding {
+        /// The path to the file with invalid encoding.
+        path: PathBuf,
+    },
 
+    /// The path does not refer to a regular file (e.g., it is a directory or symlink).
     #[error("'{}' is not a regular file.", path.display())]
-    NotAFile { path: PathBuf },
+    NotAFile {
+        /// The path that is not a regular file.
+        path: PathBuf,
+    },
 
+    /// A low-level I/O error (from [`std::io`]).
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
     // --- Parse/Structure errors (exit code 2) ---
+    /// The input file contains no recognizable policy structure (headings or numbered clauses).
     #[error(
         "No policy structure detected in '{}' — expected Markdown headings (# Section) or numbered clauses",
         path.display()
     )]
-    NoStructureDetected { path: PathBuf },
+    NoStructureDetected {
+        /// The path to the file lacking structure.
+        path: PathBuf,
+    },
 
+    /// A generic Markdown parsing error.
     #[error("Parse error: {0}")]
     Parse(String),
 
+    /// An error occurred while building an OSCAL catalog.
     #[error("Catalog build error: {0}")]
     CatalogBuild(String),
 
+    /// An error occurred while processing back matter.
     #[error("Back matter error: {0}")]
     BackMatter(String),
 
+    /// An error occurred while building a component definition.
     #[error("Component definition build error: {0}")]
     ComponentDefinitionBuild(String),
 
+    /// An error occurred while building an assessment plan.
     #[error("Assessment plan build error: {0}")]
     AssessmentPlanBuild(String),
 
+    /// An error occurred while building an SSP (System Security Plan).
+    #[error("SSP build error: {0}")]
+    SspBuild(String),
+
+    /// An error occurred during parameter extraction.
     #[error("Parameter extraction error: {0}")]
     ParameterExtraction(String),
 
+    /// The OSCAL artifact type is not supported for tracing.
     #[error("Unsupported OSCAL artifact type for tracing: {detail}")]
-    TraceUnsupportedArtifact { detail: String },
+    TraceUnsupportedArtifact {
+        /// Human-readable detail about the unsupported type.
+        detail: String,
+    },
 
+    /// The input file contains multiple OSCAL model types instead of exactly one.
     #[error(
         "Ambiguous OSCAL artifact: file contains multiple model types ({detail}). Each file must contain exactly one OSCAL model."
     )]
-    AmbiguousArtifact { detail: String },
+    AmbiguousArtifact {
+        /// A description of the conflicting model types found.
+        detail: String,
+    },
 
     // --- Validation/Config errors (exit code 3) ---
+    /// A document validation error (content rule violations).
     #[error("Validation error: {0}")]
     Validation(String),
 
+    /// A configuration error (invalid CLI options, environment, etc.).
     #[error("Configuration error: {0}")]
     Config(String),
 
     // --- Export errors (exit code 1) ---
+    /// The input file extension does not match a supported OSCAL serialization format.
     #[error(
         "Unrecognized file extension '.{extension}' on input file. \
          Expected .json, .xml, .yaml, or .yml for OSCAL artifacts."
     )]
-    ExportUnsupportedExtension { extension: String },
+    ExportUnsupportedExtension {
+        /// The unrecognized file extension.
+        extension: String,
+    },
 
+    /// The input file has no extension, so the OSCAL format cannot be determined.
     #[error(
         "No file extension on input file '{}'. \
          Cannot determine OSCAL format. Expected .json, .xml, .yaml, or .yml.",
         path.display()
     )]
-    ExportNoExtension { path: PathBuf },
+    ExportNoExtension {
+        /// The path to the file with no extension.
+        path: PathBuf,
+    },
 
+    /// The input is not valid JSON, XML, or YAML representing an OSCAL artifact.
     #[error("Input is not a valid OSCAL artifact: {detail}")]
-    ExportInvalidOscal { detail: String },
+    ExportInvalidOscal {
+        /// Human-readable detail about why the artifact is invalid.
+        detail: String,
+    },
 
+    /// The export input file is empty.
     #[error("Export input file is empty: '{}'", path.display())]
-    ExportEmptyInput { path: PathBuf },
+    ExportEmptyInput {
+        /// The path to the empty export input file.
+        path: PathBuf,
+    },
 
     // --- Argument errors (exit code 1) ---
+    /// An invalid command-line argument was provided.
     #[error("Invalid argument: {0}")]
     InvalidArgument(String),
 
     // --- Batch errors (exit code 1) ---
+    /// An error occurred during batch conversion of multiple files.
     #[error("Batch conversion error: {0}")]
     BatchConversion(String),
 
     // --- External dependency errors (exit code 4) ---
+    /// The `oscal-cli` tool was not found on the system PATH.
     #[error(
         "oscal-cli not found on system PATH. Install from: https://github.com/usnistgov/oscal-cli"
     )]
     OscalCliNotFound,
 
+    /// The `oscal-cli` binary was located but is not functional.
     #[error("oscal-cli found at '{}' but is not functional: {detail}", path.display())]
-    OscalCliNotFunctional { path: PathBuf, detail: String },
+    OscalCliNotFunctional {
+        /// The path where `oscal-cli` was found.
+        path: PathBuf,
+        /// Human-readable detail about why the tool is not functional.
+        detail: String,
+    },
 
     // --- oscal-cli execution errors (exit code 1) ---
+    /// The `oscal-cli` process finished with a non-zero exit code.
     #[error("oscal-cli execution failed (exit code {exit_code:?}): {message}")]
-    OscalCliExecution { exit_code: Option<i32>, message: String },
+    OscalCliExecution {
+        /// The exit code returned by `oscal-cli`, or `None` if terminated by signal.
+        exit_code: Option<i32>,
+        /// The error message or combined stderr/stdout output.
+        message: String,
+    },
 
+    /// The `oscal-cli` process exceeded the configured timeout.
     #[error("oscal-cli execution timed out after {timeout:?}")]
-    OscalCliTimeout { timeout: std::time::Duration },
+    OscalCliTimeout {
+        /// The timeout duration that was exceeded.
+        timeout: std::time::Duration,
+    },
 
+    /// Profile resolution requires JSON input, but a different format was provided.
     #[error(
         "Expected JSON input file, got: '{}'. Only .json files are supported for profile resolution.",
         path.display()
     )]
-    ResolveInputNotJson { path: PathBuf },
+    ResolveInputNotJson {
+        /// The path to the non-JSON input file.
+        path: PathBuf,
+    },
 
     // --- Diff errors (exit code 2 for DiffError, exit code 1 for DiffHasChanges) ---
+    /// The diff operation detected changes between golden and current output.
+    ///
+    /// This variant has an empty error message because the diff details are
+    /// printed separately by the CLI.
     #[error("")]
     DiffHasChanges,
 
+    /// Round-trip validation failed: the re-parsed output does not match the original.
     #[error("Round-trip validation failed: {0} unresolved divergence(s)")]
     RoundTripFailed(usize),
 
+    /// A generic error during diff computation.
     #[error("Diff error: {0}")]
     DiffError(String),
 
     // --- Other (exit code 1) ---
+    /// Serialization to JSON, XML, or YAML failed.
     #[error("Serialization error: {0}")]
     Serialization(String),
 
+    /// Validation against the OSCAL JSON Schema failed.
     #[error("Schema validation failed: {0}")]
     SchemaValidation(String),
 }
 
-/// Map a `ForgeError` to a CLI exit code.
+/// Map a [`ForgeError`] to a CLI exit code.
 ///
 /// Exit code categories:
-/// - 0: Success (not handled here — only error cases)
-/// - 1: Input/IO errors (file not found, permission denied, empty, binary, encoding, size, I/O)
-/// - 2: Parse/Structure errors (no structure, parse failure, build errors)
-/// - 3: Validation/Config errors (schema violations, config issues)
-/// - 4: External dependency unavailable (oscal-cli not found or not functional)
+/// - `0`: Success (not handled here — only error cases)
+/// - `1`: Input/IO errors (file not found, permission denied, empty, binary, encoding, size, I/O)
+/// - `2`: Parse/Structure errors (no structure, parse failure, build errors)
+/// - `3`: Validation/Config errors (schema violations, config issues)
+/// - `4`: External dependency unavailable (oscal-cli not found or not functional)
+///
+/// # Examples
+///
+/// ```
+/// use std::path::PathBuf;
+/// use forge::error::{ForgeError, exit_code};
+///
+/// let err = ForgeError::FileNotFound { path: PathBuf::from("missing.md") };
+/// assert_eq!(exit_code(&err), 1);
+///
+/// let err = ForgeError::Parse("bad syntax".into());
+/// assert_eq!(exit_code(&err), 2);
+///
+/// let err = ForgeError::Validation("bad field".into());
+/// assert_eq!(exit_code(&err), 3);
+///
+/// let err = ForgeError::OscalCliNotFound;
+/// assert_eq!(exit_code(&err), 4);
+/// ```
 #[must_use]
 pub fn exit_code(err: &ForgeError) -> u8 {
     match err {
@@ -205,6 +350,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
 
         // Exit 2: Parse/Structure errors + Diff errors
         ForgeError::DiffError(_)
+        | ForgeError::SspBuild(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)

@@ -13,6 +13,8 @@ pub struct ProcessInvoker {
 }
 
 impl ProcessInvoker {
+    /// Create a new `ProcessInvoker` that will invoke the oscal-cli binary
+    /// at the given `executable_path`.
     #[must_use]
     pub fn new(executable_path: PathBuf) -> Self {
         Self { executable_path }

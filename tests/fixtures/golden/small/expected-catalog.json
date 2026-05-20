@@ -1,9 +1,9 @@
 {
   "catalog": {
-    "uuid": "7e00b176-efec-4bde-82e7-4ce3b8045123",
+    "uuid": "0b8be567-7a3d-4400-97bf-73ec0a25e96b",
     "metadata": {
       "title": "Access Control Policy",
-      "last-modified": "2026-02-14T20:27:09.736974+00:00",
+      "last-modified": "2026-05-19T03:40:27.163929+00:00",
       "version": "1.0.0",
       "oscal-version": "1.2.0"
     },
@@ -46,6 +46,10 @@
             ],
             "props": [
               {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "input.md"
@@ -85,6 +89,10 @@
             ],
             "props": [
               {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "input.md"
@@ -103,18 +111,44 @@
           },
           {
             "id": "POL-AC-003",
-            "title": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days",
+            "title": "User accounts must be reviewed {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0 }} and inactive acc...",
             "links": [
               {
                 "href": "input.md#line=14",
                 "rel": "source"
               }
             ],
+            "params": [
+              {
+                "id": "p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0",
+                "label": "quarterly",
+                "values": [
+                  "quarterly"
+                ],
+                "constraints": [
+                  {
+                    "description": "exact: quarterly"
+                  }
+                ]
+              },
+              {
+                "id": "p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_1",
+                "label": "after 90 days",
+                "values": [
+                  "90 days"
+                ],
+                "constraints": [
+                  {
+                    "description": "minimum: 90 days"
+                  }
+                ]
+              }
+            ],
             "parts": [
               {
                 "id": "POL-AC-003_smt",
                 "name": "statement",
-                "prose": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
+                "prose": "User accounts must be reviewed {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_1 }}"
               },
               {
                 "id": "POL-AC-003_gdn",
@@ -123,6 +157,10 @@
               }
             ],
             "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
               {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
@@ -162,6 +200,10 @@
               }
             ],
             "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
               {
                 "name": "source-file",
                 "ns": "https://forge.policy-forge.github.io/ns/trace",

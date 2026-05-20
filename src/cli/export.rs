@@ -12,9 +12,14 @@ use crate::oscal::catalog::CatalogEnvelope;
 use crate::oscal::component_definition::ComponentDefinitionEnvelope;
 
 /// Wrapper enum for deserialized OSCAL models during the export pipeline.
+///
+/// Used internally to carry either a Catalog or Component Definition
+/// through deserialize → validate → serialize stages.
 #[derive(Debug)]
 pub enum OscalModel {
+    /// An OSCAL Catalog envelope (wraps [`CatalogEnvelope`]).
     Catalog(CatalogEnvelope),
+    /// An OSCAL Component Definition envelope (wraps [`ComponentDefinitionEnvelope`]).
     Component(ComponentDefinitionEnvelope),
 }
 

@@ -53,10 +53,15 @@ pub struct ResolveResult {
 }
 
 /// Serialization format for an OSCAL document.
+///
+/// Used when invoking `oscal-cli convert` with the `--to=` flag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OscalFormat {
+    /// JSON serialization format.
     Json,
+    /// XML serialization format.
     Xml,
+    /// YAML serialization format.
     Yaml,
 }
 
@@ -96,6 +101,7 @@ pub struct ConvertResult {
 
 /// Detect whether oscal-cli is installed and functional.
 pub trait OscalCliDetect {
+    /// Run detection: check PATH, verify the binary, and determine version.
     fn detect(&self) -> OscalCliInfo;
 }
 

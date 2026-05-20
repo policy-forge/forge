@@ -1,7 +1,18 @@
+//! Traceability: map OSCAL output fields back to source Markdown lines.
+//!
+//! Produces [`TraceLink`](crate::model::trace::TraceLink) entries for every generated
+//! OSCAL control, parameter, and citation, enabling bidirectional drill-down
+//! from compliance artifact to policy source.
+
+/// Extract trace links from a parsed policy document.
 pub mod extractor;
+/// Format trace reports for human-readable output.
 pub mod formatter;
+/// Trace report types: structured trace output for a conversion run.
 pub mod report;
+/// Resolve trace links against source files.
 pub mod resolver;
+/// Walk the OSCAL output tree and collect trace references.
 pub mod walker;
 
 use std::path::Path;

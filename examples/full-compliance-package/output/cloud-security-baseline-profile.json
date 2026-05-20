@@ -1,0 +1,37 @@
+{
+  "profile": {
+    "uuid": "9bf74229-416e-5281-bf47-1b348d1303c5",
+    "metadata": {
+      "title": "Policy Baseline Profile",
+      "last-modified": "2026-05-18T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "imports": [
+      {
+        "href": "cloud-security-baseline-catalog.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "POL-CSBP-001",
+              "POL-CSBP-002",
+              "POL-CSBP-003",
+              "POL-CSBP-004",
+              "POL-CSBP-005",
+              "POL-CSBP-006",
+              "POL-CSBP-007",
+              "POL-CSBP-008",
+              "POL-CSBP-009",
+              "POL-CSBP-010",
+              "POL-CSBP-011",
+              "POL-CSBP-012",
+              "POL-CSBP-013",
+              "POL-CSBP-014",
+              "POL-CSBP-015"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

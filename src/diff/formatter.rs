@@ -2,6 +2,10 @@ use std::fmt::Write;
 
 use super::types::{DiffEntry, DiffReport};
 
+/// Format a `DiffReport` as a human-readable plain-text report.
+///
+/// Renders added, removed, modified, and unchanged control counts, followed
+/// by per-control field-level change details.
 #[must_use]
 pub fn format_diff_report(report: &DiffReport) -> String {
     let mut out = String::new();

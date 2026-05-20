@@ -1,0 +1,887 @@
+{
+  "component-definition": {
+    "uuid": "155d0e82-69a1-43b8-9b03-975127e382ac",
+    "metadata": {
+      "title": "Cloud Security Baseline Policy",
+      "last-modified": "2026-05-19T01:45:14.368300+00:00",
+      "version": "0.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "components": [
+      {
+        "uuid": "ad0e08be-83ab-55de-9fad-0a7876928a64",
+        "type": "policy",
+        "title": "Cloud Security Baseline Policy",
+        "description": "Documentary component representing the Cloud Security Baseline Policy policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "policy.md"
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "184304d8-edf1-5973-983d-ef52609ef4b1",
+            "source": "cloud-security-baseline-profile.json",
+            "description": "Implementation narratives derived from Cloud Security Baseline Policy.",
+            "implemented-requirements": [
+              {
+                "uuid": "265605de-28b5-5b68-b618-3314209d16c4",
+                "control-id": "POL-CSBP-001",
+                "description": "The information system SHALL enforce approved authorizations for controlling access to the system. Role-Based Access Control (RBAC) SHALL be implemented for all cloud resources, and least privilege SHALL be enforced by default.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Enforcement"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "23"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=23",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "649ac5eb-8445-51f4-9976-d7bdb0a9fe59",
+                "control-id": "POL-CSBP-002",
+                "description": "Production workloads SHALL be isolated from development and testing environments using network segmentation, security groups, or virtual private cloud (VPC) boundaries.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Enforcement"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "24"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=24",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "de7cf610-cea1-5900-a086-029c9644ea4a",
+                "control-id": "POL-CSBP-003",
+                "description": "Cross-environment access SHALL require explicit approval from the environment owner.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Access Enforcement"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "25"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=25",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "248f7a91-9c74-5559-a141-d172043a92f1",
+                "control-id": "POL-CSBP-004",
+                "description": "Successful and unsuccessful logon attempts",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Audit Events"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "31"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=31",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "c4910b66-28d3-5550-9b67-70710ea8d80c",
+                "control-id": "POL-CSBP-005",
+                "description": "Account creation and modification",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Audit Events"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "32"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=32",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "b8ec36cf-f159-50b6-b459-2b51a9940ca4",
+                "control-id": "POL-CSBP-006",
+                "description": "Privilege escalation",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Audit Events"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "33"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=33",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "0c295a85-f580-5bd6-a629-a558200b788b",
+                "control-id": "POL-CSBP-007",
+                "description": "Resource provisioning and deprovisioning",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Audit Events"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "34"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=34",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "8b4ccf25-8094-528c-a425-f659cb43d5ad",
+                "control-id": "POL-CSBP-008",
+                "description": "Security group changes",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Audit Events"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "35"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=35",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "464a38ae-a6ee-527b-9648-0af71cc2fd4b",
+                "control-id": "POL-CSBP-009",
+                "description": "Data export operations",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Audit Events"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "36"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=36",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "8133029b-6bc4-56a3-be28-5a66b3e3891a",
+                "control-id": "POL-CSBP-010",
+                "description": "The Organization SHALL configure the information system to provide only essential capabilities.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Least Functionality"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "54"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=54",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "3f656301-d400-5e6f-9aa1-04a5194692b0",
+                "control-id": "POL-CSBP-011",
+                "description": "Unnecessary services, daemons, protocols, and ports SHALL be disabled.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Least Functionality"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "55"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=55",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "69724001-e326-5fcc-9c4f-4cee4ae1fe7f",
+                "control-id": "POL-CSBP-012",
+                "description": "Default credentials SHALL be changed before any system goes into production.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Least Functionality"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "56"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=56",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "1092f69b-1f84-58c4-85da-a27583f09261",
+                "control-id": "POL-CSBP-013",
+                "description": "Only software approved by the Organization's software catalog SHALL be installed on production systems.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Least Functionality"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "57"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=57",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "360458e4-f204-5838-87aa-1f5eaea23b4f",
+                "control-id": "POL-CSBP-014",
+                "description": "The information system SHALL monitor and control communications at the external boundary of the system and at key internal boundaries.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Boundary Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "77"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=77",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "99c4a36f-0948-570e-aa36-539550e8a961",
+                "control-id": "POL-CSBP-015",
+                "description": "A default-deny firewall policy SHALL be enforced, with only explicitly approved traffic permitted.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Boundary Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "78"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=78",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "7e68f5e8-e49f-5704-9181-bfe1ac730b30",
+                "control-id": "POL-CSBP-016",
+                "description": "All communications crossing trust boundaries SHALL be encrypted using TLS 1.2 or higher.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Boundary Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "79"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=79",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "d32cc84b-7640-592a-994d-148cd874741b",
+                "control-id": "POL-CSBP-017",
+                "description": "Internal service-to-service communications within the production environment SHALL use mutual TLS (mTLS) where technically feasible.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Boundary Protection"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "80"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=80",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "7504b384-d13d-5e91-85b6-7270055da1b9",
+                "control-id": "POL-CSBP-018",
+                "description": "The Organization SHALL identify, report, and correct information system flaws.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Flaw Remediation"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "88"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=88",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "dadd3b0b-a4c9-568f-9d63-b30ad8b7b2d3",
+                "control-id": "POL-CSBP-019",
+                "description": "Critical and high severity vulnerabilities SHALL be remediated within 15 business days of discovery.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Flaw Remediation"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "89"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=89",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "9c736407-9388-5e0a-9547-084094cc0ddf",
+                "control-id": "POL-CSBP-020",
+                "description": "Medium severity vulnerabilities SHALL be remediated within 30 business days.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Flaw Remediation"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "90"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=90",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "27014e3d-0874-5122-9470-8bf6387660ba",
+                "control-id": "POL-CSBP-021",
+                "description": "Security patches SHALL be applied to all production systems {{ insert: param, id-ref: ee5d6b13-2e6c-5512-9c56-fba6455438da_prm_0 }} of release.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Flaw Remediation"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "91"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=91",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "425da6a5-9ea4-5faf-9b24-050d978cac34",
+                "control-id": "POL-CSBP-022",
+                "description": "Emergency patches for actively exploited vulnerabilities SHALL be applied within 48 hours.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Flaw Remediation"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "92"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=92",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "a81c8b21-ac74-5087-b80c-ae6d933913e9",
+                "control-id": "POL-CSBP-023",
+                "description": ": Security and Privacy Controls for Information Systems and Organizations",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "References"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "100"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=100",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "17dba58b-aa80-5285-b2c4-5a5662844b4c",
+                "control-id": "POL-CSBP-024",
+                "description": ": Continuous Monitoring",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "References"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "101"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=101",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "1b1c8bbb-6973-5fa3-888c-9659a5bdade1",
+                "control-id": "POL-CSBP-025",
+                "description": "CIS Controls v8: Implementation Groups 1 and 2",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "References"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "102"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=102",
+                    "rel": "source"
+                  }
+                ]
+              },
+              {
+                "uuid": "c09e2353-a88d-5ca6-8405-96c3ee5366b7",
+                "control-id": "POL-CSBP-026",
+                "description": "ISO/IEC 27001:2022: Information Security Management Systems",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "policy.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "References"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "103"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "policy.md#line=103",
+                    "rel": "source"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "f53d477c-bdb6-5daf-9e73-783a0e80ee33",
+          "title": "NIST SP 800-53 Rev. 5",
+          "description": "Referenced by requirement b61974d3-85a3-54f0-8b5f-faffee26c041",
+          "citation": {
+            "text": "NIST SP 800-53 Rev. 5"
+          }
+        },
+        {
+          "uuid": "d599aec6-6481-58c5-b287-e5f80cfa594e",
+          "title": "NIST SP 800-137",
+          "description": "Referenced by requirement 3d2fc520-e4c2-5262-80d0-72d2058b91ac",
+          "citation": {
+            "text": "NIST SP 800-137"
+          }
+        }
+      ]
+    }
+  }
+}

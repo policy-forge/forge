@@ -1,0 +1,3 @@
+[net]
+timeout = 60
+retry = 10

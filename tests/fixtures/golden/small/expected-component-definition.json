@@ -1,9 +1,9 @@
 {
   "component-definition": {
-    "uuid": "6847605b-296b-48f6-a36a-d28471a898cc",
+    "uuid": "7515aac3-9a0d-4f19-b922-d41b53644428",
     "metadata": {
       "title": "Access Control Policy",
-      "last-modified": "2026-02-14T20:30:57.086898+00:00",
+      "last-modified": "2026-05-19T03:40:28.459590+00:00",
       "version": "1.0.0",
       "oscal-version": "1.2.0"
     },
@@ -22,17 +22,14 @@
         ],
         "control-implementations": [
           {
+            "uuid": "86c41a18-c53a-5cbb-aab2-022e314d9f29",
+            "source": "test-profile.json",
             "description": "Implementation narratives derived from Access Control Policy.",
             "implemented-requirements": [
               {
+                "uuid": "43ca0e3f-ab89-52dc-822a-bb85c10a7ae2",
                 "control-id": "POL-AC-001",
                 "description": "All users must authenticate using approved multi-factor credentials before accessing any system",
-                "links": [
-                  {
-                    "href": "input.md#line=12",
-                    "rel": "source"
-                  }
-                ],
                 "props": [
                   {
                     "name": "source-file",
@@ -48,19 +45,23 @@
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "12"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
-                "uuid": "399ff0da-8d1e-5a57-a03a-bef0a828530a"
-              },
-              {
-                "control-id": "POL-AC-002",
-                "description": "Access permissions must follow the principle of least privilege for all user roles",
                 "links": [
                   {
-                    "href": "input.md#line=13",
+                    "href": "input.md#line=12",
                     "rel": "source"
                   }
-                ],
+                ]
+              },
+              {
+                "uuid": "3a63ced6-5862-59d1-b1a6-a5d473ea92ce",
+                "control-id": "POL-AC-002",
+                "description": "Access permissions must follow the principle of least privilege for all user roles",
                 "props": [
                   {
                     "name": "source-file",
@@ -76,19 +77,23 @@
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "13"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
-                "uuid": "1b4c9bbf-eae3-5400-84c7-332dd641c234"
-              },
-              {
-                "control-id": "POL-AC-003",
-                "description": "User accounts must be reviewed quarterly and inactive accounts disabled after 90 days",
                 "links": [
                   {
-                    "href": "input.md#line=14",
+                    "href": "input.md#line=13",
                     "rel": "source"
                   }
-                ],
+                ]
+              },
+              {
+                "uuid": "07d7c0b6-69e3-5d08-8070-e0f81854ecce",
+                "control-id": "POL-AC-003",
+                "description": "User accounts must be reviewed {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_1 }}",
                 "props": [
                   {
                     "name": "source-file",
@@ -104,19 +109,23 @@
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "14"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
-                "uuid": "7a954244-7de0-53f9-b6bf-ce6c25b8dd80"
-              },
-              {
-                "control-id": "POL-AC-004",
-                "description": "All authentication events must be logged and retained for a minimum of one year",
                 "links": [
                   {
-                    "href": "input.md#line=15",
+                    "href": "input.md#line=14",
                     "rel": "source"
                   }
-                ],
+                ]
+              },
+              {
+                "uuid": "9ac70b72-1b4c-5be5-9a58-4df02ff62abd",
+                "control-id": "POL-AC-004",
+                "description": "All authentication events must be logged and retained for a minimum of one year",
                 "props": [
                   {
                     "name": "source-file",
@@ -132,13 +141,20 @@
                     "name": "source-line",
                     "ns": "https://forge.policy-forge.github.io/ns/trace",
                     "value": "15"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
                   }
                 ],
-                "uuid": "b4c2e62d-07d0-519c-a7ad-2cbf3a403a9f"
+                "links": [
+                  {
+                    "href": "input.md#line=15",
+                    "rel": "source"
+                  }
+                ]
               }
-            ],
-            "source": "nist-800-53.json",
-            "uuid": "5f939f7d-bedf-5d5d-90a3-1e2431320888"
+            ]
           }
         ]
       }
