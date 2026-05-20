@@ -9,7 +9,7 @@ use super::types::{ControlSnapshot, DiffEntry, DiffSummary, FieldChange};
 /// - **Removed** controls: present in `old_map` but not `new_map`
 /// - **Changed** controls: match on control ID but differ in title, description,
 ///   or statement prose
-/// - **UuidChanged**: same control ID, no field changes, but different UUID
+/// - **`UuidChanged`**: same control ID, no field changes, but different UUID
 ///
 /// Results are sorted by control ID for deterministic output.
 #[must_use]

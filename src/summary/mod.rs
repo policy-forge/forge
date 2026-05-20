@@ -52,7 +52,7 @@ pub struct ConversionStatistics {
     /// Currently always empty in production (see `validation_errors` note).
     pub validation_error_messages: Vec<String>,
     /// Conversion strategy used for this pipeline run
-    /// ([crate::types::Strategy::Catalog] or [crate::types::Strategy::Component]).
+    /// ([`crate::types::Strategy::Catalog`] or [`crate::types::Strategy::Component`]).
     pub strategy: Strategy,
     /// Output path for dashboard display. Set by the CLI layer after pipeline returns.
     pub output_path: Option<PathBuf>,

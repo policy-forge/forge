@@ -36,7 +36,7 @@ pub struct AssessmentPlan {
     /// Container for the reviewed-controls scope definition.
     #[serde(rename = "reviewed-controls")]
     pub reviewed_controls: ReviewedControls,
-    /// Optional assessment tasks generated from PolicyRequirements (WI-42).
+    /// Optional assessment tasks generated from `PolicyRequirements` (WI-42).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tasks: Option<Vec<AssessmentTask>>,
     /// Optional assessment subjects referencing documentary components (WI-42).
@@ -96,7 +96,7 @@ pub struct ApIncludeControl {
 // ─── WI-42 Structs: Tasks & Subjects ────────────────────────────────────
 
 /// An assessment task describing a specific verification activity.
-/// One task is generated per PolicyRequirement.
+/// One task is generated per `PolicyRequirement`.
 #[derive(Debug, Clone, Serialize)]
 pub struct AssessmentTask {
     /// UUID v5 identifier for this task, derived from the requirement's `stable_id`.
@@ -251,14 +251,14 @@ pub fn derive_ap_output_path(input: &Path, primary_output: Option<&Path>) -> Pat
 
 // ─── WI-42: Task & Subject Generation ──────────────────────────────────
 
-/// Generate assessment tasks from PolicyRequirements.
+/// Generate assessment tasks from `PolicyRequirements`.
 ///
 /// Each requirement maps to one task with assessment guidance.
-/// Task UUIDs are deterministic v5 derived from the requirement's stable_id.
+/// Task UUIDs are deterministic v5 derived from the requirement's `stable_id`.
 ///
 /// # Arguments
 ///
-/// * `requirements` — PolicyRequirements with populated `stable_id` fields
+/// * `requirements` — `PolicyRequirements` with populated `stable_id` fields
 ///
 /// # Returns
 ///
@@ -356,7 +356,7 @@ pub fn create_assessment_subjects(
 /// # Arguments
 ///
 /// * `envelope` — The WI-41 Assessment Plan skeleton (mutable, modified in place)
-/// * `tasks` — Assessment tasks generated from PolicyRequirements
+/// * `tasks` — Assessment tasks generated from `PolicyRequirements`
 /// * `subjects` — Assessment subjects referencing documentary components
 pub fn complete_assessment_plan(
     envelope: &mut AssessmentPlanEnvelope,

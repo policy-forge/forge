@@ -201,10 +201,10 @@ pub struct SspComponentInput {
     pub component_type: String,
 }
 
-/// Generate inventory-items (SspComponent entries) from component definitions.
+/// Generate inventory-items (`SspComponent` entries) from component definitions.
 ///
 /// For each `SspComponentInput`, produces an `SspComponent` with:
-/// - A deterministic UUIDv5 derived from the component title using `COMPONENT_NAMESPACE`
+/// - A deterministic `UUIDv5` derived from the component title using `COMPONENT_NAMESPACE`
 /// - Description from the definition
 /// - A placeholder `ResponsibleRole` with TODO markers for assignment
 /// - Operational status set to "operational" by default
@@ -233,6 +233,7 @@ pub struct SspComponentInput {
 /// assert_eq!(items.len(), 1);
 /// assert_eq!(items[0].title, "Web Application Firewall");
 /// ```
+#[must_use]
 pub fn generate_inventory_items(definitions: &[SspComponentInput]) -> Vec<SspComponent> {
     definitions
         .iter()
@@ -521,8 +522,7 @@ pub fn build_ssp_skeleton(
     let ssp = &mut envelope.system_security_plan;
     ssp.control_implementation = Some(SspControlImplementation {
         description: format!(
-            "Control implementation statements derived from {title}.",
-            title = policy_title
+            "Control implementation statements derived from {policy_title}.",
         ),
         implemented_requirements,
     });

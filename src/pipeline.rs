@@ -251,7 +251,7 @@ fn derive_ap_filename(input_path: &Path) -> String {
         .map_or_else(|| "assessment-plan.json".to_owned(), |f| f.to_string_lossy().into_owned())
 }
 
-/// Recursively collect all PolicyRequirements from a PolicyDocument's section tree.
+/// Recursively collect all `PolicyRequirements` from a `PolicyDocument`'s section tree.
 ///
 /// Traverses sections in depth-first order, collecting owned clones of every
 /// requirement. Used to feed `generate_assessment_tasks` at the end of catalog

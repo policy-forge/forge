@@ -6,7 +6,7 @@ use clap::ValueEnum;
 ///
 /// Distinguishes between the three core OSCAL document types that FORGE can
 /// detect and process: [Catalog][crate::oscal::catalog::OscalCatalog],
-/// [ComponentDefinition][crate::oscal::component_definition::ComponentDefinition], and
+/// [`ComponentDefinition`][crate::oscal::component_definition::ComponentDefinition], and
 /// [Profile][crate::oscal::profile::OscalProfile].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OscalModelType {
