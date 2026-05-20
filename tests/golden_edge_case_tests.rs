@@ -113,6 +113,8 @@ fn run_convert_with_baseline(
 }
 
 fn assert_required_substrings(haystack: &str, expected: &[String], context: &str) {
+    // Normalize Windows path separators for cross-platform compatibility
+    let haystack = haystack.replace('\\', "/");
     for needle in expected {
         assert!(
             haystack.contains(needle),
