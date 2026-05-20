@@ -18,7 +18,7 @@ fn export_and_read(relative_path: &str, format: OutputFormat) -> String {
         OutputFormat::Yaml => "yaml",
     };
     let output = dir.path().join(format!("out.{ext}"));
-    export_artifact(input, format, Some(&output)).unwrap();
+    export_artifact(&input, format, Some(&output)).unwrap();
     std::fs::read_to_string(&output).unwrap()
 }
 
