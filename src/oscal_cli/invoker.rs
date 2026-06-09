@@ -93,7 +93,10 @@ fn run_oscal_cli(
     };
 
     // Join the stderr drain thread (process has exited, so this won't block long)
-    let stderr_str = stderr_thread.join().unwrap_or_default();
+    let stderr_str = stderr_thread.join().unwrap_or_else(|_| {
+        tracing::error!("oscal-cli stderr collection thread panicked");
+        String::new()
+    });
 
     // Sanitize stderr to prevent terminal escape injection (SEC-5).
     let stderr_str = crate::sanitize::strip_control_chars(&stderr_str);

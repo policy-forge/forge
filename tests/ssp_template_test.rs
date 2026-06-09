@@ -10,23 +10,18 @@
 use std::path::Path;
 use std::sync::LazyLock;
 
-use forge::model::DocumentMetadata;
 use forge::oscal::catalog::OscalMetadata;
-use forge::oscal::{
-    OscalCatalog, OscalControl, OscalGroup,
-    SspComponentInput, build_ssp_skeleton,
-};
+use forge::oscal::{OscalCatalog, OscalControl, OscalGroup, SspComponentInput, build_ssp_skeleton};
 use regex::Regex;
 use serde_json::Value;
 
-const FIXTURE_PATH: &str = "tests/fixtures/ssp_template_golden.json";
+const FIXTURE_PATH: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/ssp_template_golden.json");
 
 /// Pre-compiled UUID regex (RFC 4122 format).
 static UUID_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
-    )
-    .expect("UUID regex is valid")
+    Regex::new(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+        .expect("UUID regex is valid")
 });
 
 // ─── Normalization ───────────────────────────────────────────────────────
@@ -53,7 +48,7 @@ fn normalize_for_golden(value: &mut Value, uuid_counter: &mut usize) {
             }
         }
         Value::String(s) if UUID_RE.is_match(s) => {
-            *value = Value::String(format!("<UUID:{}>", uuid_counter));
+            *value = Value::String(format!("<UUID:{uuid_counter}>"));
             *uuid_counter += 1;
         }
         _ => {}
@@ -135,8 +130,7 @@ fn ssp_template_golden() {
     )
     .expect("SSP skeleton build failed");
 
-    let json_str =
-        serde_json::to_string_pretty(&envelope).expect("SSP serialization failed");
+    let json_str = serde_json::to_string_pretty(&envelope).expect("SSP serialization failed");
 
     let mut parsed: Value = serde_json::from_str(&json_str).expect("SSP JSON parse failed");
 
@@ -184,10 +178,7 @@ fn ssp_template_golden() {
                 }
             }
         }
-        panic!(
-            "SSP template output differs from golden file ({} diff lines)",
-            diffs
-        );
+        panic!("SSP template output differs from golden file ({diffs} diff lines)");
     }
 }
 
@@ -214,23 +205,14 @@ fn ssp_template_has_required_sections() {
         ssp.metadata.title.contains("Test Security Policy"),
         "Metadata title should reference policy"
     );
-    assert_eq!(ssp.metadata.oscal_version, "1.1.3");
+    assert_eq!(ssp.metadata.oscal_version, forge::oscal::OSCAL_VERSION);
 
     // System-implementation has components and users
-    assert!(
-        !ssp.system_implementation.components.is_empty(),
-        "Must have inventory components"
-    );
-    assert!(
-        !ssp.system_implementation.users.is_empty(),
-        "Must have placeholder users"
-    );
+    assert!(!ssp.system_implementation.components.is_empty(), "Must have inventory components");
+    assert!(!ssp.system_implementation.users.is_empty(), "Must have placeholder users");
 
     // Control-implementation is populated
-    let ci = ssp
-        .control_implementation
-        .as_ref()
-        .expect("Must have control-implementation");
+    let ci = ssp.control_implementation.as_ref().expect("Must have control-implementation");
     assert_eq!(
         ci.implemented_requirements.len(),
         2,
@@ -258,10 +240,7 @@ fn ssp_template_has_required_sections() {
 
     // System-id has TODO markers
     let sys_id = ssp.system_id.as_ref().expect("Must have system-id");
-    assert!(
-        sys_id.id.contains("TODO"),
-        "System ID must have TODO marker"
-    );
+    assert!(sys_id.id.contains("TODO"), "System ID must have TODO marker");
 }
 
 /// Verify that the SSP references the correct control IDs from the catalog.
@@ -289,8 +268,5 @@ fn ssp_control_ids_match_catalog() {
         ci.implemented_requirements.iter().map(|r| r.control_id.as_str()).collect();
 
     assert!(control_ids.contains(&"POL-AC-001"), "Must include top-level control");
-    assert!(
-        control_ids.contains(&"POL-DP-001"),
-        "Must include group control"
-    );
+    assert!(control_ids.contains(&"POL-DP-001"), "Must include group control");
 }

@@ -69,6 +69,16 @@ pub enum ForgeError {
         path: PathBuf,
     },
 
+    /// A PDF contained no extractable text; OCR is not supported by this release.
+    #[error(
+        "PDF has no extractable text: '{}'. OCR for scanned/image-only PDFs is not supported; provide a text-based PDF, DOCX, or Markdown source.",
+        path.display()
+    )]
+    OcrNotSupported {
+        /// The path to the scanned/image-only PDF.
+        path: PathBuf,
+    },
+
     /// The file extension is not a supported Markdown format.
     #[error(
         "Unsupported file format '.{extension}'. Only Markdown files (.md, .markdown) are supported. \
@@ -330,6 +340,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::PermissionDenied { .. }
         | ForgeError::EmptyInput { .. }
         | ForgeError::BinaryFile { .. }
+        | ForgeError::OcrNotSupported { .. }
         | ForgeError::UnsupportedFormat { .. }
         | ForgeError::FileTooLarge { .. }
         | ForgeError::InvalidEncoding { .. }
@@ -661,6 +672,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::duration_suboptimal_units)]
     fn oscal_cli_timeout_display() {
         let err = ForgeError::OscalCliTimeout { timeout: std::time::Duration::from_secs(60) };
         assert!(err.to_string().contains("timed out"));
@@ -704,6 +716,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::duration_suboptimal_units)]
     fn exit_code_oscal_cli_timeout_returns_1() {
         assert_eq!(
             exit_code(&ForgeError::OscalCliTimeout { timeout: std::time::Duration::from_secs(60) }),

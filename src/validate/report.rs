@@ -92,7 +92,8 @@ pub fn render_text_report(report: &ValidationReport) -> String {
 /// Output MUST contain only `ValidationReport`/`ValidationError` fields (SEC-3).
 #[must_use]
 pub fn render_json_report(report: &ValidationReport) -> String {
-    serde_json::to_string_pretty(report).unwrap_or_else(|_| {
+    serde_json::to_string_pretty(report).unwrap_or_else(|e| {
+        tracing::error!(error = %e, "ValidationReport serialization failed; returning stub");
         // SEC-3: fallback must conform to ValidationReport schema (no extra fields).
         r#"{"artifact_path":"","is_valid":false,"errors":[],"schema_error_count":0,"semantic_error_count":0}"#.to_string()
     })

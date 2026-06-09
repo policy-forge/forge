@@ -153,12 +153,27 @@ pub struct ConvertOptions<'a> {
     pub to: Option<&'a OutputType>,
 }
 
+fn effective_strategy(opts: &ConvertOptions<'_>) -> Strategy {
+    match opts.to {
+        Some(OutputType::Catalog) => Strategy::Catalog,
+        Some(OutputType::ComponentDefinition) => Strategy::Component,
+        Some(OutputType::Ssp) | None => *opts.strategy,
+    }
+}
+
 /// Execute SSP conversion: read policy metadata → build SSP skeleton → serialize to JSON.
 ///
 /// # Errors
 ///
 /// Returns `ForgeError` if the pipeline fails or SSP construction fails.
 fn execute_ssp(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
+    if *opts.format != OutputFormat::Json {
+        return Err(ForgeError::InvalidArgument(format!(
+            "--to ssp currently supports only --format json, not {}",
+            opts.format.as_extension()
+        )));
+    }
+
     let max_size_bytes = max_size_to_bytes(opts.max_size)?;
 
     if let Some(baseline) = opts.stable_id_baseline {
@@ -173,8 +188,16 @@ fn execute_ssp(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     let title = doc.metadata.title.clone();
     let version = doc.metadata.version.clone();
 
-    // Build SSP skeleton
-    let envelope = crate::oscal::build_ssp(&title, &version)?;
+    let catalog = crate::oscal::build_catalog(&doc, None)?;
+
+    // Build SSP skeleton with policy-derived control-implementation entries.
+    let envelope = crate::oscal::build_ssp_skeleton(
+        &title,
+        &version,
+        &catalog,
+        &[],
+        opts.source_profile.unwrap_or(""),
+    )?;
 
     // Serialize to JSON (SSP is JSON-only)
     let content = serde_json::to_string_pretty(&envelope)
@@ -252,8 +275,10 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
         }
     }
 
-    // Validate --source-profile upfront for component strategy (SEC-3, SEC-4, EC-4)
-    let resolved_profile = if matches!(opts.strategy, Strategy::Component) {
+    let strategy = effective_strategy(opts);
+
+    // Validate --source-profile upfront for component output (SEC-3, SEC-4, EC-4)
+    let resolved_profile = if matches!(strategy, Strategy::Component) {
         resolve_source_profile(opts.source_profile)?
     } else {
         opts.source_profile
@@ -267,7 +292,7 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
     // Run batch conversion
     let batch_summary = batch::orchestrator::run_batch_conversion(
         &path_pairs,
-        *opts.strategy,
+        strategy,
         *opts.format,
         max_size_bytes,
         resolved_profile,
@@ -305,7 +330,9 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
 
     let start = std::time::Instant::now();
 
-    let mut result = match opts.strategy {
+    let strategy = effective_strategy(opts);
+
+    let mut result = match strategy {
         Strategy::Catalog => crate::pipeline::run_catalog_pipeline(
             opts.input,
             max_size_bytes,
@@ -358,6 +385,28 @@ mod tests {
     use super::*;
     use crate::model::{DocumentMetadata, PolicyRequirement};
     use std::path::PathBuf;
+    use tempfile::TempDir;
+
+    const SAMPLE_PROFILE: &str =
+        concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/sample_profile.json");
+
+    fn write_policy(dir: &TempDir) -> PathBuf {
+        let input = dir.path().join("policy.md");
+        std::fs::write(
+            &input,
+            r#"---
+title: "Policy"
+version: "1.0.0"
+---
+
+# Access Control
+
+- Users must authenticate with MFA
+"#,
+        )
+        .unwrap();
+        input
+    }
 
     fn single_requirement_doc(section_title: &str, stable_id: &str) -> PolicyDocument {
         PolicyDocument {
@@ -482,6 +531,129 @@ mod tests {
             !err.to_string().contains("not yet supported"),
             "YAML format should be accepted, not rejected. Got: {err}"
         );
+    }
+
+    #[test]
+    fn to_component_definition_overrides_catalog_strategy() {
+        let dir = TempDir::new().unwrap();
+        let input = write_policy(&dir);
+        let output = dir.path().join("component.json");
+        let strategy = Strategy::Catalog;
+        let format = OutputFormat::Json;
+        let to = OutputType::ComponentDefinition;
+        let opts = ConvertOptions {
+            input: &input,
+            strategy: &strategy,
+            format: &format,
+            output: Some(&output),
+            max_size: 10,
+            source_profile: Some(SAMPLE_PROFILE),
+            stable_id_baseline: None,
+            import_ssp: None,
+            summary: false,
+            quiet: true,
+            jobs: 0,
+            to: Some(&to),
+        };
+
+        execute_dispatch(std::slice::from_ref(&input), &opts).unwrap();
+
+        let actual: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(output).unwrap()).unwrap();
+        assert!(actual.get("component-definition").is_some());
+        assert!(actual.get("catalog").is_none());
+    }
+
+    #[test]
+    fn to_catalog_overrides_component_strategy_without_source_profile() {
+        let dir = TempDir::new().unwrap();
+        let input = write_policy(&dir);
+        let output = dir.path().join("catalog.json");
+        let strategy = Strategy::Component;
+        let format = OutputFormat::Json;
+        let to = OutputType::Catalog;
+        let opts = ConvertOptions {
+            input: &input,
+            strategy: &strategy,
+            format: &format,
+            output: Some(&output),
+            max_size: 10,
+            source_profile: None,
+            stable_id_baseline: None,
+            import_ssp: None,
+            summary: false,
+            quiet: true,
+            jobs: 0,
+            to: Some(&to),
+        };
+
+        execute_dispatch(std::slice::from_ref(&input), &opts).unwrap();
+
+        let actual: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(output).unwrap()).unwrap();
+        assert!(actual.get("catalog").is_some());
+        assert!(actual.get("component-definition").is_none());
+    }
+
+    #[test]
+    fn to_ssp_includes_policy_derived_control_implementation() {
+        let dir = TempDir::new().unwrap();
+        let input = write_policy(&dir);
+        let output = dir.path().join("ssp.json");
+        let strategy = Strategy::Catalog;
+        let format = OutputFormat::Json;
+        let to = OutputType::Ssp;
+        let opts = ConvertOptions {
+            input: &input,
+            strategy: &strategy,
+            format: &format,
+            output: Some(&output),
+            max_size: 10,
+            source_profile: None,
+            stable_id_baseline: None,
+            import_ssp: None,
+            summary: false,
+            quiet: true,
+            jobs: 0,
+            to: Some(&to),
+        };
+
+        execute_dispatch(std::slice::from_ref(&input), &opts).unwrap();
+
+        let actual: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(output).unwrap()).unwrap();
+        let implemented =
+            actual["system-security-plan"]["control-implementation"]["implemented-requirements"]
+                .as_array()
+                .unwrap();
+        assert!(!implemented.is_empty());
+    }
+
+    #[test]
+    fn to_ssp_rejects_non_json_format() {
+        let dir = TempDir::new().unwrap();
+        let input = write_policy(&dir);
+        let strategy = Strategy::Catalog;
+        let format = OutputFormat::Yaml;
+        let to = OutputType::Ssp;
+        let opts = ConvertOptions {
+            input: &input,
+            strategy: &strategy,
+            format: &format,
+            output: None,
+            max_size: 10,
+            source_profile: None,
+            stable_id_baseline: None,
+            import_ssp: None,
+            summary: false,
+            quiet: true,
+            jobs: 0,
+            to: Some(&to),
+        };
+
+        let err = execute_dispatch(std::slice::from_ref(&input), &opts).unwrap_err();
+
+        assert!(err.to_string().contains("--to ssp currently supports only --format json"));
     }
 
     #[test]

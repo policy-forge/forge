@@ -21,9 +21,6 @@ use crate::oscal_cli::{OscalCliDetect, OscalCliInvoke, ResolveArgs};
 /// * `ForgeError::OscalCliExecution` — oscal-cli exited non-zero.
 /// * `ForgeError::OscalCliTimeout` — oscal-cli exceeded timeout.
 ///
-/// # Panics
-///
-/// Panics if oscal-cli is detected as functional but has no executable path (invariant violation).
 pub fn execute(
     input: Option<&Path>,
     output: Option<&Path>,
@@ -96,9 +93,12 @@ pub fn execute(
     );
 
     // Build invoker and resolve
-    let invoker = ProcessInvoker::new(
-        cli_info.executable_path.expect("functional oscal-cli must have a path"),
-    );
+    let invoker = ProcessInvoker::new(cli_info.executable_path.ok_or_else(|| {
+        ForgeError::OscalCliNotFunctional {
+            path: PathBuf::from("oscal-cli"),
+            detail: "oscal-cli reported as functional but has no executable path".to_string(),
+        }
+    })?);
 
     let resolve_args = ResolveArgs {
         profile_path: canonical_input,
@@ -113,7 +113,7 @@ pub fn execute(
         tracing::warn!(oscal_cli_warning = %warning, "oscal-cli stderr warning");
     }
 
-    println!("Resolved catalog written to: {}", result.output_path.display());
+    tracing::info!(output_path = %result.output_path.display(), "resolved catalog written");
 
     Ok(())
 }

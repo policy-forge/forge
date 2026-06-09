@@ -143,6 +143,12 @@ pub fn run_catalog_pipeline(
 
     // Steps 1-9: shared pipeline stages
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
+    if doc_with_ids.metadata.version == "0.0.0" {
+        tracing::warn!(
+            source = %input_path.display(),
+            "document version not found; defaulting OSCAL metadata version to 0.0.0"
+        );
+    }
 
     let sections_parsed = doc_with_ids.total_sections();
     let requirements_extracted = doc_with_ids.total_requirements();
@@ -302,6 +308,12 @@ pub fn run_component_pipeline(
 
     // Steps 1-9: shared pipeline stages
     let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
+    if doc_with_ids.metadata.version == "0.0.0" {
+        tracing::warn!(
+            source = %input_path.display(),
+            "document version not found; defaulting OSCAL metadata version to 0.0.0"
+        );
+    }
 
     let sections_parsed = doc_with_ids.total_sections();
     let requirements_extracted = doc_with_ids.total_requirements();

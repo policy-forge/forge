@@ -14,7 +14,7 @@ pub fn execute(old_path: &Path, new_path: &Path) -> Result<bool, ForgeError> {
     tracing::info!(artifact_type = %report.artifact_type, "Artifact type detected");
 
     let output = format_diff_report(&report);
-    print!("{output}");
+    crate::cli::output::write_output(&output, None)?;
 
     Ok(report.summary.has_changes())
 }

@@ -76,7 +76,14 @@ pub fn walk_catalog_elements(catalog: &serde_json::Value) -> Vec<TraceEntry> {
 
 /// Recursively walk a group: emit its entry, then recurse into child groups and controls.
 fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let group_id = group.get("id").and_then(|v| v.as_str()).unwrap_or("unknown-group").to_string();
+    let group_id = group
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or_else(|| {
+            tracing::warn!("OSCAL group is missing required 'id' field");
+            "unknown-group"
+        })
+        .to_string();
     entries.push(TraceEntry {
         element_id: group_id,
         element_type: ElementType::Group,
@@ -98,8 +105,14 @@ fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
 
 /// Recursively walk a control: emit its entry, then recurse into child controls.
 fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let control_id =
-        control.get("id").and_then(|v| v.as_str()).unwrap_or("unknown-control").to_string();
+    let control_id = control
+        .get("id")
+        .and_then(|v| v.as_str())
+        .unwrap_or_else(|| {
+            tracing::warn!("OSCAL control is missing required 'id' field");
+            "unknown-control"
+        })
+        .to_string();
     entries.push(TraceEntry {
         element_id: control_id,
         element_type: ElementType::Control,

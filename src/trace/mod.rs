@@ -92,7 +92,8 @@ pub fn generate_trace_report(
 fn read_file(path: &Path) -> Result<String, ForgeError> {
     // Guard against oversized files; ignore NotFound so read_to_string maps it.
     match crate::io::check_file_size(path, crate::io::MAX_FILE_SIZE) {
-        Ok(_) | Err(ForgeError::Io(_)) => {}
+        Ok(_) => {}
+        Err(ForgeError::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => {}
         Err(e) => return Err(e),
     }
     std::fs::read_to_string(path).map_err(|e| match e.kind() {

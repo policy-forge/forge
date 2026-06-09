@@ -250,7 +250,7 @@ fn output_round_trip_results(
         Some(output_path) => {
             write_divergence_log(result, output_path)?;
             if result.passed {
-                println!("PASS: round-trip validation succeeded (0 divergences)");
+                tracing::info!("round-trip validation passed");
             } else {
                 eprintln!(
                     "FAIL: {unresolved_count} unresolved divergence(s). Details written to: {}",
@@ -260,12 +260,12 @@ fn output_round_trip_results(
         }
         None => match format {
             ValidateOutputFormat::Text => {
-                render_round_trip_text(result, unresolved_count);
+                render_round_trip_text(result, unresolved_count)?;
             }
             ValidateOutputFormat::Json => {
                 let json = serde_json::to_string_pretty(result)
                     .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-                println!("{json}");
+                crate::cli::output::write_output(&json, None)?;
             }
         },
     }
@@ -273,16 +273,22 @@ fn output_round_trip_results(
 }
 
 /// Render a human-readable round-trip validation summary to stdout/stderr.
-fn render_round_trip_text(result: &RoundTripResult, unresolved_count: usize) {
+fn render_round_trip_text(
+    result: &RoundTripResult,
+    unresolved_count: usize,
+) -> Result<(), ForgeError> {
     if result.passed {
-        println!(
-            "PASS: round-trip validation of {} artifact '{}' succeeded",
+        let mut msg = format!(
+            "PASS: round-trip validation of {} artifact '{}' succeeded\n",
             result.artifact_type,
             result.source_path.display()
         );
         if !result.divergences.is_empty() {
-            println!("  ({} acceptable divergence(s) noted)", result.divergences.len());
+            use std::fmt::Write as _;
+            let _ =
+                writeln!(msg, "  ({} acceptable divergence(s) noted)", result.divergences.len());
         }
+        crate::cli::output::write_output(&msg, None)?;
     } else {
         eprintln!(
             "FAIL: round-trip validation of {} artifact '{}' — {} unresolved divergence(s)",
@@ -299,4 +305,5 @@ fn render_round_trip_text(result: &RoundTripResult, unresolved_count: usize) {
             eprintln!("  [{marker}] {}: {}", d.json_path, d.description);
         }
     }
+    Ok(())
 }

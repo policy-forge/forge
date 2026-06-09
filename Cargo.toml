@@ -1,6 +1,6 @@
 [package]
 name = "forge"
-version = "0.3.0"
+version = "1.1.0"
 edition = "2024"
 license = "MIT"
 
@@ -23,6 +23,8 @@ jsonschema = { version = "0.41.0", default-features = false }
 quick-xml = { version = "0.37", features = ["serialize"] }
 rayon = "1"
 tempfile = "3.25.0"
+pdf-extract = "0.10.0"
+zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }
 
 [lints.clippy]
 all = "warn"

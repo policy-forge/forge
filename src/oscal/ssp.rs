@@ -17,8 +17,8 @@ use uuid::Uuid;
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
-/// OSCAL specification version for SSP documents.
-pub const SSP_OSCAL_VERSION: &str = "1.1.3";
+/// OSCAL specification version for SSP documents — matches the shared `OSCAL_VERSION` constant.
+pub const SSP_OSCAL_VERSION: &str = crate::oscal::metadata::OSCAL_VERSION;
 
 /// Default SSP title when source document has no title.
 pub const DEFAULT_SSP_TITLE: &str = "Untitled System Security Plan";
@@ -438,7 +438,6 @@ pub fn build_ssp(
     // Deterministic UUID v5 from policy title
     let seed = format!("{SSP_UUID_SEED}|{title}");
     let uuid = generate_stable_id(&seed).to_string();
-    let ssp_uuid = uuid.clone();
 
     // Build system-implementation with placeholder users
     let system_implementation = build_system_implementation();
@@ -471,7 +470,7 @@ pub fn build_ssp(
         },
     };
 
-    tracing::info!(ssp_uuid = %ssp_uuid, title, "SSP generated with placeholder users");
+    tracing::info!(ssp_uuid = %envelope.system_security_plan.uuid, title, "SSP generated with placeholder users");
 
     Ok(envelope)
 }
@@ -513,7 +512,7 @@ pub fn build_ssp_skeleton(
     let inventory_items = generate_inventory_items(component_defs);
 
     // Collect component UUIDs for by-component linking
-    let component_uuids: Vec<String> = inventory_items.iter().map(|c| c.uuid.clone()).collect();
+    let component_uuids: Vec<&str> = inventory_items.iter().map(|c| c.uuid.as_str()).collect();
 
     // Build implemented-requirements: one per catalog control
     let implemented_requirements = build_control_impl_reqs(&control_ids, &component_uuids);
@@ -521,9 +520,7 @@ pub fn build_ssp_skeleton(
     // Build control-implementation section
     let ssp = &mut envelope.system_security_plan;
     ssp.control_implementation = Some(SspControlImplementation {
-        description: format!(
-            "Control implementation statements derived from {policy_title}.",
-        ),
+        description: format!("Control implementation statements derived from {policy_title}."),
         implemented_requirements,
     });
 
@@ -540,11 +537,7 @@ pub fn build_ssp_skeleton(
 /// Recursively collect all control IDs from a catalog (top-level + groups).
 fn collect_catalog_control_ids(catalog: &OscalCatalog) -> Vec<String> {
     let mut ids = Vec::new();
-    // Top-level controls
-    for control in &catalog.controls {
-        ids.push(control.id.clone());
-    }
-    // Controls inside groups (recursive)
+    ids.extend(catalog.controls.iter().map(|c| c.id.clone()));
     for group in &catalog.groups {
         collect_group_control_ids(group, &mut ids);
     }
@@ -553,9 +546,7 @@ fn collect_catalog_control_ids(catalog: &OscalCatalog) -> Vec<String> {
 
 /// Recursively collect control IDs from a group (nested groups + controls).
 fn collect_group_control_ids(group: &OscalGroup, ids: &mut Vec<String>) {
-    for control in &group.controls {
-        ids.push(control.id.clone());
-    }
+    ids.extend(group.controls.iter().map(|c| c.id.clone()));
     for subgroup in &group.groups {
         collect_group_control_ids(subgroup, ids);
     }
@@ -569,20 +560,19 @@ fn collect_group_control_ids(group: &OscalGroup, ids: &mut Vec<String>) {
 /// - By-component entries linking all component UUIDs
 fn build_control_impl_reqs(
     control_ids: &[String],
-    component_uuids: &[String],
+    component_uuids: &[&str],
 ) -> Vec<SspImplementedRequirement> {
     control_ids
         .iter()
-        .enumerate()
-        .map(|(i, control_id)| {
-            let uuid = generate_stable_id(&format!("ssp-impl-req|{control_id}|{i}")).to_string();
+        .map(|control_id| {
+            let uuid = generate_stable_id(&format!("ssp-impl-req|{control_id}")).to_string();
             let by_components = if component_uuids.is_empty() {
                 vec![]
             } else {
                 component_uuids
                     .iter()
                     .map(|comp_uuid| ByComponent {
-                        component_uuid: comp_uuid.clone(),
+                        component_uuid: (*comp_uuid).to_string(),
                         implementation_status: ImplementationStatus {
                             state: "planned".to_string(),
                         },
@@ -751,7 +741,7 @@ mod tests {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let ssp = &envelope.system_security_plan;
         assert!(ssp.metadata.title.contains("Test Policy"));
-        assert_eq!(ssp.metadata.oscal_version, "1.1.3");
+        assert_eq!(ssp.metadata.oscal_version, crate::oscal::metadata::OSCAL_VERSION);
         assert!(!ssp.metadata.last_modified.is_empty());
         assert_eq!(ssp.metadata.version, "1.0.0");
     }
@@ -790,7 +780,7 @@ mod tests {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let users = &envelope.system_security_plan.system_implementation.users;
         let mut uuids: Vec<&str> = users.iter().map(|u| u.uuid.as_str()).collect();
-        uuids.sort();
+        uuids.sort_unstable();
         uuids.dedup();
         assert_eq!(uuids.len(), users.len(), "All user UUIDs must be unique");
     }

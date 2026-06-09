@@ -95,10 +95,14 @@ impl ConversionStatistics {
 /// Count total controls in an OSCAL Catalog (root-level + all groups, recursively).
 #[must_use]
 pub fn count_catalog_controls(catalog: &OscalCatalog) -> usize {
-    fn count_group_controls(groups: &[crate::oscal::catalog::OscalGroup]) -> usize {
-        groups.iter().map(|g| g.controls.len() + count_group_controls(&g.groups)).sum()
+    fn count_group_controls(groups: &[crate::oscal::catalog::OscalGroup], depth: usize) -> usize {
+        if depth > 64 {
+            tracing::warn!("OSCAL group nesting > 64; truncating recursive count");
+            return groups.iter().map(|g| g.controls.len()).sum();
+        }
+        groups.iter().map(|g| g.controls.len() + count_group_controls(&g.groups, depth + 1)).sum()
     }
-    catalog.controls.len() + count_group_controls(&catalog.groups)
+    catalog.controls.len() + count_group_controls(&catalog.groups, 0)
 }
 
 #[cfg(test)]

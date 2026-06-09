@@ -203,7 +203,7 @@ pub fn format_summary_dashboard(stats: &ConversionStatistics, use_color: bool) -
     writeln!(out, "{val_row}").unwrap();
     // Render validation error detail lines with proper box alignment.
     // Format: "│   {detail}│" → border(1) + spaces(3) + detail(detail_vw) + border(1) = w + 2
-    let detail_vw = w - 3; // 3 = inner indent (3 spaces after border │)
+    let detail_vw = w.saturating_sub(3); // 3 = inner indent (3 spaces after border │)
     for detail in &validation_details {
         writeln!(out, "│   {detail:<detail_vw$}│").unwrap();
     }
@@ -281,6 +281,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::duration_suboptimal_units)]
     fn format_elapsed_boundary_at_60s() {
         let d = Duration::from_secs(60);
         assert_eq!(format_elapsed(d), "1m 0s");

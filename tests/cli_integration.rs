@@ -209,7 +209,7 @@ fn convert_overwrite_output_file() {
 // T011: Updated existing tests with --strategy catalog --format json flags
 
 #[test]
-fn convert_pdf_shows_unsupported_format_error() {
+fn convert_invalid_pdf_shows_parse_error() {
     let dir = TempDir::new().unwrap();
     let path = create_temp_md(&dir, "policy.pdf", "fake pdf");
 
@@ -226,12 +226,8 @@ fn convert_pdf_shows_unsupported_format_error() {
     assert!(!output.status.success(), "Expected non-zero exit code");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("Unsupported file format"),
-        "stderr should mention unsupported format:\n{stderr}"
-    );
-    assert!(
-        stderr.contains("pandoc") || stderr.contains("markitdown"),
-        "stderr should suggest conversion tools:\n{stderr}"
+        stderr.contains("failed to extract PDF text"),
+        "stderr should mention PDF extraction failure:\n{stderr}"
     );
 }
 

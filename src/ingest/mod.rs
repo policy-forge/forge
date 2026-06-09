@@ -1,13 +1,17 @@
-//! Markdown file ingestion module.
+//! Policy document ingestion module.
 //!
-//! Reads Markdown files from the filesystem, validates format/encoding/size,
+//! Reads Markdown, PDF, and DOCX files from the filesystem, validates format/encoding/size,
 //! computes a SHA-256 content fingerprint, and tracks 1-based line numbers
 //! for downstream OSCAL conversion.
 
+use std::io::{Cursor, Read};
 use std::path::{Path, PathBuf};
 
+use quick_xml::Reader;
+use quick_xml::events::Event as XmlEvent;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
+use zip::ZipArchive;
 
 use crate::ForgeError;
 
@@ -20,7 +24,7 @@ pub struct SourceLine {
     pub text: String,
 }
 
-/// A Markdown file that has been read and fingerprinted for downstream processing.
+/// A policy document that has been read and fingerprinted for downstream processing.
 #[derive(Debug, Serialize)]
 pub struct IngestedDocument {
     /// Canonical path to the original source file.
@@ -29,6 +33,13 @@ pub struct IngestedDocument {
     pub fingerprint: String,
     /// Ordered collection of source lines.
     pub lines: Vec<SourceLine>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum InputFormat {
+    Markdown,
+    Pdf,
+    Docx,
 }
 
 impl IngestedDocument {
@@ -65,16 +76,16 @@ fn is_binary_content(bytes: &[u8]) -> bool {
     ratio > NULL_BYTE_THRESHOLD
 }
 
-/// Read a Markdown file, validate it, and produce an [`IngestedDocument`].
+/// Read a policy file, validate it, and produce an [`IngestedDocument`].
 ///
 /// # Arguments
 ///
-/// * `path` - Path to the Markdown file (`.md` or `.markdown`, case-insensitive).
+/// * `path` - Path to the policy file (`.md`, `.markdown`, `.pdf`, or `.docx`, case-insensitive).
 /// * `max_size_bytes` - Maximum allowed file size in bytes.
 ///
 /// # Errors
 ///
-/// Returns [`ForgeError::UnsupportedFormat`] if the file extension is not `.md` or `.markdown`.
+/// Returns [`ForgeError::UnsupportedFormat`] if the file extension is unsupported.
 /// Returns [`ForgeError::NotAFile`] if the path is not a regular file.
 /// Returns [`ForgeError::FileTooLarge`] if the file exceeds `max_size_bytes`.
 /// Returns [`ForgeError::InvalidEncoding`] if the file is not valid UTF-8.
@@ -84,9 +95,7 @@ fn is_binary_content(bytes: &[u8]) -> bool {
 pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument, ForgeError> {
     // Extension validation (must execute before any file I/O)
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-    if !matches!(ext.to_ascii_lowercase().as_str(), "md" | "markdown") {
-        return Err(ForgeError::UnsupportedFormat { extension: ext.to_string() });
-    }
+    let format = detect_format(ext)?;
 
     // Metadata checks: regular file + size limit
     let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
@@ -119,14 +128,18 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         return Err(ForgeError::EmptyInput { path: path.to_path_buf() });
     }
 
-    if is_binary_content(&bytes) {
+    if format == InputFormat::Markdown && is_binary_content(&bytes) {
         return Err(ForgeError::BinaryFile { path: path.to_path_buf() });
     }
 
     let fingerprint = format!("{:x}", Sha256::digest(&bytes));
 
-    let content = String::from_utf8(bytes)
-        .map_err(|_| ForgeError::InvalidEncoding { path: path.to_path_buf() })?;
+    let content = match format {
+        InputFormat::Markdown => String::from_utf8(bytes)
+            .map_err(|_| ForgeError::InvalidEncoding { path: path.to_path_buf() })?,
+        InputFormat::Pdf => extract_pdf_content(path)?,
+        InputFormat::Docx => extract_docx_content(path, &bytes)?,
+    };
 
     let lines: Vec<SourceLine> = content
         .lines()
@@ -134,9 +147,187 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         .map(|(i, text)| SourceLine { number: i + 1, text: text.to_string() })
         .collect();
 
-    let source_path = path.canonicalize()?;
+    let source_path = path.canonicalize().map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: path.to_path_buf() }
+        }
+        _ => ForgeError::Io(e),
+    })?;
 
     Ok(IngestedDocument { source_path, fingerprint, lines })
+}
+
+fn detect_format(extension: &str) -> Result<InputFormat, ForgeError> {
+    match extension.to_ascii_lowercase().as_str() {
+        "md" | "markdown" => Ok(InputFormat::Markdown),
+        "pdf" => Ok(InputFormat::Pdf),
+        "docx" => Ok(InputFormat::Docx),
+        _ => Err(ForgeError::UnsupportedFormat { extension: extension.to_string() }),
+    }
+}
+
+fn extract_pdf_content(path: &Path) -> Result<String, ForgeError> {
+    let extracted = pdf_extract::extract_text(path)
+        .map_err(|e| ForgeError::Parse(format!("failed to extract PDF text: {e}")))?;
+    if extracted.trim().is_empty() {
+        return Err(ForgeError::OcrNotSupported { path: path.to_path_buf() });
+    }
+    Ok(markdownize_extracted_text(&extracted))
+}
+
+fn extract_docx_content(path: &Path, bytes: &[u8]) -> Result<String, ForgeError> {
+    let cursor = Cursor::new(bytes);
+    let mut archive = ZipArchive::new(cursor)
+        .map_err(|e| ForgeError::Parse(format!("failed to open DOCX archive: {e}")))?;
+    let mut document_xml = String::new();
+    archive
+        .by_name("word/document.xml")
+        .map_err(|e| ForgeError::Parse(format!("DOCX missing word/document.xml: {e}")))?
+        .read_to_string(&mut document_xml)
+        .map_err(|e| ForgeError::Parse(format!("failed to read DOCX document.xml: {e}")))?;
+
+    let extracted = extract_docx_document_xml(&document_xml)?;
+    if extracted.trim().is_empty() {
+        return Err(ForgeError::EmptyInput { path: path.to_path_buf() });
+    }
+    Ok(extracted)
+}
+
+fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
+    let mut reader = Reader::from_str(xml);
+    reader.config_mut().trim_text(true);
+
+    let mut output = Vec::new();
+    let mut paragraph = String::new();
+    let mut style: Option<String> = None;
+    let mut in_paragraph = false;
+    let mut in_table = false;
+    let mut in_row = false;
+    let mut in_cell = false;
+    let mut cell = String::new();
+    let mut row = Vec::new();
+    let mut is_list_item = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
+                b"w:p" => {
+                    in_paragraph = true;
+                    paragraph.clear();
+                    style = None;
+                    is_list_item = false;
+                }
+                b"w:tbl" => in_table = true,
+                b"w:tr" => {
+                    in_row = true;
+                    row.clear();
+                }
+                b"w:tc" => {
+                    in_cell = true;
+                    cell.clear();
+                }
+                b"w:numPr" if in_paragraph => is_list_item = true,
+                b"w:pStyle" if in_paragraph => {
+                    for attr in element.attributes().flatten() {
+                        if attr.key.as_ref() == b"w:val" {
+                            style = Some(String::from_utf8_lossy(attr.value.as_ref()).into_owned());
+                        }
+                    }
+                }
+                _ => {}
+            },
+            Ok(XmlEvent::Empty(element)) => match element.name().as_ref() {
+                b"w:numPr" if in_paragraph => is_list_item = true,
+                b"w:pStyle" if in_paragraph => {
+                    for attr in element.attributes().flatten() {
+                        if attr.key.as_ref() == b"w:val" {
+                            style = Some(String::from_utf8_lossy(attr.value.as_ref()).into_owned());
+                        }
+                    }
+                }
+                _ => {}
+            },
+            Ok(XmlEvent::Text(text)) => {
+                let decoded = String::from_utf8_lossy(text.as_ref());
+                if in_cell {
+                    cell.push_str(&decoded);
+                } else if in_paragraph {
+                    paragraph.push_str(&decoded);
+                }
+            }
+            Ok(XmlEvent::End(element)) => match element.name().as_ref() {
+                b"w:p" => {
+                    let text = paragraph.trim();
+                    if !text.is_empty() && !in_table {
+                        output.push(format_docx_paragraph(text, style.as_deref(), is_list_item));
+                    }
+                    in_paragraph = false;
+                }
+                b"w:tc" => {
+                    if in_row {
+                        row.push(cell.trim().to_string());
+                    }
+                    in_cell = false;
+                }
+                b"w:tr" => {
+                    if !row.is_empty() {
+                        output.push(format!("| {} |", row.join(" | ")));
+                    }
+                    in_row = false;
+                }
+                b"w:tbl" => in_table = false,
+                _ => {}
+            },
+            Ok(XmlEvent::Eof) => break,
+            Err(e) => return Err(ForgeError::Parse(format!("failed to parse DOCX XML: {e}"))),
+            _ => {}
+        }
+    }
+
+    Ok(output.join("\n"))
+}
+
+fn format_docx_paragraph(text: &str, style: Option<&str>, is_list_item: bool) -> String {
+    if let Some(style) = style
+        && let Some(level) = heading_level_from_docx_style(style)
+    {
+        return format!("{} {text}", "#".repeat(level));
+    }
+    if is_list_item { format!("- {text}") } else { text.to_string() }
+}
+
+fn heading_level_from_docx_style(style: &str) -> Option<usize> {
+    let normalized = style.replace(' ', "").to_ascii_lowercase();
+    normalized
+        .strip_prefix("heading")
+        .and_then(|level| level.parse::<usize>().ok())
+        .filter(|level| (1..=6).contains(level))
+}
+
+fn markdownize_extracted_text(text: &str) -> String {
+    let mut output = Vec::new();
+    let mut emitted_title = false;
+    for line in text.lines().map(str::trim).filter(|line| !line.is_empty()) {
+        if !emitted_title {
+            output.push(format!("# {line}"));
+            emitted_title = true;
+        } else if looks_like_heading(line) {
+            output.push(format!("## {line}"));
+        } else {
+            output.push(line.to_string());
+        }
+    }
+    output.join("\n")
+}
+
+fn looks_like_heading(line: &str) -> bool {
+    let word_count = line.split_whitespace().count();
+    word_count <= 8
+        && !line.ends_with('.')
+        && !line.ends_with(';')
+        && !line.contains(" must ")
+        && !line.contains(" shall ")
 }
 
 #[cfg(test)]
@@ -151,6 +342,46 @@ mod tests {
         let mut file = fs::File::create(&path).unwrap();
         file.write_all(content.as_bytes()).unwrap();
         path
+    }
+
+    fn create_temp_bytes(dir: &TempDir, name: &str, content: &[u8]) -> PathBuf {
+        let path = dir.path().join(name);
+        fs::write(&path, content).unwrap();
+        path
+    }
+
+    fn create_docx(dir: &TempDir, document_xml: &str) -> PathBuf {
+        let path = dir.path().join("policy.docx");
+        let file = fs::File::create(&path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default();
+        zip.start_file("word/document.xml", options).unwrap();
+        zip.write_all(document_xml.as_bytes()).unwrap();
+        zip.finish().unwrap();
+        path
+    }
+
+    fn minimal_blank_pdf() -> Vec<u8> {
+        let mut pdf = b"%PDF-1.4\n".to_vec();
+        let objects = [
+            b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n".as_slice(),
+            b"2 0 obj\n<< /Type /Pages /Count 0 /Kids [] >>\nendobj\n".as_slice(),
+        ];
+        let mut offsets = Vec::new();
+        for object in objects {
+            offsets.push(pdf.len());
+            pdf.extend_from_slice(object);
+        }
+        let xref_offset = pdf.len();
+        pdf.extend_from_slice(b"xref\n0 3\n0000000000 65535 f \n");
+        for offset in offsets {
+            pdf.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+        }
+        pdf.extend_from_slice(
+            format!("trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n{xref_offset}\n%%EOF\n")
+                .as_bytes(),
+        );
+        pdf
     }
 
     #[test]
@@ -274,22 +505,30 @@ mod tests {
     // --- US2: Extension validation tests ---
 
     #[test]
-    fn pdf_file_returns_unsupported_format() {
+    fn pdf_with_no_extractable_text_returns_ocr_not_supported() {
         let dir = TempDir::new().unwrap();
-        let path = create_temp_md(&dir, "policy.pdf", "fake pdf");
+        let path = create_temp_bytes(&dir, "policy.pdf", &minimal_blank_pdf());
         let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
-        match err {
-            ForgeError::UnsupportedFormat { extension } => assert_eq!(extension, "pdf"),
-            other => panic!("Expected UnsupportedFormat, got: {other:?}"),
-        }
+        assert!(matches!(err, ForgeError::OcrNotSupported { .. }), "got: {err:?}");
     }
 
     #[test]
-    fn docx_file_returns_unsupported_format() {
+    fn docx_extracts_headings_lists_and_tables() {
         let dir = TempDir::new().unwrap();
-        let path = create_temp_md(&dir, "policy.docx", "fake docx");
-        let err = ingest_file(&path, 10 * 1_048_576).unwrap_err();
-        assert!(matches!(err, ForgeError::UnsupportedFormat { .. }));
+        let path = create_docx(
+            &dir,
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+  <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Access Control</w:t></w:r></w:p>
+  <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/></w:numPr></w:pPr><w:r><w:t>Users must authenticate with MFA.</w:t></w:r></w:p>
+  <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Role</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Requirement</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+</w:body></w:document>"#,
+        );
+        let doc = ingest_file(&path, 10 * 1_048_576).unwrap();
+        let content = doc.reconstruct_content();
+        assert!(content.contains("# Access Control"));
+        assert!(content.contains("- Users must authenticate with MFA."));
+        assert!(content.contains("| Role | Requirement |"));
     }
 
     #[test]

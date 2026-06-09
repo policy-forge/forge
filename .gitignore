@@ -54,3 +54,7 @@ docs/superpowers/
 # === OS ===
 Thumbs.db
 .DS_Store
+
+# === Local tooling ===
+.serena/
+.opencode/

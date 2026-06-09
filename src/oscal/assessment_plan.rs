@@ -276,17 +276,17 @@ pub fn generate_assessment_tasks(requirements: &[PolicyRequirement]) -> Vec<Asse
 
     requirements
         .iter()
-        .map(|req| {
-            let stable_id = req.stable_id.as_deref().unwrap_or("unknown");
-            // UUID v5 for the task, seeded by the requirement's stable_id
-            let task_uuid = generate_stable_id(&format!("assessment-task|{stable_id}"));
+        .enumerate()
+        .map(|(i, req)| {
+            // Use stable_id when available; fall back to index so UUIDs stay unique.
+            let id_seed = req
+                .stable_id
+                .as_deref()
+                .filter(|s| !s.is_empty())
+                .map_or_else(|| format!("req-{i}"), str::to_owned);
+            let task_uuid = generate_stable_id(&format!("assessment-task|{id_seed}"));
 
-            // Title: first 80 chars of requirement text, prefixed
-            let title = if req.text.len() > 80 {
-                format!("Assess: {}...", &req.text[..77])
-            } else {
-                format!("Assess: {}", req.text)
-            };
+            let title = assessment_task_title(&req.text);
 
             // Description: assessment-framed requirement text
             let description = if req.text.trim().is_empty() {
@@ -296,7 +296,7 @@ pub fn generate_assessment_tasks(requirements: &[PolicyRequirement]) -> Vec<Asse
             };
 
             // Associated activity derived from the same requirement
-            let activity_uuid = generate_stable_id(&format!("assessment-activity|{stable_id}"));
+            let activity_uuid = generate_stable_id(&format!("assessment-activity|{id_seed}"));
             let activity = AssociatedActivity {
                 uuid: activity_uuid.to_string(),
                 title: format!("Review: {}", req.text.chars().take(60).collect::<String>()),
@@ -315,6 +315,14 @@ pub fn generate_assessment_tasks(requirements: &[PolicyRequirement]) -> Vec<Asse
             }
         })
         .collect()
+}
+
+fn assessment_task_title(text: &str) -> String {
+    const MAX_REQUIREMENT_CHARS: usize = 77;
+
+    let mut chars = text.chars();
+    let prefix: String = chars.by_ref().take(MAX_REQUIREMENT_CHARS).collect();
+    if chars.next().is_some() { format!("Assess: {prefix}...") } else { format!("Assess: {text}") }
 }
 
 /// Create assessment-subjects referencing the documentary component.
@@ -554,7 +562,7 @@ mod tests {
 
     // ─── WI-42: Task Generation Tests ──────────────────────────────────
 
-    /// Helper: create a PolicyRequirement with a stable_id for testing.
+    /// Helper: create a `PolicyRequirement` with a `stable_id` for testing.
     fn make_req(stable_id: &str, text: &str) -> PolicyRequirement {
         PolicyRequirement {
             stable_id: Some(stable_id.to_string()),
@@ -646,6 +654,15 @@ mod tests {
         assert!(task.description.contains("No assessment guidance available"));
         assert_eq!(task.task_type, "action");
         assert!(!task.uuid.is_empty());
+    }
+
+    #[test]
+    fn multibyte_requirement_text_title_truncates_without_panic() {
+        let text = format!("{} must be reviewed", "認証".repeat(40));
+        let tasks = generate_assessment_tasks(&[make_req("req-unicode", &text)]);
+
+        assert!(tasks[0].title.starts_with("Assess: "));
+        assert!(tasks[0].title.ends_with("..."));
     }
 
     // ─── Each task has associated-activities ──────────────────────────

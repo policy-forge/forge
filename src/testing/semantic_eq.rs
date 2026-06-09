@@ -170,7 +170,14 @@ fn format_value(value: &Value) -> String {
         Value::Number(n) => n.to_string(),
         Value::String(s) => format!("\"{s}\""),
         Value::Array(_) | Value::Object(_) => {
-            serde_json::to_string(value).unwrap_or_else(|_| "<unrepresentable>".to_string())
+            let s =
+                serde_json::to_string(value).unwrap_or_else(|_| "<unrepresentable>".to_string());
+            if s.len() > 500 {
+                let truncated: String = s.chars().take(500).collect();
+                format!("{truncated}… ({} chars total)", s.chars().count())
+            } else {
+                s
+            }
         }
     }
 }
@@ -519,5 +526,22 @@ mod tests {
         assert_eq!(escape_json_pointer_token("c~d"), "c~0d");
         assert_eq!(escape_json_pointer_token("a~b/c"), "a~0b~1c");
         assert_eq!(escape_json_pointer_token(""), "");
+    }
+
+    #[test]
+    fn format_value_truncates_large_json_values() {
+        let value = json!({ "description": "a".repeat(600) });
+        let formatted = format_value(&value);
+
+        assert!(formatted.contains('…'));
+        assert!(formatted.contains("chars total"));
+    }
+
+    #[test]
+    fn format_value_truncates_multibyte_json_values_without_panic() {
+        let value = json!({ "description": format!("{}{}", "a".repeat(495), "認証".repeat(20)) });
+        let formatted = format_value(&value);
+
+        assert!(!formatted.is_empty());
     }
 }

@@ -61,6 +61,7 @@ pub fn format_trace_table(report: &TraceReport) -> String {
         output.push_str("Warning: Source file may have been modified since conversion (source is newer than artifact)\n\n");
     }
 
+    // Writing to `String` via `fmt::Write` is infallible; `let _` is intentional.
     // Header
     let _ = writeln!(
         output,
