@@ -259,15 +259,15 @@ fn derive_ap_filename(input_path: &Path) -> String {
 
 /// Recursively collect all `PolicyRequirements` from a `PolicyDocument`'s section tree.
 ///
-/// Traverses sections in depth-first order, collecting owned clones of every
+/// Traverses sections in depth-first order, collecting references to every
 /// requirement. Used to feed `generate_assessment_tasks` at the end of catalog
 /// and component pipelines.
-fn collect_all_requirements(doc: &PolicyDocument) -> Vec<crate::model::PolicyRequirement> {
-    fn collect_section(
-        section: &crate::model::PolicySection,
-        out: &mut Vec<crate::model::PolicyRequirement>,
+fn collect_all_requirements(doc: &PolicyDocument) -> Vec<&crate::model::PolicyRequirement> {
+    fn collect_section<'a>(
+        section: &'a crate::model::PolicySection,
+        out: &mut Vec<&'a crate::model::PolicyRequirement>,
     ) {
-        out.extend(section.requirements.iter().cloned());
+        out.extend(section.requirements.iter());
         for child in &section.children {
             collect_section(child, out);
         }

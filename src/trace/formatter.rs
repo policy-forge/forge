@@ -126,6 +126,8 @@ fn format_source_line(
     element_type: ElementType,
     source_line_count: usize,
 ) -> String {
+    // Groups can be mapped at the section level without a concrete line number.
+    // In that case, display an em dash ("—") instead of the generic "0 ⚠" warning.
     if source_line == 0 && element_type == ElementType::Group {
         return "\u{2014}".to_string();
     }

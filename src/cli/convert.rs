@@ -52,12 +52,25 @@ fn count_substantive_stable_id_changes(
     let current_ids = collect_stable_ids(current);
     let baseline_ids = collect_stable_ids(baseline);
 
-    current_ids
-        .iter()
-        .filter(|(locator, current_id)| {
-            baseline_ids.get(*locator).is_some_and(|baseline_id| baseline_id != *current_id)
-        })
-        .count()
+    // Both branches count the same set: locators present in both maps whose
+    // IDs differ. Iterating over the smaller map reduces HashMap lookups while
+    // preserving identical semantics (locators only in one map are skipped by
+    // both branches via `is_some_and`).
+    if current_ids.len() <= baseline_ids.len() {
+        current_ids
+            .iter()
+            .filter(|(locator, current_id)| {
+                baseline_ids.get(*locator).is_some_and(|baseline_id| baseline_id != *current_id)
+            })
+            .count()
+    } else {
+        baseline_ids
+            .iter()
+            .filter(|(locator, baseline_id)| {
+                current_ids.get(*locator).is_some_and(|current_id| current_id != *baseline_id)
+            })
+            .count()
+    }
 }
 
 /// Convert a max-size value in MB to bytes, with overflow check.

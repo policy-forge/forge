@@ -4,6 +4,7 @@
 //! from conversion output control IDs, plus optional `tasks` and `assessment-subjects`
 //! generated from PolicyRequirements and component metadata.
 
+use std::borrow::Borrow;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -268,7 +269,10 @@ pub fn derive_ap_output_path(input: &Path, primary_output: Option<&Path>) -> Pat
 /// # Edge Cases
 ///
 /// * If a requirement has empty text, the task description uses a placeholder.
-pub fn generate_assessment_tasks(requirements: &[PolicyRequirement]) -> Vec<AssessmentTask> {
+pub fn generate_assessment_tasks<T>(requirements: &[T]) -> Vec<AssessmentTask>
+where
+    T: Borrow<PolicyRequirement>,
+{
     if requirements.is_empty() {
         tracing::warn!("Zero PolicyRequirements — Assessment Plan will have empty tasks[]");
         return Vec::new();
@@ -277,7 +281,8 @@ pub fn generate_assessment_tasks(requirements: &[PolicyRequirement]) -> Vec<Asse
     requirements
         .iter()
         .enumerate()
-        .map(|(i, req)| {
+        .map(|(i, req_t)| {
+            let req = req_t.borrow();
             // Use stable_id when available; fall back to index so UUIDs stay unique.
             let id_seed = req
                 .stable_id
