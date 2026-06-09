@@ -259,7 +259,9 @@ pub fn derive_ap_output_path(input: &Path, primary_output: Option<&Path>) -> Pat
 ///
 /// # Arguments
 ///
-/// * `requirements` — `PolicyRequirements` with populated `stable_id` fields
+/// * `requirements` — slice of items that borrow as [`PolicyRequirement`]
+///   (e.g. `&[PolicyRequirement]` or `&[&PolicyRequirement]`), each with
+///   populated `stable_id` fields
 ///
 /// # Returns
 ///
