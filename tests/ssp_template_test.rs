@@ -15,6 +15,14 @@ use forge::oscal::{OscalCatalog, OscalControl, OscalGroup, SspComponentInput, bu
 use regex::Regex;
 use serde_json::Value;
 
+/// Path to the SSP golden fixture used by this regression test.
+///
+/// By default, the test compares generated output against this file.
+/// To intentionally refresh the fixture after expected template changes, run:
+///
+/// `UPDATE_GOLDEN_FILES=1 cargo test --test ssp_template_test -- --nocapture`
+///
+/// Review and commit the updated fixture after regeneration.
 const FIXTURE_PATH: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/ssp_template_golden.json");
 
@@ -143,6 +151,7 @@ fn ssp_template_golden() {
 
     // Load or write golden file
     let fixture_path = Path::new(FIXTURE_PATH);
+    // Set UPDATE_GOLDEN_FILES=1 to regenerate this golden fixture intentionally.
     if std::env::var("UPDATE_GOLDEN_FILES").is_ok() {
         std::fs::create_dir_all(fixture_path.parent().unwrap())
             .expect("Failed to create fixtures dir");

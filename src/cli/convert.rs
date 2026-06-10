@@ -52,12 +52,25 @@ fn count_substantive_stable_id_changes(
     let current_ids = collect_stable_ids(current);
     let baseline_ids = collect_stable_ids(baseline);
 
-    current_ids
-        .iter()
-        .filter(|(locator, current_id)| {
-            baseline_ids.get(*locator).is_some_and(|baseline_id| baseline_id != *current_id)
-        })
-        .count()
+    // Both branches count the same set: locators present in both maps whose
+    // IDs differ. Iterating over the smaller map reduces HashMap lookups while
+    // preserving identical semantics (locators only in one map are skipped by
+    // both branches via `is_some_and`).
+    if current_ids.len() <= baseline_ids.len() {
+        current_ids
+            .iter()
+            .filter(|(locator, current_id)| {
+                baseline_ids.get(*locator).is_some_and(|baseline_id| baseline_id != *current_id)
+            })
+            .count()
+    } else {
+        baseline_ids
+            .iter()
+            .filter(|(locator, baseline_id)| {
+                current_ids.get(*locator).is_some_and(|current_id| current_id != *baseline_id)
+            })
+            .count()
+    }
 }
 
 /// Convert a max-size value in MB to bytes, with overflow check.
@@ -440,6 +453,43 @@ version: "1.0.0"
         }
     }
 
+    /// Build a doc whose section holds one requirement per `(source_line,
+    /// atom_index, stable_id)` tuple, so each maps to a distinct locator.
+    fn multi_requirement_doc(section_title: &str, reqs: &[(usize, usize, &str)]) -> PolicyDocument {
+        PolicyDocument {
+            id: "doc".to_string(),
+            metadata: DocumentMetadata {
+                title: "Title".to_string(),
+                version: "1.0.0".to_string(),
+                author: None,
+                date: None,
+                source_path: PathBuf::from("fixture.md"),
+                content_hash: None,
+            },
+            sections: vec![PolicySection {
+                title: section_title.to_string(),
+                heading_level: 1,
+                source_line: 1,
+                body_text: None,
+                children: vec![],
+                requirements: reqs
+                    .iter()
+                    .map(|(source_line, atom_index, stable_id)| PolicyRequirement {
+                        stable_id: Some((*stable_id).to_string()),
+                        text: "Requirement text".to_string(),
+                        source_line: *source_line,
+                        nesting_depth: 0,
+                        atom_index: *atom_index,
+                        parent_text: None,
+                        citations: vec![],
+                        modality: None,
+                        parameters: vec![],
+                    })
+                    .collect(),
+            }],
+        }
+    }
+
     fn make_opts<'a>(
         input: &'a Path,
         strategy: &'a Strategy,
@@ -669,6 +719,43 @@ version: "1.0.0"
     fn substantive_change_count_ignores_missing_locator_matches() {
         let baseline = single_requirement_doc("Access", "11111111-1111-1111-1111-111111111111");
         let current = single_requirement_doc("Monitoring", "22222222-2222-2222-2222-222222222222");
+
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        assert_eq!(changed_count, 0);
+    }
+
+    #[test]
+    fn substantive_change_count_handles_current_larger_than_baseline() {
+        // current has more locators than baseline, exercising the branch that
+        // iterates the baseline map. The shared locator (Access, line 10, atom 0)
+        // changed IDs; the current-only locator (line 20) must not be counted.
+        let baseline =
+            multi_requirement_doc("Access", &[(10, 0, "11111111-1111-1111-1111-111111111111")]);
+        let current = multi_requirement_doc(
+            "Access",
+            &[
+                (10, 0, "22222222-2222-2222-2222-222222222222"),
+                (20, 1, "33333333-3333-3333-3333-333333333333"),
+            ],
+        );
+
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        assert_eq!(changed_count, 1);
+    }
+
+    #[test]
+    fn substantive_change_count_is_symmetric_for_unchanged_shared_locator() {
+        // Same shared locator with identical IDs but differing map sizes: the
+        // baseline-iterating branch must report zero substantive changes.
+        let baseline =
+            multi_requirement_doc("Access", &[(10, 0, "11111111-1111-1111-1111-111111111111")]);
+        let current = multi_requirement_doc(
+            "Access",
+            &[
+                (10, 0, "11111111-1111-1111-1111-111111111111"),
+                (20, 1, "33333333-3333-3333-3333-333333333333"),
+            ],
+        );
 
         let changed_count = count_substantive_stable_id_changes(&current, &baseline);
         assert_eq!(changed_count, 0);
