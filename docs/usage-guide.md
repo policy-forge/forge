@@ -85,7 +85,7 @@ FORGE detects and processes:
 
 25 sample policies are included in `example_data/` covering topics from acceptable use to incident response.
 
-For PDF or DOCX source documents, convert to Markdown first using [pandoc](https://pandoc.org/) or [markitdown](https://github.com/microsoft/markitdown).
+PDF and DOCX source documents are also accepted directly — Word heading and list styles are mapped to the document model automatically. For other formats, convert to Markdown first using [pandoc](https://pandoc.org/) or [markitdown](https://github.com/microsoft/markitdown).
 
 ## 3. The Seven CLI Subcommands
 

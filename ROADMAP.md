@@ -1,10 +1,10 @@
 # FORGE Roadmap
 
-> **Last Updated:** 2026-05-21
-> **Current Release Line:** v1.0.0
+> **Last Updated:** 2026-08-22
+> **Current Release Line:** v1.1.0
 > **Canonical Detail:** [docs/FORGE_PRODUCT_ROADMAP.md](docs/FORGE_PRODUCT_ROADMAP.md)
 
-This roadmap reconciles the historical 50-work-item FORGE plan against the current repository state. FORGE has completed the original Phase 1, Phase 2, and Phase 3 scope and is now in the v1.0.0 release line.
+This roadmap reconciles the historical 50-work-item FORGE plan against the current repository state. FORGE has completed the original Phase 1, Phase 2, and Phase 3 scope and is now in the v1.1.0 release line.
 
 ---
 
@@ -15,6 +15,7 @@ FORGE v1.0.0 is the community-ready release of the Markdown-to-OSCAL pipeline. T
 **What is built:**
 
 - Markdown ingestion, structural extraction, clause extraction, domain model assembly, atomization, deterministic UUID v5 IDs, citation extraction, modality detection, and parameter extraction.
+- Native PDF (`.pdf`) and DOCX (`.docx`) ingestion with heading/list style mapping, added in v1.1.0.
 - OSCAL Catalog, Component Definition, Profile, Assessment Plan, and System Security Plan template generation.
 - JSON, XML, and YAML output with format export and round-trip validation support.
 - Schema validation, semantic validation, human-readable and JSON validation reports.
@@ -98,6 +99,16 @@ FORGE v1.0.0 is the community-ready release of the Markdown-to-OSCAL pipeline. T
 
 ---
 
+## v1.1.0 Release Line (Current)
+
+v1.1.0 (released 2026-06-09) extends the completed pipeline beyond Markdown-only input:
+
+- Native PDF ingestion via `pdf-extract`.
+- Native DOCX ingestion via `zip` + OOXML parsing, with Word heading/list styles mapped to the internal document model.
+- SSP generation now derives control implementations from the generated Catalog instead of emitting empty placeholders.
+
+Note: this reverses the 2026-02-10 "Markdown-only input" decision recorded in [docs/FORGE_PRODUCT_ROADMAP.md](docs/FORGE_PRODUCT_ROADMAP.md); see that document's decision log for rationale.
+
 ## v1.0.0 Release Gate
 
 The v1.0.0 release line is the reconciled release target. The release gate consists of:
@@ -139,5 +150,5 @@ From the [Product Vision](docs/FORGE_PRODUCT_VISION.md):
 |----|------|--------|
 | G-1 | Reliable Markdown-to-OSCAL pipeline with schema validation and traceability | Complete |
 | G-2 | Full OSCAL Control layer with Catalog, Profile, and multi-format output | Complete |
-| G-3 | Standard open-source policy-to-OSCAL tool | v1.0.0 release line |
+| G-3 | Standard open-source policy-to-OSCAL tool | v1.1.0 release line |
 | G-4 | OSCAL Implementation layer with Component Definition and SSP templates | Complete |

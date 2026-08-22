@@ -4,6 +4,25 @@ All notable changes to FORGE will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] — 2026-06-09
+
+FORGE v1.1.0 adds native PDF and DOCX ingestion, removing the requirement to pre-convert policy documents to Markdown with external tools.
+
+### Added
+
+- **PDF ingestion** — `forge convert` now accepts `.pdf` input directly (via `pdf-extract`) in addition to Markdown.
+- **DOCX ingestion** — `forge convert` now accepts `.docx` input directly; Word heading styles are mapped to Markdown headings and list styles to list items before pipeline processing.
+- **Policy-derived SSP control implementations** — `forge convert --to ssp` now builds the SSP skeleton from the generated Catalog so control-implementation entries are derived from the source policy rather than empty placeholders.
+- **`--to ssp` output-type guard** — explicit error when SSP conversion is requested with a non-JSON output format.
+
+### Changed
+
+- Strategy selection for batch and single-file conversion now respects the `--to` output type consistently (`catalog`, `component`, `ssp`).
+
+### Dependencies
+
+- Added `pdf-extract`, `zip`; bumped `clap`, `pulldown-cmark`, `tracing-subscriber`, `rand`, `quick-xml`, `jsonschema`.
+
 ## [1.0.0] — 2026-05-18
 
 FORGE v1.0.0 marks the completion of the Markdown-to-OSCAL pipeline. This release represents the journey from a proof-of-concept v0.1.0 through a production-ready tool that converts Markdown security policy documents into validated OSCAL artifacts across all major model types.

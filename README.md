@@ -206,7 +206,7 @@ All users must authenticate before accessing systems.
 
 Headings become OSCAL groups and controls. List items, tables, and paragraphs become control statements. Compound requirements like "Systems must X and must Y" are automatically split into atomic statements.
 
-For other document formats (PDF, DOCX), convert to Markdown first using tools like [pandoc](https://pandoc.org/) or [markitdown](https://github.com/microsoft/markitdown).
+PDF (`.pdf`) and DOCX (`.docx`) documents are also accepted directly — headings and list styles are mapped to the same document model as Markdown. Plain-text formats can be pre-converted with [pandoc](https://pandoc.org/) or [markitdown](https://github.com/microsoft/markitdown) if needed.
 
 25 sample policies are included in `example_data/` covering topics from acceptable use to incident response.
 
@@ -221,7 +221,7 @@ This ensures that the output is not just "valid JSON," but a semantically accura
 
 ## 🗺️ Roadmap
 
-FORGE is on the v1.0.0 release line. The original 50-item roadmap is complete:
+FORGE is on the v1.1.0 release line. The original 50-item roadmap is complete:
 
 - Phase 1 — Foundation: Markdown-to-OSCAL Catalog and Component Definition pipeline, deterministic UUIDs, traceability, validation, golden files, error handling, and benchmarks.
 - Phase 2 — Control Layer & Multi-Format: JSON/XML/YAML output, round-trip checks, export subcommand, Profile generation, parameter tailoring, modality tagging, and parameter extraction.

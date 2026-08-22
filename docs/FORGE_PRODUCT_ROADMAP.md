@@ -2,8 +2,8 @@
 
 > **Document Type:** Product Roadmap
 > **Audience:** LLM agents, human reviewers, leadership stakeholders, engineering leads
-> **Status:** Complete / v1.0.0 Release Line
-> **Last Updated:** 2026-05-21 <!-- @auto -->
+> **Status:** Complete / v1.1.0 Release Line
+> **Last Updated:** 2026-08-22 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Parent Vision:** docs/FORGE_PRODUCT_VISION.md <!-- @auto -->
 
@@ -11,7 +11,7 @@
 
 ## Reconciliation Summary
 
-This document is the canonical reconciled roadmap for FORGE. Earlier roadmap snapshots treated Phase 2 as current and Phase 3 as partially incomplete. The repository has since moved ahead: the original 50-work-item roadmap is complete and the release line is **v1.0.0**.
+This document is the canonical reconciled roadmap for FORGE. Earlier roadmap snapshots treated Phase 2 as current and Phase 3 as partially incomplete. The repository has since moved ahead: the original 50-work-item roadmap is complete and the release line is **v1.1.0**.
 
 **Current state:**
 
@@ -20,6 +20,7 @@ This document is the canonical reconciled roadmap for FORGE. Earlier roadmap sna
 - Phase 2 Control Layer & Multi-Format is complete.
 - Phase 3 Ecosystem & Community is complete.
 - v1.0.0 is the target/current release line for community-ready distribution.
+- v1.1.0 (2026-06-09) added native PDF and DOCX ingestion and policy-derived SSP control implementations.
 
 This reconciliation supersedes stale counts such as “43/50 done,” “44/50 done,” “8/15 Phase 3 done,” and “7 remaining.”
 
@@ -45,7 +46,7 @@ FORGE translates Markdown security policy documents into deterministic, schema-v
 |-------------|---------------|-----------------|
 | G-1: Markdown-to-OSCAL Pipeline | T-1, T-2, T-3 | Complete |
 | G-2: Full Control Layer + Multi-Format | T-2, T-4, T-5 | Complete |
-| G-3: Community Adoption | T-6 | v1.0.0 release line |
+| G-3: Community Adoption | T-6 | v1.1.0 release line |
 | G-4: Implementation Layer | T-6 | Complete |
 
 ---
@@ -170,7 +171,7 @@ v1.0.0 is the reconciled version target. A release candidate is ready when the f
 | T-4: Output Format Expansion | 4 | 4 | 0 | 0 | 0 | Complete |
 | T-5: Profile & Tailoring | 6 | 6 | 0 | 0 | 0 | Complete |
 | T-6: Ecosystem & Community | 15 | 15 | 0 | 0 | 0 | Complete |
-| **Total** | **50** | **50** | **0** | **0** | **0** | **v1.0.0** |
+| **Total** | **50** | **50** | **0** | **0** | **0** | **v1.1.0** |
 
 ---
 
@@ -215,6 +216,7 @@ Candidate future work from PRD deferrals and architecture notes:
 | 0.3–0.8 | 2026-02-11 to 2026-02-14 | LLM (Claude) | Progressive updates through WI-24 |
 | 0.9 | 2026-05-18 | Hermes (Vega) | Major refresh: Phase 1+2 complete, Phase 3 partially complete |
 | **1.0** | **2026-05-21** | **Hermes** | **Roadmap reconciliation for v1.0.0: all 50 work items marked Done, stale Phase 3 remaining-work sections removed, future work moved to separate candidate list.** |
+| 1.1 | 2026-08-22 | ox-alpha | Reconciled status to v1.1.0 release line; recorded v1.1.0 PDF/DOCX ingestion and SSP control-implementation changes; added decision-log entry superseding the Markdown-only decision. |
 
 ---
 
@@ -224,6 +226,7 @@ Candidate future work from PRD deferrals and architecture notes:
 |------|----------|-----------|--------|------------------------|
 | 2026-02-10 | 1-week sprint cadence | Small scope per sprint reduces risk; enables fast feedback | Higher planning overhead accepted | 2-week sprints; kanban |
 | 2026-02-10 | Markdown-only input | Mature external converters exist; in-house PDF/DOCX adds high-risk scope | Removed PDF/DOCX ingestion from initial roadmap | Include PDF/DOCX in Phase 1 |
+| 2026-06-09 | Native PDF/DOCX ingestion in v1.1.0 | User demand to remove the external pandoc/markitdown pre-conversion step; matured `pdf-extract`/OOXML parsing made in-house support low-risk | Supersedes the 2026-02-10 Markdown-only decision; v1.1.0 accepts `.pdf` and `.docx` directly | Keep external converter guidance |
 | 2026-02-10 | Could Have items in Phase 3 | Must Have and Should Have items came first | Ecosystem work moved later | Include C-items in Phase 2 |
 | 2026-05-18 | MS-7 target compressed | Roadmap execution was far ahead of original plan | Phase 3 pulled into near-term release plan | Keep April 2027 target |
 | 2026-05-21 | v1.0.0 is the release line | User confirmed version is 1.0; repo contains completed Phase 3 evidence | Roadmap, README, package version, and completion plan reconciled to v1.0.0 | Keep an interim 0.x release |
