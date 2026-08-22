@@ -334,7 +334,7 @@ sequenceDiagram
     CI->>CI: cargo fmt --check, clippy, test (per platform)
     CI-->>GH: Pass/Fail status
 
-    D->>GH: Push tag v0.3.0
+    D->>GH: Push tag v1.0.0
     GH->>RW: Trigger release.yml (matrix: 4 targets)
     RW->>RW: cargo build --release (per platform)
     RW->>RW: cargo test --release (per platform)
@@ -428,7 +428,7 @@ codegen-units = 1
 **Pattern:** Tag-triggered release
 ```
 1. Developer merges all changes to main
-2. Developer creates and pushes tag: git tag v0.3.0 && git push origin v0.3.0
+2. Developer creates and pushes tag: git tag v1.0.0 && git push origin v1.0.0
 3. release.yml triggers on v* tag pattern
 4. Matrix builds run in parallel (4 platform targets)
 5. Each build: compile --release, test --release, rename binary
@@ -439,18 +439,18 @@ codegen-units = 1
 **Pattern:** Binary naming convention
 ```
 forge-v{VERSION}-{PLATFORM}-{ARCH}[.exe]
-  - forge-v0.3.0-linux-x86_64
-  - forge-v0.3.0-macos-x86_64
-  - forge-v0.3.0-macos-aarch64
-  - forge-v0.3.0-windows-x86_64.exe
+  - forge-v1.0.0-linux-x86_64
+  - forge-v1.0.0-macos-x86_64
+  - forge-v1.0.0-macos-aarch64
+  - forge-v1.0.0-windows-x86_64.exe
 ```
 
 **Pattern:** Checksum generation
 ```
-sha256sum forge-v0.3.0-linux-x86_64 >> SHA256SUMS.txt
-sha256sum forge-v0.3.0-macos-x86_64 >> SHA256SUMS.txt
-sha256sum forge-v0.3.0-macos-aarch64 >> SHA256SUMS.txt
-sha256sum forge-v0.3.0-windows-x86_64.exe >> SHA256SUMS.txt
+sha256sum forge-v1.0.0-linux-x86_64 >> SHA256SUMS.txt
+sha256sum forge-v1.0.0-macos-x86_64 >> SHA256SUMS.txt
+sha256sum forge-v1.0.0-macos-aarch64 >> SHA256SUMS.txt
+sha256sum forge-v1.0.0-windows-x86_64.exe >> SHA256SUMS.txt
 ```
 
 ---
@@ -470,7 +470,7 @@ sha256sum forge-v0.3.0-windows-x86_64.exe >> SHA256SUMS.txt
 - Release profile: `lto = true`, `strip = true`, `codegen-units = 1` for optimized binaries
 - Binary naming: `forge-v{VERSION}-{PLATFORM}-{ARCH}[.exe]`
 - Checksum format: SHA-256 in a single `SHA256SUMS.txt` file
-- Tag pattern: `v*` (e.g., `v0.3.0`, `v1.0.0`) triggers release workflow
+- Tag pattern: `v*` (e.g., `v1.0.0`, `v1.0.0`) triggers release workflow
 - macOS aarch64 may require cross-compilation from x86_64 runner if no native aarch64 runner is available
 
 ### Architectural Boundaries :yellow_circle: `@human-review`
@@ -552,7 +552,7 @@ graph TD
 2. Create `.github/workflows/ci.yml` with matrix strategy (Linux, macOS, Windows)
 3. Verify CI passes on all platforms
 4. Create `.github/workflows/release.yml` with tag-triggered matrix builds
-5. Test release workflow with a pre-release tag (e.g., `v0.3.0-rc.1`)
+5. Test release workflow with a pre-release tag (e.g., `v1.0.0-rc.1`)
 6. Verify binaries are functional on each platform (smoke test: `forge --help`)
 7. Update installation instructions in README, CONTRIBUTING.md, and docs/USAGE.md
 8. Document checksum verification process in installation instructions

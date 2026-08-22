@@ -221,23 +221,15 @@ This ensures that the output is not just "valid JSON," but a semantically accura
 
 ## 🗺️ Roadmap
 
-Completed: Phase 1 — Foundation (v0.1.0)
+FORGE is on the v1.0.0 release line. The original 50-item roadmap is complete:
 
-Core Markdown-to-OSCAL pipeline. Focus on Requirement Atomization and Deterministic UUIDs.
+- Phase 1 — Foundation: Markdown-to-OSCAL Catalog and Component Definition pipeline, deterministic UUIDs, traceability, validation, golden files, error handling, and benchmarks.
+- Phase 2 — Control Layer & Multi-Format: JSON/XML/YAML output, round-trip checks, export subcommand, Profile generation, parameter tailoring, modality tagging, and parameter extraction.
+- Phase 3 — Ecosystem & Community: oscal-cli integration, trace reports, diff reports, batch conversion, summary dashboards, Assessment Plan scaffolding, SSP templates, community examples, documentation, cross-platform CI, and release automation.
 
-Current: Phase 2 — Agentic Guardrails (v0.2.0)
+Future work such as Assessment Results, POA&M, built-in Profile Resolution, Control Mapping, GRC integrations, web/API mode, and hosted documentation should be tracked in a new v1.x/v2 roadmap rather than reopened against the completed Phase 1–3 plan.
 
-Normative Detection: Using Rust-based NLP to differentiate "Must/Shall" from "Should/May."
-
-Parameter Extraction: Turning prose thresholds (e.g., "30-day rotation") into machine-enforceable parameters.
-
-Future: Phase 3 — Ecosystem (v0.3.0+)
-
-Traceability Reports: Mapping every code line back to an OSCAL control.
-
-Assessment Scaffolding: Generating automated test plans for AI agents.
-
-See `docs/FORGE_PRODUCT_ROADMAP.md` for the full 50-item sprint plan.
+See `docs/FORGE_PRODUCT_ROADMAP.md` for the reconciled roadmap.
 
 ## 🤝 Contributing
 

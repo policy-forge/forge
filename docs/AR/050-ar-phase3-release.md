@@ -52,7 +52,7 @@
 > Use comprehensive automated integration testing via `cargo test` supplemented by manual verification of MS-7 exit criteria, leveraging the WI-49 release infrastructure (GitHub Actions matrix + GitHub Releases) for the final tagged release with blocker-only community feedback triage.
 
 ### TL;DR for Agents :yellow_circle: `@human-review`
-> Phase 3 release (WI-50) is an integration testing and release gate, NOT a feature development sprint. Create a comprehensive integration test module (`tests/integration_phase3.rs`) exercising ALL Phase 3 features end-to-end. Verify MS-7 exit criteria: oscal-cli integration tested, community examples published, Assessment Plan scaffolding working. Triage community feedback as blocker/non-blocker -- only address blockers before release. Tag as v0.3.0 or v1.0.0 (product owner decision), trigger the WI-49 release workflow. Do NOT add new features. Do NOT defer testing to "fix later."
+> Phase 3 release (WI-50) is an integration testing and release gate, NOT a feature development sprint. Create a comprehensive integration test module (`tests/integration_phase3.rs`) exercising ALL Phase 3 features end-to-end. Verify MS-7 exit criteria: oscal-cli integration tested, community examples published, Assessment Plan scaffolding working. Triage community feedback as blocker/non-blocker -- only address blockers before release. Tag as v1.0.0 (product owner decision), trigger the WI-49 release workflow. Do NOT add new features. Do NOT defer testing to "fix later."
 
 ---
 
@@ -68,7 +68,7 @@ Phase 3 spans 15 work items (WI-36 through WI-49) developed over 14 sprints, add
 - How MS-7 exit criteria are verified
 - How community feedback is triaged and addressed
 - The release preparation and publication process
-- The version numbering decision framework (v0.3.0 vs v1.0.0)
+- The version numbering decision framework for v1.0.0
 
 **This AR does NOT decide:**
 - New feature development -- explicitly prohibited in this sprint
@@ -159,7 +159,7 @@ graph TD
     subgraph "Option 1: Minimal Extension"
         Tests["Existing cargo test"] --> Pass{Pass?}
         Pass -->|Yes| Manual["Manual spot-check of key features"]
-        Manual --> Tag["Tag v0.3.0"]
+        Manual --> Tag["Tag v1.0.0"]
         Tag --> Release["WI-49 release workflow"]
     end
 ```
@@ -199,7 +199,7 @@ graph TD
         Pipeline & OSCALCLI & Examples & AP & Features --> CI["CI matrix (Linux, macOS, Windows)"]
         CI --> MS7["MS-7 exit criteria checklist"]
         MS7 --> Feedback["Community feedback triage"]
-        Feedback --> Tag["Tag v0.3.0 / v1.0.0"]
+        Feedback --> Tag["Tag v1.0.0"]
         Tag --> Release["WI-49 release workflow"]
         Release --> Smoke["Smoke test released binaries"]
     end
@@ -232,13 +232,13 @@ graph TD
 ```mermaid
 graph TD
     subgraph "Option 3: Staged Rollout"
-        Alpha["v0.3.0-alpha.1"] --> Testers["Limited tester group"]
+        Alpha["v1.0.0-alpha.1"] --> Testers["Limited tester group"]
         Testers --> Feedback["Collect feedback (1-2 weeks)"]
         Feedback --> Fix["Address feedback"]
-        Fix --> Beta["v0.3.0-beta.1"]
+        Fix --> Beta["v1.0.0-beta.1"]
         Beta --> WideFeedback["Wider feedback (1-2 weeks)"]
         WideFeedback --> Fix2["Address feedback"]
-        Fix2 --> GA["v0.3.0 GA Release"]
+        Fix2 --> GA["v1.0.0 GA Release"]
     end
 ```
 
@@ -309,7 +309,7 @@ graph TD
         end
 
         subgraph "Release"
-            Tag["Tag v0.3.0 or v1.0.0"]
+            Tag["Tag v1.0.0"]
             ReleaseWF["WI-49 Release Workflow"]
             SmokeTest["Smoke Test Released Binaries"]
             Notes["Release Notes + Changelog"]
@@ -361,7 +361,7 @@ sequenceDiagram
     Dev->>CI: Push fixes, re-run CI
     CI-->>Dev: All tests pass
 
-    Dev->>GH: git tag v0.3.0 && git push origin v0.3.0
+    Dev->>GH: git tag v1.0.0 && git push origin v1.0.0
     GH->>GR: Trigger WI-49 release workflow
     GR-->>GR: Build binaries, generate checksums
     GR-->>Dev: GitHub Release published
@@ -453,13 +453,8 @@ For each GitHub Issue tagged "community-feedback":
 
 **Pattern:** Version Number Decision Framework
 ```
-v0.3.0 if:
-  - API may change in future versions
-  - Some Phase 3 features are experimental
-  - Community feedback has not yet validated stability
+v1.0.0 because:
 
-v1.0.0 if:
-  - CLI interface is stable and will not change
   - All features are tested and production-quality
   - Product owner assesses "ready for production use"
 
@@ -477,7 +472,7 @@ Decision made by: Product Owner (Brian Luby) at release time
 - `cargo clippy -- -D warnings` must pass on all platforms
 - `cargo fmt --check` must pass
 - `cargo test` must pass on all target platforms with zero failures
-- Semantic versioning; tag format `v0.3.0` or `v1.0.0`
+- Semantic versioning; tag format `v1.0.0`
 - oscal-cli pinned version for integration testing
 
 **Added by this Architecture:**
@@ -573,7 +568,7 @@ graph TD
 8. Triage community feedback (blocker/non-blocker)
 9. Fix any blockers; add regression tests
 10. Prepare CHANGELOG.md and release notes
-11. Tag release (v0.3.0 or v1.0.0 per product owner decision)
+11. Tag release (v1.0.0)
 12. Verify released binaries (smoke test on each platform)
 
 ### Testing Strategy :green_circle: `@llm-autonomous`

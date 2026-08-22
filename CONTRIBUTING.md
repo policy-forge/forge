@@ -102,7 +102,7 @@ cargo test --doc                 # Documentation tests
 cargo test <test_name>           # Run a single test by name (e.g., `cargo test diff_added`)
 ```
 
-FORGE targets zero test failures. As of v0.3.0, there are 1,433 passing tests across 24 integration test files and extensive unit tests.
+FORGE targets zero test failures. As of v1.0.0, there are 1,433 passing tests across 24 integration test files and extensive unit tests.
 
 ### Snapshot Tests
 

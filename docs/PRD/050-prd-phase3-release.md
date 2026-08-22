@@ -41,7 +41,7 @@
 ## Context
 
 ### Background :red_circle: `@human-required`
-This PRD covers **WI-50: Phase 3 Integration Testing & Release** from the FORGE Product Roadmap (Sprint S-50, Feb 16–20+ 2027, Theme T-6: Ecosystem & Community, Milestone MS-7). This is the final work item in the FORGE roadmap, serving as the capstone integration testing and release gate for all Phase 3 work (WI-36 through WI-49). Phase 3 added ecosystem capabilities including oscal-cli integration (WI-36, WI-37), traceability reporting (WI-38, WI-39), batch conversion (WI-40), Assessment Plan scaffolding (WI-41, WI-42), diff reporting (WI-43), summary dashboard (WI-44), SSP template generation (WI-45, WI-46), community examples (WI-47), community documentation (WI-48), and cross-platform release infrastructure (WI-49). WI-50 validates that all these features work together end-to-end, integrates any community feedback received during Phase 3 development, and tags the final release as v0.3.0 or v1.0.0 depending on maturity assessment. This work item satisfies the MS-7 exit criteria: "oscal-cli integration tested; community examples published; Assessment Plan scaffolding working."
+This PRD covers **WI-50: Phase 3 Integration Testing & Release** from the FORGE Product Roadmap (Sprint S-50, Feb 16–20+ 2027, Theme T-6: Ecosystem & Community, Milestone MS-7). This is the final work item in the FORGE roadmap, serving as the capstone integration testing and release gate for all Phase 3 work (WI-36 through WI-49). Phase 3 added ecosystem capabilities including oscal-cli integration (WI-36, WI-37), traceability reporting (WI-38, WI-39), batch conversion (WI-40), Assessment Plan scaffolding (WI-41, WI-42), diff reporting (WI-43), summary dashboard (WI-44), SSP template generation (WI-45, WI-46), community examples (WI-47), community documentation (WI-48), and cross-platform release infrastructure (WI-49). WI-50 validates that all these features work together end-to-end, integrates any community feedback received during Phase 3 development, and tags the final release as v1.0.0 depending on maturity assessment. This work item satisfies the MS-7 exit criteria: "oscal-cli integration tested; community examples published; Assessment Plan scaffolding working."
 
 ### Scope Boundaries :yellow_circle: `@human-review`
 
@@ -50,7 +50,7 @@ This PRD covers **WI-50: Phase 3 Integration Testing & Release** from the FORGE 
 - End-to-end testing of the full FORGE pipeline: ingestion through all OSCAL output models (Catalog, Component Definition, Profile, Assessment Plan scaffold, SSP template)
 - Verification of MS-7 exit criteria: oscal-cli integration, community examples, Assessment Plan scaffolding
 - Integration of community feedback received during Phase 3 development
-- Version tagging and release preparation (v0.3.0 or v1.0.0)
+- Version tagging and release preparation (v1.0.0)
 - Final release notes, changelog, and announcement preparation
 - Cross-platform release verification (Linux, macOS, Windows binaries from WI-49)
 
@@ -69,7 +69,6 @@ This PRD covers **WI-50: Phase 3 Integration Testing & Release** from the FORGE 
 | Exit Criteria | Specific, measurable conditions that must be met before a milestone is considered complete |
 | Release Candidate | A version of the software that is potentially ready for final release, pending validation |
 | Semantic Versioning | Version numbering scheme (MAJOR.MINOR.PATCH) conveying compatibility information |
-| v0.3.0 | Minor version release indicating Phase 3 ecosystem features are complete but API stability is not yet guaranteed |
 | v1.0.0 | Major version release indicating API stability and production readiness |
 | Changelog | A document recording notable changes for each version of the project |
 | Community Feedback | Issues, suggestions, and bug reports from users and contributors during Phase 3 development |
@@ -151,7 +150,7 @@ A user downloads the released version and follows the documentation to complete 
 - [A-1] All Phase 3 work items (WI-36 through WI-49) have been completed and individually tested before WI-50 begins.
 - [A-2] oscal-cli is available and functional for integration testing on the CI environment.
 - [A-3] Community feedback received during Phase 3 is limited in scope and can be addressed within one sprint.
-- [A-4] The version number decision (v0.3.0 vs v1.0.0) will be made by the product owner based on API stability assessment.
+- [A-4] The product owner has selected v1.0.0 for the community-ready release line.
 
 ### Risks
 | ID | Risk | Likelihood | Impact | Mitigation |
@@ -185,7 +184,7 @@ flowchart TD
     K --> L[Build Cross-Platform Binaries]
     L --> M[Publish GitHub Release]
     M --> N[Verify Release Artifacts]
-    N --> O[Release Complete: v0.3.0 / v1.0.0]
+    N --> O[Release Complete: v1.0.0]
 ```
 
 ### State Diagram (if applicable) :yellow_circle: `@human-review`
@@ -217,7 +216,7 @@ stateDiagram-v2
 - [ ] **M-4:** Community examples (WI-47) shall be verified: each sample policy converts to OSCAL and matches expected output.
 - [ ] **M-5:** Assessment Plan scaffolding (WI-41, WI-42) shall produce valid AP scaffolds with reviewed-controls, tasks, and assessment-subjects.
 - [ ] **M-6:** All Phase 3 features shall be exercised in integration tests: traceability reports, batch conversion, diff reports, summary dashboard, SSP templates.
-- [ ] **M-7:** The release shall be tagged (v0.3.0 or v1.0.0) and published to GitHub Releases with cross-platform binaries and checksums.
+- [ ] **M-7:** The release shall be tagged (v1.0.0) and published to GitHub Releases with cross-platform binaries and checksums.
 - [ ] **M-8:** Release notes shall document all Phase 3 features, breaking changes (if any), and known limitations.
 
 ### Should Have (S) — High value, not blocking :red_circle: `@human-required`
@@ -246,7 +245,7 @@ stateDiagram-v2
 - **Linting:** `cargo clippy -- -D warnings` must pass on all platforms
 - **Formatting:** `cargo fmt --check` must pass
 - **Testing:** `cargo test` must pass on all target platforms with zero failures
-- **Version Tagging:** Semantic versioning; tag format `v0.3.0` or `v1.0.0`
+- **Version Tagging:** Semantic versioning; tag format `v1.0.0`
 
 ---
 
@@ -426,7 +425,7 @@ N/A — No spike tasks for this work item. All technical approaches have been va
 |------|----------|-----------|------------------------|
 | 2026-02-10 | Automated integration tests as primary validation method | Repeatable, CI-integrated, catches regressions across all platforms | Manual testing only (not repeatable), partial testing (insufficient coverage) |
 | 2026-02-10 | Triage community feedback with blocker/non-blocker classification | Prevents scope creep while ensuring release quality; non-blockers documented as known issues | Address all feedback (risks schedule), ignore all feedback (risks quality) |
-| 2026-02-10 | Defer v0.3.0 vs v1.0.0 decision to product owner at release time | API stability assessment requires human judgment based on Phase 3 testing results | Pre-commit to v1.0.0 (premature), default to v0.3.0 (may undersell maturity) |
+| 2026-02-10 | Product owner selected v1.0.0 as the release line | Phase 3 scope is complete and v1.0.0 better reflects production readiness | Use an interim 0.x release |
 
 ---
 

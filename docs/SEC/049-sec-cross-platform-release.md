@@ -160,7 +160,7 @@ Most data elements are **Level 1 (Public)** -- FORGE is an open-source project. 
 ```mermaid
 flowchart TD
     subgraph "Source Control"
-        Tag["git tag v0.3.0"] --> GH[GitHub]
+        Tag["git tag v1.0.0"] --> GH[GitHub]
     end
 
     subgraph "CI Build Pipeline"

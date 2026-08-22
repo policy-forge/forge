@@ -187,8 +187,8 @@ N/A — No state transitions in this work item. The CI pipeline is a linear buil
 ### Must Have (M) — MVP, launch blockers :red_circle: `@human-required`
 - [ ] **M-1:** A GitHub Actions workflow shall build FORGE on Linux (x86_64), macOS (x86_64), and Windows (x86_64) for every push to main and every pull request.
 - [ ] **M-2:** The CI workflow shall run `cargo test` on all target platforms, failing the build if any tests fail.
-- [ ] **M-3:** A release workflow shall be triggered by git tags matching `v*` (e.g., `v0.3.0`, `v1.0.0`) and produce pre-built binaries for all target platforms.
-- [ ] **M-4:** Release binaries shall be uploaded to GitHub Releases with descriptive asset names including the platform and architecture (e.g., `forge-v0.3.0-linux-x86_64`).
+- [ ] **M-3:** A release workflow shall be triggered by git tags matching `v*` (e.g., `v1.0.0`) and produce pre-built binaries for all target platforms.
+- [ ] **M-4:** Release binaries shall be uploaded to GitHub Releases with descriptive asset names including the platform and architecture (e.g., `forge-v1.0.0-linux-x86_64`).
 - [ ] **M-5:** SHA-256 checksums shall be generated and published alongside release binaries.
 - [ ] **M-6:** Installation instructions shall document both `cargo install` from git and binary download from GitHub Releases.
 
@@ -303,7 +303,7 @@ jobs:
 | AC ID | Requirement | User Story | Given | When | Then |
 |-------|-------------|------------|-------|------|------|
 | AC-1 | M-1, M-2 | US-3 | A pull request to main | CI runs | Build and test jobs pass on Linux, macOS, and Windows |
-| AC-2 | M-3, M-4 | US-1 | A git tag `v0.3.0` is pushed | Release workflow runs | Pre-built binaries for all platforms are uploaded to GitHub Releases |
+| AC-2 | M-3, M-4 | US-1 | A git tag `v1.0.0` is pushed | Release workflow runs | Pre-built binaries for all platforms are uploaded to GitHub Releases |
 | AC-3 | M-5 | US-1 | Release binaries on GitHub Releases | Downloading binary and checksum | SHA-256 checksum matches the downloaded binary |
 | AC-4 | M-6 | US-2 | Installation instructions in documentation | Following cargo install steps | FORGE binary is installed and runnable |
 | AC-5 | S-1 | US-1 | A tagged release | Checking GitHub Releases | A macOS aarch64 binary is available |
