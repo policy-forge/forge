@@ -13,6 +13,11 @@ use tempfile::TempDir;
 fn forge_bin() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_forge"));
     cmd.current_dir(std::env::temp_dir());
+    // Child processes inherit the host environment; a stray FORGE_CONFIG
+    // would replace discovery and an invalid FORGE_JOBS could fail unrelated
+    // tests. Tests that exercise these variables set them explicitly via
+    // `run_with_env`.
+    cmd.env_remove("FORGE_CONFIG").env_remove("FORGE_JOBS");
     cmd
 }
 
@@ -254,6 +259,8 @@ fn ac8_invalid_forge_jobs_fails_before_side_effects() {
 
 #[test]
 fn ac12_no_summary_flag_overrides_config_true() {
+    const DASHBOARD: &str = "FORGE Conversion Summary";
+
     let dir = TempDir::new().unwrap();
     let policy = create_temp_md(&dir, "policy.md", POLICY);
     write_config(
@@ -263,15 +270,26 @@ fn ac12_no_summary_flag_overrides_config_true() {
 
     let name = policy.file_name().unwrap().to_str().unwrap();
 
-    let quiet_run = run_with_env(dir.path(), &["convert", "--quiet", name], []);
-    assert_eq!(quiet_run.2, Some(0), "{}", quiet_run.1);
+    // Run non-quiet with a file output so the summary dashboard is the only
+    // thing on stderr; `--quiet` suppresses it independently and would make
+    // every invocation pass even if the override were ignored.
 
-    let (_, _, code) = run(dir.path(), &["convert", "--quiet", "--no-summary", name]);
-    assert_eq!(code, Some(0));
+    // Config summary = true: dashboard emitted.
+    let (_, stderr, code) = run(dir.path(), &["convert", "--output", "out.json", name]);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(stderr.contains(DASHBOARD), "config summary=true must emit dashboard: {stderr}");
 
-    // Explicit positive form still parses alongside config summary=true.
-    let (_, _, code) = run(dir.path(), &["convert", "--quiet", "--summary", name]);
-    assert_eq!(code, Some(0));
+    // `--no-summary` overrides config summary = true: dashboard suppressed.
+    let (_, stderr, code) =
+        run(dir.path(), &["convert", "--output", "out.json", "--no-summary", name]);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(!stderr.contains(DASHBOARD), "--no-summary must suppress dashboard: {stderr}");
+
+    // Explicit positive form keeps it on.
+    let (_, stderr, code) =
+        run(dir.path(), &["convert", "--output", "out.json", "--summary", name]);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(stderr.contains(DASHBOARD), "--summary must emit dashboard: {stderr}");
 }
 
 // ── Path safety (AC-13, AC-14, M-9/M-12) ────────────────────────────────────

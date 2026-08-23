@@ -262,11 +262,11 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum ConfigCommand {
     /// Validate the selected project configuration without side effects
-    Check {
-        /// Path to a config file (overrides `$FORGE_CONFIG` and .forge.toml discovery)
-        #[arg(long)]
-        config: Option<PathBuf>,
-    },
+    ///
+    /// Uses the global `--config` selector, so both
+    /// `forge --config <path> config check` and
+    /// `forge config check --config <path>` resolve identically.
+    Check,
 }
 
 /// Output format for `forge validate` results (WI-20).
@@ -352,30 +352,41 @@ fn run_convert(
     convert::execute_dispatch(args.input, &opts)
 }
 
-/// Resolve effective validate settings and dispatch validation.
-#[allow(clippy::too_many_arguments)]
-fn run_validate(
-    input: &Path,
+/// Raw validate-command arguments captured from clap before resolution.
+#[derive(Clone)]
+struct ValidateArgs<'a> {
+    input: &'a Path,
     schema_type: Option<SchemaType>,
     format: Option<ValidateOutputFormat>,
-    output: Option<&Path>,
+    output: Option<&'a Path>,
     timeout: Option<u64>,
     round_trip: bool,
-    oscal_cli_path: Option<&Path>,
+    oscal_cli_path: Option<&'a Path>,
+}
+
+/// Resolve effective validate settings and dispatch validation.
+fn run_validate(
+    args: &ValidateArgs<'_>,
     project_config: Option<&crate::config::ProjectConfig>,
 ) -> Result<(), ForgeError> {
-    let effective = config::resolve_validate(schema_type, format, output, timeout, project_config)?;
-    if round_trip {
+    let effective = config::resolve_validate(
+        args.schema_type.clone(),
+        args.format.clone(),
+        args.output,
+        args.timeout,
+        project_config,
+    )?;
+    if args.round_trip {
         validate::execute_round_trip(
-            input,
+            args.input,
             &effective.format,
             effective.output.as_deref(),
             effective.timeout_seconds,
-            oscal_cli_path,
+            args.oscal_cli_path,
         )
     } else {
         validate::execute(
-            input,
+            args.input,
             effective.schema_type.as_ref(),
             &effective.format,
             effective.output.as_deref(),
@@ -461,18 +472,24 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         } => {
             let project_config = config::load_selected(cli.config.as_deref())?;
             run_validate(
-                input,
-                schema_type.clone(),
-                format.clone(),
-                output.as_deref(),
-                *timeout,
-                *round_trip,
-                oscal_cli_path.as_deref(),
+                &ValidateArgs {
+                    input,
+                    schema_type: schema_type.clone(),
+                    format: format.clone(),
+                    output: output.as_deref(),
+                    timeout: *timeout,
+                    round_trip: *round_trip,
+                    oscal_cli_path: oscal_cli_path.as_deref(),
+                },
                 project_config.as_ref(),
             )
         }
         Commands::Config { command } => match command {
-            ConfigCommand::Check { config: explicit } => config_check::execute(explicit.as_deref()),
+            // The global `--config` selector applies here too; because it is a
+            // clap `global = true` argument it binds identically whether the
+            // user writes `forge --config <path> config check` or
+            // `forge config check --config <path>`.
+            ConfigCommand::Check => config_check::execute(cli.config.as_deref()),
         },
         Commands::Resolve { input, output, check, timeout, oscal_cli_path } => resolve::execute(
             input.as_deref(),
@@ -853,6 +870,49 @@ mod tests {
             Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"]).unwrap();
         if let Commands::Convert { summary, .. } = cli.command {
             assert!(!summary, "Expected --summary to default to false");
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_summary_then_no_summary_resolves_false() {
+        // Last flag wins (clap `overrides_with`): `--summary --no-summary`
+        // must resolve to disabled.
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "test.md",
+            "--strategy",
+            "catalog",
+            "--summary",
+            "--no-summary",
+        ])
+        .unwrap();
+        if let Commands::Convert { summary, no_summary, .. } = cli.command {
+            assert!(!summary, "`--summary` must be overridden by a later `--no-summary`");
+            assert!(no_summary);
+        } else {
+            panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_no_summary_then_summary_resolves_true() {
+        // Reverse order: `--no-summary --summary` must resolve to enabled.
+        let cli = Cli::try_parse_from([
+            "forge",
+            "convert",
+            "test.md",
+            "--strategy",
+            "catalog",
+            "--no-summary",
+            "--summary",
+        ])
+        .unwrap();
+        if let Commands::Convert { summary, no_summary, .. } = cli.command {
+            assert!(summary, "`--no-summary` must be overridden by a later `--summary`");
+            assert!(!no_summary);
         } else {
             panic!("Expected Convert command");
         }

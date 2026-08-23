@@ -341,7 +341,7 @@ fn parse_and_validate(
     check_unknown_keys(&value)?;
 
     let raw: RawFile =
-        value.clone().try_into().map_err(|e: toml::de::Error| format!("invalid schema: {e}"))?;
+        value.try_into().map_err(|e: toml::de::Error| format!("invalid schema: {e}"))?;
 
     match raw.schema_version {
         None => {
@@ -633,19 +633,32 @@ const RESERVED_DEVICE_NAMES: &[&str] = &[
     "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 ];
 
-/// Reject Windows reserved device names in the final path component
-/// (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`). Win32 can redirect such
-/// paths to devices even when they appear to be ordinary relative files, so a
-/// repository-controlled config must not be able to select them.
+/// Reject Windows reserved device names in any path component
+/// (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`). Win32 resolves reserved
+/// device names in intermediate components as well, ignores trailing dots and
+/// spaces (so `"CON "` and `"CON."` still name the device), and treats text
+/// after the first `.` or `:` as extension/alternate-data-stream — all of
+/// which can redirect an apparently ordinary relative path to a device. A
+/// repository-controlled config must not be able to select such paths.
 fn reject_windows_device_name(key: &str, raw: &str) -> Result<(), String> {
-    let last =
-        Path::new(raw).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let stem = last.split('.').next().unwrap_or("").to_ascii_uppercase();
-    if RESERVED_DEVICE_NAMES.contains(&stem.as_str()) {
-        return Err(format!(
-            "`{key}` path '{raw}' uses a reserved device name ('{stem}') that is not allowed \
-             in project configuration paths"
-        ));
+    for component in Path::new(raw).components() {
+        let Component::Normal(name) = component else { continue };
+        let name = name.to_string_lossy();
+        // Split at the first '.' or ':' (extension / ADS separator), then
+        // strip trailing spaces and dots that Win32 disregards. Leading
+        // spaces are significant in Win32 and are preserved.
+        let stem = name
+            .split(['.', ':'])
+            .next()
+            .unwrap_or("")
+            .trim_end_matches([' ', '.'])
+            .to_ascii_uppercase();
+        if RESERVED_DEVICE_NAMES.contains(&stem.as_str()) {
+            return Err(format!(
+                "`{key}` path '{raw}' uses a reserved device name ('{stem}') that is not allowed \
+                 in project configuration paths"
+            ));
+        }
     }
     Ok(())
 }
@@ -1165,11 +1178,11 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
     fn discovery_selects_unsafe_nearest_candidate_instead_of_bypassing() {
         // A directory named .forge.toml is the nearest candidate: discovery
         // must select it (so loading fails under M-10) rather than silently
         // skipping to an ancestor configuration.
-        #[cfg(unix)]
         use std::os::unix::fs::symlink;
         let parent = tempdir();
         let child = parent.path().join("child");
@@ -1195,7 +1208,22 @@ mod tests {
 
     #[test]
     fn windows_reserved_device_names_rejected_cross_platform() {
-        for raw in ["CON", "NUL.json", "com1", "logs/LPT3.txt"] {
+        for raw in [
+            "CON",
+            "NUL.json",
+            "com1",
+            "logs/LPT3.txt",
+            // Intermediate components are checked too.
+            "CON/out.json",
+            "logs/AUX/report.json",
+            // Trailing dots/spaces are insignificant in Win32...
+            "CON ",
+            "CON.",
+            "sub/NUL .. ",
+            // ...and alternate-data-stream syntax still names the device.
+            "CON:stream",
+            "aux.txt:hidden",
+        ] {
             let text = format!("schema-version = 1\n[convert]\noutput = \"{raw}\"\n");
             let err = load_str(&text).unwrap_err();
             assert!(err.to_string().contains("reserved device name"), "{raw}: {err}");
