@@ -1067,8 +1067,7 @@ mod tests {
         let abs = if cfg!(windows) { "C:\\evil\\out.json" } else { "/etc/passwd" };
         // TOML literal string (single quotes) so backslashes need no escaping on Windows
         let err =
-            load_str(&format!("schema-version = 1\n[convert]\noutput = '{abs}'\n"))
-                .unwrap_err();
+            load_str(&format!("schema-version = 1\n[convert]\noutput = '{abs}'\n")).unwrap_err();
         assert!(err.to_string().contains("absolute"), "{err}");
     }
 

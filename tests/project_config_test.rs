@@ -314,9 +314,13 @@ fn ac14_traversal_output_rejected_before_side_effects() {
 #[test]
 fn ac14_absolute_output_rejected() {
     let dir = TempDir::new().unwrap();
+    // Use an actually-absolute path per platform; "/tmp/escape" is
+    // drive-relative (not absolute) on Windows. TOML literal string (single
+    // quotes) so backslashes need no escaping.
+    let abs = if cfg!(windows) { "C:\\escape" } else { "/tmp/escape" };
     write_config(
         dir.path(),
-        "schema-version = 1\n[convert]\nstrategy = \"catalog\"\noutput = \"/tmp/escape\"\n",
+        &format!("schema-version = 1\n[convert]\nstrategy = \"catalog\"\noutput = '{abs}'\n"),
     );
     let (_, stderr, code) = run(dir.path(), &["config", "check"]);
     assert_ne!(code, Some(0));
