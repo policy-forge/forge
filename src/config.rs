@@ -1062,8 +1062,12 @@ mod tests {
 
     #[test]
     fn absolute_output_rejected() {
+        // Use an actually-absolute path per platform; "/etc/passwd" is
+        // drive-relative (not absolute) on Windows.
+        let abs = if cfg!(windows) { "C:\\evil\\out.json" } else { "/etc/passwd" };
         let err =
-            load_str("schema-version = 1\n[convert]\noutput = \"/etc/passwd\"\n").unwrap_err();
+            load_str(&format!("schema-version = 1\n[convert]\noutput = \"{abs}\"\n"))
+                .unwrap_err();
         assert!(err.to_string().contains("absolute"), "{err}");
     }
 

@@ -78,5 +78,9 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # Generate a token on Sonarcloud.io, add it to the secrets of this repo with the name SONAR_TOKEN (Settings > Secrets > Actions > add new repository secret)
         with:
+          # Runner provides Java 21 (setup-java above); skip scanner JRE auto-provisioning,
+          # whose metadata endpoint can 403 and fail the job
+          args: -Dsonar.scanner.autoprovisioning=false
+        with:
           # When you need the analysis to take place in a directory other than the one from which it was launched, default is .
           projectBaseDir: .
