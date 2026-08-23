@@ -21,8 +21,8 @@ struct JsonOutput<'a> {
 ///
 /// # Errors
 ///
-/// Returns [`ForgeError::DiffError`] for file, JSON, or model errors and
-/// [`ForgeError::Serialization`] if machine output cannot be serialized.
+/// Returns [`ForgeError::DiffError`] for file, JSON, model, or status-output
+/// serialization errors.
 pub fn execute(
     committed_path: &Path,
     generated_path: &Path,

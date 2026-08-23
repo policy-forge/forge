@@ -192,3 +192,31 @@ fn drift_model_errors_do_not_disclose_absolute_runner_paths() {
     assert!(!stderr.contains(&absolute_root), "{stderr}");
     assert!(output.stdout.is_empty());
 }
+
+#[test]
+fn drift_structure_errors_do_not_disclose_absolute_runner_paths() {
+    let dir = TempDir::new().unwrap();
+    let committed_path = dir.path().join("malformed-catalog.json");
+    let generated_path = dir.path().join("generated-catalog.json");
+    fs::write(&committed_path, br#"{"catalog": []}"#).unwrap();
+    fs::write(
+        &generated_path,
+        serde_json::to_vec_pretty(&catalog(
+            "22222222-2222-4222-8222-222222222222",
+            "2026-08-23T12:34:56Z",
+            "Users must authenticate.",
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let output =
+        forge_bin().arg("drift").arg(&committed_path).arg(&generated_path).output().unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let absolute_root = dir.path().display().to_string();
+    assert!(stderr.contains("committed artifact must contain a 'catalog' JSON object"), "{stderr}");
+    assert!(!stderr.contains(&absolute_root), "{stderr}");
+    assert!(output.stdout.is_empty());
+}
