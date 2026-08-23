@@ -147,5 +147,10 @@ fn parse_set_param_pairs(set_params: &[String]) -> Result<Vec<(String, String)>,
             set_params.len()
         )));
     }
-    Ok(set_params.chunks_exact(2).map(|c| (c[0].clone(), c[1].clone())).collect())
+    Ok(set_params
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|[id, value]| (id.clone(), value.clone()))
+        .collect())
 }

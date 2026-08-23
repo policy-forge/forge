@@ -30,6 +30,8 @@ pub mod batch;
 pub mod citation;
 /// CLI argument parsing and subcommand dispatch.
 pub mod cli;
+/// Project configuration (`.forge.toml`): selection, validation, resolution.
+pub mod config;
 /// OSCAL artifact diff engine (compare two artifacts).
 pub mod diff;
 /// Unified error types for all pipeline stages.

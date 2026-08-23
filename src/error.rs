@@ -236,6 +236,17 @@ pub enum ForgeError {
     #[error("Batch conversion error: {0}")]
     BatchConversion(String),
 
+    // --- Usage errors (exit code 2) ---
+    /// A required command argument was not supplied by any layer (CLI or
+    /// project configuration). Mirrors clap's usage-error behavior so the
+    /// no-config exit code remains unchanged (PRD 051 M-14).
+    ///
+    /// Displayed without its own `error:` prefix because `main` already wraps
+    /// every message in `Error: …`; carrying both prefixes produced
+    /// `Error: error: …`.
+    #[error("{0}")]
+    MissingRequiredArgument(String),
+
     // --- External dependency errors (exit code 4) ---
     /// The `oscal-cli` tool was not found on the system PATH.
     #[error(
@@ -359,8 +370,9 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::DiffHasChanges
         | ForgeError::RoundTripFailed(_) => 1,
 
-        // Exit 2: Parse/Structure errors + Diff errors
-        ForgeError::DiffError(_)
+        // Exit 2: Parse/Structure errors + usage/required-argument errors
+        ForgeError::MissingRequiredArgument(_)
+        | ForgeError::DiffError(_)
         | ForgeError::SspBuild(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
@@ -427,6 +439,23 @@ mod tests {
     }
 
     // --- T005: exit_code tests ---
+
+    #[test]
+    fn missing_required_argument_display_has_no_extra_prefix() {
+        let err = ForgeError::MissingRequiredArgument(
+            "the following required arguments were not provided:\n  --strategy <STRATEGY>"
+                .to_string(),
+        );
+        let rendered = err.to_string();
+        assert!(rendered.starts_with("the following required arguments"), "{rendered}");
+        assert!(!rendered.starts_with("error:"), "prefix duplication with main's `Error:` wrapper");
+        assert!(rendered.contains("--strategy"), "{rendered}");
+    }
+
+    #[test]
+    fn missing_required_argument_exit_code_is_2() {
+        assert_eq!(exit_code(&ForgeError::MissingRequiredArgument("test".into())), 2);
+    }
 
     #[test]
     fn batch_conversion_error_display() {
