@@ -24,14 +24,14 @@ pub fn format_text(report: &MigrationReport) -> String {
         output,
         "old: {} [{}; sha256={}]",
         escape_controls(&report.old_source.label),
-        format_name(report.old_source.format),
+        report.old_source.format.as_str(),
         report.old_source.sha256
     );
     let _ = writeln!(
         output,
         "new: {} [{}; sha256={}]",
         escape_controls(&report.new_source.label),
-        format_name(report.new_source.format),
+        report.new_source.format.as_str(),
         report.new_source.sha256
     );
     if report.old_source.location_basis != super::types::LocationBasis::SourceLine
@@ -60,19 +60,15 @@ pub fn format_text(report: &MigrationReport) -> String {
     write_outcome_counts(&mut output, "new outcomes", &summary.new_requirements);
 
     for entry in &report.entries {
-        let _ = writeln!(output, "\n{}", classification_name(entry.classification));
-        let evidence = entry
-            .evidence
-            .iter()
-            .map(|evidence| evidence_name(*evidence))
-            .collect::<Vec<_>>()
-            .join(",");
+        let _ = writeln!(output, "\n{}", entry.classification.as_str());
+        let evidence =
+            entry.evidence.iter().map(|evidence| evidence.as_str()).collect::<Vec<_>>().join(",");
         let _ = writeln!(output, "  evidence: {evidence}");
         let _ = writeln!(
             output,
             "  confidence: {}; approval: {}",
-            confidence_name(entry.confidence_basis),
-            approval_name(entry.approval_status)
+            entry.confidence_basis.as_str(),
+            entry.approval_status.as_str()
         );
         for item in &entry.old {
             write_item(&mut output, "old", item);
@@ -103,51 +99,6 @@ fn write_outcome_counts(
     );
 }
 
-const fn classification_name(classification: super::types::Classification) -> &'static str {
-    use super::types::Classification;
-    match classification {
-        Classification::Unchanged => "unchanged",
-        Classification::ObservedIdChange => "observed_id_change",
-        Classification::SubstantiveChangeCandidate => "substantive_change_candidate",
-        Classification::AtomizationChangeCandidate => "atomization_change_candidate",
-        Classification::Ambiguous => "ambiguous",
-        Classification::Retired => "retired",
-        Classification::Added => "added",
-    }
-}
-
-const fn evidence_name(evidence: super::types::EvidenceCode) -> &'static str {
-    use super::types::EvidenceCode;
-    match evidence {
-        EvidenceCode::ExactId => "exact_id",
-        EvidenceCode::UniqueNormalizedText => "unique_normalized_text",
-        EvidenceCode::SameLocator => "same_locator",
-        EvidenceCode::DuplicateNormalizedText => "duplicate_normalized_text",
-        EvidenceCode::CompetingLocator => "competing_locator",
-        EvidenceCode::SourceFileChanged => "source_file_changed",
-        EvidenceCode::SectionPathChanged => "section_path_changed",
-        EvidenceCode::SourceLineChanged => "source_line_changed",
-        EvidenceCode::AtomIndexChanged => "atom_index_changed",
-    }
-}
-
-const fn confidence_name(confidence: super::types::ConfidenceBasis) -> &'static str {
-    use super::types::ConfidenceBasis;
-    match confidence {
-        ConfidenceBasis::Exact => "exact",
-        ConfidenceBasis::Candidate => "candidate",
-        ConfidenceBasis::Unresolved => "unresolved",
-        ConfidenceBasis::Unmatched => "unmatched",
-    }
-}
-
-const fn approval_name(approval: super::types::ApprovalStatus) -> &'static str {
-    match approval {
-        super::types::ApprovalStatus::NotRequired => "not_required",
-        super::types::ApprovalStatus::NotApproved => "not_approved",
-    }
-}
-
 fn write_item(output: &mut String, side: &str, item: &InventoryRequirement) {
     let _ = writeln!(
         output,
@@ -159,14 +110,6 @@ fn write_item(output: &mut String, side: &str, item: &InventoryRequirement) {
         item.location.atom_index,
         escape_controls(&item.location.section_path)
     );
-}
-
-const fn format_name(format: super::types::InputFormat) -> &'static str {
-    match format {
-        super::types::InputFormat::Markdown => "markdown",
-        super::types::InputFormat::Pdf => "pdf",
-        super::types::InputFormat::Docx => "docx",
-    }
 }
 
 fn escape_controls(value: &str) -> String {

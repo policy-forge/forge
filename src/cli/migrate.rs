@@ -41,9 +41,9 @@ fn reject_output_alias(
     let Some(output) = output else {
         return Ok(());
     };
-    let output_identity = path_identity(output)?;
+    let output_identity = path_identity(output, "--output path")?;
     for (label, input) in [("old policy", old_policy), ("new policy", new_policy)] {
-        let input_identity = path_identity(input)?;
+        let input_identity = path_identity(input, label)?;
         if output_identity == input_identity {
             return Err(ForgeError::MigrationError(format!(
                 "--output must not overwrite the {label}"
@@ -53,20 +53,20 @@ fn reject_output_alias(
     Ok(())
 }
 
-fn path_identity(path: &Path) -> Result<PathBuf, ForgeError> {
+fn path_identity(path: &Path, role: &str) -> Result<PathBuf, ForgeError> {
     if path.exists() {
         return path.canonicalize().map_err(|error| {
-            ForgeError::MigrationError(format!("unable to resolve path: {error}"))
+            ForgeError::MigrationError(format!("unable to resolve {role}: {error}"))
         });
     }
     let parent =
         path.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
     let canonical_parent = parent.canonicalize().map_err(|error| {
-        ForgeError::MigrationError(format!("unable to resolve output directory: {error}"))
+        ForgeError::MigrationError(format!("unable to resolve directory for {role}: {error}"))
     })?;
     let file_name = path
         .file_name()
-        .ok_or_else(|| ForgeError::MigrationError("--output must name a file".to_string()))?;
+        .ok_or_else(|| ForgeError::MigrationError(format!("{role} must name a file")))?;
     Ok(canonical_parent.join(file_name))
 }
 
@@ -83,5 +83,18 @@ mod tests {
         std::fs::write(&new, "# New\n").unwrap();
         let result = reject_output_alias(Some(&old), &old, &new);
         assert!(matches!(result, Err(ForgeError::MigrationError(_))));
+    }
+
+    #[test]
+    fn missing_input_directory_names_the_input_role() {
+        let directory = tempfile::tempdir().unwrap();
+        let old = directory.path().join("missing").join("old.md");
+        let new = directory.path().join("new.md");
+        let output = directory.path().join("report.json");
+        std::fs::write(&new, "# New\n").unwrap();
+
+        let error = reject_output_alias(Some(&output), &old, &new).unwrap_err().to_string();
+        assert!(error.contains("directory for old policy"), "unexpected error: {error}");
+        assert!(!error.contains("output directory"), "unexpected error: {error}");
     }
 }

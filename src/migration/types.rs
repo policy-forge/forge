@@ -20,6 +20,17 @@ pub enum InputFormat {
     Docx,
 }
 
+impl InputFormat {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Markdown => "markdown",
+            Self::Pdf => "pdf",
+            Self::Docx => "docx",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LocationBasis {
@@ -61,6 +72,19 @@ pub enum Classification {
 }
 
 impl Classification {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Unchanged => "unchanged",
+            Self::ObservedIdChange => "observed_id_change",
+            Self::SubstantiveChangeCandidate => "substantive_change_candidate",
+            Self::AtomizationChangeCandidate => "atomization_change_candidate",
+            Self::Ambiguous => "ambiguous",
+            Self::Retired => "retired",
+            Self::Added => "added",
+        }
+    }
+
     pub(crate) const fn rank(self) -> u8 {
         match self {
             Self::Unchanged => 0,
@@ -88,6 +112,23 @@ pub enum EvidenceCode {
     AtomIndexChanged,
 }
 
+impl EvidenceCode {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::ExactId => "exact_id",
+            Self::UniqueNormalizedText => "unique_normalized_text",
+            Self::SameLocator => "same_locator",
+            Self::DuplicateNormalizedText => "duplicate_normalized_text",
+            Self::CompetingLocator => "competing_locator",
+            Self::SourceFileChanged => "source_file_changed",
+            Self::SectionPathChanged => "section_path_changed",
+            Self::SourceLineChanged => "source_line_changed",
+            Self::AtomIndexChanged => "atom_index_changed",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ConfidenceBasis {
@@ -97,11 +138,33 @@ pub enum ConfidenceBasis {
     Unmatched,
 }
 
+impl ConfidenceBasis {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Exact => "exact",
+            Self::Candidate => "candidate",
+            Self::Unresolved => "unresolved",
+            Self::Unmatched => "unmatched",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ApprovalStatus {
     NotRequired,
     NotApproved,
+}
+
+impl ApprovalStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::NotRequired => "not_required",
+            Self::NotApproved => "not_approved",
+        }
+    }
 }
 
 /// A top-level, mutually exclusive migration outcome.
@@ -192,4 +255,60 @@ impl MigrationReport {
 pub(crate) struct RequirementInventory {
     pub source: SourceProvenance,
     pub requirements: Vec<InventoryRequirement>,
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+
+    use super::*;
+
+    fn assert_json_name<T: Serialize>(value: T, name: &str) {
+        assert_eq!(
+            serde_json::to_value(value).unwrap(),
+            serde_json::Value::String(name.to_string())
+        );
+    }
+
+    #[test]
+    fn canonical_names_match_json_serialization() {
+        for value in [InputFormat::Markdown, InputFormat::Pdf, InputFormat::Docx] {
+            assert_json_name(value, value.as_str());
+        }
+        for value in [
+            Classification::Unchanged,
+            Classification::ObservedIdChange,
+            Classification::SubstantiveChangeCandidate,
+            Classification::AtomizationChangeCandidate,
+            Classification::Ambiguous,
+            Classification::Retired,
+            Classification::Added,
+        ] {
+            assert_json_name(value, value.as_str());
+        }
+        for value in [
+            EvidenceCode::ExactId,
+            EvidenceCode::UniqueNormalizedText,
+            EvidenceCode::SameLocator,
+            EvidenceCode::DuplicateNormalizedText,
+            EvidenceCode::CompetingLocator,
+            EvidenceCode::SourceFileChanged,
+            EvidenceCode::SectionPathChanged,
+            EvidenceCode::SourceLineChanged,
+            EvidenceCode::AtomIndexChanged,
+        ] {
+            assert_json_name(value, value.as_str());
+        }
+        for value in [
+            ConfidenceBasis::Exact,
+            ConfidenceBasis::Candidate,
+            ConfidenceBasis::Unresolved,
+            ConfidenceBasis::Unmatched,
+        ] {
+            assert_json_name(value, value.as_str());
+        }
+        for value in [ApprovalStatus::NotRequired, ApprovalStatus::NotApproved] {
+            assert_json_name(value, value.as_str());
+        }
+    }
 }
