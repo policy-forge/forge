@@ -42,7 +42,7 @@ fn reject_output_alias(
         return Ok(());
     };
     let output_identity = path_identity(output, "--output path")?;
-    for (label, input) in [("old policy", old_policy), ("new policy", new_policy)] {
+    for (label, input) in [("old policy path", old_policy), ("new policy path", new_policy)] {
         let input_identity = path_identity(input, label)?;
         if output_identity == input_identity {
             return Err(ForgeError::MigrationError(format!(
@@ -62,7 +62,7 @@ fn path_identity(path: &Path, role: &str) -> Result<PathBuf, ForgeError> {
     let parent =
         path.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
     let canonical_parent = parent.canonicalize().map_err(|error| {
-        ForgeError::MigrationError(format!("unable to resolve directory for {role}: {error}"))
+        ForgeError::MigrationError(format!("unable to resolve parent directory of {role}: {error}"))
     })?;
     let file_name = path
         .file_name()
@@ -94,7 +94,7 @@ mod tests {
         std::fs::write(&new, "# New\n").unwrap();
 
         let error = reject_output_alias(Some(&output), &old, &new).unwrap_err().to_string();
-        assert!(error.contains("directory for old policy"), "unexpected error: {error}");
+        assert!(error.contains("parent directory of old policy path"), "unexpected error: {error}");
         assert!(!error.contains("output directory"), "unexpected error: {error}");
     }
 }

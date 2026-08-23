@@ -234,6 +234,9 @@ pub struct MigrationReport {
 }
 
 impl MigrationReport {
+    /// Whether PRD 53 M-20 requires a review signal. Any source-location
+    /// change is intentionally reviewable, including source-line or atom-index
+    /// drift that does not alter normalized requirement prose.
     #[must_use]
     pub fn has_reviewable_changes(&self) -> bool {
         self.entries.iter().any(|entry| {

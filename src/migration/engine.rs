@@ -7,11 +7,19 @@ use super::types::{
 };
 use crate::error::ForgeError;
 
+type CandidateGroup = (BTreeSet<usize>, BTreeSet<usize>, BTreeSet<EvidenceCode>);
+
 pub(crate) fn classify(
     old: RequirementInventory,
     new: RequirementInventory,
 ) -> Result<MigrationReport, ForgeError> {
-    validate_cross_inventory_ids(&old.requirements, &new.requirements)?;
+    let new_by_id: BTreeMap<&str, usize> = new
+        .requirements
+        .iter()
+        .enumerate()
+        .map(|(index, item)| (item.stable_id.as_str(), index))
+        .collect();
+    validate_cross_inventory_ids(&old.requirements, &new.requirements, &new_by_id)?;
 
     let mut old_matched = vec![false; old.requirements.len()];
     let mut new_matched = vec![false; new.requirements.len()];
@@ -20,6 +28,7 @@ pub(crate) fn classify(
     match_exact_ids(
         &old.requirements,
         &new.requirements,
+        &new_by_id,
         &mut old_matched,
         &mut new_matched,
         &mut entries,
@@ -65,11 +74,11 @@ pub(crate) fn classify(
 fn validate_cross_inventory_ids(
     old: &[InventoryRequirement],
     new: &[InventoryRequirement],
+    new_by_id: &BTreeMap<&str, usize>,
 ) -> Result<(), ForgeError> {
-    let new_by_id: BTreeMap<_, _> = new.iter().map(|item| (&item.stable_id, item)).collect();
     for old_item in old {
-        if let Some(new_item) = new_by_id.get(&old_item.stable_id)
-            && old_item.normalized_text != new_item.normalized_text
+        if let Some(&new_index) = new_by_id.get(old_item.stable_id.as_str())
+            && old_item.normalized_text != new[new_index].normalized_text
         {
             return Err(ForgeError::MigrationError(format!(
                 "stable-ID integrity anomaly for '{}'",
@@ -83,14 +92,13 @@ fn validate_cross_inventory_ids(
 fn match_exact_ids(
     old: &[InventoryRequirement],
     new: &[InventoryRequirement],
+    new_by_id: &BTreeMap<&str, usize>,
     old_matched: &mut [bool],
     new_matched: &mut [bool],
     entries: &mut Vec<MigrationEntry>,
 ) {
-    let new_by_id: BTreeMap<_, _> =
-        new.iter().enumerate().map(|(index, item)| (&item.stable_id, index)).collect();
     for (old_index, old_item) in old.iter().enumerate() {
-        let Some(&new_index) = new_by_id.get(&old_item.stable_id) else {
+        let Some(&new_index) = new_by_id.get(old_item.stable_id.as_str()) else {
             continue;
         };
         old_matched[old_index] = true;
@@ -186,7 +194,7 @@ fn group_ambiguities(
     new_matched: &mut [bool],
     entries: &mut Vec<MigrationEntry>,
 ) {
-    let mut groups: Vec<(BTreeSet<usize>, BTreeSet<usize>, BTreeSet<EvidenceCode>)> = Vec::new();
+    let mut groups: Vec<CandidateGroup> = Vec::new();
     append_candidate_groups(
         &mut groups,
         group_unmatched_by(old, old_matched, |item| item.normalized_text.clone()),
@@ -200,24 +208,7 @@ fn group_ambiguities(
         EvidenceCode::CompetingLocator,
     );
 
-    let mut merged: Vec<(BTreeSet<usize>, BTreeSet<usize>, BTreeSet<EvidenceCode>)> = Vec::new();
-    for mut group in groups {
-        let mut index = 0;
-        while index < merged.len() {
-            if !group.0.is_disjoint(&merged[index].0) || !group.1.is_disjoint(&merged[index].1) {
-                let other = merged.remove(index);
-                group.0.extend(other.0);
-                group.1.extend(other.1);
-                group.2.extend(other.2);
-                index = 0;
-            } else {
-                index += 1;
-            }
-        }
-        merged.push(group);
-    }
-
-    for (old_indexes, new_indexes, evidence) in merged {
+    for (old_indexes, new_indexes, evidence) in merge_candidate_groups(groups) {
         for &index in &old_indexes {
             old_matched[index] = true;
         }
@@ -236,7 +227,7 @@ fn group_ambiguities(
 }
 
 fn append_candidate_groups<K: Ord>(
-    output: &mut Vec<(BTreeSet<usize>, BTreeSet<usize>, BTreeSet<EvidenceCode>)>,
+    output: &mut Vec<CandidateGroup>,
     old_groups: BTreeMap<K, Vec<usize>>,
     new_groups: &BTreeMap<K, Vec<usize>>,
     evidence: EvidenceCode,
@@ -256,6 +247,75 @@ fn append_candidate_groups<K: Ord>(
     }
 }
 
+fn merge_candidate_groups(groups: Vec<CandidateGroup>) -> Vec<CandidateGroup> {
+    let mut components = DisjointSet::new(groups.len());
+    let mut old_owner = BTreeMap::new();
+    let mut new_owner = BTreeMap::new();
+
+    for (group_index, (old_indexes, new_indexes, _)) in groups.iter().enumerate() {
+        for &old_index in old_indexes {
+            if let Some(previous_group) = old_owner.insert(old_index, group_index) {
+                components.union(group_index, previous_group);
+            }
+        }
+        for &new_index in new_indexes {
+            if let Some(previous_group) = new_owner.insert(new_index, group_index) {
+                components.union(group_index, previous_group);
+            }
+        }
+    }
+
+    let mut merged: BTreeMap<usize, CandidateGroup> = BTreeMap::new();
+    for (group_index, (old_indexes, new_indexes, evidence)) in groups.into_iter().enumerate() {
+        let root = components.find(group_index);
+        let component = merged.entry(root).or_default();
+        component.0.extend(old_indexes);
+        component.1.extend(new_indexes);
+        component.2.extend(evidence);
+    }
+    merged.into_values().collect()
+}
+
+struct DisjointSet {
+    parents: Vec<usize>,
+    ranks: Vec<u8>,
+}
+
+impl DisjointSet {
+    fn new(len: usize) -> Self {
+        Self { parents: (0..len).collect(), ranks: vec![0; len] }
+    }
+
+    fn find(&mut self, mut index: usize) -> usize {
+        let mut root = index;
+        while self.parents[root] != root {
+            root = self.parents[root];
+        }
+        while self.parents[index] != index {
+            let parent = self.parents[index];
+            self.parents[index] = root;
+            index = parent;
+        }
+        root
+    }
+
+    fn union(&mut self, left: usize, right: usize) {
+        let left_root = self.find(left);
+        let right_root = self.find(right);
+        if left_root == right_root {
+            return;
+        }
+        match self.ranks[left_root].cmp(&self.ranks[right_root]) {
+            std::cmp::Ordering::Less => self.parents[left_root] = right_root,
+            std::cmp::Ordering::Greater => self.parents[right_root] = left_root,
+            std::cmp::Ordering::Equal => {
+                self.parents[right_root] = left_root;
+                self.ranks[left_root] += 1;
+            }
+        }
+    }
+}
+
 fn add_unmatched(
     old: &[InventoryRequirement],
     new: &[InventoryRequirement],
@@ -263,8 +323,9 @@ fn add_unmatched(
     new_matched: &[bool],
     entries: &mut Vec<MigrationEntry>,
 ) {
-    for (index, item) in old.iter().enumerate().filter(|(index, _)| !old_matched[*index]) {
-        let _ = index;
+    for item in
+        old.iter().enumerate().filter(|(index, _)| !old_matched[*index]).map(|(_, item)| item)
+    {
         entries.push(entry(
             Classification::Retired,
             Vec::new(),
@@ -274,8 +335,9 @@ fn add_unmatched(
             Vec::new(),
         ));
     }
-    for (index, item) in new.iter().enumerate().filter(|(index, _)| !new_matched[*index]) {
-        let _ = index;
+    for item in
+        new.iter().enumerate().filter(|(index, _)| !new_matched[*index]).map(|(_, item)| item)
+    {
         entries.push(entry(
             Classification::Added,
             Vec::new(),
@@ -516,5 +578,37 @@ mod tests {
         let requirements = vec![item("same", "same", "A", 1, 0)];
         let report = classify(inventory(requirements.clone()), inventory(requirements)).unwrap();
         assert!(!report.has_reviewable_changes());
+    }
+
+    #[test]
+    fn ambiguity_groups_merge_transitively() {
+        let groups = vec![
+            (
+                BTreeSet::from([0]),
+                BTreeSet::from([0]),
+                BTreeSet::from([EvidenceCode::DuplicateNormalizedText]),
+            ),
+            (
+                BTreeSet::from([1]),
+                BTreeSet::from([0]),
+                BTreeSet::from([EvidenceCode::CompetingLocator]),
+            ),
+            (
+                BTreeSet::from([1]),
+                BTreeSet::from([2]),
+                BTreeSet::from([EvidenceCode::DuplicateNormalizedText]),
+            ),
+        ];
+
+        let merged = merge_candidate_groups(groups);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].0, BTreeSet::from([0, 1]));
+        assert_eq!(merged[0].1, BTreeSet::from([0, 2]));
+        assert_eq!(
+            merged[0].2,
+            BTreeSet::from(
+                [EvidenceCode::DuplicateNormalizedText, EvidenceCode::CompetingLocator,]
+            )
+        );
     }
 }
