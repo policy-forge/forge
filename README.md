@@ -137,6 +137,41 @@ forge -v convert policy.md --strategy catalog --format json
 forge -q convert policy.md --strategy catalog --format json
 ```
 
+### Project Configuration (`.forge.toml`)
+
+Check in a `.forge.toml` to make repository command defaults reviewable and reusable:
+
+```toml
+schema-version = 1
+
+[convert]
+strategy = "catalog"
+format = "json"
+output = "generated/oscal"
+jobs = 0
+summary = false
+
+[validate]
+format = "text"
+timeout-seconds = 30
+```
+
+```bash
+# Explicit inputs only — strategy/format/output come from the project file
+forge convert policies/policy-a.md policies/policy-b.md
+
+# Validate the configuration without side effects
+forge config check
+```
+
+Precedence per setting: explicit CLI > `$FORGE_JOBS` environment override > project config > built-in default.
+See [Project Configuration](docs/project-configuration.md) for the full schema,
+path rules, and selection order (`--config` > `$FORGE_CONFIG` > discovery).
+
+> Note: a checked-in config makes option resolution deterministic; generated
+> OSCAL artifacts still embed runtime UUID/timestamp metadata and are not yet
+> byte-reproducible.
+
 ## 📦 Installation
 
 ### From crates.io

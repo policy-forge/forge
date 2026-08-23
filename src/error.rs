@@ -231,6 +231,12 @@ pub enum ForgeError {
     #[error("Invalid argument: {0}")]
     InvalidArgument(String),
 
+    /// A required command argument was not supplied by any layer (CLI or
+    /// project configuration). Mirrors clap's usage-error behavior so the
+    /// no-config exit code remains unchanged (PRD 051 M-14).
+    #[error("error: {0}")]
+    MissingRequiredArgument(String),
+
     // --- Batch errors (exit code 1) ---
     /// An error occurred during batch conversion of multiple files.
     #[error("Batch conversion error: {0}")]
@@ -359,8 +365,9 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::DiffHasChanges
         | ForgeError::RoundTripFailed(_) => 1,
 
-        // Exit 2: Parse/Structure errors + Diff errors
-        ForgeError::DiffError(_)
+        // Exit 2: Parse/Structure errors + usage/required-argument errors
+        ForgeError::MissingRequiredArgument(_)
+        | ForgeError::DiffError(_)
         | ForgeError::SspBuild(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)

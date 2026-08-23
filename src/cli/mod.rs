@@ -1,4 +1,5 @@
 /// Convert subcommand: policy document → OSCAL artifact.
+pub mod config_check;
 pub mod convert;
 /// Diff subcommand: compare two OSCAL artifacts.
 pub mod diff;
@@ -11,6 +12,7 @@ pub mod trace;
 /// Validate subcommand: OSCAL schema validation.
 pub mod validate;
 
+use std::path::Path;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
@@ -18,6 +20,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 pub use crate::types::{OutputFormat, OutputType, Strategy};
 
 use crate::ForgeError;
+use crate::config::{self, ConvertCliValues};
 
 /// Top-level CLI configuration for the `forge` tool.
 ///
@@ -48,6 +51,10 @@ pub struct Cli {
     /// Suppress all non-essential output (only OSCAL artifact on stdout)
     #[arg(short, long, global = true)]
     pub quiet: bool,
+
+    /// Path to a project configuration file (overrides `$FORGE_CONFIG` and .forge.toml discovery)
+    #[arg(long, global = true, value_name = "PATH")]
+    pub config: Option<PathBuf>,
 }
 
 /// CLI subcommands for the `forge` tool.
@@ -58,32 +65,34 @@ pub enum Commands {
     /// Convert a policy document to OSCAL format
     Convert {
         /// Path(s) to the input Markdown policy document(s) (.md)
-        #[arg(num_args = 1..)]
+        #[arg(num_args = 1.., required = true)]
         input: Vec<PathBuf>,
 
-        /// Conversion strategy: 'catalog' for OSCAL Catalog, 'component' for Component Definition
+        /// Conversion strategy: 'catalog' for OSCAL Catalog, 'component' for Component Definition.
+        /// May also be supplied by project configuration (.forge.toml).
         #[arg(long)]
-        strategy: Strategy,
+        strategy: Option<Strategy>,
 
-        /// Output format: json, xml, or yaml
-        #[arg(long, default_value = "json")]
-        format: OutputFormat,
+        /// Output format: json, xml, or yaml (default: json or project configuration)
+        #[arg(long)]
+        format: Option<OutputFormat>,
 
         /// Write output to a file instead of stdout
         #[arg(long)]
         output: Option<PathBuf>,
 
-        /// Maximum input file size in MB (default: 10)
-        #[arg(long, default_value = "10")]
-        max_size: u64,
+        /// Maximum input file size in MB (default: 10 or project configuration)
+        #[arg(long)]
+        max_size: Option<u64>,
 
         /// Source profile/baseline reference for component strategy (e.g., path to OSCAL profile JSON)
         #[arg(long)]
         source_profile: Option<String>,
 
-        /// Number of parallel jobs for batch conversion (0 = auto, 1 = sequential)
-        #[arg(long, default_value = "0", value_parser = clap::value_parser!(u16).range(0..=256))]
-        jobs: u16,
+        /// Number of parallel jobs for batch conversion (0 = auto, 1 = sequential;
+        /// default: 0, `$FORGE_JOBS`, or project configuration)
+        #[arg(long, value_parser = clap::value_parser!(u16).range(0..=256))]
+        jobs: Option<u16>,
 
         /// Optional baseline policy used to compare stable IDs and emit substantive-change warnings.
         ///
@@ -108,8 +117,12 @@ pub enum Commands {
         import_ssp: Option<String>,
 
         /// Print a conversion summary dashboard to stderr after conversion
-        #[arg(long)]
+        #[arg(long, overrides_with = "no_summary")]
         summary: bool,
+
+        /// Explicitly disable the summary dashboard (overrides convert.summary = true in project configuration)
+        #[arg(long)]
+        no_summary: bool,
     },
 
     /// Export an OSCAL artifact to a different format
@@ -135,9 +148,9 @@ pub enum Commands {
         #[arg(long, value_enum, conflicts_with = "round_trip")]
         schema_type: Option<SchemaType>,
 
-        /// Output format for validation results (text or json)
-        #[arg(long, value_enum, default_value = "text")]
-        format: ValidateOutputFormat,
+        /// Output format for validation results (text or json; default: text or project configuration)
+        #[arg(long, value_enum)]
+        format: Option<ValidateOutputFormat>,
 
         /// Run round-trip validation (JSON → XML → YAML → JSON) via oscal-cli
         #[arg(long)]
@@ -147,9 +160,10 @@ pub enum Commands {
         #[arg(long)]
         output: Option<PathBuf>,
 
-        /// Timeout for each oscal-cli conversion step in seconds (default: 30)
-        #[arg(long, default_value = "30", requires = "round_trip")]
-        timeout: u64,
+        /// Timeout for each oscal-cli conversion step in seconds
+        /// (default: 30 or project configuration)
+        #[arg(long, requires = "round_trip")]
+        timeout: Option<u64>,
 
         /// Explicit path to oscal-cli binary (overrides PATH search)
         #[arg(long, requires = "round_trip")]
@@ -204,6 +218,13 @@ pub enum Commands {
         new_artifact: PathBuf,
     },
 
+    /// Inspect and validate project configuration (.forge.toml)
+    Config {
+        /// Config subcommands
+        #[command(subcommand)]
+        command: ConfigCommand,
+    },
+
     /// Generate an OSCAL Profile by selecting controls from a source Catalog
     Profile {
         /// Path to the source Catalog file (OSCAL Catalog JSON)
@@ -237,6 +258,17 @@ pub enum Commands {
     },
 }
 
+/// Subcommands for `forge config`.
+#[derive(Subcommand)]
+pub enum ConfigCommand {
+    /// Validate the selected project configuration without side effects
+    Check {
+        /// Path to a config file (overrides `$FORGE_CONFIG` and .forge.toml discovery)
+        #[arg(long)]
+        config: Option<PathBuf>,
+    },
+}
+
 /// Output format for `forge validate` results (WI-20).
 #[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
 pub enum ValidateOutputFormat {
@@ -250,7 +282,7 @@ pub enum ValidateOutputFormat {
 ///
 /// Allows explicitly specifying the OSCAL model type when auto-detection
 /// is ambiguous or incorrect.
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
 pub enum SchemaType {
     /// Validate against the OSCAL Catalog schema.
     Catalog,
@@ -259,12 +291,122 @@ pub enum SchemaType {
     ComponentDefinition,
 }
 
+/// Raw convert-command arguments captured from clap before resolution.
+#[derive(Clone, Copy)]
+struct ConvertArgs<'a> {
+    input: &'a [PathBuf],
+    strategy: Option<Strategy>,
+    format: Option<OutputFormat>,
+    output: Option<&'a Path>,
+    max_size: Option<u64>,
+    source_profile: Option<&'a str>,
+    jobs: Option<u16>,
+    stable_id_baseline: Option<&'a Path>,
+    import_ssp: Option<&'a str>,
+    to: Option<OutputType>,
+    /// `Some(true)` for `--summary`, `Some(false)` for `--no-summary`.
+    summary: Option<bool>,
+}
+
+/// Resolve effective convert settings and dispatch conversion.
+fn run_convert(
+    args: &ConvertArgs<'_>,
+    explicit_config: Option<&Path>,
+    quiet: bool,
+) -> Result<(), ForgeError> {
+    if args.input.is_empty() {
+        return Err(ForgeError::BatchConversion("No input files provided".to_string()));
+    }
+    let project_config = config::load_selected(explicit_config)?;
+    let cli_values = ConvertCliValues {
+        strategy: args.strategy,
+        format: args.format,
+        output: args.output,
+        max_size: args.max_size,
+        source_profile: args.source_profile,
+        jobs: args.jobs,
+        stable_id_baseline: args.stable_id_baseline,
+        to: args.to,
+        import_ssp: args.import_ssp,
+        summary: args.summary,
+    };
+    let effective =
+        config::resolve_convert(cli_values, project_config.as_ref(), config::env_jobs())?;
+    // Borrow locals for the option struct (ConvertOptions borrows paths/strings).
+    let source_profile_str =
+        effective.source_profile.clone().map(|p| p.to_string_lossy().into_owned());
+    let opts = convert::ConvertOptions {
+        input: &args.input[0],
+        strategy: &effective.strategy,
+        format: &effective.format,
+        output: effective.output.as_deref(),
+        max_size: effective.max_size_mb,
+        source_profile: source_profile_str.as_deref(),
+        stable_id_baseline: effective.stable_id_baseline.as_deref(),
+        import_ssp: effective.import_ssp.as_deref(),
+        summary: effective.summary,
+        quiet,
+        jobs: effective.jobs,
+        to: effective.to.as_ref(),
+    };
+    convert::execute_dispatch(args.input, &opts)
+}
+
+/// Resolve effective validate settings and dispatch validation.
+#[allow(clippy::too_many_arguments)]
+fn run_validate(
+    input: &Path,
+    schema_type: Option<SchemaType>,
+    format: Option<ValidateOutputFormat>,
+    output: Option<&Path>,
+    timeout: Option<u64>,
+    round_trip: bool,
+    oscal_cli_path: Option<&Path>,
+    project_config: Option<&crate::config::ProjectConfig>,
+) -> Result<(), ForgeError> {
+    let effective = config::resolve_validate(schema_type, format, output, timeout, project_config)?;
+    if round_trip {
+        validate::execute_round_trip(
+            input,
+            &effective.format,
+            effective.output.as_deref(),
+            effective.timeout_seconds,
+            oscal_cli_path,
+        )
+    } else {
+        validate::execute(
+            input,
+            effective.schema_type.as_ref(),
+            &effective.format,
+            effective.output.as_deref(),
+        )
+    }
+}
+
+/// The global `--config` selector is only consumed by the commands whose
+/// settings schema version 1 supports (PRD 051 M-2/M-12). Rejecting it
+/// explicitly prevents it from being silently ignored elsewhere.
+fn reject_unsupported_config_selector(cli: &Cli) -> Result<(), ForgeError> {
+    let config_supported = matches!(
+        &cli.command,
+        Commands::Convert { .. } | Commands::Validate { .. } | Commands::Config { .. }
+    );
+    if cli.config.is_some() && !config_supported {
+        return Err(ForgeError::Config(
+            "--config is only supported by the 'convert', 'validate', and 'config' commands"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Execute the CLI command, dispatching to the appropriate subcommand handler.
 ///
 /// # Errors
 ///
 /// Returns `ForgeError` if the subcommand handler fails.
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
+    reject_unsupported_config_selector(cli)?;
     match &cli.command {
         Commands::Convert {
             input,
@@ -278,25 +420,32 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             import_ssp,
             to,
             summary,
+            no_summary,
         } => {
-            if input.is_empty() {
-                return Err(ForgeError::BatchConversion("No input files provided".to_string()));
-            }
-            let opts = convert::ConvertOptions {
-                input: &input[0],
-                strategy,
-                format,
-                output: output.as_deref(),
-                max_size: *max_size,
-                source_profile: source_profile.as_deref(),
-                stable_id_baseline: stable_id_baseline.as_deref(),
-                import_ssp: import_ssp.as_deref(),
-                summary: *summary,
-                quiet: cli.quiet,
-                jobs: *jobs,
-                to: to.as_ref(),
+            let summary = if *summary {
+                Some(true)
+            } else if *no_summary {
+                Some(false)
+            } else {
+                None
             };
-            convert::execute_dispatch(input, &opts)
+            run_convert(
+                &ConvertArgs {
+                    input,
+                    strategy: *strategy,
+                    format: *format,
+                    output: output.as_deref(),
+                    max_size: *max_size,
+                    source_profile: source_profile.as_deref(),
+                    jobs: *jobs,
+                    stable_id_baseline: stable_id_baseline.as_deref(),
+                    import_ssp: import_ssp.as_deref(),
+                    to: *to,
+                    summary,
+                },
+                cli.config.as_deref(),
+                cli.quiet,
+            )
         }
         Commands::Export { input, format, output } => {
             export::execute(input, format, output.as_deref())
@@ -310,18 +459,21 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             timeout,
             oscal_cli_path,
         } => {
-            if *round_trip {
-                validate::execute_round_trip(
-                    input,
-                    format,
-                    output.as_deref(),
-                    *timeout,
-                    oscal_cli_path.as_deref(),
-                )
-            } else {
-                validate::execute(input, schema_type.as_ref(), format, output.as_deref())
-            }
+            let project_config = config::load_selected(cli.config.as_deref())?;
+            run_validate(
+                input,
+                schema_type.clone(),
+                format.clone(),
+                output.as_deref(),
+                *timeout,
+                *round_trip,
+                oscal_cli_path.as_deref(),
+                project_config.as_ref(),
+            )
         }
+        Commands::Config { command } => match command {
+            ConfigCommand::Check { config: explicit } => config_check::execute(explicit.as_deref()),
+        },
         Commands::Resolve { input, output, check, timeout, oscal_cli_path } => resolve::execute(
             input.as_deref(),
             output.as_deref(),
@@ -391,10 +543,10 @@ mod tests {
         {
             assert_eq!(input, PathBuf::from("artifact.json"));
             assert!(schema_type.is_none());
-            assert_eq!(format, ValidateOutputFormat::Text);
+            assert_eq!(format, None, "No explicit --format; default resolved later");
             assert!(!round_trip);
             assert!(output.is_none());
-            assert_eq!(timeout, 30);
+            assert_eq!(timeout, None);
             assert!(oscal_cli_path.is_none());
         } else {
             panic!("Expected Validate command");
@@ -447,8 +599,8 @@ mod tests {
 
         if let Commands::Convert { input, strategy, format, output, .. } = cli.command {
             assert_eq!(input, vec![PathBuf::from("test.md")]);
-            assert!(matches!(strategy, Strategy::Catalog));
-            assert!(matches!(format, OutputFormat::Json));
+            assert!(matches!(strategy, Some(Strategy::Catalog)));
+            assert!(matches!(format, Some(OutputFormat::Json)));
             assert_eq!(output, Some(PathBuf::from("out.json")));
         } else {
             panic!("Expected Convert command");
@@ -456,18 +608,20 @@ mod tests {
     }
 
     #[test]
-    fn parse_convert_missing_strategy_fails() {
+    fn parse_convert_missing_strategy_is_accepted_at_parse_time() {
+        // PRD 051 M-7: --strategy may be supplied by project configuration,
+        // so clap no longer requires it; the resolver enforces the choice.
         let result = Cli::try_parse_from(["forge", "convert", "test.md", "--format", "json"]);
-        assert!(result.is_err(), "Should fail when --strategy is omitted");
+        assert!(result.is_ok(), "Parsing succeeds; requirement enforced by config resolver");
     }
 
     #[test]
     fn parse_convert_missing_format_defaults_to_json() {
-        // T001 (EC-1): --format omitted → defaults to Json
+        // T001 (EC-1): --format omitted → resolved to Json by the config layer
         let cli = Cli::try_parse_from(["forge", "convert", "test.md", "--strategy", "catalog"])
-            .expect("Should succeed when --format is omitted (defaults to json)");
+            .expect("Should succeed when --format is omitted");
         if let Commands::Convert { format, .. } = cli.command {
-            assert!(matches!(format, OutputFormat::Json), "Default format should be Json");
+            assert!(format.is_none(), "No explicit --format; default resolved later");
         } else {
             panic!("Expected Convert command");
         }
@@ -605,7 +759,7 @@ mod tests {
         ])
         .unwrap();
         if let Commands::Convert { jobs, .. } = cli.command {
-            assert_eq!(jobs, 4);
+            assert_eq!(jobs, Some(4));
         } else {
             panic!("Expected Convert command");
         }
@@ -624,7 +778,7 @@ mod tests {
         ])
         .unwrap();
         if let Commands::Convert { jobs, .. } = cli.command {
-            assert_eq!(jobs, 1);
+            assert_eq!(jobs, Some(1));
         } else {
             panic!("Expected Convert command");
         }
@@ -644,7 +798,7 @@ mod tests {
         ])
         .unwrap();
         if let Commands::Convert { jobs, .. } = cli.command {
-            assert_eq!(jobs, 0);
+            assert_eq!(jobs, Some(0));
         } else {
             panic!("Expected Convert command");
         }
@@ -669,7 +823,7 @@ mod tests {
         let cli =
             Cli::try_parse_from(["forge", "convert", "a.md", "--strategy", "catalog"]).unwrap();
         if let Commands::Convert { jobs, .. } = cli.command {
-            assert_eq!(jobs, 0, "Default should be 0 (auto)");
+            assert_eq!(jobs, None, "No explicit --jobs; default resolved later");
         } else {
             panic!("Expected Convert command");
         }
@@ -794,7 +948,7 @@ mod tests {
             assert_eq!(input, PathBuf::from("artifact.json"));
             assert!(round_trip);
             assert!(output.is_none());
-            assert_eq!(timeout, 30);
+            assert_eq!(timeout, None);
             assert!(oscal_cli_path.is_none());
         } else {
             panic!("Expected Validate command");
@@ -833,7 +987,7 @@ mod tests {
         .unwrap();
         if let Commands::Validate { round_trip, timeout, .. } = cli.command {
             assert!(round_trip);
-            assert_eq!(timeout, 120);
+            assert_eq!(timeout, Some(120));
         } else {
             panic!("Expected Validate command");
         }
@@ -888,9 +1042,9 @@ mod tests {
             assert_eq!(input, PathBuf::from("artifact.json"));
             assert!(round_trip);
             assert_eq!(output, Some(PathBuf::from("div.json")));
-            assert_eq!(timeout, 45);
+            assert_eq!(timeout, Some(45));
             assert_eq!(oscal_cli_path, Some(PathBuf::from("/opt/oscal-cli")));
-            assert_eq!(format, ValidateOutputFormat::Json);
+            assert_eq!(format, Some(ValidateOutputFormat::Json));
         } else {
             panic!("Expected Validate command");
         }

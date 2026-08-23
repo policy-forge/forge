@@ -270,7 +270,36 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
         tracing::warn!("--import-ssp is not supported in batch mode and will be ignored");
     }
 
-    // Validate --output is a dir or absent (FR-014), create if needed (FR-015)
+    let strategy = effective_strategy(opts);
+
+    // Validate --source-profile upfront for component output (SEC-3, SEC-4, EC-4)
+    let resolved_profile = if matches!(strategy, Strategy::Component) {
+        resolve_source_profile(opts.source_profile)?
+    } else {
+        opts.source_profile
+    };
+
+    let max_size_bytes = max_size_to_bytes(opts.max_size)?;
+
+    // Pre-check input sizes so oversized inputs fail before any filesystem
+    // side effects such as output-directory creation (PRD 051 M-12).
+    for path in input {
+        let Ok(meta) = std::fs::metadata(path) else {
+            return Err(ForgeError::FileNotFound { path: path.clone() });
+        };
+        let size = meta.len();
+        if size > max_size_bytes {
+            return Err(ForgeError::FileTooLarge {
+                path: path.clone(),
+                size_bytes: size,
+                limit_bytes: max_size_bytes,
+            });
+        }
+    }
+
+    // Validate --output is a dir or absent (FR-014), create if needed (FR-015).
+    // This runs after all validation above so invalid invocations leave no
+    // filesystem side effects (PRD 051 M-12).
     if let Some(out_path) = opts.output {
         if out_path.exists() && !out_path.is_dir() {
             return Err(ForgeError::BatchConversion(format!(
@@ -287,17 +316,6 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
             })?;
         }
     }
-
-    let strategy = effective_strategy(opts);
-
-    // Validate --source-profile upfront for component output (SEC-3, SEC-4, EC-4)
-    let resolved_profile = if matches!(strategy, Strategy::Component) {
-        resolve_source_profile(opts.source_profile)?
-    } else {
-        opts.source_profile
-    };
-
-    let max_size_bytes = max_size_to_bytes(opts.max_size)?;
 
     // Derive output paths
     let path_pairs = batch::output_naming::derive_output_paths(input, *opts.format, opts.output);

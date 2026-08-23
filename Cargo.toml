@@ -25,6 +25,7 @@ rayon = "1"
 tempfile = "3.25.0"
 pdf-extract = "0.10.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }
+toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }
 
 [lints.clippy]
 all = "warn"
