@@ -19,7 +19,11 @@ fn main() -> ExitCode {
 
     match cli::execute(&cli) {
         Ok(()) => ExitCode::SUCCESS,
-        Err(ForgeError::DiffHasChanges | ForgeError::DriftDetected) => ExitCode::from(1u8),
+        Err(
+            ForgeError::DiffHasChanges
+            | ForgeError::DriftDetected
+            | ForgeError::MigrationHasChanges,
+        ) => ExitCode::from(1u8),
         Err(e) => {
             eprintln!("Error: {e}");
             ExitCode::from(exit_code(&e))

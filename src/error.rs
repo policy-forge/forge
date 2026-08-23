@@ -303,6 +303,15 @@ pub enum ForgeError {
     #[error("")]
     DriftDetected,
 
+    /// A completed policy migration analysis found reviewable changes.
+    /// The report is printed separately by the CLI.
+    #[error("")]
+    MigrationHasChanges,
+
+    /// A trustworthy, complete policy migration report could not be produced.
+    #[error("Migration analysis error: {0}")]
+    MigrationError(String),
+
     /// Round-trip validation failed: the re-parsed output does not match the original.
     #[error("Round-trip validation failed: {0} unresolved divergence(s)")]
     RoundTripFailed(usize),
@@ -374,11 +383,13 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::Serialization(_)
         | ForgeError::DiffHasChanges
         | ForgeError::DriftDetected
+        | ForgeError::MigrationHasChanges
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors
         ForgeError::MissingRequiredArgument(_)
         | ForgeError::DiffError(_)
+        | ForgeError::MigrationError(_)
         | ForgeError::SspBuild(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
