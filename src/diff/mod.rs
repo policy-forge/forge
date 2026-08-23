@@ -3,6 +3,8 @@
 //!
 //! Supports Catalog and Component Definition model types.
 
+/// CI-safe, full-artifact comparison with a versioned volatility contract.
+pub mod canonical;
 /// Diff engine: compute a `DiffReport` between two artifact snapshots.
 pub mod engine;
 /// Snapshot extraction: build `ControlSnapshot` lists from OSCAL JSON.
@@ -18,6 +20,9 @@ use crate::error::ForgeError;
 use crate::types::OscalModelType;
 use crate::validate::detect_model_type;
 
+pub use canonical::{
+    DRIFT_COMPARISON_CONTRACT_VERSION, DriftComparison, DriftStatus, compare_artifacts_for_drift,
+};
 pub use formatter::format_diff_report;
 pub use types::{ArtifactType, DiffReport};
 

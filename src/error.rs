@@ -290,13 +290,18 @@ pub enum ForgeError {
         path: PathBuf,
     },
 
-    // --- Diff errors (exit code 2 for DiffError, exit code 1 for DiffHasChanges) ---
+    // --- Diff/drift errors (exit code 2 for DiffError, exit code 1 when changes exist) ---
     /// The diff operation detected changes between golden and current output.
     ///
     /// This variant has an empty error message because the diff details are
     /// printed separately by the CLI.
     #[error("")]
     DiffHasChanges,
+
+    /// The canonical CI comparison detected substantive artifact drift.
+    /// Status is printed separately without artifact content.
+    #[error("")]
+    DriftDetected,
 
     /// Round-trip validation failed: the re-parsed output does not match the original.
     #[error("Round-trip validation failed: {0} unresolved divergence(s)")]
@@ -368,6 +373,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::ResolveInputNotJson { .. }
         | ForgeError::Serialization(_)
         | ForgeError::DiffHasChanges
+        | ForgeError::DriftDetected
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors
@@ -455,6 +461,13 @@ mod tests {
     #[test]
     fn missing_required_argument_exit_code_is_2() {
         assert_eq!(exit_code(&ForgeError::MissingRequiredArgument("test".into())), 2);
+    }
+
+    #[test]
+    fn drift_detected_has_no_message_and_exit_code_one() {
+        let err = ForgeError::DriftDetected;
+        assert!(err.to_string().is_empty());
+        assert_eq!(exit_code(&err), 1);
     }
 
     #[test]

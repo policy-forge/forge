@@ -3,6 +3,8 @@ pub mod config_check;
 pub mod convert;
 /// Diff subcommand: compare two OSCAL artifacts.
 pub mod diff;
+/// Drift subcommand: content-safe, canonical artifact comparison for CI.
+pub mod drift;
 pub mod export;
 pub mod output;
 pub mod profile;
@@ -40,7 +42,7 @@ use crate::config::{self, ConvertCliValues};
     arg_required_else_help = true
 )]
 pub struct Cli {
-    /// The subcommand to execute (convert, export, validate, resolve, diff, trace, profile).
+    /// The subcommand to execute (convert, export, validate, resolve, diff, drift, trace, profile).
     #[command(subcommand)]
     pub command: Commands,
 
@@ -218,6 +220,19 @@ pub enum Commands {
         new_artifact: PathBuf,
     },
 
+    /// Check generated OSCAL JSON for substantive drift without printing policy content
+    Drift {
+        /// Path to the committed OSCAL artifact (JSON)
+        committed_artifact: PathBuf,
+
+        /// Path to the newly generated OSCAL artifact (JSON)
+        generated_artifact: PathBuf,
+
+        /// Status output format; neither format includes policy content or file paths
+        #[arg(long, value_enum, default_value = "text")]
+        format: DriftOutputFormat,
+    },
+
     /// Inspect and validate project configuration (.forge.toml)
     Config {
         /// Config subcommands
@@ -275,6 +290,15 @@ pub enum ValidateOutputFormat {
     /// Human-readable text output (default)
     Text,
     /// Machine-parseable JSON output (PRD S-1)
+    Json,
+}
+
+/// Output format for the content-safe drift result.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum DriftOutputFormat {
+    /// Three-line, human-readable status output.
+    Text,
+    /// Single-object, machine-readable JSON status output.
     Json,
 }
 
@@ -411,6 +435,18 @@ fn reject_unsupported_config_selector(cli: &Cli) -> Result<(), ForgeError> {
     Ok(())
 }
 
+fn run_drift(
+    committed_artifact: &Path,
+    generated_artifact: &Path,
+    format: &DriftOutputFormat,
+) -> Result<(), ForgeError> {
+    if drift::execute(committed_artifact, generated_artifact, format)? {
+        Err(ForgeError::DriftDetected)
+    } else {
+        Ok(())
+    }
+}
+
 /// Execute the CLI command, dispatching to the appropriate subcommand handler.
 ///
 /// # Errors
@@ -502,6 +538,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             diff::execute(old_artifact, new_artifact).and_then(|has_changes| {
                 if has_changes { Err(ForgeError::DiffHasChanges) } else { Ok(()) }
             })
+        }
+        Commands::Drift { committed_artifact, generated_artifact, format } => {
+            run_drift(committed_artifact, generated_artifact, format)
         }
         Commands::Trace { artifact, source, output } => {
             trace::execute(artifact, source, output.as_deref())
@@ -994,6 +1033,32 @@ mod tests {
     fn parse_diff_missing_new_artifact_fails() {
         let result = Cli::try_parse_from(["forge", "diff", "old.json"]);
         assert!(result.is_err(), "Should fail when new_artifact is omitted");
+    }
+
+    #[test]
+    fn parse_drift_subcommand_with_json_output() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "drift",
+            "committed.json",
+            "generated.json",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+        if let Commands::Drift { committed_artifact, generated_artifact, format } = cli.command {
+            assert_eq!(committed_artifact, PathBuf::from("committed.json"));
+            assert_eq!(generated_artifact, PathBuf::from("generated.json"));
+            assert_eq!(format, DriftOutputFormat::Json);
+        } else {
+            panic!("Expected Drift command");
+        }
+    }
+
+    #[test]
+    fn parse_drift_missing_generated_artifact_fails() {
+        let result = Cli::try_parse_from(["forge", "drift", "committed.json"]);
+        assert!(result.is_err(), "Should fail when generated_artifact is omitted");
     }
 
     // ─── Issue #64: --round-trip CLI parsing tests ─────────────────────
