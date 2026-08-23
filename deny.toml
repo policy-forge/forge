@@ -1,6 +1,10 @@
 [advisories]
 version = 2
-ignore = []
+ignore = [
+    # ttf-parser 0.25.x is unmaintained but still pulled transitively by lopdf 0.42 (via pdf-extract);
+    # unmaintained is informational, not a vulnerability. Revisit when lopdf drops it.
+    "RUSTSEC-2026-0192",
+]
 
 [licenses]
 version = 2
