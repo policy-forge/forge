@@ -127,6 +127,24 @@ forge validate catalog.json --format json
 forge validate artifact.json --schema-type catalog
 ```
 
+### Drift
+
+Compare committed and newly generated OSCAL JSON without printing policy
+content. The versioned comparison ignores only FORGE's volatile root `uuid` and
+`metadata.last-modified`; every other field remains significant.
+
+```bash
+# Human-readable status
+forge drift committed/catalog.json staged/catalog.json
+
+# Machine-readable status for CI
+forge drift committed/catalog.json staged/catalog.json --format json
+```
+
+Exit codes are `0` for clean, `1` for drift, and `2` for invalid, unsupported,
+or mismatched inputs. Run `forge validate` on generated artifacts before drift
+comparison in enforcement workflows.
+
 ### Global Options
 
 ```bash

@@ -23,7 +23,7 @@ Verify your installation:
 forge --help
 ```
 
-You should see seven subcommands: `convert`, `export`, `validate`, `resolve`, `trace`, `diff`, and `profile`.
+You should see eight subcommands: `convert`, `export`, `validate`, `resolve`, `trace`, `diff`, `drift`, and `profile`.
 
 ## 2. Writing a Policy Document
 
@@ -307,7 +307,28 @@ Changed (1)
 
 Exits 1 if differences are found (useful in CI pipelines).
 
-### 3.7 `profile` — Generate OSCAL Profile from Catalog
+### 3.7 `drift` — Content-Safe Generated-Artifact Check
+
+Compares the complete parsed JSON value of committed and newly generated
+Catalog or Component Definition artifacts. It ignores only the generated root
+`uuid` and `metadata.last-modified`; every nested UUID and all other metadata and
+policy-derived fields remain significant.
+
+```bash
+# Human-readable status
+forge drift committed/catalog.json staged/catalog.json
+
+# Machine-readable status for CI orchestration
+forge drift committed/catalog.json staged/catalog.json --format json
+```
+
+Both output formats contain only status, artifact type, and comparison-contract
+version. They do not include file paths, control identifiers, titles, prose, or
+JSON excerpts. Exit `0` means clean, exit `1` means drift, and exit `2` means the
+inputs could not be compared. This is a comparison primitive, not schema
+validation; enforcement workflows must run `forge validate` first.
+
+### 3.8 `profile` — Generate OSCAL Profile from Catalog
 
 Creates an OSCAL Profile by selecting specific controls from a source Catalog.
 
