@@ -131,3 +131,64 @@ fn drift_rejects_mismatched_models_with_exit_two() {
     assert!(String::from_utf8_lossy(&output.stderr).contains("Artifact type mismatch"));
     assert!(output.stdout.is_empty());
 }
+
+#[test]
+fn drift_read_errors_do_not_disclose_absolute_runner_paths() {
+    let dir = TempDir::new().unwrap();
+    let generated = catalog(
+        "22222222-2222-4222-8222-222222222222",
+        "2026-08-23T12:34:56Z",
+        "Users must authenticate.",
+    );
+    let generated_path = dir.path().join("generated.json");
+    fs::write(&generated_path, serde_json::to_vec_pretty(&generated).unwrap()).unwrap();
+    let missing_path = dir.path().join("sensitive-absolute-runner-path.json");
+
+    let output = forge_bin()
+        .arg("drift")
+        .arg(&missing_path)
+        .arg(&generated_path)
+        .arg("--format")
+        .arg("json")
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let absolute_root = dir.path().display().to_string();
+    assert!(stderr.contains("unable to inspect committed artifact"), "{stderr}");
+    assert!(!stderr.contains(&absolute_root), "{stderr}");
+    assert!(output.stdout.is_empty());
+}
+
+#[test]
+fn drift_model_errors_do_not_disclose_absolute_runner_paths() {
+    let dir = TempDir::new().unwrap();
+    let committed_path = dir.path().join("committed-profile.json");
+    let generated_path = dir.path().join("generated-catalog.json");
+    fs::write(
+        &committed_path,
+        serde_json::to_vec_pretty(&json!({"profile": {"uuid": "profile-uuid"}})).unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        &generated_path,
+        serde_json::to_vec_pretty(&catalog(
+            "22222222-2222-4222-8222-222222222222",
+            "2026-08-23T12:34:56Z",
+            "Users must authenticate.",
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let output =
+        forge_bin().arg("drift").arg(&committed_path).arg(&generated_path).output().unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let absolute_root = dir.path().display().to_string();
+    assert!(stderr.contains("committed artifact uses unsupported Profile"), "{stderr}");
+    assert!(!stderr.contains(&absolute_root), "{stderr}");
+    assert!(output.stdout.is_empty());
+}

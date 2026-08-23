@@ -59,8 +59,11 @@ fn format_json(comparison: &DriftComparison) -> Result<String, ForgeError> {
         artifact_type: artifact_type_name(comparison),
         comparison_contract: DRIFT_COMPARISON_CONTRACT_VERSION,
     };
-    let mut rendered = serde_json::to_string(&output)
-        .map_err(|error| ForgeError::Serialization(error.to_string()))?;
+    // A status-rendering defect is a comparison failure (exit 2), never
+    // substantive drift (exit 1). Keep the diagnostic content-free.
+    let mut rendered = serde_json::to_string(&output).map_err(|_| {
+        ForgeError::DiffError("unable to serialize drift status output".to_string())
+    })?;
     rendered.push('\n');
     Ok(rendered)
 }

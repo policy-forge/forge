@@ -11,6 +11,7 @@ use serde_json::Value;
 
 use super::ArtifactType;
 use crate::error::ForgeError;
+use crate::types::OscalModelType;
 
 /// Version of the canonical comparison contract.
 ///
@@ -71,34 +72,88 @@ pub fn compare_artifacts_for_drift(
     committed_path: &Path,
     generated_path: &Path,
 ) -> Result<DriftComparison, ForgeError> {
-    let mut committed = parse_artifact(committed_path)?;
-    let mut generated = parse_artifact(generated_path)?;
+    let mut committed = parse_artifact(committed_path, ArtifactRole::Committed)?;
+    let mut generated = parse_artifact(generated_path, ArtifactRole::Generated)?;
 
-    let committed_type = super::to_artifact_type(&committed, committed_path)?;
-    let generated_type = super::to_artifact_type(&generated, generated_path)?;
+    let committed_type = detect_artifact_type(&committed, ArtifactRole::Committed)?;
+    let generated_type = detect_artifact_type(&generated, ArtifactRole::Generated)?;
     if committed_type != generated_type {
         return Err(ForgeError::DiffError(format!(
             "Artifact type mismatch: committed is {committed_type}, generated is {generated_type}"
         )));
     }
 
-    canonicalize(&mut committed, &committed_type, committed_path)?;
-    canonicalize(&mut generated, &generated_type, generated_path)?;
+    canonicalize(&mut committed, &committed_type, ArtifactRole::Committed)?;
+    canonicalize(&mut generated, &generated_type, ArtifactRole::Generated)?;
 
     let status = if committed == generated { DriftStatus::Clean } else { DriftStatus::Drift };
     Ok(DriftComparison { artifact_type: committed_type, status })
 }
 
-fn parse_artifact(path: &Path) -> Result<Value, ForgeError> {
-    let text = super::read_diff_file(path)?;
-    serde_json::from_str(&text)
-        .map_err(|e| ForgeError::DiffError(format!("Invalid JSON in '{}': {e}", path.display())))
+#[derive(Clone, Copy)]
+enum ArtifactRole {
+    Committed,
+    Generated,
+}
+
+impl ArtifactRole {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Committed => "committed",
+            Self::Generated => "generated",
+        }
+    }
+}
+
+fn parse_artifact(path: &Path, role: ArtifactRole) -> Result<Value, ForgeError> {
+    let role_name = role.as_str();
+    let metadata = std::fs::metadata(path).map_err(|error| {
+        ForgeError::DiffError(format!(
+            "unable to inspect {role_name} artifact ({:?})",
+            error.kind()
+        ))
+    })?;
+    if !metadata.is_file() {
+        return Err(ForgeError::DiffError(format!("{role_name} artifact is not a regular file")));
+    }
+    if metadata.len() > crate::io::MAX_FILE_SIZE {
+        return Err(ForgeError::DiffError(format!(
+            "{role_name} artifact exceeds the {} byte comparison limit",
+            crate::io::MAX_FILE_SIZE
+        )));
+    }
+
+    let text = std::fs::read_to_string(path).map_err(|error| {
+        ForgeError::DiffError(format!("unable to read {role_name} artifact ({:?})", error.kind()))
+    })?;
+    serde_json::from_str(&text).map_err(|error| {
+        ForgeError::DiffError(format!(
+            "invalid JSON in {role_name} artifact at line {}, column {}",
+            error.line(),
+            error.column()
+        ))
+    })
+}
+
+fn detect_artifact_type(value: &Value, role: ArtifactRole) -> Result<ArtifactType, ForgeError> {
+    match crate::validate::detect_model_type(value) {
+        Ok(OscalModelType::Catalog) => Ok(ArtifactType::Catalog),
+        Ok(OscalModelType::ComponentDefinition) => Ok(ArtifactType::ComponentDefinition),
+        Ok(OscalModelType::Profile) => Err(ForgeError::DiffError(format!(
+            "{} artifact uses unsupported Profile model; expected Catalog or Component Definition",
+            role.as_str()
+        ))),
+        Err(_) => Err(ForgeError::DiffError(format!(
+            "{} artifact is not a recognized Catalog or Component Definition",
+            role.as_str()
+        ))),
+    }
 }
 
 fn canonicalize(
     artifact: &mut Value,
     artifact_type: &ArtifactType,
-    path: &Path,
+    role: ArtifactRole,
 ) -> Result<(), ForgeError> {
     let root_key = match artifact_type {
         ArtifactType::Catalog => "catalog",
@@ -107,8 +162,8 @@ fn canonicalize(
 
     let root = artifact.get_mut(root_key).and_then(Value::as_object_mut).ok_or_else(|| {
         ForgeError::DiffError(format!(
-            "'{}': expected '{root_key}' to be a JSON object",
-            path.display()
+            "{} artifact must contain a '{root_key}' JSON object",
+            role.as_str()
         ))
     })?;
 
@@ -117,8 +172,8 @@ fn canonicalize(
     root.remove("uuid");
     let metadata = root.get_mut("metadata").and_then(Value::as_object_mut).ok_or_else(|| {
         ForgeError::DiffError(format!(
-            "'{}': expected '{root_key}.metadata' to be a JSON object",
-            path.display()
+            "{} artifact must contain a '{root_key}.metadata' JSON object",
+            role.as_str()
         ))
     })?;
     metadata.remove("last-modified");
