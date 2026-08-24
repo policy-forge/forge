@@ -6,6 +6,7 @@ pub mod diff;
 /// Drift subcommand: content-safe, canonical artifact comparison for CI.
 pub mod drift;
 pub mod export;
+pub mod migrate;
 pub mod output;
 pub mod profile;
 pub mod resolve;
@@ -42,7 +43,7 @@ use crate::config::{self, ConvertCliValues};
     arg_required_else_help = true
 )]
 pub struct Cli {
-    /// The subcommand to execute (convert, export, validate, resolve, diff, drift, trace, profile).
+    /// The subcommand to execute (convert, export, validate, resolve, diff, drift, migrate, trace, profile).
     #[command(subcommand)]
     pub command: Commands,
 
@@ -233,6 +234,31 @@ pub enum Commands {
         format: DriftOutputFormat,
     },
 
+    /// Analyze stable-ID migration between two source-policy revisions
+    Migrate {
+        /// Path to the old policy revision (.md, .markdown, .pdf, or .docx)
+        old_policy: PathBuf,
+
+        /// Path to the new policy revision (.md, .markdown, .pdf, or .docx)
+        new_policy: PathBuf,
+
+        /// Migration report format
+        #[arg(long, value_enum, default_value = "text")]
+        format: MigrationOutputFormat,
+
+        /// Write the completed report to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+
+        /// Maximum size of each policy input in MB
+        #[arg(
+            long,
+            default_value = "10",
+            value_parser = clap::value_parser!(u64).range(1..=51_200)
+        )]
+        max_size: u64,
+    },
+
     /// Inspect and validate project configuration (.forge.toml)
     Config {
         /// Config subcommands
@@ -299,6 +325,15 @@ pub enum DriftOutputFormat {
     /// Three-line, human-readable status output.
     Text,
     /// Single-object, machine-readable JSON status output.
+    Json,
+}
+
+/// Output format for policy migration reports.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum MigrationOutputFormat {
+    /// Human-readable audit report.
+    Text,
+    /// Versioned machine-readable report.
     Json,
 }
 
@@ -447,11 +482,26 @@ fn run_drift(
     }
 }
 
+fn run_migrate(
+    old_policy: &Path,
+    new_policy: &Path,
+    format: &MigrationOutputFormat,
+    output: Option<&Path>,
+    max_size: u64,
+) -> Result<(), ForgeError> {
+    if migrate::execute(old_policy, new_policy, format, output, max_size)? {
+        Err(ForgeError::MigrationHasChanges)
+    } else {
+        Ok(())
+    }
+}
+
 /// Execute the CLI command, dispatching to the appropriate subcommand handler.
 ///
 /// # Errors
 ///
 /// Returns `ForgeError` if the subcommand handler fails.
+#[allow(clippy::too_many_lines)] // Flat exhaustive dispatch keeps every clap variant visible here.
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     reject_unsupported_config_selector(cli)?;
     match &cli.command {
@@ -538,6 +588,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             diff::execute(old_artifact, new_artifact).and_then(|has_changes| {
                 if has_changes { Err(ForgeError::DiffHasChanges) } else { Ok(()) }
             })
+        }
+        Commands::Migrate { old_policy, new_policy, format, output, max_size } => {
+            run_migrate(old_policy, new_policy, format, output.as_deref(), *max_size)
         }
         Commands::Drift { committed_artifact, generated_artifact, format } => {
             run_drift(committed_artifact, generated_artifact, format)
