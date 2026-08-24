@@ -77,21 +77,57 @@ fn compare_values(
         }
         _ => {
             if expected != actual {
+                let acceptable = acceptable_scalar_normalization(expected, actual, path);
                 divergences.push(Divergence {
                     json_path: path.to_string(),
                     expected: expected.clone(),
                     actual: actual.clone(),
-                    classification: DivergenceClass::ForgeFix,
-                    description: format!(
-                        "Value mismatch: expected {}, actual {}",
-                        summarize_value(expected),
-                        summarize_value(actual)
+                    classification: if acceptable.is_some() {
+                        DivergenceClass::Acceptable
+                    } else {
+                        DivergenceClass::ForgeFix
+                    },
+                    description: acceptable.map_or_else(
+                        || {
+                            format!(
+                                "Value mismatch: expected {}, actual {}",
+                                summarize_value(expected),
+                                summarize_value(actual)
+                            )
+                        },
+                        str::to_string,
                     ),
                     resolution: None,
                 });
             }
         }
     }
+}
+
+fn acceptable_scalar_normalization(
+    expected: &Value,
+    actual: &Value,
+    path: &str,
+) -> Option<&'static str> {
+    let (Some(expected), Some(actual)) = (expected.as_str(), actual.as_str()) else {
+        return None;
+    };
+
+    if path.ends_with("/last-modified")
+        && let (Ok(expected), Ok(actual)) = (
+            chrono::DateTime::parse_from_rfc3339(expected),
+            chrono::DateTime::parse_from_rfc3339(actual),
+        )
+        && expected == actual
+    {
+        return Some("Equivalent RFC 3339 timestamp representation");
+    }
+
+    if path.ends_with("/prose") && expected.split_whitespace().eq(actual.split_whitespace()) {
+        return Some("Markup prose differs only by whitespace normalization");
+    }
+
+    None
 }
 
 fn missing_key_divergence(
@@ -322,6 +358,24 @@ mod tests {
         assert_eq!(result[0].json_path, "/catalog/metadata/title");
         assert_eq!(result[0].expected, json!("Original"));
         assert_eq!(result[0].actual, json!("Changed"));
+    }
+
+    #[test]
+    fn equivalent_timestamp_spelling_is_acceptable() {
+        let expected = json!({"last-modified": "2026-08-24T18:07:31.190199+00:00"});
+        let actual = json!({"last-modified": "2026-08-24T18:07:31.190199Z"});
+        let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].classification, DivergenceClass::Acceptable);
+    }
+
+    #[test]
+    fn prose_whitespace_normalization_is_acceptable() {
+        let expected = json!({"prose": "first line\nsecond line"});
+        let actual = json!({"prose": "first line second line"});
+        let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].classification, DivergenceClass::Acceptable);
     }
 
     // T009(d): Missing key in actual → divergence

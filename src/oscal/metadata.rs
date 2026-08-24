@@ -8,15 +8,15 @@ use crate::model::DocumentMetadata;
 
 /// OSCAL specification version constant.
 /// Single point of change when FORGE targets a new OSCAL version.
-pub const OSCAL_VERSION: &str = "1.2.0";
+pub const OSCAL_VERSION: &str = "1.2.3";
 
 /// OSCAL metadata for any artifact type (Catalog, Component Definition, Profile).
 ///
 /// Serializes to OSCAL-compliant JSON with hyphenated field names where required.
-/// Four fields are serialized and required per OSCAL v1.2.0: `title`, `last-modified`,
+/// Four fields are serialized and required per OSCAL v1.2.3: `title`, `last-modified`,
 /// `version`, and `oscal-version`. The `uuid` field is internal-only and annotated
 /// with `#[serde(skip_serializing)]`; it is not emitted in JSON output because
-/// OSCAL v1.2.0 places the artifact UUID at the root object level, not inside metadata.
+/// OSCAL v1.2.3 places the artifact UUID at the root object level, not inside metadata.
 ///
 /// # Examples
 ///
@@ -27,7 +27,7 @@ pub const OSCAL_VERSION: &str = "1.2.0";
 /// let doc_meta = DocumentMetadata { title: "My Policy".into(), version: "1.0".into(), ..Default::default() };
 /// let metadata = assemble_metadata(&doc_meta, None).unwrap();
 /// assert_eq!(metadata.title, "My Policy");
-/// assert_eq!(metadata.oscal_version, "1.2.0");
+/// assert_eq!(metadata.oscal_version, "1.2.3");
 /// ```
 #[derive(Debug, Clone, Serialize)]
 pub struct OscalMetadata {
@@ -46,7 +46,7 @@ pub struct OscalMetadata {
     /// Document version from PolicyDocument.metadata.version.
     pub version: String,
 
-    /// OSCAL specification version — always "1.2.0".
+    /// OSCAL specification version — always "1.2.3".
     #[serde(rename = "oscal-version")]
     pub oscal_version: String,
 }
@@ -155,9 +155,9 @@ mod tests {
         assert_eq!(result.version, "2.1");
     }
 
-    /// T009: Assert `metadata.oscal_version` equals "1.2.0".
+    /// T009: Assert `metadata.oscal_version` equals "1.2.3".
     #[test]
-    fn assemble_sets_oscal_version_to_1_2_0() {
+    fn assemble_sets_oscal_version_to_1_2_3() {
         let doc_meta = DocumentMetadata {
             title: "Policy".into(),
             version: "1.0".into(),
@@ -165,7 +165,7 @@ mod tests {
         };
 
         let result = assemble_metadata(&doc_meta, None).unwrap();
-        assert_eq!(result.oscal_version, "1.2.0");
+        assert_eq!(result.oscal_version, "1.2.3");
     }
 
     /// T010: Call without override, parse `last_modified`, assert timezone is UTC.

@@ -553,8 +553,8 @@ fn convert_component_strategy_produces_valid_component_definition() {
     );
     assert_eq!(
         metadata["oscal-version"].as_str().unwrap(),
-        "1.2.0",
-        "metadata.oscal-version should be 1.2.0"
+        "1.2.3",
+        "metadata.oscal-version should be 1.2.3"
     );
     assert!(metadata["last-modified"].is_string(), "metadata.last-modified should be a string");
     assert!(
@@ -1299,8 +1299,8 @@ fn convert_catalog_format_yaml_contains_oscal_keys() {
     assert!(metadata["version"].is_string(), "metadata.version should be present");
     assert_eq!(
         metadata["oscal-version"].as_str(),
-        Some("1.2.0"),
-        "metadata.oscal-version should be 1.2.0"
+        Some("1.2.3"),
+        "metadata.oscal-version should be 1.2.3"
     );
 }
 
@@ -1400,7 +1400,7 @@ fn convert_component_format_yaml_contains_oscal_keys() {
     assert!(metadata["version"].is_string(), "metadata.version should be present");
     assert_eq!(
         metadata["oscal-version"].as_str(),
-        Some("1.2.0"),
-        "metadata.oscal-version should be 1.2.0"
+        Some("1.2.3"),
+        "metadata.oscal-version should be 1.2.3"
     );
 }

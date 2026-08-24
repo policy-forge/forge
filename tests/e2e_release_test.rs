@@ -181,8 +181,8 @@ fn test_m5_metadata_fields_present() {
     assert!(metadata["version"].is_string(), "metadata.version should be present");
     assert_eq!(
         metadata["oscal-version"].as_str(),
-        Some("1.2.0"),
-        "metadata.oscal-version should be '1.2.0'"
+        Some("1.2.3"),
+        "metadata.oscal-version should be '1.2.3'"
     );
 
     // Catalog-level UUID

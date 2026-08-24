@@ -49,6 +49,40 @@ fn validate_valid_catalog_exits_0() {
 }
 
 #[test]
+fn validate_legacy_catalog_json_reports_declared_and_schema_versions() {
+    let file = temp_json_file(include_str!("fixtures/legacy/v1.2.0/catalog/catalog.json"));
+    let (stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap(), "--format", "json"]);
+    assert_eq!(code, 0, "legacy catalog should remain supported: {stderr}");
+    let report: serde_json::Value =
+        serde_json::from_str(&stdout).expect("validation stdout must be JSON");
+    assert_eq!(report["model_type"], "catalog");
+    assert_eq!(report["declared_oscal_version"], "1.2.0");
+    assert_eq!(report["schema_version_used"], "1.2.3");
+    assert_eq!(report["supported_input"], true);
+    assert_eq!(report["is_valid"], true);
+}
+
+#[test]
+fn validate_rejects_unsupported_declaration_and_names_available_baseline() {
+    let content = r#"{
+        "catalog": {
+            "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+            "metadata": {
+                "title": "Unsupported Catalog",
+                "last-modified": "2026-01-01T00:00:00Z",
+                "version": "1.0",
+                "oscal-version": "1.3.0"
+            }
+        }
+    }"#;
+    let file = temp_json_file(content);
+    let (_stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap()]);
+    assert_eq!(code, 3);
+    assert!(stderr.contains("unsupported OSCAL version declaration '1.3.0'"));
+    assert!(stderr.contains("available schema baseline is 1.2.3"));
+}
+
+#[test]
 fn validate_valid_component_definition_exits_0() {
     let content = r#"{
         "component-definition": {

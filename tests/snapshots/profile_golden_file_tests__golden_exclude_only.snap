@@ -20,7 +20,7 @@ expression: "&normalized"
     ],
     "metadata": {
       "last-modified": "2026-01-01T00:00:00Z",
-      "oscal-version": "1.2.0",
+      "oscal-version": "1.2.3",
       "title": "Policy Baseline Profile",
       "version": "1.0.0"
     },

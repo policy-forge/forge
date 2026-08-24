@@ -1,0 +1,17 @@
+catalog:
+  uuid: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+  metadata:
+    title: Test Catalog
+    last-modified: 2026-01-15T12:00:00Z
+    version: '1.0'
+    oscal-version: '1.2.0'
+  groups:
+  - id: access-control
+    title: Access Control
+    controls:
+    - id: POL-AC-001
+      title: All users must authenticate using MFA.
+      parts:
+      - id: POL-AC-001_smt
+        name: statement
+        prose: All users must authenticate using MFA.

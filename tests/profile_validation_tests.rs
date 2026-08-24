@@ -1,7 +1,7 @@
 //! Profile schema validation and edge case tests (WI-32, US1 + US3).
 //!
 //! Tests confirm that `forge profile` output (include-only and exclude-only)
-//! conforms to the OSCAL v1.2.0 Profile JSON schema using the existing
+//! conforms to the OSCAL v1.2.3 Profile JSON schema using the existing
 //! `validate_artifact()` infrastructure from WI-19.
 
 use std::io::Write as _;
@@ -59,7 +59,7 @@ fn make_catalog_file() -> NamedTempFile {
 // US1: Schema validation tests (T004)
 // ---------------------------------------------------------------------------
 
-/// Include-only Profile passes OSCAL v1.2.0 schema validation.
+/// Include-only Profile passes OSCAL v1.2.3 schema validation.
 #[test]
 fn schema_include_only() {
     let catalog = make_catalog_file();
@@ -88,7 +88,7 @@ fn schema_include_only() {
     assert!(result.errors.is_empty(), "Expected zero schema errors, got: {:?}", result.errors);
 }
 
-/// Exclude-only Profile passes OSCAL v1.2.0 schema validation.
+/// Exclude-only Profile passes OSCAL v1.2.3 schema validation.
 #[test]
 fn schema_exclude_only() {
     let catalog = make_catalog_file();
@@ -117,7 +117,7 @@ fn schema_exclude_only() {
 // verified by existing unit tests in `src/validate/mod.rs` (`validate_errors_have_instance_path`).
 
 // TODO(WI-31): remove #[ignore] when --set-param is implemented
-/// Profile with parameter overrides passes OSCAL v1.2.0 schema validation.
+/// Profile with parameter overrides passes OSCAL v1.2.3 schema validation.
 #[test]
 #[ignore = "WI-31 (--set-param) not yet implemented"]
 fn schema_with_set_param() {

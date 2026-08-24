@@ -10,8 +10,9 @@ use crate::oscal_cli::OscalCliDetect;
 use crate::oscal_cli::detector::PathDetector;
 use crate::oscal_cli::invoker::ProcessInvoker;
 use crate::round_trip::{
-    DivergenceClass, OscalComparisonRules, RoundTripResult, compare_oscal_json,
-    run_round_trip_chain, write_divergence_log,
+    Divergence, DivergenceClass, OscalComparisonRules, RoundTripResult,
+    classify_oscal_cli_compatibility, compare_oscal_json, run_round_trip_chain,
+    write_divergence_log,
 };
 use crate::validate::{self, OscalModelType, ValidateError};
 
@@ -85,7 +86,7 @@ pub fn execute(
     if report.is_valid() {
         let rendered = match format {
             ValidateOutputFormat::Text => {
-                format!("Valid: {model_type} artifact passes all validation.\n")
+                format!("{}\n", validate::report::render_text_report(&report))
             }
             ValidateOutputFormat::Json => validate::report::render_json_report(&report),
         };
@@ -193,6 +194,7 @@ pub fn execute_round_trip(
         "Detected oscal-cli for round-trip validation"
     );
 
+    let oscal_cli_version = cli_info.version.clone();
     let invoker = match cli_info.executable_path {
         Some(path) => ProcessInvoker::new(path),
         None => {
@@ -227,16 +229,40 @@ pub fn execute_round_trip(
         divergences.iter().filter(|d| d.classification != DivergenceClass::Acceptable).count();
     let passed = unresolved_count == 0;
 
-    let artifact_type = validate::detect_model_type(&original_json)
-        .map_or_else(|_| "Unknown".to_string(), |m| m.to_string());
-
     let result =
-        RoundTripResult { artifact_type, source_path: input.to_path_buf(), passed, divergences };
+        build_round_trip_result(&original_json, input, oscal_cli_version, passed, divergences);
 
     // Step 7: Output results
     output_round_trip_results(&result, unresolved_count, output, format)?;
 
     if passed { Ok(()) } else { Err(ForgeError::RoundTripFailed(unresolved_count)) }
+}
+
+fn build_round_trip_result(
+    original_json: &serde_json::Value,
+    input: &Path,
+    oscal_cli_version: Option<String>,
+    passed: bool,
+    divergences: Vec<Divergence>,
+) -> RoundTripResult {
+    let model_type = validate::detect_model_type(original_json).ok();
+    let artifact_type = model_type.map_or_else(|| "Unknown".to_string(), |model| model.to_string());
+    let declared_oscal_version = model_type
+        .and_then(|model| validate::version::inspect_oscal_version(original_json, model).declared);
+    let (compatibility_classification, oscal_cli_model_version) =
+        classify_oscal_cli_compatibility(oscal_cli_version.as_deref());
+
+    RoundTripResult {
+        artifact_type,
+        source_path: input.to_path_buf(),
+        declared_oscal_version,
+        schema_version_used: validate::version::SCHEMA_VERSION_USED.to_string(),
+        oscal_cli_version,
+        oscal_cli_model_version: oscal_cli_model_version.map(str::to_string),
+        compatibility_classification,
+        passed,
+        divergences,
+    }
 }
 
 /// Write round-trip validation results to the appropriate output destination.
@@ -279,9 +305,13 @@ fn render_round_trip_text(
 ) -> Result<(), ForgeError> {
     if result.passed {
         let mut msg = format!(
-            "PASS: round-trip validation of {} artifact '{}' succeeded\n",
+            "PASS: round-trip validation of {} artifact '{}' succeeded\n  declared_oscal_version: {}\n  schema_version_used: {}\n  oscal_cli_version: {}\n  compatibility_classification: {}\n",
             result.artifact_type,
-            result.source_path.display()
+            result.source_path.display(),
+            result.declared_oscal_version.as_deref().unwrap_or("unknown"),
+            result.schema_version_used,
+            result.oscal_cli_version.as_deref().unwrap_or("unavailable"),
+            result.compatibility_classification,
         );
         if !result.divergences.is_empty() {
             use std::fmt::Write as _;
@@ -291,10 +321,14 @@ fn render_round_trip_text(
         crate::cli::output::write_output(&msg, None)?;
     } else {
         eprintln!(
-            "FAIL: round-trip validation of {} artifact '{}' — {} unresolved divergence(s)",
+            "FAIL: round-trip validation of {} artifact '{}' — {} unresolved divergence(s)\n  declared_oscal_version: {}\n  schema_version_used: {}\n  oscal_cli_version: {}\n  compatibility_classification: {}",
             result.artifact_type,
             result.source_path.display(),
-            unresolved_count
+            unresolved_count,
+            result.declared_oscal_version.as_deref().unwrap_or("unknown"),
+            result.schema_version_used,
+            result.oscal_cli_version.as_deref().unwrap_or("unavailable"),
+            result.compatibility_classification,
         );
         for d in &result.divergences {
             let marker = match d.classification {

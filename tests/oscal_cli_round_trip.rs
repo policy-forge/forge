@@ -10,7 +10,8 @@ use forge::oscal_cli::detector::PathDetector;
 use forge::oscal_cli::invoker::ProcessInvoker;
 use forge::round_trip::{
     Divergence, DivergenceClass, OscalComparisonRules, ResolutionStatus, RoundTripResult,
-    compare_oscal_json, run_round_trip_chain, write_divergence_log,
+    classify_oscal_cli_compatibility, compare_oscal_json, run_round_trip_chain,
+    write_divergence_log,
 };
 use forge::types::OutputFormat;
 
@@ -18,18 +19,19 @@ const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 const TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Build a `ProcessInvoker` from a detector, or None if oscal-cli is unavailable.
-fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<ProcessInvoker> {
+fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<(ProcessInvoker, String)> {
     let info = detector.detect();
     if !info.available || !info.functional {
         eprintln!("SKIP: oscal-cli not available ({info:?})");
         return None;
     }
     let path = info.executable_path.unwrap();
-    Some(ProcessInvoker::new(path))
+    let version = info.version.unwrap_or_else(|| "unknown".to_string());
+    Some((ProcessInvoker::new(path), version))
 }
 
 /// Helper: detect oscal-cli using system PATH and return a `ProcessInvoker`, or None.
-fn skip_if_no_oscal_cli() -> Option<ProcessInvoker> {
+fn skip_if_no_oscal_cli() -> Option<(ProcessInvoker, String)> {
     invoker_if_available(&PathDetector::new())
 }
 
@@ -74,6 +76,7 @@ fn reclassify(divergences: Vec<Divergence>) -> Vec<Divergence> {
 fn run_round_trip_and_compare(
     original_json_path: &Path,
     invoker: &ProcessInvoker,
+    oscal_cli_version: &str,
     artifact_type: &str,
     log_output_path: &Path,
 ) -> RoundTripResult {
@@ -92,10 +95,21 @@ fn run_round_trip_and_compare(
     let divergences = reclassify(divergences);
 
     let passed = divergences.iter().all(|d| d.classification == DivergenceClass::Acceptable);
+    let declared_oscal_version = original
+        .pointer(&format!("/{}/metadata/oscal-version", artifact_type_root(artifact_type)))
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string);
+    let (compatibility_classification, oscal_cli_model_version) =
+        classify_oscal_cli_compatibility(Some(oscal_cli_version));
 
     let result = RoundTripResult {
         artifact_type: artifact_type.to_string(),
         source_path: original_json_path.to_path_buf(),
+        declared_oscal_version,
+        schema_version_used: forge::validate::version::SCHEMA_VERSION_USED.to_string(),
+        oscal_cli_version: Some(oscal_cli_version.to_string()),
+        oscal_cli_model_version: oscal_cli_model_version.map(str::to_string),
+        compatibility_classification,
         passed,
         divergences,
     };
@@ -104,6 +118,14 @@ fn run_round_trip_and_compare(
     write_divergence_log(&result, log_output_path).expect("Divergence log write should succeed");
 
     result
+}
+
+fn artifact_type_root(artifact_type: &str) -> &'static str {
+    match artifact_type {
+        "Catalog" => "catalog",
+        "ComponentDefinition" => "component-definition",
+        _ => "unknown",
+    }
 }
 
 /// Validate divergence log file contents (T019).
@@ -116,6 +138,10 @@ fn validate_divergence_log(log_path: &Path) {
     // Verify top-level fields
     assert!(content.get("artifact_type").is_some(), "Log should have artifact_type");
     assert!(content.get("source_path").is_some(), "Log should have source_path");
+    assert!(content.get("declared_oscal_version").is_some());
+    assert_eq!(content["schema_version_used"], "1.2.3");
+    assert!(content.get("oscal_cli_version").is_some());
+    assert!(content.get("compatibility_classification").is_some());
     assert!(content.get("passed").is_some(), "Log should have passed");
     assert!(content.get("divergences").is_some(), "Log should have divergences");
 
@@ -147,7 +173,7 @@ fn validate_divergence_log(log_path: &Path) {
 // SC-001: Catalog JSON → XML → YAML → JSON round-trip
 #[test]
 fn catalog_json_xml_yaml_json_round_trip() {
-    let Some(invoker) = skip_if_no_oscal_cli() else { return };
+    let Some((invoker, oscal_cli_version)) = skip_if_no_oscal_cli() else { return };
 
     let temp_dir = tempfile::tempdir().unwrap();
     let fixture = Path::new("tests/fixtures/full_policy.md");
@@ -155,7 +181,13 @@ fn catalog_json_xml_yaml_json_round_trip() {
     let log_path = temp_dir.path().join("divergences-catalog.json");
 
     generate_catalog_json(fixture, &catalog_json);
-    let result = run_round_trip_and_compare(&catalog_json, &invoker, "Catalog", &log_path);
+    let result = run_round_trip_and_compare(
+        &catalog_json,
+        &invoker,
+        &oscal_cli_version,
+        "Catalog",
+        &log_path,
+    );
 
     // Log divergences for investigation
     log_divergence_summary(&result);
@@ -175,7 +207,7 @@ fn catalog_json_xml_yaml_json_round_trip() {
 // SC-002: Component Definition JSON → XML → YAML → JSON round-trip
 #[test]
 fn component_json_xml_yaml_json_round_trip() {
-    let Some(invoker) = skip_if_no_oscal_cli() else { return };
+    let Some((invoker, oscal_cli_version)) = skip_if_no_oscal_cli() else { return };
 
     let temp_dir = tempfile::tempdir().unwrap();
     let fixture = Path::new("tests/fixtures/full_policy.md");
@@ -183,8 +215,13 @@ fn component_json_xml_yaml_json_round_trip() {
     let log_path = temp_dir.path().join("divergences-component.json");
 
     generate_component_json(fixture, &component_json);
-    let result =
-        run_round_trip_and_compare(&component_json, &invoker, "ComponentDefinition", &log_path);
+    let result = run_round_trip_and_compare(
+        &component_json,
+        &invoker,
+        &oscal_cli_version,
+        "ComponentDefinition",
+        &log_path,
+    );
 
     // Log divergences for investigation
     log_divergence_summary(&result);

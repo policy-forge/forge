@@ -54,6 +54,10 @@ pub struct ValidationError {
 #[derive(Debug, Clone, Serialize)]
 pub struct ValidationReport {
     artifact_path: String,
+    model_type: String,
+    declared_oscal_version: Option<String>,
+    schema_version_used: String,
+    supported_input: bool,
     is_valid: bool,
     errors: Vec<ValidationError>,
     schema_error_count: usize,
@@ -68,10 +72,31 @@ impl<'de> Deserialize<'de> for ValidationReport {
         #[derive(Deserialize)]
         struct Raw {
             artifact_path: String,
+            #[serde(default = "unknown_model_type")]
+            model_type: String,
+            #[serde(default)]
+            declared_oscal_version: Option<String>,
+            #[serde(default = "current_schema_version")]
+            schema_version_used: String,
+            #[serde(default)]
+            supported_input: Option<bool>,
+            // Legacy reports had `is_valid` but no `supported_input`. It is
+            // used only as a compatibility default; derived validity is still
+            // recomputed from `errors` below.
+            #[serde(default)]
+            is_valid: Option<bool>,
             errors: Vec<ValidationError>,
         }
         let raw = Raw::deserialize(deserializer)?;
-        Ok(Self::new(raw.artifact_path, raw.errors))
+        let supported_input = raw.supported_input.or(raw.is_valid).unwrap_or(false);
+        Ok(Self::new_with_schema_context(
+            raw.artifact_path,
+            raw.model_type,
+            raw.declared_oscal_version,
+            raw.schema_version_used,
+            supported_input,
+            raw.errors,
+        ))
     }
 }
 
@@ -82,19 +107,83 @@ impl ValidationReport {
     /// from the provided errors list, ensuring all invariants hold.
     #[must_use]
     pub fn new(artifact_path: String, errors: Vec<ValidationError>) -> Self {
+        Self::new_with_context(artifact_path, "unknown".to_string(), None, false, errors)
+    }
+
+    /// Create a report with the model and version evidence used by validation.
+    #[must_use]
+    pub fn new_with_context(
+        artifact_path: String,
+        model_type: String,
+        declared_oscal_version: Option<String>,
+        supported_input: bool,
+        errors: Vec<ValidationError>,
+    ) -> Self {
+        Self::new_with_schema_context(
+            artifact_path,
+            model_type,
+            declared_oscal_version,
+            crate::validate::version::SCHEMA_VERSION_USED.to_string(),
+            supported_input,
+            errors,
+        )
+    }
+
+    fn new_with_schema_context(
+        artifact_path: String,
+        model_type: String,
+        declared_oscal_version: Option<String>,
+        schema_version_used: String,
+        supported_input: bool,
+        errors: Vec<ValidationError>,
+    ) -> Self {
         let schema_error_count =
             errors.iter().filter(|e| e.category == ValidationErrorCategory::Schema).count();
         let semantic_error_count =
             errors.iter().filter(|e| e.category == ValidationErrorCategory::Semantic).count();
         let is_valid = errors.is_empty();
 
-        Self { artifact_path, is_valid, errors, schema_error_count, semantic_error_count }
+        Self {
+            artifact_path,
+            model_type,
+            declared_oscal_version,
+            schema_version_used,
+            supported_input,
+            is_valid,
+            errors,
+            schema_error_count,
+            semantic_error_count,
+        }
     }
 
     /// Path to the validated artifact.
     #[must_use]
     pub fn artifact_path(&self) -> &str {
         &self.artifact_path
+    }
+
+    /// Detected or explicitly selected model type.
+    #[must_use]
+    pub fn model_type(&self) -> &str {
+        &self.model_type
+    }
+
+    /// OSCAL version declared by the document, when it is a string.
+    #[must_use]
+    pub fn declared_oscal_version(&self) -> Option<&str> {
+        self.declared_oscal_version.as_deref()
+    }
+
+    /// Actual pinned schema baseline used for validation.
+    #[must_use]
+    pub fn schema_version_used(&self) -> &str {
+        &self.schema_version_used
+    }
+
+    /// Whether the declared version is accepted by the compatibility policy.
+    #[must_use]
+    pub fn supported_input(&self) -> bool {
+        self.supported_input
     }
 
     /// Whether the artifact passed all validation.
@@ -120,6 +209,14 @@ impl ValidationReport {
     pub fn semantic_error_count(&self) -> usize {
         self.semantic_error_count
     }
+}
+
+fn unknown_model_type() -> String {
+    "unknown".to_string()
+}
+
+fn current_schema_version() -> String {
+    crate::validate::version::SCHEMA_VERSION_USED.to_string()
 }
 
 #[cfg(test)]
@@ -248,6 +345,32 @@ mod tests {
         assert!(report.errors().is_empty());
         assert_eq!(report.schema_error_count(), 0);
         assert_eq!(report.semantic_error_count(), 0);
+    }
+
+    #[test]
+    fn legacy_valid_report_defaults_supported_input_to_true() {
+        let legacy = r#"{
+            "artifact_path": "catalog.json",
+            "is_valid": true,
+            "errors": [],
+            "schema_error_count": 0,
+            "semantic_error_count": 0
+        }"#;
+        let report: ValidationReport = serde_json::from_str(legacy).unwrap();
+        assert!(report.is_valid());
+        assert!(report.supported_input());
+    }
+
+    #[test]
+    fn explicit_supported_input_overrides_legacy_validity() {
+        let report = r#"{
+            "artifact_path": "catalog.json",
+            "supported_input": false,
+            "is_valid": true,
+            "errors": []
+        }"#;
+        let report: ValidationReport = serde_json::from_str(report).unwrap();
+        assert!(!report.supported_input());
     }
 
     #[test]

@@ -126,7 +126,7 @@ expression: normalize_for_comparison(&component_output)
     ],
     "metadata": {
       "last-modified": "2026-01-01T00:00:00Z",
-      "oscal-version": "1.2.0",
+      "oscal-version": "1.2.3",
       "title": "Control Statements",
       "version": "0.0.0"
     },

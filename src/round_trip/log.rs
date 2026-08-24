@@ -39,6 +39,12 @@ mod tests {
         let result = RoundTripResult {
             artifact_type: "Catalog".to_string(),
             source_path: PathBuf::from("/tmp/test/catalog.json"),
+            declared_oscal_version: Some("1.2.3".to_string()),
+            schema_version_used: "1.2.3".to_string(),
+            oscal_cli_version: Some("1.0.3".to_string()),
+            oscal_cli_model_version: Some("1.1.2".to_string()),
+            compatibility_classification:
+                crate::round_trip::CompatibilityClassification::AdvisoryOlderModelBaseline,
             passed: true,
             divergences: vec![],
         };
@@ -58,6 +64,12 @@ mod tests {
         let result = RoundTripResult {
             artifact_type: "Catalog".to_string(),
             source_path: PathBuf::from("/tmp/test/catalog.json"),
+            declared_oscal_version: Some("1.2.3".to_string()),
+            schema_version_used: "1.2.3".to_string(),
+            oscal_cli_version: Some("1.0.3".to_string()),
+            oscal_cli_model_version: Some("1.1.2".to_string()),
+            compatibility_classification:
+                crate::round_trip::CompatibilityClassification::AdvisoryOlderModelBaseline,
             passed: false,
             divergences: vec![
                 Divergence {
@@ -94,6 +106,12 @@ mod tests {
         let result = RoundTripResult {
             artifact_type: "ComponentDefinition".to_string(),
             source_path: PathBuf::from("/tmp/test/component.json"),
+            declared_oscal_version: Some("1.2.3".to_string()),
+            schema_version_used: "1.2.3".to_string(),
+            oscal_cli_version: None,
+            oscal_cli_model_version: None,
+            compatibility_classification:
+                crate::round_trip::CompatibilityClassification::Unavailable,
             passed: false,
             divergences: vec![Divergence {
                 json_path: "/component-definition/metadata/version".to_string(),

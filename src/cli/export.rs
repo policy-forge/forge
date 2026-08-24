@@ -443,6 +443,37 @@ mod tests {
         assert!(validate_oscal_model(&model).is_ok());
     }
 
+    #[test]
+    fn supported_patch_declarations_validate_and_are_preserved() {
+        let legacy = include_str!("../../tests/fixtures/legacy/v1.2.0/catalog/catalog.json");
+        for version in ["1.2.0", "1.2.1", "1.2.2", "1.2.3"] {
+            let content = legacy.replace(
+                "\"oscal-version\": \"1.2.0\"",
+                &format!("\"oscal-version\": \"{version}\""),
+            );
+            let model = deserialize_oscal(&content, &OutputFormat::Json).unwrap();
+            validate_oscal_model(&model)
+                .unwrap_or_else(|error| panic!("{version} should be supported: {error}"));
+            let xml = serialize_oscal(&model, OutputFormat::Xml).unwrap();
+            assert!(
+                xml.contains(&format!("<oscal-version>{version}</oscal-version>")),
+                "export must preserve declaration {version}"
+            );
+        }
+    }
+
+    #[test]
+    fn unsupported_declaration_fails_with_declared_and_schema_versions() {
+        let legacy = include_str!("../../tests/fixtures/legacy/v1.2.0/catalog/catalog.json");
+        let content =
+            legacy.replace("\"oscal-version\": \"1.2.0\"", "\"oscal-version\": \"1.3.0\"");
+        let model = deserialize_oscal(&content, &OutputFormat::Json).unwrap();
+        let error = validate_oscal_model(&model).expect_err("1.3.0 must be rejected");
+        let message = error.to_string();
+        assert!(message.contains("unsupported OSCAL version declaration '1.3.0'"));
+        assert!(message.contains("available schema baseline is 1.2.3"));
+    }
+
     // ══════════════════════════════════════════════════════
     // T015: export_artifact end-to-end with file
     // ══════════════════════════════════════════════════════

@@ -97,11 +97,11 @@ fn smoke_test_metadata_fields_populated() {
         "metadata.version should match frontmatter version"
     );
 
-    // OSCAL version is 1.2.0
+    // OSCAL version uses the current shared baseline.
     assert_eq!(
         metadata["oscal-version"].as_str().unwrap(),
-        "1.2.0",
-        "metadata.oscal-version should be '1.2.0'"
+        "1.2.3",
+        "metadata.oscal-version should be '1.2.3'"
     );
 
     // last-modified is valid RFC 3339 timestamp
