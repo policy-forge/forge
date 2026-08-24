@@ -4,7 +4,8 @@
 //! inventory-items, users, leveraged-authorizations, plus metadata,
 //! back-matter, and implemented-requirements.
 
-use serde::Serialize;
+use serde::ser::SerializeStruct;
+use serde::{Serialize, Serializer};
 
 use crate::error::ForgeError;
 use crate::model::DocumentMetadata;
@@ -25,6 +26,9 @@ pub const DEFAULT_SSP_TITLE: &str = "Untitled System Security Plan";
 
 /// Seed namespace for deterministic SSP UUID generation.
 const SSP_UUID_SEED: &str = "ssp";
+
+/// Namespace for FORGE-only SSP template metadata that has no native OSCAL field.
+const FORGE_SSP_TEMPLATE_NS: &str = "https://forge.policy-forge.github.io/ns/ssp-template";
 
 // ─── Envelope ───────────────────────────────────────────────────────────
 
@@ -47,9 +51,18 @@ pub struct SystemSecurityPlan {
     /// Metadata block (title, version, oscal-version, etc.).
     pub metadata: SspMetadata,
 
-    /// System-level identifier(s).
-    #[serde(rename = "system-id")]
+    /// Legacy direct system identifier retained for callers; OSCAL 1.2.3 nests
+    /// system identifiers under `system-characteristics`.
+    #[serde(skip)]
     pub system_id: Option<SspSystemId>,
+
+    /// Profile or catalog that defines the system's control baseline.
+    #[serde(rename = "import-profile")]
+    pub import_profile: ImportProfile,
+
+    /// Required description of the system and its authorization boundary.
+    #[serde(rename = "system-characteristics")]
+    pub system_characteristics: SystemCharacteristics,
 
     /// System implementation details: components, users, leveraged auths.
     #[serde(rename = "system-implementation")]
@@ -79,7 +92,7 @@ pub struct SspMetadata {
     /// Document version string.
     pub version: String,
 
-    /// OSCAL spec version — always "1.1.3".
+    /// OSCAL spec version — always the shared v1.2.3 baseline.
     #[serde(rename = "oscal-version")]
     pub oscal_version: String,
 
@@ -101,8 +114,9 @@ pub struct SspRevision {
     /// Version string for this revision.
     pub version: String,
 
-    /// Human-readable description of what changed.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// Human-readable description of what changed. OSCAL v1.2.3 represents
+    /// this content as revision `remarks`.
+    #[serde(default, rename = "remarks", skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
@@ -117,6 +131,64 @@ pub struct SspSystemId {
 
     /// The actual system identifier value.
     pub id: String,
+}
+
+/// Reference to the profile or catalog used as the system control baseline.
+#[derive(Debug, Clone, Serialize)]
+pub struct ImportProfile {
+    /// Resolvable URI reference to the source profile or catalog.
+    pub href: String,
+}
+
+/// Required OSCAL SSP system characteristics.
+#[derive(Debug, Clone, Serialize)]
+pub struct SystemCharacteristics {
+    /// One or more identifiers for the system.
+    #[serde(rename = "system-ids")]
+    pub system_ids: Vec<SspSystemId>,
+
+    /// Full system name.
+    #[serde(rename = "system-name")]
+    pub system_name: String,
+
+    /// Summary of the system purpose and scope.
+    pub description: String,
+
+    /// Information types stored, processed, or transmitted by the system.
+    #[serde(rename = "system-information")]
+    pub system_information: SystemInformation,
+
+    /// Current operational state of the system.
+    pub status: ComponentStatus,
+
+    /// Narrative description of the authorization boundary.
+    #[serde(rename = "authorization-boundary")]
+    pub authorization_boundary: AuthorizationBoundary,
+}
+
+/// Information types handled by the system.
+#[derive(Debug, Clone, Serialize)]
+pub struct SystemInformation {
+    /// At least one information type is required by OSCAL 1.2.3.
+    #[serde(rename = "information-types")]
+    pub information_types: Vec<InformationType>,
+}
+
+/// A category of information handled by the system.
+#[derive(Debug, Clone, Serialize)]
+pub struct InformationType {
+    /// Human-readable information type name.
+    pub title: String,
+
+    /// Description of how the information is used.
+    pub description: String,
+}
+
+/// Description of the system authorization boundary.
+#[derive(Debug, Clone, Serialize)]
+pub struct AuthorizationBoundary {
+    /// Narrative boundary description.
+    pub description: String,
 }
 
 // ─── System Implementation ──────────────────────────────────────────────
@@ -178,8 +250,10 @@ pub struct ResponsibleRole {
     #[serde(rename = "role-id")]
     pub role_id: String,
 
-    /// Display name for the responsible party.
-    #[serde(rename = "responsible-party", skip_serializing_if = "Option::is_none")]
+    /// Display name or completion guidance for the responsible party. The
+    /// legacy string cannot populate OSCAL's UUID-only `party-uuids`, so it is
+    /// preserved as `remarks` rather than silently discarded.
+    #[serde(default, rename = "remarks", skip_serializing_if = "Option::is_none")]
     pub responsible_party: Option<String>,
 }
 
@@ -206,7 +280,7 @@ pub struct SspComponentInput {
 /// For each `SspComponentInput`, produces an `SspComponent` with:
 /// - A deterministic `UUIDv5` derived from the component title using `COMPONENT_NAMESPACE`
 /// - Description from the definition
-/// - A placeholder `ResponsibleRole` with TODO markers for assignment
+/// - No fabricated responsible-role reference; callers add one with a real role ID
 /// - Operational status set to "operational" by default
 ///
 /// # Arguments
@@ -244,15 +318,7 @@ pub fn generate_inventory_items(definitions: &[SspComponentInput]) -> Vec<SspCom
                 component_type: def.component_type.clone(),
                 title: def.title.clone(),
                 description: Some(def.description.clone()),
-                responsible_roles: vec![ResponsibleRole {
-                    role_id:
-                        "<!-- TODO(role-id): assign the responsible role for this component -->"
-                            .to_string(),
-                    responsible_party: Some(
-                        "<!-- TODO(responsible-party): identify the person or team responsible -->"
-                            .to_string(),
-                    ),
-                }],
+                responsible_roles: vec![],
                 status: ComponentStatus { state: "operational".to_string() },
             }
         })
@@ -263,9 +329,9 @@ pub fn generate_inventory_items(definitions: &[SspComponentInput]) -> Vec<SspCom
 
 /// An authorized user of the system.
 ///
-/// OSCAL 1.1.3 user object within system-implementation.
+/// OSCAL v1.2.3 user object within system-implementation.
 /// Fields marked with `<!-- TODO(...) -->` need to be filled with real data.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct AuthorizedUser {
     /// Unique identifier for this user entry.
     pub uuid: String,
@@ -276,27 +342,76 @@ pub struct AuthorizedUser {
 
     /// Short identifier (e.g., username, employee ID).
     /// <!-- TODO(short-name): set the actual username or employee ID -->
-    #[serde(default, rename = "short-name", skip_serializing_if = "Option::is_none")]
     pub short_name: Option<String>,
 
     /// Description of the user's role and access scope.
     /// <!-- TODO(description): describe the user's purpose and access scope -->
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Role identifiers assigned to this user.
     /// References role-ids defined in the system or inherited from the SSP.
     /// <!-- TODO(role-ids): assign concrete role-ids matching the system's role catalog -->
-    #[serde(default, rename = "role-ids", skip_serializing_if = "Vec::is_empty")]
     pub role_ids: Vec<String>,
 
     /// Date the user was authorized (ISO 8601).
     /// <!-- TODO(authorized-date): set the actual authorization date -->
-    #[serde(default, rename = "authorized-date", skip_serializing_if = "Option::is_none")]
     pub authorized_date: Option<String>,
 
-    /// User account status.
+    /// Legacy user account status retained for callers. OSCAL 1.2.3 system
+    /// users do not define a status field.
     pub status: UserStatus,
+}
+
+impl Serialize for AuthorizedUser {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut field_count = 2;
+        field_count += usize::from(self.short_name.is_some());
+        field_count += usize::from(self.description.is_some());
+        field_count += usize::from(!self.role_ids.is_empty());
+
+        let mut props = Vec::new();
+        if let Some(authorized_date) = &self.authorized_date {
+            props.push(template_prop("authorized-date", authorized_date));
+        }
+        props.push(template_prop("account-status", &self.status.state));
+        if let Some(reason) = &self.status.reason {
+            props.push(template_prop("account-status-reason", reason));
+        }
+        field_count += usize::from(!props.is_empty());
+
+        let mut state = serializer.serialize_struct("AuthorizedUser", field_count)?;
+        state.serialize_field("uuid", &self.uuid)?;
+        state.serialize_field("title", &self.title)?;
+        if let Some(short_name) = &self.short_name {
+            state.serialize_field("short-name", short_name)?;
+        }
+        if let Some(description) = &self.description {
+            state.serialize_field("description", description)?;
+        }
+        if self.role_ids.is_empty() {
+            props.push(template_prop(
+                "role-ids",
+                "TODO: Define metadata roles and assign their role IDs.",
+            ));
+        } else {
+            state.serialize_field("role-ids", &self.role_ids)?;
+        }
+        if !props.is_empty() {
+            state.serialize_field("props", &props)?;
+        }
+        state.end()
+    }
+}
+
+fn template_prop(name: &str, value: &str) -> OscalProp {
+    OscalProp {
+        name: name.to_string(),
+        ns: Some(FORGE_SSP_TEMPLATE_NS.to_string()),
+        value: value.to_string(),
+    }
 }
 
 /// Status of a user account.
@@ -315,9 +430,9 @@ pub struct UserStatus {
 
 /// A leveraged (inherited) authorization from another system.
 ///
-/// OSCAL 1.1.3 leveraged-authorization object within system-implementation.
+/// OSCAL v1.2.3 leveraged-authorization object within system-implementation.
 /// Represents an authority to inherit controls from a shared service/system.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct LeveragedAuthorization {
     /// Unique identifier for this leveraged authorization entry.
     pub uuid: String,
@@ -328,13 +443,46 @@ pub struct LeveragedAuthorization {
 
     /// Hyperlink reference to the leveraged system's SSP.
     /// <!-- TODO(href): set the URL or path to the leveraged system's SSP -->
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub href: Option<String>,
 
     /// Description of what is inherited.
     /// <!-- TODO(description): describe the inherited controls or services -->
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+
+    /// UUID of the party that manages the leveraged system.
+    pub party_uuid: String,
+
+    /// Date the leveraged system received authorization.
+    pub date_authorized: String,
+}
+
+impl Serialize for LeveragedAuthorization {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut field_count = 4;
+        field_count += usize::from(self.href.is_some());
+        field_count += usize::from(self.description.is_some());
+
+        let mut state = serializer.serialize_struct("LeveragedAuthorization", field_count)?;
+        state.serialize_field("uuid", &self.uuid)?;
+        state.serialize_field("title", &self.title)?;
+        if let Some(href) = &self.href {
+            let links = [OscalLink {
+                href: href.clone(),
+                rel: "source".to_string(),
+                text: Some("Leveraged system SSP".to_string()),
+            }];
+            state.serialize_field("links", &links)?;
+        }
+        state.serialize_field("party-uuid", &self.party_uuid)?;
+        state.serialize_field("date-authorized", &self.date_authorized)?;
+        if let Some(description) = &self.description {
+            state.serialize_field("remarks", description)?;
+        }
+        state.end()
+    }
 }
 
 // ─── Control Implementation ─────────────────────────────────────────────
@@ -349,6 +497,9 @@ pub struct ImplementationStatus {
 /// A by-component entry linking an implemented-requirement to a component.
 #[derive(Debug, Clone, Serialize)]
 pub struct ByComponent {
+    /// Stable UUID for this component-specific implementation statement.
+    pub uuid: String,
+
     /// UUID of the component this implementation applies to.
     #[serde(rename = "component-uuid")]
     pub component_uuid: String,
@@ -374,7 +525,9 @@ pub struct SspImplementedRequirement {
     #[serde(rename = "control-id")]
     pub control_id: String,
 
-    /// Implementation narrative (placeholder with TODO markers).
+    /// Implementation narrative (placeholder with TODO markers). OSCAL v1.2.3
+    /// represents this content as implemented-requirement `remarks`.
+    #[serde(rename = "remarks")]
     pub description: String,
 
     /// Trace properties.
@@ -460,10 +613,9 @@ pub fn build_ssp(
                     description: Some("<!-- TODO(description): describe initial SSP scope and system boundary -->".to_string()),
                 }],
             },
-            system_id: Some(SspSystemId {
-                identifier_type: Some("<!-- TODO(identifier-type): set system ID scheme URI, e.g., http://example.org/system-id -->".to_string()),
-                id: "<!-- TODO(id): set the actual system identifier -->".to_string(),
-            }),
+            system_id: Some(todo_system_id()),
+            import_profile: ImportProfile { href: "TODO-profile.json".to_string() },
+            system_characteristics: build_system_characteristics(title),
             system_implementation,
             control_implementation: None,
             back_matter: Some(back_matter),
@@ -519,6 +671,11 @@ pub fn build_ssp_skeleton(
 
     // Build control-implementation section
     let ssp = &mut envelope.system_security_plan;
+    ssp.import_profile.href = if source_profile.trim().is_empty() {
+        "TODO-profile.json".to_string()
+    } else {
+        source_profile.to_string()
+    };
     ssp.control_implementation = Some(SspControlImplementation {
         description: format!("Control implementation statements derived from {policy_title}."),
         implemented_requirements,
@@ -527,11 +684,36 @@ pub fn build_ssp_skeleton(
     // Replace empty components with inventory items
     ssp.system_implementation.components = inventory_items;
 
-    // Add profile reference as a prop in metadata if not present
-    // (SSP metadata links back to the source profile)
-    let _ = source_profile; // reserved for future profile-link integration
-
     Ok(envelope)
+}
+
+/// Build the required system-characteristics skeleton with schema-valid TODO
+/// values that users can replace as they complete the SSP.
+fn build_system_characteristics(system_name: &str) -> SystemCharacteristics {
+    SystemCharacteristics {
+        system_ids: vec![todo_system_id()],
+        system_name: system_name.to_string(),
+        description: "TODO: Describe the system purpose, environment, and scope.".to_string(),
+        system_information: SystemInformation {
+            information_types: vec![InformationType {
+                title: "TODO information type".to_string(),
+                description:
+                    "TODO: Describe how this information is stored, processed, or transmitted."
+                        .to_string(),
+            }],
+        },
+        status: ComponentStatus { state: "under-development".to_string() },
+        authorization_boundary: AuthorizationBoundary {
+            description: "TODO: Describe the system authorization boundary.".to_string(),
+        },
+    }
+}
+
+fn todo_system_id() -> SspSystemId {
+    SspSystemId {
+        identifier_type: Some("https://example.com/system-identifiers".to_string()),
+        id: "TODO-system-id".to_string(),
+    }
 }
 
 /// Recursively collect all control IDs from a catalog (top-level + groups).
@@ -572,6 +754,10 @@ fn build_control_impl_reqs(
                 component_uuids
                     .iter()
                     .map(|comp_uuid| ByComponent {
+                        uuid: generate_stable_id(&format!(
+                            "ssp-by-component|{control_id}|{comp_uuid}"
+                        ))
+                        .to_string(),
                         component_uuid: (*comp_uuid).to_string(),
                         implementation_status: ImplementationStatus {
                             state: "planned".to_string(),
@@ -602,12 +788,9 @@ fn build_system_implementation() -> SystemImplementation {
     SystemImplementation {
         components: Vec::new(), // Populated by inventory-items task
         users: build_placeholder_users(),
-        leveraged_authorizations: vec![LeveragedAuthorization {
-            uuid: generate_stable_id("leveraged-auth|placeholder").to_string(),
-            title: "<!-- TODO(title): set the leveraged system name (e.g., 'AWS GovCloud', 'FedRAMP Moderate PaaS') -->".to_string(),
-            href: Some("<!-- TODO(href): URL or path to the leveraged system's SSP -->".to_string()),
-            description: Some("<!-- TODO(description): describe inherited controls, e.g., 'Physical security and hypervisor controls inherited from cloud provider') -->".to_string()),
-        }],
+        // A leveraged authorization is optional. Do not fabricate a real-looking
+        // authorization date or a dangling party reference merely to provide a template.
+        leveraged_authorizations: vec![],
     }
 }
 
@@ -625,11 +808,7 @@ fn build_placeholder_users() -> Vec<AuthorizedUser> {
                 "<!-- TODO(description): describe system administrator role and access scope -->"
                     .to_string(),
             ),
-            role_ids: vec![
-                "<!-- TODO(role-id): assign role-id for system-admin, e.g., 'system-admin' -->"
-                    .to_string(),
-                "<!-- TODO(role-id): assign role-id for security-officer, e.g., 'security-officer' -->".to_string(),
-            ],
+            role_ids: vec![],
             authorized_date: Some(
                 "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->"
                     .to_string(),
@@ -649,10 +828,7 @@ fn build_placeholder_users() -> Vec<AuthorizedUser> {
                 "<!-- TODO(description): describe regular user role and access scope -->"
                     .to_string(),
             ),
-            role_ids: vec![
-                "<!-- TODO(role-id): assign role-id for regular user, e.g., 'analyst' -->"
-                    .to_string(),
-            ],
+            role_ids: vec![],
             authorized_date: Some(
                 "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->"
                     .to_string(),
@@ -673,10 +849,7 @@ fn build_placeholder_users() -> Vec<AuthorizedUser> {
                 "<!-- TODO(description): describe service account purpose, e.g., 'automated data ingestion' -->"
                     .to_string(),
             ),
-            role_ids: vec![
-                "<!-- TODO(role-id): assign role-id for service account, e.g., 'service-account' -->"
-                    .to_string(),
-            ],
+            role_ids: vec![],
             authorized_date: Some(
                 "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->"
                     .to_string(),
@@ -753,6 +926,12 @@ mod tests {
         assert_eq!(revisions.len(), 1);
         assert_eq!(revisions[0].title, "Initial SSP generation");
         assert!(revisions[0].description.as_deref().unwrap().contains("TODO"));
+        let json = serde_json::to_value(&envelope).unwrap();
+        assert!(
+            json["system-security-plan"]["metadata"]["revisions"][0]["remarks"]
+                .as_str()
+                .is_some_and(|remarks| remarks.contains("TODO"))
+        );
     }
 
     #[test]
@@ -764,14 +943,22 @@ mod tests {
     }
 
     #[test]
-    fn ssp_users_have_role_ids() {
+    fn ssp_users_do_not_reference_undefined_roles() {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let users = &envelope.system_security_plan.system_implementation.users;
         for user in users {
-            assert!(!user.role_ids.is_empty(), "User '{}' must have role-ids", user.title);
-            for role_id in &user.role_ids {
-                assert!(role_id.contains("TODO"), "role-id should have TODO marker: {role_id}");
-            }
+            assert!(user.role_ids.is_empty());
+        }
+
+        let json = serde_json::to_value(&envelope).unwrap();
+        for user in
+            json["system-security-plan"]["system-implementation"]["users"].as_array().unwrap()
+        {
+            assert!(user.get("role-ids").is_none());
+            assert!(user["props"].as_array().unwrap().iter().any(|prop| {
+                prop["name"] == "role-ids"
+                    && prop["value"].as_str().is_some_and(|value| value.contains("TODO"))
+            }));
         }
     }
 
@@ -807,15 +994,46 @@ mod tests {
                 assert!(desc.contains("TODO"), "description should have TODO: {desc}");
             }
         }
+
+        let json = serde_json::to_value(&envelope).unwrap();
+        let props = json["system-security-plan"]["system-implementation"]["users"][0]["props"]
+            .as_array()
+            .unwrap();
+        assert!(props.iter().any(|prop| {
+            prop["name"] == "authorized-date"
+                && prop["value"].as_str().is_some_and(|value| value.contains("TODO"))
+        }));
+        assert!(props.iter().any(|prop| prop["name"] == "account-status"));
     }
 
     #[test]
-    fn ssp_has_leveraged_authorizations_placeholder() {
+    fn ssp_does_not_fabricate_leveraged_authorization() {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let leveraged =
             &envelope.system_security_plan.system_implementation.leveraged_authorizations;
-        assert_eq!(leveraged.len(), 1, "Must have placeholder leveraged authorization");
-        assert!(leveraged[0].title.contains("TODO"));
+        assert!(leveraged.is_empty());
+
+        let json = serde_json::to_string(&envelope).unwrap();
+        assert!(!json.contains("leveraged-authorizations"));
+        assert!(!json.contains("1970-01-01"));
+        assert!(!json.contains("leveraged-auth-placeholder"));
+        assert!(json.contains("TODO-profile.json"));
+    }
+
+    #[test]
+    fn leveraged_authorization_legacy_fields_map_to_oscal_fields() {
+        let authorization = LeveragedAuthorization {
+            uuid: "b35fef25-14dc-4f91-b4fa-997c0f4d2a71".to_string(),
+            title: "Shared service".to_string(),
+            href: Some("shared-service-ssp.json".to_string()),
+            description: Some("Inherited physical controls".to_string()),
+            party_uuid: "13ac0950-94d9-4b81-8235-9d93bfeff0fc".to_string(),
+            date_authorized: "2026-08-24".to_string(),
+        };
+        let json = serde_json::to_value(authorization).unwrap();
+        assert_eq!(json["links"][0]["href"], "shared-service-ssp.json");
+        assert_eq!(json["remarks"], "Inherited physical controls");
+        assert_eq!(json["party-uuid"], "13ac0950-94d9-4b81-8235-9d93bfeff0fc");
     }
 
     #[test]
@@ -917,20 +1135,26 @@ mod tests {
     }
 
     #[test]
-    fn generate_inventory_items_todo_markers_in_responsible_roles() {
+    fn generate_inventory_items_do_not_fabricate_responsible_roles() {
         let defs = vec![SspComponentInput {
             title: "Firewall".to_string(),
             description: "Network security".to_string(),
             component_type: "network".to_string(),
         }];
         let items = generate_inventory_items(&defs);
-        assert_eq!(items[0].responsible_roles.len(), 1);
-        let role = &items[0].responsible_roles[0];
-        assert!(role.role_id.contains("TODO"), "role_id must contain TODO marker");
-        assert!(
-            role.responsible_party.as_ref().unwrap().contains("TODO"),
-            "responsible_party must contain TODO marker"
-        );
+        assert!(items[0].responsible_roles.is_empty());
+        let json = serde_json::to_value(&items).unwrap();
+        assert!(json[0].get("responsible-roles").is_none());
+    }
+
+    #[test]
+    fn responsible_party_legacy_field_serializes_as_remarks() {
+        let role = ResponsibleRole {
+            role_id: "system-owner".to_string(),
+            responsible_party: Some("TODO: assign a real party UUID".to_string()),
+        };
+        let json = serde_json::to_value(role).unwrap();
+        assert_eq!(json["remarks"], "TODO: assign a real party UUID");
     }
 
     #[test]

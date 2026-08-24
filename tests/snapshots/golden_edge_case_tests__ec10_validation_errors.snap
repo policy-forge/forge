@@ -2,7 +2,10 @@
 source: tests/golden_edge_case_tests.rs
 expression: rendered
 ---
-Validation failed: 4 schema errors, 1 semantic error
+Validation failed: 5 schema errors, 1 semantic error
+  Model: catalog
+  Declared OSCAL version: unavailable
+  Schema version used: 1.2.3
 
 Schema Errors:
   [1] $.catalog.metadata — required field missing: last-modified
@@ -17,6 +20,9 @@ Schema Errors:
   [4] $.catalog.uuid — schema validation failed
       Expected: valid value per schema
       Actual: "123e4567-e89b-12d3-a456-426614174000"
+  [5] $.catalog.metadata.oscal-version — OSCAL version declaration must be a non-empty supported string; available schema baseline is 1.2.3
+      Expected: a canonical OSCAL version from 1.2.0 through 1.2.3
+      Actual: field not present
 
 Semantic Errors:
   [1] $.catalog.groups[0].controls[0].links[0].href — orphaned link: reference #missing-resource not found in back-matter resources

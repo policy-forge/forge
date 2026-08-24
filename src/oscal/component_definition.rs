@@ -401,8 +401,8 @@ mod tests {
         // (3) metadata.version matches PolicyDocument version
         assert_eq!(cd["metadata"]["version"], "2.0");
 
-        // (4) metadata.oscal-version is "1.2.0"
-        assert_eq!(cd["metadata"]["oscal-version"], "1.2.0");
+        // (4) metadata.oscal-version uses the shared current baseline.
+        assert_eq!(cd["metadata"]["oscal-version"], crate::oscal::metadata::OSCAL_VERSION);
 
         // (5) metadata.last-modified is present and non-empty
         let last_modified = cd["metadata"]["last-modified"].as_str().unwrap();
@@ -658,9 +658,9 @@ mod tests {
 
         let cd_meta = &cd_envelope.component_definition.metadata;
 
-        // (1) Both have oscal-version "1.2.0"
-        assert_eq!(cd_meta.oscal_version, "1.2.0");
-        assert_eq!(cat_metadata.oscal_version, "1.2.0");
+        // (1) Both use the shared current OSCAL baseline.
+        assert_eq!(cd_meta.oscal_version, crate::oscal::metadata::OSCAL_VERSION);
+        assert_eq!(cat_metadata.oscal_version, crate::oscal::metadata::OSCAL_VERSION);
 
         // (2) Both have matching title
         assert_eq!(cd_meta.title, cat_metadata.title);

@@ -552,7 +552,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(profile.metadata.title, "Policy Baseline Profile");
-        assert_eq!(profile.metadata.oscal_version, "1.2.0");
+        assert_eq!(profile.metadata.oscal_version, crate::oscal::metadata::OSCAL_VERSION);
     }
 
     #[test]

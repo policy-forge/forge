@@ -24,50 +24,57 @@
               "description": "<!-- TODO(by-component): describe how control POL-AC-001 is implemented for this component -->",
               "implementation-status": {
                 "state": "planned"
-              }
+              },
+              "uuid": "<UUID:3>"
             },
             {
-              "component-uuid": "<UUID:3>",
+              "component-uuid": "<UUID:4>",
               "description": "<!-- TODO(by-component): describe how control POL-AC-001 is implemented for this component -->",
               "implementation-status": {
                 "state": "planned"
-              }
+              },
+              "uuid": "<UUID:5>"
             }
           ],
           "control-id": "POL-AC-001",
-          "description": "<!-- TODO(description): implementation narrative for control POL-AC-001 -->",
-          "uuid": "<UUID:4>"
+          "remarks": "<!-- TODO(description): implementation narrative for control POL-AC-001 -->",
+          "uuid": "<UUID:6>"
         },
         {
           "by-components": [
             {
-              "component-uuid": "<UUID:5>",
+              "component-uuid": "<UUID:7>",
               "description": "<!-- TODO(by-component): describe how control POL-DP-001 is implemented for this component -->",
               "implementation-status": {
                 "state": "planned"
-              }
+              },
+              "uuid": "<UUID:8>"
             },
             {
-              "component-uuid": "<UUID:6>",
+              "component-uuid": "<UUID:9>",
               "description": "<!-- TODO(by-component): describe how control POL-DP-001 is implemented for this component -->",
               "implementation-status": {
                 "state": "planned"
-              }
+              },
+              "uuid": "<UUID:10>"
             }
           ],
           "control-id": "POL-DP-001",
-          "description": "<!-- TODO(description): implementation narrative for control POL-DP-001 -->",
-          "uuid": "<UUID:7>"
+          "remarks": "<!-- TODO(description): implementation narrative for control POL-DP-001 -->",
+          "uuid": "<UUID:11>"
         }
       ]
     },
+    "import-profile": {
+      "href": "./test-profile.json"
+    },
     "metadata": {
       "last-modified": "2026-01-01T00:00:00Z",
-      "oscal-version": "1.2.0",
+      "oscal-version": "1.2.3",
       "revisions": [
         {
-          "description": "<!-- TODO(description): describe initial SSP scope and system boundary -->",
           "last-modified": "2026-01-01T00:00:00Z",
+          "remarks": "<!-- TODO(description): describe initial SSP scope and system boundary -->",
           "title": "Initial SSP generation",
           "version": "1.0.0"
         }
@@ -75,95 +82,128 @@
       "title": "System Security Plan for Test Security Policy",
       "version": "1.0.0"
     },
-    "system-id": {
-      "id": "<!-- TODO(id): set the actual system identifier -->",
-      "identifier-type": "<!-- TODO(identifier-type): set system ID scheme URI, e.g., http://example.org/system-id -->"
+    "system-characteristics": {
+      "authorization-boundary": {
+        "description": "TODO: Describe the system authorization boundary."
+      },
+      "description": "TODO: Describe the system purpose, environment, and scope.",
+      "status": {
+        "state": "under-development"
+      },
+      "system-ids": [
+        {
+          "id": "TODO-system-id",
+          "identifier-type": "https://example.com/system-identifiers"
+        }
+      ],
+      "system-information": {
+        "information-types": [
+          {
+            "description": "TODO: Describe how this information is stored, processed, or transmitted.",
+            "title": "TODO information type"
+          }
+        ]
+      },
+      "system-name": "Test Security Policy"
     },
     "system-implementation": {
       "components": [
         {
           "description": "Filters incoming HTTP traffic",
-          "responsible-roles": [
-            {
-              "responsible-party": "<!-- TODO(responsible-party): identify the person or team responsible -->",
-              "role-id": "<!-- TODO(role-id): assign the responsible role for this component -->"
-            }
-          ],
           "status": {
             "state": "operational"
           },
           "title": "Web Application Firewall",
           "type": "software",
-          "uuid": "<UUID:8>"
+          "uuid": "<UUID:12>"
         },
         {
           "description": "Primary PostgreSQL instance",
-          "responsible-roles": [
-            {
-              "responsible-party": "<!-- TODO(responsible-party): identify the person or team responsible -->",
-              "role-id": "<!-- TODO(role-id): assign the responsible role for this component -->"
-            }
-          ],
           "status": {
             "state": "operational"
           },
           "title": "Database Server",
           "type": "software",
-          "uuid": "<UUID:9>"
-        }
-      ],
-      "leveraged-authorizations": [
-        {
-          "description": "<!-- TODO(description): describe inherited controls, e.g., 'Physical security and hypervisor controls inherited from cloud provider') -->",
-          "href": "<!-- TODO(href): URL or path to the leveraged system's SSP -->",
-          "title": "<!-- TODO(title): set the leveraged system name (e.g., 'AWS GovCloud', 'FedRAMP Moderate PaaS') -->",
-          "uuid": "<UUID:10>"
+          "uuid": "<UUID:13>"
         }
       ],
       "users": [
         {
-          "authorized-date": "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->",
           "description": "<!-- TODO(description): describe system administrator role and access scope -->",
-          "role-ids": [
-            "<!-- TODO(role-id): assign role-id for system-admin, e.g., 'system-admin' -->",
-            "<!-- TODO(role-id): assign role-id for security-officer, e.g., 'security-officer' -->"
+          "props": [
+            {
+              "name": "authorized-date",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->"
+            },
+            {
+              "name": "account-status",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "active"
+            },
+            {
+              "name": "role-ids",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "TODO: Define metadata roles and assign their role IDs."
+            }
           ],
           "short-name": "<!-- TODO(short-name): set admin username, e.g., 'sysadmin' -->",
-          "status": {
-            "state": "active"
-          },
           "title": "<!-- TODO(title): set system administrator name -->",
-          "uuid": "<UUID:11>"
+          "uuid": "<UUID:14>"
         },
         {
-          "authorized-date": "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->",
           "description": "<!-- TODO(description): describe regular user role and access scope -->",
-          "role-ids": [
-            "<!-- TODO(role-id): assign role-id for regular user, e.g., 'analyst' -->"
+          "props": [
+            {
+              "name": "authorized-date",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->"
+            },
+            {
+              "name": "account-status",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "active"
+            },
+            {
+              "name": "role-ids",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "TODO: Define metadata roles and assign their role IDs."
+            }
           ],
           "short-name": "<!-- TODO(short-name): set regular username, e.g., 'analyst-01' -->",
-          "status": {
-            "state": "active"
-          },
           "title": "<!-- TODO(title): set regular user display name -->",
-          "uuid": "<UUID:12>"
+          "uuid": "<UUID:15>"
         },
         {
-          "authorized-date": "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->",
           "description": "<!-- TODO(description): describe service account purpose, e.g., 'automated data ingestion' -->",
-          "role-ids": [
-            "<!-- TODO(role-id): assign role-id for service account, e.g., 'service-account' -->"
+          "props": [
+            {
+              "name": "authorized-date",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "<!-- TODO(authorized-date): set authorization date in ISO 8601 format -->"
+            },
+            {
+              "name": "account-status",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "active"
+            },
+            {
+              "name": "account-status-reason",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "<!-- TODO(reason): e.g., 'automated system process, no interactive login' -->"
+            },
+            {
+              "name": "role-ids",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "TODO: Define metadata roles and assign their role IDs."
+            }
           ],
           "short-name": "<!-- TODO(short-name): set service account identifier, e.g., 'svc-ingest' -->",
-          "status": {
-            "reason": "<!-- TODO(reason): e.g., 'automated system process, no interactive login' -->",
-            "state": "active"
-          },
           "title": "<!-- TODO(title): set service account name -->",
-          "uuid": "<UUID:13>"
+          "uuid": "<UUID:16>"
         }
       ]
     },
-    "uuid": "<UUID:14>"
+    "uuid": "<UUID:17>"
   }
 }

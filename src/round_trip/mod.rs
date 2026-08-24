@@ -11,6 +11,9 @@ mod rules;
 
 pub use chain::run_round_trip_chain;
 pub use comparator::compare_oscal_json;
-pub use divergence::{Divergence, DivergenceClass, ResolutionStatus, RoundTripResult};
+pub use divergence::{
+    CompatibilityClassification, Divergence, DivergenceClass, ResolutionStatus, RoundTripResult,
+    classify_oscal_cli_compatibility,
+};
 pub use log::write_divergence_log;
 pub use rules::OscalComparisonRules;

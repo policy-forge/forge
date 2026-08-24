@@ -142,15 +142,68 @@ impl OscalCliInvoke for ProcessInvoker {
 
     fn convert(&self, args: &ConvertArgs) -> Result<ConvertResult, ForgeError> {
         let to_flag = format!("-to={}", args.output_format.to_cli_flag());
+        let model_command = detect_model_command(&args.input_path)?;
 
         let mut cmd = Command::new(&self.executable_path);
-        cmd.args(["convert", &to_flag]);
+        cmd.args([model_command, "convert", &to_flag]);
         cmd.arg(&args.input_path);
         cmd.arg(&args.output_path);
 
         let output = run_oscal_cli(&mut cmd, args.timeout, "convert")?;
 
         Ok(ConvertResult { output_path: args.output_path.clone(), warnings: output.warnings })
+    }
+}
+
+/// Detect the oscal-cli model subcommand from the document root.
+fn detect_model_command(path: &std::path::Path) -> Result<&'static str, ForgeError> {
+    let content = std::fs::read_to_string(path).map_err(ForgeError::Io)?;
+    let extension = path.extension().and_then(std::ffi::OsStr::to_str).unwrap_or_default();
+
+    let root = match extension {
+        "json" => serde_json::from_str::<serde_json::Value>(&content)
+            .ok()
+            .and_then(|value| value.as_object()?.keys().next().cloned()),
+        "yaml" | "yml" => serde_yaml::from_str::<serde_yaml::Value>(&content)
+            .ok()
+            .and_then(|value| value.as_mapping()?.keys().next()?.as_str().map(str::to_string)),
+        "xml" => xml_root_name(&content),
+        _ => None,
+    }
+    .ok_or_else(|| ForgeError::OscalCliExecution {
+        exit_code: None,
+        message: format!("Unable to detect OSCAL model from '{}'", path.display()),
+    })?;
+
+    model_command_for_root(&root).ok_or_else(|| ForgeError::OscalCliExecution {
+        exit_code: None,
+        message: format!("Unsupported OSCAL document root '{root}' in '{}'", path.display()),
+    })
+}
+
+fn xml_root_name(content: &str) -> Option<String> {
+    let mut reader = quick_xml::Reader::from_str(content);
+    loop {
+        match reader.read_event().ok()? {
+            quick_xml::events::Event::Start(element) | quick_xml::events::Event::Empty(element) => {
+                return std::str::from_utf8(element.local_name().as_ref()).ok().map(str::to_string);
+            }
+            quick_xml::events::Event::Eof => return None,
+            _ => {}
+        }
+    }
+}
+
+fn model_command_for_root(root: &str) -> Option<&'static str> {
+    match root {
+        "catalog" => Some("catalog"),
+        "profile" => Some("profile"),
+        "component-definition" => Some("component-definition"),
+        "system-security-plan" => Some("ssp"),
+        "assessment-plan" => Some("ap"),
+        "assessment-results" => Some("ar"),
+        "plan-of-action-and-milestones" => Some("poam"),
+        _ => None,
     }
 }
 
@@ -231,6 +284,30 @@ mod tests {
         let warnings = collect_warnings(stderr);
         assert_eq!(warnings.len(), 2);
         assert!(warnings[0].contains("deprecated"));
+    }
+
+    #[test]
+    fn detects_model_command_across_round_trip_formats() {
+        let temp = tempfile::tempdir().unwrap();
+        let json = temp.path().join("catalog.json");
+        let xml = temp.path().join("catalog.xml");
+        let yaml = temp.path().join("catalog.yaml");
+        std::fs::write(&json, r#"{"catalog":{}}"#).unwrap();
+        std::fs::write(&xml, r#"<?xml version="1.0"?><catalog/>"#).unwrap();
+        std::fs::write(&yaml, "catalog: {}\n").unwrap();
+
+        assert_eq!(detect_model_command(&json).unwrap(), "catalog");
+        assert_eq!(detect_model_command(&xml).unwrap(), "catalog");
+        assert_eq!(detect_model_command(&yaml).unwrap(), "catalog");
+    }
+
+    #[test]
+    fn rejects_unknown_model_root() {
+        let temp = tempfile::tempdir().unwrap();
+        let input = temp.path().join("unknown.json");
+        std::fs::write(&input, r#"{"unknown":{}}"#).unwrap();
+        let error = detect_model_command(&input).unwrap_err();
+        assert!(error.to_string().contains("Unsupported OSCAL document root"));
     }
 
     // --- T044: timeout handling is tested via integration tests ---

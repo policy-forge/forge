@@ -4,6 +4,8 @@ expression: content
 ---
 {
   "artifact_type": "Catalog",
+  "compatibility_classification": "advisory-older-model-baseline",
+  "declared_oscal_version": "1.2.3",
   "divergences": [
     {
       "actual": "my-security-policy",
@@ -22,6 +24,9 @@ expression: content
       "resolution": "Accepted"
     }
   ],
+  "oscal_cli_model_version": "1.1.2",
+  "oscal_cli_version": "1.0.3",
   "passed": false,
+  "schema_version_used": "1.2.3",
   "source_path": "/tmp/test/catalog.json"
 }

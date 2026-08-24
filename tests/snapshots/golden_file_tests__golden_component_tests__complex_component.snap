@@ -1114,7 +1114,7 @@ expression: normalized
     ],
     "metadata": {
       "last-modified": "2026-01-01T00:00:00Z",
-      "oscal-version": "1.2.0",
+      "oscal-version": "1.2.3",
       "title": "Comprehensive Security Policy",
       "version": "3.0.0"
     },

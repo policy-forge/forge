@@ -20,8 +20,15 @@ use super::error_types::{ValidationErrorCategory, ValidationReport};
 /// ```
 #[must_use]
 pub fn render_text_report(report: &ValidationReport) -> String {
+    let declared = report.declared_oscal_version().unwrap_or("unavailable");
     if report.is_valid() {
-        return format!("Valid: {} artifact passes all validation.", report.artifact_path());
+        return format!(
+            "Valid: {} artifact passes all validation.\n  Artifact: {}\n  Declared OSCAL version: {}\n  Schema version used: {}",
+            report.model_type(),
+            report.artifact_path(),
+            declared,
+            report.schema_version_used()
+        );
     }
 
     let mut output = String::new();
@@ -43,6 +50,9 @@ pub fn render_text_report(report: &ValidationReport) -> String {
         ));
     }
     let _ = writeln!(output, "Validation failed: {}", parts.join(", "));
+    let _ = writeln!(output, "  Model: {}", report.model_type());
+    let _ = writeln!(output, "  Declared OSCAL version: {declared}");
+    let _ = writeln!(output, "  Schema version used: {}", report.schema_version_used());
 
     // Schema errors section
     let schema_errors: Vec<_> =
@@ -95,7 +105,10 @@ pub fn render_json_report(report: &ValidationReport) -> String {
     serde_json::to_string_pretty(report).unwrap_or_else(|e| {
         tracing::error!(error = %e, "ValidationReport serialization failed; returning fallback JSON structure");
         // SEC-3: fallback must conform to ValidationReport schema (no extra fields).
-        r#"{"artifact_path":"","is_valid":false,"errors":[],"schema_error_count":0,"semantic_error_count":0}"#.to_string()
+        format!(
+            r#"{{"artifact_path":"","model_type":"unknown","declared_oscal_version":null,"schema_version_used":"{}","supported_input":false,"is_valid":false,"errors":[],"schema_error_count":0,"semantic_error_count":0}}"#,
+            crate::validate::version::SCHEMA_VERSION_USED
+        )
     })
 }
 
@@ -209,8 +222,17 @@ mod tests {
         let json = render_json_report(&report);
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
         let obj = parsed.as_object().unwrap();
-        let allowed_keys =
-            ["artifact_path", "is_valid", "errors", "schema_error_count", "semantic_error_count"];
+        let allowed_keys = [
+            "artifact_path",
+            "model_type",
+            "declared_oscal_version",
+            "schema_version_used",
+            "supported_input",
+            "is_valid",
+            "errors",
+            "schema_error_count",
+            "semantic_error_count",
+        ];
         for key in obj.keys() {
             assert!(allowed_keys.contains(&key.as_str()), "Unexpected key in JSON: {key}");
         }
@@ -226,5 +248,26 @@ mod tests {
         assert_eq!(original.errors().len(), parsed.errors().len());
         assert_eq!(original.schema_error_count(), parsed.schema_error_count());
         assert_eq!(original.semantic_error_count(), parsed.semantic_error_count());
+    }
+
+    #[test]
+    fn contextual_report_exposes_declared_and_actual_baselines() {
+        let report = ValidationReport::new_with_context(
+            "legacy-catalog.json".to_string(),
+            "catalog".to_string(),
+            Some("1.2.0".to_string()),
+            true,
+            vec![],
+        );
+        let json: serde_json::Value =
+            serde_json::from_str(&render_json_report(&report)).expect("report must be JSON");
+        assert_eq!(json["model_type"], "catalog");
+        assert_eq!(json["declared_oscal_version"], "1.2.0");
+        assert_eq!(json["schema_version_used"], "1.2.3");
+        assert_eq!(json["supported_input"], true);
+
+        let text = render_text_report(&report);
+        assert!(text.contains("Declared OSCAL version: 1.2.0"));
+        assert!(text.contains("Schema version used: 1.2.3"));
     }
 }

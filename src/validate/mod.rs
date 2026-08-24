@@ -1,7 +1,7 @@
 //! OSCAL schema validation module (WI-19, WI-20).
 //!
-//! Validates OSCAL JSON artifacts against embedded NIST OSCAL v1.2.0 JSON schemas.
-//! Supports Catalog and Component Definition model types with auto-detection.
+//! Validates OSCAL JSON artifacts against embedded NIST OSCAL v1.2.3 JSON schemas.
+//! Supports Catalog, Component Definition, and Profile model types with auto-detection.
 //!
 //! WI-20 adds enhanced error reporting with:
 //! - Actionable error messages with JSON Path notation (M-1)
@@ -13,6 +13,7 @@ pub mod error_types;
 pub mod formatter;
 pub mod report;
 pub mod semantic;
+pub mod version;
 
 pub use error_types::{ValidationError, ValidationErrorCategory, ValidationReport};
 
@@ -33,6 +34,12 @@ pub struct ValidationResult {
     pub is_valid: bool,
     /// Detected or specified model type.
     pub model_type: OscalModelType,
+    /// Document-declared OSCAL version, when it is a string.
+    pub declared_oscal_version: Option<String>,
+    /// Actual pinned schema baseline used for validation.
+    pub schema_version_used: &'static str,
+    /// Whether the declaration is accepted by the current compatibility policy.
+    pub supported_input: bool,
     /// All schema validation errors (empty if valid).
     pub errors: Vec<SchemaError>,
 }
@@ -183,7 +190,7 @@ pub fn validate_artifact(
             message: e.to_string(),
         })?;
 
-    let errors: Vec<SchemaError> = validator
+    let mut errors: Vec<SchemaError> = validator
         .iter_errors(json)
         .map(|error| {
             let instance_path = error.instance_path().to_string();
@@ -196,13 +203,29 @@ pub fn validate_artifact(
         })
         .collect();
 
+    let version = version::inspect_oscal_version(json, model_type);
+    if let Some(error) = version.error {
+        errors.push(SchemaError {
+            message: error.message,
+            instance_path: Some(format!("/{}/metadata/oscal-version", model_type.as_str())),
+            schema_path: None,
+        });
+    }
+
     if errors.is_empty() {
         info!("Schema validation passed for {model_type}");
     } else {
         info!("Schema validation failed for {model_type}: {} error(s)", errors.len());
     }
 
-    Ok(ValidationResult { is_valid: errors.is_empty(), model_type, errors })
+    Ok(ValidationResult {
+        is_valid: errors.is_empty(),
+        model_type,
+        declared_oscal_version: version.declared,
+        schema_version_used: version::SCHEMA_VERSION_USED,
+        supported_input: version.supported,
+        errors,
+    })
 }
 
 /// Check file size against the 50MB limit (SEC-3).
@@ -252,10 +275,15 @@ pub fn run_full_validation(
         })?;
 
     // Schema validation: collect all raw errors and format them
-    let schema_errors: Vec<error_types::ValidationError> = validator
+    let mut schema_errors: Vec<error_types::ValidationError> = validator
         .iter_errors(json)
         .map(|error| formatter::format_schema_error(&error, json))
         .collect();
+
+    let version = version::inspect_oscal_version(json, model_type);
+    if let Some(error) = version.error.clone() {
+        schema_errors.push(error);
+    }
 
     // Semantic validation
     let semantic_validator = semantic::SemanticValidator;
@@ -271,7 +299,13 @@ pub fn run_full_validation(
         info!("Full validation failed for {model_type}: {} error(s)", all_errors.len());
     }
 
-    Ok(error_types::ValidationReport::new(artifact_path.to_string(), all_errors))
+    Ok(error_types::ValidationReport::new_with_context(
+        artifact_path.to_string(),
+        model_type.to_string(),
+        version.declared,
+        version.supported,
+        all_errors,
+    ))
 }
 
 #[cfg(test)]
@@ -532,6 +566,37 @@ mod tests {
         let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
         assert!(report.is_valid());
         assert!(report.errors().is_empty());
+        assert_eq!(report.model_type(), "catalog");
+        assert_eq!(report.declared_oscal_version(), Some("1.2.0"));
+        assert_eq!(report.schema_version_used(), "1.2.3");
+        assert!(report.supported_input());
+    }
+
+    #[test]
+    fn full_validation_rejects_unsupported_declaration_with_baseline_context() {
+        let json = serde_json::json!({
+            "catalog": {
+                "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+                "metadata": {
+                    "title": "Unsupported Catalog",
+                    "last-modified": "2026-01-01T00:00:00Z",
+                    "version": "1.0",
+                    "oscal-version": "1.3.0"
+                }
+            }
+        });
+        let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
+        assert!(!report.is_valid());
+        assert_eq!(report.declared_oscal_version(), Some("1.3.0"));
+        assert_eq!(report.schema_version_used(), "1.2.3");
+        assert!(!report.supported_input());
+        let version_error = report
+            .errors()
+            .iter()
+            .find(|error| error.path == "$.catalog.metadata.oscal-version")
+            .expect("unsupported version must produce a metadata-path error");
+        assert!(version_error.message.contains("1.3.0"));
+        assert!(version_error.message.contains("1.2.3"));
     }
 
     #[test]

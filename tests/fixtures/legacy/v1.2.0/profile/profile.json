@@ -1,0 +1,17 @@
+{
+  "profile": {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "metadata": {
+      "title": "Sample Test Profile",
+      "last-modified": "2026-08-07T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.0"
+    },
+    "imports": [
+      {
+        "href": "../catalog/catalog.json",
+        "include-all": {}
+      }
+    ]
+  }
+}

@@ -217,6 +217,20 @@ fn normalized_ap_json(ap: &serde_json::Value) -> serde_json::Value {
     common::normalize_for_snapshot(ap)
 }
 
+fn assert_v1_2_3_assessment_plan_schema_valid(ap: &serde_json::Value) {
+    let schema: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/schemas/oscal_assessment-plan_schema.json"))
+            .expect("official assessment plan schema must parse");
+    let validator =
+        jsonschema::validator_for(&schema).expect("assessment plan schema must compile");
+    let errors: Vec<_> = validator.iter_errors(ap).map(|error| error.to_string()).collect();
+    assert!(
+        errors.is_empty(),
+        "assessment plan must validate against OSCAL v1.2.3 schema:\n{}",
+        errors.join("\n")
+    );
+}
+
 // ─── Golden snapshots: assessment plan structure ─────────────────────────
 
 /// Golden snapshot of the catalog pipeline assessment plan.
@@ -247,6 +261,23 @@ fn golden_component_ap_snapshot() {
     insta::assert_json_snapshot!("golden_component_ap", &normalized);
 }
 
+#[test]
+fn generated_catalog_and_component_assessment_plans_validate_against_v1_2_3() {
+    let fixture = Path::new(FIXTURE);
+    if common::skip_if_missing(fixture) {
+        return;
+    }
+
+    let catalog_dir = TempDir::new().unwrap();
+    let catalog_ap = run_catalog_with_ap(fixture, catalog_dir.path(), "./ssp/system-ssp.json");
+    assert_v1_2_3_assessment_plan_schema_valid(&catalog_ap);
+
+    let component_dir = TempDir::new().unwrap();
+    let component_ap =
+        run_component_with_ap(fixture, component_dir.path(), "./ssp/system-ssp.json");
+    assert_v1_2_3_assessment_plan_schema_valid(&component_ap);
+}
+
 // ─── Structural assertions: assessment subjects per component ────────────
 
 /// Catalog pipeline: assessment-subjects exist but without component UUID refs.
@@ -268,11 +299,12 @@ fn catalog_ap_subject_without_component_ref() {
     for subject in subjects {
         assert_eq!(subject["type"], "component", "Subject type should be 'component'");
         assert!(subject["description"].is_string(), "Subject should have a description");
-        // Catalog pipeline: no component UUID available → no include-subjects
+        // Catalog pipeline: no component UUID available → include all components.
         assert!(
             subject.get("include-subjects").is_none(),
             "Catalog pipeline should not have include-subjects (no component UUID available)"
         );
+        assert!(subject["include-all"].is_object());
     }
 }
 

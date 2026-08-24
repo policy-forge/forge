@@ -1,7 +1,7 @@
 //! XSD validation integration tests (T035, T036).
 //!
 //! These tests serialize OSCAL structures to XML, write them to temporary files,
-//! and validate against the OSCAL v1.2.0 XSD schemas using `xmllint`.
+//! and validate against the OSCAL v1.2.3 XSD schemas using `xmllint`.
 //!
 //! Tests are skipped if `xmllint` is not available on the system.
 
@@ -46,7 +46,7 @@ fn build_component_definition_xml(fixture_path: &Path) -> String {
     .content
 }
 
-/// T035: Validate catalog XML against OSCAL v1.2.0 catalog XSD.
+/// T035: Validate catalog XML against OSCAL v1.2.3 catalog XSD.
 #[test]
 fn catalog_xml_validates_against_xsd() {
     if !xmllint_available() {
@@ -70,6 +70,7 @@ fn catalog_xml_validates_against_xsd() {
     std::fs::write(&xml_path, &xml).unwrap();
 
     let output = Command::new("xmllint")
+        .arg("--nonet")
         .arg("--schema")
         .arg(xsd_path)
         .arg(&xml_path)
@@ -80,11 +81,11 @@ fn catalog_xml_validates_against_xsd() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         output.status.success(),
-        "Catalog XML must validate against OSCAL v1.2.0 XSD.\nxmllint stderr:\n{stderr}"
+        "Catalog XML must validate against OSCAL v1.2.3 XSD.\nxmllint stderr:\n{stderr}"
     );
 }
 
-/// T036: Validate component definition XML against OSCAL v1.2.0 component XSD.
+/// T036: Validate component definition XML against OSCAL v1.2.3 component XSD.
 #[test]
 fn component_definition_xml_validates_against_xsd() {
     if !xmllint_available() {
@@ -108,6 +109,7 @@ fn component_definition_xml_validates_against_xsd() {
     std::fs::write(&xml_path, &xml).unwrap();
 
     let output = Command::new("xmllint")
+        .arg("--nonet")
         .arg("--schema")
         .arg(xsd_path)
         .arg(&xml_path)
@@ -118,6 +120,6 @@ fn component_definition_xml_validates_against_xsd() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         output.status.success(),
-        "Component definition XML must validate against OSCAL v1.2.0 XSD.\nxmllint stderr:\n{stderr}"
+        "Component definition XML must validate against OSCAL v1.2.3 XSD.\nxmllint stderr:\n{stderr}"
     );
 }

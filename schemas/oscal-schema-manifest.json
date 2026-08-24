@@ -1,0 +1,99 @@
+{
+  "repository": "usnistgov/OSCAL",
+  "tag": "v1.2.3",
+  "release_commit": "e061961",
+  "published_at": "2026-08-07",
+  "schema_version": "1.2.3",
+  "assets": [
+    {
+      "name": "oscal_catalog_schema.json",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_catalog_schema.json",
+      "local_path": "schemas/oscal_catalog_schema.json",
+      "size": 55199,
+      "sha256": "ab95836e9e8dfeb6fde80007f6cc76fa3192f595d427c751a3f3923c3f474fc2",
+      "format": "json-schema",
+      "model": "catalog",
+      "role": "runtime"
+    },
+    {
+      "name": "oscal_component_schema.json",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_component_schema.json",
+      "local_path": "schemas/oscal_component_schema.json",
+      "size": 82323,
+      "sha256": "95e76881151ececd5cb1a93ff0f70ad74b8cc1aa58771626ac8b262bf2c8e001",
+      "format": "json-schema",
+      "model": "component-definition",
+      "role": "runtime"
+    },
+    {
+      "name": "oscal_profile_schema.json",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_profile_schema.json",
+      "local_path": "schemas/oscal_profile_schema.json",
+      "size": 68516,
+      "sha256": "7c5ff5a92683b6a80ce6a3474dea04e0ea8680a4ecb60702ffa08ebfc677e6cb",
+      "format": "json-schema",
+      "model": "profile",
+      "role": "runtime"
+    },
+    {
+      "name": "oscal_assessment-plan_schema.json",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_assessment-plan_schema.json",
+      "local_path": "tests/fixtures/schemas/oscal_assessment-plan_schema.json",
+      "size": 144952,
+      "sha256": "ea687b9d0ab1d84c9cb11ee0a5e22b17956fe892ee93f5acca937bef81d23ea2",
+      "format": "json-schema",
+      "model": "assessment-plan",
+      "role": "test"
+    },
+    {
+      "name": "oscal_ssp_schema.json",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_ssp_schema.json",
+      "local_path": "tests/fixtures/schemas/oscal_ssp_schema.json",
+      "size": 105538,
+      "sha256": "99b1bee2df5604a7d4f1faeab43148e0bd4c4a1f513cd0d2d0c7896aa216a1e7",
+      "format": "json-schema",
+      "model": "ssp",
+      "role": "test"
+    },
+    {
+      "name": "oscal_catalog_schema.xsd",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_catalog_schema.xsd",
+      "local_path": "tests/fixtures/xsd/oscal_catalog_schema.xsd",
+      "size": 115340,
+      "sha256": "07e8131af5efb67be209cd5403a9eaaf4650b9ffb73d7a1d9a6ccdac388525be",
+      "format": "xsd",
+      "model": "catalog",
+      "role": "test"
+    },
+    {
+      "name": "oscal_component_schema.xsd",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_component_schema.xsd",
+      "local_path": "tests/fixtures/xsd/oscal_component_schema.xsd",
+      "size": 174249,
+      "sha256": "9ee6573f835708bf282c47eaafc6e30a5c9b4dfcd6ffacf8a0a08f9f5b3a4895",
+      "format": "xsd",
+      "model": "component-definition",
+      "role": "test"
+    },
+    {
+      "name": "oscal_profile_schema.xsd",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_profile_schema.xsd",
+      "local_path": "tests/fixtures/xsd/oscal_profile_schema.xsd",
+      "size": 138462,
+      "sha256": "02b8c7a08547b40da9448a7810ad403d5e7b7a4c11ec95c77875976a1c1e56f3",
+      "format": "xsd",
+      "model": "profile",
+      "role": "test"
+    },
+    {
+      "name": "oscal_complete_schema.xsd",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_complete_schema.xsd",
+      "local_path": "tests/fixtures/xsd/oscal_complete_schema.xsd",
+      "size": 571954,
+      "sha256": "c7bccd69cfe1e7e9fbc225f5969bf021d09476fc8d3a3842250d10dc77d3f003",
+      "format": "xsd",
+      "model": "complete",
+      "role": "test"
+    }
+  ]
+}

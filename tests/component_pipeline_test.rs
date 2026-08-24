@@ -51,7 +51,7 @@ fn component_pipeline_metadata_populated() {
 
     assert_eq!(metadata["title"].as_str().unwrap(), "Sample Security Policy");
     assert_eq!(metadata["version"].as_str().unwrap(), "1.0.0");
-    assert_eq!(metadata["oscal-version"].as_str().unwrap(), "1.2.0");
+    assert_eq!(metadata["oscal-version"].as_str().unwrap(), "1.2.3");
     assert!(metadata["last-modified"].is_string(), "Must have last-modified");
 }
 

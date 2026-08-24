@@ -5,6 +5,7 @@
 //! generated from PolicyRequirements and component metadata.
 
 use std::borrow::Borrow;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -34,6 +35,9 @@ pub struct AssessmentPlan {
     /// Reference to the System Security Plan this assessment plan imports.
     #[serde(rename = "import-ssp")]
     pub import_ssp: ImportSsp,
+    /// Locally defined activities referenced by assessment tasks.
+    #[serde(rename = "local-definitions", skip_serializing_if = "Option::is_none")]
+    pub local_definitions: Option<LocalDefinitions>,
     /// Container for the reviewed-controls scope definition.
     #[serde(rename = "reviewed-controls")]
     pub reviewed_controls: ReviewedControls,
@@ -117,11 +121,39 @@ pub struct AssessmentTask {
 /// An activity linked to a task describing a specific assessment action.
 #[derive(Debug, Clone, Serialize)]
 pub struct AssociatedActivity {
-    /// UUID v5 identifier for this activity.
+    /// UUID v5 identifier copied by [`complete_assessment_plan`] into
+    /// `local-definitions.activities`; skipped here because associated-activity
+    /// serializes only the reference in OSCAL v1.2.3.
+    #[serde(skip)]
+    pub uuid: String,
+    /// Human-readable activity title copied into `local-definitions.activities`.
+    #[serde(skip)]
+    pub title: String,
+    /// Description copied into `local-definitions.activities`.
+    #[serde(skip)]
+    pub description: String,
+    /// Reference to the matching activity in `local-definitions.activities`.
+    #[serde(rename = "activity-uuid")]
+    pub activity_uuid: String,
+    /// Subjects to which this activity applies.
+    pub subjects: Vec<AssessmentSubject>,
+}
+
+/// Local Assessment Plan definitions referenced by tasks.
+#[derive(Debug, Clone, Serialize)]
+pub struct LocalDefinitions {
+    /// Activity definitions referenced by `associated-activities`.
+    pub activities: Vec<ActivityDefinition>,
+}
+
+/// A locally defined assessment activity.
+#[derive(Debug, Clone, Serialize)]
+pub struct ActivityDefinition {
+    /// Deterministic activity UUID.
     pub uuid: String,
     /// Human-readable activity title.
     pub title: String,
-    /// Description of the assessment action.
+    /// Assessment action description.
     pub description: String,
 }
 
@@ -133,10 +165,17 @@ pub struct AssessmentSubject {
     pub subject_type: String,
     /// Human-readable description identifying the policy document.
     pub description: String,
+    /// Include all subjects of this type when no concrete UUID is available.
+    #[serde(rename = "include-all", skip_serializing_if = "Option::is_none")]
+    pub include_all: Option<IncludeAllSubjects>,
     /// Optional references to included subjects (populated when `component_uuid` is available).
     #[serde(rename = "include-subjects", skip_serializing_if = "Option::is_none")]
     pub include_subjects: Option<Vec<SubjectRef>>,
 }
+
+/// Empty OSCAL marker object for an all-subjects selection.
+#[derive(Debug, Clone, Serialize)]
+pub struct IncludeAllSubjects {}
 
 /// A reference to an included subject within assessment-subjects.
 #[derive(Debug, Clone, Serialize)]
@@ -213,6 +252,7 @@ pub fn build_assessment_plan(
             import_ssp: ImportSsp {
                 href: crate::io::sanitize_artifact_path(std::path::Path::new(import_ssp_href)),
             },
+            local_definitions: None,
             reviewed_controls: ReviewedControls {
                 description: Some(format!(
                     "Controls derived from {policy_title} for assessment review."
@@ -311,6 +351,13 @@ where
                     "Examine evidence that {} is implemented and operating effectively.",
                     req.text
                 ),
+                activity_uuid: activity_uuid.to_string(),
+                subjects: vec![AssessmentSubject {
+                    subject_type: "component".to_string(),
+                    description: "Policy components in assessment scope".to_string(),
+                    include_all: Some(IncludeAllSubjects {}),
+                    include_subjects: None,
+                }],
             };
 
             AssessmentTask {
@@ -354,14 +401,20 @@ pub fn create_assessment_subjects(
     let include_subjects = component_uuid.map(|uuid| {
         vec![SubjectRef { subject_uuid: uuid.to_string(), ref_type: "component".to_string() }]
     });
+    let include_all = component_uuid.is_none().then_some(IncludeAllSubjects {});
 
     if component_uuid.is_none() {
         tracing::warn!(
-            "No documentary component UUID available — assessment-subjects will not include a component reference"
+            "No documentary component UUID available — assessment-subjects will use include-all"
         );
     }
 
-    vec![AssessmentSubject { subject_type: "component".to_string(), description, include_subjects }]
+    vec![AssessmentSubject {
+        subject_type: "component".to_string(),
+        description,
+        include_all,
+        include_subjects,
+    }]
 }
 
 /// Complete the Assessment Plan by adding tasks and subjects to the WI-41 skeleton.
@@ -373,19 +426,52 @@ pub fn create_assessment_subjects(
 /// * `envelope` — The WI-41 Assessment Plan skeleton (mutable, modified in place)
 /// * `tasks` — Assessment tasks generated from `PolicyRequirements`
 /// * `subjects` — Assessment subjects referencing documentary components
+///
+/// # Errors
+///
+/// Returns [`ForgeError::Validation`] when `subjects` is empty, because OSCAL
+/// requires both `assessment-subjects` and associated-activity `subjects` to
+/// contain at least one item.
 pub fn complete_assessment_plan(
     envelope: &mut AssessmentPlanEnvelope,
-    tasks: Vec<AssessmentTask>,
+    mut tasks: Vec<AssessmentTask>,
     subjects: Vec<AssessmentSubject>,
-) {
+) -> Result<(), ForgeError> {
+    if subjects.is_empty() {
+        return Err(ForgeError::Validation(
+            "assessment plan subjects must not be empty".to_string(),
+        ));
+    }
+
     tracing::info!(
         task_count = tasks.len(),
         subject_count = subjects.len(),
         "Completing Assessment Plan with tasks and subjects"
     );
 
+    let mut activities = Vec::new();
+    let mut activity_uuids = HashSet::new();
+    for task in &mut tasks {
+        if let Some(associated) = &mut task.associated_activities {
+            for activity in associated {
+                activity.subjects.clone_from(&subjects);
+                if activity_uuids.insert(activity.uuid.clone()) {
+                    activities.push(ActivityDefinition {
+                        uuid: activity.uuid.clone(),
+                        title: activity.title.clone(),
+                        description: activity.description.clone(),
+                    });
+                }
+            }
+        }
+    }
+
+    envelope.assessment_plan.local_definitions =
+        (!activities.is_empty()).then_some(LocalDefinitions { activities });
     envelope.assessment_plan.tasks = Some(tasks);
     envelope.assessment_plan.assessment_subjects = Some(subjects);
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -411,7 +497,7 @@ mod tests {
         let ap = &envelope.assessment_plan;
         assert_eq!(ap.metadata.title, "Assessment Plan for Corp Policy");
         assert_eq!(ap.metadata.version, "1.0.0");
-        assert_eq!(ap.metadata.oscal_version, "1.2.0");
+        assert_eq!(ap.metadata.oscal_version, crate::oscal::metadata::OSCAL_VERSION);
         assert!(!ap.metadata.last_modified.is_empty());
     }
 
@@ -701,6 +787,7 @@ mod tests {
         assert!(subjects[0].description.contains("Information Security Policy"));
 
         let include = subjects[0].include_subjects.as_ref().unwrap();
+        assert!(subjects[0].include_all.is_none());
         assert_eq!(include.len(), 1);
         assert_eq!(include[0].subject_uuid, "550e8400-e29b-41d4-a716-446655440000");
         assert_eq!(include[0].ref_type, "component");
@@ -714,10 +801,8 @@ mod tests {
         assert_eq!(subjects.len(), 1);
         assert_eq!(subjects[0].subject_type, "component");
         assert!(subjects[0].description.contains("Security Policy"));
-        assert!(
-            subjects[0].include_subjects.is_none(),
-            "Without component UUID, include-subjects should be None"
-        );
+        assert!(subjects[0].include_subjects.is_none());
+        assert!(subjects[0].include_all.is_some(), "generic subject should use include-all");
     }
 
     // ─── Complete Assessment Plan Tests ──────────────────────────────
@@ -737,7 +822,7 @@ mod tests {
         let subjects =
             create_assessment_subjects(Some("550e8400-e29b-41d4-a716-446655440000"), "Test Policy");
 
-        complete_assessment_plan(&mut envelope, tasks, subjects);
+        complete_assessment_plan(&mut envelope, tasks, subjects).unwrap();
 
         assert!(envelope.assessment_plan.tasks.is_some());
         assert!(envelope.assessment_plan.assessment_subjects.is_some());
@@ -761,7 +846,7 @@ mod tests {
         let tasks = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")]);
         let subjects = create_assessment_subjects(None, "Test Policy");
 
-        complete_assessment_plan(&mut envelope, tasks, subjects);
+        complete_assessment_plan(&mut envelope, tasks, subjects).unwrap();
 
         assert_eq!(envelope.assessment_plan.uuid, original_uuid);
         assert_eq!(envelope.assessment_plan.metadata.title, original_title);
@@ -770,5 +855,30 @@ mod tests {
             envelope.assessment_plan.reviewed_controls.control_selections[0].include_controls.len(),
             original_controls
         );
+    }
+
+    #[test]
+    fn complete_plan_rejects_empty_subjects() {
+        let ids = vec!["AC-001".to_string()];
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let tasks = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")]);
+
+        let error = complete_assessment_plan(&mut envelope, tasks, Vec::new()).unwrap_err();
+        assert!(matches!(error, ForgeError::Validation(_)));
+    }
+
+    #[test]
+    fn complete_plan_deduplicates_activity_definitions_by_uuid() {
+        let ids = vec!["AC-001".to_string()];
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let task = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")])
+            .pop()
+            .unwrap();
+        let subjects = create_assessment_subjects(None, "Test Policy");
+
+        complete_assessment_plan(&mut envelope, vec![task.clone(), task], subjects).unwrap();
+
+        let activities = &envelope.assessment_plan.local_definitions.as_ref().unwrap().activities;
+        assert_eq!(activities.len(), 1);
     }
 }

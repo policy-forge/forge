@@ -58,9 +58,9 @@ fn phase1_catalog_structure_regression() {
     let uuid = catalog["catalog"]["uuid"].as_str().unwrap_or("");
     assert!(!uuid.is_empty(), "catalog.uuid must be a non-empty string");
 
-    // oscal-version must be 1.2.0
+    // oscal-version must use the current baseline.
     let oscal_version = catalog["catalog"]["metadata"]["oscal-version"].as_str().unwrap_or("");
-    assert_eq!(oscal_version, "1.2.0", "catalog.metadata.oscal-version must be '1.2.0'");
+    assert_eq!(oscal_version, "1.2.3", "catalog.metadata.oscal-version must be '1.2.3'");
 
     // groups must be non-empty
     let groups = catalog["catalog"]["groups"].as_array().expect("catalog.groups must be an array");

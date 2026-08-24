@@ -191,6 +191,34 @@ fn ssp_template_golden() {
     }
 }
 
+#[test]
+fn generated_ssp_validates_against_v1_2_3_schema() {
+    let catalog = build_minimal_catalog();
+    let components = build_minimal_components();
+    let envelope = build_ssp_skeleton(
+        "Test Security Policy",
+        "1.0.0",
+        &catalog,
+        &components,
+        "./test-profile.json",
+    )
+    .expect("SSP skeleton build failed");
+    let instance = serde_json::to_value(&envelope).expect("SSP must serialize");
+    let schema: Value =
+        serde_json::from_str(include_str!("fixtures/schemas/oscal_ssp_schema.json"))
+            .expect("official SSP schema must parse");
+    let validator = jsonschema::validator_for(&schema).expect("SSP schema must compile");
+    let errors: Vec<_> = validator
+        .iter_errors(&instance)
+        .map(|error| format!("{}: {error}", error.instance_path()))
+        .collect();
+    assert!(
+        errors.is_empty(),
+        "SSP must validate against OSCAL v1.2.3 schema:\n{}",
+        errors.join("\n")
+    );
+}
+
 /// Verify that the SSP output contains required structural elements.
 #[test]
 fn ssp_template_has_required_sections() {

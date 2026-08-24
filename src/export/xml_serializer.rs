@@ -606,7 +606,7 @@ pub fn serialize_component_definition_to_xml(
     Ok(xml)
 }
 
-/// Serialize an OSCAL Profile to a valid OSCAL v1.2.0 XML string.
+/// Serialize an OSCAL Profile to a valid OSCAL v1.2.3 XML string.
 ///
 /// Produces a complete XML document with:
 /// - XML declaration (`<?xml version="1.0" encoding="UTF-8"?>`)

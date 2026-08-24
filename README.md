@@ -48,7 +48,7 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 
 - **Markdown to OSCAL** — Convert policy documents into OSCAL Catalogs or Component Definitions
 - **Multi-format output** — JSON, XML, and YAML with round-trip fidelity between all three
-- **Schema validation** — Validate artifacts against OSCAL v1.2.0 JSON schemas with semantic checks
+- **Schema validation** — Validate supported OSCAL v1.2.0–v1.2.3 declarations against the pinned v1.2.3 JSON schemas with semantic checks
 - **Format conversion** — Export existing OSCAL artifacts between JSON, XML, and YAML
 - **Requirement atomization** — Automatically split compound policy statements into individual controls
 - **Deterministic IDs** — UUID v5 generation ensures stable identifiers across re-conversions
@@ -114,7 +114,7 @@ forge export catalog.yaml --format json --output catalog.json
 
 ### Validate
 
-Validate an OSCAL artifact against the OSCAL v1.2.0 JSON schema. Auto-detects the model type (Catalog or Component Definition) from the document structure.
+Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects the Catalog or Component Definition schema family from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
 
 ```bash
 # Validate with human-readable output
@@ -126,6 +126,19 @@ forge validate catalog.json --format json
 # Override auto-detected model type
 forge validate artifact.json --schema-type catalog
 ```
+
+Newly generated Catalog, Component Definition, Profile, Assessment Plan, and
+SSP artifacts declare OSCAL `1.2.3`. Existing Catalog, Component Definition,
+and Profile inputs declaring `1.2.0`, `1.2.1`, `1.2.2`, or `1.2.3` remain
+supported when they satisfy the v1.2.3 compatibility schema. Export preserves
+both `metadata.version` and the imported `metadata.oscal-version`; it does not
+silently upgrade declarations. Validation, export, and built-in compatibility
+checks are offline and use only vendored schemas.
+
+Optional oscal-cli round trips are interoperability evidence, not v1.2.3
+schema certification. In particular, oscal-cli v1.0.3 documents an OSCAL
+v1.1.2 model baseline, so FORGE labels its results advisory. See
+[OSCAL compatibility and schema upgrades](docs/OSCAL_COMPATIBILITY.md).
 
 ### Drift
 
