@@ -100,7 +100,7 @@ fn smoke_test_metadata_fields_populated() {
     // OSCAL version uses the current shared baseline.
     assert_eq!(
         metadata["oscal-version"].as_str().unwrap(),
-        "1.2.3",
+        forge::oscal::metadata::OSCAL_VERSION,
         "metadata.oscal-version should be '1.2.3'"
     );
 

@@ -55,9 +55,20 @@ fn manifest_pins_the_approved_release_and_complete_allowlist() {
 
     let names: HashSet<_> = manifest.assets.iter().map(|asset| asset.name.as_str()).collect();
     assert_eq!(names.len(), manifest.assets.len(), "asset names must be unique");
-    assert!(names.contains("oscal_assessment-plan_schema.json"));
-    assert!(names.contains("oscal_ssp_schema.json"));
-    assert!(names.contains("oscal_profile_schema.xsd"));
+    assert_eq!(
+        names,
+        HashSet::from([
+            "oscal_catalog_schema.json",
+            "oscal_component_schema.json",
+            "oscal_profile_schema.json",
+            "oscal_assessment-plan_schema.json",
+            "oscal_ssp_schema.json",
+            "oscal_catalog_schema.xsd",
+            "oscal_component_schema.xsd",
+            "oscal_profile_schema.xsd",
+            "oscal_complete_schema.xsd",
+        ])
+    );
 }
 
 #[test]
@@ -97,6 +108,8 @@ fn vendored_assets_match_release_sizes_and_sha256_digests() {
 #[test]
 fn vendored_schemas_are_offline_and_compile_where_applicable() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let remote_schema_location = regex::Regex::new(r#"schemaLocation\s*=\s*[\"']\s*https?://"#)
+        .expect("remote schema-location regex must compile");
 
     for asset in manifest().assets {
         let bytes = std::fs::read(root.join(&asset.local_path)).expect("manifest asset must exist");
@@ -109,8 +122,7 @@ fn vendored_schemas_are_offline_and_compile_where_applicable() {
             let xsd = std::str::from_utf8(&bytes).expect("XSD must be UTF-8");
             assert!(xsd.contains("<m:schema-version>1.2.3</m:schema-version>"));
             assert!(
-                !xsd.contains("schemaLocation=\"http://")
-                    && !xsd.contains("schemaLocation=\"https://"),
+                !remote_schema_location.is_match(xsd),
                 "{} contains a remote schema location",
                 asset.name
             );

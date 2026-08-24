@@ -138,8 +138,8 @@ fn validate_divergence_log(log_path: &Path) {
     // Verify top-level fields
     assert!(content.get("artifact_type").is_some(), "Log should have artifact_type");
     assert!(content.get("source_path").is_some(), "Log should have source_path");
-    assert!(content.get("declared_oscal_version").is_some());
-    assert_eq!(content["schema_version_used"], "1.2.3");
+    assert_eq!(content["declared_oscal_version"], forge::validate::version::SCHEMA_VERSION_USED);
+    assert_eq!(content["schema_version_used"], forge::validate::version::SCHEMA_VERSION_USED);
     assert!(content.get("oscal_cli_version").is_some());
     assert!(content.get("compatibility_classification").is_some());
     assert!(content.get("passed").is_some(), "Log should have passed");

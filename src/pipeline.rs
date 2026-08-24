@@ -239,7 +239,7 @@ pub fn run_catalog_pipeline(
             None, // Catalog pipeline: no component definition UUID available
             &envelope.catalog.metadata.title,
         );
-        crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects);
+        crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects)?;
         let ap_json = serde_json::to_string_pretty(&ap_envelope)
             .map_err(|e| ForgeError::Serialization(e.to_string()))?;
         let filename = derive_ap_filename(input_path);
@@ -398,7 +398,7 @@ pub fn run_component_pipeline(
             Some(&envelope.component_definition.uuid),
             &envelope.component_definition.metadata.title,
         );
-        crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects);
+        crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects)?;
         let ap_json = serde_json::to_string_pretty(&ap_envelope)
             .map_err(|e| ForgeError::Serialization(e.to_string()))?;
         let filename = derive_ap_filename(input_path);

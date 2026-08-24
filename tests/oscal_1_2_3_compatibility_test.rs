@@ -158,6 +158,19 @@ fn generated_profile_variants_pass_v1_2_3_json_xml_yaml_gates() {
 }
 
 #[test]
+fn legacy_v1_2_0_profile_remains_valid_against_the_current_schema() {
+    let profile: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/legacy/v1.2.0/profile/profile.json"))
+            .expect("legacy profile fixture must parse");
+    let result = validate_artifact(&profile, OscalModelType::Profile)
+        .expect("legacy profile validation must run");
+
+    assert!(result.is_valid, "legacy profile must remain compatible: {:#?}", result.errors);
+    assert_eq!(result.declared_oscal_version.as_deref(), Some("1.2.0"));
+    assert_eq!(result.schema_version_used, "1.2.3");
+}
+
+#[test]
 fn compatibility_upgrade_does_not_expand_runtime_or_cli_scope() {
     let command = forge::cli::Cli::command();
     let subcommand_names: Vec<_> = command.get_subcommands().map(clap::Command::get_name).collect();

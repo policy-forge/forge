@@ -123,11 +123,63 @@ fn acceptable_scalar_normalization(
         return Some("Equivalent RFC 3339 timestamp representation");
     }
 
-    if path.ends_with("/prose") && expected.split_whitespace().eq(actual.split_whitespace()) {
+    if path.ends_with("/prose") && soft_line_breaks_equivalent(expected, actual) {
         return Some("Markup prose differs only by whitespace normalization");
     }
 
     None
+}
+
+fn soft_line_breaks_equivalent(expected: &str, actual: &str) -> bool {
+    normalize_soft_line_breaks(expected).is_some_and(|normalized| normalized == actual)
+        || normalize_soft_line_breaks(actual).is_some_and(|normalized| normalized == expected)
+}
+
+fn normalize_soft_line_breaks(value: &str) -> Option<String> {
+    if !value.contains('\n')
+        || value.contains('\r')
+        || value.contains('\t')
+        || value.contains("<pre")
+        || value.contains("</pre")
+        || value.contains('`')
+        || value.contains("~~~")
+    {
+        return None;
+    }
+
+    let lines: Vec<_> = value.split('\n').collect();
+    if lines.iter().any(|line| line.is_empty()) {
+        return None;
+    }
+
+    for (index, line) in lines.iter().enumerate() {
+        if line.ends_with("  ") || line.ends_with('\\') {
+            return None;
+        }
+        if index > 0 && is_markdown_block_start(line) {
+            return None;
+        }
+    }
+
+    Some(lines.join(" "))
+}
+
+fn is_markdown_block_start(line: &str) -> bool {
+    if line.starts_with(char::is_whitespace) {
+        return true;
+    }
+
+    let trimmed = line.trim_start();
+    if ["- ", "* ", "+ ", "> ", "# "].iter().any(|marker| trimmed.starts_with(marker)) {
+        return true;
+    }
+
+    let Some((marker, _)) = trimmed.split_once(' ') else {
+        return false;
+    };
+    marker.strip_suffix('.').or_else(|| marker.strip_suffix(')')).is_some_and(|digits| {
+        !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+    })
 }
 
 fn missing_key_divergence(
@@ -376,6 +428,24 @@ mod tests {
         let result = compare_oscal_json(&expected, &actual, "", &default_rules());
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].classification, DivergenceClass::Acceptable);
+    }
+
+    #[test]
+    fn markdown_sensitive_prose_whitespace_requires_a_forge_fix() {
+        let cases = [
+            ("<pre>line one\n  line two</pre>", "<pre>line one line two</pre>"),
+            ("line one  \nline two", "line one line two"),
+            ("first paragraph\n\nsecond paragraph", "first paragraph second paragraph"),
+            ("- parent\n  - child", "- parent - child"),
+        ];
+
+        for (expected_prose, actual_prose) in cases {
+            let expected = json!({"prose": expected_prose});
+            let actual = json!({"prose": actual_prose});
+            let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[0].classification, DivergenceClass::ForgeFix);
+        }
     }
 
     // T009(d): Missing key in actual → divergence

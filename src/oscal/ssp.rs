@@ -613,10 +613,7 @@ pub fn build_ssp(
                     description: Some("<!-- TODO(description): describe initial SSP scope and system boundary -->".to_string()),
                 }],
             },
-            system_id: Some(SspSystemId {
-                identifier_type: Some("https://example.com/system-identifiers".to_string()),
-                id: "TODO-system-id".to_string(),
-            }),
+            system_id: Some(todo_system_id()),
             import_profile: ImportProfile { href: "TODO-profile.json".to_string() },
             system_characteristics: build_system_characteristics(title),
             system_implementation,
@@ -694,10 +691,7 @@ pub fn build_ssp_skeleton(
 /// values that users can replace as they complete the SSP.
 fn build_system_characteristics(system_name: &str) -> SystemCharacteristics {
     SystemCharacteristics {
-        system_ids: vec![SspSystemId {
-            identifier_type: Some("https://example.com/system-identifiers".to_string()),
-            id: "TODO-system-id".to_string(),
-        }],
+        system_ids: vec![todo_system_id()],
         system_name: system_name.to_string(),
         description: "TODO: Describe the system purpose, environment, and scope.".to_string(),
         system_information: SystemInformation {
@@ -712,6 +706,13 @@ fn build_system_characteristics(system_name: &str) -> SystemCharacteristics {
         authorization_boundary: AuthorizationBoundary {
             description: "TODO: Describe the system authorization boundary.".to_string(),
         },
+    }
+}
+
+fn todo_system_id() -> SspSystemId {
+    SspSystemId {
+        identifier_type: Some("https://example.com/system-identifiers".to_string()),
+        id: "TODO-system-id".to_string(),
     }
 }
 

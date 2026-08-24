@@ -26,21 +26,28 @@ pub struct VersionInspection {
 /// prereleases, prefixes, whitespace, and leading-zero variants are rejected.
 #[must_use]
 pub fn is_supported_oscal_version(value: &str) -> bool {
-    let mut components = value.split('.');
-    let Some(major) = parse_component(components.next()) else {
+    let Some(declared) = parse_version(value) else {
         return false;
     };
-    let Some(minor) = parse_component(components.next()) else {
+    let Some(minimum) = parse_version(MIN_SUPPORTED_OSCAL_VERSION) else {
         return false;
     };
-    let Some(patch) = parse_component(components.next()) else {
+    let Some(maximum) = parse_version(SCHEMA_VERSION_USED) else {
         return false;
     };
-    if components.next().is_some() {
-        return false;
-    }
 
-    major == 1 && minor == 2 && patch <= 3
+    declared >= minimum && declared <= maximum
+}
+
+fn parse_version(value: &str) -> Option<(u64, u64, u64)> {
+    let mut components = value.split('.');
+    let major = parse_component(components.next())?;
+    let minor = parse_component(components.next())?;
+    let patch = parse_component(components.next())?;
+    if components.next().is_some() {
+        return None;
+    }
+    Some((major, minor, patch))
 }
 
 fn parse_component(component: Option<&str>) -> Option<u64> {
@@ -116,7 +123,7 @@ fn version_error(path: String, message: String, actual: String) -> ValidationErr
 }
 
 fn escape_for_diagnostic(value: &str) -> String {
-    value.chars().flat_map(char::escape_default).take(100).collect()
+    value.chars().take(100).flat_map(char::escape_default).collect()
 }
 
 #[cfg(test)]
@@ -179,13 +186,13 @@ mod tests {
 
     #[test]
     fn invalid_declaration_is_bounded_in_report_context() {
-        let declaration = format!("1.3.0-{}\n", "x".repeat(500));
+        let declaration = format!("{}\n{}", "x".repeat(99), "y".repeat(500));
         let json = serde_json::json!({
             "catalog": {"metadata": {"oscal-version": declaration}}
         });
         let inspection = inspect_oscal_version(&json, OscalModelType::Catalog);
         let declared = inspection.declared.expect("string declaration should be reported");
-        assert!(declared.chars().count() <= 100);
+        assert_eq!(declared, format!("{}\\n", "x".repeat(99)));
         assert!(!declared.contains('\n'));
     }
 }

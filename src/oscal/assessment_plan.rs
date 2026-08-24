@@ -5,6 +5,7 @@
 //! generated from PolicyRequirements and component metadata.
 
 use std::borrow::Borrow;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -425,11 +426,23 @@ pub fn create_assessment_subjects(
 /// * `envelope` — The WI-41 Assessment Plan skeleton (mutable, modified in place)
 /// * `tasks` — Assessment tasks generated from `PolicyRequirements`
 /// * `subjects` — Assessment subjects referencing documentary components
+///
+/// # Errors
+///
+/// Returns [`ForgeError::Validation`] when `subjects` is empty, because OSCAL
+/// requires both `assessment-subjects` and associated-activity `subjects` to
+/// contain at least one item.
 pub fn complete_assessment_plan(
     envelope: &mut AssessmentPlanEnvelope,
     mut tasks: Vec<AssessmentTask>,
     subjects: Vec<AssessmentSubject>,
-) {
+) -> Result<(), ForgeError> {
+    if subjects.is_empty() {
+        return Err(ForgeError::Validation(
+            "assessment plan subjects must not be empty".to_string(),
+        ));
+    }
+
     tracing::info!(
         task_count = tasks.len(),
         subject_count = subjects.len(),
@@ -437,15 +450,18 @@ pub fn complete_assessment_plan(
     );
 
     let mut activities = Vec::new();
+    let mut activity_uuids = HashSet::new();
     for task in &mut tasks {
         if let Some(associated) = &mut task.associated_activities {
             for activity in associated {
                 activity.subjects.clone_from(&subjects);
-                activities.push(ActivityDefinition {
-                    uuid: activity.uuid.clone(),
-                    title: activity.title.clone(),
-                    description: activity.description.clone(),
-                });
+                if activity_uuids.insert(activity.uuid.clone()) {
+                    activities.push(ActivityDefinition {
+                        uuid: activity.uuid.clone(),
+                        title: activity.title.clone(),
+                        description: activity.description.clone(),
+                    });
+                }
             }
         }
     }
@@ -454,6 +470,8 @@ pub fn complete_assessment_plan(
         (!activities.is_empty()).then_some(LocalDefinitions { activities });
     envelope.assessment_plan.tasks = Some(tasks);
     envelope.assessment_plan.assessment_subjects = Some(subjects);
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -804,7 +822,7 @@ mod tests {
         let subjects =
             create_assessment_subjects(Some("550e8400-e29b-41d4-a716-446655440000"), "Test Policy");
 
-        complete_assessment_plan(&mut envelope, tasks, subjects);
+        complete_assessment_plan(&mut envelope, tasks, subjects).unwrap();
 
         assert!(envelope.assessment_plan.tasks.is_some());
         assert!(envelope.assessment_plan.assessment_subjects.is_some());
@@ -828,7 +846,7 @@ mod tests {
         let tasks = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")]);
         let subjects = create_assessment_subjects(None, "Test Policy");
 
-        complete_assessment_plan(&mut envelope, tasks, subjects);
+        complete_assessment_plan(&mut envelope, tasks, subjects).unwrap();
 
         assert_eq!(envelope.assessment_plan.uuid, original_uuid);
         assert_eq!(envelope.assessment_plan.metadata.title, original_title);
@@ -837,5 +855,30 @@ mod tests {
             envelope.assessment_plan.reviewed_controls.control_selections[0].include_controls.len(),
             original_controls
         );
+    }
+
+    #[test]
+    fn complete_plan_rejects_empty_subjects() {
+        let ids = vec!["AC-001".to_string()];
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let tasks = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")]);
+
+        let error = complete_assessment_plan(&mut envelope, tasks, Vec::new()).unwrap_err();
+        assert!(matches!(error, ForgeError::Validation(_)));
+    }
+
+    #[test]
+    fn complete_plan_deduplicates_activity_definitions_by_uuid() {
+        let ids = vec!["AC-001".to_string()];
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let task = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")])
+            .pop()
+            .unwrap();
+        let subjects = create_assessment_subjects(None, "Test Policy");
+
+        complete_assessment_plan(&mut envelope, vec![task.clone(), task], subjects).unwrap();
+
+        let activities = &envelope.assessment_plan.local_definitions.as_ref().unwrap().activities;
+        assert_eq!(activities.len(), 1);
     }
 }
