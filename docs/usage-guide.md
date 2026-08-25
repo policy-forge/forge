@@ -456,11 +456,14 @@ count. Additional distinct evidence can be supplied as repeatable
 they do not prove identity or authority. An approved record whose current bytes
 differ reports `approved-drifted`. `status` classifies `due-soon` on the
 inclusive configured boundary and `overdue` only after the next-review date.
-Repeat `--record` for deterministic portfolio status and supersession-cycle
-validation. `queue` emits `forge.policy-lifecycle-queue/1` JSON grouped by owner
-and next-review date. A transition entering `in-review` can preserve bounded,
-sorted PRD-057 reasons with repeatable `--impact-finding-id` values; those IDs
-are included in status and queue output. `attest` emits deterministic
+`check` validates structure, artifact drift, and portfolio relationships without
+inventing an `--as-of` date. Check/status JSON is always an array, even for one
+record. Repeat `--record` for deterministic portfolio status and
+supersession-cycle validation. `queue` emits `forge.policy-lifecycle-queue/1`
+JSON grouped by owner and next-review date. A transition entering `in-review`
+can preserve bounded, sorted PRD-057 reasons with repeatable
+`--impact-finding-id` values; duplicate flags are collapsed. Those IDs are
+included in status and queue output. `attest` emits deterministic
 `forge.policy-approval-attestation/1` JSON containing the approved event,
 declared assertions, approval policy, exact fingerprints, and review date. It
 does not sign anything and refuses records that are not currently approved or

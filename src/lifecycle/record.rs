@@ -282,15 +282,23 @@ pub fn validate(record: &LifecycleRecord) -> Result<(), ForgeError> {
         return Err(error(format!("$.history exceeds the {MAX_EVENTS} event limit")));
     }
     validate_history(record)?;
-    match (record.state, &record.replaced_by) {
-        (LifecycleState::Superseded, None) => {
+    let has_supersession =
+        record.history.iter().any(|event| event.next_state == LifecycleState::Superseded);
+    match (record.state, &record.replaced_by, has_supersession) {
+        (LifecycleState::Superseded, None, _) => {
             return Err(error("a superseded record requires replaced_by"));
         }
-        (LifecycleState::Superseded, Some(reference)) => {
+        (LifecycleState::Superseded, Some(reference), _)
+        | (LifecycleState::Retired, Some(reference), true) => {
             validate_reference("$.replaced_by", reference, record)?;
         }
-        (_, Some(_)) => return Err(error("replaced_by is only valid in superseded state")),
-        (_, None) => {}
+        (LifecycleState::Retired, None, true) => {
+            return Err(error("a retired record with supersession history requires replaced_by"));
+        }
+        (_, Some(_), _) => {
+            return Err(error("replaced_by is only valid after a supersession transition"));
+        }
+        (_, None, _) => {}
     }
     Ok(())
 }

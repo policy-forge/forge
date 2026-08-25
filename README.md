@@ -227,11 +227,12 @@ forge lifecycle attest --record policy-lifecycle.json \
 ```
 
 `lifecycle check` validates one record or an explicitly supplied portfolio,
-including supersession links and cycles. `status` never emits policy prose by
-default. Re-review transitions can link bounded PRD-057 findings with repeatable
-`--impact-finding-id` values. Exit codes are `0` for a valid record under the
-selected gate, `1` for a valid action-required result, and `2` for an invalid
-record or transition.
+including supersession links and cycles, without deriving date-relative review
+conditions. JSON check/status output is always an array, including for one
+record. `status` never emits policy prose by default. Re-review transitions can
+link bounded PRD-057 findings with repeatable `--impact-finding-id` values. Exit
+codes are `0` for a valid record under the selected gate, `1` for a valid
+action-required result, and `2` for an invalid record or transition.
 
 ### Global Options
 

@@ -502,6 +502,18 @@ mod tests {
     }
 
     #[test]
+    fn lifecycle_error_display_and_exit_code() {
+        let err = ForgeError::Lifecycle("invalid record".to_string());
+        assert_eq!(err.to_string(), "Policy lifecycle error: invalid record");
+        assert_eq!(exit_code(&err), 2);
+    }
+
+    #[test]
+    fn lifecycle_action_required_exit_code_is_one() {
+        assert_eq!(exit_code(&ForgeError::LifecycleActionRequired), 1);
+    }
+
+    #[test]
     fn batch_conversion_error_display() {
         let err = ForgeError::BatchConversion("thread pool failed".to_string());
         assert_eq!(err.to_string(), "Batch conversion error: thread pool failed");

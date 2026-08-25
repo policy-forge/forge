@@ -8,6 +8,14 @@ fn run(args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_forge")).args(args).output().expect("run forge")
 }
 
+fn run_in(directory: &Path, args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_forge"))
+        .current_dir(directory)
+        .args(args)
+        .output()
+        .expect("run forge")
+}
+
 fn catalog(uuid: &str, title: &str) -> Value {
     json!({
         "catalog": {
@@ -38,9 +46,10 @@ struct Fixture {
 impl Fixture {
     fn new(name: &str, shared_actor: bool) -> Self {
         let dir = tempfile::tempdir().expect("tempdir");
-        let source = dir.path().join(format!("{name}.md"));
-        let artifact = dir.path().join(format!("{name}.json"));
-        let record = dir.path().join(format!("{name}-lifecycle.json"));
+        let root = dir.path().canonicalize().expect("canonical tempdir");
+        let source = root.join(format!("{name}.md"));
+        let artifact = root.join(format!("{name}.json"));
+        let record = root.join(format!("{name}-lifecycle.json"));
         std::fs::write(&source, format!("# {name}\n\nPolicy text.\n")).expect("source");
         write_json(&artifact, &catalog("11111111-1111-4111-8111-111111111111", name));
         let mut args = vec![
@@ -168,7 +177,7 @@ fn approved_byte_drift_is_action_required_without_policy_prose() {
     ]);
     assert_eq!(result.status.code(), Some(1));
     let report: Value = serde_json::from_slice(&result.stdout).expect("status json");
-    assert_eq!(report["derived_status"], "approved-drifted");
+    assert_eq!(report[0]["derived_status"], "approved-drifted");
     assert!(!String::from_utf8_lossy(&result.stdout).contains("Changed secret prose"));
 }
 
@@ -193,7 +202,7 @@ fn approved_generated_artifact_drift_is_action_required() {
     ]);
     assert_eq!(result.status.code(), Some(1));
     let report: Value = serde_json::from_slice(&result.stdout).expect("status json");
-    assert_eq!(report["derived_status"], "approved-drifted");
+    assert_eq!(report[0]["derived_status"], "approved-drifted");
 }
 
 #[test]
@@ -244,7 +253,7 @@ fn explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive
     assert!(first.status.success());
     assert_eq!(first.stdout, second.stdout);
     let report: Value = serde_json::from_slice(&first.stdout).expect("json");
-    assert_eq!(report["derived_status"], "due-soon");
+    assert_eq!(report[0]["derived_status"], "due-soon");
 
     let overdue = run(&[
         "lifecycle",
@@ -260,7 +269,30 @@ fn explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive
     ]);
     assert!(overdue.status.success());
     let overdue_report: Value = serde_json::from_slice(&overdue.stdout).expect("overdue json");
-    assert_eq!(overdue_report["derived_status"], "overdue");
+    assert_eq!(overdue_report[0]["derived_status"], "overdue");
+}
+
+#[test]
+fn check_is_schedule_neutral_and_accepts_a_relative_record_path() {
+    let fixture = Fixture::new("relative-check-policy", false);
+    let directory = fixture.record.parent().expect("record parent");
+    let result = run_in(
+        directory,
+        &[
+            "lifecycle",
+            "check",
+            "--record",
+            fixture.record.file_name().and_then(|name| name.to_str()).expect("record name"),
+            "--format",
+            "json",
+        ],
+    );
+    assert!(result.status.success(), "{}", String::from_utf8_lossy(&result.stderr));
+    let reports: Value = serde_json::from_slice(&result.stdout).expect("check json");
+    assert_eq!(reports.as_array().expect("stable report array").len(), 1);
+    assert_eq!(reports[0]["derived_status"], "draft");
+    assert_eq!(reports[0]["as_of"], Value::Null);
+    assert_eq!(reports[0]["blockers"], json!([]));
 }
 
 #[test]
@@ -308,6 +340,8 @@ fn impact_finding_ids_are_bounded_review_reasons() {
             "framework-impact-002",
             "--impact-finding-id",
             "framework-impact-001",
+            "--impact-finding-id",
+            "framework-impact-002",
         ],
     );
     assert!(review.status.success(), "{}", String::from_utf8_lossy(&review.stderr));
@@ -332,7 +366,7 @@ fn impact_finding_ids_are_bounded_review_reasons() {
     assert!(status.status.success());
     let report: Value = serde_json::from_slice(&status.stdout).expect("status json");
     assert_eq!(
-        report["impact_finding_ids"],
+        report[0]["impact_finding_ids"],
         json!(["framework-impact-001", "framework-impact-002"])
     );
 
@@ -439,15 +473,85 @@ fn portfolio_check_rejects_supersession_cycle() {
     assert!(String::from_utf8_lossy(&result.stderr).contains("supersession cycle"));
 }
 
+#[test]
+fn superseded_record_can_retire_without_losing_replacement_evidence() {
+    let original = Fixture::new("retired-original", false);
+    let replacement = Fixture::new("retired-replacement", false);
+    original.approve();
+    replacement.approve();
+    let superseded = original.transition(
+        "superseded",
+        "approver",
+        "approver",
+        "2026-08-25T12:00:00Z",
+        &["--replacement-policy-key", "retired-replacement", "--replacement-version-key", "v1"],
+    );
+    assert!(superseded.status.success(), "{}", String::from_utf8_lossy(&superseded.stderr));
+    let retired =
+        original.transition("retired", "approver", "approver", "2026-08-25T13:00:00Z", &[]);
+    assert!(retired.status.success(), "{}", String::from_utf8_lossy(&retired.stderr));
+
+    let record: Value =
+        serde_json::from_slice(&std::fs::read(&original.record).expect("record")).expect("json");
+    assert_eq!(record["state"], "retired");
+    assert_eq!(record["replaced_by"]["policy_key"], "retired-replacement");
+    let check = run(&[
+        "lifecycle",
+        "check",
+        "--record",
+        original.record.to_str().expect("original"),
+        "--record",
+        replacement.record.to_str().expect("replacement"),
+    ]);
+    assert!(check.status.success(), "{}", String::from_utf8_lossy(&check.stderr));
+}
+
+#[test]
+fn portfolio_check_uses_the_replacements_latest_approval() {
+    let original = Fixture::new("chronology-original", false);
+    let replacement = Fixture::new("chronology-replacement", false);
+    original.approve();
+    replacement.approve();
+    let superseded = original.transition(
+        "superseded",
+        "approver",
+        "approver",
+        "2026-08-25T11:30:00Z",
+        &["--replacement-policy-key", "chronology-replacement", "--replacement-version-key", "v1"],
+    );
+    assert!(superseded.status.success(), "{}", String::from_utf8_lossy(&superseded.stderr));
+    let review =
+        replacement.transition("in-review", "reviewer", "reviewer", "2026-08-25T12:00:00Z", &[]);
+    assert!(review.status.success(), "{}", String::from_utf8_lossy(&review.stderr));
+    let approved =
+        replacement.transition("approved", "approver", "approver", "2026-08-25T13:00:00Z", &[]);
+    assert!(approved.status.success(), "{}", String::from_utf8_lossy(&approved.stderr));
+
+    let check = run(&[
+        "lifecycle",
+        "check",
+        "--record",
+        original.record.to_str().expect("original"),
+        "--record",
+        replacement.record.to_str().expect("replacement"),
+    ]);
+    assert_eq!(check.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&check.stderr)
+            .contains("replacement approval must not be later than supersession")
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn init_rejects_symlink_output_without_changing_target() {
     use std::os::unix::fs::symlink;
 
     let dir = tempfile::tempdir().expect("tempdir");
-    let source = dir.path().join("policy.md");
-    let target = dir.path().join("target.json");
-    let output = dir.path().join("record.json");
+    let root = dir.path().canonicalize().expect("canonical tempdir");
+    let source = root.join("policy.md");
+    let target = root.join("target.json");
+    let output = root.join("record.json");
     std::fs::write(&source, "# Policy\n").expect("source");
     std::fs::write(&target, "keep-me").expect("target");
     symlink(&target, &output).expect("symlink");
@@ -471,6 +575,43 @@ fn init_rejects_symlink_output_without_changing_target() {
     ]);
     assert_eq!(result.status.code(), Some(2));
     assert_eq!(std::fs::read_to_string(target).expect("target"), "keep-me");
+}
+
+#[cfg(unix)]
+#[test]
+fn init_rejects_a_symlink_in_an_input_path_component() {
+    use std::os::unix::fs::symlink;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let root = dir.path().canonicalize().expect("canonical tempdir");
+    let real = root.join("real");
+    let alias = root.join("alias");
+    let output = root.join("record.json");
+    std::fs::create_dir(&real).expect("real directory");
+    std::fs::write(real.join("policy.md"), "# Policy\n").expect("source");
+    symlink(&real, &alias).expect("directory symlink");
+    let source = alias.join("policy.md");
+    let result = run(&[
+        "lifecycle",
+        "init",
+        "--source",
+        source.to_str().expect("source"),
+        "--output",
+        output.to_str().expect("output"),
+        "--policy-key",
+        "component-safe-policy",
+        "--version-key",
+        "v1",
+        "--title",
+        "Component Safe Policy",
+        "--owner",
+        "owner",
+        "--next-review",
+        "2027-08-25",
+    ]);
+    assert_eq!(result.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&result.stderr).contains("is a symlink"));
+    assert!(!output.exists());
 }
 
 #[cfg(unix)]

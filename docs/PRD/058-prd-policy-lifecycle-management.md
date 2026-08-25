@@ -202,9 +202,9 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 | M-3, M-8 | `approved_byte_drift_is_action_required_without_policy_prose`, `approved_generated_artifact_drift_is_action_required` |
 | M-4 | `state_machine_matches_prd`, `separation_failure_and_retired_terminal_leave_record_unchanged` |
 | M-6, M-7 | `configurable_role_counts_accept_distinct_assertions`, `separation_failure_and_retired_terminal_leave_record_unchanged` |
-| M-9, M-14 | `explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive`, `queue_groups_deterministically_by_owner_and_due_date` |
-| M-11 | `portfolio_check_rejects_supersession_cycle` plus intrinsic self-reference and chronology validation |
-| M-13 | `init_rejects_symlink_output_without_changing_target`, `transition_rejects_hard_link_alias_without_changing_record` |
+| M-9, M-14 | `explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive`, `check_is_schedule_neutral_and_accepts_a_relative_record_path`, `queue_groups_deterministically_by_owner_and_due_date` |
+| M-11 | `portfolio_check_rejects_supersession_cycle`, `superseded_record_can_retire_without_losing_replacement_evidence`, `portfolio_check_uses_the_replacements_latest_approval` |
+| M-13 | `init_rejects_symlink_output_without_changing_target`, `init_rejects_a_symlink_in_an_input_path_component`, `transition_rejects_hard_link_alias_without_changing_record` |
 | M-16, AC-1–AC-6 | The complete `lifecycle_cli_test` integration suite and `lifecycle::record` unit suite |
 | S-1, S-2 | `queue_groups_deterministically_by_owner_and_due_date` and repeated `--record` portfolio paths |
 | S-3 | `impact_finding_ids_are_bounded_review_reasons` |

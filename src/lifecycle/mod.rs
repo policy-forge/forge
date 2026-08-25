@@ -69,7 +69,7 @@ struct StatusReport {
     derived_status: String,
     owner_keys: Vec<String>,
     next_review_date: NaiveDate,
-    as_of: NaiveDate,
+    as_of: Option<NaiveDate>,
     blockers: Vec<String>,
     current_fingerprints: FingerprintSet,
     approved_fingerprints: Option<FingerprintSet>,
@@ -217,7 +217,7 @@ pub fn execute_check(
     validate_portfolio(&loaded)?;
     let reports = loaded
         .iter()
-        .map(|(path, record)| status_report(path, record, record.review.next_review_date))
+        .map(|(path, record)| status_report(path, record, None))
         .collect::<Result<Vec<_>, _>>()?;
     let action_required =
         reports.iter().any(|report| report.blockers.iter().any(|item| item == "approved-drifted"));
@@ -243,7 +243,7 @@ pub fn execute_status(
     validate_portfolio(&loaded)?;
     let mut reports = loaded
         .iter()
-        .map(|(path, record)| status_report(path, record, as_of))
+        .map(|(path, record)| status_report(path, record, Some(as_of)))
         .collect::<Result<Vec<_>, _>>()?;
     reports.sort_by(|left, right| {
         left.next_review_date
@@ -275,7 +275,7 @@ pub fn execute_queue(
     validate_portfolio(&loaded)?;
     let reports = loaded
         .iter()
-        .map(|(path, record)| status_report(path, record, as_of))
+        .map(|(path, record)| status_report(path, record, Some(as_of)))
         .collect::<Result<Vec<_>, _>>()?;
     let action_required = gate_action_required(&reports, gate);
     let queue = build_queue(reports, as_of);
@@ -389,13 +389,14 @@ pub fn execute_transition(options: &TransitionOptions<'_>) -> Result<(), ForgeEr
         impact_finding_ids: {
             let mut values = options.impact_finding_ids.to_vec();
             values.sort();
+            values.dedup();
             values
         },
         replacement: replacement.clone(),
     };
     event.event_id = record::event_id(&record, &event)?;
     record.state = options.next_state;
-    record.replaced_by = replacement;
+    record.replaced_by = replacement.or(record.replaced_by);
     record.history.push(event);
     record::validate(&record)?;
     let rendered = render_record(&record)?;
@@ -522,13 +523,13 @@ fn current_fingerprints(
     record_path: &Path,
     record: &LifecycleRecord,
 ) -> Result<FingerprintSet, ForgeError> {
-    let base = record_path.parent().unwrap_or_else(|| Path::new("."));
+    let base = record_directory(record_path)?;
     let source_path = base.join(&record.policy.source.path);
-    let source = fingerprint(&source_path, base, false)?;
+    let source = fingerprint(&source_path, &base, false)?;
     let mut generated = Vec::new();
     for expected in &record.policy.generated_artifacts {
         let path = base.join(&expected.path);
-        let actual = fingerprint(&path, base, true)?;
+        let actual = fingerprint(&path, &base, true)?;
         if actual.oscal_type != expected.oscal_type || actual.root_uuid != expected.root_uuid {
             return Err(error(format!(
                 "generated artifact '{}' type or root UUID changed",
@@ -553,7 +554,7 @@ fn approved_fingerprints(record: &LifecycleRecord) -> Option<FingerprintSet> {
 fn status_report(
     path: &Path,
     record: &LifecycleRecord,
-    as_of: NaiveDate,
+    as_of: Option<NaiveDate>,
 ) -> Result<StatusReport, ForgeError> {
     let current = current_fingerprints(path, record)?;
     let approved = approved_fingerprints(record);
@@ -563,26 +564,28 @@ fn status_report(
     {
         blockers.push("approved-drifted".to_string());
     }
-    if as_of > record.review.next_review_date {
-        blockers.push("overdue".to_string());
-    }
-    let due_soon_boundary = as_of
-        .checked_add_days(chrono::Days::new(u64::from(record.review.due_soon_days)))
-        .ok_or_else(|| error("due-soon date calculation overflowed"))?;
     let derived_status = if blockers.iter().any(|item| item == "approved-drifted") {
         "approved-drifted".to_string()
-    } else if blockers.iter().any(|item| item == "overdue") {
-        "overdue".to_string()
-    } else if as_of <= record.review.next_review_date
-        && record.review.next_review_date <= due_soon_boundary
-    {
-        "due-soon".to_string()
     } else {
-        record.state.as_str().to_string()
+        match as_of {
+            Some(as_of) if as_of > record.review.next_review_date => {
+                blockers.push("overdue".to_string());
+                "overdue".to_string()
+            }
+            Some(as_of) => {
+                let due_soon_boundary = as_of
+                    .checked_add_days(chrono::Days::new(u64::from(record.review.due_soon_days)))
+                    .ok_or_else(|| error("due-soon date calculation overflowed"))?;
+                if record.review.next_review_date <= due_soon_boundary {
+                    blockers.push("due-soon".to_string());
+                    "due-soon".to_string()
+                } else {
+                    record.state.as_str().to_string()
+                }
+            }
+            None => record.state.as_str().to_string(),
+        }
     };
-    if derived_status == "due-soon" {
-        blockers.push("due-soon".to_string());
-    }
     Ok(StatusReport {
         schema_version: "forge.policy-lifecycle-status/1",
         policy_key: record.policy.policy_key.clone(),
@@ -692,13 +695,14 @@ fn validate_portfolio(records: &[(PathBuf, LifecycleRecord)]) -> Result<(), Forg
             })?;
             let superseded_at = record
                 .history
-                .last()
+                .iter()
+                .rfind(|event| event.next_state == LifecycleState::Superseded)
                 .map(|event| event.timestamp.as_str())
                 .ok_or_else(|| error("superseded record lacks transition history"))?;
             let replacement_approved_at = target
                 .history
                 .iter()
-                .find(|event| event.next_state == LifecycleState::Approved)
+                .rfind(|event| event.next_state == LifecycleState::Approved)
                 .map(|event| event.timestamp.as_str())
                 .ok_or_else(|| {
                     error(format!("replacement '{}:{}' was never approved", key.0, key.1))
@@ -745,12 +749,8 @@ fn write_reports(
 ) -> Result<(), ForgeError> {
     let rendered = match format {
         LifecycleOutputFormat::Json => {
-            let mut value = if reports.len() == 1 {
-                serde_json::to_string_pretty(&reports[0])
-            } else {
-                serde_json::to_string_pretty(reports)
-            }
-            .map_err(|source| error(format!("cannot serialize lifecycle status: {source}")))?;
+            let mut value = serde_json::to_string_pretty(reports)
+                .map_err(|source| error(format!("cannot serialize lifecycle status: {source}")))?;
             value.push('\n');
             value
         }
@@ -899,10 +899,14 @@ fn validate_write_target(path: &Path) -> Result<(), ForgeError> {
 }
 
 fn reject_symlink_components(path: &Path) -> Result<(), ForgeError> {
-    if let Ok(metadata) = std::fs::symlink_metadata(path)
-        && metadata.file_type().is_symlink()
-    {
-        return Err(error(format!("path '{}' is a symlink", path.display())));
+    let mut current = PathBuf::new();
+    for component in path.components() {
+        current.push(component.as_os_str());
+        if let Ok(metadata) = std::fs::symlink_metadata(&current)
+            && metadata.file_type().is_symlink()
+        {
+            return Err(error(format!("path '{}' is a symlink", current.display())));
+        }
     }
     Ok(())
 }
