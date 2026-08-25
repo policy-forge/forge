@@ -437,13 +437,91 @@ fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
     if !left.exists() || !right.exists() {
         return Ok(false);
     }
-    same_file::is_same_file(left, right).map_err(|error| {
-        mapping_error(format!(
-            "cannot compare '{}' and '{}': {error}",
-            left.display(),
-            right.display()
-        ))
-    })
+    same_file_identity(left, right)
+}
+
+#[cfg(unix)]
+fn same_file_identity(left: &Path, right: &Path) -> Result<bool, ForgeError> {
+    use std::os::unix::fs::MetadataExt;
+
+    let left_metadata = std::fs::metadata(left)
+        .map_err(|error| mapping_error(format!("cannot inspect '{}': {error}", left.display())))?;
+    let right_metadata = std::fs::metadata(right)
+        .map_err(|error| mapping_error(format!("cannot inspect '{}': {error}", right.display())))?;
+    Ok(left_metadata.dev() == right_metadata.dev() && left_metadata.ino() == right_metadata.ino())
+}
+
+#[cfg(windows)]
+fn same_file_identity(left: &Path, right: &Path) -> Result<bool, ForgeError> {
+    windows_file_identity::same_file(left, right)
+        .map_err(|error| mapping_error(format!("cannot compare file identities: {error}")))
+}
+
+#[cfg(not(any(unix, windows)))]
+fn same_file_identity(_left: &Path, _right: &Path) -> Result<bool, ForgeError> {
+    Ok(false)
+}
+
+#[cfg(windows)]
+#[allow(unsafe_code)]
+mod windows_file_identity {
+    use std::ffi::c_void;
+    use std::fs::File;
+    use std::io;
+    use std::mem::MaybeUninit;
+    use std::os::windows::io::AsRawHandle;
+    use std::path::Path;
+
+    #[repr(C)]
+    struct FileTime {
+        low_date_time: u32,
+        high_date_time: u32,
+    }
+
+    #[repr(C)]
+    struct ByHandleFileInformation {
+        file_attributes: u32,
+        creation_time: FileTime,
+        last_access_time: FileTime,
+        last_write_time: FileTime,
+        volume_serial_number: u32,
+        file_size_high: u32,
+        file_size_low: u32,
+        number_of_links: u32,
+        file_index_high: u32,
+        file_index_low: u32,
+    }
+
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetFileInformationByHandle(
+            file: *mut c_void,
+            information: *mut ByHandleFileInformation,
+        ) -> i32;
+    }
+
+    pub(super) fn same_file(left: &Path, right: &Path) -> io::Result<bool> {
+        let left = identity(&File::open(left)?)?;
+        let right = identity(&File::open(right)?)?;
+        Ok(left == right)
+    }
+
+    fn identity(file: &File) -> io::Result<(u32, u64)> {
+        let mut information = MaybeUninit::<ByHandleFileInformation>::uninit();
+        // SAFETY: `file` remains open for the call, its raw handle is valid, and `information`
+        // points to writable storage with the exact documented C layout. The value is read only
+        // after the API reports success and has initialized the complete structure.
+        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), information.as_mut_ptr()) }
+            == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        // SAFETY: the successful API call above initialized the complete structure.
+        let information = unsafe { information.assume_init() };
+        let file_index =
+            (u64::from(information.file_index_high) << 32) | u64::from(information.file_index_low);
+        Ok((information.volume_serial_number, file_index))
+    }
 }
 
 fn path_identity(path: &Path) -> Result<PathBuf, ForgeError> {

@@ -22,7 +22,6 @@ uuid = { version = "1.20.0", features = ["serde", "v4", "v5"] }
 jsonschema = { version = "0.45.0", default-features = false }
 quick-xml = { version = "0.41", features = ["serialize"] }
 rayon = "1"
-same-file = "1.0.6"
 tempfile = "3.25.0"
 pdf-extract = "0.12"
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }
