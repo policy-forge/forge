@@ -923,7 +923,7 @@ fn relative_path(base: &Path, target: &Path) -> Result<String, ForgeError> {
     let common = base_components
         .iter()
         .zip(&target_components)
-        .take_while(|(left, right)| left == right)
+        .take_while(|(left, right)| path_components_equal(left, right))
         .count();
     if common == 0 {
         return Err(error("cannot express artifact path relative to lifecycle record"));
@@ -940,6 +940,16 @@ fn relative_path(base: &Path, target: &Path) -> Result<String, ForgeError> {
     path.to_str()
         .map(str::to_string)
         .ok_or_else(|| error("artifact path is not valid UTF-8 and cannot be stored in JSON"))
+}
+
+#[cfg(windows)]
+fn path_components_equal(left: &Component<'_>, right: &Component<'_>) -> bool {
+    left.as_os_str().to_string_lossy().eq_ignore_ascii_case(&right.as_os_str().to_string_lossy())
+}
+
+#[cfg(not(windows))]
+fn path_components_equal(left: &Component<'_>, right: &Component<'_>) -> bool {
+    left == right
 }
 
 fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
@@ -1072,5 +1082,31 @@ mod tests {
         let as_of = NaiveDate::from_ymd_opt(2026, 8, 25).expect("date");
         let boundary = as_of.checked_add_days(chrono::Days::new(30)).expect("boundary");
         assert_eq!(boundary, NaiveDate::from_ymd_opt(2026, 9, 24).expect("date"));
+    }
+
+    #[test]
+    fn relative_path_handles_sibling_directories() {
+        let temporary = tempfile::tempdir().expect("temporary directory");
+        let records = temporary.path().join("records");
+        let artifacts = temporary.path().join("artifacts");
+        std::fs::create_dir_all(&records).expect("records directory");
+        std::fs::create_dir_all(&artifacts).expect("artifacts directory");
+        let artifact = artifacts.join("policy.md");
+        std::fs::write(&artifact, "policy").expect("artifact");
+
+        assert_eq!(
+            relative_path(&records, &artifact).expect("relative path"),
+            Path::new("..").join("artifacts").join("policy.md").to_string_lossy()
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn relative_path_matches_windows_components_case_insensitively() {
+        assert_eq!(
+            relative_path(Path::new(r"C:\Work\records"), Path::new(r"c:\work\artifacts\policy.md"))
+                .expect("relative path"),
+            Path::new("..").join("artifacts").join("policy.md").to_string_lossy()
+        );
     }
 }
