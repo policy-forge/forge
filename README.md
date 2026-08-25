@@ -191,6 +191,48 @@ check triggers `--fail-on`, and `2` when trustworthy analysis is impossible.
 Reports default to identifiers, counts, and hashes; `--include-excerpts` is an
 explicit sensitive-output opt-in.
 
+### Policy Lifecycle
+
+Bind a policy version's declared review state to exact local source and generated
+OSCAL bytes. Lifecycle history is append-only and deterministic; FORGE preserves
+declared actors and roles but does not authenticate identity or authority.
+
+```bash
+# Create a draft record with a date-only review schedule
+forge lifecycle init --source policy.md --artifact catalog.json \
+  --output policy-lifecycle.json --policy-key access-control \
+  --version-key v1 --title "Access Control Policy" --owner alice \
+  --party alice=owner,author --party bob=reviewer --party carol=approver \
+  --next-review 2027-08-25 --separate-reviewer-approver
+
+# Append reviewed transitions with explicit event times
+forge lifecycle transition --record policy-lifecycle.json --to in-review \
+  --actor bob --role reviewer --at 2026-08-25T17:00:00Z \
+  --rationale "Review completed" --apply
+forge lifecycle transition --record policy-lifecycle.json --to approved \
+  --actor carol --role approver --at 2026-08-25T18:00:00Z \
+  --rationale "Approved for publication" --apply
+
+# Deterministic CI status; exit 1 means lifecycle action is required
+forge lifecycle status --record policy-lifecycle.json \
+  --as-of 2026-08-25 --format json
+
+# Group an explicit portfolio by owner and next-review date
+forge lifecycle queue --record policy-lifecycle.json \
+  --as-of 2026-08-25 --format json
+
+# Export deterministic unsigned approval evidence; refuses drifted approvals
+forge lifecycle attest --record policy-lifecycle.json \
+  --output approval-attestation.json
+```
+
+`lifecycle check` validates one record or an explicitly supplied portfolio,
+including supersession links and cycles. `status` never emits policy prose by
+default. Re-review transitions can link bounded PRD-057 findings with repeatable
+`--impact-finding-id` values. Exit codes are `0` for a valid record under the
+selected gate, `1` for a valid action-required result, and `2` for an invalid
+record or transition.
+
 ### Global Options
 
 ```bash

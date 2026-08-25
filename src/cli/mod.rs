@@ -265,6 +265,12 @@ pub enum Commands {
         command: MappingCommand,
     },
 
+    /// Manage deterministic local policy lifecycle records
+    Lifecycle {
+        #[command(subcommand)]
+        command: LifecycleCommand,
+    },
+
     /// Inspect and validate project configuration (.forge.toml)
     Config {
         /// Config subcommands
@@ -382,6 +388,172 @@ pub enum MappingCommand {
         #[arg(long)]
         include_excerpts: bool,
     },
+}
+
+/// Policy lifecycle workflow commands.
+#[derive(Subcommand)]
+pub enum LifecycleCommand {
+    /// Create a draft record bound to current source and OSCAL artifact bytes
+    Init {
+        /// Source policy file
+        #[arg(long)]
+        source: PathBuf,
+        /// Generated OSCAL JSON artifact; repeat for each artifact
+        #[arg(long = "artifact")]
+        artifacts: Vec<PathBuf>,
+        /// Lifecycle record to create
+        #[arg(long)]
+        output: PathBuf,
+        /// Stable logical policy key
+        #[arg(long)]
+        policy_key: String,
+        /// Immutable reviewed version key
+        #[arg(long)]
+        version_key: String,
+        /// Human-readable policy title
+        #[arg(long)]
+        title: String,
+        /// Owner party key; repeat for multiple owners
+        #[arg(long = "owner", required = true)]
+        owners: Vec<String>,
+        /// Party declaration in KEY=ROLE[,ROLE] form
+        #[arg(long = "party")]
+        parties: Vec<String>,
+        /// Explicit next review date (YYYY-MM-DD)
+        #[arg(long)]
+        next_review: chrono::NaiveDate,
+        /// Review cadence in days
+        #[arg(long, default_value = "365", value_parser = clap::value_parser!(u16).range(1..))]
+        cadence_days: u16,
+        /// Number of days before review to classify as due-soon
+        #[arg(long, default_value = "30")]
+        due_soon_days: u16,
+        /// Distinct reviewer assertions required for approval
+        #[arg(long, default_value = "1", value_parser = clap::value_parser!(u16).range(1..))]
+        required_reviewers: u16,
+        /// Distinct approver assertions required for approval
+        #[arg(long, default_value = "1", value_parser = clap::value_parser!(u16).range(1..))]
+        required_approvers: u16,
+        /// Require different declared actors for author and reviewer roles
+        #[arg(long)]
+        separate_author_reviewer: bool,
+        /// Require different declared actors for author and approver roles
+        #[arg(long)]
+        separate_author_approver: bool,
+        /// Require different declared actors for reviewer and approver roles
+        #[arg(long)]
+        separate_reviewer_approver: bool,
+    },
+    /// Validate records, current artifact identity, and supplied supersession graph
+    Check {
+        /// Lifecycle record; repeat to validate a portfolio
+        #[arg(long = "record", required = true)]
+        records: Vec<PathBuf>,
+        /// Report format
+        #[arg(long, value_enum, default_value = "text")]
+        format: LifecycleOutputFormat,
+        /// Write the report atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Propose a transition, or append it atomically with --apply
+    Transition {
+        /// Lifecycle record
+        #[arg(long)]
+        record: PathBuf,
+        /// Next lifecycle state
+        #[arg(long = "to", value_enum)]
+        next_state: crate::lifecycle::record::LifecycleState,
+        /// Declared actor key
+        #[arg(long)]
+        actor: String,
+        /// Actor's declared role
+        #[arg(long, value_enum)]
+        role: crate::lifecycle::record::DeclaredRole,
+        /// Explicit RFC 3339 event timestamp
+        #[arg(long)]
+        at: String,
+        /// Bounded rationale for the transition
+        #[arg(long)]
+        rationale: String,
+        /// Additional approval evidence in ACTOR=ROLE form
+        #[arg(long = "assertion")]
+        assertions: Vec<String>,
+        /// PRD-057 impact finding ID that triggered re-review; repeat as needed
+        #[arg(long = "impact-finding-id")]
+        impact_finding_ids: Vec<String>,
+        /// Replacement policy key for supersession
+        #[arg(long, requires = "replacement_version_key")]
+        replacement_policy_key: Option<String>,
+        /// Replacement version key for supersession
+        #[arg(long, requires = "replacement_policy_key")]
+        replacement_version_key: Option<String>,
+        /// Append the validated event to the record atomically
+        #[arg(long, conflicts_with = "output")]
+        apply: bool,
+        /// Write a proposed complete record atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Report deterministic lifecycle status for an explicit date
+    Status {
+        /// Lifecycle record; repeat for a deterministic review queue
+        #[arg(long = "record", required = true)]
+        records: Vec<PathBuf>,
+        /// Explicit status date (YYYY-MM-DD)
+        #[arg(long)]
+        as_of: chrono::NaiveDate,
+        /// Status output format
+        #[arg(long, value_enum, default_value = "text")]
+        format: LifecycleOutputFormat,
+        /// Gate that determines whether action-required status exits 1
+        #[arg(long, value_enum, default_value = "publication")]
+        gate: LifecycleGate,
+        /// Write the report atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Emit a deterministic review queue grouped by owner and next-review date
+    Queue {
+        /// Lifecycle record; repeat to build a portfolio queue
+        #[arg(long = "record", required = true)]
+        records: Vec<PathBuf>,
+        /// Explicit queue date (YYYY-MM-DD)
+        #[arg(long)]
+        as_of: chrono::NaiveDate,
+        /// Queue output format
+        #[arg(long, value_enum, default_value = "json")]
+        format: LifecycleOutputFormat,
+        /// Gate that determines whether action-required status exits 1
+        #[arg(long, value_enum, default_value = "publication")]
+        gate: LifecycleGate,
+        /// Write the queue atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Emit deterministic unsigned approval evidence for external signing
+    Attest {
+        /// Approved, non-drifted lifecycle record
+        #[arg(long)]
+        record: PathBuf,
+        /// Write attestation JSON atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+}
+
+/// Deterministic lifecycle report serialization.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum LifecycleOutputFormat {
+    Text,
+    Json,
+}
+
+/// Lifecycle status gate.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum LifecycleGate {
+    Publication,
+    None,
 }
 
 /// Deterministic Control Mapping report serialization.
@@ -744,6 +916,106 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 } else {
                     Ok(())
                 }
+            }
+        },
+        Commands::Lifecycle { command } => match command {
+            LifecycleCommand::Init {
+                source,
+                artifacts,
+                output,
+                policy_key,
+                version_key,
+                title,
+                owners,
+                parties,
+                next_review,
+                cadence_days,
+                due_soon_days,
+                required_reviewers,
+                required_approvers,
+                separate_author_reviewer,
+                separate_author_approver,
+                separate_reviewer_approver,
+            } => crate::lifecycle::execute_init(&crate::lifecycle::InitOptions {
+                source,
+                artifacts,
+                output,
+                policy_key,
+                version_key,
+                title,
+                owners,
+                parties,
+                next_review: *next_review,
+                cadence_days: *cadence_days,
+                due_soon_days: *due_soon_days,
+                required_reviewers: *required_reviewers,
+                required_approvers: *required_approvers,
+                separate_author_reviewer: *separate_author_reviewer,
+                separate_author_approver: *separate_author_approver,
+                separate_reviewer_approver: *separate_reviewer_approver,
+            }),
+            LifecycleCommand::Check { records, format, output } => {
+                if crate::lifecycle::execute_check(records, format, output.as_deref())? {
+                    Err(ForgeError::LifecycleActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            LifecycleCommand::Transition {
+                record,
+                next_state,
+                actor,
+                role,
+                at,
+                rationale,
+                assertions,
+                impact_finding_ids,
+                replacement_policy_key,
+                replacement_version_key,
+                apply,
+                output,
+            } => crate::lifecycle::execute_transition(&crate::lifecycle::TransitionOptions {
+                record_path: record,
+                next_state: *next_state,
+                actor_key: actor,
+                role: *role,
+                timestamp: at,
+                rationale,
+                assertions,
+                impact_finding_ids,
+                replacement_policy_key: replacement_policy_key.as_deref(),
+                replacement_version_key: replacement_version_key.as_deref(),
+                apply: *apply,
+                output: output.as_deref(),
+            }),
+            LifecycleCommand::Status { records, as_of, format, gate, output } => {
+                if crate::lifecycle::execute_status(
+                    records,
+                    *as_of,
+                    format,
+                    gate,
+                    output.as_deref(),
+                )? {
+                    Err(ForgeError::LifecycleActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            LifecycleCommand::Queue { records, as_of, format, gate, output } => {
+                if crate::lifecycle::execute_queue(
+                    records,
+                    *as_of,
+                    format,
+                    gate,
+                    output.as_deref(),
+                )? {
+                    Err(ForgeError::LifecycleActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            LifecycleCommand::Attest { record, output } => {
+                crate::lifecycle::execute_attest(record, output.as_deref())
             }
         },
         Commands::Drift { committed_artifact, generated_artifact, format } => {

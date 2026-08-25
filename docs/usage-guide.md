@@ -23,7 +23,9 @@ Verify your installation:
 forge --help
 ```
 
-You should see eight subcommands: `convert`, `export`, `validate`, `resolve`, `trace`, `diff`, `drift`, and `profile`.
+The help output lists conversion, validation, profile, mapping, migration,
+configuration, drift, traceability, and lifecycle workflows. Use
+`forge <SUBCOMMAND> --help` for the exact command contract in this release.
 
 ## 2. Writing a Policy Document
 
@@ -410,6 +412,61 @@ Reviewer names and rationale become durable artifact data. FORGE preserves but
 does not authenticate identity, authority, approval, or signatures. Users are
 responsible for permission to process and share framework content; FORGE ships
 no third-party framework catalogs and defaults reports to IDs and hashes.
+
+### 3.10 `lifecycle` — Manage Reviewable Policy State
+
+Lifecycle records use the closed, bounded `forge.policy-lifecycle/1` JSON
+contract. One file describes one immutable policy version, its source and
+generated-artifact hashes, declared parties, versioned approval policy,
+date-only review schedule, current state, optional replacement, and append-only
+transition events. Unknown or duplicate JSON keys, unsupported versions,
+sequence gaps, invalid event UUIDs, unsafe aliases, and exceeded limits fail.
+
+```bash
+forge lifecycle init --source policy.md --artifact catalog.json \
+  --output policy-lifecycle.json --policy-key access-control \
+  --version-key v1 --title "Access Control Policy" --owner alice \
+  --party alice=owner,author --party bob=reviewer --party carol=approver \
+  --next-review 2027-08-25 --separate-reviewer-approver
+
+# Without --apply, transition writes a complete proposal to stdout or --output.
+forge lifecycle transition --record policy-lifecycle.json --to in-review \
+  --actor bob --role reviewer --at 2026-08-25T17:00:00Z \
+  --rationale "Review completed" --apply
+forge lifecycle transition --record policy-lifecycle.json --to approved \
+  --actor carol --role approver --at 2026-08-25T18:00:00Z \
+  --rationale "Approved for publication" --apply
+
+forge lifecycle check --record policy-lifecycle.json --format json
+forge lifecycle status --record policy-lifecycle.json \
+  --as-of 2026-08-25 --format json --gate publication
+
+# Explicit portfolio review queue grouped by owner and date
+forge lifecycle queue --record policy-lifecycle.json \
+  --as-of 2026-08-25 --format json --gate publication
+
+# Deterministic unsigned evidence suitable for a separate signing system
+forge lifecycle attest --record policy-lifecycle.json \
+  --output approval-attestation.json
+```
+
+Approval evidence must use identical fingerprints and meet every declared role
+count. Additional distinct evidence can be supplied as repeatable
+`--assertion ACTOR=ROLE` values. Separation rules compare declared actor keys;
+they do not prove identity or authority. An approved record whose current bytes
+differ reports `approved-drifted`. `status` classifies `due-soon` on the
+inclusive configured boundary and `overdue` only after the next-review date.
+Repeat `--record` for deterministic portfolio status and supersession-cycle
+validation. `queue` emits `forge.policy-lifecycle-queue/1` JSON grouped by owner
+and next-review date. A transition entering `in-review` can preserve bounded,
+sorted PRD-057 reasons with repeatable `--impact-finding-id` values; those IDs
+are included in status and queue output. `attest` emits deterministic
+`forge.policy-approval-attestation/1` JSON containing the approved event,
+declared assertions, approval policy, exact fingerprints, and review date. It
+does not sign anything and refuses records that are not currently approved or
+whose approved bytes have drifted. Exit `0` means valid under the selected gate,
+exit `1` means valid but action is required, and exit `2` means the record,
+artifacts, portfolio, or transition is invalid.
 
 ## 4. Global Options
 
