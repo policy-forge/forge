@@ -43,7 +43,7 @@ use crate::config::{self, ConvertCliValues};
     arg_required_else_help = true
 )]
 pub struct Cli {
-    /// The subcommand to execute (convert, export, validate, resolve, diff, drift, migrate, trace, profile).
+    /// The subcommand to execute, including mapping, applicability, and lifecycle workflows.
     #[command(subcommand)]
     pub command: Commands,
 
@@ -269,6 +269,12 @@ pub enum Commands {
     Lifecycle {
         #[command(subcommand)]
         command: LifecycleCommand,
+    },
+
+    /// Declare framework applicability and analyze policy-mapping gaps
+    Applicability {
+        #[command(subcommand)]
+        command: ApplicabilityCommand,
     },
 
     /// Inspect and validate project configuration (.forge.toml)
@@ -563,6 +569,87 @@ pub enum LifecycleOutputFormat {
 pub enum LifecycleGate {
     Publication,
     None,
+}
+
+/// Framework applicability workflow commands.
+#[derive(Subcommand)]
+pub enum ApplicabilityCommand {
+    /// Inventory a framework and create an undecided manifest scaffold
+    Init {
+        /// Local OSCAL Catalog or Profile JSON
+        #[arg(long)]
+        framework: PathBuf,
+        /// Explicit resolved Catalog companion when the framework is a Profile
+        #[arg(long)]
+        resolved_catalog: Option<PathBuf>,
+        /// Write the scaffold to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Validate decisions and Mapping Collections, then classify every framework control
+    Analyze {
+        /// Versioned `forge.applicability/1` JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Deterministic report format
+        #[arg(long, value_enum, default_value = "text")]
+        format: ApplicabilityReportFormat,
+        /// Write the report to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Category gate that produces exit status 1 after a valid report is written
+        #[arg(long, value_enum, default_value = "never")]
+        fail_on: ApplicabilityFailOn,
+        /// Deterministic date used by the overdue-deferred gate (YYYY-MM-DD)
+        #[arg(long)]
+        as_of: Option<chrono::NaiveDate>,
+        /// Show controls in this group (including nested group membership)
+        #[arg(long)]
+        group: Option<String>,
+        /// Show controls whose stable ID starts with this prefix
+        #[arg(long)]
+        control_prefix: Option<String>,
+        /// Show controls with this primary classification
+        #[arg(long, value_enum)]
+        state: Option<ApplicabilityStateFilter>,
+        /// Show controls assigned to or reviewed by this reviewer key
+        #[arg(long)]
+        reviewer: Option<String>,
+        /// Show controls participating in mappings from this source href
+        #[arg(long)]
+        policy_source: Option<String>,
+    },
+}
+
+/// Deterministic applicability report serialization.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum ApplicabilityReportFormat {
+    Text,
+    Json,
+    Html,
+}
+
+/// Valid analysis categories that can require human review in CI.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum ApplicabilityFailOn {
+    #[value(name = "applicable-unmapped")]
+    ApplicableUnmapped,
+    #[value(name = "any-review-action")]
+    AnyReviewAction,
+    #[value(name = "overdue-deferred")]
+    OverdueDeferred,
+    Never,
+}
+
+/// Applicability classification used to filter report details.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum ApplicabilityStateFilter {
+    ApplicableMapped,
+    ApplicableReviewedNoRelationship,
+    ApplicableUnmapped,
+    NotApplicable,
+    Deferred,
+    UnderReview,
 }
 
 /// Deterministic Control Mapping report serialization.
@@ -1028,6 +1115,46 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             }
             LifecycleCommand::Attest { record, output } => {
                 crate::lifecycle::execute_attest(record, output.as_deref())
+            }
+        },
+        Commands::Applicability { command } => match command {
+            ApplicabilityCommand::Init { framework, resolved_catalog, output } => {
+                crate::applicability::execute_init(
+                    framework,
+                    resolved_catalog.as_deref(),
+                    output.as_deref(),
+                )
+            }
+            ApplicabilityCommand::Analyze {
+                manifest,
+                format,
+                output,
+                fail_on,
+                as_of,
+                group,
+                control_prefix,
+                state,
+                reviewer,
+                policy_source,
+            } => {
+                if crate::applicability::execute_analyze(
+                    manifest,
+                    format,
+                    output.as_deref(),
+                    fail_on,
+                    *as_of,
+                    crate::applicability::model::ReportFilters {
+                        group: group.clone(),
+                        control_prefix: control_prefix.clone(),
+                        state: state.as_ref().map(crate::applicability::classification_filter),
+                        reviewer: reviewer.clone(),
+                        policy_source: policy_source.clone(),
+                    },
+                )? {
+                    Err(ForgeError::ApplicabilityReviewRequired)
+                } else {
+                    Ok(())
+                }
             }
         },
         Commands::Drift { committed_artifact, generated_artifact, format } => {

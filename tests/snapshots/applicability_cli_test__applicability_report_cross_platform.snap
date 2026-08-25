@@ -1,0 +1,167 @@
+---
+source: tests/applicability_cli_test.rs
+expression: "String::from_utf8(first.stdout.clone()).expect(\"UTF-8 report\")"
+---
+{
+  "schema_version": "forge.applicability-report/1",
+  "manifest_sha256": "1d574aaebf550dadde65ec8307b623ad54640245cfd1c8d14c04c7b7b9700145",
+  "framework": {
+    "resource_type": "catalog",
+    "href": "framework.json",
+    "raw_sha256": "163cf792fe9f9d5146138f7ea60a1ddf15975c3a7a25856cc6b313c4b83cf20f",
+    "root_uuid": "22222222-2222-4222-8222-222222222222",
+    "document_version": "1.0.0",
+    "oscal_version": "1.2.3"
+  },
+  "mapping_collections": [
+    {
+      "uuid": "060895b8-4b3d-5ca3-a1af-f9a7a9f04876",
+      "raw_sha256": "adb8b1c63b8dd732f4e9386b08552cb120807dfda2c6c46f02ec96e6fbeeb20c",
+      "version": "1.0.0",
+      "oscal_version": "1.2.3",
+      "reviewed_at": "2026-08-25T08:00:00Z",
+      "reviewers": [
+        {
+          "uuid": "5762bfcd-283e-543a-8ee4-dc2cc6026637",
+          "type": "person",
+          "name": "Mapping Reviewer"
+        }
+      ],
+      "source_resources": [
+        {
+          "resource_type": "catalog",
+          "href": "policy.json",
+          "raw_sha256": "9abf1ac8f1db2318e8ee1c04bc21deeb40f25ac46f38cc8a78c4a06c93ae966a",
+          "root_uuid": "11111111-1111-4111-8111-111111111111",
+          "document_version": "1.0.0",
+          "oscal_version": "1.2.3"
+        }
+      ]
+    }
+  ],
+  "reviewers": [
+    {
+      "key": "scope-reviewer",
+      "type": "person",
+      "name": "Scope Reviewer"
+    }
+  ],
+  "counts": {
+    "total": 6,
+    "applicable_mapped": 1,
+    "applicable_reviewed_no_relationship": 1,
+    "applicable_unmapped": 1,
+    "not_applicable": 1,
+    "deferred": 1,
+    "under_review": 1
+  },
+  "filters": {},
+  "matched_controls": 6,
+  "controls": [
+    {
+      "control_id": "c1",
+      "groups": [
+        "group-1"
+      ],
+      "classification": "applicable-mapped",
+      "reviewer_key": "scope-reviewer",
+      "reviewed_at": "2026-08-25T09:00:00Z",
+      "positive_mapping_count": 1,
+      "no_relationship_count": 1,
+      "policy_sources": [
+        "policy.json"
+      ]
+    },
+    {
+      "control_id": "c2",
+      "groups": [
+        "group-1"
+      ],
+      "classification": "applicable-reviewed-no-relationship",
+      "reviewer_key": "scope-reviewer",
+      "reviewed_at": "2026-08-25T09:00:00Z",
+      "positive_mapping_count": 0,
+      "no_relationship_count": 1,
+      "policy_sources": [
+        "policy.json"
+      ]
+    },
+    {
+      "control_id": "c3",
+      "groups": [
+        "group-1"
+      ],
+      "classification": "applicable-unmapped",
+      "reviewer_key": "scope-reviewer",
+      "reviewed_at": "2026-08-25T09:00:00Z",
+      "positive_mapping_count": 0,
+      "no_relationship_count": 0,
+      "policy_sources": []
+    },
+    {
+      "control_id": "c4",
+      "groups": [
+        "group-1"
+      ],
+      "classification": "not-applicable",
+      "reviewer_key": "scope-reviewer",
+      "reviewed_at": "2026-08-25T09:00:00Z",
+      "rationale": "Outside the reviewed organizational scope.",
+      "positive_mapping_count": 0,
+      "no_relationship_count": 0,
+      "policy_sources": []
+    },
+    {
+      "control_id": "c5",
+      "groups": [
+        "group-1"
+      ],
+      "classification": "deferred",
+      "reviewer_key": "scope-reviewer",
+      "reviewed_at": "2026-08-25T09:00:00Z",
+      "rationale": "Pending the named architecture decision.",
+      "revisit_date": "2026-10-01",
+      "positive_mapping_count": 0,
+      "no_relationship_count": 0,
+      "policy_sources": []
+    },
+    {
+      "control_id": "c6",
+      "groups": [
+        "group-1"
+      ],
+      "classification": "under-review",
+      "positive_mapping_count": 0,
+      "no_relationship_count": 0,
+      "policy_sources": []
+    }
+  ],
+  "review_queue": [
+    {
+      "control_id": "c2",
+      "reason_code": "reviewed-no-positive-relationship",
+      "owner": "scope-reviewer",
+      "policy_sources": [
+        "policy.json"
+      ]
+    },
+    {
+      "control_id": "c3",
+      "reason_code": "no-reviewed-mapping",
+      "owner": "scope-reviewer",
+      "policy_sources": []
+    },
+    {
+      "control_id": "c5",
+      "reason_code": "deferred-scope-decision",
+      "owner": "scope-reviewer",
+      "revisit_date": "2026-10-01",
+      "policy_sources": []
+    },
+    {
+      "control_id": "c6",
+      "reason_code": "scope-decision-required",
+      "policy_sources": []
+    }
+  ]
+}

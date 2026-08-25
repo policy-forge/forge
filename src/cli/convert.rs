@@ -80,6 +80,10 @@ fn max_size_to_bytes(max_size_mb: u64) -> Result<u64, ForgeError> {
         .ok_or_else(|| ForgeError::Validation("--max-size value is too large".to_string()))
 }
 
+fn add_max_size_guidance(error: ForgeError) -> ForgeError {
+    error.with_max_size_guidance()
+}
+
 /// Validate and resolve `--source-profile` for component strategy.
 ///
 /// Returns `Ok(None)` if no profile was provided (with a warning),
@@ -196,7 +200,8 @@ fn execute_ssp(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     let start = std::time::Instant::now();
 
     // Steps 1-7: shared pipeline stages to extract document metadata
-    let doc = crate::pipeline::prepare_document(opts.input, max_size_bytes)?;
+    let doc = crate::pipeline::prepare_document(opts.input, max_size_bytes)
+        .map_err(add_max_size_guidance)?;
 
     let title = doc.metadata.title.clone();
     let version = doc.metadata.version.clone();
@@ -289,11 +294,11 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
         };
         let size = meta.len();
         if size > max_size_bytes {
-            return Err(ForgeError::FileTooLarge {
+            return Err(add_max_size_guidance(ForgeError::FileTooLarge {
                 path: path.clone(),
                 size_bytes: size,
                 limit_bytes: max_size_bytes,
-            });
+            }));
         }
     }
 
@@ -356,7 +361,8 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
 
     if let Some(baseline) = opts.stable_id_baseline {
         validate_regular_file(baseline, "--stable-id-baseline")?;
-        emit_stable_id_change_warning_if_needed(opts.input, baseline, max_size_bytes)?;
+        emit_stable_id_change_warning_if_needed(opts.input, baseline, max_size_bytes)
+            .map_err(add_max_size_guidance)?;
     }
 
     let start = std::time::Instant::now();
@@ -369,7 +375,7 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
             max_size_bytes,
             opts.format,
             opts.import_ssp,
-        )?,
+        ),
         Strategy::Component => {
             // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
             let profile_ref = resolve_source_profile(opts.source_profile)?;
@@ -379,9 +385,10 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
                 profile_ref,
                 opts.format,
                 opts.import_ssp,
-            )?
+            )
         }
-    };
+    }
+    .map_err(add_max_size_guidance)?;
 
     // Write primary output
     crate::cli::output::write_output(&result.content, opts.output)?;

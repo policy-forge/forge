@@ -493,6 +493,92 @@ byte comparison, but portable filesystems do not provide conditional rename;
 concurrent lifecycle transitions or external writers therefore require
 external serialization. FORGE does not claim multi-writer transaction safety.
 
+### 3.11 `applicability` — Declare Scope and Analyze Policy Gaps
+
+Applicability analysis consumes one closed `forge.applicability/1` manifest,
+one exact local Catalog or Profile baseline, and zero or more PRD 055 Mapping
+Collections. Omitted controls remain `under-review`. FORGE never derives scope
+from mappings and never labels a mapped control as satisfied.
+
+```bash
+# Catalog scaffold: omitted decisions make every inventoried control under-review
+forge applicability init --framework framework-catalog.json \
+  --output applicability.json
+
+# Profile scaffold: caller supplies the resolved Catalog used for inventory
+forge applicability init --framework framework-profile.json \
+  --resolved-catalog framework-resolved.json \
+  --output applicability.json
+
+# Text, JSON, and static HTML share the same deterministic report model
+forge applicability analyze --manifest applicability.json --format text
+forge applicability analyze --manifest applicability.json --format json \
+  --output applicability-report.json
+forge applicability analyze --manifest applicability.json --format html \
+  --output applicability-report.html
+```
+
+The scaffold records resource type, relative label, raw SHA-256, root UUID,
+metadata version, OSCAL version, resolved-Catalog hash when applicable, and a
+sorted control inventory. To keep large valid inventories bounded, the scaffold
+starts with an empty `decisions` array; the manifest contract classifies every
+omitted control as `under-review`. For a Profile, a reviewer must change
+`resolved_catalog_attestation` to `true` only after confirming the companion.
+Each explicit decision uses one of `applicable`, `not-applicable`, `deferred`,
+or `under-review`. Applicable decisions require reviewer and review time;
+exclusions additionally require rationale; deferrals additionally require a
+`YYYY-MM-DD` revisit date. Explicit `under-review` records may carry only an
+optional assignee (`reviewer_key`) and note.
+
+Every control receives exactly one primary classification:
+`applicable-mapped`, `applicable-reviewed-no-relationship`,
+`applicable-unmapped`, `not-applicable`, `deferred`, or `under-review`. Positive
+mapping participation wins when a control has both positive and explicit
+`no-relationship` edges, while both edge counts remain visible. The JSON/HTML
+review queue uses stable reason codes and retains owner, revisit date, and
+policy-source metadata.
+
+Control and statement subjects retain PRD 055 granularity. A relationship that
+targets only a statement is validated as part of its Mapping Collection but
+does not implicitly classify the statement's parent control as mapped or
+reviewed-no-relationship. Authors must map the control explicitly when that is
+the reviewed conclusion.
+
+Detail filters never change framework-wide totals:
+
+```bash
+forge applicability analyze --manifest applicability.json --format json \
+  --group access-control \
+  --control-prefix ac- \
+  --state applicable-unmapped \
+  --reviewer scope-reviewer \
+  --policy-source policy-catalog.json
+```
+
+The explicit CI gates are `never` (default), `applicable-unmapped`,
+`any-review-action`, and `overdue-deferred`. The overdue gate requires a caller-
+supplied date so repeated runs do not depend on the wall clock:
+
+```bash
+forge applicability analyze --manifest applicability.json \
+  --fail-on overdue-deferred --as-of 2026-10-01
+```
+
+The gate treats a deferral as overdue only when its `revisit_date` is strictly
+earlier than `--as-of`. It does not fire on the revisit date itself.
+
+Analysis is offline and bounded. Unknown/duplicate manifest keys, unsupported
+versions, stale inventories or subject fingerprints, conflicting decisions or
+relationships, contradictory policy-source identities, duplicate or unstable
+Mapping UUIDs, undeclared map reviewers, mismatched framework sides, absolute
+local report paths, and output/input aliases fail before any report is written. Exit `0`
+means valid analysis without the selected gate condition, exit `1` means a
+valid report requires human review, and exit `2` means analysis failed.
+Artifact and Mapping Collection paths are trusted local file instructions
+resolved from the manifest directory and may intentionally contain `..`; the
+manifest is not a filesystem-confinement boundary. Output parent directories
+must already exist.
+
 ## 4. Global Options
 
 ```bash

@@ -139,6 +139,28 @@ fn build_emits_schema_valid_mapping_and_scoped_participation_report() {
 }
 
 #[test]
+fn build_accepts_schema_valid_groups_without_ids() {
+    let (dir, manifest_path) = setup();
+    let source_path = dir.path().join("source.json");
+    let mut source: Value =
+        serde_json::from_slice(&std::fs::read(&source_path).expect("source")).expect("JSON");
+    source["catalog"]["groups"][0].as_object_mut().expect("group").remove("id");
+    write_json(&source_path, &source);
+    let output_path = dir.path().join("mapping.json");
+
+    let result = run(&[
+        "mapping",
+        "build",
+        "--manifest",
+        manifest_path.to_str().expect("manifest path"),
+        "--output",
+        output_path.to_str().expect("output path"),
+    ]);
+    assert!(result.status.success(), "{}", String::from_utf8_lossy(&result.stderr));
+    assert!(output_path.exists());
+}
+
+#[test]
 fn text_report_includes_resource_validation_and_author_estimate_evidence() {
     let (dir, manifest_path) = setup();
     let report_path = dir.path().join("report.txt");

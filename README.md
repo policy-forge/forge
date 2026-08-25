@@ -242,6 +242,44 @@ artifact-identity-changed, and non-approved states require action. Exit codes
 are `0` for a valid record under the selected gate, `1` for a valid
 action-required result, and `2` for an invalid record or transition.
 
+### Framework Applicability and Policy Gaps
+
+Record explicit human scope decisions against an exact Catalog/Profile revision,
+then combine them with reviewed Control Mapping artifacts. FORGE reports mapping
+participation and review state; it does not infer scope or make assurance claims.
+
+```bash
+# Inventory every control; omitted decisions classify as under-review
+forge applicability init --framework framework.json \
+  --output applicability.json
+
+# Produce a deterministic JSON report and gate on applicable unmapped controls
+forge applicability analyze --manifest applicability.json \
+  --format json --output applicability-report.json \
+  --fail-on applicable-unmapped
+
+# Filter displayed details without changing framework-wide totals
+forge applicability analyze --manifest applicability.json --format html \
+  --group access-control --state applicable-unmapped \
+  --output applicability-report.html
+
+# Deterministically gate overdue deferrals (no wall-clock dependency)
+forge applicability analyze --manifest applicability.json \
+  --fail-on overdue-deferred --as-of 2026-10-01
+```
+
+Profiles require `--resolved-catalog` during initialization and explicit
+`resolved_catalog_attestation: true` before analysis. Reports include exact
+framework, policy-source, and Mapping fingerprints and provenance, reconciled
+category totals, and a stable machine-readable review queue. Exit codes are `0` for a valid analysis
+whose selected gate does not fire, `1` for a valid report requiring review, and
+`2` when trustworthy analysis is impossible.
+
+Statement-level Mapping Collection relationships remain distinct statement
+evidence and never roll up implicitly to a parent control classification. The
+overdue deferral gate fires only when `revisit_date` is strictly earlier than
+`--as-of`; a deferral is due, but not yet overdue, on its revisit date.
+
 ### Global Options
 
 ```bash

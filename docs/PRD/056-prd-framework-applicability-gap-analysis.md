@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** Draft
-> **Last Updated:** 2026-08-24 <!-- @auto -->
+> **Status:** Technical implementation complete; human release gates pending
+> **Last Updated:** 2026-08-25 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `056-framework-applicability-gap-analysis`
 **Created**: 2026-08-24
-**Status**: Draft
+**Status**: Technical implementation complete; human release gates pending
 **Input**: Post-v1.3 product planning
 
 ---
@@ -125,6 +125,7 @@ Compliance engineers need to define the controls in scope for their organization
 3. **Absence remains ambiguous.** `applicable-unmapped` is a review queue item, not proof that the policy library lacks relevant language.
 4. **Exclusions are visible.** `not-applicable` and `deferred` remain in totals and always carry rationale.
 5. **Exact resource identity matters.** The framework and every consumed mapping must reconcile by type, root UUID, version, OSCAL version, and SHA-256.
+6. **Local manifests are trusted file instructions.** Artifact and Mapping Collection paths resolve from the manifest directory and may contain `..`; applicability analysis does not claim to confine filesystem reads to that directory.
 
 ## Functional Model :yellow_circle: `@human-review`
 
@@ -152,6 +153,10 @@ Each eligible framework control appears exactly once as one of:
 
 A control is `applicable-mapped` only when it participates on the framework side of at least one valid, non-stale positive relationship in an accepted Mapping Collection. A control participating only in explicit `no-relationship` maps is `applicable-reviewed-no-relationship`; it has been reviewed but still lacks a positive policy relationship. If a control has both positive and `no-relationship` edges to different policy subjects, the primary classification is `applicable-mapped` and the report preserves the `no-relationship` edge count as a secondary review fact.
 
+Statement targets retain PRD 055 subject granularity. They are validated as
+part of an accepted Mapping Collection but do not roll up implicitly to parent
+controls or affect the six control classifications.
+
 ### Aggregation
 
 The MVP may consume multiple Mapping Collections only when all target the same exact framework resource. Duplicate policy sources are allowed, but duplicate Mapping Collection UUIDs or contradictory resource fingerprints are fatal. Counts reconcile to the complete eligible control inventory.
@@ -160,28 +165,28 @@ The MVP may consume multiple Mapping Collections only when all target the same e
 
 ### Must Have (M) — MVP launch blockers :red_circle: `@human-required`
 
-- [ ] **M-1 — Commands:** Provide `forge applicability init --framework <FILE> --output <FILE>` and `forge applicability analyze --manifest <FILE>` with text/JSON report and output options.
-- [ ] **M-2 — Closed manifest:** Parse a bounded `forge.applicability/1` JSON manifest; reject unknown keys, duplicate decoded keys, unsupported versions, and exceeded limits.
-- [ ] **M-3 — Framework validation:** Accept a local JSON Catalog or Profile; require and fingerprint a resolved Catalog companion for a Profile.
-- [ ] **M-4 — Inventory:** Recursively inventory eligible framework controls and reject duplicate or ambiguous IDs.
-- [ ] **M-5 — Decisions:** Validate state vocabulary, control references, reviewer references, timestamps, required rationale, and revisit dates.
-- [ ] **M-6 — Default:** Classify omitted controls as `under-review`; never infer exclusions or applicability.
-- [ ] **M-7 — Mapping inputs:** Validate every Mapping Collection against the pinned schema and require its framework-side identity to match the manifest exactly.
-- [ ] **M-8 — Classification:** Emit exactly one deterministic classification per eligible control and reconcile category counts to the inventory total.
-- [ ] **M-9 — Terminology:** Use mapping participation and review-state language; prohibit compliance, effectiveness, implementation, or certification labels in generated reports.
-- [ ] **M-10 — Provenance:** Report exact framework and mapping fingerprints, root UUIDs, metadata versions, OSCAL versions, manifest hash, reviewers, and analysis schema version.
-- [ ] **M-11 — Conflict handling:** Reject duplicate decisions, conflicting control states, duplicate mapping UUIDs, stale references, and mismatched resource sides before writing output.
-- [ ] **M-12 — Determinism:** Sort by stable control ID and produce byte-identical JSON for identical inputs without timestamps, absolute paths, or environment data.
-- [ ] **M-13 — Safe I/O:** Operate offline, bound input sizes/depth/counts, reject output/input aliases, and use atomic safe writes.
-- [ ] **M-14 — Exit contract:** Exit `0` for complete valid analysis, `1` when review-action categories are present under the selected gate policy, and `2` for invalid input or analysis failure.
-- [ ] **M-15 — Tests:** Cover all state, mismatch, stale-reference, conflict, determinism, safety, and terminology scenarios.
+- [x] **M-1 — Commands:** Provide `forge applicability init --framework <FILE> --output <FILE>` and `forge applicability analyze --manifest <FILE>` with text/JSON report and output options.
+- [x] **M-2 — Closed manifest:** Parse a bounded `forge.applicability/1` JSON manifest; reject unknown keys, duplicate decoded keys, unsupported versions, and exceeded limits.
+- [x] **M-3 — Framework validation:** Accept a local JSON Catalog or Profile; require and fingerprint a resolved Catalog companion for a Profile.
+- [x] **M-4 — Inventory:** Recursively inventory eligible framework controls and reject duplicate or ambiguous IDs.
+- [x] **M-5 — Decisions:** Validate state vocabulary, control references, reviewer references, timestamps, required rationale, and revisit dates.
+- [x] **M-6 — Default:** Classify omitted controls as `under-review`; never infer exclusions or applicability.
+- [x] **M-7 — Mapping inputs:** Validate every Mapping Collection against the pinned schema and require its framework-side identity to match the manifest exactly.
+- [x] **M-8 — Classification:** Emit exactly one deterministic classification per eligible control and reconcile category counts to the inventory total.
+- [x] **M-9 — Terminology:** Use mapping participation and review-state language; prohibit compliance, effectiveness, implementation, or certification labels in generated reports.
+- [x] **M-10 — Provenance:** Report exact framework and mapping fingerprints, root UUIDs, metadata versions, OSCAL versions, manifest hash, reviewers, and analysis schema version.
+- [x] **M-11 — Conflict handling:** Reject duplicate decisions, conflicting control states, duplicate mapping UUIDs, stale references, and mismatched resource sides before writing output.
+- [x] **M-12 — Determinism:** Sort by stable control ID and produce byte-identical JSON for identical inputs without timestamps, absolute paths, or environment data.
+- [x] **M-13 — Safe I/O:** Operate offline, bound input sizes/depth/counts, reject output/input aliases, and use atomic safe writes.
+- [x] **M-14 — Exit contract:** Exit `0` for complete valid analysis, `1` when review-action categories are present under the selected gate policy, and `2` for invalid input or analysis failure.
+- [x] **M-15 — Tests:** Cover all state, mismatch, stale-reference, conflict, determinism, safety, and terminology scenarios.
 
 ### Should Have (S) — High-value fast follows :yellow_circle: `@human-review`
 
-- [ ] **S-1:** Filter reports by group, control prefix, state, reviewer, or policy source without changing totals.
-- [ ] **S-2:** Emit a machine-readable review queue containing stable reason codes and owner/revisit metadata.
-- [ ] **S-3:** Support an approved, explicit gate policy such as no `applicable-unmapped` or overdue `deferred` controls.
-- [ ] **S-4:** Produce a static HTML report from the same versioned report model.
+- [x] **S-1:** Filter reports by group, control prefix, state, reviewer, or policy source without changing totals.
+- [x] **S-2:** Emit a machine-readable review queue containing stable reason codes and owner/revisit metadata.
+- [x] **S-3:** Support an approved, explicit gate policy such as no `applicable-unmapped` or overdue `deferred` controls.
+- [x] **S-4:** Produce a static HTML report from the same versioned report model.
 
 ### Could Have (C) — Future considerations :green_circle: `@llm-autonomous`
 
@@ -261,4 +266,8 @@ The MVP may consume multiple Mapping Collections only when all target the same e
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.5 | 2026-08-25 | Codex | Remediated adversarial review findings: self-analyzable large scaffolds, schema-valid idless groups, duplicate group-filter rejection, runtime count reconciliation, portable path hardening, strict filter validation, complete HTML decision evidence, and documented statement and overdue semantics |
+| 0.4 | 2026-08-25 | Codex | Hardened Mapping Collection consumption with exact policy-source provenance, cross-collection stable identity checks, reviewer-party linkage, source-subject fingerprint consistency, and contradictory relationship rejection |
+| 0.3 | 2026-08-25 | Codex | Completed all code-deliverable Must and Should requirements with filtering, stable review queues, explicit deterministic gates, static HTML, complete provenance, path-safety controls, cross-platform golden output, and expanded contract tests; human and design-partner release gates remain pending |
+| 0.2 | 2026-08-25 | Codex | Began implementation with strict manifest parsing, Catalog/Profile scaffolding, Mapping Collection validation, deterministic classification/reporting, CI gate exits, and end-to-end contract tests |
 | 0.1 | 2026-08-24 | Codex | Initial draft for reviewed framework applicability and policy-gap analysis |
