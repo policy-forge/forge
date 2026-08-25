@@ -141,14 +141,15 @@ pub fn load(
         )));
     }
     validate_schema(path_label, &json, expected_model)?;
-    let evidence = extract_evidence(path_label, resource, &json, raw_sha256)?;
+    let mut evidence = extract_evidence(path_label, resource, &json, raw_sha256)?;
 
-    let inventory_json = if resource.resource_type == ResourceType::Profile {
+    let inventory = if resource.resource_type == ResourceType::Profile {
         let companion = resource.resolved_catalog.as_ref().ok_or_else(|| {
             mapping_error(format!("{path_label}.resolved_catalog is required for a Profile"))
         })?;
         let companion_path = manifest_dir.join(companion);
         let companion_bytes = read_bounded_json(&companion_path, path_label)?;
+        evidence.resolved_catalog_sha256 = Some(sha256(&companion_bytes));
         let companion_json: Value = serde_json::from_slice(&companion_bytes).map_err(|error| {
             mapping_error(format!("{path_label}.resolved_catalog is not valid JSON: {error}"))
         })?;
@@ -160,17 +161,11 @@ pub fn load(
             )));
         }
         validate_schema(path_label, &companion_json, OscalModelType::Catalog)?;
-        companion_json
+        inventory_catalog(path_label, &companion_json)?
     } else {
-        json.clone()
+        inventory_catalog(path_label, &json)?
     };
 
-    let mut evidence = evidence;
-    if let Some(companion) = &resource.resolved_catalog {
-        let companion_bytes = read_bounded_json(&manifest_dir.join(companion), path_label)?;
-        evidence.resolved_catalog_sha256 = Some(sha256(&companion_bytes));
-    }
-    let inventory = inventory_catalog(path_label, &inventory_json)?;
     if let Some(expected) = &resource.inventory {
         let actual = ResourceInventorySnapshot {
             root_uuid: evidence.root_uuid.clone(),
@@ -193,10 +188,7 @@ pub(super) fn validate_schema(
     json: &Value,
     model: OscalModelType,
 ) -> Result<(), ForgeError> {
-    let schema = validate::load_schema(model).map_err(|error| {
-        mapping_error(format!("{path_label} schema validation failed: {error}"))
-    })?;
-    let validator = jsonschema::validator_for(&schema).map_err(|error| {
+    let validator = validate::compiled_validator(model).map_err(|error| {
         mapping_error(format!("{path_label} schema compilation failed: {error}"))
     })?;
     let mut errors: Vec<_> = validator

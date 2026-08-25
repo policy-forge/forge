@@ -94,6 +94,14 @@ fn run(args: &[&str]) -> std::process::Output {
     Command::new(env!("CARGO_BIN_EXE_forge")).args(args).output().expect("run forge")
 }
 
+fn run_in(cwd: &Path, args: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_forge"))
+        .current_dir(cwd)
+        .args(args)
+        .output()
+        .expect("run forge")
+}
+
 #[test]
 fn build_emits_schema_valid_mapping_and_scoped_participation_report() {
     let (dir, manifest_path) = setup();
@@ -303,6 +311,8 @@ fn baseline_check_reports_subject_change_and_new_gap_with_exit_1() {
         baseline_path.to_str().unwrap(),
         "--report-format",
         "json",
+        "--fail-on",
+        "any",
     ]);
     assert_eq!(check.status.code(), Some(1), "{}", String::from_utf8_lossy(&check.stderr));
     let report: Value = serde_json::from_slice(&check.stdout).expect("JSON impact report");
@@ -393,6 +403,60 @@ fn invalid_baseline_is_incomplete_analysis_exit_2() {
     ]);
     assert_eq!(check.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&check.stderr).contains("must be an OSCAL Control Mapping"));
+}
+
+#[test]
+fn baseline_with_duplicate_map_uuid_is_rejected() {
+    let (dir, manifest_path) = setup();
+    let baseline_path = dir.path().join("baseline.json");
+    let build = run(&[
+        "mapping",
+        "build",
+        "--manifest",
+        manifest_path.to_str().unwrap(),
+        "--output",
+        baseline_path.to_str().unwrap(),
+    ]);
+    assert!(build.status.success(), "{}", String::from_utf8_lossy(&build.stderr));
+
+    let mut baseline: Value =
+        serde_json::from_slice(&std::fs::read(&baseline_path).unwrap()).unwrap();
+    let maps =
+        baseline["mapping-collection"]["mappings"][0]["maps"].as_array_mut().expect("maps array");
+    let mut duplicate = maps[0].clone();
+    duplicate["relationship"] = json!("equivalent-to");
+    maps.push(duplicate);
+    write_json(&baseline_path, &baseline);
+
+    let check = run(&[
+        "mapping",
+        "check",
+        "--manifest",
+        manifest_path.to_str().unwrap(),
+        "--baseline",
+        baseline_path.to_str().unwrap(),
+    ]);
+    assert_eq!(check.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&check.stderr).contains("duplicate map UUID"));
+}
+
+#[test]
+fn public_build_rejects_unknown_provenance_reviewer() {
+    let (dir, _manifest_path) = setup();
+    let mut manifest: forge::mapping::manifest::MappingManifest =
+        serde_json::from_value(manifest("source-1", &["target-1"])).unwrap();
+    manifest.provenance.reviewer_keys = vec!["unknown-reviewer".to_string()];
+    let source =
+        forge::mapping::inventory::load(dir.path(), "$.mapping.source", &manifest.mapping.source)
+            .unwrap();
+    let target =
+        forge::mapping::inventory::load(dir.path(), "$.mapping.target", &manifest.mapping.target)
+            .unwrap();
+
+    let Err(error) = forge::mapping::model::build(&manifest, &source, &target, false) else {
+        panic!("unknown reviewer must return an error");
+    };
+    assert!(error.to_string().contains("references unknown reviewer"));
 }
 
 #[test]
@@ -543,14 +607,17 @@ fn different_working_directories_do_not_change_output_or_leak_paths() {
     let second_output = second_dir.path().join("mapping.json");
     for (manifest, output) in [(&first_manifest, &first_output), (&second_manifest, &second_output)]
     {
-        let result = run(&[
-            "mapping",
-            "build",
-            "--manifest",
-            manifest.to_str().unwrap(),
-            "--output",
-            output.to_str().unwrap(),
-        ]);
+        let result = run_in(
+            manifest.parent().unwrap(),
+            &[
+                "mapping",
+                "build",
+                "--manifest",
+                manifest.to_str().unwrap(),
+                "--output",
+                output.to_str().unwrap(),
+            ],
+        );
         assert!(result.status.success(), "{}", String::from_utf8_lossy(&result.stderr));
     }
     let first = std::fs::read_to_string(first_output).unwrap();

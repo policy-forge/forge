@@ -33,7 +33,7 @@ fn collect_resource_uuids(json: &Value) -> HashSet<String> {
     let mut uuids = HashSet::new();
 
     // Try known OSCAL root keys
-    let root_keys = ["catalog", "component-definition"];
+    let root_keys = ["catalog", "component-definition", "mapping-collection"];
     for key in &root_keys {
         if let Some(root) = json.get(key)
             && let Some(resources) = root.pointer("/back-matter/resources")
@@ -315,6 +315,21 @@ mod tests {
 
         let errors = check_orphaned_links(&json);
         assert_eq!(errors.len(), 3);
+    }
+
+    #[test]
+    fn mapping_back_matter_resource_satisfies_local_link() {
+        let resource_uuid = "11111111-1111-4111-8111-111111111111";
+        let json = serde_json::json!({
+            "mapping-collection": {
+                "links": [{"href": format!("#{resource_uuid}")}],
+                "back-matter": {
+                    "resources": [{"uuid": resource_uuid}]
+                }
+            }
+        });
+
+        assert!(check_orphaned_links(&json).is_empty());
     }
 
     #[test]

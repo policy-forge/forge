@@ -341,8 +341,19 @@ pub fn build(
             name: reviewer.name.clone(),
         })
         .collect();
-    let responsible_party_uuids =
-        manifest.provenance.reviewer_keys.iter().map(|key| reviewer_uuids[key.as_str()]).collect();
+    let responsible_party_uuids = manifest
+        .provenance
+        .reviewer_keys
+        .iter()
+        .map(|key| {
+            reviewer_uuids.get(key.as_str()).copied().ok_or_else(|| {
+                mapping_error(format!(
+                    "$.provenance.reviewer_keys references unknown reviewer '{}'",
+                    bounded(key)
+                ))
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let artifact = MappingCollectionEnvelope {
         mapping_collection: MappingCollection {
             uuid: stable_uuid("collection", &manifest.collection.key),

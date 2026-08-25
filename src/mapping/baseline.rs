@@ -66,9 +66,16 @@ pub fn analyze(
 
 fn verify_integrity(baseline: &MappingCollectionEnvelope) -> Result<(), ForgeError> {
     require_prop(&baseline.mapping_collection.metadata.props, "collection-key", "metadata")?;
+    let mut map_uuids = BTreeSet::new();
     for (mapping_index, mapping) in baseline.mapping_collection.mappings.iter().enumerate() {
         require_prop(&mapping.props, "mapping-key", &format!("mappings[{mapping_index}]"))?;
         for (map_index, map) in mapping.maps.iter().enumerate() {
+            if !map_uuids.insert(map.uuid) {
+                return Err(mapping_error(format!(
+                    "baseline contains duplicate map UUID '{}'",
+                    map.uuid
+                )));
+            }
             require_prop(
                 &map.props,
                 "map-key",

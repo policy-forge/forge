@@ -115,6 +115,7 @@ forge export catalog.yaml --format json --output catalog.json
 ### Validate
 
 Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, or Control Mapping from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
+The explicit `--schema-type` override supports Catalog, Component Definition, and Control Mapping; Profile documents currently require auto-detection.
 
 ```bash
 # Validate with human-readable output

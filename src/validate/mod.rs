@@ -19,6 +19,7 @@ pub mod version;
 pub use error_types::{ValidationError, ValidationErrorCategory, ValidationReport};
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use serde_json::Value;
 use tracing::{debug, info};
@@ -180,6 +181,34 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
     Ok(schema)
 }
 
+static CATALOG_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+static COMPONENT_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+static PROFILE_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+static MAPPING_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+
+/// Return the process-wide compiled validator for an OSCAL model.
+///
+/// Compilation success or failure is cached so concurrent and repeated validation paths use the
+/// same immutable validator and deterministic error.
+pub(crate) fn compiled_validator(
+    model_type: OscalModelType,
+) -> Result<&'static jsonschema::Validator, ValidateError> {
+    let cell = match model_type {
+        OscalModelType::Catalog => &CATALOG_VALIDATOR,
+        OscalModelType::ComponentDefinition => &COMPONENT_VALIDATOR,
+        OscalModelType::Profile => &PROFILE_VALIDATOR,
+        OscalModelType::Mapping => &MAPPING_VALIDATOR,
+    };
+    let result = cell.get_or_init(|| {
+        let schema = load_schema(model_type).map_err(|error| error.to_string())?;
+        jsonschema::validator_for(&schema).map_err(|error| error.to_string())
+    });
+    result.as_ref().map_err(|message| ValidateError::SchemaCompilation {
+        model_type: model_type.to_string(),
+        message: message.clone(),
+    })
+}
+
 /// Validate a JSON value against the OSCAL schema for the given model type.
 ///
 /// Collects all errors (does not stop at the first).
@@ -191,13 +220,7 @@ pub fn validate_artifact(
     json: &Value,
     model_type: OscalModelType,
 ) -> Result<ValidationResult, ValidateError> {
-    let schema = load_schema(model_type)?;
-
-    let validator =
-        jsonschema::validator_for(&schema).map_err(|e| ValidateError::SchemaCompilation {
-            model_type: model_type.to_string(),
-            message: e.to_string(),
-        })?;
+    let validator = compiled_validator(model_type)?;
 
     let mut errors: Vec<SchemaError> = validator
         .iter_errors(json)
@@ -275,13 +298,7 @@ pub fn run_full_validation(
     json: &Value,
     model_type: OscalModelType,
 ) -> Result<error_types::ValidationReport, ValidateError> {
-    let schema = load_schema(model_type)?;
-
-    let validator =
-        jsonschema::validator_for(&schema).map_err(|e| ValidateError::SchemaCompilation {
-            model_type: model_type.to_string(),
-            message: e.to_string(),
-        })?;
+    let validator = compiled_validator(model_type)?;
 
     // Schema validation: collect all raw errors and format them
     let mut schema_errors: Vec<error_types::ValidationError> = validator
@@ -590,6 +607,26 @@ mod tests {
         assert!(msg.contains("catalog"));
         assert!(msg.contains("component-definition"));
         assert!(msg.contains("profile"));
+    }
+
+    #[test]
+    fn detect_model_type_rejects_catalog_and_mapping_ambiguity() {
+        let json = serde_json::json!({
+            "catalog": {},
+            "mapping-collection": {}
+        });
+        let error = detect_model_type(&json).expect_err("multiple roots must be ambiguous");
+        assert!(matches!(error, ValidateError::AmbiguousArtifact { .. }));
+        let message = error.to_string();
+        assert!(message.contains("catalog"));
+        assert!(message.contains("mapping-collection"));
+    }
+
+    #[test]
+    fn compiled_validator_is_cached_per_model() {
+        let first = compiled_validator(OscalModelType::Mapping).expect("compile Mapping schema");
+        let second = compiled_validator(OscalModelType::Mapping).expect("reuse Mapping schema");
+        assert!(std::ptr::eq(first, second));
     }
 
     #[test]
