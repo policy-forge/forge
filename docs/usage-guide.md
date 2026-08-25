@@ -453,9 +453,16 @@ forge lifecycle attest --record policy-lifecycle.json \
 Approval evidence must use identical fingerprints and meet every declared role
 count. Additional distinct evidence can be supplied as repeatable
 `--assertion ACTOR=ROLE` values. Separation rules compare declared actor keys;
-they do not prove identity or authority. An approved record whose current bytes
-differ reports `approved-drifted`. `status` classifies `due-soon` on the
-inclusive configured boundary and `overdue` only after the next-review date.
+they do not prove identity or authority. When author/reviewer or
+author/approver separation is enabled, the review window must include at least
+one declared `author` assertion; missing author evidence fails closed. An
+approved record whose current bytes differ reports `approved-drifted`; a
+generated artifact type or root-UUID change is also reported as action required
+with `artifact-identity-changed`, rather than invalid JSON. `status` classifies
+the next-review date itself as `due-soon` and only later dates as `overdue`.
+`due-soon` is informational under the publication gate. The gate blocks
+overdue, drifted, artifact-identity-changed, draft, in-review, superseded, and
+retired records, so historical portfolios must be curated for publication.
 `check` validates structure, artifact drift, and portfolio relationships without
 inventing an `--as-of` date. Check/status JSON is always an array, even for one
 record. Repeat `--record` for deterministic portfolio status and
@@ -470,6 +477,13 @@ does not sign anything and refuses records that are not currently approved or
 whose approved bytes have drifted. Exit `0` means valid under the selected gate,
 exit `1` means valid but action is required, and exit `2` means the record,
 artifacts, portfolio, or transition is invalid.
+
+Event IDs bind policy metadata, parties, approval rules, review configuration,
+and transition evidence. Direct edits to those surrounding fields invalidate
+existing history. Transition writes use durable atomic replacement and a final
+byte comparison, but portable filesystems do not provide conditional rename;
+concurrent lifecycle transitions or external writers therefore require
+external serialization. FORGE does not claim multi-writer transaction safety.
 
 ## 4. Global Options
 

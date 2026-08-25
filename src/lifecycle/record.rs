@@ -184,7 +184,7 @@ pub struct TransitionEvent {
     pub replacement: Option<PolicyReference>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct ActorAssertion {
     pub actor_key: String,
@@ -404,6 +404,9 @@ fn validate_history(record: &LifecycleRecord) -> Result<(), ForgeError> {
                 "{path}.assertions exceeds the {MAX_ASSERTIONS} entry limit"
             )));
         }
+        if event.assertions.windows(2).any(|items| items[0] >= items[1]) {
+            return Err(error(format!("{path}.assertions must be unique and sorted")));
+        }
         validate_impact_findings(&path, event)?;
         let mut assertions = BTreeSet::new();
         assertions.insert((event.actor_key.as_str(), event.declared_role));
@@ -574,6 +577,11 @@ fn validate_separation(
     let authors = actors_for(DeclaredRole::Author);
     let reviewers = actors_for(DeclaredRole::Reviewer);
     let approvers = actors_for(DeclaredRole::Approver);
+    if (rules.author_reviewer || rules.author_approver) && authors.is_empty() {
+        return Err(error(
+            "approval requires at least one declared author assertion when author separation is enabled",
+        ));
+    }
     for (required, left, right, label) in [
         (rules.author_reviewer, &authors, &reviewers, "author/reviewer"),
         (rules.author_approver, &authors, &approvers, "author/approver"),
@@ -638,8 +646,10 @@ pub fn event_id(record: &LifecycleRecord, event: &TransitionEvent) -> Result<Str
     #[derive(Serialize)]
     struct Seed<'a> {
         schema_version: &'a str,
-        policy_key: &'a str,
-        version_key: &'a str,
+        policy: &'a PolicyIdentity,
+        parties: &'a [Party],
+        approval_policy: &'a ApprovalPolicy,
+        review: &'a ReviewSchedule,
         sequence: u32,
         previous_state: LifecycleState,
         next_state: LifecycleState,
@@ -654,8 +664,10 @@ pub fn event_id(record: &LifecycleRecord, event: &TransitionEvent) -> Result<Str
     }
     let seed = serde_json::to_vec(&Seed {
         schema_version: SCHEMA_VERSION,
-        policy_key: &record.policy.policy_key,
-        version_key: &record.policy.version_key,
+        policy: &record.policy,
+        parties: &record.parties,
+        approval_policy: &record.approval_policy,
+        review: &record.review,
         sequence: event.sequence,
         previous_state: event.previous_state,
         next_state: event.next_state,

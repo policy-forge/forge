@@ -230,8 +230,10 @@ forge lifecycle attest --record policy-lifecycle.json \
 including supersession links and cycles, without deriving date-relative review
 conditions. JSON check/status output is always an array, including for one
 record. `status` never emits policy prose by default. Re-review transitions can
-link bounded PRD-057 findings with repeatable `--impact-finding-id` values. Exit
-codes are `0` for a valid record under the selected gate, `1` for a valid
+link bounded PRD-057 findings with repeatable `--impact-finding-id` values.
+`due-soon` is informational under the publication gate; overdue, drifted,
+artifact-identity-changed, and non-approved states require action. Exit codes
+are `0` for a valid record under the selected gate, `1` for a valid
 action-required result, and `2` for an invalid record or transition.
 
 ### Global Options

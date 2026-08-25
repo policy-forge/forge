@@ -160,6 +160,105 @@ fn configurable_role_counts_accept_distinct_assertions() {
 }
 
 #[test]
+fn author_separation_requires_declared_author_evidence() {
+    let fixture = Fixture::new("author-separation-policy", false);
+    let mut record: Value =
+        serde_json::from_slice(&std::fs::read(&fixture.record).expect("record")).expect("json");
+    record["parties"].as_array_mut().expect("parties").push(json!({
+        "key": "author",
+        "roles": ["author"]
+    }));
+    record["approval_policy"]["separation"]["author_approver"] = json!(true);
+    std::fs::write(&fixture.record, serde_json::to_vec_pretty(&record).expect("serialize record"))
+        .expect("write record");
+
+    let review =
+        fixture.transition("in-review", "reviewer", "reviewer", "2026-08-25T10:00:00Z", &[]);
+    assert!(review.status.success(), "{}", String::from_utf8_lossy(&review.stderr));
+    let before = std::fs::read(&fixture.record).expect("before rejection");
+    let rejected =
+        fixture.transition("approved", "approver", "approver", "2026-08-25T11:00:00Z", &[]);
+    assert_eq!(rejected.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("declared author assertion"));
+    assert_eq!(std::fs::read(&fixture.record).expect("after rejection"), before);
+
+    let approved = fixture.transition(
+        "approved",
+        "approver",
+        "approver",
+        "2026-08-25T11:00:00Z",
+        &["--assertion", "author=author"],
+    );
+    assert!(approved.status.success(), "{}", String::from_utf8_lossy(&approved.stderr));
+}
+
+#[test]
+fn event_ids_bind_policy_parties_approval_rules_and_review_schedule() {
+    let fixture = Fixture::new("context-binding-policy", false);
+    fixture.approve();
+    let original: Value =
+        serde_json::from_slice(&std::fs::read(&fixture.record).expect("record")).expect("json");
+
+    let mutations: [fn(&mut Value); 3] = [
+        |record| {
+            record["parties"][0]["roles"].as_array_mut().expect("roles").push(json!("custodian"));
+        },
+        |record| {
+            record["approval_policy"]["separation"]["reviewer_approver"] = json!(true);
+        },
+        |record| {
+            record["review"]["due_soon_days"] = json!(29);
+        },
+    ];
+    for mutate in mutations {
+        let mut changed = original.clone();
+        mutate(&mut changed);
+        std::fs::write(
+            &fixture.record,
+            serde_json::to_vec_pretty(&changed).expect("serialize changed record"),
+        )
+        .expect("write changed record");
+        let checked =
+            run(&["lifecycle", "check", "--record", fixture.record.to_str().expect("record path")]);
+        assert_eq!(checked.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&checked.stderr).contains("event_id"));
+    }
+}
+
+#[test]
+fn assertion_order_and_duplicates_do_not_change_event_bytes() {
+    let first = Fixture::new("assertion-order-policy", false);
+    let second = Fixture::new("assertion-order-policy", false);
+    let first_transition = first.transition(
+        "in-review",
+        "reviewer",
+        "reviewer",
+        "2026-08-25T10:00:00Z",
+        &[
+            "--assertion",
+            "owner=owner",
+            "--assertion",
+            "approver=approver",
+            "--assertion",
+            "owner=owner",
+        ],
+    );
+    let second_transition = second.transition(
+        "in-review",
+        "reviewer",
+        "reviewer",
+        "2026-08-25T10:00:00Z",
+        &["--assertion", "approver=approver", "--assertion", "owner=owner"],
+    );
+    assert!(first_transition.status.success());
+    assert!(second_transition.status.success());
+    assert_eq!(
+        std::fs::read(&first.record).expect("first record"),
+        std::fs::read(&second.record).expect("second record")
+    );
+}
+
+#[test]
 fn approved_byte_drift_is_action_required_without_policy_prose() {
     let fixture = Fixture::new("drift-policy", false);
     fixture.approve();
@@ -206,31 +305,83 @@ fn approved_generated_artifact_drift_is_action_required() {
 }
 
 #[test]
-fn separation_failure_and_retired_terminal_leave_record_unchanged() {
-    let fixture = Fixture::new("separation-policy", true);
-    let review = fixture.transition("in-review", "same", "reviewer", "2026-08-25T10:00:00Z", &[]);
-    assert!(review.status.success(), "{}", String::from_utf8_lossy(&review.stderr));
+fn approved_artifact_identity_change_is_action_required_not_invalid_input() {
+    let fixture = Fixture::new("artifact-identity-policy", false);
+    fixture.approve();
+    write_json(
+        &fixture.artifact,
+        &catalog("22222222-2222-4222-8222-222222222222", "Replacement artifact"),
+    );
 
+    let status = run(&[
+        "lifecycle",
+        "status",
+        "--record",
+        fixture.record.to_str().expect("record"),
+        "--as-of",
+        "2026-08-25",
+        "--format",
+        "json",
+    ]);
+    assert_eq!(status.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&status.stdout).expect("status json");
+    assert_eq!(report[0]["derived_status"], "approved-drifted");
+    assert!(
+        report[0]["blockers"]
+            .as_array()
+            .expect("blockers")
+            .contains(&json!("artifact-identity-changed"))
+    );
+    assert_eq!(
+        report[0]["artifact_identity_changes"],
+        json!([fixture
+            .artifact
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("artifact name")])
+    );
+
+    let check = run(&[
+        "lifecycle",
+        "check",
+        "--record",
+        fixture.record.to_str().expect("record"),
+        "--format",
+        "json",
+    ]);
+    assert_eq!(check.status.code(), Some(1));
+}
+
+#[test]
+fn separation_failure_and_retired_terminal_leave_record_unchanged() {
+    let separation = Fixture::new("separation-policy", true);
     let mut record: Value =
-        serde_json::from_slice(&std::fs::read(&fixture.record).expect("record")).expect("json");
+        serde_json::from_slice(&std::fs::read(&separation.record).expect("record")).expect("json");
     record["approval_policy"]["separation"]["reviewer_approver"] = json!(true);
-    std::fs::write(&fixture.record, serde_json::to_vec_pretty(&record).expect("serialize record"))
-        .expect("write record");
-    let before = std::fs::read(&fixture.record).expect("before");
-    let rejected = fixture.transition("approved", "same", "approver", "2026-08-25T11:00:00Z", &[]);
+    std::fs::write(
+        &separation.record,
+        serde_json::to_vec_pretty(&record).expect("serialize record"),
+    )
+    .expect("write record");
+    let review =
+        separation.transition("in-review", "same", "reviewer", "2026-08-25T10:00:00Z", &[]);
+    assert!(review.status.success(), "{}", String::from_utf8_lossy(&review.stderr));
+    let before = std::fs::read(&separation.record).expect("before");
+    let rejected =
+        separation.transition("approved", "same", "approver", "2026-08-25T11:00:00Z", &[]);
     assert_eq!(rejected.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&rejected.stderr).contains("reviewer/approver separation"));
-    assert_eq!(std::fs::read(&fixture.record).expect("after"), before);
+    assert_eq!(std::fs::read(&separation.record).expect("after"), before);
 
-    record["approval_policy"]["separation"]["reviewer_approver"] = json!(false);
-    std::fs::write(&fixture.record, serde_json::to_vec_pretty(&record).expect("serialize record"))
-        .expect("write record");
-    let retired = fixture.transition("retired", "same", "approver", "2026-08-25T12:00:00Z", &[]);
+    let terminal = Fixture::new("terminal-policy", true);
+    let review = terminal.transition("in-review", "same", "reviewer", "2026-08-25T10:00:00Z", &[]);
+    assert!(review.status.success(), "{}", String::from_utf8_lossy(&review.stderr));
+    let retired = terminal.transition("retired", "same", "approver", "2026-08-25T12:00:00Z", &[]);
     assert!(retired.status.success(), "{}", String::from_utf8_lossy(&retired.stderr));
-    let retired_before = std::fs::read(&fixture.record).expect("retired");
-    let terminal = fixture.transition("draft", "same", "author", "2026-08-25T13:00:00Z", &[]);
-    assert_eq!(terminal.status.code(), Some(2));
-    assert_eq!(std::fs::read(&fixture.record).expect("terminal"), retired_before);
+    let retired_before = std::fs::read(&terminal.record).expect("retired");
+    let rejected = terminal.transition("draft", "same", "author", "2026-08-25T13:00:00Z", &[]);
+    assert_eq!(rejected.status.code(), Some(2));
+    assert_eq!(std::fs::read(&terminal.record).expect("terminal"), retired_before);
 }
 
 #[test]
@@ -273,6 +424,37 @@ fn explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive
 }
 
 #[test]
+fn publication_gate_treats_due_soon_as_informational_but_blocks_overdue() {
+    let fixture = Fixture::new("publication-gate-policy", false);
+    fixture.approve();
+    let due_soon = run(&[
+        "lifecycle",
+        "status",
+        "--record",
+        fixture.record.to_str().expect("record"),
+        "--as-of",
+        "2026-08-25",
+        "--format",
+        "json",
+    ]);
+    assert!(due_soon.status.success(), "{}", String::from_utf8_lossy(&due_soon.stderr));
+    let report: Value = serde_json::from_slice(&due_soon.stdout).expect("due-soon json");
+    assert_eq!(report[0]["derived_status"], "due-soon");
+
+    let overdue = run(&[
+        "lifecycle",
+        "status",
+        "--record",
+        fixture.record.to_str().expect("record"),
+        "--as-of",
+        "2026-09-25",
+        "--format",
+        "json",
+    ]);
+    assert_eq!(overdue.status.code(), Some(1));
+}
+
+#[test]
 fn check_is_schedule_neutral_and_accepts_a_relative_record_path() {
     let fixture = Fixture::new("relative-check-policy", false);
     let directory = fixture.record.parent().expect("record parent");
@@ -293,6 +475,43 @@ fn check_is_schedule_neutral_and_accepts_a_relative_record_path() {
     assert_eq!(reports[0]["derived_status"], "draft");
     assert_eq!(reports[0]["as_of"], Value::Null);
     assert_eq!(reports[0]["blockers"], json!([]));
+}
+
+#[test]
+fn init_collapses_duplicate_owner_flags() {
+    let directory = tempfile::tempdir().expect("tempdir");
+    let root = directory.path().canonicalize().expect("canonical tempdir");
+    let source = root.join("owner-policy.md");
+    let record = root.join("owner-policy-lifecycle.json");
+    std::fs::write(&source, "# Owner policy\n").expect("source");
+    let initialized = run(&[
+        "lifecycle",
+        "init",
+        "--source",
+        source.to_str().expect("source path"),
+        "--output",
+        record.to_str().expect("record path"),
+        "--policy-key",
+        "owner-policy",
+        "--version-key",
+        "v1",
+        "--title",
+        "Owner Policy",
+        "--owner",
+        "owner",
+        "--owner",
+        "owner",
+        "--party",
+        "reviewer=reviewer",
+        "--party",
+        "approver=approver",
+        "--next-review",
+        "2026-09-24",
+    ]);
+    assert!(initialized.status.success(), "{}", String::from_utf8_lossy(&initialized.stderr));
+    let value: Value =
+        serde_json::from_slice(&std::fs::read(record).expect("record")).expect("json");
+    assert_eq!(value["policy"]["owner_keys"], json!(["owner"]));
 }
 
 #[test]
