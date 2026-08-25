@@ -252,7 +252,6 @@ fn duplicate_manifest_key_and_output_alias_are_rejected() {
     assert!(String::from_utf8_lossy(&alias.stderr).contains("aliases a mapping input"));
 }
 
-#[cfg(unix)]
 #[test]
 fn hard_link_output_alias_is_rejected_without_modifying_the_input() {
     let (dir, manifest_path) = setup();

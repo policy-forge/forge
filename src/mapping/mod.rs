@@ -437,39 +437,13 @@ fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
     if !left.exists() || !right.exists() {
         return Ok(false);
     }
-    let left_metadata = std::fs::metadata(left)
-        .map_err(|error| mapping_error(format!("cannot inspect '{}': {error}", left.display())))?;
-    let right_metadata = std::fs::metadata(right)
-        .map_err(|error| mapping_error(format!("cannot inspect '{}': {error}", right.display())))?;
-    Ok(same_file_identity(&left_metadata, &right_metadata))
-}
-
-#[cfg(unix)]
-fn same_file_identity(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
-    use std::os::unix::fs::MetadataExt;
-
-    left.dev() == right.dev() && left.ino() == right.ino()
-}
-
-#[cfg(windows)]
-fn same_file_identity(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
-    use std::os::windows::fs::MetadataExt;
-
-    matches!(
-        (
-            left.volume_serial_number(),
-            left.file_index(),
-            right.volume_serial_number(),
-            right.file_index(),
-        ),
-        (Some(left_volume), Some(left_index), Some(right_volume), Some(right_index))
-            if left_volume == right_volume && left_index == right_index
-    )
-}
-
-#[cfg(not(any(unix, windows)))]
-fn same_file_identity(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> bool {
-    false
+    same_file::is_same_file(left, right).map_err(|error| {
+        mapping_error(format!(
+            "cannot compare '{}' and '{}': {error}",
+            left.display(),
+            right.display()
+        ))
+    })
 }
 
 fn path_identity(path: &Path) -> Result<PathBuf, ForgeError> {
