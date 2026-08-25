@@ -35,16 +35,16 @@ pub struct ResourceEvidence {
 
 #[derive(Debug, Clone)]
 pub struct Inventory {
-    subjects: BTreeMap<(SubjectType, String), String>,
+    subjects: BTreeMap<SubjectType, BTreeMap<String, String>>,
     ids: BTreeMap<String, SubjectType>,
     ineligible_parts: BTreeMap<String, String>,
-    excerpts: BTreeMap<(SubjectType, String), String>,
+    excerpts: BTreeMap<SubjectType, BTreeMap<String, String>>,
 }
 
 impl Inventory {
     #[must_use]
     pub fn contains(&self, subject_type: SubjectType, id: &str) -> bool {
-        self.subjects.contains_key(&(subject_type, id.to_string()))
+        self.subjects.get(&subject_type).is_some_and(|subjects| subjects.contains_key(id))
     }
 
     #[must_use]
@@ -59,26 +59,27 @@ impl Inventory {
 
     #[must_use]
     pub fn fingerprint(&self, subject_type: SubjectType, id: &str) -> Option<&str> {
-        self.subjects.get(&(subject_type, id.to_string())).map(String::as_str)
+        self.subjects.get(&subject_type).and_then(|subjects| subjects.get(id)).map(String::as_str)
     }
 
     #[must_use]
     pub fn excerpt(&self, subject_type: SubjectType, id: &str) -> Option<&str> {
-        self.excerpts.get(&(subject_type, id.to_string())).map(String::as_str)
+        self.excerpts.get(&subject_type).and_then(|excerpts| excerpts.get(id)).map(String::as_str)
     }
 
     #[must_use]
     pub fn ids_of_type(&self, subject_type: SubjectType) -> BTreeSet<String> {
         self.subjects
-            .keys()
-            .filter(|(kind, _)| *kind == subject_type)
-            .map(|(_, id)| id.clone())
+            .get(&subject_type)
+            .into_iter()
+            .flat_map(|subjects| subjects.keys())
+            .cloned()
             .collect()
     }
 
     #[must_use]
     pub fn count(&self, subject_type: SubjectType) -> usize {
-        self.subjects.keys().filter(|(kind, _)| *kind == subject_type).count()
+        self.subjects.get(&subject_type).map_or(0, BTreeMap::len)
     }
 }
 
@@ -348,7 +349,7 @@ fn insert_subject(
     subject_type: SubjectType,
     inventory: &mut Inventory,
 ) -> Result<(), ForgeError> {
-    if inventory.subjects.len() >= MAX_INVENTORY_SUBJECTS {
+    if inventory.ids.len() >= MAX_INVENTORY_SUBJECTS {
         return Err(mapping_error(format!(
             "{path_label} exceeds the {MAX_INVENTORY_SUBJECTS} subject inventory limit"
         )));
@@ -377,8 +378,8 @@ fn insert_subject(
         .chars()
         .take(160)
         .collect();
-    inventory.subjects.insert((subject_type, id.to_string()), fingerprint);
-    inventory.excerpts.insert((subject_type, id.to_string()), excerpt);
+    inventory.subjects.entry(subject_type).or_default().insert(id.to_string(), fingerprint);
+    inventory.excerpts.entry(subject_type).or_default().insert(id.to_string(), excerpt);
     Ok(())
 }
 
