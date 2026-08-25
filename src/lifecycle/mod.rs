@@ -944,12 +944,22 @@ fn relative_path(base: &Path, target: &Path) -> Result<String, ForgeError> {
 
 #[cfg(windows)]
 fn path_components_equal(left: &Component<'_>, right: &Component<'_>) -> bool {
-    left.as_os_str().to_string_lossy().eq_ignore_ascii_case(&right.as_os_str().to_string_lossy())
+    normalized_windows_component(&left.as_os_str().to_string_lossy())
+        == normalized_windows_component(&right.as_os_str().to_string_lossy())
 }
 
 #[cfg(not(windows))]
 fn path_components_equal(left: &Component<'_>, right: &Component<'_>) -> bool {
     left == right
+}
+
+#[cfg(any(windows, test))]
+fn normalized_windows_component(value: &str) -> String {
+    if let Some(value) = value.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{value}").to_ascii_lowercase()
+    } else {
+        value.strip_prefix(r"\\?\").unwrap_or(value).to_ascii_lowercase()
+    }
 }
 
 fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
@@ -1100,12 +1110,24 @@ mod tests {
         );
     }
 
+    #[test]
+    fn windows_component_normalization_matches_canonical_prefix_forms() {
+        assert_eq!(normalized_windows_component(r"\\?\C:"), normalized_windows_component("c:"));
+        assert_eq!(
+            normalized_windows_component(r"\\?\UNC\Server\Share"),
+            normalized_windows_component(r"\\server\share")
+        );
+    }
+
     #[cfg(windows)]
     #[test]
     fn relative_path_matches_windows_components_case_insensitively() {
         assert_eq!(
-            relative_path(Path::new(r"C:\Work\records"), Path::new(r"c:\work\artifacts\policy.md"))
-                .expect("relative path"),
+            relative_path(
+                Path::new(r"\\?\C:\Work\records"),
+                Path::new(r"c:\work\artifacts\policy.md")
+            )
+            .expect("relative path"),
             Path::new("..").join("artifacts").join("policy.md").to_string_lossy()
         );
     }
