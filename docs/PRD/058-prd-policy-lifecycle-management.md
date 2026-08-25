@@ -37,7 +37,7 @@ No design-partner lifecycle corpus, approval-policy research, or production revi
 
 **In Scope:**
 
-- A bounded `forge.policy-lifecycle/1` local JSON record per policy
+- A bounded `forge.policy-lifecycle/2` local JSON record per policy with non-destructive `/1` migration
 - Stable policy key, title, version, owner roles, source artifact, and generated-artifact fingerprints
 - States `draft`, `in-review`, `approved`, `superseded`, and `retired`
 - Documented allowed transitions with actor, role, time, rationale, and exact input/output hashes
@@ -149,18 +149,18 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 ### Must Have (M) — MVP launch blockers :red_circle: `@human-required`
 
 - [x] **M-1 — Commands:** Provide `forge lifecycle init`, `check`, `transition`, and `status` with text/JSON output and safe file options.
-- [x] **M-2 — Closed schema:** Parse bounded `forge.policy-lifecycle/1` JSON and reject unknown keys, duplicate decoded keys, unsupported versions, gaps in sequence, and exceeded limits.
+- [x] **M-2 — Closed schema:** Parse bounded legacy `/1` and current `forge.policy-lifecycle/2` JSON; reject unknown keys, duplicate decoded keys, unsupported versions, gaps in sequence, and exceeded limits; preserve legacy IDs during explicit migration.
 - [x] **M-3 — Artifact identity:** Fingerprint the policy source plus explicitly listed generated OSCAL artifacts and validate their type/root metadata where supported.
 - [x] **M-4 — State machine:** Enforce only documented state transitions and make `retired` terminal.
-- [x] **M-5 — Transition evidence:** Require actor, declared role, timestamp, rationale, previous state, next state, and exact relevant fingerprints for every event.
+- [x] **M-5 — Transition evidence:** Require actor, declared role, timestamp, rationale, previous state, next state, exact relevant fingerprints, and immutable policy/party/approval/review context for every event ID.
 - [x] **M-6 — Approval policy:** Require a versioned local approval policy defining required declared roles/counts; reject approval when requirements are unmet.
-- [x] **M-7 — Separation rules:** Validate optional author/reviewer/approver key separation while stating that identity is not authenticated.
+- [x] **M-7 — Separation rules:** Validate optional author/reviewer/approver key separation, require declared author evidence when author separation is enabled, and state that identity is not authenticated.
 - [x] **M-8 — Drift:** Derive `approved-drifted` when current bytes differ from approved fingerprints; never preserve clean approved status through content change.
 - [x] **M-9 — Review schedule:** Validate cadence, next-review date, timezone policy, and derived `due-soon`/`overdue` status from an explicit `--as-of` date.
 - [x] **M-10 — Reproducible time:** Require explicit event times and report `--as-of`; do not use wall-clock time in deterministic JSON fixtures or event identity.
 - [x] **M-11 — Supersession:** Validate replacement references, chronological consistency, no self-reference, and no cycles within a supplied portfolio.
 - [x] **M-12 — Append-only history:** Preserve all accepted events; transition application may append one event but never rewrite or delete prior events.
-- [x] **M-13 — Safe mutation:** Validate the complete proposed record, write atomically, reject aliases/symlinks per existing safe-I/O policy, and leave the original intact on failure.
+- [x] **M-13 — Safe mutation:** Validate the complete proposed record, durably replace it atomically, reject aliases/symlinks per existing safe-I/O policy, leave the original intact on failure, and document that concurrent writers require external serialization.
 - [x] **M-14 — Status report:** Emit stable states, derived conditions, owners, due dates, blockers, current hashes, approved hashes, and event IDs without policy prose by default.
 - [x] **M-15 — Exit contract:** Exit `0` for valid policy under the selected gate, `1` for valid lifecycle action required, and `2` for invalid input or transition.
 - [x] **M-16 — Tests:** Cover every transition, approval/separation rule, drift case, date boundary, supersession cycle, determinism, and safe-write failure.
@@ -197,12 +197,12 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 
 | Requirements | Executable coverage |
 |--------------|---------------------|
-| M-1, M-5, M-10, M-12, M-15 | `draft_review_approval_retains_deterministic_evidence`, `explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive` |
+| M-1, M-5, M-10, M-12, M-15 | `draft_review_approval_retains_deterministic_evidence`, `event_ids_bind_policy_parties_approval_rules_and_review_schedule`, `assertion_order_and_duplicates_do_not_change_event_bytes` |
 | M-2 | `closed_schema_rejects_unknown_and_duplicate_keys`; `lifecycle::record` bound and state-machine unit tests |
-| M-3, M-8 | `approved_byte_drift_is_action_required_without_policy_prose`, `approved_generated_artifact_drift_is_action_required` |
+| M-3, M-8 | `approved_byte_drift_is_action_required_without_policy_prose`, `approved_generated_artifact_drift_is_action_required`, `approved_artifact_identity_change_is_action_required_not_invalid_input` |
 | M-4 | `state_machine_matches_prd`, `separation_failure_and_retired_terminal_leave_record_unchanged` |
-| M-6, M-7 | `configurable_role_counts_accept_distinct_assertions`, `separation_failure_and_retired_terminal_leave_record_unchanged` |
-| M-9, M-14 | `explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive`, `check_is_schedule_neutral_and_accepts_a_relative_record_path`, `queue_groups_deterministically_by_owner_and_due_date` |
+| M-6, M-7 | `configurable_role_counts_accept_distinct_assertions`, `author_separation_requires_declared_author_evidence`, `separation_failure_and_retired_terminal_leave_record_unchanged` |
+| M-9, M-14 | `explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive`, `publication_gate_treats_due_soon_as_informational_but_blocks_overdue`, `queue_groups_deterministically_by_owner_and_due_date` |
 | M-11 | `portfolio_check_rejects_supersession_cycle`, `superseded_record_can_retire_without_losing_replacement_evidence`, `portfolio_check_uses_the_replacements_latest_approval` |
 | M-13 | `init_rejects_symlink_output_without_changing_target`, `init_rejects_a_symlink_in_an_input_path_component`, `transition_rejects_hard_link_alias_without_changing_record` |
 | M-16, AC-1–AC-6 | The complete `lifecycle_cli_test` integration suite and `lifecycle::record` unit suite |
@@ -237,6 +237,7 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 | Organization workflows differ | Overfitted state machine | Minimal common states plus versioned approval policy; no arbitrary workflow engine in MVP |
 | Wall-clock behavior breaks reproducibility | Inconsistent CI | Explicit event time and `--as-of` date |
 | Mutating history destroys evidence | Audit failure | Append-only validation and atomic writes |
+| Concurrent writers race a portable rename | Lost transition | Final byte comparison plus explicit external-serialization requirement; no multi-writer transaction claim |
 
 ## Open Questions :yellow_circle: `@human-review`
 
@@ -272,3 +273,4 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 | 0.1 | 2026-08-24 | Codex | Initial draft for deterministic policy lifecycle records and review queues |
 | 0.2 | 2026-08-25 | Codex | Implemented and tested the Must Have technical MVP; human release gates remain pending |
 | 0.3 | 2026-08-25 | Codex | Completed portfolio status, review queues, framework-impact links, and unsigned attestation Should Haves |
+| 0.4 | 2026-08-25 | Codex | Remediated adversarial review findings for separation evidence, publication gating, versioned context-bound event IDs with `/1` migration, deterministic assertions, artifact identity drift, and durable writes |

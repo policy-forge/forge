@@ -7,23 +7,29 @@ use crate::error::ForgeError;
 /// Maximum file size for all file-reading operations (50 MB).
 pub const MAX_FILE_SIZE: u64 = 50 * 1024 * 1024;
 
-/// Write content to a file atomically using temp-file + rename.
+/// Write content durably and atomically using flush + temp-file rename.
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Io` if the temporary file cannot be created, written to, or persisted.
+/// Returns `ForgeError::Io` if the temporary file cannot be created, written, flushed, persisted,
+/// or durably recorded by the containing directory on Unix.
 pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
     use std::io::Write;
 
-    let parent = path.parent().unwrap_or(Path::new("."));
+    let parent =
+        path.parent().filter(|value| !value.as_os_str().is_empty()).unwrap_or(Path::new("."));
     let mut tmp = tempfile::NamedTempFile::new_in(parent)?;
     tmp.write_all(content)?;
-    tmp.persist(path).map_err(|e| {
+    tmp.as_file().sync_all()?;
+    let persisted = tmp.persist(path).map_err(|e| {
         ForgeError::Io(std::io::Error::other(format!(
             "Failed to persist temp file to '{}': {e}",
             path.display()
         )))
     })?;
+    persisted.sync_all()?;
+    #[cfg(unix)]
+    std::fs::File::open(parent)?.sync_all()?;
     Ok(())
 }
 

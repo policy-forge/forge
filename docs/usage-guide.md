@@ -415,8 +415,10 @@ no third-party framework catalogs and defaults reports to IDs and hashes.
 
 ### 3.10 `lifecycle` — Manage Reviewable Policy State
 
-Lifecycle records use the closed, bounded `forge.policy-lifecycle/1` JSON
-contract. One file describes one immutable policy version, its source and
+New lifecycle records use the closed, bounded `forge.policy-lifecycle/2` JSON
+contract. Legacy `/1` records remain readable by `check` and `status`; migrate
+them non-destructively before transitions or attestations. One file describes
+one immutable policy version, its source and
 generated-artifact hashes, declared parties, versioned approval policy,
 date-only review schedule, current state, optional replacement, and append-only
 transition events. Unknown or duplicate JSON keys, unsupported versions,
@@ -428,6 +430,10 @@ forge lifecycle init --source policy.md --artifact catalog.json \
   --version-key v1 --title "Access Control Policy" --owner alice \
   --party alice=owner,author --party bob=reviewer --party carol=approver \
   --next-review 2027-08-25 --separate-reviewer-approver
+
+# Preserve a legacy /1 file and produce a context-bound /2 replacement.
+forge lifecycle migrate --record policy-lifecycle-v1.json \
+  --output policy-lifecycle-v2.json
 
 # Without --apply, transition writes a complete proposal to stdout or --output.
 forge lifecycle transition --record policy-lifecycle.json --to in-review \
@@ -453,9 +459,16 @@ forge lifecycle attest --record policy-lifecycle.json \
 Approval evidence must use identical fingerprints and meet every declared role
 count. Additional distinct evidence can be supplied as repeatable
 `--assertion ACTOR=ROLE` values. Separation rules compare declared actor keys;
-they do not prove identity or authority. An approved record whose current bytes
-differ reports `approved-drifted`. `status` classifies `due-soon` on the
-inclusive configured boundary and `overdue` only after the next-review date.
+they do not prove identity or authority. When author/reviewer or
+author/approver separation is enabled, the review window must include at least
+one declared `author` assertion; missing author evidence fails closed. An
+approved record whose current bytes differ reports `approved-drifted`; a
+generated artifact type or root-UUID change is also reported as action required
+with `artifact-identity-changed`, rather than invalid JSON. `status` classifies
+the next-review date itself as `due-soon` and only later dates as `overdue`.
+`due-soon` is informational under the publication gate. The gate blocks
+overdue, drifted, artifact-identity-changed, draft, in-review, superseded, and
+retired records, so historical portfolios must be curated for publication.
 `check` validates structure, artifact drift, and portfolio relationships without
 inventing an `--as-of` date. Check/status JSON is always an array, even for one
 record. Repeat `--record` for deterministic portfolio status and
@@ -470,6 +483,15 @@ does not sign anything and refuses records that are not currently approved or
 whose approved bytes have drifted. Exit `0` means valid under the selected gate,
 exit `1` means valid but action is required, and exit `2` means the record,
 artifacts, portfolio, or transition is invalid.
+
+Event IDs bind policy metadata, parties, approval rules, review configuration,
+and transition evidence. Direct edits to those surrounding fields invalidate
+existing `/2` history. Migration retains each `/1` event ID as
+`legacy_event_id` and calculates a new context-bound ID without modifying the
+input record. Transition writes use durable atomic replacement and a final
+byte comparison, but portable filesystems do not provide conditional rename;
+concurrent lifecycle transitions or external writers therefore require
+external serialization. FORGE does not claim multi-writer transaction safety.
 
 ## 4. Global Options
 

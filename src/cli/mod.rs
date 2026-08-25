@@ -456,6 +456,15 @@ pub enum LifecycleCommand {
         #[arg(long)]
         output: Option<PathBuf>,
     },
+    /// Migrate a legacy /1 record to a context-bound /2 record
+    Migrate {
+        /// Valid legacy lifecycle record
+        #[arg(long)]
+        record: PathBuf,
+        /// New lifecycle /2 record; the legacy input is never modified
+        #[arg(long)]
+        output: PathBuf,
+    },
     /// Propose a transition, or append it atomically with --apply
     Transition {
         /// Lifecycle record
@@ -960,6 +969,9 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 } else {
                     Ok(())
                 }
+            }
+            LifecycleCommand::Migrate { record, output } => {
+                crate::lifecycle::execute_migrate(record, output)
             }
             LifecycleCommand::Transition {
                 record,
