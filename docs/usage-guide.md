@@ -361,6 +361,56 @@ forge profile --catalog catalog.json --include "ac-1" \
 
 `--include` and `--exclude` are mutually exclusive. At least one must be provided (unless using only `--set-param`, which produces a Profile with empty imports and a warning).
 
+### 3.9 `mapping` — Publish Human-Reviewed Control Relationships
+
+Control Mapping accepts explicit reviewer decisions from a closed,
+versioned `forge.mapping-manifest/1` JSON document. It never downloads
+framework content, follows OSCAL links, invokes `oscal-cli`, generates
+relationship candidates, or interprets gaps as compliance failures.
+
+```bash
+# Deterministic unapproved scaffold; add reviewers, rationale, and maps before build
+forge mapping init --source policy-catalog.json --target framework-catalog.json \
+  --output mapping-manifest.json
+
+# Profiles need a caller-produced resolved Catalog companion
+forge mapping init --source policy-catalog.json --target framework-profile.json \
+  --target-resolved-catalog framework-resolved.json \
+  --output mapping-manifest.json
+
+# OSCAL JSON and reports always use separate streams/files
+forge mapping build --manifest mapping-manifest.json \
+  --output mapping.json \
+  --report mapping-report.json --report-format json
+
+# Read-only baseline impact check for CI
+forge mapping check --manifest mapping-manifest.json \
+  --baseline mapping.json --report-format json --fail-on any
+```
+
+The manifest declares `control-only` or `control-plus-statement` review scope,
+stable collection/mapping/map keys, resource paths and expected hashes,
+reviewer parties, provenance, and one or more explicit maps. Many-to-many sets
+remain one map and source/target direction is never reversed. Missing controls,
+wrong semantic types, stale scaffold inventories, duplicate IDs/keys, invalid
+vocabulary, and confidence/coverage values outside `0..=1` fail before output.
+For a Profile, the reviewer must set `resolved_catalog_attestation: true` after
+confirming that the explicit companion represents that Profile; FORGE records
+both hashes but does not authenticate the reviewer or independently prove the
+resolver lineage.
+
+Reports label ratios as **review participation**, never compliance coverage.
+By default they contain IDs, counts, hashes, and stable machine finding codes.
+`--include-excerpts` adds bounded titles/prose and makes the report as sensitive
+as its source frameworks. Exit `0` means analysis completed without the selected
+review policy firing, exit `1` means completed analysis requires human review,
+and exit `2` means no trustworthy artifact or report could be produced.
+
+Reviewer names and rationale become durable artifact data. FORGE preserves but
+does not authenticate identity, authority, approval, or signatures. Users are
+responsible for permission to process and share framework content; FORGE ships
+no third-party framework catalogs and defaults reports to IDs and hashes.
+
 ## 4. Global Options
 
 ```bash

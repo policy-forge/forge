@@ -4,10 +4,10 @@ use clap::ValueEnum;
 
 /// Detected OSCAL model type.
 ///
-/// Distinguishes between the three core OSCAL document types that FORGE can
+/// Distinguishes between the OSCAL document types that FORGE can
 /// detect and process: [Catalog][crate::oscal::catalog::OscalCatalog],
 /// [`ComponentDefinition`][crate::oscal::component_definition::ComponentDefinition], and
-/// [Profile][crate::oscal::profile::OscalProfile].
+/// [Profile][crate::oscal::profile::OscalProfile], plus Control Mapping collections.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OscalModelType {
     /// An OSCAL Catalog containing groups and controls.
@@ -16,6 +16,8 @@ pub enum OscalModelType {
     ComponentDefinition,
     /// An OSCAL Profile that selects/overrides controls from a Catalog.
     Profile,
+    /// An OSCAL Control Mapping collection.
+    Mapping,
 }
 
 impl OscalModelType {
@@ -26,6 +28,7 @@ impl OscalModelType {
             Self::Catalog => "catalog",
             Self::ComponentDefinition => "component-definition",
             Self::Profile => "profile",
+            Self::Mapping => "mapping-collection",
         }
     }
 }
@@ -135,6 +138,7 @@ mod tests {
         assert_eq!(OscalModelType::Catalog.to_string(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.to_string(), "component-definition");
         assert_eq!(OscalModelType::Profile.to_string(), "profile");
+        assert_eq!(OscalModelType::Mapping.to_string(), "mapping-collection");
     }
 
     #[test]
@@ -142,6 +146,7 @@ mod tests {
         assert_eq!(OscalModelType::Catalog.as_str(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.as_str(), "component-definition");
         assert_eq!(OscalModelType::Profile.as_str(), "profile");
+        assert_eq!(OscalModelType::Mapping.as_str(), "mapping-collection");
     }
 
     #[test]

@@ -40,6 +40,8 @@ pub mod error;
 pub mod export;
 pub mod ingest;
 pub mod io;
+/// Human-reviewed OSCAL Control Mapping workflows.
+pub mod mapping;
 /// Read-only policy revision migration analysis.
 pub mod migration;
 pub mod model;

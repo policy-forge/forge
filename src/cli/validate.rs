@@ -21,6 +21,7 @@ fn schema_type_to_model_type(schema_type: &SchemaType) -> OscalModelType {
     match schema_type {
         SchemaType::Catalog => OscalModelType::Catalog,
         SchemaType::ComponentDefinition => OscalModelType::ComponentDefinition,
+        SchemaType::Mapping => OscalModelType::Mapping,
     }
 }
 

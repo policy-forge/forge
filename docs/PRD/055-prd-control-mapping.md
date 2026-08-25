@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** Draft
-> **Last Updated:** 2026-08-22 <!-- @auto -->
+> **Status:** Technical implementation complete; human release gates pending
+> **Last Updated:** 2026-08-24 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `055-control-mapping`
 **Created**: 2026-08-22
-**Status**: Draft
+**Status**: Technical implementation complete; human release gates pending
 **Input**: FORGE v1.3 roadmap priority 5
 
 ---
@@ -220,43 +220,43 @@ Sorted unmapped control IDs are emitted in OSCAL `source-gap-summary` and `targe
 
 ### Must Have (M) — MVP launch blockers :red_circle: `@human-required`
 
-- [ ] **M-1 — Command:** Provide `forge mapping build --manifest <FILE>` with optional `--output <FILE>`, `--report <FILE>`, `--report-format text|json`, and `--baseline <MAPPING_JSON>`.
-- [ ] **M-2 — Blocking version:** PRD 054's v1.2.3 compatibility gate shall pass before implementation ships; this feature shall pin and embed the Mapping schema from the same v1.2.3 release, never v1.2.0 or a moving `latest` URL.
-- [ ] **M-3 — JSON inputs:** Accept local `.json` Catalog/Profile resources only. XML/YAML inputs and output are rejected with guidance until lossless mapping support is proven.
-- [ ] **M-4 — Offline boundary:** Read only caller-supplied local files. Do not fetch resource `href`, Profile imports, links, schemas, or back-matter URLs.
-- [ ] **M-5 — Profile companion:** Require a schema-valid resolved Catalog companion for every Profile resource and record fingerprints of both. Never perform partial Profile resolution.
-- [ ] **M-6 — Manifest contract:** Parse a bounded `forge.mapping-manifest/1` JSON document with closed top-level and nested schemas; reject unknown keys, duplicate keys after decoding, unsupported versions, invalid Unicode, and oversized values.
-- [ ] **M-7 — Reviewer records:** Require at least one reviewer party, a mapping-reviewer role, responsible-party references, and a non-empty review timestamp. Validate references but state that FORGE does not authenticate identity or authority.
-- [ ] **M-8 — Per-map human evidence:** Require every map to name a reviewer key and contain non-empty decision rationale. Preserve the reviewer key/time in namespaced properties and rationale in `remarks` without rewriting prose.
-- [ ] **M-9 — Resource validation:** Schema-validate each source/target Catalog/Profile and verify declared type, root UUID, metadata version, and OSCAL version. A manifest `expected-sha256`, when present, must match.
-- [ ] **M-10 — Subject inventory:** Recursively index eligible control and statement IDs from each effective resource. Duplicate or ambiguous identifiers are fatal rather than last-write-wins.
-- [ ] **M-11 — Reference validation:** Every source item shall resolve on the source side and every target item on the target side with the declared type. Errors identify manifest JSON path, side, type, and bounded identifier.
-- [ ] **M-12 — Cardinality:** Require one or more unique source items and one or more unique target items per map; preserve grouped one-to-many, many-to-one, and many-to-many cardinality in one OSCAL map.
-- [ ] **M-13 — Vocabulary:** Accept only OSCAL v1.2.3 standard relationship, subject-type, method, matching-rationale, status, confidence, and qualifier values when the OSCAL namespace is used. Custom vocabularies require an explicit absolute namespace and are out of MVP output.
-- [ ] **M-14 — Relationship direction:** Preserve source-to-target direction exactly, especially for `subset-of` and `superset-of`; never canonicalize by swapping sides.
-- [ ] **M-15 — No inferred claims:** Emit only map entries present in the reviewer manifest. Never create `no-relationship` from absence or promote gaps/candidates/confidence into maps.
-- [ ] **M-16 — Provenance:** Populate standard `provenance` method, matching-rationale, status, mapping-description, confidence/coverage when supplied, and responsible parties. Preserve per-mapping overrides where present.
-- [ ] **M-17 — Resource evidence:** Add namespaced properties for source/target raw SHA-256, root UUID, document version, OSCAL version, and Profile resolved-companion SHA-256 where applicable.
-- [ ] **M-18 — Stable UUIDs:** Derive valid UUID v5 identifiers for collection, mapping, map, gap summaries, parties, and other generated identified objects from documented stable manifest keys; reject duplicate keys and UUID collisions.
-- [ ] **M-19 — Schema-valid output:** Serialize typed structures with `serde`, validate the completed JSON against the embedded v1.2.3 Mapping schema, and write no artifact if validation fails.
-- [ ] **M-20 — Gap summaries:** Compute exact sorted unmapped control IDs for each source and target inventory and emit non-empty OSCAL source/target gap summaries without interpreting gaps as `no-relationship`.
-- [ ] **M-21 — Deterministic report:** Produce versioned text or JSON with inventory totals, unique referenced totals, review-participation ratios, unmapped IDs, statement gaps when requested, validation results, resource fingerprints, and reviewer-estimate fields kept separate.
-- [ ] **M-22 — Deterministic bytes:** Given identical resource bytes, manifest bytes, options, baseline bytes, and FORGE version, produce byte-identical OSCAL JSON and reports. Require manifest-supplied metadata time; do not read the clock or emit absolute canonical paths.
-- [ ] **M-23 — Change impact:** With `--baseline`, match mapping objects and maps by stable UUID and report added/removed/changed maps, resource changes, stale references, subject content changes, subject-type changes, and gap changes without selecting replacements.
-- [ ] **M-24 — Baseline integrity:** Schema-validate the baseline as OSCAL v1.2.3 Mapping JSON and verify expected FORGE stable-key/fingerprint properties before comparison; otherwise fail as incomplete analysis.
-- [ ] **M-25 — Stream and write safety:** OSCAL JSON goes to stdout or `--output`; requested reports go only to `--report`; diagnostics go to stderr. Reject output/report paths that alias any input or each other and use existing safe-write conventions.
-- [ ] **M-26 — Bounds:** Reuse file-size and JSON-depth protections and add documented limits for resources, mappings, maps, subjects per side, reviewers, qualifiers, strings, and report entries. No malformed input may panic or exhaust unbounded memory.
-- [ ] **M-27 — Confidence safety:** Validate category or decimal `0..=1`, preserve the chosen representation, label it author confidence, and ensure it never changes validation, gap membership, ordering, approval, or exit status.
-- [ ] **M-28 — Compatibility:** Existing convert, profile, resolve, validate, trace, diff, export, and migrate contracts remain unchanged except that validation gains the Mapping model through this PRD after PRD 054's baseline upgrade.
+- [x] **M-1 — Command:** Provide `forge mapping build --manifest <FILE>` with optional `--output <FILE>`, `--report <FILE>`, `--report-format text|json`, and `--baseline <MAPPING_JSON>`.
+- [x] **M-2 — Blocking version:** PRD 054's v1.2.3 compatibility gate shall pass before implementation ships; this feature shall pin and embed the Mapping schema from the same v1.2.3 release, never v1.2.0 or a moving `latest` URL.
+- [x] **M-3 — JSON inputs:** Accept local `.json` Catalog/Profile resources only. XML/YAML inputs and output are rejected with guidance until lossless mapping support is proven.
+- [x] **M-4 — Offline boundary:** Read only caller-supplied local files. Do not fetch resource `href`, Profile imports, links, schemas, or back-matter URLs.
+- [x] **M-5 — Profile companion:** Require a schema-valid resolved Catalog companion for every Profile resource and record fingerprints of both. Never perform partial Profile resolution.
+- [x] **M-6 — Manifest contract:** Parse a bounded `forge.mapping-manifest/1` JSON document with closed top-level and nested schemas; reject unknown keys, duplicate keys after decoding, unsupported versions, invalid Unicode, and oversized values.
+- [x] **M-7 — Reviewer records:** Require at least one reviewer party, a mapping-reviewer role, responsible-party references, and a non-empty review timestamp. Validate references but state that FORGE does not authenticate identity or authority.
+- [x] **M-8 — Per-map human evidence:** Require every map to name a reviewer key and contain non-empty decision rationale. Preserve the reviewer key/time in namespaced properties and rationale in `remarks` without rewriting prose.
+- [x] **M-9 — Resource validation:** Schema-validate each source/target Catalog/Profile and verify declared type, root UUID, metadata version, and OSCAL version. A manifest `expected-sha256`, when present, must match.
+- [x] **M-10 — Subject inventory:** Recursively index eligible control and statement IDs from each effective resource. Duplicate or ambiguous identifiers are fatal rather than last-write-wins.
+- [x] **M-11 — Reference validation:** Every source item shall resolve on the source side and every target item on the target side with the declared type. Errors identify manifest JSON path, side, type, and bounded identifier.
+- [x] **M-12 — Cardinality:** Require one or more unique source items and one or more unique target items per map; preserve grouped one-to-many, many-to-one, and many-to-many cardinality in one OSCAL map.
+- [x] **M-13 — Vocabulary:** Accept only OSCAL v1.2.3 standard relationship, subject-type, method, matching-rationale, status, confidence, and qualifier values when the OSCAL namespace is used. Custom vocabularies require an explicit absolute namespace and are out of MVP output.
+- [x] **M-14 — Relationship direction:** Preserve source-to-target direction exactly, especially for `subset-of` and `superset-of`; never canonicalize by swapping sides.
+- [x] **M-15 — No inferred claims:** Emit only map entries present in the reviewer manifest. Never create `no-relationship` from absence or promote gaps/candidates/confidence into maps.
+- [x] **M-16 — Provenance:** Populate standard `provenance` method, matching-rationale, status, mapping-description, confidence/coverage when supplied, and responsible parties. Preserve per-mapping overrides where present.
+- [x] **M-17 — Resource evidence:** Add namespaced properties for source/target raw SHA-256, root UUID, document version, OSCAL version, and Profile resolved-companion SHA-256 where applicable.
+- [x] **M-18 — Stable UUIDs:** Derive valid UUID v5 identifiers for collection, mapping, map, gap summaries, parties, and other generated identified objects from documented stable manifest keys; reject duplicate keys and UUID collisions.
+- [x] **M-19 — Schema-valid output:** Serialize typed structures with `serde`, validate the completed JSON against the embedded v1.2.3 Mapping schema, and write no artifact if validation fails.
+- [x] **M-20 — Gap summaries:** Compute exact sorted unmapped control IDs for each source and target inventory and emit non-empty OSCAL source/target gap summaries without interpreting gaps as `no-relationship`.
+- [x] **M-21 — Deterministic report:** Produce versioned text or JSON with inventory totals, unique referenced totals, review-participation ratios, unmapped IDs, statement gaps when requested, validation results, resource fingerprints, and reviewer-estimate fields kept separate.
+- [x] **M-22 — Deterministic bytes:** Given identical resource bytes, manifest bytes, options, baseline bytes, and FORGE version, produce byte-identical OSCAL JSON and reports. Require manifest-supplied metadata time; do not read the clock or emit absolute canonical paths.
+- [x] **M-23 — Change impact:** With `--baseline`, match mapping objects and maps by stable UUID and report added/removed/changed maps, resource changes, stale references, subject content changes, subject-type changes, and gap changes without selecting replacements.
+- [x] **M-24 — Baseline integrity:** Schema-validate the baseline as OSCAL v1.2.3 Mapping JSON and verify expected FORGE stable-key/fingerprint properties before comparison; otherwise fail as incomplete analysis.
+- [x] **M-25 — Stream and write safety:** OSCAL JSON goes to stdout or `--output`; requested reports go only to `--report`; diagnostics go to stderr. Reject output/report paths that alias any input or each other and use existing safe-write conventions.
+- [x] **M-26 — Bounds:** Reuse file-size and JSON-depth protections and add documented limits for resources, mappings, maps, subjects per side, reviewers, qualifiers, strings, and report entries. No malformed input may panic or exhaust unbounded memory.
+- [x] **M-27 — Confidence safety:** Validate category or decimal `0..=1`, preserve the chosen representation, label it author confidence, and ensure it never changes validation, gap membership, ordering, approval, or exit status.
+- [x] **M-28 — Compatibility:** Existing convert, profile, resolve, validate, trace, diff, export, and migrate contracts remain unchanged except that validation gains the Mapping model through this PRD after PRD 054's baseline upgrade.
 
 ### Should Have (S) — High-value fast follows :yellow_circle: `@human-review`
 
-- [ ] **S-1 — Scaffold:** `forge mapping init --source <FILE> --target <FILE>` should emit a deterministic unapproved manifest skeleton containing resource fingerprints, inventories, empty maps, and no relationship claims.
-- [ ] **S-2 — CI check mode:** `forge mapping check --manifest <FILE> --baseline <FILE>` should be a read-only alias focused on impact reporting, with `0` for no review impact, `1` for completed analysis requiring review, and `2` for incomplete/error.
-- [ ] **S-3 — Fail policy:** `--fail-on <stale|subject-change|gap-increase|any|never>` should refine exit `1` without changing report contents.
-- [ ] **S-4 — Scope selection:** The manifest should allow explicit control-only or control-plus-statement review scope so denominators and gaps are declared, not inferred from which maps happen to exist.
-- [ ] **S-5 — Bounded excerpts:** Text reports should optionally include short subject titles/prose excerpts for local review while JSON defaults to IDs and hashes.
-- [ ] **S-6 — Stable machine codes:** JSON findings should use versioned codes such as `stale_reference`, `subject_changed`, `map_added`, `map_removed`, `relationship_changed`, and `new_gap`.
+- [x] **S-1 — Scaffold:** `forge mapping init --source <FILE> --target <FILE>` should emit a deterministic unapproved manifest skeleton containing resource fingerprints, inventories, empty maps, and no relationship claims.
+- [x] **S-2 — CI check mode:** `forge mapping check --manifest <FILE> --baseline <FILE>` should be a read-only alias focused on impact reporting, with `0` for no review impact, `1` for completed analysis requiring review, and `2` for incomplete/error.
+- [x] **S-3 — Fail policy:** `--fail-on <stale|subject-change|gap-increase|any|never>` should refine exit `1` without changing report contents.
+- [x] **S-4 — Scope selection:** The manifest should allow explicit control-only or control-plus-statement review scope so denominators and gaps are declared, not inferred from which maps happen to exist.
+- [x] **S-5 — Bounded excerpts:** Text reports should optionally include short subject titles/prose excerpts for local review while JSON defaults to IDs and hashes.
+- [x] **S-6 — Stable machine codes:** JSON findings should use versioned codes such as `stale_reference`, `subject_changed`, `map_added`, `map_removed`, `relationship_changed`, and `new_gap`.
 
 ### Could Have (C) — Desirable if time permits :green_circle: `@llm-autonomous`
 
@@ -311,8 +311,9 @@ Build without `--output` writes only OSCAL JSON to stdout. Reports require an ex
   },
   "mapping": {
     "key": "access-policy-to-target",
+    "scope": "control-plus-statement",
     "source": {"type": "catalog", "artifact": "../catalogs/access-policy.json", "href": "../catalogs/access-policy.json", "expected_sha256": "<64 lowercase hex characters>"},
-    "target": {"type": "profile", "artifact": "../profiles/target-profile.json", "resolved_catalog": "../profiles/target-profile-resolved.json", "href": "../profiles/target-profile.json"},
+    "target": {"type": "profile", "artifact": "../profiles/target-profile.json", "resolved_catalog": "../profiles/target-profile-resolved.json", "resolved_catalog_attestation": true, "href": "../profiles/target-profile.json"},
     "maps": [
       {
         "key": "access-authorization",
@@ -494,35 +495,37 @@ The feature provides integrity checks, not authorization, confidentiality, digit
 
 ---
 
-## Open Questions :yellow_circle: `@human-review`
+## Implementation Decisions and Remaining Questions :yellow_circle: `@human-review`
 
-- **[Product + Compliance, blocking]** Should v1 require a reviewer on every map, or may a mapping-level responsible party cover all maps when authorship is uniform?
-- **[Engineering + Compliance, blocking]** What canonical element fields belong in the subject fingerprint so editorial metadata changes do not create false semantic impact?
-- **[Engineering, blocking]** Which explicit limits should apply to mappings, maps, subjects per side, nesting depth, and error collection?
-- **[Compliance, blocking]** Is rejecting identical source/target bytes appropriate, or is same-framework version mapping a valid initial use case?
-- **[Product, non-blocking]** Should `mapping init` be pulled into MVP if manifest authoring is the main usability barrier in pilot one?
-- **[Security, non-blocking]** Should reviewer names be omitted from default reports while remaining in the OSCAL artifact?
-- **[Compliance + Legal, non-blocking]** What licensing guidance should documentation provide for common non-public control frameworks without giving legal advice?
+- **Resolved implementation contract:** v1 requires a reviewer key, review time, and non-empty rationale on every map; mapping-level responsibility does not replace per-map evidence.
+- **Resolved fingerprint contract:** hash the complete canonical eligible control/statement subtree after removing only FORGE-generated `subject-sha256` properties.
+- **Resolved bounds:** manifest 2 MiB; resources/baselines 50 MiB; 100 reviewers; 10,000 maps; 100 subjects per side; 100 qualifiers per map; depth 64; 64 KiB strings; 100 schema errors; 10,000 impact findings; 1,000 optional excerpts.
+- **Resolved same-resource behavior:** identical source/target bytes are allowed for deliberate same-framework mappings and are covered by a contract test.
+- **Resolved scaffold scope:** `mapping init` is included and emits inventories, fingerprints, empty maps, and no relationship claims.
+- **Resolved report privacy default:** default reports omit reviewer names and prose; `--include-excerpts` is an explicit sensitive-output opt-in.
+- **Resolved documentation:** usage guidance states that FORGE does not authenticate reviewer identity/authority and that users remain responsible for framework-content rights.
 - **[Engineering, non-blocking]** Can resolved-Profile provenance from the current `oscal-cli` output be verified strongly enough to remove the explicit attestation limitation later?
 
 ---
 
 ## Definition of Ready :red_circle: `@human-required`
 
-- [ ] PRD 054's OSCAL v1.2.3 compatibility gate is complete.
+- [x] PRD 054's OSCAL v1.2.3 compatibility gate is complete.
 - [ ] Product and Compliance approve the human-review, participation, gap, and no-compliance-verdict language.
 - [ ] Engineering approves manifest v1, the stable-key/UUID seed contract, subject fingerprint fields, and resource limits.
 - [ ] Security and Legal review reviewer-data handling, local-file boundaries, and framework licensing guidance.
-- [ ] The official v1.2.3 Mapping schema and its provenance/checksum record are verified.
-- [ ] A synthetic, redistributable Catalog-to-Catalog fixture set covers every supported relationship and cardinality.
+- [x] The official v1.2.3 Mapping schema and its provenance/checksum record are verified.
+- [x] A synthetic, redistributable Catalog-to-Catalog fixture set covers every supported relationship and cardinality.
 - [ ] At least three design partners agree to evaluate the manifest workflow with lawfully usable inputs.
-- [ ] Every Must Have requirement maps to an executable acceptance scenario or release-gate test.
+- [x] Every Must Have requirement maps to an executable acceptance scenario or release-gate test.
 
 ## Decision Log :yellow_circle: `@human-review`
 
 | Date | Decision | Rationale | Alternatives Considered |
 |------|----------|-----------|-------------------------|
 | 2026-08-22 | Require reviewer-authored relationships and rationale | FORGE must preserve accountable human judgment rather than manufacture compliance claims | Automated semantic mapping; confidence-based approval |
+| 2026-08-24 | Lock manifest v1 implementation defaults | Per-map review evidence, complete-subtree fingerprints, explicit limits, and same-resource support provide a deterministic auditable contract | Mapping-level-only reviewer; field allowlist fingerprints; unbounded inputs; rejecting identical resources |
+| 2026-08-24 | Include scaffold/check fast follows in the technical implementation | They make the manifest authorable and baseline impact enforceable without adding relationship suggestions | Defer both commands to a later release |
 | 2026-08-22 | Limit MVP to one source/target resource pair | Proves the authoring, validation, provenance, and reporting contract before multi-pair orchestration | Multiple mappings per collection in v1 |
 | 2026-08-22 | Require resolved Catalog companions for Profile inputs | Effective Profile subjects cannot be validated safely without resolution, and native resolution is out of scope | Partial local resolver; unchecked Profile references |
 | 2026-08-22 | Report review participation instead of compliance coverage | Map presence and absence do not establish implementation, effectiveness, or compliance | Treat mapped percentage as coverage |

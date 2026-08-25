@@ -1,7 +1,8 @@
 //! OSCAL schema validation module (WI-19, WI-20).
 //!
 //! Validates OSCAL JSON artifacts against embedded NIST OSCAL v1.2.3 JSON schemas.
-//! Supports Catalog, Component Definition, and Profile model types with auto-detection.
+//! Supports Catalog, Component Definition, Profile, and Control Mapping model types with
+//! auto-detection.
 //!
 //! WI-20 adds enhanced error reporting with:
 //! - Actionable error messages with JSON Path notation (M-1)
@@ -18,6 +19,7 @@ pub mod version;
 pub use error_types::{ValidationError, ValidationErrorCategory, ValidationReport};
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use serde_json::Value;
 use tracing::{debug, info};
@@ -126,6 +128,9 @@ pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> 
     if json.get("profile").is_some() {
         found.push("profile");
     }
+    if json.get("mapping-collection").is_some() {
+        found.push("mapping-collection");
+    }
     if found.len() > 1 {
         return Err(ValidateError::AmbiguousArtifact { detail: found.join(", ") });
     }
@@ -136,6 +141,8 @@ pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> 
         Ok(OscalModelType::ComponentDefinition)
     } else if json.get("profile").is_some() {
         Ok(OscalModelType::Profile)
+    } else if json.get("mapping-collection").is_some() {
+        Ok(OscalModelType::Mapping)
     } else {
         Err(ValidateError::UnknownModelType)
     }
@@ -160,6 +167,9 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
         OscalModelType::Profile => {
             include_str!("../../schemas/oscal_profile_schema.json")
         }
+        OscalModelType::Mapping => {
+            include_str!("../../schemas/oscal_mapping_schema.json")
+        }
     };
 
     let schema =
@@ -169,6 +179,34 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
         })?;
     debug!("Schema loaded successfully for {model_type}");
     Ok(schema)
+}
+
+static CATALOG_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+static COMPONENT_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+static PROFILE_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+static MAPPING_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+
+/// Return the process-wide compiled validator for an OSCAL model.
+///
+/// Compilation success or failure is cached so concurrent and repeated validation paths use the
+/// same immutable validator and deterministic error.
+pub(crate) fn compiled_validator(
+    model_type: OscalModelType,
+) -> Result<&'static jsonschema::Validator, ValidateError> {
+    let cell = match model_type {
+        OscalModelType::Catalog => &CATALOG_VALIDATOR,
+        OscalModelType::ComponentDefinition => &COMPONENT_VALIDATOR,
+        OscalModelType::Profile => &PROFILE_VALIDATOR,
+        OscalModelType::Mapping => &MAPPING_VALIDATOR,
+    };
+    let result = cell.get_or_init(|| {
+        let schema = load_schema(model_type).map_err(|error| error.to_string())?;
+        jsonschema::validator_for(&schema).map_err(|error| error.to_string())
+    });
+    result.as_ref().map_err(|message| ValidateError::SchemaCompilation {
+        model_type: model_type.to_string(),
+        message: message.clone(),
+    })
 }
 
 /// Validate a JSON value against the OSCAL schema for the given model type.
@@ -182,13 +220,7 @@ pub fn validate_artifact(
     json: &Value,
     model_type: OscalModelType,
 ) -> Result<ValidationResult, ValidateError> {
-    let schema = load_schema(model_type)?;
-
-    let validator =
-        jsonschema::validator_for(&schema).map_err(|e| ValidateError::SchemaCompilation {
-            model_type: model_type.to_string(),
-            message: e.to_string(),
-        })?;
+    let validator = compiled_validator(model_type)?;
 
     let mut errors: Vec<SchemaError> = validator
         .iter_errors(json)
@@ -266,13 +298,7 @@ pub fn run_full_validation(
     json: &Value,
     model_type: OscalModelType,
 ) -> Result<error_types::ValidationReport, ValidateError> {
-    let schema = load_schema(model_type)?;
-
-    let validator =
-        jsonschema::validator_for(&schema).map_err(|e| ValidateError::SchemaCompilation {
-            model_type: model_type.to_string(),
-            message: e.to_string(),
-        })?;
+    let validator = compiled_validator(model_type)?;
 
     // Schema validation: collect all raw errors and format them
     let mut schema_errors: Vec<error_types::ValidationError> = validator
@@ -329,6 +355,13 @@ mod tests {
     }
 
     #[test]
+    fn detect_model_type_mapping() {
+        let json: Value = serde_json::from_str(r#"{"mapping-collection": {}}"#).unwrap();
+        let result = detect_model_type(&json).unwrap();
+        assert_eq!(result, OscalModelType::Mapping);
+    }
+
+    #[test]
     fn detect_model_type_unknown_returns_error() {
         // Use a key that is not any recognized OSCAL root key
         let json: Value = serde_json::from_str(r#"{"unknown-oscal-type": {}}"#).unwrap();
@@ -359,6 +392,16 @@ mod tests {
         let schema = load_schema(OscalModelType::ComponentDefinition).unwrap();
         assert!(schema.is_object());
         assert!(schema.get("$schema").is_some());
+    }
+
+    #[test]
+    fn load_schema_mapping_returns_valid_json() {
+        let schema = load_schema(OscalModelType::Mapping).unwrap();
+        assert!(schema.is_object());
+        assert_eq!(
+            schema.get("$id").and_then(Value::as_str),
+            Some("http://csrc.nist.gov/ns/oscal/1.2.3/oscal-mapping-schema.json")
+        );
     }
 
     // --- validate_artifact tests (T014) ---
@@ -398,6 +441,46 @@ mod tests {
         let result = validate_artifact(&catalog_json, OscalModelType::Catalog).unwrap();
         assert!(!result.is_valid);
         assert!(!result.errors.is_empty());
+    }
+
+    #[test]
+    fn validate_valid_minimal_mapping_collection() {
+        let mapping_json: Value = serde_json::from_str(
+            r#"{
+                "mapping-collection": {
+                    "uuid": "11111111-1111-4111-8111-111111111111",
+                    "metadata": {
+                        "title": "Reviewed mapping",
+                        "last-modified": "2026-08-22T17:00:00Z",
+                        "version": "1.0.0",
+                        "oscal-version": "1.2.3"
+                    },
+                    "provenance": {
+                        "method": "human",
+                        "matching-rationale": "semantic",
+                        "status": "draft",
+                        "mapping-description": "Human-reviewed relationship set."
+                    },
+                    "mappings": [{
+                        "uuid": "22222222-2222-4222-8222-222222222222",
+                        "source-resource": {"type": "catalog", "href": "source.json"},
+                        "target-resource": {"type": "catalog", "href": "target.json"},
+                        "maps": [{
+                            "uuid": "33333333-3333-4333-8333-333333333333",
+                            "relationship": "subset-of",
+                            "sources": [{"type": "control", "id-ref": "source-1"}],
+                            "targets": [{"type": "control", "id-ref": "target-1"}]
+                        }]
+                    }]
+                }
+            }"#,
+        )
+        .unwrap();
+
+        let result = validate_artifact(&mapping_json, OscalModelType::Mapping).unwrap();
+        assert!(result.is_valid, "Expected valid mapping, got errors: {:?}", result.errors);
+        assert_eq!(result.declared_oscal_version.as_deref(), Some("1.2.3"));
+        assert_eq!(result.schema_version_used, "1.2.3");
     }
 
     #[test]
@@ -495,6 +578,7 @@ mod tests {
         assert_eq!(OscalModelType::Catalog.to_string(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.to_string(), "component-definition");
         assert_eq!(OscalModelType::Profile.to_string(), "profile");
+        assert_eq!(OscalModelType::Mapping.to_string(), "mapping-collection");
     }
 
     #[test]
@@ -523,6 +607,26 @@ mod tests {
         assert!(msg.contains("catalog"));
         assert!(msg.contains("component-definition"));
         assert!(msg.contains("profile"));
+    }
+
+    #[test]
+    fn detect_model_type_rejects_catalog_and_mapping_ambiguity() {
+        let json = serde_json::json!({
+            "catalog": {},
+            "mapping-collection": {}
+        });
+        let error = detect_model_type(&json).expect_err("multiple roots must be ambiguous");
+        assert!(matches!(error, ValidateError::AmbiguousArtifact { .. }));
+        let message = error.to_string();
+        assert!(message.contains("catalog"));
+        assert!(message.contains("mapping-collection"));
+    }
+
+    #[test]
+    fn compiled_validator_is_cached_per_model() {
+        let first = compiled_validator(OscalModelType::Mapping).expect("compile Mapping schema");
+        let second = compiled_validator(OscalModelType::Mapping).expect("reuse Mapping schema");
+        assert!(std::ptr::eq(first, second));
     }
 
     #[test]

@@ -149,6 +149,7 @@ fn schema_type_label(schema_type: &crate::cli::SchemaType) -> &'static str {
     match schema_type {
         crate::cli::SchemaType::Catalog => "catalog",
         crate::cli::SchemaType::ComponentDefinition => "component-definition",
+        crate::cli::SchemaType::Mapping => "mapping",
     }
 }
 
