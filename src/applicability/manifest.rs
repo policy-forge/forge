@@ -201,14 +201,14 @@ fn validate_framework(framework: &ResourceManifest) -> Result<(), ForgeError> {
 pub(crate) fn validate_report_href(path: &str, value: &str) -> Result<(), ForgeError> {
     let bytes = value.as_bytes();
     let windows_drive = bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
-    let unc_path = value.starts_with("\\\\") || value.starts_with("//");
+    let rooted_local_path = value.starts_with('/') || value.starts_with('\\');
     let parsed_url = url::Url::parse(value);
     let file_url = parsed_url.as_ref().is_ok_and(|url| url.scheme() == "file");
     let ntfs_alternate_stream =
         parsed_url.is_err() && value.split(['/', '\\']).any(|component| component.contains(':'));
     if PathBuf::from(value).is_absolute()
+        || rooted_local_path
         || windows_drive
-        || unc_path
         || file_url
         || ntfs_alternate_stream
     {
@@ -520,6 +520,7 @@ mod tests {
 
         for href in [
             "/private/framework.json",
+            r"\Windows\framework.json",
             r"C:\Users\example\framework.json",
             "C:framework.json",
             r"\\server\share\framework.json",
