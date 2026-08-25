@@ -169,6 +169,14 @@ pub enum ForgeError {
     #[error("Control Mapping changes require human review")]
     MappingReviewRequired,
 
+    /// A lifecycle record, transition, portfolio, or artifact binding is invalid.
+    #[error("Policy lifecycle error: {0}")]
+    Lifecycle(String),
+
+    /// A valid lifecycle record requires human action under the selected gate.
+    #[error("Policy lifecycle action required")]
+    LifecycleActionRequired,
+
     /// An error occurred during parameter extraction.
     #[error("Parameter extraction error: {0}")]
     ParameterExtraction(String),
@@ -393,6 +401,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::DriftDetected
         | ForgeError::MigrationHasChanges
         | ForgeError::MappingReviewRequired
+        | ForgeError::LifecycleActionRequired
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors
@@ -401,6 +410,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::MigrationError(_)
         | ForgeError::SspBuild(_)
         | ForgeError::MappingBuild(_)
+        | ForgeError::Lifecycle(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)
@@ -489,6 +499,18 @@ mod tests {
         let err = ForgeError::DriftDetected;
         assert!(err.to_string().is_empty());
         assert_eq!(exit_code(&err), 1);
+    }
+
+    #[test]
+    fn lifecycle_error_display_and_exit_code() {
+        let err = ForgeError::Lifecycle("invalid record".to_string());
+        assert_eq!(err.to_string(), "Policy lifecycle error: invalid record");
+        assert_eq!(exit_code(&err), 2);
+    }
+
+    #[test]
+    fn lifecycle_action_required_exit_code_is_one() {
+        assert_eq!(exit_code(&ForgeError::LifecycleActionRequired), 1);
     }
 
     #[test]

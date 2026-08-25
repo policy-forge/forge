@@ -23,7 +23,8 @@ fn main() -> ExitCode {
             ForgeError::DiffHasChanges
             | ForgeError::DriftDetected
             | ForgeError::MigrationHasChanges
-            | ForgeError::MappingReviewRequired,
+            | ForgeError::MappingReviewRequired
+            | ForgeError::LifecycleActionRequired,
         ) => ExitCode::from(1u8),
         Err(e) => {
             eprintln!("Error: {e}");
