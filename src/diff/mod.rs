@@ -100,6 +100,10 @@ fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactTyp
             "'{}': Profile artifacts are not supported by diff; expected Catalog or ComponentDefinition",
             path.display()
         ))),
+        Ok(OscalModelType::Mapping) => Err(ForgeError::DiffError(format!(
+            "'{}': Control Mapping artifacts are not supported by diff; expected Catalog or ComponentDefinition",
+            path.display()
+        ))),
         Err(_) => Err(ForgeError::DiffError(format!(
             "'{}': not a recognized OSCAL artifact; expected 'catalog' or 'component-definition' root key",
             path.display()

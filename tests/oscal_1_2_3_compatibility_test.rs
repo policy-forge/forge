@@ -171,10 +171,10 @@ fn legacy_v1_2_0_profile_remains_valid_against_the_current_schema() {
 }
 
 #[test]
-fn compatibility_upgrade_does_not_expand_runtime_or_cli_scope() {
+fn mapping_schema_expansion_preserves_other_runtime_and_cli_scope() {
     let command = forge::cli::Cli::command();
     let subcommand_names: Vec<_> = command.get_subcommands().map(clap::Command::get_name).collect();
-    for excluded in ["mapping", "assessment-plan", "ssp"] {
+    for excluded in ["assessment-plan", "ssp"] {
         assert!(
             !subcommand_names.contains(&excluded),
             "compatibility work must not add a {excluded} command"
@@ -201,8 +201,8 @@ fn compatibility_upgrade_does_not_expand_runtime_or_cli_scope() {
         .collect();
     assert_eq!(
         runtime_models,
-        std::collections::BTreeSet::from(["catalog", "component-definition", "profile"]),
-        "runtime schema selection must remain limited to the existing model families"
+        std::collections::BTreeSet::from(["catalog", "component-definition", "mapping", "profile"]),
+        "runtime schema selection must remain limited to the supported model families"
     );
 
     let cargo_toml = include_str!("../Cargo.toml");

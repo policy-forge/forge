@@ -101,6 +101,43 @@ fn validate_valid_component_definition_exits_0() {
     assert!(stdout.contains("Valid"), "Expected 'Valid' in output, got: {stdout}");
 }
 
+#[test]
+fn validate_valid_mapping_collection_exits_0_with_explicit_schema_type() {
+    let content = r#"{
+        "mapping-collection": {
+            "uuid": "11111111-1111-4111-8111-111111111111",
+            "metadata": {
+                "title": "Reviewed mapping",
+                "last-modified": "2026-08-22T17:00:00Z",
+                "version": "1.0.0",
+                "oscal-version": "1.2.3"
+            },
+            "provenance": {
+                "method": "human",
+                "matching-rationale": "semantic",
+                "status": "draft",
+                "mapping-description": "Human-reviewed relationship set."
+            },
+            "mappings": [{
+                "uuid": "22222222-2222-4222-8222-222222222222",
+                "source-resource": {"type": "catalog", "href": "source.json"},
+                "target-resource": {"type": "catalog", "href": "target.json"},
+                "maps": [{
+                    "uuid": "33333333-3333-4333-8333-333333333333",
+                    "relationship": "subset-of",
+                    "sources": [{"type": "control", "id-ref": "source-1"}],
+                    "targets": [{"type": "control", "id-ref": "target-1"}]
+                }]
+            }]
+        }
+    }"#;
+    let file = temp_json_file(content);
+    let (stdout, stderr, code) =
+        run_validate(&[file.path().to_str().unwrap(), "--schema-type", "mapping"]);
+    assert_eq!(code, 0, "Expected valid mapping to pass validation: {stderr}");
+    assert!(stdout.contains("Valid"), "Expected 'Valid' in output, got: {stdout}");
+}
+
 // --- US1: Invalid artifact validation (AC-3, AC-4) ---
 
 #[test]

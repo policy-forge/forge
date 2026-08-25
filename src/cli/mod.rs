@@ -147,7 +147,7 @@ pub enum Commands {
         /// Path to the OSCAL JSON artifact to validate
         input: PathBuf,
 
-        /// Override auto-detected OSCAL model type (catalog or component-definition)
+        /// Override auto-detected OSCAL model type (catalog, component-definition, or mapping)
         #[arg(long, value_enum, conflicts_with = "round_trip")]
         schema_type: Option<SchemaType>,
 
@@ -259,6 +259,12 @@ pub enum Commands {
         max_size: u64,
     },
 
+    /// Build or check human-reviewed OSCAL Control Mapping artifacts
+    Mapping {
+        #[command(subcommand)]
+        command: MappingCommand,
+    },
+
     /// Inspect and validate project configuration (.forge.toml)
     Config {
         /// Config subcommands
@@ -310,6 +316,93 @@ pub enum ConfigCommand {
     Check,
 }
 
+/// Control Mapping workflow commands.
+#[derive(Subcommand)]
+pub enum MappingCommand {
+    /// Create an unapproved deterministic manifest skeleton without relationship claims
+    Init {
+        /// Local source Catalog or Profile JSON
+        #[arg(long)]
+        source: PathBuf,
+        /// Local target Catalog or Profile JSON
+        #[arg(long)]
+        target: PathBuf,
+        /// Explicit resolved Catalog companion when source is a Profile
+        #[arg(long)]
+        source_resolved_catalog: Option<PathBuf>,
+        /// Explicit resolved Catalog companion when target is a Profile
+        #[arg(long)]
+        target_resolved_catalog: Option<PathBuf>,
+        /// Write the scaffold to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Build schema-valid OSCAL Mapping JSON from a reviewer-authored manifest
+    Build {
+        /// Versioned `forge.mapping-manifest/1` JSON file
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Write OSCAL Mapping JSON to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Write the deterministic review report to a separate file
+        #[arg(long)]
+        report: Option<PathBuf>,
+        /// Review report format
+        #[arg(long, value_enum, default_value = "text")]
+        report_format: MappingReportFormat,
+        /// Prior FORGE Mapping JSON used for change-impact analysis
+        #[arg(long)]
+        baseline: Option<PathBuf>,
+        /// Baseline finding policy that produces exit status 1
+        #[arg(long, value_enum, default_value = "never", requires = "baseline")]
+        fail_on: MappingFailOn,
+        /// Include bounded subject titles/prose in the sensitive review report
+        #[arg(long, requires = "report")]
+        include_excerpts: bool,
+    },
+    /// Check a manifest and current resources against an existing Mapping baseline
+    Check {
+        /// Versioned `forge.mapping-manifest/1` JSON file
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Prior FORGE Mapping JSON used for change-impact analysis
+        #[arg(long)]
+        baseline: PathBuf,
+        /// Write the deterministic impact report to a file instead of stdout
+        #[arg(long)]
+        report: Option<PathBuf>,
+        /// Review report format
+        #[arg(long, value_enum, default_value = "text")]
+        report_format: MappingReportFormat,
+        /// Finding policy that produces exit status 1
+        #[arg(long, value_enum, default_value = "any")]
+        fail_on: MappingFailOn,
+        /// Include bounded subject titles/prose in the sensitive review report
+        #[arg(long)]
+        include_excerpts: bool,
+    },
+}
+
+/// Deterministic Control Mapping report serialization.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum MappingReportFormat {
+    Text,
+    Json,
+}
+
+/// Baseline impact categories that may require human review.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum MappingFailOn {
+    Stale,
+    #[value(name = "subject-change")]
+    SubjectChange,
+    #[value(name = "gap-increase")]
+    GapIncrease,
+    Any,
+    Never,
+}
+
 /// Output format for `forge validate` results (WI-20).
 #[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
 pub enum ValidateOutputFormat {
@@ -348,6 +441,8 @@ pub enum SchemaType {
     /// Validate against the OSCAL Component Definition schema.
     #[value(name = "component-definition")]
     ComponentDefinition,
+    /// Validate against the OSCAL Control Mapping schema.
+    Mapping,
 }
 
 /// Raw convert-command arguments captured from clap before resolution.
@@ -592,6 +687,65 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         Commands::Migrate { old_policy, new_policy, format, output, max_size } => {
             run_migrate(old_policy, new_policy, format, output.as_deref(), *max_size)
         }
+        Commands::Mapping { command } => match command {
+            MappingCommand::Init {
+                source,
+                target,
+                source_resolved_catalog,
+                target_resolved_catalog,
+                output,
+            } => crate::mapping::execute_init(
+                source,
+                target,
+                source_resolved_catalog.as_deref(),
+                target_resolved_catalog.as_deref(),
+                output.as_deref(),
+            ),
+            MappingCommand::Build {
+                manifest,
+                output,
+                report,
+                report_format,
+                baseline,
+                fail_on,
+                include_excerpts,
+            } => {
+                if crate::mapping::execute_build(
+                    manifest,
+                    output.as_deref(),
+                    report.as_deref(),
+                    report_format,
+                    baseline.as_deref(),
+                    fail_on,
+                    *include_excerpts,
+                )? {
+                    Err(ForgeError::MappingReviewRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            MappingCommand::Check {
+                manifest,
+                baseline,
+                report,
+                report_format,
+                fail_on,
+                include_excerpts,
+            } => {
+                if crate::mapping::execute_check(
+                    manifest,
+                    baseline,
+                    report.as_deref(),
+                    report_format,
+                    fail_on,
+                    *include_excerpts,
+                )? {
+                    Err(ForgeError::MappingReviewRequired)
+                } else {
+                    Ok(())
+                }
+            }
+        },
         Commands::Drift { committed_artifact, generated_artifact, format } => {
             run_drift(committed_artifact, generated_artifact, format)
         }

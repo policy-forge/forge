@@ -557,6 +557,7 @@ fn validate_validate(project_root: &Path, raw: &RawValidate) -> Result<ValidateS
         &[
             ("catalog", SchemaType::Catalog),
             ("component-definition", SchemaType::ComponentDefinition),
+            ("mapping", SchemaType::Mapping),
         ],
     )?;
     let format = parse_enum(

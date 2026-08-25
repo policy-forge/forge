@@ -114,7 +114,7 @@ forge export catalog.yaml --format json --output catalog.json
 
 ### Validate
 
-Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects the Catalog or Component Definition schema family from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
+Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, or Control Mapping from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
 
 ```bash
 # Validate with human-readable output
@@ -125,6 +125,9 @@ forge validate catalog.json --format json
 
 # Override auto-detected model type
 forge validate artifact.json --schema-type catalog
+
+# Validate an OSCAL Control Mapping artifact
+forge validate mapping.json --schema-type mapping
 ```
 
 Newly generated Catalog, Component Definition, Profile, Assessment Plan, and
@@ -157,6 +160,35 @@ forge drift committed/catalog.json staged/catalog.json --format json
 Exit codes are `0` for clean, `1` for drift, and `2` for invalid, unsupported,
 or mismatched inputs. Run `forge validate` on generated artifacts before drift
 comparison in enforcement workflows.
+
+### Control Mapping
+
+Publish explicit, human-reviewed Catalog/Profile relationships as OSCAL v1.2.3
+Control Mapping JSON. FORGE validates declarations and references; it does not
+generate relationships or make compliance determinations.
+
+```bash
+# Create an unapproved manifest scaffold with fingerprints and inventories
+forge mapping init --source source.json --target target.json \
+  --output mapping-manifest.json
+
+# Build Mapping JSON and a separate deterministic review report
+forge mapping build --manifest mapping-manifest.json \
+  --output mapping.json --report mapping-report.json --report-format json
+
+# Check current resources against a prior Mapping baseline
+forge mapping check --manifest mapping-manifest.json \
+  --baseline mapping.json --report-format json --fail-on any
+```
+
+Mapping commands are local-file-only and JSON-only. Profiles require an
+explicit resolved Catalog companion and reviewer attestation in the manifest.
+FORGE preserves but does not authenticate reviewer identity or authority, and
+users remain responsible for rights to process framework content. Exit codes are `0` for a
+completed build/check with no selected review impact, `1` when a completed
+check triggers `--fail-on`, and `2` when trustworthy analysis is impossible.
+Reports default to identifiers, counts, and hashes; `--include-excerpts` is an
+explicit sensitive-output opt-in.
 
 ### Global Options
 
@@ -293,7 +325,7 @@ FORGE is on the v1.1.0 release line. The original 50-item roadmap is complete:
 - Phase 2 — Control Layer & Multi-Format: JSON/XML/YAML output, round-trip checks, export subcommand, Profile generation, parameter tailoring, modality tagging, and parameter extraction.
 - Phase 3 — Ecosystem & Community: oscal-cli integration, trace reports, diff reports, batch conversion, summary dashboards, Assessment Plan scaffolding, SSP templates, community examples, documentation, cross-platform CI, and release automation.
 
-Future work such as Assessment Results, POA&M, built-in Profile Resolution, Control Mapping, GRC integrations, web/API mode, and hosted documentation should be tracked in a new v1.x/v2 roadmap rather than reopened against the completed Phase 1–3 plan.
+Future work such as Assessment Results, POA&M, built-in Profile Resolution, GRC integrations, web/API mode, and hosted documentation should be tracked in a new v1.x/v2 roadmap rather than reopened against the completed Phase 1–3 plan.
 
 See `docs/FORGE_PRODUCT_ROADMAP.md` for the reconciled roadmap.
 

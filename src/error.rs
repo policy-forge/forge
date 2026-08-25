@@ -161,6 +161,14 @@ pub enum ForgeError {
     #[error("SSP build error: {0}")]
     SspBuild(String),
 
+    /// A trustworthy OSCAL Control Mapping artifact could not be produced.
+    #[error("Control Mapping build error: {0}")]
+    MappingBuild(String),
+
+    /// Completed Mapping impact analysis requires human review under the selected policy.
+    #[error("Control Mapping changes require human review")]
+    MappingReviewRequired,
+
     /// An error occurred during parameter extraction.
     #[error("Parameter extraction error: {0}")]
     ParameterExtraction(String),
@@ -384,6 +392,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::DiffHasChanges
         | ForgeError::DriftDetected
         | ForgeError::MigrationHasChanges
+        | ForgeError::MappingReviewRequired
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors
@@ -391,6 +400,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::DiffError(_)
         | ForgeError::MigrationError(_)
         | ForgeError::SspBuild(_)
+        | ForgeError::MappingBuild(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)
