@@ -81,12 +81,7 @@ fn max_size_to_bytes(max_size_mb: u64) -> Result<u64, ForgeError> {
 }
 
 fn add_max_size_guidance(error: ForgeError) -> ForgeError {
-    match error {
-        error @ ForgeError::FileTooLarge { .. } => {
-            ForgeError::Validation(format!("{error} Use --max-size to increase the limit."))
-        }
-        other => other,
-    }
+    error.with_max_size_guidance()
 }
 
 /// Validate and resolve `--source-profile` for component strategy.

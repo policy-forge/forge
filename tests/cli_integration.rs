@@ -292,7 +292,7 @@ fn convert_oversized_file_shows_size_error() {
         .output()
         .expect("Failed to execute process");
 
-    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("exceeding"), "stderr should mention exceeding limit:\n{stderr}");
     assert!(stderr.contains("max-size"), "stderr should mention --max-size:\n{stderr}");

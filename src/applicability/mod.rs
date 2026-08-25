@@ -5,7 +5,7 @@ pub mod model;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -71,7 +71,7 @@ pub fn execute_analyze(
     format: &ApplicabilityReportFormat,
     output: Option<&Path>,
     fail_on: &ApplicabilityFailOn,
-    as_of: Option<&str>,
+    as_of: Option<chrono::NaiveDate>,
     filters: model::ReportFilters,
 ) -> Result<bool, ForgeError> {
     validate_filters(&filters)?;
@@ -945,7 +945,7 @@ fn review_required(
                 || report.counts.under_review > 0
         }
         ApplicabilityFailOn::OverdueDeferred => {
-            let as_of = as_of.expect("overdue gate date validated before analysis");
+            let Some(as_of) = as_of else { return false };
             manifest.decisions.iter().any(|decision| {
                 decision.state == manifest::DecisionState::Deferred
                     && decision.revisit_date.as_deref().is_some_and(|date| {
@@ -959,14 +959,10 @@ fn review_required(
 
 fn parse_gate_date(
     fail_on: &ApplicabilityFailOn,
-    as_of: Option<&str>,
+    as_of: Option<chrono::NaiveDate>,
 ) -> Result<Option<chrono::NaiveDate>, ForgeError> {
     match (fail_on, as_of) {
-        (ApplicabilityFailOn::OverdueDeferred, Some(value)) => {
-            chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d")
-                .map(Some)
-                .map_err(|_| error("--as-of must use YYYY-MM-DD"))
-        }
+        (ApplicabilityFailOn::OverdueDeferred, Some(value)) => Ok(Some(value)),
         (ApplicabilityFailOn::OverdueDeferred, None) => {
             Err(error("--as-of is required with --fail-on overdue-deferred"))
         }
@@ -1078,50 +1074,21 @@ fn scaffold_framework(
 }
 
 fn manifest_relative_path(path: &Path, output: Option<&Path>) -> Result<PathBuf, ForgeError> {
-    let target = path.canonicalize().map_err(|cause| {
-        error(format!("cannot resolve framework resource '{}': {cause}", path.display()))
-    })?;
-    let manifest_dir_path = output
-        .and_then(Path::parent)
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    if !manifest_dir_path.is_dir() {
-        return Err(error(format!(
-            "output directory '{}' does not exist",
-            manifest_dir_path.display()
-        )));
-    }
-    let manifest_dir = manifest_dir_path
-        .canonicalize()
-        .map_err(|cause| error(format!("cannot resolve manifest directory: {cause}")))?;
-    Ok(relative_path(&manifest_dir, &target).unwrap_or(target))
-}
-
-fn relative_path(base: &Path, target: &Path) -> Option<PathBuf> {
-    let base_components: Vec<_> = base.components().collect();
-    let target_components: Vec<_> = target.components().collect();
-    let common = base_components
-        .iter()
-        .zip(&target_components)
-        .take_while(|(left, right)| left == right)
-        .count();
-    if common == 0 {
-        return None;
-    }
-    let mut relative = PathBuf::new();
-    for component in &base_components[common..] {
-        if matches!(component, Component::Normal(_)) {
-            relative.push("..");
-        }
-    }
-    for component in &target_components[common..] {
-        relative.push(component.as_os_str());
-    }
-    Some(relative)
+    io::manifest_relative_path(path, output, "framework resource").map_err(error)
 }
 
 fn validate_destination(inputs: &[PathBuf], output: Option<&Path>) -> Result<(), ForgeError> {
     let Some(output) = output else { return Ok(()) };
+    let output_parent = output
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    if !output_parent.is_dir() {
+        return Err(error(format!(
+            "output directory '{}' does not exist",
+            output_parent.display()
+        )));
+    }
     for input in inputs {
         if crate::mapping::paths_alias(output, input).map_err(relabel_mapping_error)? {
             return Err(error(format!(
@@ -1149,7 +1116,15 @@ fn relabel_mapping_error(cause: ForgeError) -> ForgeError {
 }
 
 fn escape(value: &str) -> String {
-    value.chars().flat_map(char::escape_default).collect()
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        if character.is_control() {
+            escaped.extend(character.escape_default());
+        } else {
+            escaped.push(character);
+        }
+    }
+    escaped
 }
 
 fn escape_html(value: &str) -> String {
@@ -1195,5 +1170,10 @@ mod tests {
         };
         let cause = validate_classification_counts(&counts).expect_err("mismatch must fail");
         assert!(cause.to_string().contains("classification reconciliation failed"));
+    }
+
+    #[test]
+    fn text_escape_preserves_printable_unicode_and_escapes_controls() {
+        assert_eq!(escape("Sécurité\n"), "Sécurité\\n");
     }
 }

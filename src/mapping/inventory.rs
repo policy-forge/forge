@@ -331,11 +331,7 @@ fn inventory_controls(
 ) -> Result<(), ForgeError> {
     enforce_depth(path_label, depth)?;
     for control in controls {
-        insert_subject(path_label, control, SubjectType::Control, inventory)?;
-        let control_id = control
-            .get("id")
-            .and_then(Value::as_str)
-            .expect("eligible control ID validated by insert_subject");
+        let control_id = insert_subject(path_label, control, SubjectType::Control, inventory)?;
         inventory.control_groups.insert(control_id.to_string(), groups.to_vec());
         if let Some(parts) = control.get("parts").and_then(Value::as_array) {
             inventory_parts(path_label, parts, depth + 1, inventory)?;
@@ -369,12 +365,12 @@ fn inventory_parts(
     Ok(())
 }
 
-fn insert_subject(
+fn insert_subject<'a>(
     path_label: &str,
-    value: &Value,
+    value: &'a Value,
     subject_type: SubjectType,
     inventory: &mut Inventory,
-) -> Result<(), ForgeError> {
+) -> Result<&'a str, ForgeError> {
     if inventory.ids.len() >= MAX_INVENTORY_SUBJECTS {
         return Err(mapping_error(format!(
             "{path_label} exceeds the {MAX_INVENTORY_SUBJECTS} subject inventory limit"
@@ -406,7 +402,7 @@ fn insert_subject(
         .collect();
     inventory.subjects.entry(subject_type).or_default().insert(id.to_string(), fingerprint);
     inventory.excerpts.entry(subject_type).or_default().insert(id.to_string(), excerpt);
-    Ok(())
+    Ok(id)
 }
 
 fn canonical_subject_sha256(value: &Value) -> Result<String, ForgeError> {

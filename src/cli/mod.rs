@@ -602,7 +602,7 @@ pub enum ApplicabilityCommand {
         fail_on: ApplicabilityFailOn,
         /// Deterministic date used by the overdue-deferred gate (YYYY-MM-DD)
         #[arg(long)]
-        as_of: Option<String>,
+        as_of: Option<chrono::NaiveDate>,
         /// Show controls in this group (including nested group membership)
         #[arg(long)]
         group: Option<String>,
@@ -1142,7 +1142,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     format,
                     output.as_deref(),
                     fail_on,
-                    as_of.as_deref(),
+                    *as_of,
                     crate::applicability::model::ReportFilters {
                         group: group.clone(),
                         control_prefix: control_prefix.clone(),

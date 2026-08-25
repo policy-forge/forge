@@ -113,7 +113,11 @@ fn convert_single_file(
 
     match result {
         Ok(Ok(())) => FileResult::success(input.to_path_buf(), output.to_path_buf(), duration),
-        Ok(Err(e)) => FileResult::failure(input.to_path_buf(), e.to_string(), duration),
+        Ok(Err(e)) => FileResult::failure(
+            input.to_path_buf(),
+            e.with_max_size_guidance().to_string(),
+            duration,
+        ),
         Err(_) => FileResult::failure(
             input.to_path_buf(),
             "Internal error (panic during conversion)".to_string(),

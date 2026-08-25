@@ -48,12 +48,12 @@ expression: "String::from_utf8(first.stdout.clone()).expect(\"UTF-8 report\")"
   ],
   "counts": {
     "total": 6,
-    "applicable-mapped": 1,
-    "applicable-reviewed-no-relationship": 1,
-    "applicable-unmapped": 1,
-    "not-applicable": 1,
+    "applicable_mapped": 1,
+    "applicable_reviewed_no_relationship": 1,
+    "applicable_unmapped": 1,
+    "not_applicable": 1,
     "deferred": 1,
-    "under-review": 1
+    "under_review": 1
   },
   "filters": {},
   "matched_controls": 6,

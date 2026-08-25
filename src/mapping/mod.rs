@@ -6,7 +6,7 @@ pub mod manifest;
 pub mod model;
 
 use std::fmt::Write as _;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use crate::cli::{MappingFailOn, MappingReportFormat};
 use crate::{ForgeError, io, validate};
@@ -172,46 +172,7 @@ fn scaffold_resource(
 }
 
 fn manifest_relative_path(path: &Path, output: Option<&Path>) -> Result<PathBuf, ForgeError> {
-    let target = path.canonicalize().map_err(|error| {
-        mapping_error(format!("cannot resolve mapping resource '{}': {error}", path.display()))
-    })?;
-    let manifest_dir_path = output
-        .and_then(Path::parent)
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    if !manifest_dir_path.is_dir() {
-        return Err(mapping_error(format!(
-            "output directory '{}' does not exist",
-            manifest_dir_path.display()
-        )));
-    }
-    let manifest_dir = manifest_dir_path
-        .canonicalize()
-        .map_err(|error| mapping_error(format!("cannot resolve manifest directory: {error}")))?;
-    Ok(relative_path(&manifest_dir, &target).unwrap_or(target))
-}
-
-fn relative_path(base: &Path, target: &Path) -> Option<PathBuf> {
-    let base_components: Vec<_> = base.components().collect();
-    let target_components: Vec<_> = target.components().collect();
-    let common = base_components
-        .iter()
-        .zip(&target_components)
-        .take_while(|(left, right)| left == right)
-        .count();
-    if common == 0 {
-        return None;
-    }
-    let mut relative = PathBuf::new();
-    for component in &base_components[common..] {
-        if matches!(component, Component::Normal(_)) {
-            relative.push("..");
-        }
-    }
-    for component in &target_components[common..] {
-        relative.push(component.as_os_str());
-    }
-    Some(relative)
+    crate::io::manifest_relative_path(path, output, "mapping resource").map_err(mapping_error)
 }
 
 fn safe_file_label(path: &Path) -> String {

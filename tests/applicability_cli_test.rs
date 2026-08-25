@@ -260,12 +260,12 @@ fn analyze_classifies_all_six_states_and_reconciles_deterministically() {
     assert_eq!(report["schema_version"], "forge.applicability-report/1");
     assert_eq!(report["counts"]["total"], 6);
     for label in [
-        "applicable-mapped",
-        "applicable-reviewed-no-relationship",
-        "applicable-unmapped",
-        "not-applicable",
+        "applicable_mapped",
+        "applicable_reviewed_no_relationship",
+        "applicable_unmapped",
+        "not_applicable",
         "deferred",
-        "under-review",
+        "under_review",
     ] {
         assert_eq!(report["counts"][label], 1, "unexpected {label} count");
     }
@@ -301,7 +301,7 @@ fn selected_gate_returns_one_after_emitting_a_valid_report() {
     );
     assert_eq!(output.status.code(), Some(1));
     let report: Value = serde_json::from_slice(&output.stdout).expect("valid report before gate");
-    assert_eq!(report["counts"]["applicable-unmapped"], 1);
+    assert_eq!(report["counts"]["applicable_unmapped"], 1);
 }
 
 #[test]
@@ -457,6 +457,22 @@ fn overdue_deferred_gate_requires_an_explicit_deterministic_date() {
     assert_eq!(missing.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&missing.stderr).contains("--as-of is required"));
 
+    let invalid = run_in(
+        dir.path(),
+        &[
+            "applicability",
+            "analyze",
+            "--manifest",
+            "applicability.json",
+            "--fail-on",
+            "overdue-deferred",
+            "--as-of",
+            "2026-02-30",
+        ],
+    );
+    assert_eq!(invalid.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&invalid.stderr).contains("invalid value '2026-02-30'"));
+
     let current = run_in(
         dir.path(),
         &[
@@ -553,7 +569,7 @@ fn large_init_scaffold_can_be_analyzed_without_manual_compaction() {
     assert!(analyze.status.success(), "{}", String::from_utf8_lossy(&analyze.stderr));
     let report: Value = serde_json::from_slice(&analyze.stdout).expect("large report");
     assert_eq!(report["counts"]["total"], 30_000);
-    assert_eq!(report["counts"]["under-review"], 30_000);
+    assert_eq!(report["counts"]["under_review"], 30_000);
     assert_eq!(report["matched_controls"], 0);
 }
 
@@ -604,8 +620,8 @@ fn statement_only_maps_do_not_roll_up_to_parent_control_classifications() {
     );
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let report: Value = serde_json::from_slice(&output.stdout).expect("report");
-    assert_eq!(report["counts"]["applicable-mapped"], 0);
-    assert_eq!(report["counts"]["applicable-unmapped"], 3);
+    assert_eq!(report["counts"]["applicable_mapped"], 0);
+    assert_eq!(report["counts"]["applicable_unmapped"], 3);
     assert_eq!(report["controls"][0]["positive_mapping_count"], 0);
 }
 
@@ -634,6 +650,23 @@ fn whitespace_padded_filters_and_missing_output_directories_are_rejected_clearly
     assert_eq!(output.status.code(), Some(2));
     assert!(
         String::from_utf8_lossy(&output.stderr)
+            .contains("output directory 'missing' does not exist")
+    );
+
+    let analyze_output = run_in(
+        dir.path(),
+        &[
+            "applicability",
+            "analyze",
+            "--manifest",
+            "applicability.json",
+            "--output",
+            "missing/report.json",
+        ],
+    );
+    assert_eq!(analyze_output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&analyze_output.stderr)
             .contains("output directory 'missing' does not exist")
     );
 }
@@ -694,8 +727,8 @@ fn multiple_mapping_collections_aggregate_without_changing_the_denominator() {
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let report: Value = serde_json::from_slice(&output.stdout).expect("report");
     assert_eq!(report["counts"]["total"], 6);
-    assert_eq!(report["counts"]["applicable-mapped"], 2);
-    assert_eq!(report["counts"]["applicable-unmapped"], 0);
+    assert_eq!(report["counts"]["applicable_mapped"], 2);
+    assert_eq!(report["counts"]["applicable_unmapped"], 0);
     assert_eq!(report["mapping_collections"].as_array().expect("mappings").len(), 2);
 }
 
@@ -1068,7 +1101,7 @@ fn profile_companion_analysis_accepts_exact_profile_target_mapping() {
     assert!(analyzed.status.success(), "{}", String::from_utf8_lossy(&analyzed.stderr));
     let report: Value = serde_json::from_slice(&analyzed.stdout).expect("report");
     assert_eq!(report["framework"]["resource_type"], "profile");
-    assert_eq!(report["counts"]["applicable-mapped"], 1);
+    assert_eq!(report["counts"]["applicable_mapped"], 1);
     assert_eq!(
         report["framework"]["resolved_catalog_sha256"].as_str().expect("companion hash").len(),
         64
@@ -1159,10 +1192,10 @@ fn hundred_control_acceptance_fixture_reconciles_sixty_applicable_and_forty_mapp
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let report: Value = serde_json::from_slice(&output.stdout).expect("report");
     assert_eq!(report["counts"]["total"], 100);
-    assert_eq!(report["counts"]["applicable-mapped"], 40);
-    assert_eq!(report["counts"]["applicable-unmapped"], 20);
-    assert_eq!(report["counts"]["not-applicable"], 10);
+    assert_eq!(report["counts"]["applicable_mapped"], 40);
+    assert_eq!(report["counts"]["applicable_unmapped"], 20);
+    assert_eq!(report["counts"]["not_applicable"], 10);
     assert_eq!(report["counts"]["deferred"], 5);
-    assert_eq!(report["counts"]["under-review"], 25);
+    assert_eq!(report["counts"]["under_review"], 25);
     assert!(!output.stdout.windows(2).any(|window| window == b"\r\n"));
 }

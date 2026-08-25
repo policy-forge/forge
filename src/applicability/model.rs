@@ -72,7 +72,6 @@ pub struct ApplicabilityReport {
 
 /// Reconciled classification totals.
 #[derive(Debug, Clone, Default, Serialize)]
-#[serde(rename_all = "kebab-case")]
 pub struct ClassificationCounts {
     pub total: usize,
     pub applicable_mapped: usize,

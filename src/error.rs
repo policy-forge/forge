@@ -105,6 +105,22 @@ pub enum ForgeError {
         limit_bytes: u64,
     },
 
+    /// The input file exceeds the maximum allowed size for a command that accepts `--max-size`.
+    #[error(
+        "File '{}' is {}, exceeding the {} limit. Use --max-size to increase the limit.",
+        path.display(),
+        format_size(.size_bytes),
+        format_size(.limit_bytes)
+    )]
+    FileTooLargeWithMaxSize {
+        /// The path to the oversized file.
+        path: PathBuf,
+        /// The actual file size in bytes.
+        size_bytes: u64,
+        /// The configured size limit in bytes.
+        limit_bytes: u64,
+    },
+
     /// The file is not valid UTF-8 text.
     #[error(
         "File '{}' is not valid UTF-8 text. FORGE requires UTF-8 encoded Markdown files.",
@@ -392,6 +408,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::OcrNotSupported { .. }
         | ForgeError::UnsupportedFormat { .. }
         | ForgeError::FileTooLarge { .. }
+        | ForgeError::FileTooLargeWithMaxSize { .. }
         | ForgeError::InvalidEncoding { .. }
         | ForgeError::NotAFile { .. }
         | ForgeError::Io(_)
@@ -436,6 +453,19 @@ pub fn exit_code(err: &ForgeError) -> u8 {
 
         // Exit 4: External dependency unavailable
         ForgeError::OscalCliNotFound | ForgeError::OscalCliNotFunctional { .. } => 4,
+    }
+}
+
+impl ForgeError {
+    /// Add actionable `--max-size` guidance without changing input-error semantics.
+    #[must_use]
+    pub(crate) fn with_max_size_guidance(self) -> Self {
+        match self {
+            Self::FileTooLarge { path, size_bytes, limit_bytes } => {
+                Self::FileTooLargeWithMaxSize { path, size_bytes, limit_bytes }
+            }
+            other => other,
+        }
     }
 }
 
@@ -521,6 +551,17 @@ mod tests {
     #[test]
     fn lifecycle_action_required_exit_code_is_one() {
         assert_eq!(exit_code(&ForgeError::LifecycleActionRequired), 1);
+    }
+
+    #[test]
+    fn applicability_errors_have_stable_display_and_exit_codes() {
+        let analysis = ForgeError::ApplicabilityAnalysis("invalid manifest".to_string());
+        assert_eq!(analysis.to_string(), "Applicability analysis error: invalid manifest");
+        assert_eq!(exit_code(&analysis), 2);
+
+        let review = ForgeError::ApplicabilityReviewRequired;
+        assert_eq!(review.to_string(), "Applicability analysis requires human review");
+        assert_eq!(exit_code(&review), 1);
     }
 
     #[test]
@@ -627,6 +668,18 @@ mod tests {
             limit_bytes: 10 * 1_048_576,
         };
         assert_eq!(err.to_string(), "File '/tmp/huge.md' is 15.0MB, exceeding the 10.0MB limit.");
+    }
+
+    #[test]
+    fn guided_file_too_large_preserves_input_error_exit_code() {
+        let err = ForgeError::FileTooLarge {
+            path: PathBuf::from("/tmp/huge.md"),
+            size_bytes: 15 * 1_048_576,
+            limit_bytes: 10 * 1_048_576,
+        }
+        .with_max_size_guidance();
+        assert_eq!(exit_code(&err), 1);
+        assert!(err.to_string().contains("Use --max-size"));
     }
 
     #[test]

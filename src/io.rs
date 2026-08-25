@@ -1,6 +1,6 @@
 //! Shared I/O utilities: atomic writes, size guardrails, path sanitization.
 
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 
 use crate::error::ForgeError;
 
@@ -50,6 +50,51 @@ pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
         });
     }
     Ok(size)
+}
+
+/// Express a local resource relative to the manifest output directory when possible.
+pub(crate) fn manifest_relative_path(
+    path: &Path,
+    output: Option<&Path>,
+    resource_kind: &str,
+) -> Result<PathBuf, String> {
+    let target = path
+        .canonicalize()
+        .map_err(|cause| format!("cannot resolve {resource_kind} '{}': {cause}", path.display()))?;
+    let manifest_dir_path = output
+        .and_then(Path::parent)
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    if !manifest_dir_path.is_dir() {
+        return Err(format!("output directory '{}' does not exist", manifest_dir_path.display()));
+    }
+    let manifest_dir = manifest_dir_path
+        .canonicalize()
+        .map_err(|cause| format!("cannot resolve manifest directory: {cause}"))?;
+    Ok(relative_path(&manifest_dir, &target).unwrap_or(target))
+}
+
+fn relative_path(base: &Path, target: &Path) -> Option<PathBuf> {
+    let base_components: Vec<_> = base.components().collect();
+    let target_components: Vec<_> = target.components().collect();
+    let common = base_components
+        .iter()
+        .zip(&target_components)
+        .take_while(|(left, right)| left == right)
+        .count();
+    if common == 0 {
+        return None;
+    }
+    let mut relative = PathBuf::new();
+    for component in &base_components[common..] {
+        if matches!(component, Component::Normal(_)) {
+            relative.push("..");
+        }
+    }
+    for component in &target_components[common..] {
+        relative.push(component.as_os_str());
+    }
+    Some(relative)
 }
 
 /// Extract filename from a path to prevent absolute path leaks in OSCAL artifacts.
