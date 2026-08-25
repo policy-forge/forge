@@ -21,7 +21,7 @@ pub const MAX_INVENTORY_DEPTH: usize = 64;
 /// Maximum schema/version errors collected for one mapping input.
 pub const MAX_SCHEMA_ERRORS: usize = 100;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ResourceEvidence {
     pub resource_type: ResourceType,
     pub href: String,
@@ -39,6 +39,9 @@ pub struct Inventory {
     ids: BTreeMap<String, SubjectType>,
     ineligible_parts: BTreeMap<String, String>,
     excerpts: BTreeMap<SubjectType, BTreeMap<String, String>>,
+    control_groups: BTreeMap<String, Vec<String>>,
+    group_ids: BTreeSet<String>,
+    ambiguous_group_ids: BTreeSet<String>,
 }
 
 impl Inventory {
@@ -80,6 +83,18 @@ impl Inventory {
     #[must_use]
     pub fn count(&self, subject_type: SubjectType) -> usize {
         self.subjects.get(&subject_type).map_or(0, BTreeMap::len)
+    }
+
+    /// Return the containing group hierarchy for an eligible control.
+    #[must_use]
+    pub fn groups_for_control(&self, id: &str) -> &[String] {
+        self.control_groups.get(id).map_or(&[], Vec::as_slice)
+    }
+
+    /// Return group IDs that occur more than once in the effective Catalog.
+    #[must_use]
+    pub fn ambiguous_group_ids(&self) -> &BTreeSet<String> {
+        &self.ambiguous_group_ids
     }
 }
 
@@ -183,7 +198,7 @@ pub fn load(
     Ok(LoadedResource { path: artifact_path, evidence, inventory })
 }
 
-pub(super) fn validate_schema(
+pub(crate) fn validate_schema(
     path_label: &str,
     json: &Value,
     model: OscalModelType,
@@ -266,12 +281,15 @@ fn inventory_catalog(path_label: &str, json: &Value) -> Result<Inventory, ForgeE
         ids: BTreeMap::new(),
         ineligible_parts: BTreeMap::new(),
         excerpts: BTreeMap::new(),
+        control_groups: BTreeMap::new(),
+        group_ids: BTreeSet::new(),
+        ambiguous_group_ids: BTreeSet::new(),
     };
     if let Some(controls) = catalog.get("controls").and_then(Value::as_array) {
-        inventory_controls(path_label, controls, 0, &mut inventory)?;
+        inventory_controls(path_label, controls, 0, &[], &mut inventory)?;
     }
     if let Some(groups) = catalog.get("groups").and_then(Value::as_array) {
-        inventory_groups(path_label, groups, 0, &mut inventory)?;
+        inventory_groups(path_label, groups, 0, &[], &mut inventory)?;
     }
     Ok(inventory)
 }
@@ -280,15 +298,25 @@ fn inventory_groups(
     path_label: &str,
     groups: &[Value],
     depth: usize,
+    parent_groups: &[String],
     inventory: &mut Inventory,
 ) -> Result<(), ForgeError> {
     enforce_depth(path_label, depth)?;
     for group in groups {
+        let mut group_path = parent_groups.to_vec();
+        if let Some(group_id) =
+            group.get("id").and_then(Value::as_str).filter(|id| !id.trim().is_empty())
+        {
+            if !inventory.group_ids.insert(group_id.to_string()) {
+                inventory.ambiguous_group_ids.insert(group_id.to_string());
+            }
+            group_path.push(group_id.to_string());
+        }
         if let Some(controls) = group.get("controls").and_then(Value::as_array) {
-            inventory_controls(path_label, controls, depth + 1, inventory)?;
+            inventory_controls(path_label, controls, depth + 1, &group_path, inventory)?;
         }
         if let Some(children) = group.get("groups").and_then(Value::as_array) {
-            inventory_groups(path_label, children, depth + 1, inventory)?;
+            inventory_groups(path_label, children, depth + 1, &group_path, inventory)?;
         }
     }
     Ok(())
@@ -298,16 +326,22 @@ fn inventory_controls(
     path_label: &str,
     controls: &[Value],
     depth: usize,
+    groups: &[String],
     inventory: &mut Inventory,
 ) -> Result<(), ForgeError> {
     enforce_depth(path_label, depth)?;
     for control in controls {
         insert_subject(path_label, control, SubjectType::Control, inventory)?;
+        let control_id = control
+            .get("id")
+            .and_then(Value::as_str)
+            .expect("eligible control ID validated by insert_subject");
+        inventory.control_groups.insert(control_id.to_string(), groups.to_vec());
         if let Some(parts) = control.get("parts").and_then(Value::as_array) {
             inventory_parts(path_label, parts, depth + 1, inventory)?;
         }
         if let Some(children) = control.get("controls").and_then(Value::as_array) {
-            inventory_controls(path_label, children, depth + 1, inventory)?;
+            inventory_controls(path_label, children, depth + 1, groups, inventory)?;
         }
     }
     Ok(())

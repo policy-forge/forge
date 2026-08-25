@@ -91,7 +91,7 @@ pub enum ForgeError {
 
     /// The input file exceeds the maximum allowed size.
     #[error(
-        "File '{}' is {}, exceeding the {} limit. Use --max-size to increase the limit.",
+        "File '{}' is {}, exceeding the {} limit.",
         path.display(),
         format_size(.size_bytes),
         format_size(.limit_bytes)
@@ -176,6 +176,14 @@ pub enum ForgeError {
     /// A valid lifecycle record requires human action under the selected gate.
     #[error("Policy lifecycle action required")]
     LifecycleActionRequired,
+
+    /// A trustworthy framework applicability report could not be produced.
+    #[error("Applicability analysis error: {0}")]
+    ApplicabilityAnalysis(String),
+
+    /// A completed applicability analysis contains categories selected by the gate policy.
+    #[error("Applicability analysis requires human review")]
+    ApplicabilityReviewRequired,
 
     /// An error occurred during parameter extraction.
     #[error("Parameter extraction error: {0}")]
@@ -402,6 +410,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::MigrationHasChanges
         | ForgeError::MappingReviewRequired
         | ForgeError::LifecycleActionRequired
+        | ForgeError::ApplicabilityReviewRequired
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors
@@ -411,6 +420,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::SspBuild(_)
         | ForgeError::MappingBuild(_)
         | ForgeError::Lifecycle(_)
+        | ForgeError::ApplicabilityAnalysis(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)
@@ -616,10 +626,7 @@ mod tests {
             size_bytes: 15 * 1_048_576,
             limit_bytes: 10 * 1_048_576,
         };
-        assert_eq!(
-            err.to_string(),
-            "File '/tmp/huge.md' is 15.0MB, exceeding the 10.0MB limit. Use --max-size to increase the limit."
-        );
+        assert_eq!(err.to_string(), "File '/tmp/huge.md' is 15.0MB, exceeding the 10.0MB limit.");
     }
 
     #[test]

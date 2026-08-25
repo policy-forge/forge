@@ -175,19 +175,20 @@ fn manifest_relative_path(path: &Path, output: Option<&Path>) -> Result<PathBuf,
     let target = path.canonicalize().map_err(|error| {
         mapping_error(format!("cannot resolve mapping resource '{}': {error}", path.display()))
     })?;
-    let manifest_dir = output
+    let manifest_dir_path = output
         .and_then(Path::parent)
         .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."))
+        .unwrap_or_else(|| Path::new("."));
+    if !manifest_dir_path.is_dir() {
+        return Err(mapping_error(format!(
+            "output directory '{}' does not exist",
+            manifest_dir_path.display()
+        )));
+    }
+    let manifest_dir = manifest_dir_path
         .canonicalize()
         .map_err(|error| mapping_error(format!("cannot resolve manifest directory: {error}")))?;
-    relative_path(&manifest_dir, &target).ok_or_else(|| {
-        mapping_error(format!(
-            "cannot express mapping resource '{}' relative to manifest directory '{}'",
-            path.display(),
-            manifest_dir.display()
-        ))
-    })
+    Ok(relative_path(&manifest_dir, &target).unwrap_or(target))
 }
 
 fn relative_path(base: &Path, target: &Path) -> Option<PathBuf> {
@@ -430,7 +431,7 @@ fn validate_destinations(
     Ok(())
 }
 
-fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
+pub(crate) fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
     if path_identity(left)? == path_identity(right)? {
         return Ok(true);
     }

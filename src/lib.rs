@@ -25,6 +25,8 @@
 //! }
 //! ```
 
+/// Human-reviewed framework applicability and policy-gap analysis.
+pub mod applicability;
 /// Batch processing: parallel conversion of multiple policy files.
 pub mod batch;
 pub mod citation;
