@@ -1,4 +1,4 @@
-//! Closed, bounded `forge.policy-lifecycle/1` record contract.
+//! Closed, bounded lifecycle record contract with legacy `/1` validation and current `/2` IDs.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -11,7 +11,8 @@ use uuid::Uuid;
 
 use crate::ForgeError;
 
-pub const SCHEMA_VERSION: &str = "forge.policy-lifecycle/1";
+pub const LEGACY_SCHEMA_VERSION: &str = "forge.policy-lifecycle/1";
+pub const SCHEMA_VERSION: &str = "forge.policy-lifecycle/2";
 pub const APPROVAL_POLICY_VERSION: &str = "forge.approval-policy/1";
 pub const MAX_RECORD_BYTES: u64 = 2 * 1024 * 1024;
 const MAX_PARTIES: usize = 64;
@@ -169,6 +170,8 @@ impl LifecycleState {
 pub struct TransitionEvent {
     pub sequence: u32,
     pub event_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub legacy_event_id: Option<String>,
     pub previous_state: LifecycleState,
     pub next_state: LifecycleState,
     pub actor_key: String,
@@ -242,9 +245,9 @@ pub fn parse(bytes: &[u8]) -> Result<LifecycleRecord, ForgeError> {
 /// Returns [`ForgeError::Lifecycle`] for an invalid schema version, party, approval policy,
 /// fingerprint, schedule, state transition, event identity, or supersession reference.
 pub fn validate(record: &LifecycleRecord) -> Result<(), ForgeError> {
-    if record.schema_version != SCHEMA_VERSION {
+    if !matches!(record.schema_version.as_str(), LEGACY_SCHEMA_VERSION | SCHEMA_VERSION) {
         return Err(error(format!(
-            "unsupported schema_version '{}'; expected {SCHEMA_VERSION}",
+            "unsupported schema_version '{}'; expected {LEGACY_SCHEMA_VERSION} or {SCHEMA_VERSION}",
             bounded(&record.schema_version)
         )));
     }
@@ -404,7 +407,10 @@ fn validate_history(record: &LifecycleRecord) -> Result<(), ForgeError> {
                 "{path}.assertions exceeds the {MAX_ASSERTIONS} entry limit"
             )));
         }
-        if event.assertions.windows(2).any(|items| items[0] >= items[1]) {
+        if record.schema_version == SCHEMA_VERSION
+            && event.legacy_event_id.is_none()
+            && event.assertions.windows(2).any(|items| items[0] >= items[1])
+        {
             return Err(error(format!("{path}.assertions must be unique and sorted")));
         }
         validate_impact_findings(&path, event)?;
@@ -432,6 +438,7 @@ fn validate_history(record: &LifecycleRecord) -> Result<(), ForgeError> {
         non_empty(&format!("{path}.rationale"), &event.rationale)?;
         validate_fingerprint_set(&format!("{path}.fingerprints"), &event.fingerprints)?;
         validate_replacement(&path, event, record)?;
+        validate_legacy_event_id(&path, record, event)?;
         let expected_id = event_id(record, event)?;
         if event.event_id != expected_id {
             return Err(error(format!(
@@ -451,6 +458,30 @@ fn validate_history(record: &LifecycleRecord) -> Result<(), ForgeError> {
         )));
     }
     Ok(())
+}
+
+fn validate_legacy_event_id(
+    path: &str,
+    record: &LifecycleRecord,
+    event: &TransitionEvent,
+) -> Result<(), ForgeError> {
+    match (record.schema_version.as_str(), &event.legacy_event_id) {
+        (LEGACY_SCHEMA_VERSION, Some(_)) => {
+            Err(error(format!("{path}.legacy_event_id is only valid in {SCHEMA_VERSION}")))
+        }
+        (SCHEMA_VERSION, Some(value)) => {
+            Uuid::parse_str(value)
+                .map_err(|source| error(format!("{path}.legacy_event_id is invalid: {source}")))?;
+            if value != &legacy_event_id(record, event)? {
+                return Err(error(format!(
+                    "{path}.legacy_event_id does not match legacy event evidence"
+                )));
+            }
+            Ok(())
+        }
+        (_, None) => Ok(()),
+        _ => Err(error("unsupported lifecycle schema version")),
+    }
 }
 
 fn validate_actor(
@@ -561,12 +592,18 @@ fn validate_approval(
             )));
         }
     }
-    validate_separation(&record.approval_policy.separation, &evidence)
+    validate_separation(
+        &record.approval_policy.separation,
+        &evidence,
+        record.schema_version == SCHEMA_VERSION
+            && record.history[event_index].legacy_event_id.is_none(),
+    )
 }
 
 fn validate_separation(
     rules: &SeparationRules,
     evidence: &BTreeSet<(&str, DeclaredRole)>,
+    require_author_evidence: bool,
 ) -> Result<(), ForgeError> {
     let actors_for = |role| {
         evidence
@@ -577,7 +614,10 @@ fn validate_separation(
     let authors = actors_for(DeclaredRole::Author);
     let reviewers = actors_for(DeclaredRole::Reviewer);
     let approvers = actors_for(DeclaredRole::Approver);
-    if (rules.author_reviewer || rules.author_approver) && authors.is_empty() {
+    if require_author_evidence
+        && (rules.author_reviewer || rules.author_approver)
+        && authors.is_empty()
+    {
         return Err(error(
             "approval requires at least one declared author assertion when author separation is enabled",
         ));
@@ -643,6 +683,17 @@ fn validate_hash(path: &str, value: &str) -> Result<(), ForgeError> {
 ///
 /// Returns [`ForgeError::Lifecycle`] if the bounded event evidence cannot be serialized.
 pub fn event_id(record: &LifecycleRecord, event: &TransitionEvent) -> Result<String, ForgeError> {
+    match record.schema_version.as_str() {
+        LEGACY_SCHEMA_VERSION => legacy_event_id(record, event),
+        SCHEMA_VERSION => context_event_id(record, event),
+        _ => Err(error("cannot calculate an event ID for an unsupported schema version")),
+    }
+}
+
+fn context_event_id(
+    record: &LifecycleRecord,
+    event: &TransitionEvent,
+) -> Result<String, ForgeError> {
     #[derive(Serialize)]
     struct Seed<'a> {
         schema_version: &'a str,
@@ -651,6 +702,7 @@ pub fn event_id(record: &LifecycleRecord, event: &TransitionEvent) -> Result<Str
         approval_policy: &'a ApprovalPolicy,
         review: &'a ReviewSchedule,
         sequence: u32,
+        legacy_event_id: &'a Option<String>,
         previous_state: LifecycleState,
         next_state: LifecycleState,
         actor_key: &'a str,
@@ -663,12 +715,13 @@ pub fn event_id(record: &LifecycleRecord, event: &TransitionEvent) -> Result<Str
         replacement: &'a Option<PolicyReference>,
     }
     let seed = serde_json::to_vec(&Seed {
-        schema_version: SCHEMA_VERSION,
+        schema_version: &record.schema_version,
         policy: &record.policy,
         parties: &record.parties,
         approval_policy: &record.approval_policy,
         review: &record.review,
         sequence: event.sequence,
+        legacy_event_id: &event.legacy_event_id,
         previous_state: event.previous_state,
         next_state: event.next_state,
         actor_key: &event.actor_key,
@@ -681,6 +734,55 @@ pub fn event_id(record: &LifecycleRecord, event: &TransitionEvent) -> Result<Str
         replacement: &event.replacement,
     })
     .map_err(|source| error(format!("cannot serialize deterministic event evidence: {source}")))?;
+    Ok(Uuid::new_v5(&crate::uuid::FORGE_NAMESPACE_UUID, &seed).to_string())
+}
+
+/// Calculate a legacy `/1` event ID for validation and migration tooling.
+///
+/// New records must use [`event_id`] with [`SCHEMA_VERSION`].
+///
+/// # Errors
+///
+/// Returns [`ForgeError::Lifecycle`] if legacy evidence serialization fails.
+#[doc(hidden)]
+pub fn legacy_event_id(
+    record: &LifecycleRecord,
+    event: &TransitionEvent,
+) -> Result<String, ForgeError> {
+    #[derive(Serialize)]
+    struct LegacySeed<'a> {
+        schema_version: &'a str,
+        policy_key: &'a str,
+        version_key: &'a str,
+        sequence: u32,
+        previous_state: LifecycleState,
+        next_state: LifecycleState,
+        actor_key: &'a str,
+        declared_role: DeclaredRole,
+        timestamp: &'a str,
+        rationale: &'a str,
+        fingerprints: &'a FingerprintSet,
+        assertions: &'a [ActorAssertion],
+        impact_finding_ids: &'a [String],
+        replacement: &'a Option<PolicyReference>,
+    }
+    let seed = serde_json::to_vec(&LegacySeed {
+        schema_version: LEGACY_SCHEMA_VERSION,
+        policy_key: &record.policy.policy_key,
+        version_key: &record.policy.version_key,
+        sequence: event.sequence,
+        previous_state: event.previous_state,
+        next_state: event.next_state,
+        actor_key: &event.actor_key,
+        declared_role: event.declared_role,
+        timestamp: &event.timestamp,
+        rationale: &event.rationale,
+        fingerprints: &event.fingerprints,
+        assertions: &event.assertions,
+        impact_finding_ids: &event.impact_finding_ids,
+        replacement: &event.replacement,
+    })
+    .map_err(|source| error(format!("cannot serialize legacy event evidence: {source}")))?;
     Ok(Uuid::new_v5(&crate::uuid::FORGE_NAMESPACE_UUID, &seed).to_string())
 }
 

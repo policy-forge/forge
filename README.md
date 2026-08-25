@@ -205,6 +205,10 @@ forge lifecycle init --source policy.md --artifact catalog.json \
   --party alice=owner,author --party bob=reviewer --party carol=approver \
   --next-review 2027-08-25 --separate-reviewer-approver
 
+# Non-destructively migrate a legacy /1 history before mutation or attestation
+forge lifecycle migrate --record policy-lifecycle-v1.json \
+  --output policy-lifecycle-v2.json
+
 # Append reviewed transitions with explicit event times
 forge lifecycle transition --record policy-lifecycle.json --to in-review \
   --actor bob --role reviewer --at 2026-08-25T17:00:00Z \
@@ -228,7 +232,9 @@ forge lifecycle attest --record policy-lifecycle.json \
 
 `lifecycle check` validates one record or an explicitly supplied portfolio,
 including supersession links and cycles, without deriving date-relative review
-conditions. JSON check/status output is always an array, including for one
+conditions. New records use context-bound `forge.policy-lifecycle/2` event IDs;
+legacy `/1` histories remain readable and have an explicit `migrate` command.
+JSON check/status output is always an array, including for one
 record. `status` never emits policy prose by default. Re-review transitions can
 link bounded PRD-057 findings with repeatable `--impact-finding-id` values.
 `due-soon` is informational under the publication gate; overdue, drifted,

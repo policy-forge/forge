@@ -15,9 +15,9 @@ use crate::cli::{LifecycleGate, LifecycleOutputFormat};
 use crate::{ForgeError, io, validate};
 use record::{
     APPROVAL_POLICY_VERSION, ActorAssertion, ApprovalPolicy, ArtifactFingerprint, DeclaredRole,
-    FingerprintSet, LifecycleRecord, LifecycleState, NamedHash, Party, PolicyIdentity,
-    PolicyReference, ReviewSchedule, RoleRequirement, SCHEMA_VERSION, SeparationRules,
-    TimezonePolicy, TransitionEvent,
+    FingerprintSet, LEGACY_SCHEMA_VERSION, LifecycleRecord, LifecycleState, NamedHash, Party,
+    PolicyIdentity, PolicyReference, ReviewSchedule, RoleRequirement, SCHEMA_VERSION,
+    SeparationRules, TimezonePolicy, TransitionEvent,
 };
 
 const TRUST_BOUNDARY: &str =
@@ -244,6 +244,36 @@ pub fn execute_check(
     Ok(action_required)
 }
 
+/// Convert a validated legacy lifecycle record into the current context-bound schema.
+///
+/// The source record remains unchanged. Each migrated event preserves its former deterministic ID
+/// in `legacy_event_id` and receives a new current-schema ID.
+///
+/// # Errors
+///
+/// Returns [`ForgeError::Lifecycle`] or [`ForgeError::Io`] if the input is not a valid legacy
+/// record, the output aliases lifecycle evidence, migration validation fails, or writing fails.
+pub fn execute_migrate(record_path: &Path, output: &Path) -> Result<(), ForgeError> {
+    let (_, mut record) = load_record(record_path)?;
+    if record.schema_version != LEGACY_SCHEMA_VERSION {
+        return Err(error(format!(
+            "lifecycle migration requires {LEGACY_SCHEMA_VERSION}; found '{}'",
+            record.schema_version
+        )));
+    }
+    validate_report_destination(Some(output), &[(record_path.to_path_buf(), record.clone())])?;
+    for event in &mut record.history {
+        event.legacy_event_id = Some(std::mem::take(&mut event.event_id));
+    }
+    record.schema_version = SCHEMA_VERSION.to_string();
+    for index in 0..record.history.len() {
+        let event_id = record::event_id(&record, &record.history[index])?;
+        record.history[index].event_id = event_id;
+    }
+    record::validate(&record)?;
+    io::write_atomic(output, render_record(&record)?.as_bytes())
+}
+
 /// Emit deterministic lifecycle status for an explicit date.
 ///
 /// # Errors
@@ -311,6 +341,9 @@ pub fn execute_queue(
 /// serialization/write fails.
 pub fn execute_attest(record_path: &Path, output: Option<&Path>) -> Result<(), ForgeError> {
     let (_, record) = load_record(record_path)?;
+    if record.schema_version == LEGACY_SCHEMA_VERSION {
+        return Err(error("legacy lifecycle records must be migrated before attestation"));
+    }
     let loaded = vec![(record_path.to_path_buf(), record.clone())];
     validate_report_destination(output, &loaded)?;
     if record.state != LifecycleState::Approved {
@@ -372,6 +405,9 @@ pub fn execute_transition(options: &TransitionOptions<'_>) -> Result<(), ForgeEr
         return Err(error("--output cannot be used with --apply"));
     }
     let (original, mut record) = load_record(options.record_path)?;
+    if record.schema_version == LEGACY_SCHEMA_VERSION {
+        return Err(error("legacy lifecycle records must be migrated before transition"));
+    }
     if !record.state.permits(options.next_state) {
         return Err(error(format!(
             "invalid transition {} -> {}",
@@ -399,6 +435,7 @@ pub fn execute_transition(options: &TransitionOptions<'_>) -> Result<(), ForgeEr
     let mut event = TransitionEvent {
         sequence,
         event_id: String::new(),
+        legacy_event_id: None,
         previous_state: record.state,
         next_state: options.next_state,
         actor_key: options.actor_key.to_string(),

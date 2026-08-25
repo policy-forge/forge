@@ -37,7 +37,7 @@ No design-partner lifecycle corpus, approval-policy research, or production revi
 
 **In Scope:**
 
-- A bounded `forge.policy-lifecycle/1` local JSON record per policy
+- A bounded `forge.policy-lifecycle/2` local JSON record per policy with non-destructive `/1` migration
 - Stable policy key, title, version, owner roles, source artifact, and generated-artifact fingerprints
 - States `draft`, `in-review`, `approved`, `superseded`, and `retired`
 - Documented allowed transitions with actor, role, time, rationale, and exact input/output hashes
@@ -149,7 +149,7 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 ### Must Have (M) — MVP launch blockers :red_circle: `@human-required`
 
 - [x] **M-1 — Commands:** Provide `forge lifecycle init`, `check`, `transition`, and `status` with text/JSON output and safe file options.
-- [x] **M-2 — Closed schema:** Parse bounded `forge.policy-lifecycle/1` JSON and reject unknown keys, duplicate decoded keys, unsupported versions, gaps in sequence, and exceeded limits.
+- [x] **M-2 — Closed schema:** Parse bounded legacy `/1` and current `forge.policy-lifecycle/2` JSON; reject unknown keys, duplicate decoded keys, unsupported versions, gaps in sequence, and exceeded limits; preserve legacy IDs during explicit migration.
 - [x] **M-3 — Artifact identity:** Fingerprint the policy source plus explicitly listed generated OSCAL artifacts and validate their type/root metadata where supported.
 - [x] **M-4 — State machine:** Enforce only documented state transitions and make `retired` terminal.
 - [x] **M-5 — Transition evidence:** Require actor, declared role, timestamp, rationale, previous state, next state, exact relevant fingerprints, and immutable policy/party/approval/review context for every event ID.
@@ -273,4 +273,4 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 | 0.1 | 2026-08-24 | Codex | Initial draft for deterministic policy lifecycle records and review queues |
 | 0.2 | 2026-08-25 | Codex | Implemented and tested the Must Have technical MVP; human release gates remain pending |
 | 0.3 | 2026-08-25 | Codex | Completed portfolio status, review queues, framework-impact links, and unsigned attestation Should Haves |
-| 0.4 | 2026-08-25 | Codex | Remediated adversarial review findings for separation evidence, publication gating, context-bound event IDs, deterministic assertions, artifact identity drift, and durable writes |
+| 0.4 | 2026-08-25 | Codex | Remediated adversarial review findings for separation evidence, publication gating, versioned context-bound event IDs with `/1` migration, deterministic assertions, artifact identity drift, and durable writes |
