@@ -63,6 +63,9 @@ pub struct InventoryRequirement {
 #[serde(rename_all = "snake_case")]
 pub enum Classification {
     Unchanged,
+    DeclaredSuccessor,
+    DeclaredSplit,
+    DeclaredMerge,
     ObservedIdChange,
     SubstantiveChangeCandidate,
     AtomizationChangeCandidate,
@@ -76,6 +79,9 @@ impl Classification {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Unchanged => "unchanged",
+            Self::DeclaredSuccessor => "declared_successor",
+            Self::DeclaredSplit => "declared_split",
+            Self::DeclaredMerge => "declared_merge",
             Self::ObservedIdChange => "observed_id_change",
             Self::SubstantiveChangeCandidate => "substantive_change_candidate",
             Self::AtomizationChangeCandidate => "atomization_change_candidate",
@@ -88,12 +94,15 @@ impl Classification {
     pub(crate) const fn rank(self) -> u8 {
         match self {
             Self::Unchanged => 0,
-            Self::ObservedIdChange => 1,
-            Self::SubstantiveChangeCandidate => 2,
-            Self::AtomizationChangeCandidate => 3,
-            Self::Ambiguous => 4,
-            Self::Retired => 5,
-            Self::Added => 6,
+            Self::DeclaredSuccessor => 1,
+            Self::DeclaredSplit => 2,
+            Self::DeclaredMerge => 3,
+            Self::ObservedIdChange => 4,
+            Self::SubstantiveChangeCandidate => 5,
+            Self::AtomizationChangeCandidate => 6,
+            Self::Ambiguous => 7,
+            Self::Retired => 8,
+            Self::Added => 9,
         }
     }
 }
@@ -102,6 +111,7 @@ impl Classification {
 #[serde(rename_all = "snake_case")]
 pub enum EvidenceCode {
     ExactId,
+    ReviewerDeclaration,
     UniqueNormalizedText,
     SameLocator,
     DuplicateNormalizedText,
@@ -117,6 +127,7 @@ impl EvidenceCode {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::ExactId => "exact_id",
+            Self::ReviewerDeclaration => "reviewer_declaration",
             Self::UniqueNormalizedText => "unique_normalized_text",
             Self::SameLocator => "same_locator",
             Self::DuplicateNormalizedText => "duplicate_normalized_text",
@@ -133,6 +144,7 @@ impl EvidenceCode {
 #[serde(rename_all = "snake_case")]
 pub enum ConfidenceBasis {
     Exact,
+    Declared,
     Candidate,
     Unresolved,
     Unmatched,
@@ -143,6 +155,7 @@ impl ConfidenceBasis {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Exact => "exact",
+            Self::Declared => "declared",
             Self::Candidate => "candidate",
             Self::Unresolved => "unresolved",
             Self::Unmatched => "unmatched",
@@ -155,6 +168,7 @@ impl ConfidenceBasis {
 pub enum ApprovalStatus {
     NotRequired,
     NotApproved,
+    Declared,
 }
 
 impl ApprovalStatus {
@@ -163,8 +177,17 @@ impl ApprovalStatus {
         match self {
             Self::NotRequired => "not_required",
             Self::NotApproved => "not_approved",
+            Self::Declared => "declared",
         }
     }
+}
+
+/// Reviewer evidence preserved verbatim for a declared identity relationship.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DeclarationEvidence {
+    pub approved_by: String,
+    pub approved_at: String,
+    pub rationale: String,
 }
 
 /// A top-level, mutually exclusive migration outcome.
@@ -174,6 +197,8 @@ pub struct MigrationEntry {
     pub evidence: Vec<EvidenceCode>,
     pub confidence_basis: ConfidenceBasis,
     pub approval_status: ApprovalStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub declaration: Option<DeclarationEvidence>,
     pub old: Vec<InventoryRequirement>,
     pub new: Vec<InventoryRequirement>,
 }
@@ -184,6 +209,9 @@ pub struct MigrationSummary {
     pub total_new: usize,
     /// Counts of top-level report entries. Grouped outcomes count once here.
     pub unchanged: usize,
+    pub declared_successors: usize,
+    pub declared_splits: usize,
+    pub declared_merges: usize,
     pub observed_id_changes: usize,
     pub substantive_change_candidates: usize,
     pub atomization_change_candidates: usize,
@@ -200,6 +228,9 @@ pub struct MigrationSummary {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct MigrationOutcomeCounts {
     pub unchanged: usize,
+    pub declared_successors: usize,
+    pub declared_splits: usize,
+    pub declared_merges: usize,
     pub observed_id_changes: usize,
     pub substantive_change_candidates: usize,
     pub atomization_change_candidates: usize,
@@ -212,6 +243,9 @@ impl MigrationOutcomeCounts {
     #[must_use]
     pub const fn total(&self) -> usize {
         self.unchanged
+            + self.declared_successors
+            + self.declared_splits
+            + self.declared_merges
             + self.observed_id_changes
             + self.substantive_change_candidates
             + self.atomization_change_candidates
@@ -280,6 +314,9 @@ mod tests {
         }
         for value in [
             Classification::Unchanged,
+            Classification::DeclaredSuccessor,
+            Classification::DeclaredSplit,
+            Classification::DeclaredMerge,
             Classification::ObservedIdChange,
             Classification::SubstantiveChangeCandidate,
             Classification::AtomizationChangeCandidate,
@@ -291,6 +328,7 @@ mod tests {
         }
         for value in [
             EvidenceCode::ExactId,
+            EvidenceCode::ReviewerDeclaration,
             EvidenceCode::UniqueNormalizedText,
             EvidenceCode::SameLocator,
             EvidenceCode::DuplicateNormalizedText,
@@ -304,13 +342,16 @@ mod tests {
         }
         for value in [
             ConfidenceBasis::Exact,
+            ConfidenceBasis::Declared,
             ConfidenceBasis::Candidate,
             ConfidenceBasis::Unresolved,
             ConfidenceBasis::Unmatched,
         ] {
             assert_json_name(value, value.as_str());
         }
-        for value in [ApprovalStatus::NotRequired, ApprovalStatus::NotApproved] {
+        for value in
+            [ApprovalStatus::NotRequired, ApprovalStatus::NotApproved, ApprovalStatus::Declared]
+        {
             assert_json_name(value, value.as_str());
         }
     }

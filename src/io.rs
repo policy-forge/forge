@@ -52,6 +52,19 @@ pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
     Ok(size)
 }
 
+/// Return metadata only when `path` names a regular file directly, never through a symlink.
+pub(crate) fn regular_file_metadata(path: &Path, label: &str) -> Result<std::fs::Metadata, String> {
+    let metadata = std::fs::symlink_metadata(path)
+        .map_err(|cause| format!("{label} '{}': {cause}", path.display()))?;
+    if metadata.file_type().is_symlink() {
+        return Err(format!("{label} must not be a symbolic link"));
+    }
+    if !metadata.is_file() {
+        return Err(format!("{label} must be a regular file"));
+    }
+    Ok(metadata)
+}
+
 /// Express a local resource relative to the manifest output directory when possible.
 pub(crate) fn manifest_relative_path(
     path: &Path,
@@ -147,6 +160,25 @@ mod tests {
         std::fs::write(&path, vec![b'x'; 100]).unwrap();
         let result = check_file_size(&path, 50);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn regular_file_metadata_rejects_directories() {
+        let dir = tempfile::tempdir().unwrap();
+        let error = regular_file_metadata(dir.path(), "input").unwrap_err();
+        assert_eq!(error, "input must be a regular file");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn regular_file_metadata_rejects_symlinks() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.json");
+        let link = dir.path().join("link.json");
+        std::fs::write(&target, "{}").unwrap();
+        std::os::unix::fs::symlink(target, &link).unwrap();
+        let error = regular_file_metadata(&link, "input").unwrap_err();
+        assert_eq!(error, "input must not be a symbolic link");
     }
 
     #[test]

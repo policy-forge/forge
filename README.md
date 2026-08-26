@@ -280,6 +280,52 @@ evidence and never roll up implicitly to a parent control classification. The
 overdue deferral gate fires only when `revisit_date` is strictly earlier than
 `--as-of`; a deferral is due, but not yet overdue, on its revisit date.
 
+### Framework Revision Impact
+
+Compare an exact old/new OSCAL Catalog pair or attested Profile-plus-resolved-
+Catalog pair and trace changed or removed controls through optional PRD 055
+Mapping Collections and a PRD 056 applicability manifest:
+
+```bash
+forge framework impact --manifest framework-impact.json \
+  --format json --output framework-impact-report.json
+```
+
+The closed `forge.framework-impact/1` manifest declares both resources' paths,
+SHA-256 fingerprints, root UUIDs, document and OSCAL versions, Profile companion
+evidence when applicable, each local Mapping Collection and its framework role,
+and optionally the authoritative `forge.applicability/1` manifest. Applicability
+analysis must match the old baseline and the complete target-side Mapping
+portfolio exactly. Reports retain prior gap state, decision owner, policy sources,
+stable finding IDs, priorities, required actions, and dependency paths without
+framework prose. Reviewer-authored `forge.successor-map/1` declarations preserve
+approved successor, split, and merge evidence without inferring continuity.
+Report-bound `forge.framework-impact-dispositions/1` records retain resolved,
+accepted-risk, and still-open review state while leaving raw findings visible.
+A PRD 057 finding ID can also be attached to a PRD 058 transition with
+`lifecycle transition --impact-finding-id`. Text, JSON, Markdown, static HTML,
+and GitHub workflow-command output share the same report model. Exact-match
+filters can narrow displayed findings by framework group, prior applicability
+decision state, policy source, impact priority, or owner. Filters combine with
+AND semantics and never weaken full summary totals or CI gate evaluation. The
+default gate exits `1` for open blocking or review-required findings and `2`
+when complete trustworthy analysis is impossible.
+
+### Stable-ID Migration
+
+Analyze policy-requirement identity changes and optionally apply explicit
+reviewer declarations:
+
+```bash
+forge migrate old-policy.md new-policy.md --format json \
+  --successor-map successor-map.json
+```
+
+The closed `forge.successor-map/1` contract supports one-to-one successors,
+one-to-many splits, and many-to-one merges with reviewer, timestamp, and
+rationale evidence. FORGE validates and preserves declarations but does not
+authenticate the reviewer or mutate either policy.
+
 ### Global Options
 
 ```bash
