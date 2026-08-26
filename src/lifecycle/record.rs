@@ -1,6 +1,7 @@
 //! Closed, bounded lifecycle record contract with legacy `/1` validation and current `/2` IDs.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Component, Path};
 
 use chrono::{DateTime, NaiveDate};
 use clap::ValueEnum;
@@ -636,6 +637,7 @@ fn validate_separation(
 
 fn validate_fingerprint(path: &str, value: &ArtifactFingerprint) -> Result<(), ForgeError> {
     non_empty(&format!("{path}.path"), &value.path)?;
+    validate_artifact_path_shape(&format!("{path}.path"), &value.path)?;
     validate_hash(&format!("{path}.sha256"), &value.sha256)?;
     if let Some(kind) = &value.oscal_type {
         non_empty(&format!("{path}.oscal_type"), kind)?;
@@ -643,6 +645,29 @@ fn validate_fingerprint(path: &str, value: &ArtifactFingerprint) -> Result<(), F
     if let Some(root_uuid) = &value.root_uuid {
         Uuid::parse_str(root_uuid)
             .map_err(|source| error(format!("{path}.root_uuid is not a UUID: {source}")))?;
+    }
+    Ok(())
+}
+
+/// Stored artifact paths must be relative: joining them onto the record
+/// directory must keep the record directory as the anchor, so absolute paths
+/// and Windows drive prefixes (which discard the anchor entirely when joined)
+/// and `.` components (never produced by relative-path storage) are rejected.
+/// Parent-directory components remain permitted because records may
+/// legitimately reference artifacts in sibling directories.
+fn validate_artifact_path_shape(path: &str, value: &str) -> Result<(), ForgeError> {
+    let drive_prefixed = value.as_bytes().get(1) == Some(&b':')
+        && value.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
+    let relative = !drive_prefixed
+        && Path::new(value)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_) | Component::ParentDir));
+    if !relative {
+        return Err(error(format!(
+            "{path} must be a relative path without '.', absolute, or drive-prefix components \
+             ('{}')",
+            bounded(value)
+        )));
     }
     Ok(())
 }
@@ -936,6 +961,26 @@ mod tests {
             for next in states {
                 assert_eq!(previous.permits(next), allowed.contains(&(previous, next)));
             }
+        }
+    }
+
+    #[test]
+    fn artifact_paths_must_be_relative() {
+        let fingerprint = |path: &str| ArtifactFingerprint {
+            path: path.to_string(),
+            sha256: "a".repeat(64),
+            oscal_type: None,
+            root_uuid: None,
+        };
+        validate_fingerprint("$.policy.source", &fingerprint("policy.md"))
+            .expect("plain relative path is valid");
+        validate_fingerprint("$.policy.source", &fingerprint("output/catalog.json"))
+            .expect("nested relative path is valid");
+        validate_fingerprint("$.policy.source", &fingerprint("../artifacts/policy.md"))
+            .expect("sibling-directory path is valid");
+        for raw in ["/etc/passwd", r"C:\evil\policy.md", "./policy.md", "."] {
+            let error = validate_fingerprint("$.policy.source", &fingerprint(raw)).expect_err(raw);
+            assert!(error.to_string().contains("must be a relative path"), "{raw}: {error}");
         }
     }
 

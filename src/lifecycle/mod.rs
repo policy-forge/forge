@@ -479,7 +479,7 @@ pub fn execute_transition(options: &TransitionOptions<'_>) -> Result<(), ForgeEr
             for artifact in std::iter::once(&record.policy.source)
                 .chain(record.policy.generated_artifacts.iter())
             {
-                if paths_alias(path, &base.join(&artifact.path))? {
+                if paths_alias(path, &confined_join(base, &artifact.path)?)? {
                     return Err(error("proposal output aliases a lifecycle artifact"));
                 }
             }
@@ -598,12 +598,12 @@ fn current_artifacts(
     record: &LifecycleRecord,
 ) -> Result<CurrentArtifacts, ForgeError> {
     let base = record_directory(record_path)?;
-    let source_path = base.join(&record.policy.source.path);
+    let source_path = confined_join(&base, &record.policy.source.path)?;
     let source = fingerprint(&source_path, &base, false)?;
     let mut generated = Vec::new();
     let mut identity_changes = Vec::new();
     for expected in &record.policy.generated_artifacts {
-        let path = base.join(&expected.path);
+        let path = confined_join(&base, &expected.path)?;
         let actual = fingerprint(&path, &base, true)?;
         if actual.oscal_type != expected.oscal_type || actual.root_uuid != expected.root_uuid {
             identity_changes.push(expected.path.clone());
@@ -618,6 +618,26 @@ fn current_artifacts(
         },
         identity_changes,
     })
+}
+
+/// Join a record-stored artifact path onto `base` after re-asserting that the
+/// stored path is relative (no absolute or drive-prefixed value that would
+/// discard `base` when joined), so a hostile record cannot redirect artifact
+/// reads or alias checks to arbitrary locations.
+fn confined_join(base: &Path, raw: &str) -> Result<PathBuf, ForgeError> {
+    let drive_prefixed = raw.as_bytes().get(1) == Some(&b':')
+        && raw.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
+    let relative = !drive_prefixed
+        && Path::new(raw)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_) | Component::ParentDir));
+    if !relative {
+        return Err(error(format!(
+            "lifecycle artifact path '{raw}' must be relative without absolute or drive-prefix \
+             components"
+        )));
+    }
+    Ok(base.join(raw))
 }
 
 fn approved_fingerprints(record: &LifecycleRecord) -> Option<FingerprintSet> {
@@ -918,7 +938,7 @@ fn validate_report_destination(
         for artifact in
             std::iter::once(&record.policy.source).chain(record.policy.generated_artifacts.iter())
         {
-            if paths_alias(output, &base.join(&artifact.path))? {
+            if paths_alias(output, &confined_join(base, &artifact.path)?)? {
                 return Err(error("report output aliases a lifecycle artifact"));
             }
         }
@@ -1185,6 +1205,25 @@ mod tests {
         let as_of = NaiveDate::from_ymd_opt(2026, 8, 25).expect("date");
         let boundary = as_of.checked_add_days(chrono::Days::new(30)).expect("boundary");
         assert_eq!(boundary, NaiveDate::from_ymd_opt(2026, 9, 24).expect("date"));
+    }
+
+    #[test]
+    fn confined_join_rejects_anchor_discarding_paths() {
+        let base = Path::new("/records");
+        assert_eq!(
+            confined_join(base, "policy.md").expect("relative path"),
+            base.join("policy.md")
+        );
+        assert_eq!(
+            confined_join(base, "../artifacts/policy.md").expect("sibling path"),
+            base.join("../artifacts/policy.md")
+        );
+        let absolute = if cfg!(windows) { r"C:\evil\policy.md" } else { "/etc/passwd" };
+        let error = confined_join(base, absolute).expect_err("absolute path must be rejected");
+        assert!(error.to_string().contains("must be relative"), "{error}");
+        let error = confined_join(base, r"C:\evil\policy.md")
+            .expect_err("drive-prefixed path must be rejected");
+        assert!(error.to_string().contains("must be relative"), "{error}");
     }
 
     #[test]

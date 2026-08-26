@@ -167,7 +167,8 @@ jobs:
       contents: write
     # SLSA L3 provenance — tamper-proof build attestation.
     # https://github.com/slsa-framework/slsa-github-generator
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    # Pinned to the commit SHA for v2.1.0 (id-token:write + contents:write grant).
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@f7dd8c54c2067bafc12ca7a55595d5ee9b75204a
     with:
       base64-subjects: "${{ needs.hash.outputs.hashes }}"
       upload-assets: false
