@@ -116,12 +116,7 @@ fn validate(file: &mut DispositionFile) -> Result<(), ForgeError> {
 }
 
 fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
-    if value.len() != 64
-        || !value.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-    {
-        return Err(error(format!("{path} must be 64 lowercase hexadecimal characters")));
-    }
-    Ok(())
+    crate::json_strict::validate_lowercase_sha256(path, value).map_err(error)
 }
 
 fn validate_nonempty(path: &str, value: &str) -> Result<(), ForgeError> {
@@ -137,7 +132,53 @@ fn error(message: impl Into<String>) -> ForgeError {
 
 #[cfg(test)]
 mod tests {
-    use super::parse;
+    use serde_json::{Value, json};
+
+    use super::{
+        DISPOSITION_SCHEMA_VERSION, DispositionFile, DispositionRecord, DispositionStatus,
+        MAX_DISPOSITIONS, MAX_STRING_BYTES, parse, validate,
+    };
+
+    const FIRST_ID: &str = "00000000-0000-4000-8000-000000000001";
+    const SECOND_ID: &str = "00000000-0000-4000-8000-000000000002";
+
+    fn valid_value() -> Value {
+        json!({
+            "schema_version": DISPOSITION_SCHEMA_VERSION,
+            "prior_report_sha256": "0".repeat(64),
+            "dispositions": [{
+                "finding_id": FIRST_ID,
+                "status": "resolved",
+                "decided_by": "reviewer",
+                "decided_at": "2026-08-25T12:00:00Z",
+                "rationale": "Reviewed finding."
+            }]
+        })
+    }
+
+    fn parse_error(value: &Value) -> String {
+        parse(&serde_json::to_vec(value).expect("serialize disposition fixture"))
+            .unwrap_err()
+            .to_string()
+    }
+
+    fn valid_record(finding_id: &str) -> DispositionRecord {
+        DispositionRecord {
+            finding_id: finding_id.to_string(),
+            status: DispositionStatus::Resolved,
+            decided_by: "reviewer".to_string(),
+            decided_at: "2026-08-25T12:00:00Z".to_string(),
+            rationale: "Reviewed finding.".to_string(),
+        }
+    }
+
+    fn valid_file() -> DispositionFile {
+        DispositionFile {
+            schema_version: DISPOSITION_SCHEMA_VERSION.to_string(),
+            prior_report_sha256: "0".repeat(64),
+            dispositions: vec![valid_record(FIRST_ID)],
+        }
+    }
 
     #[test]
     fn duplicate_keys_are_rejected_before_contract_validation() {
@@ -146,5 +187,81 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("duplicate object key"));
+    }
+
+    #[test]
+    fn contract_rejects_unknown_fields_schema_hash_status_and_empty_records() {
+        let mut unknown = valid_value();
+        unknown["unexpected"] = json!(true);
+        assert!(parse_error(&unknown).contains("unknown field"));
+
+        let mut nested_unknown = valid_value();
+        nested_unknown["dispositions"][0]["unexpected"] = json!(true);
+        assert!(parse_error(&nested_unknown).contains("unknown field"));
+
+        let mut schema = valid_value();
+        schema["schema_version"] = json!("forge.framework-impact-dispositions/2");
+        assert!(parse_error(&schema).contains("unsupported disposition schema_version"));
+
+        for hash in ["0".repeat(63), "A".repeat(64), "g".repeat(64)] {
+            let mut invalid = valid_value();
+            invalid["prior_report_sha256"] = json!(hash);
+            assert!(parse_error(&invalid).contains("64 lowercase hexadecimal characters"));
+        }
+
+        let mut status = valid_value();
+        status["dispositions"][0]["status"] = json!("waived");
+        assert!(parse_error(&status).contains("unknown variant"));
+
+        let mut empty = valid_value();
+        empty["dispositions"] = json!([]);
+        assert!(parse_error(&empty).contains("must contain between 1"));
+    }
+
+    #[test]
+    fn record_validation_rejects_invalid_ids_duplicates_evidence_and_timestamps() {
+        let mut invalid_id = valid_value();
+        invalid_id["dispositions"][0]["finding_id"] = json!("not-a-uuid");
+        assert!(parse_error(&invalid_id).contains("finding_id must be a UUID"));
+
+        let mut duplicate = valid_value();
+        let duplicate_record = duplicate["dispositions"][0].clone();
+        duplicate["dispositions"].as_array_mut().expect("disposition array").push(duplicate_record);
+        assert!(parse_error(&duplicate).contains("duplicates another disposition"));
+
+        for field in ["decided_by", "decided_at", "rationale"] {
+            let mut empty = valid_value();
+            empty["dispositions"][0][field] = json!(" \t ");
+            assert!(
+                parse_error(&empty)
+                    .contains(&format!("$.dispositions[0].{field} must contain between 1"))
+            );
+        }
+
+        let mut invalid_time = valid_value();
+        invalid_time["dispositions"][0]["decided_at"] = json!("not-a-time");
+        assert!(parse_error(&invalid_time).contains("must be an RFC 3339 timestamp"));
+
+        let mut oversized = valid_file();
+        oversized.dispositions[0].rationale = "x".repeat(MAX_STRING_BYTES + 1);
+        assert!(
+            validate(&mut oversized).unwrap_err().to_string().contains("must contain between 1")
+        );
+    }
+
+    #[test]
+    fn record_count_is_bounded_and_valid_records_sort_by_finding_id() {
+        let record = valid_record(FIRST_ID);
+        let mut too_many = valid_file();
+        too_many.dispositions = vec![record; MAX_DISPOSITIONS + 1];
+        assert!(
+            validate(&mut too_many).unwrap_err().to_string().contains("must contain between 1")
+        );
+
+        let mut sortable = valid_file();
+        sortable.dispositions = vec![valid_record(SECOND_ID), valid_record(FIRST_ID)];
+        validate(&mut sortable).expect("valid disposition records");
+        assert_eq!(sortable.dispositions[0].finding_id, FIRST_ID);
+        assert_eq!(sortable.dispositions[1].finding_id, SECOND_ID);
     }
 }

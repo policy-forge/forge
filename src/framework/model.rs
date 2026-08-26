@@ -252,3 +252,61 @@ impl RequiredAction {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+
+    use super::{ChangeClass, FindingPriority, ReasonCode, RequiredAction};
+
+    #[test]
+    fn enum_as_str_values_match_their_serialized_contracts() {
+        for value in [
+            ChangeClass::Added,
+            ChangeClass::Removed,
+            ChangeClass::ContentChanged,
+            ChangeClass::IdentityMigrated,
+            ChangeClass::Unchanged,
+        ] {
+            assert_serialized_string(&value, value.as_str());
+        }
+        for value in [
+            FindingPriority::Blocking,
+            FindingPriority::ReviewRequired,
+            FindingPriority::Informational,
+        ] {
+            assert_serialized_string(&value, value.as_str());
+        }
+        for value in [
+            ReasonCode::ControlAdded,
+            ReasonCode::ControlRemoved,
+            ReasonCode::ControlContentChanged,
+            ReasonCode::MappingReferenceRemoved,
+            ReasonCode::MappingSubjectChanged,
+            ReasonCode::ApplicabilityDecisionRemoved,
+            ReasonCode::ApplicabilityDecisionChanged,
+            ReasonCode::ApplicabilityDecisionMigrated,
+            ReasonCode::IdentityMigrationDeclared,
+            ReasonCode::MappingSubjectMigrated,
+            ReasonCode::ResourceMetadataChanged,
+        ] {
+            assert_serialized_string(&value, value.as_str());
+        }
+        for value in [
+            RequiredAction::ReviewApplicability,
+            RequiredAction::ReviewFrameworkRemoval,
+            RequiredAction::ReviewControlChange,
+            RequiredAction::RepairOrApproveMapping,
+            RequiredAction::ReapproveMappingRationale,
+            RequiredAction::ReviewApplicabilityDecision,
+            RequiredAction::ReviewIdentityMigration,
+            RequiredAction::ReviewResourceMetadata,
+        ] {
+            assert_serialized_string(&value, value.as_str());
+        }
+    }
+
+    fn assert_serialized_string(value: &impl Serialize, expected: &str) {
+        assert_eq!(serde_json::to_value(value).expect("serialize enum"), expected);
+    }
+}

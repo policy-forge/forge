@@ -1,7 +1,7 @@
 //! Strict, bounded framework-impact manifest parsing.
 
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -194,18 +194,48 @@ fn validate_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
     {
         return Err(impact_error(format!("{path} must be a local .json file")));
     }
-    Ok(())
-}
-
-fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
-    if value.len() != 64
-        || !value.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-    {
-        return Err(impact_error(format!("{path} must be 64 lowercase hexadecimal characters")));
+    let spelling = value.to_string_lossy();
+    let bytes = spelling.as_bytes();
+    let windows_drive = bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
+    let rooted_spelling = spelling.starts_with('/') || spelling.starts_with('\\');
+    let parent_component = value.components().any(|component| component == Component::ParentDir)
+        || spelling.split(['/', '\\']).any(|component| component == "..");
+    if value.is_absolute() || windows_drive || rooted_spelling || parent_component {
+        return Err(impact_error(format!(
+            "{path} must be a relative local .json path without parent-directory components"
+        )));
     }
     Ok(())
 }
 
+fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
+    crate::json_strict::validate_lowercase_sha256(path, value).map_err(impact_error)
+}
+
 fn impact_error(message: impl Into<String>) -> ForgeError {
     ForgeError::FrameworkImpact(message.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::validate_json_path;
+
+    #[test]
+    fn manifest_paths_are_relative_and_cannot_traverse_parent_directories() {
+        for rejected in [
+            "/tmp/catalog.json",
+            "../catalog.json",
+            "nested/../catalog.json",
+            r"C:\catalog.json",
+            r"\\server\share\catalog.json",
+            r"nested\..\catalog.json",
+        ] {
+            let error = validate_json_path("$.artifact", Path::new(rejected)).unwrap_err();
+            assert!(error.to_string().contains("relative local .json path"), "{rejected}: {error}");
+        }
+        assert!(validate_json_path("$.artifact", Path::new("catalog.json")).is_ok());
+        assert!(validate_json_path("$.artifact", Path::new("nested/catalog.json")).is_ok());
+    }
 }

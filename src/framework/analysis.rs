@@ -20,6 +20,10 @@ use crate::{ForgeError, io, json_strict::bounded, validate};
 
 const MAX_FINDINGS: usize = 100_000;
 const MAX_FILTER_BYTES: usize = 4 * 1024;
+const MAPPING_JSON_LIMITS: crate::json_strict::Limits = crate::json_strict::Limits {
+    max_depth: 64,
+    max_string_bytes: crate::mapping::manifest::MAX_STRING_BYTES,
+};
 
 #[derive(Debug)]
 struct MappingReference {
@@ -297,8 +301,12 @@ fn apply_dispositions(
     if prior_finding_ids.len() != prior["findings"].as_array().map_or(0, Vec::len) {
         return Err(impact_error("$.prior_report contains duplicate finding IDs"));
     }
-    let current_finding_ids: BTreeSet<_> =
-        report.findings.iter().map(|finding| finding.finding_id.clone()).collect();
+    let current_finding_indexes: BTreeMap<_, _> = report
+        .findings
+        .iter()
+        .enumerate()
+        .map(|(index, finding)| (finding.finding_id.clone(), index))
+        .collect();
     for disposition in dispositions.dispositions {
         if !prior_finding_ids.contains(disposition.finding_id.as_str()) {
             return Err(impact_error(format!(
@@ -306,14 +314,8 @@ fn apply_dispositions(
                 bounded(&disposition.finding_id)
             )));
         }
-        if current_finding_ids.contains(disposition.finding_id.as_str()) {
-            if let Some(finding) = report
-                .findings
-                .iter_mut()
-                .find(|finding| finding.finding_id == disposition.finding_id)
-            {
-                finding.disposition = Some(disposition);
-            }
+        if let Some(index) = current_finding_indexes.get(&disposition.finding_id) {
+            report.findings[*index].disposition = Some(disposition);
         } else {
             report.prior_only_dispositions.push(disposition);
         }
@@ -654,8 +656,7 @@ fn load_mapping_references(
         let bytes = std::fs::read(&path)
             .map_err(|error| impact_error(format!("{label}.artifact: {error}")))?;
         let raw_sha256 = sha256(&bytes);
-        let value: Value = serde_json::from_slice(&bytes)
-            .map_err(|error| impact_error(format!("{label}.artifact is not JSON: {error}")))?;
+        let value = parse_mapping_value(&bytes, &label)?;
         validate_mapping(&label, &value)?;
         let collection: MappingCollectionEnvelope = serde_json::from_value(value)
             .map_err(|error| impact_error(format!("{label}.artifact is unsupported: {error}")))?;
@@ -696,6 +697,11 @@ fn load_mapping_references(
         });
     }
     Ok(portfolio)
+}
+
+fn parse_mapping_value(bytes: &[u8], label: &str) -> Result<Value, ForgeError> {
+    crate::json_strict::parse_value(bytes, &format!("{label}.artifact"), MAPPING_JSON_LIMITS)
+        .map_err(impact_error)
 }
 
 fn validate_mapping(label: &str, value: &Value) -> Result<(), ForgeError> {
@@ -1223,12 +1229,208 @@ fn impact_error(message: impl Into<String>) -> ForgeError {
 
 #[cfg(test)]
 mod tests {
-    use super::{MAX_FINDINGS, ensure_finding_slot};
+    use std::collections::BTreeMap;
+
+    use serde_json::json;
+
+    use super::{MAX_FINDINGS, classify, ensure_finding_slot, parse_mapping_value};
+    use crate::mapping::inventory::Inventory;
+    use crate::mapping::manifest::{ResourceManifest, ResourceType, SubjectType};
+    use crate::migration::successor::{RelationshipType, SuccessorMap, SuccessorRelationship};
 
     #[test]
     fn finding_limit_is_checked_before_the_next_allocation() {
         assert!(ensure_finding_slot(MAX_FINDINGS - 1).is_ok());
         let error = ensure_finding_slot(MAX_FINDINGS).unwrap_err();
         assert!(error.to_string().contains("100000 finding limit"));
+    }
+
+    #[test]
+    fn mapping_json_is_duplicate_key_safe_and_bounded() {
+        let duplicate = parse_mapping_value(
+            br#"{"mapping-collection":{},"mapping-collection":{}}"#,
+            "$.mapping_collections[0]",
+        )
+        .unwrap_err();
+        assert!(duplicate.to_string().contains("duplicate object key 'mapping-collection'"));
+
+        let oversized = format!(r#"{{"value":"{}"}}"#, "x".repeat(64 * 1024 + 1));
+        let bounded =
+            parse_mapping_value(oversized.as_bytes(), "$.mapping_collections[0]").unwrap_err();
+        assert!(bounded.to_string().contains("maximum string length 65536 bytes"));
+    }
+
+    #[test]
+    fn stable_ids_cannot_be_redeclared_as_migration_endpoints() {
+        let old = inventory(&[("stable", "same"), ("old-only", "old")]);
+        let new = inventory(&[("stable", "same"), ("new-only", "new")]);
+
+        let old_stable = successor_map(vec![relationship(
+            RelationshipType::Successor,
+            &["stable"],
+            &["new-only"],
+        )]);
+        let error = classify(&old, &new, Some(&old_stable)).unwrap_err();
+        assert!(error.to_string().contains("old control 'stable' is already reconciled"));
+
+        let new_stable = successor_map(vec![relationship(
+            RelationshipType::Successor,
+            &["old-only"],
+            &["stable"],
+        )]);
+        let error = classify(&old, &new, Some(&new_stable)).unwrap_err();
+        assert!(error.to_string().contains("new control 'stable' is already reconciled"));
+    }
+
+    #[test]
+    fn migration_endpoints_cannot_be_consumed_more_than_once() {
+        let old = inventory(&[("old-a", "a"), ("old-b", "b")]);
+        let new = inventory(&[("new-a", "a"), ("new-b", "b")]);
+
+        let reused_old = successor_map(vec![
+            relationship(RelationshipType::Successor, &["old-a"], &["new-a"]),
+            relationship(RelationshipType::Successor, &["old-a"], &["new-b"]),
+        ]);
+        let error = classify(&old, &new, Some(&reused_old)).unwrap_err();
+        assert!(error.to_string().contains("old control 'old-a' is already reconciled"));
+
+        let reused_new = successor_map(vec![
+            relationship(RelationshipType::Successor, &["old-a"], &["new-a"]),
+            relationship(RelationshipType::Successor, &["old-b"], &["new-a"]),
+        ]);
+        let error = classify(&old, &new, Some(&reused_new)).unwrap_err();
+        assert!(error.to_string().contains("new control 'new-a' is already reconciled"));
+    }
+
+    #[test]
+    fn split_and_merge_hashes_and_classification_are_reconciled_exactly_once() {
+        let old = inventory(&[
+            ("stable", "same"),
+            ("split-old", "split"),
+            ("merge-old-a", "merge a"),
+            ("merge-old-b", "merge b"),
+            ("removed", "removed"),
+        ]);
+        let new = inventory(&[
+            ("stable", "same"),
+            ("split-new-a", "split a"),
+            ("split-new-b", "split b"),
+            ("merge-new", "merge"),
+            ("added", "added"),
+        ]);
+        let migrations = successor_map(vec![
+            relationship(RelationshipType::Split, &["split-old"], &["split-new-a", "split-new-b"]),
+            relationship(RelationshipType::Merge, &["merge-old-a", "merge-old-b"], &["merge-new"]),
+        ]);
+
+        let changes = classify(&old, &new, Some(&migrations)).unwrap();
+        let split = changes
+            .iter()
+            .find(|change| {
+                change
+                    .migration
+                    .as_ref()
+                    .is_some_and(|migration| migration.relationship == RelationshipType::Split)
+            })
+            .expect("split change");
+        assert!(split.old_sha256.is_some());
+        assert!(split.new_sha256.is_none());
+        let merge = changes
+            .iter()
+            .find(|change| {
+                change
+                    .migration
+                    .as_ref()
+                    .is_some_and(|migration| migration.relationship == RelationshipType::Merge)
+            })
+            .expect("merge change");
+        assert!(merge.old_sha256.is_none());
+        assert!(merge.new_sha256.is_some());
+
+        let mut old_occurrences = BTreeMap::new();
+        let mut new_occurrences = BTreeMap::new();
+        for change in &changes {
+            for subject in &change.old_subjects {
+                *old_occurrences.entry(subject.id.clone()).or_insert(0) += 1;
+            }
+            for subject in &change.new_subjects {
+                *new_occurrences.entry(subject.id.clone()).or_insert(0) += 1;
+            }
+        }
+        assert_eq!(
+            old_occurrences,
+            old.ids_of_type(SubjectType::Control).into_iter().map(|id| (id, 1)).collect()
+        );
+        assert_eq!(
+            new_occurrences,
+            new.ids_of_type(SubjectType::Control).into_iter().map(|id| (id, 1)).collect()
+        );
+    }
+
+    fn inventory(controls: &[(&str, &str)]) -> Inventory {
+        let directory = tempfile::tempdir().expect("temporary inventory directory");
+        let artifact = directory.path().join("catalog.json");
+        let catalog = json!({
+            "catalog": {
+                "uuid": "77777777-7777-4777-8777-777777777777",
+                "metadata": {
+                    "title": "Classification fixture",
+                    "last-modified": "2026-08-26T12:00:00Z",
+                    "version": "1.0.0",
+                    "oscal-version": "1.2.3"
+                },
+                "groups": [{
+                    "id": "fixture-group",
+                    "title": "Fixture group",
+                    "controls": controls.iter().map(|(id, prose)| json!({
+                        "id": id,
+                        "title": format!("Control {id}"),
+                        "parts": [{
+                            "id": format!("{id}_smt"),
+                            "name": "statement",
+                            "prose": prose
+                        }]
+                    })).collect::<Vec<_>>()
+                }]
+            }
+        });
+        std::fs::write(&artifact, serde_json::to_vec(&catalog).unwrap()).unwrap();
+        crate::mapping::inventory::load(
+            directory.path(),
+            "$.fixture",
+            &ResourceManifest {
+                resource_type: ResourceType::Catalog,
+                artifact: "catalog.json".into(),
+                href: "catalog.json".to_string(),
+                resolved_catalog: None,
+                resolved_catalog_attestation: None,
+                expected_sha256: None,
+                inventory: None,
+            },
+        )
+        .unwrap()
+        .inventory
+    }
+
+    fn successor_map(relationships: Vec<SuccessorRelationship>) -> SuccessorMap {
+        SuccessorMap {
+            schema_version: crate::migration::successor::SUCCESSOR_MAP_SCHEMA_VERSION.to_string(),
+            relationships,
+        }
+    }
+
+    fn relationship(
+        relationship: RelationshipType,
+        old_ids: &[&str],
+        new_ids: &[&str],
+    ) -> SuccessorRelationship {
+        SuccessorRelationship {
+            relationship,
+            old_ids: old_ids.iter().map(|id| (*id).to_string()).collect(),
+            new_ids: new_ids.iter().map(|id| (*id).to_string()).collect(),
+            approved_by: "reviewer".to_string(),
+            approved_at: "2026-08-26T12:00:00Z".to_string(),
+            rationale: "Reviewed migration.".to_string(),
+        }
     }
 }

@@ -558,12 +558,7 @@ fn validate_stable_uuid(
 }
 
 fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
-    if value.len() != 64
-        || !value.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-    {
-        return Err(error(format!("{path} must be 64 lowercase hexadecimal characters")));
-    }
-    Ok(())
+    crate::json_strict::validate_lowercase_sha256(path, value).map_err(error)
 }
 
 fn validate_framework_reference(

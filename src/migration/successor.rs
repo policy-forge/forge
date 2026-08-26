@@ -1,6 +1,7 @@
 //! Strict reviewer-authored successor, split, and merge declarations.
 
 use std::collections::BTreeSet;
+use std::io::Read as _;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -60,18 +61,30 @@ impl RelationshipType {
 /// Returns [`ForgeError::MigrationError`] for unsafe files, invalid JSON, unsupported contracts,
 /// conflicting declarations, invalid cardinality, or invalid approval evidence.
 pub fn load(path: &Path) -> Result<SuccessorMap, ForgeError> {
-    let metadata = crate::io::regular_file_metadata(path, "successor map").map_err(error)?;
+    crate::io::regular_file_metadata(path, "successor map").map_err(error)?;
+    let file = std::fs::File::open(path).map_err(|cause| {
+        error(format!("cannot open successor map '{}': {cause}", path.display()))
+    })?;
+    let metadata = file.metadata().map_err(|cause| {
+        error(format!("cannot inspect successor map '{}': {cause}", path.display()))
+    })?;
+    if !metadata.is_file() {
+        return Err(error("successor map must be a regular file"));
+    }
     if metadata.len() > MAX_SUCCESSOR_MAP_BYTES {
-        return Err(ForgeError::MigrationError(format!(
+        return Err(error(format!(
             "successor map exceeds the {MAX_SUCCESSOR_MAP_BYTES} byte limit"
         )));
     }
-    let bytes = std::fs::read(path).map_err(|cause| {
-        ForgeError::MigrationError(format!(
-            "cannot read successor map '{}': {cause}",
-            path.display()
-        ))
+    let mut bytes = Vec::new();
+    file.take(MAX_SUCCESSOR_MAP_BYTES + 1).read_to_end(&mut bytes).map_err(|cause| {
+        error(format!("cannot read successor map '{}': {cause}", path.display()))
     })?;
+    if bytes.len() as u64 > MAX_SUCCESSOR_MAP_BYTES {
+        return Err(error(format!(
+            "successor map exceeds the {MAX_SUCCESSOR_MAP_BYTES} byte limit"
+        )));
+    }
     parse(&bytes)
 }
 
@@ -214,5 +227,31 @@ mod tests {
         )
         .unwrap_err();
         assert!(duplicate.to_string().contains("duplicate object key"));
+    }
+
+    #[test]
+    fn relationship_as_str_values_match_their_serialized_contracts() {
+        for value in [RelationshipType::Successor, RelationshipType::Split, RelationshipType::Merge]
+        {
+            assert_eq!(serde_json::to_value(value).unwrap(), value.as_str());
+        }
+    }
+
+    #[test]
+    fn load_reads_the_validated_handle_with_a_hard_byte_limit() {
+        let directory = tempfile::tempdir().unwrap();
+        let valid_path = directory.path().join("valid.json");
+        std::fs::write(
+            &valid_path,
+            br#"{"schema_version":"forge.successor-map/1","relationships":[{"relationship":"successor","old_ids":["old"],"new_ids":["new"],"approved_by":"reviewer","approved_at":"2026-08-25T12:00:00Z","rationale":"reviewed successor"}]}"#,
+        )
+        .unwrap();
+        assert_eq!(load(&valid_path).unwrap().relationships.len(), 1);
+
+        let oversized_path = directory.path().join("oversized.json");
+        let oversized = std::fs::File::create(&oversized_path).unwrap();
+        oversized.set_len(MAX_SUCCESSOR_MAP_BYTES + 1).unwrap();
+        let error = load(&oversized_path).unwrap_err();
+        assert!(error.to_string().contains("byte limit"));
     }
 }

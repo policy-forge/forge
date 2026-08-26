@@ -8,8 +8,42 @@ pub mod model;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use crate::cli::{FrameworkFailOn, FrameworkReportFormat};
+use crate::cli::{
+    FrameworkDecisionStateFilter, FrameworkFailOn, FrameworkImpactPriorityFilter,
+    FrameworkReportFormat,
+};
 use crate::{ForgeError, io};
+
+#[must_use]
+pub(crate) const fn decision_state_filter(
+    value: &FrameworkDecisionStateFilter,
+) -> crate::applicability::manifest::DecisionState {
+    match value {
+        FrameworkDecisionStateFilter::Applicable => {
+            crate::applicability::manifest::DecisionState::Applicable
+        }
+        FrameworkDecisionStateFilter::NotApplicable => {
+            crate::applicability::manifest::DecisionState::NotApplicable
+        }
+        FrameworkDecisionStateFilter::Deferred => {
+            crate::applicability::manifest::DecisionState::Deferred
+        }
+        FrameworkDecisionStateFilter::UnderReview => {
+            crate::applicability::manifest::DecisionState::UnderReview
+        }
+    }
+}
+
+#[must_use]
+pub(crate) const fn priority_filter(
+    value: &FrameworkImpactPriorityFilter,
+) -> model::FindingPriority {
+    match value {
+        FrameworkImpactPriorityFilter::Blocking => model::FindingPriority::Blocking,
+        FrameworkImpactPriorityFilter::ReviewRequired => model::FindingPriority::ReviewRequired,
+        FrameworkImpactPriorityFilter::Informational => model::FindingPriority::Informational,
+    }
+}
 
 /// Execute `forge framework impact` and return whether the selected gate fires.
 ///
@@ -118,7 +152,12 @@ fn render_markdown(report: &model::ImpactReport) -> String {
             markdown_escape(&finding.subject_id),
             finding.required_action.as_str(),
             finding.disposition.as_ref().map_or("none", |value| value.status.as_str()),
-            markdown_escape(&finding.dependency_path.join(" -> "))
+            finding
+                .dependency_path
+                .iter()
+                .map(|segment| markdown_escape(segment))
+                .collect::<Vec<_>>()
+                .join(" -> ")
         );
     }
     output
@@ -414,6 +453,11 @@ fn impact_error(message: impl Into<String>) -> ForgeError {
 
 #[cfg(test)]
 mod tests {
+    use crate::applicability::manifest::DecisionState;
+    use crate::cli::{
+        FrameworkDecisionStateFilter, FrameworkFailOn, FrameworkImpactPriorityFilter,
+    };
+    use crate::framework::disposition::{DispositionRecord, DispositionStatus};
     use crate::framework::model::{
         ChangeClass, ChangeSummary, ControlChange, FindingPriority, ImpactFinding, ImpactReport,
         ReasonCode, RequiredAction,
@@ -422,7 +466,8 @@ mod tests {
     use crate::mapping::manifest::ResourceType;
 
     use super::{
-        github_data, github_property, html_escape, markdown_escape, render_html, render_markdown,
+        decision_state_filter, gate_fires, github_data, github_property, html_escape,
+        markdown_escape, priority_filter, render_html, render_markdown,
     };
 
     #[test]
@@ -432,20 +477,54 @@ mod tests {
     }
 
     #[test]
+    fn cli_filters_map_exhaustively_to_report_model_values() {
+        assert_eq!(
+            decision_state_filter(&FrameworkDecisionStateFilter::Applicable),
+            DecisionState::Applicable
+        );
+        assert_eq!(
+            decision_state_filter(&FrameworkDecisionStateFilter::NotApplicable),
+            DecisionState::NotApplicable
+        );
+        assert_eq!(
+            decision_state_filter(&FrameworkDecisionStateFilter::Deferred),
+            DecisionState::Deferred
+        );
+        assert_eq!(
+            decision_state_filter(&FrameworkDecisionStateFilter::UnderReview),
+            DecisionState::UnderReview
+        );
+        assert_eq!(
+            priority_filter(&FrameworkImpactPriorityFilter::Blocking),
+            FindingPriority::Blocking
+        );
+        assert_eq!(
+            priority_filter(&FrameworkImpactPriorityFilter::ReviewRequired),
+            FindingPriority::ReviewRequired
+        );
+        assert_eq!(
+            priority_filter(&FrameworkImpactPriorityFilter::Informational),
+            FindingPriority::Informational
+        );
+    }
+
+    #[test]
     fn markdown_and_html_reports_are_deterministic_and_escape_injected_content() {
         let report = report_with_injected_content();
 
         let markdown = render_markdown(&report);
         assert_eq!(markdown, render_markdown(&report));
         assert!(markdown.starts_with("# FORGE framework change impact report\n"));
+        assert!(markdown.contains("- Status: complete"));
         assert!(markdown.contains("control\\|with\\*markup&lt;script&gt;"));
-        assert!(markdown.contains("source&#10;\\|row"));
+        assert!(markdown.contains("source&#10;\\|row -> &lt;img src=x onerror=alert\\(1\\)&gt;"));
         assert!(!markdown.contains("<script>"));
         assert!(!markdown.contains("\n|row"));
 
         let html = render_html(&report);
         assert_eq!(html, render_html(&report));
         assert!(html.starts_with("<!doctype html>\n<html lang=\"en\">"));
+        assert!(html.contains("<dt>Status</dt><dd><code>complete</code></dd>"));
         assert!(html.contains("control|with*markup&lt;script&gt;"));
         assert!(html.contains("source\n|row"));
         assert!(!html.contains("<script>"));
@@ -465,6 +544,55 @@ mod tests {
         );
     }
 
+    #[test]
+    fn gates_cover_every_priority_disposition_and_filtered_out_findings() {
+        let mut report = report_with_injected_content();
+        let gates =
+            [FrameworkFailOn::Blocking, FrameworkFailOn::ReviewRequired, FrameworkFailOn::Any];
+        for (priority, expected) in [
+            (FindingPriority::Blocking, [true, true, true]),
+            (FindingPriority::ReviewRequired, [false, true, true]),
+            (FindingPriority::Informational, [false, false, true]),
+        ] {
+            report.findings[0].priority = priority;
+            for (gate, expected) in gates.iter().zip(expected) {
+                assert_eq!(gate_fires(&report, gate), expected, "priority={priority:?}");
+            }
+        }
+
+        report.findings[0].priority = FindingPriority::Blocking;
+        for status in [DispositionStatus::Resolved, DispositionStatus::AcceptedRisk] {
+            report.findings[0].disposition = Some(disposition(status));
+            assert!(gates.iter().all(|gate| !gate_fires(&report, gate)));
+        }
+        report.findings[0].disposition = Some(disposition(DispositionStatus::StillOpen));
+        assert!(gates.iter().all(|gate| gate_fires(&report, gate)));
+
+        report.findings[0].disposition = None;
+        report.filtered_out_findings = std::mem::take(&mut report.findings);
+        assert!(report.findings.is_empty());
+        for (priority, expected) in [
+            (FindingPriority::Blocking, [true, true, true]),
+            (FindingPriority::ReviewRequired, [false, true, true]),
+            (FindingPriority::Informational, [false, false, true]),
+        ] {
+            report.filtered_out_findings[0].priority = priority;
+            for (gate, expected) in gates.iter().zip(expected) {
+                assert_eq!(gate_fires(&report, gate), expected, "filtered priority={priority:?}");
+            }
+        }
+    }
+
+    fn disposition(status: DispositionStatus) -> DispositionRecord {
+        DispositionRecord {
+            finding_id: "00000000-0000-4000-8000-000000000002".to_owned(),
+            status,
+            decided_by: "reviewer".to_owned(),
+            decided_at: "2026-08-25T12:00:00Z".to_owned(),
+            rationale: "reviewed".to_owned(),
+        }
+    }
+
     fn report_with_injected_content() -> ImpactReport {
         let resource = ResourceEvidence {
             resource_type: ResourceType::Catalog,
@@ -477,7 +605,7 @@ mod tests {
         };
         ImpactReport {
             schema_version: crate::framework::model::REPORT_SCHEMA_VERSION,
-            status: "review-required",
+            status: "complete",
             old: resource.clone(),
             new: resource,
             summary: ChangeSummary {

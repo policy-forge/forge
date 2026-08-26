@@ -26,6 +26,16 @@ pub(crate) fn bounded(value: &str) -> String {
     value.chars().take(120).flat_map(char::escape_default).collect()
 }
 
+/// Validate the canonical lowercase hexadecimal representation of one SHA-256 digest.
+pub(crate) fn validate_lowercase_sha256(path: &str, value: &str) -> Result<(), String> {
+    if value.len() != 64
+        || !value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(format!("{path} must be 64 lowercase hexadecimal characters"));
+    }
+    Ok(())
+}
+
 fn enforce_bounds(value: &Value, path: &str, depth: usize, limits: Limits) -> Result<(), String> {
     if depth > limits.max_depth {
         return Err(format!("{path} exceeds maximum JSON depth {}", limits.max_depth));
@@ -145,7 +155,7 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
 
 #[cfg(test)]
 mod tests {
-    use super::{Limits, parse_value};
+    use super::{Limits, parse_value, validate_lowercase_sha256};
 
     const LIMITS: Limits = Limits { max_depth: 2, max_string_bytes: 3 };
 
@@ -171,5 +181,16 @@ mod tests {
                 .unwrap_err()
                 .contains("maximum JSON depth 2")
         );
+    }
+
+    #[test]
+    fn lowercase_sha256_requires_exact_length_and_alphabet() {
+        assert!(validate_lowercase_sha256("$.hash", &"0a".repeat(32)).is_ok());
+        for invalid in ["0".repeat(63), "A".repeat(64), "g".repeat(64)] {
+            assert_eq!(
+                validate_lowercase_sha256("$.hash", &invalid).unwrap_err(),
+                "$.hash must be 64 lowercase hexadecimal characters"
+            );
+        }
     }
 }

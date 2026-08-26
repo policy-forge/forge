@@ -1260,32 +1260,11 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             } => {
                 let filters = crate::framework::model::ImpactFilters {
                     group: group.clone(),
-                    decision_state: decision_state.as_ref().map(|state| match state {
-                        FrameworkDecisionStateFilter::Applicable => {
-                            crate::applicability::manifest::DecisionState::Applicable
-                        }
-                        FrameworkDecisionStateFilter::NotApplicable => {
-                            crate::applicability::manifest::DecisionState::NotApplicable
-                        }
-                        FrameworkDecisionStateFilter::Deferred => {
-                            crate::applicability::manifest::DecisionState::Deferred
-                        }
-                        FrameworkDecisionStateFilter::UnderReview => {
-                            crate::applicability::manifest::DecisionState::UnderReview
-                        }
-                    }),
+                    decision_state: decision_state
+                        .as_ref()
+                        .map(crate::framework::decision_state_filter),
                     policy_source: policy_source.clone(),
-                    priority: priority.as_ref().map(|value| match value {
-                        FrameworkImpactPriorityFilter::Blocking => {
-                            crate::framework::model::FindingPriority::Blocking
-                        }
-                        FrameworkImpactPriorityFilter::ReviewRequired => {
-                            crate::framework::model::FindingPriority::ReviewRequired
-                        }
-                        FrameworkImpactPriorityFilter::Informational => {
-                            crate::framework::model::FindingPriority::Informational
-                        }
-                    }),
+                    priority: priority.as_ref().map(crate::framework::priority_filter),
                     owner: owner.clone(),
                 };
                 if crate::framework::execute_impact(

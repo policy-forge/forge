@@ -282,9 +282,9 @@ overdue deferral gate fires only when `revisit_date` is strictly earlier than
 
 ### Framework Revision Impact
 
-Compare an exact old/new OSCAL Catalog pair or attested Profile-plus-resolved-
-Catalog pair and trace changed or removed controls through optional PRD 055
-Mapping Collections and a PRD 056 applicability manifest:
+Compare an exact old/new OSCAL Catalog pair or attested
+Profile-plus-resolved-Catalog pair and trace changed or removed controls through
+optional PRD 055 Mapping Collections and a PRD 056 applicability manifest:
 
 ```bash
 forge framework impact --manifest framework-impact.json \

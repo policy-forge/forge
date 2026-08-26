@@ -859,7 +859,7 @@ fn markdown_and_html_cli_formats_render_complete_static_reports() {
     let (_directory, manifest_path) = setup_revision();
 
     for (format, prefix, suffix) in [
-        ("markdown", "# FORGE framework change impact report\n", ""),
+        ("markdown", "# FORGE framework change impact report\n", "\n"),
         ("html", "<!doctype html>\n<html lang=\"en\">", "</html>\n"),
     ] {
         let first = run(&[
@@ -997,14 +997,22 @@ fn text_report_escapes_terminal_control_characters() {
 #[test]
 fn mixed_catalog_and_profile_revisions_are_rejected() {
     let (dir, manifest_path) = setup_revision();
+    let output_path = dir.path().join("framework-impact-report.json");
     let mut manifest: Value =
         serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
     manifest["new"]["type"] = json!("profile");
     write_json(&manifest_path, &manifest);
-    let result = run(&["framework", "impact", "--manifest", manifest_path.to_str().unwrap()]);
+    let result = run(&[
+        "framework",
+        "impact",
+        "--manifest",
+        manifest_path.to_str().unwrap(),
+        "--output",
+        output_path.to_str().unwrap(),
+    ]);
     assert_eq!(result.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&result.stderr).contains("must describe the same OSCAL model"));
-    assert!(!dir.path().join("framework-impact-report.json").exists());
+    assert!(!output_path.exists());
 }
 
 #[test]
