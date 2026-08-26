@@ -629,6 +629,7 @@ dependencies = [
  "criterion",
  "insta",
  "jsonschema",
+ "libc",
  "pdf-extract",
  "proptest",
  "pulldown-cmark",

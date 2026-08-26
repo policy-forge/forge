@@ -27,6 +27,9 @@ pdf-extract = "0.12"
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }
 toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [lints.clippy]
 all = "warn"
 pedantic = "warn"

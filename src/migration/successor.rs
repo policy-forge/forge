@@ -1,6 +1,7 @@
 //! Strict reviewer-authored successor, split, and merge declarations.
 
 use std::collections::BTreeSet;
+use std::fs::{File, OpenOptions};
 use std::io::Read as _;
 use std::path::Path;
 
@@ -61,16 +62,46 @@ impl RelationshipType {
 /// Returns [`ForgeError::MigrationError`] for unsafe files, invalid JSON, unsupported contracts,
 /// conflicting declarations, invalid cardinality, or invalid approval evidence.
 pub fn load(path: &Path) -> Result<SuccessorMap, ForgeError> {
-    crate::io::regular_file_metadata(path, "successor map").map_err(error)?;
-    let file = std::fs::File::open(path).map_err(|cause| {
+    let file = open_regular_nofollow(path)?;
+    load_open_file(file, path)
+}
+
+fn open_regular_nofollow(path: &Path) -> Result<File, ForgeError> {
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt as _;
+        options.custom_flags(libc::O_NOFOLLOW);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+        options.custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+    }
+    #[cfg(not(any(unix, windows)))]
+    return Err(error("atomic no-follow successor-map opening is unsupported on this platform"));
+
+    let file = options.open(path).map_err(|cause| {
         error(format!("cannot open successor map '{}': {cause}", path.display()))
     })?;
     let metadata = file.metadata().map_err(|cause| {
         error(format!("cannot inspect successor map '{}': {cause}", path.display()))
     })?;
+    if metadata.file_type().is_symlink() {
+        return Err(error("successor map must not be a symbolic link"));
+    }
     if !metadata.is_file() {
         return Err(error("successor map must be a regular file"));
     }
+    Ok(file)
+}
+
+fn load_open_file(file: File, path: &Path) -> Result<SuccessorMap, ForgeError> {
+    let metadata = file.metadata().map_err(|cause| {
+        error(format!("cannot inspect successor map '{}': {cause}", path.display()))
+    })?;
     if metadata.len() > MAX_SUCCESSOR_MAP_BYTES {
         return Err(error(format!(
             "successor map exceeds the {MAX_SUCCESSOR_MAP_BYTES} byte limit"
@@ -253,5 +284,40 @@ mod tests {
         oversized.set_len(MAX_SUCCESSOR_MAP_BYTES + 1).unwrap();
         let error = load(&oversized_path).unwrap_err();
         assert!(error.to_string().contains("byte limit"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn opened_handle_survives_directory_entry_replacement_without_following_the_symlink() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("successor.json");
+        let moved_path = directory.path().join("opened-successor.json");
+        let replacement = directory.path().join("replacement.json");
+        std::fs::write(&path, successor_json("original-old", "original-new")).unwrap();
+        std::fs::write(&replacement, successor_json("replacement-old", "replacement-new")).unwrap();
+
+        let opened = open_regular_nofollow(&path).unwrap();
+        std::fs::rename(&path, &moved_path).unwrap();
+        std::os::unix::fs::symlink(&replacement, &path).unwrap();
+
+        let parsed = load_open_file(opened, &path).unwrap();
+        assert_eq!(parsed.relationships[0].old_ids, ["original-old"]);
+        assert_eq!(parsed.relationships[0].new_ids, ["original-new"]);
+        assert!(load(&path).unwrap_err().to_string().contains("cannot open successor map"));
+    }
+
+    fn successor_json(old_id: &str, new_id: &str) -> Vec<u8> {
+        serde_json::to_vec(&serde_json::json!({
+            "schema_version": SUCCESSOR_MAP_SCHEMA_VERSION,
+            "relationships": [{
+                "relationship": "successor",
+                "old_ids": [old_id],
+                "new_ids": [new_id],
+                "approved_by": "reviewer",
+                "approved_at": "2026-08-25T12:00:00Z",
+                "rationale": "reviewed successor"
+            }]
+        }))
+        .unwrap()
     }
 }
