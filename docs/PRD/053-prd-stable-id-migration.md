@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** Draft
-> **Last Updated:** 2026-08-22 <!-- @auto -->
+> **Status:** Implementation in progress — successor declarations added
+> **Last Updated:** 2026-08-25 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `053-stable-id-migration`
 **Created**: 2026-08-22
-**Status**: Draft
+**Status**: Implementation in progress — successor declarations added
 **Input**: FORGE v1.2 roadmap priority 3
 
 ---
@@ -179,8 +179,8 @@ FORGE validates that declared IDs exist on the correct side and that declaration
 - [ ] **M-5 — ID evidence:** Every paired or grouped entry shall include old/new stable IDs, normalized-content SHA-256 fingerprints, source locations, section paths, atom indexes, classification evidence, and confidence basis.
 - [ ] **M-6 — No silent mutation:** The command shall be read-only with respect to old/new policies, successor maps, and generated artifacts; it shall never override, reassign, or write stable IDs.
 - [ ] **M-7 — Qualified inference:** Automatically inferred relationships shall be labeled `observed` or `candidate` and shall never be serialized as approved successors.
-- [ ] **M-8 — Successor declarations:** An optional `--successor-map <FILE>` shall accept versioned JSON declarations for one-to-one successor, one-to-many split, and many-to-one merge relationships. Each declaration shall require non-empty `approved_by`, `approved_at`, and `rationale` fields.
-- [ ] **M-9 — Mapping validation:** FORGE shall reject a successor map that references absent IDs, reuses an ID in conflicting declarations, maps an ID to itself, uses an unsupported relationship type/schema version, or is malformed/oversized. Rejection shall not suppress the error or modify inputs.
+- [x] **M-8 — Successor declarations:** An optional `--successor-map <FILE>` shall accept versioned JSON declarations for one-to-one successor, one-to-many split, and many-to-one merge relationships. Each declaration shall require non-empty `approved_by`, `approved_at`, and `rationale` fields.
+- [x] **M-9 — Mapping validation:** FORGE shall reject a successor map that references absent IDs, reuses an ID in conflicting declarations, maps an ID to itself, uses an unsupported relationship type/schema version, or is malformed/oversized. Rejection shall not suppress the error or modify inputs.
 - [ ] **M-10 — Reordering:** Unique identical normalized prose with a changed stable ID shall be reported as an observed ID change with all changed seed fields, including line shifts, section moves/renames, and atom-index changes.
 - [ ] **M-11 — Atomization:** One-to-many, many-to-one, and changed-boundary cases shall be represented as grouped candidate or declared relationships; FORGE shall not flatten them into arbitrary one-to-one pairs.
 - [ ] **M-12 — Ambiguity:** Duplicate prose or competing matches shall produce a deterministic ambiguity group containing all candidate IDs and evidence; no candidate shall be selected by traversal or hash-map iteration order.
@@ -194,7 +194,7 @@ FORGE validates that declared IDs exist on the correct side and that declaration
 - [ ] **M-20 — CI exit codes:** Exit `0` when analysis completes with only unchanged requirements and no source-location change; exit `1` when analysis completes and contains any added, retired, observed ID change, candidate, declared relationship, ambiguity, or source-location change; exit `2` when a trustworthy complete report cannot be produced, including invalid input or successor-map errors. The report shall be written before returning exit `1`.
 - [ ] **M-21 — Integrity anomaly:** If the same generated stable ID is associated with different normalized text within or across inventories, analysis shall fail with exit `2` and identify the affected ID without claiming a migration relationship.
 - [ ] **M-22 — Input safety:** Apply existing file-type, regular-file, maximum-size, and recursion/split limits independently to both policies; apply a documented size limit to the successor map.
-- [ ] **M-23 — Output safety:** `--output` shall not overwrite either input policy or the successor-map path and shall use existing safe output handling conventions.
+- [x] **M-23 — Output safety:** `--output` shall not overwrite either input policy or the successor-map path and shall use existing safe output handling conventions.
 - [ ] **M-24 — Compatibility:** Existing `forge convert --stable-id-baseline` and `forge diff` behavior shall remain unchanged in the MVP.
 
 ### Should Have (S) — High-value fast follows 🟡 `@human-review`
@@ -480,6 +480,7 @@ The feature performs no network access, executes no external process, and requir
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-22 | Codex | Initial draft from FORGE v1.2 roadmap priority 3, grounded in current stable-ID, diff, traceability, atomization, and ingestion behavior |
+| 0.2 | 2026-08-25 | Codex | Implemented closed reviewer-authored successor, split, and merge declarations with validation, approval evidence, deterministic reports, and output safety |
 
 ---
 

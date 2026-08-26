@@ -31,6 +31,13 @@ struct MappingValidationState {
     relationship_polarities: BTreeMap<RelationshipKey, bool>,
 }
 
+/// Fully validated applicability inputs and their deterministic complete report.
+pub(crate) struct PreparedAnalysis {
+    pub report: model::ApplicabilityReport,
+    pub manifest: manifest::ApplicabilityManifest,
+    pub input_paths: Vec<PathBuf>,
+}
+
 /// Create an undecided, deterministic applicability manifest scaffold.
 ///
 /// # Errors
@@ -74,8 +81,25 @@ pub fn execute_analyze(
     as_of: Option<chrono::NaiveDate>,
     filters: model::ReportFilters,
 ) -> Result<bool, ForgeError> {
-    validate_filters(&filters)?;
     let as_of = parse_gate_date(fail_on, as_of)?;
+    let prepared = prepare_analysis(manifest_path, filters)?;
+    validate_destination(&prepared.input_paths, output)?;
+    let rendered = render_report(&prepared.report, format)?;
+    crate::cli::output::write_output(&rendered, output)?;
+    Ok(review_required(&prepared.report, &prepared.manifest, fail_on, as_of))
+}
+
+/// Validate an applicability manifest and all of its local dependencies without writing output.
+///
+/// # Errors
+///
+/// Returns an error for invalid manifests, resources, decisions, Mapping Collections, stale or
+/// conflicting evidence, unsafe input aliases, or incomplete classification.
+pub(crate) fn prepare_analysis(
+    manifest_path: &Path,
+    filters: model::ReportFilters,
+) -> Result<PreparedAnalysis, ForgeError> {
+    validate_filters(&filters)?;
     io::check_file_size(manifest_path, manifest::MAX_MANIFEST_BYTES)
         .map_err(|cause| error(format!("manifest: {cause}")))?;
     let manifest_bytes = std::fs::read(manifest_path).map_err(|cause| {
@@ -103,7 +127,6 @@ pub fn execute_analyze(
         evidence.push(loaded);
     }
     evidence.sort_by(|left, right| left.uuid.cmp(&right.uuid));
-    validate_destination(&inputs, output)?;
 
     let report = model::build_report(
         &parsed,
@@ -115,9 +138,7 @@ pub fn execute_analyze(
         filters,
     );
     validate_classification_counts(&report.counts)?;
-    let rendered = render_report(&report, format)?;
-    crate::cli::output::write_output(&rendered, output)?;
-    Ok(review_required(&report, &parsed, fail_on, as_of))
+    Ok(PreparedAnalysis { report, manifest: parsed, input_paths: inputs })
 }
 
 /// Convert the CLI filter vocabulary into the report model vocabulary.
@@ -537,12 +558,7 @@ fn validate_stable_uuid(
 }
 
 fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
-    if value.len() != 64
-        || !value.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-    {
-        return Err(error(format!("{path} must be 64 lowercase hexadecimal characters")));
-    }
-    Ok(())
+    crate::json_strict::validate_lowercase_sha256(path, value).map_err(error)
 }
 
 fn validate_framework_reference(

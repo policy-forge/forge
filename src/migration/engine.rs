@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::successor::{RelationshipType, SuccessorMap};
 use super::types::{
-    ApprovalStatus, Classification, ConfidenceBasis, EvidenceCode, InventoryRequirement,
-    MIGRATION_REPORT_SCHEMA_VERSION, MigrationEntry, MigrationOutcomeCounts, MigrationReport,
-    MigrationSummary, RequirementInventory, RequirementLocation,
+    ApprovalStatus, Classification, ConfidenceBasis, DeclarationEvidence, EvidenceCode,
+    InventoryRequirement, MIGRATION_REPORT_SCHEMA_VERSION, MigrationEntry, MigrationOutcomeCounts,
+    MigrationReport, MigrationSummary, RequirementInventory, RequirementLocation,
 };
 use crate::error::ForgeError;
 
@@ -12,6 +13,7 @@ type CandidateGroup = (BTreeSet<usize>, BTreeSet<usize>, BTreeSet<EvidenceCode>)
 pub(crate) fn classify(
     old: RequirementInventory,
     new: RequirementInventory,
+    successor_map: Option<&SuccessorMap>,
 ) -> Result<MigrationReport, ForgeError> {
     let new_by_id: BTreeMap<&str, usize> = new
         .requirements
@@ -33,6 +35,16 @@ pub(crate) fn classify(
         &mut new_matched,
         &mut entries,
     );
+    if let Some(successor_map) = successor_map {
+        match_declared_relationships(
+            &old.requirements,
+            &new.requirements,
+            successor_map,
+            &mut old_matched,
+            &mut new_matched,
+            &mut entries,
+        )?;
+    }
     match_unique_normalized_text(
         &old.requirements,
         &new.requirements,
@@ -69,6 +81,69 @@ pub(crate) fn classify(
         summary,
         entries,
     })
+}
+
+fn match_declared_relationships(
+    old: &[InventoryRequirement],
+    new: &[InventoryRequirement],
+    successor_map: &SuccessorMap,
+    old_matched: &mut [bool],
+    new_matched: &mut [bool],
+    entries: &mut Vec<MigrationEntry>,
+) -> Result<(), ForgeError> {
+    let old_by_id: BTreeMap<_, _> =
+        old.iter().enumerate().map(|(index, item)| (item.stable_id.as_str(), index)).collect();
+    let new_by_id: BTreeMap<_, _> =
+        new.iter().enumerate().map(|(index, item)| (item.stable_id.as_str(), index)).collect();
+    for relationship in &successor_map.relationships {
+        let old_indexes = declared_indexes("old", &relationship.old_ids, &old_by_id, old_matched)?;
+        let new_indexes = declared_indexes("new", &relationship.new_ids, &new_by_id, new_matched)?;
+        for &index in &old_indexes {
+            old_matched[index] = true;
+        }
+        for &index in &new_indexes {
+            new_matched[index] = true;
+        }
+        let classification = match relationship.relationship {
+            RelationshipType::Successor => Classification::DeclaredSuccessor,
+            RelationshipType::Split => Classification::DeclaredSplit,
+            RelationshipType::Merge => Classification::DeclaredMerge,
+        };
+        entries.push(declared_entry(
+            classification,
+            old_indexes.into_iter().map(|index| old[index].clone()).collect(),
+            new_indexes.into_iter().map(|index| new[index].clone()).collect(),
+            DeclarationEvidence {
+                approved_by: relationship.approved_by.clone(),
+                approved_at: relationship.approved_at.clone(),
+                rationale: relationship.rationale.clone(),
+            },
+        ));
+    }
+    Ok(())
+}
+
+fn declared_indexes(
+    side: &str,
+    ids: &[String],
+    by_id: &BTreeMap<&str, usize>,
+    matched: &[bool],
+) -> Result<Vec<usize>, ForgeError> {
+    ids.iter()
+        .map(|id| {
+            let index = by_id.get(id.as_str()).copied().ok_or_else(|| {
+                ForgeError::MigrationError(format!(
+                    "successor map references {side} identifier '{id}' absent from the inventory"
+                ))
+            })?;
+            if matched[index] {
+                return Err(ForgeError::MigrationError(format!(
+                    "successor map {side} identifier '{id}' is already reconciled"
+                )));
+            }
+            Ok(index)
+        })
+        .collect()
 }
 
 fn validate_cross_inventory_ids(
@@ -392,7 +467,34 @@ fn entry(
 ) -> MigrationEntry {
     old.sort_by(|left, right| left.stable_id.cmp(&right.stable_id));
     new.sort_by(|left, right| left.stable_id.cmp(&right.stable_id));
-    MigrationEntry { classification, evidence, confidence_basis, approval_status, old, new }
+    MigrationEntry {
+        classification,
+        evidence,
+        confidence_basis,
+        approval_status,
+        declaration: None,
+        old,
+        new,
+    }
+}
+
+fn declared_entry(
+    classification: Classification,
+    mut old: Vec<InventoryRequirement>,
+    mut new: Vec<InventoryRequirement>,
+    declaration: DeclarationEvidence,
+) -> MigrationEntry {
+    old.sort_by(|left, right| left.stable_id.cmp(&right.stable_id));
+    new.sort_by(|left, right| left.stable_id.cmp(&right.stable_id));
+    MigrationEntry {
+        classification,
+        evidence: vec![EvidenceCode::ReviewerDeclaration],
+        confidence_basis: ConfidenceBasis::Declared,
+        approval_status: ApprovalStatus::Declared,
+        declaration: Some(declaration),
+        old,
+        new,
+    }
 }
 
 fn sort_entries(entries: &mut [MigrationEntry]) {
@@ -417,6 +519,9 @@ fn summarize(total_old: usize, total_new: usize, entries: &[MigrationEntry]) -> 
         total_old,
         total_new,
         unchanged: count(Classification::Unchanged),
+        declared_successors: count(Classification::DeclaredSuccessor),
+        declared_splits: count(Classification::DeclaredSplit),
+        declared_merges: count(Classification::DeclaredMerge),
         observed_id_changes: count(Classification::ObservedIdChange),
         substantive_change_candidates: count(Classification::SubstantiveChangeCandidate),
         atomization_change_candidates: count(Classification::AtomizationChangeCandidate),
@@ -437,6 +542,11 @@ fn outcome_counts(
         let requirement_count = side_len(entry);
         match entry.classification {
             Classification::Unchanged => counts.unchanged += requirement_count,
+            Classification::DeclaredSuccessor => {
+                counts.declared_successors += requirement_count;
+            }
+            Classification::DeclaredSplit => counts.declared_splits += requirement_count,
+            Classification::DeclaredMerge => counts.declared_merges += requirement_count,
             Classification::ObservedIdChange => {
                 counts.observed_id_changes += requirement_count;
             }
@@ -489,6 +599,7 @@ fn validate_reconciliation(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::migration::successor::{RelationshipType, SuccessorMap, SuccessorRelationship};
     use crate::migration::types::{InputFormat, LocationBasis, SourceProvenance};
 
     fn item(id: &str, text: &str, section: &str, line: usize, atom: usize) -> InventoryRequirement {
@@ -519,6 +630,21 @@ mod tests {
         }
     }
 
+    fn declaration(
+        relationship: RelationshipType,
+        old_ids: &[&str],
+        new_ids: &[&str],
+    ) -> SuccessorRelationship {
+        SuccessorRelationship {
+            relationship,
+            old_ids: old_ids.iter().map(|id| (*id).to_string()).collect(),
+            new_ids: new_ids.iter().map(|id| (*id).to_string()).collect(),
+            approved_by: "reviewer".to_string(),
+            approved_at: "2026-08-25T12:00:00Z".to_string(),
+            rationale: "Reviewed relationship.".to_string(),
+        }
+    }
+
     #[test]
     fn classifies_exact_moved_edited_retired_and_added() {
         let old = inventory(vec![
@@ -534,7 +660,7 @@ mod tests {
             item("added", "added", "A", 5, 0),
         ]);
 
-        let report = classify(old, new).unwrap();
+        let report = classify(old, new, None).unwrap();
         assert_eq!(report.summary.unchanged, 1);
         assert_eq!(report.summary.observed_id_changes, 1);
         assert_eq!(report.summary.substantive_change_candidates, 1);
@@ -554,7 +680,7 @@ mod tests {
             item("new-b", "duplicate", "D", 4, 0),
         ]);
 
-        let report = classify(old, new).unwrap();
+        let report = classify(old, new, None).unwrap();
         assert_eq!(report.summary.ambiguity_groups, 1);
         assert_eq!(report.summary.old_requirements.ambiguous, 2);
         assert_eq!(report.summary.new_requirements.ambiguous, 2);
@@ -569,6 +695,7 @@ mod tests {
         let result = classify(
             inventory(vec![item("collision", "old", "A", 1, 0)]),
             inventory(vec![item("collision", "new", "A", 1, 0)]),
+            None,
         );
         assert!(matches!(result, Err(ForgeError::MigrationError(_))));
     }
@@ -576,7 +703,8 @@ mod tests {
     #[test]
     fn identical_inventories_are_clean() {
         let requirements = vec![item("same", "same", "A", 1, 0)];
-        let report = classify(inventory(requirements.clone()), inventory(requirements)).unwrap();
+        let report =
+            classify(inventory(requirements.clone()), inventory(requirements), None).unwrap();
         assert!(!report.has_reviewable_changes());
     }
 
@@ -610,5 +738,54 @@ mod tests {
                 [EvidenceCode::DuplicateNormalizedText, EvidenceCode::CompetingLocator,]
             )
         );
+    }
+
+    #[test]
+    fn declared_split_and_merge_reconcile_each_requirement_once() {
+        let old = inventory(vec![
+            item("split-old", "split", "A", 1, 0),
+            item("merge-old-a", "merge a", "B", 2, 0),
+            item("merge-old-b", "merge b", "C", 3, 0),
+        ]);
+        let new = inventory(vec![
+            item("split-new-a", "split a", "A", 1, 0),
+            item("split-new-b", "split b", "A", 1, 1),
+            item("merge-new", "merged", "B", 2, 0),
+        ]);
+        let successor_map = SuccessorMap {
+            schema_version: "forge.successor-map/1".to_string(),
+            relationships: vec![
+                declaration(
+                    RelationshipType::Split,
+                    &["split-old"],
+                    &["split-new-a", "split-new-b"],
+                ),
+                declaration(
+                    RelationshipType::Merge,
+                    &["merge-old-a", "merge-old-b"],
+                    &["merge-new"],
+                ),
+            ],
+        };
+        let report = classify(old, new, Some(&successor_map)).unwrap();
+        assert_eq!(report.summary.declared_splits, 1);
+        assert_eq!(report.summary.declared_merges, 1);
+        assert_eq!(report.summary.old_requirements.total(), 3);
+        assert_eq!(report.summary.new_requirements.total(), 3);
+        assert!(report.entries.iter().all(|entry| entry.declaration.is_some()));
+    }
+
+    #[test]
+    fn declaration_with_absent_identifier_is_rejected() {
+        let successor_map = SuccessorMap {
+            schema_version: "forge.successor-map/1".to_string(),
+            relationships: vec![declaration(RelationshipType::Successor, &["missing"], &["new"])],
+        };
+        let result = classify(
+            inventory(vec![item("old", "old", "A", 1, 0)]),
+            inventory(vec![item("new", "new", "A", 1, 0)]),
+            Some(&successor_map),
+        );
+        assert!(result.unwrap_err().to_string().contains("absent from the inventory"));
     }
 }

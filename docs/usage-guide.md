@@ -579,6 +579,146 @@ resolved from the manifest directory and may intentionally contain `..`; the
 manifest is not a filesystem-confinement boundary. Output parent directories
 must already exist.
 
+### 3.12 `framework impact` — Review a Framework Revision
+
+The command compares two caller-supplied OSCAL Catalogs or two attested
+Profile-plus-resolved-Catalog pairs. It traverses optional PRD 055 Mapping
+Collections built against the exact old framework and can incorporate one raw
+PRD 056 applicability manifest as the authoritative prior scope and gap state.
+It does not fetch framework content, infer renamed controls, copy prose into the
+report, or modify dependencies.
+
+```json
+{
+  "schema_version": "forge.framework-impact/1",
+  "old": {
+    "type": "catalog",
+    "artifact": "framework-v1.json",
+    "expected_sha256": "<64 lowercase hex characters>",
+    "root_uuid": "<catalog lineage UUID>",
+    "document_version": "1.0.0",
+    "oscal_version": "1.2.3"
+  },
+  "new": {
+    "type": "catalog",
+    "artifact": "framework-v2.json",
+    "expected_sha256": "<64 lowercase hex characters>",
+    "root_uuid": "<new Catalog root UUID>",
+    "document_version": "2.0.0",
+    "oscal_version": "1.2.3"
+  },
+  "mapping_collections": [
+    {"artifact": "policy-mapping.json", "framework_role": "target"}
+  ],
+  "applicability_manifest": "applicability.json",
+  "successor_map": "successor-map.json",
+  "prior_report": "prior-impact-report.json",
+  "disposition_file": "impact-dispositions.json"
+}
+```
+
+For a Profile, each `old` and `new` object additionally requires
+`resolved_catalog`, `resolved_catalog_attestation: true`, and
+`expected_resolved_catalog_sha256`. The raw Profile provides resource identity;
+the attested companion Catalog provides the control inventory and canonical
+control hashes.
+
+```bash
+forge framework impact --manifest framework-impact.json \
+  --format json --output framework-impact-report.json
+
+# Fail on informational findings too; the default threshold is review-required
+forge framework impact --manifest framework-impact.json \
+  --format json --fail-on any
+
+# Emit deterministic GitHub workflow commands without posting them
+forge framework impact --manifest framework-impact.json --format github
+
+# Produce deterministic review artifacts from the same report model
+forge framework impact --manifest framework-impact.json --format markdown \
+  --output framework-impact.md
+forge framework impact --manifest framework-impact.json --format html \
+  --output framework-impact.html
+
+# Narrow displayed detail with exact-match filters
+forge framework impact --manifest framework-impact.json --format json \
+  --group access-control --decision-state applicable \
+  --policy-source policies/access-control.json \
+  --priority review-required --owner security-governance
+```
+
+Control identity is exact: a similar new ID is `added` while the missing old ID
+is `removed`. Same-ID canonical subtree changes are `content-changed`; stable ID
+and stable fingerprint are `unchanged`. Mapping inputs must carry the exact old
+resource evidence and subject hashes or the complete analysis fails with exit
+`2` and no report. If `applicability_manifest` is present, its old resource and
+complete Mapping Collection set must match the impact manifest's target-side
+portfolio exactly. Applicability findings retain the prior six-state gap
+classification, reviewer owner, and policy-source labels. Removed mapped
+controls are blocking; changed mapped controls, added controls, and affected
+applicability decisions require review. Other unmapped removals and changes are
+informational.
+
+`successor_map` accepts the same closed `forge.successor-map/1` contract used by
+`forge migrate`. Declared one-to-one successors, one-to-many splits, and
+many-to-one merges become `identity-migrated` groups with sorted old/new control
+IDs, hashes, cardinality, reviewer, timestamp, and rationale. A declaration is
+evidence supplied by the caller, not an authenticated approval; FORGE never
+infers a successor.
+
+Durable review state requires `prior_report` and `disposition_file` together.
+The closed `forge.framework-impact-dispositions/1` file binds itself to the
+prior report's SHA-256 and assigns each prior finding exactly one of `resolved`,
+`accepted-risk`, or `still-open`, with reviewer, time, and rationale. Raw current
+findings and priority totals remain unchanged. Resolved and accepted-risk
+findings no longer fire the selected gate; still-open and undispositioned
+findings do. Dispositions whose findings are absent from the current raw result
+remain visible as `prior_only_dispositions` for audit continuity.
+
+Detail filters are available as `--group`, `--decision-state`,
+`--policy-source`, `--priority`, and `--owner`. Multiple filters use AND
+semantics. Group matching uses the deterministic old/new group-ID union for a
+finding, including every side of an identity migration; decision state is the
+validated prior PRD 056 applicability decision rather than its derived gap
+classification. Policy source and owner use exact string matching. Filters
+narrow the rendered review queue only: framework-wide change and priority
+totals, raw disposition accounting, and gate evaluation still cover the full
+validated analysis, including findings omitted from display.
+
+The default `review-required` gate exits `1` for blocking or review-required
+findings. `blocking` is a weaker threshold and `any` is stricter; there is no
+disabled gate. Exit `0` means the selected threshold did not fire, not that the
+organization remains compliant. Stable finding IDs can be carried into PRD 058
+policy review history:
+
+```bash
+forge lifecycle transition --record lifecycle.json --to in-review \
+  --actor reviewer --role reviewer --at 2026-08-25T14:00:00Z \
+  --rationale "Framework impact requires review." \
+  --impact-finding-id <finding-uuid> --apply
+```
+
+Markdown and static HTML escape caller-controlled table and markup content and
+contain no scripts, remote assets, or runtime timestamps. The GitHub format
+emits `error`, `warning`, and `notice` workflow commands for blocking,
+review-required, and informational findings respectively. It escapes
+workflow-command data, includes no framework prose or absolute paths, and does
+not call GitHub or mutate repository state.
+
+### 3.12.1 `migrate --successor-map` — Declare Reviewed Policy Identity
+
+```bash
+forge migrate old-policy.md new-policy.md --format json \
+  --successor-map successor-map.json
+```
+
+The optional closed `forge.successor-map/1` JSON file uses the same
+`successor`, `split`, and `merge` cardinalities accepted by framework impact.
+Every declaration requires non-empty `approved_by`, RFC 3339 `approved_at`, and
+`rationale`. Conflicting, reused, self-mapped, absent, malformed, oversized, or
+unsafe declarations fail with exit `2` before output. Valid declarations remain
+read-only and appear as declared—not authenticated—migration outcomes.
+
 ## 4. Global Options
 
 ```bash

@@ -43,7 +43,7 @@ use crate::config::{self, ConvertCliValues};
     arg_required_else_help = true
 )]
 pub struct Cli {
-    /// The subcommand to execute, including mapping, applicability, and lifecycle workflows.
+    /// The subcommand to execute, including mapping, applicability, lifecycle, and framework workflows.
     #[command(subcommand)]
     pub command: Commands,
 
@@ -250,6 +250,10 @@ pub enum Commands {
         #[arg(long)]
         output: Option<PathBuf>,
 
+        /// Reviewer-authored `forge.successor-map/1` declarations
+        #[arg(long)]
+        successor_map: Option<PathBuf>,
+
         /// Maximum size of each policy input in MB
         #[arg(
             long,
@@ -275,6 +279,12 @@ pub enum Commands {
     Applicability {
         #[command(subcommand)]
         command: ApplicabilityCommand,
+    },
+
+    /// Analyze the impact of a caller-supplied framework revision
+    Framework {
+        #[command(subcommand)]
+        command: FrameworkCommand,
     },
 
     /// Inspect and validate project configuration (.forge.toml)
@@ -652,6 +662,77 @@ pub enum ApplicabilityStateFilter {
     UnderReview,
 }
 
+/// Framework revision analysis commands.
+#[derive(Subcommand)]
+pub enum FrameworkCommand {
+    /// Compare an exact old/new Catalog pair and emit a deterministic review queue
+    Impact {
+        /// Versioned `forge.framework-impact/1` portfolio manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Write the report to a file instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Deterministic report format
+        #[arg(long, value_enum, default_value = "text")]
+        format: FrameworkReportFormat,
+        /// Minimum finding priority that produces exit status 1
+        #[arg(long, value_enum, default_value = "review-required")]
+        fail_on: FrameworkFailOn,
+        /// Show findings for controls in this framework group
+        #[arg(long)]
+        group: Option<String>,
+        /// Show findings tied to this prior applicability decision state
+        #[arg(long, value_enum)]
+        decision_state: Option<FrameworkDecisionStateFilter>,
+        /// Show findings tied to this exact policy source href
+        #[arg(long)]
+        policy_source: Option<String>,
+        /// Show findings with this exact impact priority
+        #[arg(long, value_enum)]
+        priority: Option<FrameworkImpactPriorityFilter>,
+        /// Show findings assigned to this exact reviewer or migration approver key
+        #[arg(long)]
+        owner: Option<String>,
+    },
+}
+
+/// Deterministic framework-impact report serialization.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum FrameworkReportFormat {
+    Text,
+    Json,
+    Markdown,
+    Html,
+    Github,
+}
+
+/// Framework-impact gate threshold. Thresholds can be made stricter, but not disabled.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum FrameworkFailOn {
+    Blocking,
+    #[value(name = "review-required")]
+    ReviewRequired,
+    Any,
+}
+
+/// Human applicability decision state used to filter framework-impact findings.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum FrameworkDecisionStateFilter {
+    Applicable,
+    NotApplicable,
+    Deferred,
+    UnderReview,
+}
+
+/// Exact framework-impact finding priority used to filter report details.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum FrameworkImpactPriorityFilter {
+    Blocking,
+    ReviewRequired,
+    Informational,
+}
+
 /// Deterministic Control Mapping report serialization.
 #[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
 pub enum MappingReportFormat {
@@ -850,9 +931,10 @@ fn run_migrate(
     new_policy: &Path,
     format: &MigrationOutputFormat,
     output: Option<&Path>,
+    successor_map: Option<&Path>,
     max_size: u64,
 ) -> Result<(), ForgeError> {
-    if migrate::execute(old_policy, new_policy, format, output, max_size)? {
+    if migrate::execute(old_policy, new_policy, format, output, successor_map, max_size)? {
         Err(ForgeError::MigrationHasChanges)
     } else {
         Ok(())
@@ -952,8 +1034,15 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 if has_changes { Err(ForgeError::DiffHasChanges) } else { Ok(()) }
             })
         }
-        Commands::Migrate { old_policy, new_policy, format, output, max_size } => {
-            run_migrate(old_policy, new_policy, format, output.as_deref(), *max_size)
+        Commands::Migrate { old_policy, new_policy, format, output, successor_map, max_size } => {
+            run_migrate(
+                old_policy,
+                new_policy,
+                format,
+                output.as_deref(),
+                successor_map.as_deref(),
+                *max_size,
+            )
         }
         Commands::Mapping { command } => match command {
             MappingCommand::Init {
@@ -1152,6 +1241,40 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     },
                 )? {
                     Err(ForgeError::ApplicabilityReviewRequired)
+                } else {
+                    Ok(())
+                }
+            }
+        },
+        Commands::Framework { command } => match command {
+            FrameworkCommand::Impact {
+                manifest,
+                output,
+                format,
+                fail_on,
+                group,
+                decision_state,
+                policy_source,
+                priority,
+                owner,
+            } => {
+                let filters = crate::framework::model::ImpactFilters {
+                    group: group.clone(),
+                    decision_state: decision_state
+                        .as_ref()
+                        .map(crate::framework::decision_state_filter),
+                    policy_source: policy_source.clone(),
+                    priority: priority.as_ref().map(crate::framework::priority_filter),
+                    owner: owner.clone(),
+                };
+                if crate::framework::execute_impact(
+                    manifest,
+                    output.as_deref(),
+                    format,
+                    fail_on,
+                    filters,
+                )? {
+                    Err(ForgeError::FrameworkReviewRequired)
                 } else {
                     Ok(())
                 }

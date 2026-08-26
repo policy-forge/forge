@@ -25,7 +25,8 @@ fn main() -> ExitCode {
             | ForgeError::MigrationHasChanges
             | ForgeError::MappingReviewRequired
             | ForgeError::LifecycleActionRequired
-            | ForgeError::ApplicabilityReviewRequired,
+            | ForgeError::ApplicabilityReviewRequired
+            | ForgeError::FrameworkReviewRequired,
         ) => ExitCode::from(1u8),
         Err(e) => {
             eprintln!("Error: {e}");

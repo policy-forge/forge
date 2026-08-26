@@ -45,10 +45,13 @@ pub fn format_text(report: &MigrationReport) -> String {
     let summary = &report.summary;
     let _ = writeln!(
         output,
-        "summary: old={} new={} unchanged-entries={} observed-id-change-entries={} substantive-candidate-entries={} atomization-candidate-entries={} ambiguity-groups={} retired-entries={} added-entries={}",
+        "summary: old={} new={} unchanged-entries={} declared-successor-entries={} declared-split-entries={} declared-merge-entries={} observed-id-change-entries={} substantive-candidate-entries={} atomization-candidate-entries={} ambiguity-groups={} retired-entries={} added-entries={}",
         summary.total_old,
         summary.total_new,
         summary.unchanged,
+        summary.declared_successors,
+        summary.declared_splits,
+        summary.declared_merges,
         summary.observed_id_changes,
         summary.substantive_change_candidates,
         summary.atomization_change_candidates,
@@ -70,6 +73,15 @@ pub fn format_text(report: &MigrationReport) -> String {
             entry.confidence_basis.as_str(),
             entry.approval_status.as_str()
         );
+        if let Some(declaration) = &entry.declaration {
+            let _ = writeln!(
+                output,
+                "  declared-by: {}; declared-at: {}; rationale: {}",
+                escape_controls(&declaration.approved_by),
+                escape_controls(&declaration.approved_at),
+                escape_controls(&declaration.rationale)
+            );
+        }
         for item in &entry.old {
             write_item(&mut output, "old", item);
         }
@@ -87,8 +99,11 @@ fn write_outcome_counts(
 ) {
     let _ = writeln!(
         output,
-        "{label}: unchanged={} observed-id-change={} substantive-candidate={} atomization-candidate={} ambiguous={} retired={} added={} total={}",
+        "{label}: unchanged={} declared-successor={} declared-split={} declared-merge={} observed-id-change={} substantive-candidate={} atomization-candidate={} ambiguous={} retired={} added={} total={}",
         counts.unchanged,
+        counts.declared_successors,
+        counts.declared_splits,
+        counts.declared_merges,
         counts.observed_id_changes,
         counts.substantive_change_candidates,
         counts.atomization_change_candidates,

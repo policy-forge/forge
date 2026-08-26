@@ -40,8 +40,11 @@ pub mod diff;
 pub mod error;
 /// OSCAL artifact export (JSON ↔ XML ↔ YAML conversion).
 pub mod export;
+/// Read-only framework revision impact analysis.
+pub mod framework;
 pub mod ingest;
 pub mod io;
+mod json_strict;
 /// Deterministic local policy lifecycle records and review queues.
 pub mod lifecycle;
 /// Human-reviewed OSCAL Control Mapping workflows.

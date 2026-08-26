@@ -201,6 +201,14 @@ pub enum ForgeError {
     #[error("Applicability analysis requires human review")]
     ApplicabilityReviewRequired,
 
+    /// A trustworthy framework impact report could not be produced.
+    #[error("Framework impact analysis error: {0}")]
+    FrameworkImpact(String),
+
+    /// Completed framework impact analysis requires action under the selected gate.
+    #[error("Framework changes require human review")]
+    FrameworkReviewRequired,
+
     /// An error occurred during parameter extraction.
     #[error("Parameter extraction error: {0}")]
     ParameterExtraction(String),
@@ -428,6 +436,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::MappingReviewRequired
         | ForgeError::LifecycleActionRequired
         | ForgeError::ApplicabilityReviewRequired
+        | ForgeError::FrameworkReviewRequired
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors
@@ -438,6 +447,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::MappingBuild(_)
         | ForgeError::Lifecycle(_)
         | ForgeError::ApplicabilityAnalysis(_)
+        | ForgeError::FrameworkImpact(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)

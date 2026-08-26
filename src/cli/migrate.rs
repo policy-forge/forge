@@ -17,13 +17,15 @@ pub fn execute(
     new_policy: &Path,
     format: &MigrationOutputFormat,
     output: Option<&Path>,
+    successor_map: Option<&Path>,
     max_size_mb: u64,
 ) -> Result<bool, ForgeError> {
-    reject_output_alias(output, old_policy, new_policy)?;
+    reject_output_alias(output, old_policy, new_policy, successor_map)?;
     let max_size_bytes = max_size_mb
         .checked_mul(1024 * 1024)
         .ok_or_else(|| ForgeError::MigrationError("--max-size value is too large".to_string()))?;
-    let report = crate::migration::analyze_paths(old_policy, new_policy, max_size_bytes)?;
+    let report =
+        crate::migration::analyze_paths(old_policy, new_policy, successor_map, max_size_bytes)?;
     let rendered = match format {
         MigrationOutputFormat::Text => crate::migration::format_text(&report),
         MigrationOutputFormat::Json => crate::migration::format_json(&report)?,
@@ -37,6 +39,7 @@ fn reject_output_alias(
     output: Option<&Path>,
     old_policy: &Path,
     new_policy: &Path,
+    successor_map: Option<&Path>,
 ) -> Result<(), ForgeError> {
     let Some(output) = output else {
         return Ok(());
@@ -48,6 +51,14 @@ fn reject_output_alias(
             return Err(ForgeError::MigrationError(format!(
                 "--output must not overwrite the {label}"
             )));
+        }
+    }
+    if let Some(successor_map) = successor_map {
+        let successor_identity = path_identity(successor_map, "successor map path")?;
+        if output_identity == successor_identity {
+            return Err(ForgeError::MigrationError(
+                "--output must not overwrite the successor map path".to_string(),
+            ));
         }
     }
     Ok(())
@@ -81,7 +92,7 @@ mod tests {
         let new = directory.path().join("new.md");
         std::fs::write(&old, "# Old\n").unwrap();
         std::fs::write(&new, "# New\n").unwrap();
-        let result = reject_output_alias(Some(&old), &old, &new);
+        let result = reject_output_alias(Some(&old), &old, &new, None);
         assert!(matches!(result, Err(ForgeError::MigrationError(_))));
     }
 
@@ -93,7 +104,7 @@ mod tests {
         let output = directory.path().join("report.json");
         std::fs::write(&new, "# New\n").unwrap();
 
-        let error = reject_output_alias(Some(&output), &old, &new).unwrap_err().to_string();
+        let error = reject_output_alias(Some(&output), &old, &new, None).unwrap_err().to_string();
         assert!(error.contains("parent directory of old policy path"), "unexpected error: {error}");
         assert!(!error.contains("output directory"), "unexpected error: {error}");
     }
