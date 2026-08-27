@@ -3,6 +3,8 @@
 use std::path::Path;
 use std::process::{Command, Output};
 
+use sha2::{Digest, Sha256};
+
 use serde_json::{Value, json};
 
 fn write_json(path: &Path, value: &Value) {
@@ -650,7 +652,9 @@ fn whitespace_padded_filters_and_missing_output_directories_are_rejected_clearly
     assert_eq!(output.status.code(), Some(2));
     assert!(
         String::from_utf8_lossy(&output.stderr)
-            .contains("output directory 'missing' does not exist")
+            .contains("cannot resolve manifest directory 'missing'"),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
     );
 
     let analyze_output = run_in(
@@ -844,7 +848,7 @@ fn map_reviewer_keys_must_resolve_to_declared_parties() {
         &["applicability", "analyze", "--manifest", "unknown-map-reviewer.json"],
     );
     assert_eq!(output.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&output.stderr).contains("references undeclared reviewer"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("not a declared mapping-reviewer"));
 }
 
 #[test]
@@ -1052,13 +1056,18 @@ fn profile_companion_analysis_accepts_exact_profile_target_mapping() {
         &dir.path().join("resolved-catalog.json"),
         &catalog("88888888-8888-4888-8888-888888888888", &["profile-control"]),
     );
+    let resolved_catalog_sha256 = format!(
+        "{:x}",
+        Sha256::digest(std::fs::read(dir.path().join("resolved-catalog.json")).expect("companion"))
+    );
     let mut mapping = mapping_manifest();
     mapping["mapping"]["target"] = json!({
         "type": "profile",
         "artifact": "profile.json",
         "href": "profile.json",
         "resolved_catalog": "resolved-catalog.json",
-        "resolved_catalog_attestation": true
+        "resolved_catalog_attestation": true,
+        "expected_resolved_catalog_sha256": resolved_catalog_sha256
     });
     mapping["mapping"]["maps"][0]["targets"] =
         json!([{"type": "control", "id_ref": "profile-control"}]);

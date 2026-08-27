@@ -78,39 +78,53 @@ pub struct ImplementedRequirement {
 /// # Arguments
 /// * `document` - `PolicyDocument` with sections and requirements
 /// * `source_profile` - Value of the `--source-profile` CLI flag
-/// * `source_file` - Path to the source policy file (for trace props)
+/// * `source_file` - Optional path to the source policy file for trace props
 ///
 /// # Returns
 /// A `Vec<ControlImplementation>` containing one control-implementations entry.
 ///
 /// # Errors
-/// Returns [`ForgeError::ComponentDefinitionBuild`] if mapping fails.
+/// Returns [`ForgeError::ComponentDefinitionBuild`] when a requirement lacks the
+/// stable ID required to reference its corresponding catalog control.
 pub fn build_control_implementations(
     document: &PolicyDocument,
     source_profile: &str,
-    source_file: &str,
+    source_file: Option<&str>,
 ) -> Result<Vec<ControlImplementation>, ForgeError> {
     let mut abbrev_counts: HashMap<String, Vec<String>> = HashMap::new();
     let mut implemented_requirements = Vec::new();
-    let mut global_index: usize = 0;
+    // Occurrence counter per (stable_id, text) so UUIDs derive from content
+    // and stay stable when unrelated requirements are inserted or deleted
+    // (F0585); the counter only disambiguates genuinely identical pairs.
+    let mut occurrences: HashMap<(String, String), usize> = HashMap::new();
 
     for section in &document.sections {
         let abbreviation = resolve_abbreviation(&section.title, &mut abbrev_counts);
         let requirements = collect_requirements_with_section(section);
 
         for (req_idx, (req, req_section)) in requirements.iter().enumerate() {
-            let has_stable_id = req.stable_id.is_some();
-            let control_id =
-                derive_control_id_or_fallback(&abbreviation, req_idx, global_index, has_stable_id);
+            let stable_id = req.stable_id.as_deref().ok_or_else(|| {
+                let preview: String = req.text.chars().take(60).collect();
+                ForgeError::ComponentDefinitionBuild(format!(
+                    "Requirement missing stable_id in section '{}': '{preview}'",
+                    req_section.title,
+                ))
+            })?;
+            let control_id = generate_control_id(&abbreviation, req_idx, "POL");
+            let normalized_text = crate::uuid::normalize_for_hashing(&req.text);
+            let occurrence = occurrences
+                .entry((stable_id.to_string(), normalized_text))
+                .and_modify(|count| *count += 1)
+                .or_insert(0);
             let entry = map_requirement_to_implemented(
                 req,
+                stable_id,
                 &control_id,
-                global_index,
+                *occurrence,
                 source_file,
                 &req_section.title,
             );
             implemented_requirements.push(entry);
-            global_index += 1;
         }
     }
 
@@ -126,7 +140,7 @@ pub fn build_control_implementations(
         &document.metadata.title
     };
     let sanitized_source = crate::io::sanitize_artifact_path(std::path::Path::new(source_profile));
-    let ci_uuid = generate_control_impl_uuid(&sanitized_source, title);
+    let ci_uuid = generate_control_impl_uuid(source_profile, title);
     let description = format!("Implementation narratives derived from {title}.");
 
     Ok(vec![ControlImplementation {
@@ -141,20 +155,20 @@ pub fn build_control_implementations(
 ///
 /// # Arguments
 /// * `requirement` - A single `PolicyRequirement` from the domain model
+/// * `stable_id` - Validated stable ID for the requirement
 /// * `control_id` - The pre-computed control-id for this requirement
-/// * `global_index` - The requirement's global index (for UUID seed uniqueness)
-/// * `source_file` - Path to the source policy file (for trace props)
-/// * `section_title` - Section title containing this requirement (for trace props)
+/// * `occurrence` - Ordinal of this (`stable_id`, `text`) pair within the document
+/// * `source_file` - Optional path to the source policy file for trace props
+/// * `section_title` - Section title containing the requirement (for trace props)
 fn map_requirement_to_implemented(
     requirement: &PolicyRequirement,
+    stable_id: &str,
     control_id: &str,
-    global_index: usize,
-    source_file: &str,
+    occurrence: usize,
+    source_file: Option<&str>,
     section_title: &str,
 ) -> ImplementedRequirement {
-    let stable_id = requirement.stable_id.as_deref().unwrap_or("no-stable-id");
-
-    let uuid = generate_impl_req_uuid(stable_id, &requirement.text, global_index);
+    let uuid = generate_impl_req_uuid(stable_id, &requirement.text, occurrence);
 
     let description = if requirement.text.is_empty() {
         "No implementation narrative available.".to_string()
@@ -162,7 +176,10 @@ fn map_requirement_to_implemented(
         requirement.text.clone()
     };
 
-    let mut props = build_trace_props(source_file, section_title, requirement.source_line);
+    let source_file = source_file.filter(|path| !path.is_empty());
+    let mut props = source_file.map_or_else(Vec::new, |path| {
+        build_trace_props(path, section_title, requirement.source_line)
+    });
     if let Some(modality) = requirement.modality {
         let modality_value = match modality {
             crate::model::Modality::Normative => "normative",
@@ -174,14 +191,15 @@ fn map_requirement_to_implemented(
             value: modality_value.to_string(),
         });
     }
-    let link = build_trace_link(source_file, requirement.source_line);
+    let links = source_file
+        .map_or_else(Vec::new, |path| vec![build_trace_link(path, requirement.source_line)]);
 
     ImplementedRequirement {
         uuid: uuid.to_string(),
         control_id: control_id.to_string(),
         description,
         props,
-        links: vec![link],
+        links,
     }
 }
 
@@ -199,43 +217,21 @@ fn generate_control_impl_uuid(source_profile: &str, policy_title: &str) -> Uuid 
 
 /// Generate a deterministic UUID v5 for an implemented-requirement entry.
 ///
-/// Seed format: `"{stable_id}\0{text}\0{index}"`
+/// Seed format: `"{stable_id}\0{normalized_text}\0{occurrence}"`
 ///
-/// The index ensures uniqueness when two requirements have identical text (EC-5).
+/// `occurrence` is the per-document ordinal of this exact (`stable_id`,
+/// normalized text) pair: 0 for unique content (the normal case), incremented
+/// only for genuine duplicates — so inserting or deleting an unrelated
+/// requirement does not re-roll the UUIDs of everything after it (F0585).
 ///
 /// # Arguments
 /// * `stable_id` - The requirement's stable ID (UUID string)
-/// * `text` - The requirement text
-/// * `index` - Global atom index for uniqueness
-fn generate_impl_req_uuid(stable_id: &str, text: &str, index: usize) -> Uuid {
-    let seed = format!("{stable_id}\0{text}\0{index}");
+/// * `text` - The requirement text; normalized before UUID derivation
+/// * `occurrence` - Ordinal of this (`stable_id`, normalized text) pair within the document
+fn generate_impl_req_uuid(stable_id: &str, text: &str, occurrence: usize) -> Uuid {
+    let normalized_text = crate::uuid::normalize_for_hashing(text);
+    let seed = format!("{stable_id}\0{normalized_text}\0{occurrence}");
     Uuid::new_v5(&IMPL_REQ_NAMESPACE, seed.as_bytes())
-}
-
-/// Derive a control-id for a requirement, with fallback for missing `stable_id`.
-///
-/// Normal case: uses section-based generation via [`generate_control_id`] producing
-/// `POL-{ABBR}-{NNN}` format matching the Catalog builder.
-///
-/// Fallback (EC-2): `REQ-{zero-padded global_index}` when `stable_id` is `None`.
-///
-/// # Arguments
-/// * `abbreviation` - The section abbreviation (e.g., "AC")
-/// * `req_index_in_section` - Zero-based index of the requirement within its section
-/// * `global_index` - Zero-based global index across all sections
-/// * `has_stable_id` - Whether the requirement has a `stable_id`
-fn derive_control_id_or_fallback(
-    abbreviation: &str,
-    req_index_in_section: usize,
-    global_index: usize,
-    has_stable_id: bool,
-) -> String {
-    if has_stable_id {
-        generate_control_id(abbreviation, req_index_in_section, "POL")
-    } else {
-        tracing::warn!(global_index, "Requirement missing stable_id — using fallback control-id");
-        format!("REQ-{:03}", global_index + 1)
-    }
 }
 
 #[cfg(test)]
@@ -271,6 +267,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -307,8 +304,15 @@ mod tests {
         let uuid1 = generate_control_impl_uuid("./baseline.json", "Corporate Security Policy");
         let uuid2 = generate_control_impl_uuid("./other.json", "Corporate Security Policy");
         let uuid3 = generate_control_impl_uuid("./baseline.json", "Different Policy");
+        let uuid4 = generate_control_impl_uuid(
+            "./baselines/production/baseline.json",
+            "Corporate Security Policy",
+        );
+        let uuid5 =
+            generate_control_impl_uuid("./vendor/baseline.json", "Corporate Security Policy");
         assert_ne!(uuid1, uuid2, "Different source_profile must produce different UUID");
         assert_ne!(uuid1, uuid3, "Different policy_title must produce different UUID");
+        assert_ne!(uuid4, uuid5, "Distinct original profile paths must remain distinct UUIDs");
     }
 
     #[test]
@@ -343,30 +347,16 @@ mod tests {
         assert_eq!(uuid.get_variant(), uuid::Variant::RFC4122);
     }
 
-    // ─── T005: derive_control_id_or_fallback Tests [US1] ─────────────────
+    // ─── T005: Catalog-compatible control ID generation [US1] ─────────────
 
     #[test]
     fn control_id_normal_case() {
-        let id = derive_control_id_or_fallback("AC", 0, 0, true);
-        assert_eq!(id, "POL-AC-001");
+        assert_eq!(generate_control_id("AC", 0, "POL"), "POL-AC-001");
     }
 
     #[test]
     fn control_id_normal_case_second_req() {
-        let id = derive_control_id_or_fallback("DP", 2, 5, true);
-        assert_eq!(id, "POL-DP-003");
-    }
-
-    #[test]
-    fn control_id_fallback_no_stable_id() {
-        let id = derive_control_id_or_fallback("AC", 0, 0, false);
-        assert_eq!(id, "REQ-001");
-    }
-
-    #[test]
-    fn control_id_fallback_global_index() {
-        let id = derive_control_id_or_fallback("AC", 0, 4, false);
-        assert_eq!(id, "REQ-005");
+        assert_eq!(generate_control_id("DP", 2, "POL"), "POL-DP-003");
     }
 
     // ─── T006: map_requirement_to_implemented Tests [US1] ────────────────
@@ -374,8 +364,14 @@ mod tests {
     #[test]
     fn map_requirement_has_required_fields() {
         let req = make_req("All users must authenticate.", Some("uuid-1"), 0);
-        let result =
-            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
+        let result = map_requirement_to_implemented(
+            &req,
+            "uuid-1",
+            "POL-AC-001",
+            0,
+            Some("test.md"),
+            "Access Control",
+        );
 
         assert!(!result.uuid.is_empty(), "Must have uuid field");
         assert!(!result.control_id.is_empty(), "Must have control-id field");
@@ -385,8 +381,14 @@ mod tests {
     #[test]
     fn map_requirement_uses_raw_text() {
         let req = make_req("All users must authenticate.", Some("uuid-1"), 0);
-        let result =
-            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
+        let result = map_requirement_to_implemented(
+            &req,
+            "uuid-1",
+            "POL-AC-001",
+            0,
+            Some("test.md"),
+            "Access Control",
+        );
 
         assert_eq!(
             result.description, "All users must authenticate.",
@@ -397,8 +399,14 @@ mod tests {
     #[test]
     fn map_requirement_control_id_matches() {
         let req = make_req("Test requirement.", Some("uuid-1"), 0);
-        let result =
-            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
+        let result = map_requirement_to_implemented(
+            &req,
+            "uuid-1",
+            "POL-AC-001",
+            0,
+            Some("test.md"),
+            "Access Control",
+        );
 
         assert_eq!(result.control_id, "POL-AC-001");
     }
@@ -424,7 +432,8 @@ mod tests {
             ),
         ]);
 
-        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
+        let result =
+            build_control_implementations(&doc, "./baseline.json", Some("test.md")).unwrap();
         assert_eq!(result.len(), 1, "Must produce exactly one control-implementations entry");
     }
 
@@ -436,7 +445,8 @@ mod tests {
             vec![],
         )]);
 
-        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
+        let result =
+            build_control_implementations(&doc, "./baseline.json", Some("test.md")).unwrap();
         let entry = &result[0];
 
         assert!(!entry.uuid.is_empty(), "Must have uuid");
@@ -454,7 +464,7 @@ mod tests {
         )]);
 
         let result =
-            build_control_implementations(&doc, "./baselines/nist.json", "test.md").unwrap();
+            build_control_implementations(&doc, "./baselines/nist.json", Some("test.md")).unwrap();
         assert_eq!(result[0].source, "nist.json");
     }
 
@@ -467,7 +477,7 @@ mod tests {
         )]);
 
         let result =
-            build_control_implementations(&doc, "/absolute/path/to/baseline.json", "test.md")
+            build_control_implementations(&doc, "/absolute/path/to/baseline.json", Some("test.md"))
                 .unwrap();
         assert_eq!(result[0].source, "baseline.json");
         assert!(!result[0].source.contains('/'));
@@ -481,7 +491,8 @@ mod tests {
             vec![],
         )]);
 
-        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
+        let result =
+            build_control_implementations(&doc, "./baseline.json", Some("test.md")).unwrap();
         assert_eq!(
             result[0].description,
             "Implementation narratives derived from Corporate Security Policy."
@@ -507,7 +518,8 @@ mod tests {
             ),
         ]);
 
-        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
+        let result =
+            build_control_implementations(&doc, "./baseline.json", Some("test.md")).unwrap();
         assert_eq!(
             result[0].implemented_requirements.len(),
             5,
@@ -520,7 +532,8 @@ mod tests {
     #[test]
     fn zero_requirements_produces_empty_impl_reqs() {
         let doc = make_doc(vec![make_section("Empty Section", vec![], vec![])]);
-        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
+        let result =
+            build_control_implementations(&doc, "./baseline.json", Some("test.md")).unwrap();
         assert!(
             result[0].implemented_requirements.is_empty(),
             "Zero requirements must produce empty array"
@@ -532,8 +545,14 @@ mod tests {
     #[test]
     fn empty_text_produces_placeholder_description() {
         let req = make_req("", Some("uuid-1"), 0);
-        let result =
-            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
+        let result = map_requirement_to_implemented(
+            &req,
+            "uuid-1",
+            "POL-AC-001",
+            0,
+            Some("test.md"),
+            "Access Control",
+        );
         assert_eq!(
             result.description, "No implementation narrative available.",
             "Empty text must produce placeholder description"
@@ -543,17 +562,14 @@ mod tests {
     // ─── T020: Missing stable_id fallback (EC-2) ─────────────────────────
 
     #[test]
-    fn missing_stable_id_produces_fallback_control_id() {
-        let doc = make_doc(vec![make_section(
-            "Access Control",
-            vec![make_req("R1.", None, 0), make_req("R2.", None, 0)],
-            vec![],
-        )]);
+    fn missing_stable_id_returns_component_definition_error() {
+        let doc =
+            make_doc(vec![make_section("Access Control", vec![make_req("R1.", None, 0)], vec![])]);
 
-        let result = build_control_implementations(&doc, "./baseline.json", "test.md").unwrap();
-        let impl_reqs = &result[0].implemented_requirements;
-        assert_eq!(impl_reqs[0].control_id, "REQ-001");
-        assert_eq!(impl_reqs[1].control_id, "REQ-002");
+        let error =
+            build_control_implementations(&doc, "./baseline.json", Some("test.md")).unwrap_err();
+        assert!(matches!(error, ForgeError::ComponentDefinitionBuild(detail)
+            if detail.contains("missing stable_id") && detail.contains("Access Control")));
     }
 
     // ─── T022: Identical text, different positions produce distinct UUIDs (EC-5) ──
@@ -563,10 +579,22 @@ mod tests {
         let req1 = make_req("Same requirement text.", Some("id-1"), 0);
         let req2 = make_req("Same requirement text.", Some("id-2"), 1);
 
-        let result1 =
-            map_requirement_to_implemented(&req1, "POL-AC-001", 0, "test.md", "Access Control");
-        let result2 =
-            map_requirement_to_implemented(&req2, "POL-AC-002", 1, "test.md", "Access Control");
+        let result1 = map_requirement_to_implemented(
+            &req1,
+            "id-1",
+            "POL-AC-001",
+            0,
+            Some("test.md"),
+            "Access Control",
+        );
+        let result2 = map_requirement_to_implemented(
+            &req2,
+            "id-2",
+            "POL-AC-002",
+            1,
+            Some("test.md"),
+            "Access Control",
+        );
 
         assert_ne!(
             result1.uuid, result2.uuid,
@@ -588,12 +616,14 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         };
         let result = map_requirement_to_implemented(
             &req,
+            "uuid-1",
             "POL-AC-001",
             0,
-            "policies/security.md",
+            Some("policies/security.md"),
             "Access Control",
         );
 
@@ -604,7 +634,7 @@ mod tests {
             result.props[0].ns.as_deref(),
             Some("https://forge.policy-forge.github.io/ns/trace")
         );
-        assert_eq!(result.props[0].value, "policies/security.md");
+        assert_eq!(result.props[0].value, "security.md");
 
         assert_eq!(result.props[1].name, "source-section");
         assert_eq!(
@@ -633,18 +663,20 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         };
         let result = map_requirement_to_implemented(
             &req,
+            "uuid-2",
             "POL-DP-001",
             0,
-            "policies/security.md",
+            Some("policies/security.md"),
             "Data Protection",
         );
 
         assert_eq!(result.links.len(), 1, "Must have exactly 1 source link");
         assert_eq!(result.links[0].rel, "source");
-        assert_eq!(result.links[0].href, "policies/security.md#line=99");
+        assert_eq!(result.links[0].href, "security.md#line=99");
     }
 
     // ─── T023: No remarks in output (SEC-1, SEC-2) ──────────────────────
@@ -652,8 +684,14 @@ mod tests {
     #[test]
     fn no_remarks_key_in_output() {
         let req = make_req("All users must authenticate.", Some("uuid-1"), 0);
-        let result =
-            map_requirement_to_implemented(&req, "POL-AC-001", 0, "test.md", "Access Control");
+        let result = map_requirement_to_implemented(
+            &req,
+            "uuid-1",
+            "POL-AC-001",
+            0,
+            Some("test.md"),
+            "Access Control",
+        );
         let json = serde_json::to_string(&result).unwrap();
 
         assert!(!json.contains("\"remarks\""), "Output must not contain 'remarks' key");

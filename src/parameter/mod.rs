@@ -16,8 +16,10 @@
 
 pub(crate) mod matchers;
 
+use std::collections::HashSet;
+
 use crate::error::ForgeError;
-use crate::model::{ConstraintType, PolicyDocument, PolicyParameter};
+use crate::model::{ConstraintType, PolicyDocument, PolicyParameter, RequirementId};
 #[cfg(test)]
 use crate::model::{ParameterConstraint, ParameterType};
 use crate::oscal::catalog::{OscalParam, OscalParamConstraint};
@@ -76,7 +78,7 @@ pub fn extract_parameters_from_text(
         matchers.iter().flat_map(|m| m.find_parameters(text)).collect();
 
     // Sort by start position ascending; ties broken by longer match (larger end)
-    all_matches.sort_by(|a, b| a.start.cmp(&b.start).then(b.end.cmp(&a.end)));
+    all_matches.sort_unstable_by(|a, b| a.start.cmp(&b.start).then(b.end.cmp(&a.end)));
 
     // Resolve overlaps: first-match-wins (by start position)
     let mut resolved: Vec<matchers::ParameterMatch> = Vec::new();
@@ -103,7 +105,7 @@ pub fn extract_parameters_from_text(
             );
             PolicyParameter {
                 id: id.clone(),
-                requirement_id: requirement_id.to_string(),
+                requirement_id: RequirementId::from(requirement_id),
                 label: m.label.clone(),
                 value: m.value.clone(),
                 parameter_type: m.parameter_type.clone(),
@@ -123,31 +125,24 @@ pub fn extract_parameters_from_text(
     Ok((updated_text, parameters))
 }
 
-/// Document-level enrichment pass: extract parameters from all requirements.
+/// Extract parameters across every requirement exactly once.
 ///
-/// Iterates over every `PolicyRequirement` in the document. For each requirement
-/// that has a `stable_id`, calls `extract_parameters_from_text` and:
-/// - Updates `requirement.text` with OSCAL insertion placeholders
-/// - Populates `requirement.parameters` with extracted `PolicyParameter` objects
-///
-/// Requirements without a `stable_id` are skipped (cannot generate param ID).
-/// Requirements with empty text are preserved as-is.
-///
-/// # Idempotence
-/// Running this function twice on the same document produces identical results.
-/// OSCAL insertion placeholders do not match any parameter pattern (SEC-6).
+/// Completed requirements carry explicit extraction state, including those with
+/// no matches. Parameter IDs are checked document-wide before being committed.
 ///
 /// # Errors
-/// Returns `Err(ForgeError::ParameterExtraction)` if extraction fails for a requirement.
+///
+/// Returns `ForgeError::ParameterExtraction` when generated parameter IDs conflict
+/// or an extraction-state invariant is violated.
 pub fn extract_parameters(document: &mut PolicyDocument) -> Result<(), ForgeError> {
-    let mut total_params: usize = 0;
+    let mut total_params = 0;
+    let mut parameter_ids = HashSet::new();
 
     for section in &mut document.sections {
-        extract_section_parameters(section, &mut total_params)?;
+        extract_section_parameters(section, &mut total_params, &mut parameter_ids)?;
     }
 
     tracing::info!(param_count = total_params, "Parameter extraction complete");
-
     Ok(())
 }
 
@@ -159,9 +154,10 @@ pub fn extract_parameters(document: &mut PolicyDocument) -> Result<(), ForgeErro
 /// - `PolicyParameter.value` → `OscalParam.values[0]`
 /// - `PolicyParameter.constraint` → `OscalParam.constraints[0].description`
 ///   (format: `"minimum: 30 days"`, `"maximum: 15 minutes"`, `"exact: annually"`)
+#[must_use]
 pub fn to_oscal_param(parameter: &PolicyParameter) -> OscalParam {
     let values = vec![parameter.value.clone()];
-    let constraints = parameter.constraint.as_ref().map_or_else(Vec::new, |c| {
+    let constraints = parameter.constraint.as_ref().map_or(Vec::new(), |c| {
         let constraint_label = constraint_type_label(&c.constraint_type);
         vec![OscalParamConstraint { description: format!("{constraint_label}: {}", c.value) }]
     });
@@ -171,61 +167,70 @@ pub fn to_oscal_param(parameter: &PolicyParameter) -> OscalParam {
 
 // ─── Private helpers ─────────────────────────────────────────────────────────
 
-/// Recursively extract parameters from all requirements in a section and children.
 fn extract_section_parameters(
     section: &mut crate::model::PolicySection,
     total_params: &mut usize,
+    parameter_ids: &mut HashSet<String>,
 ) -> Result<(), ForgeError> {
-    for req in &mut section.requirements {
-        *total_params += extract_requirement_parameters(req)?;
+    for requirement in &mut section.requirements {
+        *total_params += extract_requirement_parameters(requirement, parameter_ids)?;
     }
 
     for child in &mut section.children {
-        extract_section_parameters(child, total_params)?;
+        extract_section_parameters(child, total_params, parameter_ids)?;
     }
 
     Ok(())
 }
 
+const PARAMETER_PLACEHOLDER_PREFIX: &str = "{{ insert: param, id-ref:";
+
+/// Return the OSCAL-safe stable identifier shared by parameter IDs and references.
+pub(crate) fn oscal_base_id(stable_id: &str) -> String {
+    if stable_id.starts_with(|character: char| character.is_alphabetic() || character == '_') {
+        stable_id.to_string()
+    } else {
+        format!("p{stable_id}")
+    }
+}
+
 fn extract_requirement_parameters(
     req: &mut crate::model::PolicyRequirement,
+    parameter_ids: &mut HashSet<String>,
 ) -> Result<usize, ForgeError> {
     let Some(stable_id) = req.stable_id.clone() else {
         return Ok(0);
     };
 
-    if req.text.is_empty() {
-        return Ok(0);
-    }
-
-    if !req.parameters.is_empty() {
+    if req.parameters_extracted {
         return Ok(req.parameters.len());
     }
+    if req.text.is_empty() {
+        req.parameters_extracted = true;
+        return Ok(0);
+    }
+    if req.text.contains(PARAMETER_PLACEHOLDER_PREFIX) {
+        return Err(ForgeError::ParameterExtraction(format!(
+            "Requirement '{stable_id}' contains parameter placeholders but is not marked extracted"
+        )));
+    }
 
-    let requirement_id = if stable_id.starts_with(|c: char| c.is_alphabetic() || c == '_') {
-        stable_id.clone()
-    } else {
-        format!("p{stable_id}")
-    };
+    let requirement_id = oscal_base_id(&stable_id);
+    let (updated_text, params) = extract_parameters_from_text(&requirement_id, &req.text)?;
 
-    let (updated_text, mut params) = extract_parameters_from_text(&requirement_id, &req.text)
-        .map_err(|e| {
-            ForgeError::ParameterExtraction(format!(
-                "Failed to extract parameters from requirement '{stable_id}': {e}"
-            ))
-        })?;
-
-    if requirement_id != stable_id {
-        for param in &mut params {
-            param.requirement_id.clone_from(&stable_id);
+    for parameter in &params {
+        if !parameter_ids.insert(parameter.id.clone()) {
+            return Err(ForgeError::ParameterExtraction(format!(
+                "Duplicate OSCAL parameter ID '{}' generated from requirement '{stable_id}'",
+                parameter.id
+            )));
         }
     }
 
     let param_count = params.len();
-
     if param_count > 0 {
         tracing::debug!(
-            requirement_id = %stable_id,
+            requirement_id = %requirement_id,
             param_count,
             "Parameters extracted from requirement"
         );
@@ -233,7 +238,7 @@ fn extract_requirement_parameters(
 
     req.text = updated_text;
     req.parameters = params;
-
+    req.parameters_extracted = true;
     Ok(param_count)
 }
 
@@ -308,6 +313,17 @@ mod tests {
         assert_eq!(params[1].parameter_type, ParameterType::Frequency);
         assert!(updated.contains("{{ insert: param, id-ref: POL-AC-001_prm_0 }}"));
         assert!(updated.contains("{{ insert: param, id-ref: POL-AC-001_prm_1 }}"));
+    }
+
+    #[test]
+    fn extract_duration_is_not_classified_as_quantity() {
+        let (_, parameters) =
+            extract_parameters_from_text("POL-RET-001", "Records retained for at least 90 days")
+                .unwrap();
+
+        assert_eq!(parameters.len(), 1);
+        assert_eq!(parameters[0].parameter_type, ParameterType::Threshold);
+        assert_eq!(parameters[0].value, "90");
     }
 
     #[test]
@@ -398,6 +414,7 @@ mod tests {
                         citations: vec![],
                         modality: None,
                         parameters: vec![],
+                        parameters_extracted: false,
                     },
                 ],
             }],
@@ -421,7 +438,7 @@ mod tests {
     fn to_oscal_param_time_window() {
         let param = PolicyParameter {
             id: "POL-AC-001_prm_0".to_string(),
-            requirement_id: "POL-AC-001".to_string(),
+            requirement_id: RequirementId::from("POL-AC-001"),
             label: "within 30 days".to_string(),
             value: "30 days".to_string(),
             parameter_type: ParameterType::TimeWindow,
@@ -442,7 +459,7 @@ mod tests {
     fn to_oscal_param_maximum_constraint() {
         let param = PolicyParameter {
             id: "POL-AC-001_prm_0".to_string(),
-            requirement_id: "POL-AC-001".to_string(),
+            requirement_id: RequirementId::from("POL-AC-001"),
             label: "no more than 15 minutes".to_string(),
             value: "15 minutes".to_string(),
             parameter_type: ParameterType::Threshold,
@@ -459,7 +476,7 @@ mod tests {
     fn to_oscal_param_exact_constraint() {
         let param = PolicyParameter {
             id: "POL-AC-001_prm_0".to_string(),
-            requirement_id: "POL-AC-001".to_string(),
+            requirement_id: RequirementId::from("POL-AC-001"),
             label: "annually".to_string(),
             value: "annually".to_string(),
             parameter_type: ParameterType::Frequency,
@@ -476,7 +493,7 @@ mod tests {
     fn to_oscal_param_no_constraint() {
         let param = PolicyParameter {
             id: "POL-AC-001_prm_0".to_string(),
-            requirement_id: "POL-AC-001".to_string(),
+            requirement_id: RequirementId::from("POL-AC-001"),
             label: "annually".to_string(),
             value: "annually".to_string(),
             parameter_type: ParameterType::Frequency,
@@ -673,6 +690,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -689,5 +707,44 @@ mod tests {
                 requirements: reqs,
             }],
         }
+    }
+
+    #[test]
+    fn extraction_marks_requirements_without_matches_complete() {
+        let mut document = make_doc(vec![make_req("POL-AC-001", "No configurable value.")]);
+        extract_parameters(&mut document).unwrap();
+        let requirement = &document.sections[0].requirements[0];
+        assert!(requirement.parameters.is_empty());
+        assert!(requirement.parameters_extracted);
+    }
+
+    #[test]
+    fn extraction_rejects_unmarked_placeholder_text() {
+        let mut document = make_doc(vec![make_req(
+            "POL-AC-001",
+            "Set {{ insert: param, id-ref: POL-AC-001_prm_0 }}.",
+        )]);
+        let error = extract_parameters(&mut document).unwrap_err();
+        assert!(error.to_string().contains("contains parameter placeholders"));
+    }
+
+    #[test]
+    fn extraction_rejects_colliding_normalized_parameter_ids() {
+        let mut document = make_doc(vec![
+            make_req("1", "Complete within 30 days."),
+            make_req("p1", "Complete within 30 days."),
+        ]);
+        let error = extract_parameters(&mut document).unwrap_err();
+        assert!(error.to_string().contains("Duplicate OSCAL parameter ID 'p1_prm_0'"));
+    }
+
+    #[test]
+    fn extraction_uses_normalized_requirement_reference() {
+        let mut document = make_doc(vec![make_req("1", "Complete within 30 days.")]);
+        extract_parameters(&mut document).unwrap();
+        assert_eq!(
+            document.sections[0].requirements[0].parameters[0].requirement_id.as_str(),
+            "p1"
+        );
     }
 }

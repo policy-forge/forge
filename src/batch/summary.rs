@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use crate::error::ForgeError;
+
 /// Outcome of converting a single file — either success with an output path,
-/// or failure with an error message.
+/// or failure retaining its typed error.
 #[derive(Debug)]
 pub enum FileOutcome {
     /// The file was converted successfully.
@@ -12,8 +14,8 @@ pub enum FileOutcome {
     },
     /// The file could not be converted.
     Failure {
-        /// Human-readable error message describing what went wrong.
-        error_message: String,
+        /// Underlying conversion error, retained for classification and source context.
+        error: ForgeError,
     },
 }
 
@@ -37,8 +39,8 @@ impl FileResult {
 
     /// Create a failed result.
     #[must_use]
-    pub fn failure(input_path: PathBuf, error_message: String, duration: Duration) -> Self {
-        Self { input_path, outcome: FileOutcome::Failure { error_message }, duration }
+    pub fn failure(input_path: PathBuf, error: ForgeError, duration: Duration) -> Self {
+        Self { input_path, outcome: FileOutcome::Failure { error }, duration }
     }
 
     /// Returns true if this file converted successfully.
@@ -52,33 +54,83 @@ impl FileResult {
 #[derive(Debug)]
 pub struct BatchSummary {
     /// Total number of files processed.
-    pub total_files: usize,
+    total_files: usize,
     /// Number of files that converted successfully.
-    pub succeeded: usize,
+    succeeded: usize,
     /// Number of files that failed conversion.
-    pub failed: usize,
+    failed: usize,
     /// Total wall-clock duration of the entire batch run.
-    pub total_duration: Duration,
-    /// Per-file results, sorted by input filename (full path as tie-breaker).
-    pub results: Vec<FileResult>,
+    total_duration: Duration,
+    /// Per-file results, sorted by raw `OsStr` filename order (full path as tie-breaker).
+    results: Vec<FileResult>,
+    /// Whether a requested custom pool could not be created and conversion ran sequentially.
+    degraded_to_sequential: bool,
 }
 
 impl BatchSummary {
     /// Build summary from a list of results and total duration.
     /// Results are sorted by input filename, with full path as tie-breaker.
     #[must_use]
-    pub fn from_results(mut results: Vec<FileResult>, total_duration: Duration) -> Self {
+    pub fn from_results(results: Vec<FileResult>, total_duration: Duration) -> Self {
+        Self::from_results_with_execution_mode(results, total_duration, false)
+    }
+
+    /// Build a summary while recording whether a custom-pool fallback occurred.
+    #[must_use]
+    pub(crate) fn from_results_with_execution_mode(
+        mut results: Vec<FileResult>,
+        total_duration: Duration,
+        degraded_to_sequential: bool,
+    ) -> Self {
         results.sort_by(|a, b| {
-            let a_name = a.input_path.file_name().unwrap_or_default();
-            let b_name = b.input_path.file_name().unwrap_or_default();
-            a_name.cmp(b_name).then_with(|| a.input_path.cmp(&b.input_path))
+            // Raw `OsStr` ordering is deterministic for a platform but intentionally
+            // case-sensitive and platform-specific.
+            let a_key = a.input_path.file_name().unwrap_or_else(|| a.input_path.as_os_str());
+            let b_key = b.input_path.file_name().unwrap_or_else(|| b.input_path.as_os_str());
+            a_key.cmp(b_key).then_with(|| a.input_path.cmp(&b.input_path))
         });
 
         let total_files = results.len();
         let succeeded = results.iter().filter(|r| r.is_success()).count();
         let failed = total_files - succeeded;
 
-        Self { total_files, succeeded, failed, total_duration, results }
+        Self { total_files, succeeded, failed, total_duration, results, degraded_to_sequential }
+    }
+
+    /// Total number of processed files.
+    #[must_use]
+    pub const fn total_files(&self) -> usize {
+        self.total_files
+    }
+
+    /// Number of successful conversions.
+    #[must_use]
+    pub const fn succeeded(&self) -> usize {
+        self.succeeded
+    }
+
+    /// Number of failed conversions.
+    #[must_use]
+    pub const fn failed(&self) -> usize {
+        self.failed
+    }
+
+    /// Total wall-clock duration of the batch.
+    #[must_use]
+    pub const fn total_duration(&self) -> Duration {
+        self.total_duration
+    }
+
+    /// Per-file results in deterministic filename order.
+    #[must_use]
+    pub fn results(&self) -> &[FileResult] {
+        &self.results
+    }
+
+    /// Returns true when a requested custom pool could not be created.
+    #[must_use]
+    pub const fn degraded_to_sequential(&self) -> bool {
+        self.degraded_to_sequential
     }
 
     /// Returns true if any file in the batch failed.
@@ -111,12 +163,12 @@ mod tests {
     fn failure_result_has_error_and_no_output_path() {
         let result = FileResult::failure(
             PathBuf::from("input.md"),
-            "parse error".to_string(),
+            ForgeError::Parse("parse error".to_string()),
             Duration::from_millis(50),
         );
         assert!(!result.is_success());
         assert!(
-            matches!(result.outcome, FileOutcome::Failure { ref error_message } if error_message == "parse error")
+            matches!(result.outcome, FileOutcome::Failure { ref error } if matches!(error, ForgeError::Parse(message) if message == "parse error"))
         );
     }
 
@@ -132,7 +184,7 @@ mod tests {
             ),
             FileResult::failure(
                 PathBuf::from("b.md"),
-                "error".to_string(),
+                ForgeError::Parse("error".to_string()),
                 Duration::from_millis(50),
             ),
             FileResult::success(
@@ -143,10 +195,18 @@ mod tests {
         ];
 
         let summary = BatchSummary::from_results(results, Duration::from_millis(300));
-        assert_eq!(summary.total_files, 3);
-        assert_eq!(summary.succeeded, 2);
-        assert_eq!(summary.failed, 1);
+        assert_eq!(summary.total_files(), 3);
+        assert_eq!(summary.succeeded(), 2);
+        assert_eq!(summary.failed(), 1);
         assert!(summary.has_failures());
+    }
+
+    #[test]
+    fn fallback_execution_state_is_preserved() {
+        let summary =
+            BatchSummary::from_results_with_execution_mode(Vec::new(), Duration::ZERO, true);
+
+        assert!(summary.degraded_to_sequential());
     }
 
     #[test]
@@ -187,5 +247,41 @@ mod tests {
         )];
         let summary = BatchSummary::from_results(results, Duration::from_millis(100));
         assert!(!summary.has_failures());
+    }
+
+    #[test]
+    fn same_filename_uses_full_path_as_tie_breaker() {
+        let summary = BatchSummary::from_results(
+            vec![
+                FileResult::success(
+                    PathBuf::from("/z/policy.md"),
+                    PathBuf::from("z.json"),
+                    Duration::ZERO,
+                ),
+                FileResult::success(
+                    PathBuf::from("/a/policy.md"),
+                    PathBuf::from("a.json"),
+                    Duration::ZERO,
+                ),
+            ],
+            Duration::ZERO,
+        );
+
+        assert_eq!(summary.results()[0].input_path, PathBuf::from("/a/policy.md"));
+        assert_eq!(summary.results()[1].input_path, PathBuf::from("/z/policy.md"));
+    }
+
+    #[test]
+    fn componentless_paths_use_their_full_path_as_sort_key() {
+        let summary = BatchSummary::from_results(
+            vec![
+                FileResult::success(PathBuf::from("b.md"), PathBuf::from("b.json"), Duration::ZERO),
+                FileResult::success(PathBuf::from(""), PathBuf::from("empty.json"), Duration::ZERO),
+            ],
+            Duration::ZERO,
+        );
+
+        assert_eq!(summary.results()[0].input_path, PathBuf::from(""));
+        assert_eq!(summary.results()[1].input_path, PathBuf::from("b.md"));
     }
 }

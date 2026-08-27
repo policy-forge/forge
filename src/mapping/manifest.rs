@@ -1,11 +1,11 @@
 //! Strict, bounded mapping-manifest v1 parsing.
 
-use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Component, Path, PathBuf};
 
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::{Map, Number, Value};
+use serde_json::{Map, Number, Value, map::Entry};
 
 use crate::ForgeError;
 
@@ -116,6 +116,8 @@ pub struct ResourceManifest {
     #[serde(default)]
     pub expected_sha256: Option<String>,
     #[serde(default)]
+    pub expected_resolved_catalog_sha256: Option<String>,
+    #[serde(default)]
     pub inventory: Option<ResourceInventorySnapshot>,
 }
 
@@ -127,6 +129,9 @@ pub struct ResourceInventorySnapshot {
     pub oscal_version: String,
     pub control_ids: Vec<String>,
     pub statement_ids: Vec<String>,
+    /// Stable digest of the eligible subject type, identifier, and fingerprint tuples.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fingerprint_digest: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
@@ -306,7 +311,7 @@ pub fn parse(bytes: &[u8]) -> Result<MappingManifest, ForgeError> {
     deserializer
         .end()
         .map_err(|error| mapping_error(format!("invalid trailing manifest data: {error}")))?;
-    enforce_value_bounds(&strict.0, "$", 0)?;
+    enforce_value_bounds(&strict.0, &mut Vec::new(), 0)?;
     let manifest: MappingManifest = serde_json::from_value(strict.0)
         .map_err(|error| mapping_error(format!("invalid manifest contract: {error}")))?;
     validate_contract(&manifest)?;
@@ -343,7 +348,14 @@ fn validate_contract(manifest: &MappingManifest) -> Result<(), ForgeError> {
     if manifest.provenance.reviewer_keys.is_empty() {
         return Err(mapping_error("$.provenance.reviewer_keys must not be empty"));
     }
+    let mut provenance_reviewers = BTreeSet::new();
     for key in &manifest.provenance.reviewer_keys {
+        if !provenance_reviewers.insert(key.as_str()) {
+            return Err(mapping_error(format!(
+                "$.provenance.reviewer_keys duplicates reviewer '{}'",
+                bounded(key)
+            )));
+        }
         if !reviewers.contains_key(key.as_str()) {
             return Err(mapping_error(format!(
                 "$.provenance.reviewer_keys references unknown reviewer '{}'",
@@ -426,9 +438,7 @@ fn validate_coverage(path: &str, coverage: Option<&CoverageManifest>) -> Result<
 }
 
 fn validate_resource(path: &str, resource: &ResourceManifest) -> Result<(), ForgeError> {
-    if resource.artifact.extension().and_then(|value| value.to_str()) != Some("json") {
-        return Err(mapping_error(format!("{path}.artifact must be a local .json file")));
-    }
+    validate_local_json_path(&format!("{path}.artifact"), &resource.artifact)?;
     non_empty(&format!("{path}.href"), &resource.href)?;
     if resource.resource_type == ResourceType::Profile {
         let Some(companion) = &resource.resolved_catalog else {
@@ -436,30 +446,51 @@ fn validate_resource(path: &str, resource: &ResourceManifest) -> Result<(), Forg
                 "{path}.resolved_catalog is required for a Profile; run 'forge resolve' explicitly"
             )));
         };
-        if companion.extension().and_then(|value| value.to_str()) != Some("json") {
-            return Err(mapping_error(format!("{path}.resolved_catalog must be a .json file")));
-        }
+        validate_local_json_path(&format!("{path}.resolved_catalog"), companion)?;
         if resource.resolved_catalog_attestation != Some(true) {
             return Err(mapping_error(format!(
-                "{path}.resolved_catalog_attestation must be true to record reviewer attestation that the companion represents this Profile"
+                "{path}.resolved_catalog_attestation must be true after reviewing the init scaffold's resolved Catalog companion"
             )));
         }
-    } else if resource.resolved_catalog.is_some() {
-        return Err(mapping_error(format!(
-            "{path}.resolved_catalog is only valid for Profile resources"
-        )));
-    } else if resource.resolved_catalog_attestation.is_some() {
-        return Err(mapping_error(format!(
-            "{path}.resolved_catalog_attestation is only valid for Profile resources"
-        )));
-    }
-    if let Some(hash) = &resource.expected_sha256
-        && (hash.len() != 64
-            || !hash.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase()))
+        let Some(hash) = &resource.expected_resolved_catalog_sha256 else {
+            return Err(mapping_error(format!(
+                "{path}.expected_resolved_catalog_sha256 is required for a Profile"
+            )));
+        };
+        validate_sha256(&format!("{path}.expected_resolved_catalog_sha256"), hash)?;
+    } else if resource.resolved_catalog.is_some()
+        || resource.resolved_catalog_attestation.is_some()
+        || resource.expected_resolved_catalog_sha256.is_some()
     {
         return Err(mapping_error(format!(
-            "{path}.expected_sha256 must be 64 lowercase hexadecimal characters"
+            "{path} resolved Catalog fields are only valid for Profile resources"
         )));
+    }
+    if let Some(hash) = &resource.expected_sha256 {
+        validate_sha256(&format!("{path}.expected_sha256"), hash)?;
+    }
+    Ok(())
+}
+
+fn validate_local_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
+    if value.is_absolute()
+        || value.components().any(|component| !matches!(component, Component::Normal(_)))
+    {
+        return Err(mapping_error(format!(
+            "{path} must be a relative path without '..', '.' or leading separators"
+        )));
+    }
+    if value.extension().and_then(|extension| extension.to_str()) != Some("json") {
+        return Err(mapping_error(format!("{path} must be a local .json file")));
+    }
+    Ok(())
+}
+
+fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
+    if value.len() != 64
+        || !value.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    {
+        return Err(mapping_error(format!("{path} must be 64 lowercase hexadecimal characters")));
     }
     Ok(())
 }
@@ -498,24 +529,38 @@ fn non_empty(path: &str, value: &str) -> Result<(), ForgeError> {
     }
 }
 
-fn enforce_value_bounds(value: &Value, path: &str, depth: usize) -> Result<(), ForgeError> {
+fn enforce_value_bounds<'a>(
+    value: &'a Value,
+    segments: &mut Vec<JsonPathSegment<'a>>,
+    depth: usize,
+) -> Result<(), ForgeError> {
     const MAX_DEPTH: usize = 64;
     if depth > MAX_DEPTH {
-        return Err(mapping_error(format!("{path} exceeds maximum JSON depth {MAX_DEPTH}")));
+        return Err(mapping_error(format!(
+            "{} exceeds maximum JSON depth {MAX_DEPTH}",
+            render_json_path(segments)
+        )));
     }
     match value {
         Value::String(text) if text.len() > MAX_STRING_BYTES => Err(mapping_error(format!(
-            "{path} exceeds maximum string length {MAX_STRING_BYTES} bytes"
+            "{} exceeds maximum string length {MAX_STRING_BYTES} bytes",
+            render_json_path(segments)
         ))),
         Value::Array(values) => {
             for (index, child) in values.iter().enumerate() {
-                enforce_value_bounds(child, &format!("{path}[{index}]"), depth + 1)?;
+                segments.push(JsonPathSegment::Index(index));
+                let result = enforce_value_bounds(child, segments, depth + 1);
+                segments.pop();
+                result?;
             }
             Ok(())
         }
         Value::Object(values) => {
             for (key, child) in values {
-                enforce_value_bounds(child, &format!("{path}.{key}"), depth + 1)?;
+                segments.push(JsonPathSegment::Key(key));
+                let result = enforce_value_bounds(child, segments, depth + 1);
+                segments.pop();
+                result?;
             }
             Ok(())
         }
@@ -525,6 +570,30 @@ fn enforce_value_bounds(value: &Value, path: &str, depth: usize) -> Result<(), F
 
 fn bounded(value: &str) -> String {
     value.chars().take(120).flat_map(char::escape_default).collect()
+}
+
+#[derive(Clone, Copy)]
+enum JsonPathSegment<'a> {
+    Index(usize),
+    Key(&'a str),
+}
+
+fn render_json_path(segments: &[JsonPathSegment<'_>]) -> String {
+    let mut path = String::from("$");
+    for segment in segments {
+        match segment {
+            JsonPathSegment::Index(index) => {
+                path.push('[');
+                path.push_str(&index.to_string());
+                path.push(']');
+            }
+            JsonPathSegment::Key(key) => {
+                path.push('.');
+                path.push_str(&bounded(key));
+            }
+        }
+    }
+    path
 }
 
 fn mapping_error(message: impl Into<String>) -> ForgeError {
@@ -609,8 +678,16 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
     {
         let mut values = Map::new();
         while let Some((key, value)) = object.next_entry::<String, StrictValue>()? {
-            if values.insert(key.clone(), value.0).is_some() {
-                return Err(de::Error::custom(format!("duplicate object key '{key}'")));
+            match values.entry(key) {
+                Entry::Occupied(entry) => {
+                    return Err(de::Error::custom(format!(
+                        "duplicate object key '{}'",
+                        entry.key()
+                    )));
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(value.0);
+                }
             }
         }
         Ok(StrictValue(Value::Object(values)))
@@ -621,24 +698,118 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
 mod tests {
     use super::*;
 
+    fn profile_resource(artifact: &str, resolved_catalog: &str) -> ResourceManifest {
+        ResourceManifest {
+            resource_type: ResourceType::Profile,
+            artifact: PathBuf::from(artifact),
+            href: artifact.to_string(),
+            resolved_catalog: Some(PathBuf::from(resolved_catalog)),
+            resolved_catalog_attestation: Some(true),
+            expected_sha256: None,
+            expected_resolved_catalog_sha256: Some("a".repeat(64)),
+            inventory: None,
+        }
+    }
+
+    #[test]
+    fn duplicate_provenance_reviewer_is_rejected() {
+        let manifest = serde_json::json!({
+            "schema_version": MANIFEST_SCHEMA_VERSION,
+            "collection": {
+                "key": "collection",
+                "title": "Collection",
+                "version": "1",
+                "last_modified": "2026-08-26T00:00:00Z"
+            },
+            "reviewers": [{ "key": "reviewer", "type": "person", "name": "Reviewer" }],
+            "provenance": {
+                "method": "human",
+                "matching_rationale": "semantic",
+                "status": "complete",
+                "mapping_description": "Reviewed mapping.",
+                "reviewer_keys": ["reviewer", "reviewer"],
+                "reviewed_at": "2026-08-26T00:00:00Z"
+            },
+            "mapping": {
+                "key": "mapping",
+                "source": { "type": "catalog", "artifact": "source.json", "href": "source.json" },
+                "target": { "type": "catalog", "artifact": "target.json", "href": "target.json" },
+                "maps": []
+            }
+        });
+        let bytes = serde_json::to_vec(&manifest).expect("test manifest serializes");
+        let error = parse(&bytes).expect_err("duplicate reviewer must fail");
+        assert!(
+            error.to_string().contains("$.provenance.reviewer_keys duplicates reviewer 'reviewer'")
+        );
+    }
+
+    #[test]
+    fn resource_paths_must_be_local_relative_json_files() {
+        validate_resource(
+            "$.mapping.target",
+            &profile_resource("resources/profile.json", "resources/catalog.json"),
+        )
+        .expect("nested local relative paths are valid");
+
+        for path in ["../profile.json", "./profile.json", "/tmp/profile.json"] {
+            let error = validate_resource(
+                "$.mapping.target",
+                &profile_resource(path, "resources/catalog.json"),
+            )
+            .expect_err(path);
+            assert!(
+                error.to_string().contains("$.mapping.target.artifact must be a relative path"),
+                "{path}: {error}"
+            );
+        }
+
+        for path in ["../catalog.json", "./catalog.json", "/tmp/catalog.json"] {
+            let error = validate_resource(
+                "$.mapping.target",
+                &profile_resource("resources/profile.json", path),
+            )
+            .expect_err(path);
+            assert!(
+                error
+                    .to_string()
+                    .contains("$.mapping.target.resolved_catalog must be a relative path"),
+                "{path}: {error}"
+            );
+        }
+    }
+
     #[test]
     fn duplicate_decoded_key_is_rejected() {
-        let error = parse(br#"{"schema_version":"a","schema_version":"b"}"#)
-            .expect_err("duplicate key must fail");
+        let error = parse(br#"{"schema_version":"forge.mapping-manifest/1","schema_version":"forge.mapping-manifest/1"}"#)
+            .expect_err("duplicate must fail");
         assert!(error.to_string().contains("duplicate object key 'schema_version'"));
     }
 
     #[test]
     fn oversized_and_invalid_utf8_manifests_are_rejected_without_panic() {
-        let oversized = vec![b' '; usize::try_from(MAX_MANIFEST_BYTES).unwrap() + 1];
+        let oversized =
+            vec![b' '; usize::try_from(MAX_MANIFEST_BYTES).expect("manifest cap fits usize") + 1];
+        let oversized_error = parse(&oversized).expect_err("oversized manifest must fail");
         assert!(
-            parse(&oversized).expect_err("oversized input must fail").to_string().contains("limit")
+            oversized_error.to_string().contains("exceeds")
+                && oversized_error.to_string().contains("byte limit"),
+            "{oversized_error}"
         );
+        let invalid_utf8_error = parse(&[0xff]).expect_err("invalid UTF-8 must fail");
         assert!(
-            parse(b"{\"schema_version\":\"\xff\"}")
-                .expect_err("invalid UTF-8 must fail")
-                .to_string()
-                .contains("invalid manifest JSON")
+            invalid_utf8_error.to_string().contains("invalid manifest JSON"),
+            "{invalid_utf8_error}"
         );
+    }
+
+    #[test]
+    fn nested_bound_errors_escape_object_keys() {
+        let value = serde_json::json!({"unsafe\nkey": "x".repeat(MAX_STRING_BYTES + 1)});
+        let error = enforce_value_bounds(&value, &mut Vec::new(), 0)
+            .expect_err("oversized nested string must fail");
+        let message = error.to_string();
+        assert!(message.contains("unsafe\\nkey"), "{message}");
+        assert!(!message.contains("unsafe\nkey"), "{message}");
     }
 }

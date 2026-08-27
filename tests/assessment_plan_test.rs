@@ -43,9 +43,7 @@ fn run_catalog_with_ap(fixture: &Path, output_dir: &Path, import_ssp: &str) -> s
 #[test]
 fn ac6_same_input_produces_identical_uuids() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir1 = TempDir::new().unwrap();
     let dir2 = TempDir::new().unwrap();
@@ -64,9 +62,7 @@ fn ac6_same_input_produces_identical_uuids() {
 #[test]
 fn ec5_different_input_produces_different_uuids() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir1 = TempDir::new().unwrap();
     let dir2 = TempDir::new().unwrap();
@@ -85,9 +81,7 @@ fn ec5_different_input_produces_different_uuids() {
 #[test]
 fn ap_file_written_when_import_ssp_provided() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir = TempDir::new().unwrap();
     let result = forge::pipeline::run_catalog_pipeline(
@@ -114,9 +108,7 @@ fn ap_file_written_when_import_ssp_provided() {
 #[test]
 fn ap_file_not_written_when_import_ssp_omitted() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let result = forge::pipeline::run_catalog_pipeline(
         fixture,
@@ -137,9 +129,7 @@ fn ap_file_not_written_when_import_ssp_omitted() {
 #[test]
 fn ap_contains_all_control_ids_from_fixture() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir = TempDir::new().unwrap();
     let ap = run_catalog_with_ap(fixture, dir.path(), "./ssp.json");
@@ -164,9 +154,7 @@ fn ap_contains_all_control_ids_from_fixture() {
 #[test]
 fn empty_import_ssp_returns_validation_error() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let result = forge::pipeline::run_catalog_pipeline(
         fixture,
@@ -219,7 +207,7 @@ fn normalized_ap_json(ap: &serde_json::Value) -> serde_json::Value {
 
 fn assert_v1_2_3_assessment_plan_schema_valid(ap: &serde_json::Value) {
     let schema: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/schemas/oscal_assessment-plan_schema.json"))
+        serde_json::from_str(include_str!("../schemas/oscal_assessment-plan_schema.json"))
             .expect("official assessment plan schema must parse");
     let validator =
         jsonschema::validator_for(&schema).expect("assessment plan schema must compile");
@@ -237,9 +225,7 @@ fn assert_v1_2_3_assessment_plan_schema_valid(ap: &serde_json::Value) {
 #[test]
 fn golden_catalog_ap_snapshot() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir = TempDir::new().unwrap();
     let ap = run_catalog_with_ap(fixture, dir.path(), "./ssp/system-ssp.json");
@@ -251,9 +237,7 @@ fn golden_catalog_ap_snapshot() {
 #[test]
 fn golden_component_ap_snapshot() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir = TempDir::new().unwrap();
     let ap = run_component_with_ap(fixture, dir.path(), "./ssp/system-ssp.json");
@@ -264,9 +248,7 @@ fn golden_component_ap_snapshot() {
 #[test]
 fn generated_catalog_and_component_assessment_plans_validate_against_v1_2_3() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let catalog_dir = TempDir::new().unwrap();
     let catalog_ap = run_catalog_with_ap(fixture, catalog_dir.path(), "./ssp/system-ssp.json");
@@ -284,9 +266,7 @@ fn generated_catalog_and_component_assessment_plans_validate_against_v1_2_3() {
 #[test]
 fn catalog_ap_subject_without_component_ref() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir = TempDir::new().unwrap();
     let ap = run_catalog_with_ap(fixture, dir.path(), "./ssp/system-ssp.json");
@@ -312,9 +292,7 @@ fn catalog_ap_subject_without_component_ref() {
 #[test]
 fn component_ap_subject_with_component_ref() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir = TempDir::new().unwrap();
     let ap = run_component_with_ap(fixture, dir.path(), "./ssp/system-ssp.json");
@@ -343,13 +321,11 @@ fn component_ap_subject_with_component_ref() {
 
 // ─── Schema-adjacent validation: required OSCAL AP fields ────────────────
 
-/// Verify the assessment plan contains all required OSCAL v1.2.0 fields.
+/// Verify the assessment plan contains all required OSCAL v1.2.3 fields.
 #[test]
 fn ap_contains_required_oscal_ap_fields() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let dir = TempDir::new().unwrap();
     let ap = run_catalog_with_ap(fixture, dir.path(), "./ssp/system-ssp.json");
@@ -391,9 +367,7 @@ fn ap_contains_required_oscal_ap_fields() {
 #[test]
 fn component_pipeline_generates_ap_with_import_ssp() {
     let fixture = Path::new(FIXTURE);
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let result = forge::pipeline::run_component_pipeline(
         fixture,

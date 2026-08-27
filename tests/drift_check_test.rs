@@ -216,7 +216,10 @@ fn drift_structure_errors_do_not_disclose_absolute_runner_paths() {
     assert_eq!(output.status.code(), Some(2));
     let stderr = String::from_utf8_lossy(&output.stderr);
     let absolute_root = dir.path().display().to_string();
-    assert!(stderr.contains("committed artifact must contain a 'catalog' JSON object"), "{stderr}");
+    assert!(
+        stderr.contains("committed artifact is not a recognized Catalog or Component Definition"),
+        "{stderr}"
+    );
     assert!(!stderr.contains(&absolute_root), "{stderr}");
     assert!(output.stdout.is_empty());
 }

@@ -15,6 +15,8 @@ pub(crate) fn classify(
     new: RequirementInventory,
     successor_map: Option<&SuccessorMap>,
 ) -> Result<MigrationReport, ForgeError> {
+    validate_unique_stable_ids("old", &old.requirements)?;
+    validate_unique_stable_ids("new", &new.requirements)?;
     let new_by_id: BTreeMap<&str, usize> = new
         .requirements
         .iter()
@@ -59,6 +61,13 @@ pub(crate) fn classify(
         &mut new_matched,
         &mut entries,
     );
+    match_unique_normalized_text(
+        &old.requirements,
+        &new.requirements,
+        &mut old_matched,
+        &mut new_matched,
+        &mut entries,
+    );
     group_ambiguities(
         &old.requirements,
         &new.requirements,
@@ -81,6 +90,22 @@ pub(crate) fn classify(
         summary,
         entries,
     })
+}
+
+fn validate_unique_stable_ids(
+    side: &str,
+    requirements: &[InventoryRequirement],
+) -> Result<(), ForgeError> {
+    let mut stable_ids = BTreeSet::new();
+    for requirement in requirements {
+        if !stable_ids.insert(requirement.stable_id.as_str()) {
+            return Err(ForgeError::MigrationError(format!(
+                "{side} inventory contains duplicate stable identifier '{}'",
+                requirement.stable_id
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn match_declared_relationships(
@@ -115,7 +140,9 @@ fn match_declared_relationships(
             new_indexes.into_iter().map(|index| new[index].clone()).collect(),
             DeclarationEvidence {
                 approved_by: relationship.approved_by.clone(),
-                approved_at: relationship.approved_at.clone(),
+                approved_at: relationship
+                    .approved_at
+                    .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true),
                 rationale: relationship.rationale.clone(),
             },
         ));
@@ -200,8 +227,8 @@ fn match_unique_normalized_text(
     new_matched: &mut [bool],
     entries: &mut Vec<MigrationEntry>,
 ) {
-    let old_groups = group_unmatched_by(old, old_matched, |item| item.normalized_text.clone());
-    let new_groups = group_unmatched_by(new, new_matched, |item| item.normalized_text.clone());
+    let old_groups = group_unmatched_by(old, old_matched, |item| item.normalized_text.as_str());
+    let new_groups = group_unmatched_by(new, new_matched, |item| item.normalized_text.as_str());
     for (normalized, old_indexes) in old_groups {
         let Some(new_indexes) = new_groups.get(&normalized) else {
             continue;
@@ -272,8 +299,8 @@ fn group_ambiguities(
     let mut groups: Vec<CandidateGroup> = Vec::new();
     append_candidate_groups(
         &mut groups,
-        group_unmatched_by(old, old_matched, |item| item.normalized_text.clone()),
-        &group_unmatched_by(new, new_matched, |item| item.normalized_text.clone()),
+        group_unmatched_by(old, old_matched, |item| item.normalized_text.as_str()),
+        &group_unmatched_by(new, new_matched, |item| item.normalized_text.as_str()),
         EvidenceCode::DuplicateNormalizedText,
     );
     append_candidate_groups(
@@ -424,20 +451,20 @@ fn add_unmatched(
     }
 }
 
-fn group_unmatched_by<K: Ord>(
-    items: &[InventoryRequirement],
+fn group_unmatched_by<'a, K: Ord>(
+    items: &'a [InventoryRequirement],
     matched: &[bool],
-    key: impl Fn(&InventoryRequirement) -> K,
+    key: impl Fn(&'a InventoryRequirement) -> K,
 ) -> BTreeMap<K, Vec<usize>> {
-    let mut groups = BTreeMap::new();
+    let mut groups: BTreeMap<K, Vec<usize>> = BTreeMap::new();
     for (index, item) in items.iter().enumerate().filter(|(index, _)| !matched[*index]) {
-        groups.entry(key(item)).or_insert_with(Vec::new).push(index);
+        groups.entry(key(item)).or_default().push(index);
     }
     groups
 }
 
-fn locator_key(item: &InventoryRequirement) -> (String, usize, usize) {
-    (item.location.section_path.clone(), item.location.line, item.location.atom_index)
+fn locator_key(item: &InventoryRequirement) -> (&str, usize, usize) {
+    (item.location.section_path.as_str(), item.location.line, item.location.atom_index)
 }
 
 fn location_changes(old: &RequirementLocation, new: &RequirementLocation) -> Vec<EvidenceCode> {
@@ -582,18 +609,34 @@ fn validate_reconciliation(
         .collect();
     let actual_old_set: BTreeSet<_> = actual_old.iter().copied().collect();
     let actual_new_set: BTreeSet<_> = actual_new.iter().copied().collect();
-    if actual_old.len() != actual_old_set.len()
-        || actual_new.len() != actual_new_set.len()
+    let duplicated_old = duplicate_id_samples(&actual_old);
+    let duplicated_new = duplicate_id_samples(&actual_new);
+    let missing_old: Vec<_> = expected_old.difference(&actual_old_set).take(3).copied().collect();
+    let missing_new: Vec<_> = expected_new.difference(&actual_new_set).take(3).copied().collect();
+    let old_outcomes = summary.old_requirements.total();
+    let new_outcomes = summary.new_requirements.total();
+    let summary_error = summary.validate();
+
+    if !duplicated_old.is_empty()
+        || !duplicated_new.is_empty()
         || actual_old_set != expected_old
         || actual_new_set != expected_new
-        || summary.old_requirements.total() != summary.total_old
-        || summary.new_requirements.total() != summary.total_new
+        || summary_error.is_err()
     {
-        return Err(ForgeError::MigrationError(
-            "internal reconciliation invariant failed".to_string(),
-        ));
+        return Err(ForgeError::MigrationError(format!(
+            "internal reconciliation invariant failed: duplicated old IDs {duplicated_old:?}; duplicated new IDs {duplicated_new:?}; missing old IDs {missing_old:?}; missing new IDs {missing_new:?}; old outcome count {old_outcomes} vs total_old {}; new outcome count {new_outcomes} vs total_new {}",
+            summary.total_old, summary.total_new
+        )));
     }
     Ok(())
+}
+
+fn duplicate_id_samples<'a>(ids: &[&'a str]) -> Vec<&'a str> {
+    let mut counts = BTreeMap::new();
+    for id in ids {
+        *counts.entry(*id).or_insert(0_usize) += 1;
+    }
+    counts.into_iter().filter_map(|(id, count)| (count > 1).then_some(id)).take(3).collect()
 }
 
 #[cfg(test)]
@@ -640,9 +683,28 @@ mod tests {
             old_ids: old_ids.iter().map(|id| (*id).to_string()).collect(),
             new_ids: new_ids.iter().map(|id| (*id).to_string()).collect(),
             approved_by: "reviewer".to_string(),
-            approved_at: "2026-08-25T12:00:00Z".to_string(),
+            approved_at: chrono::DateTime::parse_from_rfc3339("2026-08-25T12:00:00Z")
+                .expect("fixed test timestamp is RFC 3339"),
             rationale: "Reviewed relationship.".to_string(),
         }
+    }
+
+    #[test]
+    fn duplicate_inventory_stable_ids_are_rejected() {
+        let error = classify(
+            inventory(vec![
+                item("duplicate", "first", "Section", 1, 0),
+                item("duplicate", "second", "Section", 2, 0),
+            ]),
+            inventory(Vec::new()),
+            None,
+        )
+        .expect_err("duplicate stable identifiers must not be collapsed");
+        assert!(
+            error
+                .to_string()
+                .contains("old inventory contains duplicate stable identifier 'duplicate'")
+        );
     }
 
     #[test]
@@ -667,6 +729,38 @@ mod tests {
         assert_eq!(report.summary.retired, 1);
         assert_eq!(report.summary.added, 1);
         assert!(report.has_reviewable_changes());
+    }
+
+    #[test]
+    fn residual_unique_text_match_after_locator_match_is_classified() {
+        let old = inventory(vec![
+            item("old-x", "duplicate", "A", 1, 0),
+            item("old-y", "other", "B", 2, 0),
+        ]);
+        let new = inventory(vec![
+            item("new-p", "duplicate", "B", 2, 0),
+            item("new-q", "duplicate", "A", 1, 0),
+        ]);
+
+        let report = classify(old, new, None).unwrap();
+        let matched = report
+            .entries
+            .iter()
+            .find(|entry| entry.old.iter().any(|item| item.stable_id == "old-x"))
+            .unwrap();
+
+        assert_eq!(matched.classification, Classification::ObservedIdChange);
+        assert_eq!(matched.old[0].stable_id, "old-x");
+        assert_eq!(matched.new[0].stable_id, "new-q");
+        assert!(matched.evidence.contains(&EvidenceCode::UniqueNormalizedText));
+    }
+
+    #[test]
+    fn encoded_title_and_nested_section_have_distinct_locator_keys() {
+        let encoded_title = item("encoded", "text", "Parent/Access Control %2F Audit", 1, 0);
+        let nested_section = item("nested", "text", "Parent/Access Control/Audit", 1, 0);
+
+        assert_ne!(locator_key(&encoded_title), locator_key(&nested_section));
     }
 
     #[test]
@@ -787,5 +881,24 @@ mod tests {
             Some(&successor_map),
         );
         assert!(result.unwrap_err().to_string().contains("absent from the inventory"));
+    }
+
+    #[test]
+    fn reconciliation_error_identifies_duplicated_requirement() {
+        let old_requirement = item("duplicated-old", "text", "A", 1, 0);
+        let entries = vec![entry(
+            Classification::Retired,
+            Vec::new(),
+            ConfidenceBasis::Unmatched,
+            ApprovalStatus::NotRequired,
+            vec![old_requirement.clone(), old_requirement.clone()],
+            Vec::new(),
+        )];
+        let summary = summarize(1, 0, &entries);
+
+        let error =
+            validate_reconciliation(&[old_requirement], &[], &entries, &summary).unwrap_err();
+
+        assert!(error.to_string().contains("duplicated-old"));
     }
 }

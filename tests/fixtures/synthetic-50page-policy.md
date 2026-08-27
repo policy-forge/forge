@@ -31,6 +31,8 @@ User account management procedures shall ensure that all accounts are created, m
 4. System administrators shall conduct quarterly reviews of all active accounts and shall remove or disable accounts that are no longer required for business operations.
 5. The organization shall implement automated mechanisms to disable accounts after ninety consecutive days of inactivity and shall log all automated account status changes.
 
+Table 1: User Account Management Matrix
+
 | Role | Account Type | Review Frequency | Approver |
 | --- | --- | --- | --- |
 | Employee | Individual | Quarterly | Direct Supervisor |
@@ -100,6 +102,8 @@ All organizational data shall be classified according to the four-tier classific
 4. Automated data classification tools shall be deployed for all repositories containing more than ten thousand records and must achieve classification accuracy of at least ninety-five percent.
 5. The data governance committee shall maintain the authoritative classification guide and shall publish updates within fourteen business days of any regulatory change. See Table 2 for the classification matrix.
 
+Table 2: Data Classification Matrix
+
 | Classification | Description | Examples | Handling Requirements |
 | --- | --- | --- | --- |
 | Public | No impact if disclosed | Marketing materials, press releases | No restrictions |
@@ -160,6 +164,8 @@ The organization shall deploy detection capabilities across all network segments
 3. All personnel shall report suspected security incidents within one hour of detection through the designated incident reporting system or the security operations center hotline.
 4. The security operations center shall acknowledge incident reports within one hour and shall complete initial triage and severity classification within four hours of receipt.
 5. The organization shall maintain an incident tracking system that records all incidents from detection through resolution and must retain incident records for a minimum of five years.
+
+Table 3: Incident Detection and Reporting Matrix
 
 | Severity Level | Description | Response Time | Escalation |
 | --- | --- | --- | --- |
@@ -223,6 +229,8 @@ The organization shall conduct comprehensive risk assessments at least annually 
 4. Vulnerability scanning shall be conducted at least monthly on all internet-facing systems and must be conducted quarterly on all internal network systems.
 5. Risk assessment results shall be reported to the executive risk committee within fourteen business days of assessment completion and shall include recommended mitigation actions.
 
+Table 4: Risk Assessment Methodology Matrix
+
 | Risk Level | Likelihood | Impact | Response Strategy | Review Frequency |
 | --- | --- | --- | --- | --- |
 | Critical | Very High | Severe | Immediate mitigation | Weekly |
@@ -284,6 +292,8 @@ Access to organizational facilities shall be controlled through a combination of
 3. Server rooms and data centers shall require multi-factor physical access including badge and biometric verification and must be monitored by security cameras at all times.
 4. Visitor access shall require prior authorization from the hosting employee and must include escort by an authorized employee at all times within restricted areas.
 5. Physical access logs shall be retained for a minimum of twelve months and must be reviewed monthly by the facilities security team for anomalous access patterns.
+
+Table 5: Facility Access Controls Matrix
 
 | Area Classification | Access Control Type | Monitoring | Review Frequency |
 | --- | --- | --- | --- |
@@ -351,6 +361,8 @@ The organization shall implement network segmentation to isolate systems and dat
 4. Management networks shall be isolated from production networks and must be accessible only from authorized management workstations using encrypted connections.
 5. Network architecture diagrams shall be updated within five business days of any change and must accurately reflect all connections, segments, and security control placement.
 
+Table 6: Network Architecture and Segmentation Matrix
+
 | Network Zone | Purpose | Access Level | Monitoring |
 | --- | --- | --- | --- |
 | External DMZ | Internet-facing services | Restricted | Full packet capture |
@@ -414,6 +426,8 @@ The organization shall conduct background screening for all personnel prior to g
 4. The organization shall maintain background screening records in compliance with applicable privacy regulations and must retain records for the duration of employment plus seven years.
 5. Adverse screening results shall be reviewed by the human resources director in consultation with legal counsel and must be adjudicated before access to information systems is granted.
 
+Table 7: Background Screening and Verification Matrix
+
 | Position Sensitivity | Screening Level | Components | Rescreening |
 | --- | --- | --- | --- |
 | Low | Basic | Identity, criminal check | None |
@@ -474,6 +488,8 @@ The organization shall conduct a business impact analysis at least annually to i
 3. The business impact analysis shall identify and document all dependencies between critical business functions, information systems, and third-party service providers.
 4. Single points of failure identified during the business impact analysis shall be documented in the risk register and must have mitigation strategies developed within sixty calendar days.
 5. The business impact analysis shall assess both quantitative impacts including financial losses and qualitative impacts including reputational damage for each critical business function.
+
+Table 8: Business Impact Analysis Matrix
 
 | Business Function | RTO | RPO | Priority | Dependencies |
 | --- | --- | --- | --- | --- |
@@ -537,6 +553,8 @@ All information systems shall generate audit records for security-relevant event
 4. Logging configurations shall be protected from unauthorized modification and must generate alerts to the security operations center if logging is disabled or modified on any system.
 5. Application-level audit logging shall capture business transaction events and must include sufficient detail to reconstruct the complete transaction for forensic analysis.
 
+Table 9: Audit Logging Requirements Matrix
+
 | Event Category | Examples | Retention | Alert Threshold |
 | --- | --- | --- | --- |
 | Authentication | Login, logout, failed attempts | 12 months | 5 failures in 5 minutes |
@@ -552,7 +570,7 @@ All information systems shall generate audit records for security-relevant event
 Audit logs shall be collected, aggregated, and stored in a centralized log management system that provides tamper-evident storage, indexed search, and automated analysis capabilities. Log data shall be transmitted from source systems to the centralized log management system in near real time using encrypted transport. Access to the log management system shall be restricted to authorized security personnel and shall require multi-factor authentication. Log data shall be retained for the periods specified in the retention schedule and shall be archived to long-term storage in a format that preserves the integrity and searchability of the original records. The organization shall implement integrity verification mechanisms to detect any unauthorized modification of stored log data.
 
 1. Audit logs shall be transmitted to the centralized log management system within five minutes of generation and must use encrypted transport to protect log data in transit.
-2. Access to the log management system shall be restricted to authorized security personnel and must require multi-factor authentication for all access. See Section 1.2 for authentication requirements.
+2. Access to the log management system shall be restricted to authorized security personnel and must require multi-factor authentication for all access. See Section 1.3 for authentication requirements.
 3. Log data integrity shall be protected through cryptographic hash verification and must generate alerts if any modification to stored log records is detected.
 4. Log retention periods shall comply with the data retention schedule and must retain security event logs for a minimum of twelve months online and thirty-six months in archive storage.
 5. The log management system shall provide indexed search capabilities and must support queries that return results within sixty seconds for searches spanning up to twelve months of data.
@@ -598,6 +616,8 @@ The organization shall maintain a comprehensive registry of all applicable regul
 3. The compliance team shall monitor regulatory developments continuously through subscriptions to regulatory agencies and must distribute regulatory change notifications to affected business units within five business days.
 4. Impact assessments shall be conducted for all significant regulatory changes and must identify required modifications to organizational policies, controls, and procedures.
 5. The regulatory requirements registry shall be reviewed at least semi-annually and must be updated to reflect changes in the regulatory landscape and organizational operations.
+
+Table 10: Regulatory Requirements Tracking Matrix
 
 | Regulation | Jurisdiction | Applicability | Key Requirements | Review Date |
 | --- | --- | --- | --- | --- |
@@ -649,3 +669,10 @@ The organization shall define and track key performance indicators for the infor
 
 **Supplementary Guidance for Section 10.4**: Organizations implementing remediation and continuous improvement controls should consider the specific operational context and risk profile of their environment when determining the appropriate level of rigor for each requirement. The requirements in this section are aligned with NIST SP 800-53 CP-9 and reflect industry best practices for compliance and regulatory management in enterprise environments. Organizations operating in highly regulated industries may need to implement additional controls beyond those specified in this section to meet sector-specific requirements. The implementation of remediation and continuous improvement controls should be coordinated with related controls in other sections of this policy to ensure a consistent and comprehensive security posture. Regular testing and validation of implemented controls is essential to ensure continued effectiveness as the threat landscape evolves. Documentation of control implementation decisions, including any tailoring rationale, should be maintained as part of the system security plan and made available for audit review upon request. Personnel responsible for implementing and maintaining remediation and continuous improvement controls should receive specialized training appropriate to their role and should maintain current knowledge of emerging threats and countermeasures relevant to compliance and regulatory management.
 
+# Appendix A: Approved Disposal Methods
+
+Approved disposal methods include cryptographic erasure, degaussing, shredding, and certified destruction appropriate to the data classification and storage medium.
+
+# Appendix B: Vendor Assessment Questionnaire
+
+The vendor assessment questionnaire covers security governance, access control, incident response, data protection, continuity, and independent assurance evidence.

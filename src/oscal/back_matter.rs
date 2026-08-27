@@ -128,7 +128,9 @@ enum UrlClassification {
 /// Schemes like `javascript:` and `data:` pose XSS risks if rendered as
 /// clickable links. Downstream consumers should treat any resource with
 /// `url-status: "unvalidated"` as untrusted and avoid rendering the href
-/// as a navigable link.
+/// as a navigable link. A control character before the first colon can smuggle
+/// a dangerous pseudo-scheme through parsers that normalize it, so it is
+/// treated as dangerous and omitted from `rlinks`.
 fn classify_url(url_opt: Option<&String>) -> UrlClassification {
     let Some(raw) = url_opt else {
         return UrlClassification::None;
@@ -136,6 +138,10 @@ fn classify_url(url_opt: Option<&String>) -> UrlClassification {
 
     if raw.trim().is_empty() {
         return UrlClassification::Malformed(raw.clone());
+    }
+
+    if raw.chars().take_while(|character| *character != ':').any(char::is_control) {
+        return UrlClassification::Dangerous(raw.clone());
     }
 
     match url::Url::parse(raw) {
@@ -160,7 +166,7 @@ fn build_resource_parts(
     match classification {
         UrlClassification::Valid(parsed_url) => {
             let media_type = infer_media_type(&parsed_url);
-            let href = citation.url.as_deref().unwrap_or_default().to_string();
+            let href = parsed_url.to_string();
             let rlinks = vec![Rlink { href, media_type }];
             (rlinks, citation_field(&citation.text), vec![])
         }
@@ -225,21 +231,27 @@ fn infer_media_type(url: &url::Url) -> Option<String> {
 ///
 /// UUID generation uses [`crate::uuid::normalize_for_hashing`] to normalize
 /// citation text (trim + collapse whitespace) before hashing, ensuring that
-/// whitespace-only differences produce identical UUIDs.
+/// whitespace-only differences produce identical UUIDs. Valid URLs are hashed
+/// and emitted in their canonical parsed form.
 ///
 /// # Errors
 ///
 /// Returns `ForgeError::BackMatter` if citation data is invalid
-/// (e.g., citation with empty id).
+/// (for example, an empty or duplicate citation ID).
 pub fn generate_back_matter(
     citations: &[Citation],
 ) -> Result<(Vec<BackMatterResource>, HashMap<String, Uuid>), ForgeError> {
     let mut resources = Vec::with_capacity(citations.len());
     let mut resource_map = HashMap::with_capacity(citations.len());
+    let mut seen_citation_ids = std::collections::HashSet::with_capacity(citations.len());
+    let mut seen_uuids = std::collections::HashSet::with_capacity(citations.len());
 
     for citation in citations {
         if citation.id.is_empty() {
             return Err(ForgeError::BackMatter("citation has empty id".to_string()));
+        }
+        if !seen_citation_ids.insert(citation.id.clone()) {
+            return Err(ForgeError::BackMatter(format!("duplicate citation id: {}", citation.id)));
         }
 
         if citation.text.is_empty() && citation.url.is_none() {
@@ -250,15 +262,36 @@ pub fn generate_back_matter(
             continue;
         }
 
-        let normalized = crate::uuid::normalize_for_hashing(&citation.text);
-        let hash_input = match &citation.url {
-            Some(url) => format!("{normalized}\n{url}"),
-            None => normalized.clone(),
+        // Classify before deriving identity or display fields so parsed http(s)
+        // URLs use their canonical spelling throughout (F0621).
+        let classification = classify_url(citation.url.as_ref());
+        let canonical_url = match &classification {
+            UrlClassification::Valid(parsed_url) => Some(parsed_url.as_str()),
+            UrlClassification::Malformed(raw_url) | UrlClassification::Dangerous(raw_url) => {
+                Some(raw_url.as_str())
+            }
+            UrlClassification::None => None,
         };
+        let normalized = crate::uuid::normalize_for_hashing(&citation.text);
+        let hash_input =
+            canonical_url.map_or_else(|| normalized.clone(), |url| format!("{normalized}\n{url}"));
         let uuid = Uuid::new_v5(&BACK_MATTER_NAMESPACE, hash_input.as_bytes());
 
+        // Identical normalized content derives the same UUID: reuse the
+        // existing resource instead of emitting duplicates (F0618). Links via
+        // resource_map keep resolving for every distinct citation id.
+        if !seen_uuids.insert(uuid) {
+            resource_map.insert(citation.id.clone(), uuid);
+            continue;
+        }
+
         let title = if citation.text.is_empty() {
-            citation.url.clone().unwrap_or_default()
+            match &classification {
+                UrlClassification::Valid(parsed_url) => parsed_url.to_string(),
+                UrlClassification::Dangerous(_) => "[unsafe URL scheme removed]".to_string(),
+                UrlClassification::Malformed(raw_url) => raw_url.clone(),
+                UrlClassification::None => String::new(),
+            }
         } else {
             citation.text.clone()
         };
@@ -268,7 +301,6 @@ pub fn generate_back_matter(
             .as_ref()
             .map(|req_id| format!("Referenced by requirement {req_id}"));
 
-        let classification = classify_url(citation.url.as_ref());
         let (rlinks, citation_field, props) = build_resource_parts(classification, citation);
 
         resources.push(BackMatterResource {
@@ -345,7 +377,7 @@ mod tests {
             id: id.to_string(),
             text: text.to_string(),
             url: url.map(String::from),
-            source_requirement_id: Some(req_id.to_string()),
+            source_requirement_id: Some(req_id.into()),
         }
     }
 
@@ -360,6 +392,17 @@ mod tests {
         assert_eq!(resources.len(), 1);
         assert_eq!(resources[0].rlinks.len(), 1);
         assert_eq!(resources[0].rlinks[0].href, "https://nvd.nist.gov/800-53");
+    }
+
+    #[test]
+    fn valid_url_uses_canonical_href_and_identity() {
+        let canonical = url_citation("canonical", "NIST", "https://nist.gov/");
+        let padded = url_citation("padded", "NIST", "  https://nist.gov/  ");
+        let (resources, resource_map) = generate_back_matter(&[canonical, padded]).unwrap();
+
+        assert_eq!(resources.len(), 1);
+        assert_eq!(resources[0].rlinks[0].href, "https://nist.gov/");
+        assert_eq!(resource_map["canonical"], resource_map["padded"]);
     }
 
     #[test]
@@ -512,6 +555,19 @@ mod tests {
     }
 
     #[test]
+    fn control_character_pseudo_scheme_is_stripped_from_rlinks() {
+        let citations = vec![url_citation("c1", "Obfuscated JS ref", "jav\tascript:alert(1)")];
+        let (resources, _) = generate_back_matter(&citations).unwrap();
+
+        assert!(resources[0].rlinks.is_empty());
+        assert!(
+            resources[0].props.iter().any(|prop| {
+                prop.name == "url-status" && prop.value == "dangerous-scheme-removed"
+            })
+        );
+    }
+
+    #[test]
     fn data_scheme_stripped_from_rlinks() {
         let citations = vec![url_citation("c1", "Data ref", "data:text/plain;base64,SGVsbG8=")];
         let (resources, _) = generate_back_matter(&citations).unwrap();
@@ -543,13 +599,28 @@ mod tests {
     }
 
     #[test]
-    fn two_identical_citations_produce_same_uuid() {
+    fn two_identical_citations_share_one_resource() {
         let citations = vec![
             url_citation("c1", "Same", "https://example.com"),
             url_citation("c2", "Same", "https://example.com"),
         ];
+        let (resources, map) = generate_back_matter(&citations).unwrap();
+        // Identical content yields ONE resource; both citation ids resolve to it (F0618).
+        assert_eq!(resources.len(), 1);
+        assert_eq!(map.get("c1"), map.get("c2"));
+        assert_eq!(*map.get("c1").unwrap(), resources[0].uuid);
+    }
+
+    #[test]
+    fn dangerous_url_with_empty_text_is_redacted_in_title() {
+        let citations = vec![url_citation("c1", "", "javascript:alert(1)")];
         let (resources, _) = generate_back_matter(&citations).unwrap();
-        assert_eq!(resources[0].uuid, resources[1].uuid);
+        assert_eq!(resources.len(), 1);
+        assert_eq!(resources[0].title, "[unsafe URL scheme removed]");
+        assert!(
+            !resources[0].title.contains("javascript"),
+            "payload must not reach the title (F0620)"
+        );
     }
 
     #[test]
@@ -588,6 +659,19 @@ mod tests {
         }];
         let result = generate_back_matter(&citations);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn duplicate_citation_id_returns_error() {
+        let citations = vec![
+            url_citation("c1", "First reference", "https://example.com/first"),
+            url_citation("c1", "Second reference", "https://example.com/second"),
+        ];
+
+        let error = generate_back_matter(&citations).unwrap_err();
+
+        assert!(matches!(error, ForgeError::BackMatter(_)));
+        assert!(error.to_string().contains("duplicate citation id: c1"));
     }
 
     // ═══════════════════════════════════════════════════════════════════════

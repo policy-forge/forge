@@ -49,9 +49,13 @@ pub fn detect_format(path: &Path) -> Result<OutputFormat, ForgeError> {
 /// deserializes into the appropriate envelope struct.
 ///
 /// # Errors
-/// - `ForgeError::ExportInvalidOscal` if input is not a valid OSCAL artifact
-/// - `ForgeError::Serialization` if format-specific parsing fails
-pub fn deserialize_oscal(content: &str, format: &OutputFormat) -> Result<OscalModel, ForgeError> {
+/// - JSON parse, model-detection, and envelope-cast failures are normalized to
+///   `ForgeError::ExportInvalidOscal`.
+/// - XML and YAML parsers may return `ForgeError::Serialization` for format
+///   syntax failures before a model can be identified.
+/// - Every format uses `ForgeError::ExportInvalidOscal` for an unsupported or
+///   malformed OSCAL envelope after parsing.
+pub fn deserialize_oscal(content: &str, format: OutputFormat) -> Result<OscalModel, ForgeError> {
     debug!(format = ?format, "Deserializing OSCAL artifact");
     match format {
         OutputFormat::Json => deserialize_from_json(content),
@@ -62,27 +66,40 @@ pub fn deserialize_oscal(content: &str, format: &OutputFormat) -> Result<OscalMo
 
 /// Deserialize an OSCAL artifact from JSON.
 fn deserialize_from_json(content: &str) -> Result<OscalModel, ForgeError> {
-    let value: serde_json::Value = serde_json::from_str(content)
-        .map_err(|e| ForgeError::ExportInvalidOscal { detail: format!("Invalid JSON: {e}") })?;
+    let value: serde_json::Value = serde_json::from_str(content).map_err(|error| {
+        ForgeError::ExportInvalidOscal { detail: format!("Invalid JSON: {error}") }
+    })?;
 
+    oscal_model_from_value(value, "JSON")
+}
+
+/// Build a supported OSCAL envelope from a parsed format-neutral JSON value.
+fn oscal_model_from_value(
+    value: serde_json::Value,
+    origin: &str,
+) -> Result<OscalModel, ForgeError> {
     let model_type = crate::validate::detect_model_type(&value).map_err(|_| {
         ForgeError::ExportInvalidOscal {
-            detail: "JSON does not contain a recognized OSCAL root key ('catalog' or 'component-definition')".to_string(),
+            detail: format!(
+                "{origin} does not contain a recognized OSCAL root key ('catalog' or 'component-definition')"
+            ),
         }
     })?;
 
     match model_type {
         crate::validate::OscalModelType::Catalog => {
             let envelope: CatalogEnvelope =
-                serde_json::from_value(value).map_err(|e| ForgeError::ExportInvalidOscal {
-                    detail: format!("Failed to parse OSCAL catalog: {e}"),
+                serde_json::from_value(value).map_err(|error| ForgeError::ExportInvalidOscal {
+                    detail: format!("Failed to parse OSCAL catalog from {origin}: {error}"),
                 })?;
             Ok(OscalModel::Catalog(envelope))
         }
         crate::validate::OscalModelType::ComponentDefinition => {
             let envelope: ComponentDefinitionEnvelope =
-                serde_json::from_value(value).map_err(|e| ForgeError::ExportInvalidOscal {
-                    detail: format!("Failed to parse OSCAL component-definition: {e}"),
+                serde_json::from_value(value).map_err(|error| ForgeError::ExportInvalidOscal {
+                    detail: format!(
+                        "Failed to parse OSCAL component-definition from {origin}: {error}"
+                    ),
                 })?;
             Ok(OscalModel::Component(envelope))
         }
@@ -90,8 +107,7 @@ fn deserialize_from_json(content: &str) -> Result<OscalModel, ForgeError> {
             detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
         }),
         crate::validate::OscalModelType::Mapping => Err(ForgeError::ExportInvalidOscal {
-            detail: "Export of OSCAL Control Mapping documents is not yet supported; use JSON"
-                .to_string(),
+            detail: "Export of OSCAL Control Mapping documents is not yet supported".to_string(),
         }),
     }
 }
@@ -125,7 +141,10 @@ fn deserialize_from_xml(content: &str) -> Result<OscalModel, ForgeError> {
     }
 }
 
-/// Extract the root element name from XML content.
+/// Extract and validate the root element name from XML content.
+///
+/// Legacy unqualified roots remain accepted, but a declared root namespace must
+/// be the OSCAL namespace so foreign `<catalog>` elements fail locally.
 fn detect_xml_root_element(content: &str) -> Result<String, ForgeError> {
     use quick_xml::Reader;
     use quick_xml::events::Event;
@@ -133,57 +152,55 @@ fn detect_xml_root_element(content: &str) -> Result<String, ForgeError> {
     let mut reader = Reader::from_str(content);
     loop {
         match reader.read_event() {
-            Ok(Event::Start(ref e) | Event::Empty(ref e)) => {
-                let name = String::from_utf8_lossy(e.local_name().as_ref()).to_string();
-                return Ok(name);
+            Ok(Event::Start(ref element) | Event::Empty(ref element)) => {
+                let element_name = element.name();
+                let qualified_name = String::from_utf8_lossy(element_name.as_ref());
+                let (prefix, local_name) = qualified_name
+                    .rsplit_once(':')
+                    .map_or((None, qualified_name.as_ref()), |(prefix, local_name)| {
+                        (Some(prefix), local_name)
+                    });
+                let namespace_attribute =
+                    prefix.map_or_else(|| "xmlns".to_string(), |prefix| format!("xmlns:{prefix}"));
+                for attribute in element.attributes().with_checks(false) {
+                    let attribute = attribute.map_err(|error| ForgeError::ExportInvalidOscal {
+                        detail: format!("Invalid XML root attribute: {error}"),
+                    })?;
+                    if attribute.key.as_ref() == namespace_attribute.as_bytes()
+                        && attribute.value.as_ref()
+                            != crate::export::xml_serializer::OSCAL_NS.as_bytes()
+                    {
+                        return Err(ForgeError::ExportInvalidOscal {
+                            detail: format!(
+                                "XML root '<{qualified_name}>' declares unsupported namespace '{}'; expected '{}'",
+                                String::from_utf8_lossy(attribute.value.as_ref()),
+                                crate::export::xml_serializer::OSCAL_NS
+                            ),
+                        });
+                    }
+                }
+                return Ok(local_name.to_string());
             }
             Ok(Event::Eof) => {
                 return Err(ForgeError::ExportInvalidOscal {
                     detail: "XML has no root element".to_string(),
                 });
             }
-            Err(e) => {
-                return Err(ForgeError::ExportInvalidOscal { detail: format!("Invalid XML: {e}") });
+            Err(error) => {
+                return Err(ForgeError::ExportInvalidOscal {
+                    detail: format!("Invalid XML: {error}"),
+                });
             }
-            _ => {} // Skip declarations, comments, DTDs, etc.
+            _ => {}
         }
     }
 }
 
 /// Deserialize an OSCAL artifact from YAML.
 fn deserialize_from_yaml_format(content: &str) -> Result<OscalModel, ForgeError> {
-    // Parse to serde_json::Value via YAML, then detect model type
     let value: serde_json::Value = crate::export::yaml::deserialize_from_yaml(content)?;
 
-    let model_type = crate::validate::detect_model_type(&value).map_err(|_| {
-        ForgeError::ExportInvalidOscal {
-            detail: "YAML does not contain a recognized OSCAL root key ('catalog' or 'component-definition')".to_string(),
-        }
-    })?;
-
-    match model_type {
-        crate::validate::OscalModelType::Catalog => {
-            let envelope: CatalogEnvelope =
-                serde_json::from_value(value).map_err(|e| ForgeError::ExportInvalidOscal {
-                    detail: format!("Failed to parse OSCAL catalog from YAML: {e}"),
-                })?;
-            Ok(OscalModel::Catalog(envelope))
-        }
-        crate::validate::OscalModelType::ComponentDefinition => {
-            let envelope: ComponentDefinitionEnvelope =
-                serde_json::from_value(value).map_err(|e| ForgeError::ExportInvalidOscal {
-                    detail: format!("Failed to parse OSCAL component-definition from YAML: {e}"),
-                })?;
-            Ok(OscalModel::Component(envelope))
-        }
-        crate::validate::OscalModelType::Profile => Err(ForgeError::ExportInvalidOscal {
-            detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
-        }),
-        crate::validate::OscalModelType::Mapping => Err(ForgeError::ExportInvalidOscal {
-            detail: "Export of OSCAL Control Mapping documents is not yet supported; use JSON"
-                .to_string(),
-        }),
-    }
+    oscal_model_from_value(value, "YAML")
 }
 
 /// Serialize an OSCAL model to a string in the specified format.
@@ -217,50 +234,63 @@ pub fn serialize_oscal(model: &OscalModel, format: OutputFormat) -> Result<Strin
     }
 }
 
-/// Validate an OSCAL model using full validation (schema + semantic checks).
+/// Convert the strongly typed model to the canonical JSON validation representation.
 ///
-/// Serializes the model to JSON Value, then validates using `run_full_validation()`
-/// which includes both JSON schema validation and semantic checks (orphaned
-/// back-matter links, missing references, etc.).
-///
-/// # Errors
-/// - `ForgeError::SchemaValidation` if validation fails
-pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
-    debug!("Validating OSCAL model (schema + semantic)");
-    let (json_value, model_type) = match model {
-        OscalModel::Catalog(envelope) => {
-            let value = serde_json::to_value(envelope).map_err(|e| {
+/// The envelope serde representations are lossless for supported export models:
+/// this same value is schema-validated and, for JSON targets, emitted without a
+/// second full model serialization.
+fn model_json_value(
+    model: &OscalModel,
+) -> Result<(serde_json::Value, crate::validate::OscalModelType), ForgeError> {
+    match model {
+        OscalModel::Catalog(envelope) => Ok((
+            serde_json::to_value(envelope).map_err(|error| {
                 ForgeError::Serialization(format!(
-                    "Failed to serialize model to JSON for validation: {e}"
+                    "Failed to serialize model to JSON for validation: {error}"
                 ))
-            })?;
-            (value, crate::validate::OscalModelType::Catalog)
-        }
-        OscalModel::Component(envelope) => {
-            let value = serde_json::to_value(envelope).map_err(|e| {
+            })?,
+            crate::validate::OscalModelType::Catalog,
+        )),
+        OscalModel::Component(envelope) => Ok((
+            serde_json::to_value(envelope).map_err(|error| {
                 ForgeError::Serialization(format!(
-                    "Failed to serialize model to JSON for validation: {e}"
+                    "Failed to serialize model to JSON for validation: {error}"
                 ))
-            })?;
-            (value, crate::validate::OscalModelType::ComponentDefinition)
-        }
-    };
+            })?,
+            crate::validate::OscalModelType::ComponentDefinition,
+        )),
+    }
+}
 
-    let report = crate::validate::run_full_validation("export-artifact", &json_value, model_type)
-        .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+fn validate_oscal_json_value(
+    json_value: &serde_json::Value,
+    model_type: crate::validate::OscalModelType,
+) -> Result<(), ForgeError> {
+    let report = crate::validate::run_full_validation("export-artifact", json_value, model_type)
+        .map_err(|error| ForgeError::SchemaValidation(error.to_string()))?;
 
     if report.is_valid() {
         info!("Export validation passed for {model_type}");
         Ok(())
     } else {
         let error_messages: Vec<String> =
-            report.errors().iter().map(|e| e.message.clone()).collect();
+            report.errors().iter().map(|error| error.message.clone()).collect();
         Err(ForgeError::SchemaValidation(format!(
             "{} validation error(s): {}",
             report.errors().len(),
             error_messages.join("; ")
         )))
     }
+}
+
+/// Validate an OSCAL model using full validation (schema + semantic checks).
+///
+/// # Errors
+/// - `ForgeError::SchemaValidation` if validation fails
+pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
+    debug!("Validating OSCAL model (schema + semantic)");
+    let (json_value, model_type) = model_json_value(model)?;
+    validate_oscal_json_value(&json_value, model_type)
 }
 
 /// Execute the full export pipeline: read → detect → deserialize → validate → serialize → write.
@@ -274,16 +304,13 @@ pub fn export_artifact(
 ) -> Result<(), ForgeError> {
     info!(input = %input_path.display(), target = ?target_format, "Starting export");
 
-    // Step 1: Check file exists
     if !input_path.exists() {
         return Err(ForgeError::FileNotFound { path: input_path.to_path_buf() });
     }
+    let source_format = detect_format(input_path)?;
+    info!(source = ?source_format, target = ?target_format, "Format detection complete");
 
-    // Step 2: Guard against oversized files before reading
-    crate::io::check_file_size(input_path, crate::io::MAX_FILE_SIZE)?;
-
-    // Step 3: Read input file (read bytes first for actionable encoding errors)
-    let bytes = std::fs::read(input_path)?;
+    let bytes = read_export_input(input_path)?;
     let content = String::from_utf8(bytes).map_err(|_| ForgeError::ExportInvalidOscal {
         detail: format!(
             "File '{}' is not valid UTF-8 text. OSCAL artifacts must be UTF-8 encoded.",
@@ -291,32 +318,85 @@ pub fn export_artifact(
         ),
     })?;
 
-    // Step 4: Check non-empty
     if content.is_empty() {
         return Err(ForgeError::ExportEmptyInput { path: input_path.to_path_buf() });
     }
 
-    // Step 5: Detect input format
-    let source_format = detect_format(input_path)?;
-    info!(source = ?source_format, target = ?target_format, "Format detection complete");
-
-    // Step 6: Deserialize to internal model
-    let model = deserialize_oscal(&content, &source_format)?;
+    let model = deserialize_oscal(&content, source_format)?;
     debug!("Deserialization complete");
 
-    // Step 7: Validate model against OSCAL schema
-    validate_oscal_model(&model)?;
+    let (json_value, model_type) = model_json_value(&model)?;
+    validate_oscal_json_value(&json_value, model_type)?;
     debug!("Validation passed");
 
-    // Step 8: Serialize to target format
-    let output_content = serialize_oscal(&model, target_format)?;
+    let output_content = match target_format {
+        OutputFormat::Json => serde_json::to_string_pretty(&json_value).map_err(|error| {
+            ForgeError::Serialization(format!("JSON serialization failed: {error}"))
+        })?,
+        OutputFormat::Xml | OutputFormat::Yaml => serialize_oscal(&model, target_format)?,
+    };
     debug!("Serialization complete");
 
-    // Step 9: Write output
     crate::cli::output::write_output(&output_content, output)?;
     info!("Export complete");
 
     Ok(())
+}
+
+/// Read one regular OSCAL artifact through a bounded, already-open file handle.
+fn read_export_input(input_path: &Path) -> Result<Vec<u8>, ForgeError> {
+    use std::io::Read;
+
+    let initial_metadata = std::fs::metadata(input_path).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            ForgeError::FileNotFound { path: input_path.to_path_buf() }
+        } else {
+            ForgeError::Io(error)
+        }
+    })?;
+    if !initial_metadata.is_file() {
+        return Err(ForgeError::ExportInvalidOscal {
+            detail: format!("'{}' is not a regular file", input_path.display()),
+        });
+    }
+
+    let file = std::fs::File::open(input_path).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            ForgeError::FileNotFound { path: input_path.to_path_buf() }
+        } else {
+            ForgeError::Io(error)
+        }
+    })?;
+    let metadata = file.metadata()?;
+    if !metadata.is_file() {
+        return Err(ForgeError::ExportInvalidOscal {
+            detail: format!("'{}' is not a regular file", input_path.display()),
+        });
+    }
+    if metadata.len() > crate::io::MAX_FILE_SIZE {
+        return Err(ForgeError::FileTooLarge {
+            path: input_path.to_path_buf(),
+            size_bytes: metadata.len(),
+            limit_bytes: crate::io::MAX_FILE_SIZE,
+        });
+    }
+
+    let capacity = usize::try_from(metadata.len()).map_err(|_| ForgeError::FileTooLarge {
+        path: input_path.to_path_buf(),
+        size_bytes: metadata.len(),
+        limit_bytes: crate::io::MAX_FILE_SIZE,
+    })?;
+    let mut bytes = Vec::with_capacity(capacity);
+    file.take(crate::io::MAX_FILE_SIZE + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > crate::io::MAX_FILE_SIZE {
+        return Err(ForgeError::FileTooLarge {
+            path: input_path.to_path_buf(),
+            size_bytes: bytes.len() as u64,
+            limit_bytes: crate::io::MAX_FILE_SIZE,
+        });
+    }
+
+    Ok(bytes)
 }
 
 /// CLI handler for `forge export`.
@@ -340,6 +420,14 @@ mod tests {
     // ══════════════════════════════════════════════════════
     // T004: detect_format tests
     // ══════════════════════════════════════════════════════
+
+    #[test]
+    fn rejects_foreign_xml_root_namespace() {
+        let error = detect_xml_root_element(r#"<catalog xmlns="https://example.invalid/oscal"/>"#)
+            .unwrap_err();
+        assert!(matches!(error, ForgeError::ExportInvalidOscal { .. }));
+        assert!(error.to_string().contains("unsupported namespace"));
+    }
 
     #[test]
     fn detect_format_json() {
@@ -396,14 +484,14 @@ mod tests {
     #[test]
     fn deserialize_json_catalog() {
         let content = include_str!("../../tests/fixtures/export/catalog.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         assert!(matches!(model, OscalModel::Catalog(_)));
     }
 
     #[test]
     fn deserialize_json_component() {
         let content = include_str!("../../tests/fixtures/export/component.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         assert!(matches!(model, OscalModel::Component(_)));
     }
 
@@ -414,7 +502,7 @@ mod tests {
     #[test]
     fn export_json_catalog_to_xml() {
         let content = include_str!("../../tests/fixtures/export/catalog.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         let xml = serialize_oscal(&model, OutputFormat::Xml).unwrap();
         assert!(xml.contains("<catalog"));
         assert!(xml.contains("xmlns"));
@@ -427,7 +515,7 @@ mod tests {
     #[test]
     fn export_json_component_to_xml() {
         let content = include_str!("../../tests/fixtures/export/component.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         let xml = serialize_oscal(&model, OutputFormat::Xml).unwrap();
         assert!(xml.contains("<component-definition"));
         assert!(xml.contains("xmlns"));
@@ -440,14 +528,14 @@ mod tests {
     #[test]
     fn validate_valid_catalog_model() {
         let content = include_str!("../../tests/fixtures/export/catalog.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         assert!(validate_oscal_model(&model).is_ok());
     }
 
     #[test]
     fn validate_valid_component_model() {
         let content = include_str!("../../tests/fixtures/export/component.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         assert!(validate_oscal_model(&model).is_ok());
     }
 
@@ -459,7 +547,7 @@ mod tests {
                 "\"oscal-version\": \"1.2.0\"",
                 &format!("\"oscal-version\": \"{version}\""),
             );
-            let model = deserialize_oscal(&content, &OutputFormat::Json).unwrap();
+            let model = deserialize_oscal(&content, OutputFormat::Json).unwrap();
             validate_oscal_model(&model)
                 .unwrap_or_else(|error| panic!("{version} should be supported: {error}"));
             let xml = serialize_oscal(&model, OutputFormat::Xml).unwrap();
@@ -475,7 +563,7 @@ mod tests {
         let legacy = include_str!("../../tests/fixtures/legacy/v1.2.0/catalog/catalog.json");
         let content =
             legacy.replace("\"oscal-version\": \"1.2.0\"", "\"oscal-version\": \"1.3.0\"");
-        let model = deserialize_oscal(&content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(&content, OutputFormat::Json).unwrap();
         let error = validate_oscal_model(&model).expect_err("1.3.0 must be rejected");
         let message = error.to_string();
         assert!(message.contains("unsupported OSCAL version declaration '1.3.0'"));
@@ -511,7 +599,7 @@ mod tests {
     #[test]
     fn export_json_catalog_to_yaml() {
         let content = include_str!("../../tests/fixtures/export/catalog.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         let yaml = serialize_oscal(&model, OutputFormat::Yaml).unwrap();
         assert!(yaml.contains("catalog:"));
     }
@@ -523,7 +611,7 @@ mod tests {
     #[test]
     fn export_json_component_to_yaml() {
         let content = include_str!("../../tests/fixtures/export/component.json");
-        let model = deserialize_oscal(content, &OutputFormat::Json).unwrap();
+        let model = deserialize_oscal(content, OutputFormat::Json).unwrap();
         let yaml = serialize_oscal(&model, OutputFormat::Yaml).unwrap();
         assert!(yaml.contains("component-definition:"));
     }
@@ -535,7 +623,7 @@ mod tests {
     #[test]
     fn deserialize_invalid_oscal_json() {
         let content = r#"{"some_key": "some_value"}"#;
-        let err = deserialize_oscal(content, &OutputFormat::Json).unwrap_err();
+        let err = deserialize_oscal(content, OutputFormat::Json).unwrap_err();
         assert!(matches!(err, ForgeError::ExportInvalidOscal { .. }));
     }
 
@@ -676,5 +764,29 @@ mod tests {
         let content = std::fs::read_to_string(&output).unwrap();
         let value: serde_json::Value = serde_json::from_str(&content).unwrap();
         assert!(value.get("catalog").is_some());
+    }
+
+    #[test]
+    fn unsupported_profile_and_mapping_messages_match_across_json_and_yaml() {
+        for (json, yaml) in [
+            ("{\"profile\": {}}", "profile: {}"),
+            ("{\"mapping-collection\": {}}", "mapping-collection: {}"),
+        ] {
+            let json_error = deserialize_from_json(json).unwrap_err().to_string();
+            let yaml_error = deserialize_from_yaml_format(yaml).unwrap_err().to_string();
+
+            assert_eq!(json_error, yaml_error);
+        }
+    }
+
+    #[test]
+    fn export_reader_rejects_a_directory_before_deserialization() {
+        let directory = tempfile::tempdir()
+            .unwrap_or_else(|error| panic!("failed to create temporary directory: {error}"));
+        let error = read_export_input(directory.path()).unwrap_err();
+
+        assert!(
+            matches!(error, ForgeError::ExportInvalidOscal { detail } if detail.contains("not a regular file"))
+        );
     }
 }

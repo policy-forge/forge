@@ -1,6 +1,7 @@
 //! OSCAL (Open Security Controls Assessment Language) output generation.
 //!
-//! This module provides types and builders for producing OSCAL v1.2.0 artifacts
+//! This module provides types and builders for producing artifacts compliant with
+//! [`OSCAL_VERSION`](metadata::OSCAL_VERSION) (currently v1.2.3).
 //! including Catalogs, Component Definitions, Profiles, and Assessment Plans.
 
 /// OSCAL Assessment Plan types and builder functions.
@@ -43,10 +44,18 @@ pub use component_definition::{
     ComponentDefinition, ComponentDefinitionEnvelope, ComponentDefinitionMetadata,
     DEFAULT_COMPONENT_TITLE, DocumentaryComponent, build_component_definition,
 };
+/// Implemented-requirement types and builder.
+pub use implemented_requirements::{
+    ControlImplementation, ImplementedRequirement, build_control_implementations,
+};
 /// Metadata types and assembly function.
+///
+/// [`OscalMetadata`] is the canonical shared metadata type used by Profile and
+/// Component Definition artifacts. Catalogs retain their separately shaped
+/// placeholder metadata type at [`catalog::OscalMetadata`] until catalog assembly.
 pub use metadata::{MetadataOptions, OSCAL_VERSION, OscalMetadata, assemble_metadata};
 /// Part and Prop types with builder functions.
-pub use parts::{OscalPart, OscalProp, build_control_parts, build_control_props, generate_part_id};
+pub use parts::{OscalPart, OscalProp, build_control_parts, generate_part_id};
 /// Profile types and builder with control selection.
 pub use profile::{
     ControlSelection, IncludeAll, OscalProfile, ProfileImport, ProfileRoot, SelectionMode,
@@ -58,4 +67,9 @@ pub use ssp::{
     SspComponentInput, SspControlImplementation, SspImplementedRequirement, SspMetadata,
     SystemImplementation, SystemSecurityPlanEnvelope, build_ssp, build_ssp_skeleton,
     generate_inventory_items,
+};
+/// Traceability embedding helpers and constants.
+pub use trace_embedding::{
+    FORGE_TRACE_NS, LINK_REL_SOURCE, PROP_SOURCE_FILE, PROP_SOURCE_LINE, PROP_SOURCE_SECTION,
+    build_trace_link, build_trace_props, embed_trace_in_catalog,
 };

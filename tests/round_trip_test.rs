@@ -348,7 +348,7 @@ mod yaml_round_trip {
     #[test]
     fn test_yaml_preserves_deeply_nested() {
         use forge::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadata};
-        use forge::oscal::parts::OscalPart;
+        use forge::oscal::parts::{OscalPart, OscalPartName};
 
         let envelope = CatalogEnvelope {
             catalog: OscalCatalog {
@@ -373,27 +373,27 @@ mod yaml_round_trip {
                         params: vec![],
                         parts: vec![OscalPart {
                             id: "smt".to_string(),
-                            name: "statement".to_string(),
+                            name: OscalPartName::Statement,
                             prose: "Level 1".to_string(),
                             props: vec![],
                             parts: vec![OscalPart {
                                 id: "smt.a".to_string(),
-                                name: "item".to_string(),
+                                name: OscalPartName::Item,
                                 prose: "Level 2".to_string(),
                                 props: vec![],
                                 parts: vec![OscalPart {
                                     id: "smt.a.1".to_string(),
-                                    name: "item".to_string(),
+                                    name: OscalPartName::Item,
                                     prose: "Level 3".to_string(),
                                     props: vec![],
                                     parts: vec![OscalPart {
                                         id: "smt.a.1.i".to_string(),
-                                        name: "item".to_string(),
+                                        name: OscalPartName::Item,
                                         prose: "Level 4".to_string(),
                                         props: vec![],
                                         parts: vec![OscalPart {
                                             id: "smt.a.1.i.A".to_string(),
-                                            name: "item".to_string(),
+                                            name: OscalPartName::Item,
                                             prose: "Level 5".to_string(),
                                             props: vec![],
                                             parts: vec![],
@@ -420,7 +420,7 @@ mod yaml_round_trip {
     #[test]
     fn test_yaml_preserves_array_ordering() {
         use forge::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadata};
-        use forge::oscal::parts::OscalPart;
+        use forge::oscal::parts::{OscalPart, OscalPartName};
 
         let envelope = CatalogEnvelope {
             catalog: OscalCatalog {
@@ -447,7 +447,7 @@ mod yaml_round_trip {
                             params: vec![],
                             parts: vec![OscalPart {
                                 id: "POL-AC-001_smt".to_string(),
-                                name: "statement".to_string(),
+                                name: OscalPartName::Statement,
                                 prose: "First".to_string(),
                                 props: vec![],
                                 parts: vec![],
@@ -462,7 +462,7 @@ mod yaml_round_trip {
                             params: vec![],
                             parts: vec![OscalPart {
                                 id: "POL-AC-002_smt".to_string(),
-                                name: "statement".to_string(),
+                                name: OscalPartName::Statement,
                                 prose: "Second".to_string(),
                                 props: vec![],
                                 parts: vec![],
@@ -477,7 +477,7 @@ mod yaml_round_trip {
                             params: vec![],
                             parts: vec![OscalPart {
                                 id: "POL-AC-003_smt".to_string(),
-                                name: "statement".to_string(),
+                                name: OscalPartName::Statement,
                                 prose: "Third".to_string(),
                                 props: vec![],
                                 parts: vec![],
@@ -507,7 +507,7 @@ mod yaml_round_trip {
     /// YAML type coercion.
     fn make_catalog_with_prop_values(values: &[&str]) -> CatalogEnvelope {
         use forge::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadata};
-        use forge::oscal::parts::{OscalPart, OscalProp};
+        use forge::oscal::parts::{OscalPart, OscalPartName, OscalProp};
 
         let props: Vec<OscalProp> = values
             .iter()
@@ -542,7 +542,7 @@ mod yaml_round_trip {
                         params: vec![],
                         parts: vec![OscalPart {
                             id: "POL-T-001_smt".to_string(),
-                            name: "statement".to_string(),
+                            name: OscalPartName::Statement,
                             prose: "Test".to_string(),
                             props,
                             parts: vec![],
@@ -622,7 +622,7 @@ mod xml_round_trip {
     #[test]
     fn test_xml_preserves_array_ordering() {
         use forge::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadata};
-        use forge::oscal::parts::OscalPart;
+        use forge::oscal::parts::{OscalPart, OscalPartName};
 
         let envelope = CatalogEnvelope {
             catalog: OscalCatalog {
@@ -649,7 +649,7 @@ mod xml_round_trip {
                             params: vec![],
                             parts: vec![OscalPart {
                                 id: "smt1".to_string(),
-                                name: "statement".to_string(),
+                                name: OscalPartName::Statement,
                                 prose: "First".to_string(),
                                 props: vec![],
                                 parts: vec![],
@@ -664,7 +664,7 @@ mod xml_round_trip {
                             params: vec![],
                             parts: vec![OscalPart {
                                 id: "smt2".to_string(),
-                                name: "statement".to_string(),
+                                name: OscalPartName::Statement,
                                 prose: "Second".to_string(),
                                 props: vec![],
                                 parts: vec![],
@@ -679,7 +679,7 @@ mod xml_round_trip {
                             params: vec![],
                             parts: vec![OscalPart {
                                 id: "smt3".to_string(),
-                                name: "statement".to_string(),
+                                name: OscalPartName::Statement,
                                 prose: "Third".to_string(),
                                 props: vec![],
                                 parts: vec![],
@@ -707,7 +707,7 @@ mod xml_round_trip {
     #[test]
     fn test_xml_preserves_deeply_nested() {
         use forge::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadata};
-        use forge::oscal::parts::OscalPart;
+        use forge::oscal::parts::{OscalPart, OscalPartName};
 
         let envelope = CatalogEnvelope {
             catalog: OscalCatalog {
@@ -732,27 +732,27 @@ mod xml_round_trip {
                         params: vec![],
                         parts: vec![OscalPart {
                             id: "smt".to_string(),
-                            name: "statement".to_string(),
+                            name: OscalPartName::Statement,
                             prose: "Level 1".to_string(),
                             props: vec![],
                             parts: vec![OscalPart {
                                 id: "smt.a".to_string(),
-                                name: "item".to_string(),
+                                name: OscalPartName::Item,
                                 prose: "Level 2".to_string(),
                                 props: vec![],
                                 parts: vec![OscalPart {
                                     id: "smt.a.1".to_string(),
-                                    name: "item".to_string(),
+                                    name: OscalPartName::Item,
                                     prose: "Level 3".to_string(),
                                     props: vec![],
                                     parts: vec![OscalPart {
                                         id: "smt.a.1.i".to_string(),
-                                        name: "item".to_string(),
+                                        name: OscalPartName::Item,
                                         prose: "Level 4".to_string(),
                                         props: vec![],
                                         parts: vec![OscalPart {
                                             id: "smt.a.1.i.A".to_string(),
-                                            name: "item".to_string(),
+                                            name: OscalPartName::Item,
                                             prose: "Level 5".to_string(),
                                             props: vec![],
                                             parts: vec![],
@@ -825,7 +825,7 @@ mod xml_yaml_xml_round_trip {
     #[test]
     fn test_xml_yaml_xml_preserves_namespace() {
         use forge::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadata};
-        use forge::oscal::parts::OscalPart;
+        use forge::oscal::parts::{OscalPart, OscalPartName};
 
         let envelope = CatalogEnvelope {
             catalog: OscalCatalog {
@@ -851,7 +851,7 @@ mod xml_yaml_xml_round_trip {
                         params: vec![],
                         parts: vec![OscalPart {
                             id: "smt".to_string(),
-                            name: "statement".to_string(),
+                            name: OscalPartName::Statement,
                             prose: "Namespace test".to_string(),
                             props: vec![],
                             parts: vec![],

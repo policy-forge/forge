@@ -162,6 +162,7 @@ struct ListState {
     list_type_stack: Vec<ListType>,
     item_stack: Vec<(String, usize)>,
     exclude_depth: usize,
+    paragraph_depth: usize,
 }
 
 struct TableState {
@@ -201,18 +202,51 @@ fn handle_list_event(
         }
         Event::Start(Tag::Item) => {
             let source_line = offset_to_line(range.start, line_starts);
+            // Tight Markdown list items have inline text without Paragraph
+            // events. Treat the item itself as the base allowed paragraph
+            // scope; explicit Paragraph events nest above it (F0664).
             state.item_stack.push((String::new(), source_line));
+            state.paragraph_depth = 1;
             true
         }
         Event::End(TagEnd::Item) => {
             finalize_list_item(state, list_items);
+            state.paragraph_depth = usize::from(!state.item_stack.is_empty());
             true
         }
-        Event::Start(Tag::CodeBlock(_) | Tag::BlockQuote(_)) if !state.item_stack.is_empty() => {
+        // EC-8: only direct paragraph contents belong to an item. This
+        // allow-list prevents headings and future container tags from leaking
+        // their text into requirement clauses.
+        Event::Start(Tag::Paragraph) if !state.item_stack.is_empty() => {
+            state.paragraph_depth += 1;
+            true
+        }
+        Event::End(TagEnd::Paragraph)
+            if !state.item_stack.is_empty() && state.paragraph_depth > 0 =>
+        {
+            if let Some((item_text, _)) = state.item_stack.last_mut() {
+                let last_is_whitespace =
+                    item_text.chars().next_back().is_some_and(char::is_whitespace);
+                if !last_is_whitespace {
+                    item_text.push(' ');
+                }
+            }
+            state.paragraph_depth -= 1;
+            true
+        }
+        // Headings and block containers nested in a list item are structural,
+        // never requirement prose; exclude their text while retaining tight
+        // item paragraph scope.
+        Event::Start(Tag::Heading { .. } | Tag::CodeBlock(_) | Tag::BlockQuote(_))
+            if !state.item_stack.is_empty() =>
+        {
             state.exclude_depth += 1;
             true
         }
-        Event::End(TagEnd::CodeBlock | TagEnd::BlockQuote(_)) if !state.item_stack.is_empty() => {
+        Event::End(TagEnd::Heading(_) | TagEnd::CodeBlock | TagEnd::BlockQuote(_))
+            if !state.item_stack.is_empty() =>
+        {
+            debug_assert!(state.exclude_depth > 0, "excluded block must have a matching start");
             state.exclude_depth = state.exclude_depth.saturating_sub(1);
             true
         }
@@ -240,35 +274,20 @@ fn finalize_list_item(state: &mut ListState, list_items: &mut Vec<ExtractedListI
 }
 
 fn handle_item_text(event: &Event<'_>, state: &mut ListState) -> bool {
-    if state.item_stack.is_empty() || state.exclude_depth != 0 {
+    if state.item_stack.is_empty() || state.exclude_depth != 0 || state.paragraph_depth == 0 {
         return false;
     }
+
     match event {
-        Event::Text(text) => {
+        Event::Text(text) | Event::Code(text) => {
             if let Some((item_text, _)) = state.item_stack.last_mut() {
                 item_text.push_str(text);
-            }
-            true
-        }
-        Event::Code(code) => {
-            if let Some((item_text, _)) = state.item_stack.last_mut() {
-                item_text.push_str(code);
             }
             true
         }
         Event::SoftBreak | Event::HardBreak => {
             if let Some((item_text, _)) = state.item_stack.last_mut() {
                 item_text.push(' ');
-            }
-            true
-        }
-        Event::End(TagEnd::Paragraph) => {
-            if let Some((item_text, _)) = state.item_stack.last_mut() {
-                let last_is_whitespace =
-                    item_text.chars().next_back().is_some_and(char::is_whitespace);
-                if !last_is_whitespace {
-                    item_text.push(' ');
-                }
             }
             true
         }
@@ -332,7 +351,7 @@ fn handle_table_event(
             state.current_cell.push_str(code);
             true
         }
-        Event::SoftBreak if state.in_table => {
+        Event::SoftBreak | Event::HardBreak if state.in_table => {
             state.current_cell.push(' ');
             true
         }
@@ -373,7 +392,7 @@ fn handle_paragraph_event(
             state.text.push_str(code);
             true
         }
-        Event::SoftBreak if state.in_standalone => {
+        Event::SoftBreak | Event::HardBreak if state.in_standalone => {
             state.text.push(' ');
             true
         }
@@ -382,6 +401,57 @@ fn handle_paragraph_event(
 }
 
 // ── Functions ──────────────────────────────────────────────────────────
+
+struct ExtractionState {
+    list_state: ListState,
+    table_state: TableState,
+    para_state: ParagraphState,
+    list_items: Vec<ExtractedListItem>,
+    tables: Vec<ExtractedTable>,
+    paragraphs: Vec<ExtractedParagraph>,
+}
+
+fn handle_extraction_event(
+    event: &Event<'_>,
+    range: &std::ops::Range<usize>,
+    state: &mut ExtractionState,
+    line_starts: &[usize],
+) {
+    // While inside a table, its handler owns the stream so a GFM table nested
+    // in a list item reaches the cell accumulator rather than duplicating text.
+    let handled = if state.table_state.in_table {
+        handle_table_event(event, range, &mut state.table_state, &mut state.tables, line_starts)
+            || handle_list_event(
+                event,
+                range,
+                &mut state.list_state,
+                &mut state.list_items,
+                line_starts,
+            )
+            || handle_item_text(event, &mut state.list_state)
+    } else {
+        handle_list_event(event, range, &mut state.list_state, &mut state.list_items, line_starts)
+            || handle_item_text(event, &mut state.list_state)
+            || handle_table_event(
+                event,
+                range,
+                &mut state.table_state,
+                &mut state.tables,
+                line_starts,
+            )
+    };
+    if !handled {
+        handle_paragraph_event(
+            event,
+            range,
+            &mut state.para_state,
+            &mut state.paragraphs,
+            !state.list_state.item_stack.is_empty(),
+            state.table_state.in_table,
+            line_starts,
+        );
+    }
+}
 
 /// Extract list items, tables, and paragraphs from Markdown content.
 ///
@@ -421,55 +491,58 @@ fn handle_paragraph_event(
 /// 6. Strip inline formatting by processing only Text/Code/SoftBreak events
 /// 7. Map byte offsets to 1-based line numbers via line-starts lookup table
 pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
-    let options = Options::ENABLE_TABLES;
+    let options = Options::ENABLE_TABLES.union(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
     let parser = Parser::new_ext(content, options).into_offset_iter();
     let line_starts = build_line_starts(content);
 
-    let mut list_items: Vec<ExtractedListItem> = Vec::new();
-    let mut tables: Vec<ExtractedTable> = Vec::new();
-    let mut paragraphs: Vec<ExtractedParagraph> = Vec::new();
-
-    let mut list_state =
-        ListState { list_type_stack: Vec::new(), item_stack: Vec::new(), exclude_depth: 0 };
-    let mut table_state = TableState {
-        in_table: false,
-        current_table_source_line: 0,
-        headers: Vec::new(),
-        rows: Vec::new(),
-        current_row: Vec::new(),
-        current_cell: String::new(),
+    let mut state = ExtractionState {
+        list_state: ListState {
+            list_type_stack: Vec::new(),
+            item_stack: Vec::new(),
+            exclude_depth: 0,
+            paragraph_depth: 0,
+        },
+        table_state: TableState {
+            in_table: false,
+            current_table_source_line: 0,
+            headers: Vec::new(),
+            rows: Vec::new(),
+            current_row: Vec::new(),
+            current_cell: String::new(),
+        },
+        para_state: ParagraphState { in_standalone: false, text: String::new(), source_line: 0 },
+        list_items: Vec::new(),
+        tables: Vec::new(),
+        paragraphs: Vec::new(),
     };
-    let mut para_state =
-        ParagraphState { in_standalone: false, text: String::new(), source_line: 0 };
 
     for (event, range) in parser {
-        if handle_list_event(&event, &range, &mut list_state, &mut list_items, &line_starts) {
-            continue;
-        }
-        if handle_item_text(&event, &mut list_state) {
-            continue;
-        }
-        if handle_table_event(&event, &range, &mut table_state, &mut tables, &line_starts) {
-            continue;
-        }
-        handle_paragraph_event(
-            &event,
-            &range,
-            &mut para_state,
-            &mut paragraphs,
-            !list_state.item_stack.is_empty(),
-            table_state.in_table,
-            &line_starts,
-        );
+        handle_extraction_event(&event, &range, &mut state, &line_starts);
+    }
+
+    if !state.list_state.list_type_stack.is_empty()
+        || !state.list_state.item_stack.is_empty()
+        || state.list_state.exclude_depth != 0
+        || state.list_state.paragraph_depth != 0
+        || state.table_state.in_table
+        || state.para_state.in_standalone
+    {
+        return Err(ForgeError::Parse(
+            "Markdown extraction ended with unbalanced structural state".to_string(),
+        ));
     }
 
     // Sort items by source_line to maintain document order.
     // Necessary because nested items complete (and are pushed) before their parent items.
     // When End(Item) events fire, deeply nested children are finalized first, which can
     // reorder the list_items vector. Sorting by source_line restores original document order.
-    list_items.sort_by_key(|item| item.source_line);
+    state.list_items.sort_unstable_by_key(|item| item.source_line);
 
-    Ok(ExtractedContent { list_items, tables, paragraphs })
+    Ok(ExtractedContent {
+        list_items: state.list_items,
+        tables: state.tables,
+        paragraphs: state.paragraphs,
+    })
 }
 
 #[cfg(test)]
@@ -1105,5 +1178,32 @@ Some separator text.
         assert_eq!(result.list_items[0].text, "Dash item");
         assert_eq!(result.list_items[1].text, "Star item");
         assert_eq!(result.list_items[2].text, "Plus item");
+    }
+
+    #[test]
+    fn list_item_headings_are_not_extracted_as_requirement_text() {
+        let markdown = "- Clause text\n\n  ### Nested heading\n";
+        let extracted = extract_clauses(markdown).unwrap();
+
+        assert_eq!(extracted.list_items.len(), 1);
+        assert_eq!(extracted.list_items[0].text, "Clause text");
+    }
+
+    #[test]
+    fn hard_breaks_preserve_token_boundaries_in_paragraphs_and_tables() {
+        let extracted = extract_clauses("first\\\nsecond").unwrap();
+        assert_eq!(extracted.paragraphs[0].text, "first second");
+
+        let mut state = TableState {
+            in_table: true,
+            current_table_source_line: 0,
+            headers: Vec::new(),
+            rows: Vec::new(),
+            current_row: Vec::new(),
+            current_cell: String::new(),
+        };
+        let mut tables = Vec::new();
+        assert!(handle_table_event(&Event::HardBreak, &(0..0), &mut state, &mut tables, &[]));
+        assert_eq!(state.current_cell, " ");
     }
 }

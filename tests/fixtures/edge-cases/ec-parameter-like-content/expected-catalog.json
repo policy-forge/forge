@@ -1,27 +1,10 @@
 {
   "catalog": {
-    "uuid": "60ca49f4-4985-4546-ba28-c1d4b597623c",
-    "metadata": {
-      "title": "Timelines",
-      "last-modified": "2026-02-21T21:03:44.811734+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "groups": [
       {
-        "id": "timelines",
-        "title": "Timelines",
-        "props": [
-          {
-            "name": "source-section",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "Timelines"
-          }
-        ],
         "controls": [
           {
             "id": "POL-T-001",
-            "title": "Teams must review access requests {{ insert: param, id-ref: p223d1187-cc60-54fe-bb73-38885ebdb515_prm_0 }}.",
             "links": [
               {
                 "href": "input.md#line=3",
@@ -30,15 +13,15 @@
             ],
             "params": [
               {
-                "id": "p223d1187-cc60-54fe-bb73-38885ebdb515_prm_0",
-                "label": "within 30 days",
-                "values": [
-                  "30 days"
-                ],
                 "constraints": [
                   {
                     "description": "minimum: 30 days"
                   }
+                ],
+                "id": "a84fa2db-65a8-52ac-8eba-2acaaa579e56_prm_0",
+                "label": "within 30 days",
+                "values": [
+                  "30 days"
                 ]
               }
             ],
@@ -46,12 +29,7 @@
               {
                 "id": "POL-T-001_smt",
                 "name": "statement",
-                "prose": "Teams must review access requests {{ insert: param, id-ref: p223d1187-cc60-54fe-bb73-38885ebdb515_prm_0 }}."
-              },
-              {
-                "id": "POL-T-001_gdn",
-                "name": "guidance",
-                "prose": "Teams must review access requests within 30 days.\nSystems must use at least 128-bit keys for encrypted channels."
+                "prose": "Teams must review access requests {{ insert: param, id-ref: a84fa2db-65a8-52ac-8eba-2acaaa579e56_prm_0 }}."
               }
             ],
             "props": [
@@ -74,11 +52,11 @@
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "3"
               }
-            ]
+            ],
+            "title": "Teams must review access requests {{ insert: param, id-ref: a84fa2db-65a8-52ac-8eba-2acaaa579e56_prm_0 }}."
           },
           {
             "id": "POL-T-002",
-            "title": "Systems must use {{ insert: param, id-ref: c194d8e5-1b54-55bf-8f0b-b1332bd8bf2c_prm_0 }} keys for encrypted channels.",
             "links": [
               {
                 "href": "input.md#line=4",
@@ -87,15 +65,15 @@
             ],
             "params": [
               {
-                "id": "c194d8e5-1b54-55bf-8f0b-b1332bd8bf2c_prm_0",
-                "label": "at least 128-bit",
-                "values": [
-                  "128-bit"
-                ],
                 "constraints": [
                   {
                     "description": "minimum: 128-bit"
                   }
+                ],
+                "id": "e36a0a97-4cb5-5d12-a4b6-e3db3fb65fd7_prm_0",
+                "label": "at least 128-bit",
+                "values": [
+                  "128-bit"
                 ]
               }
             ],
@@ -103,12 +81,7 @@
               {
                 "id": "POL-T-002_smt",
                 "name": "statement",
-                "prose": "Systems must use {{ insert: param, id-ref: c194d8e5-1b54-55bf-8f0b-b1332bd8bf2c_prm_0 }} keys for encrypted channels."
-              },
-              {
-                "id": "POL-T-002_gdn",
-                "name": "guidance",
-                "prose": "Teams must review access requests within 30 days.\nSystems must use at least 128-bit keys for encrypted channels."
+                "prose": "Systems must use {{ insert: param, id-ref: e36a0a97-4cb5-5d12-a4b6-e3db3fb65fd7_prm_0 }} keys for encrypted channels."
               }
             ],
             "props": [
@@ -131,10 +104,27 @@
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "4"
               }
-            ]
+            ],
+            "title": "Systems must use {{ insert: param, id-ref: e36a0a97-4cb5-5d12-a4b6-e3db3fb65fd7_prm_0 }} keys for encrypted channels."
           }
-        ]
+        ],
+        "id": "timelines",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Timelines"
+          }
+        ],
+        "title": "Timelines"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:01.449636+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Timelines",
+      "version": "0.0.0"
+    },
+    "uuid": "8ae9b85e-d597-4e57-8a9d-eeddc620b297"
   }
 }

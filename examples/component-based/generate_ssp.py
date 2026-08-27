@@ -10,12 +10,25 @@ with open("output/component-definition.json") as f:
 
 cd = comp_def["component-definition"]
 
-# Collect control IDs from component definition
+# Collect control IDs from component definition, remembering which component
+# supplied each one so `links[].href` can point at that component's real SSP
+# UUID (fragments must resolve to a component uuid, not a slug).
+def ssp_seed_for_component(comp):
+    title = comp.get("title", "")
+    if "database" in title.lower():
+        return "database"
+    return "web-application"
+
+
 control_ids = []
+owner_seed = {}
 for comp in cd.get("components", []):
+    seed = ssp_seed_for_component(comp)
     for ci in comp.get("control-implementations", []):
         for ir in ci.get("implemented-requirements", []):
-            control_ids.append(ir["control-id"])
+            cid = ir["control-id"]
+            control_ids.append(cid)
+            owner_seed[cid] = seed
 
 # Generate deterministic UUIDs for SSP components
 def stable_uuid(seed):
@@ -29,7 +42,7 @@ for cid in control_ids:
         "control-id": cid,
         "description": f"Implementation statement for {cid} - see component definition for details.",
         "links": [
-            {"href": "#component-web-application", "rel": "implements"}
+            {"href": "#" + stable_uuid(owner_seed[cid]), "rel": "implements"}
         ]
     })
 
@@ -81,8 +94,18 @@ ssp = {
                     "short-name": "sysadmin",
                     "description": "Full system administration access with privileged role assignment capabilities",
                     "role-ids": ["system-admin", "security-officer"],
-                    "authorized-date": "2026-01-01T00:00:00Z",
-                    "status": {"state": "active"}
+                    "props": [
+                        {
+                            "name": "authorized-date",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "2026-01-01T00:00:00Z"
+                        },
+                        {
+                            "name": "account-status",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "active"
+                        }
+                    ]
                 },
                 {
                     "uuid": stable_uuid("user-analyst"),
@@ -90,8 +113,18 @@ ssp = {
                     "short-name": "analyst-01",
                     "description": "Read-only access to security logs and audit reports",
                     "role-ids": ["analyst"],
-                    "authorized-date": "2026-01-01T00:00:00Z",
-                    "status": {"state": "active"}
+                    "props": [
+                        {
+                            "name": "authorized-date",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "2026-01-01T00:00:00Z"
+                        },
+                        {
+                            "name": "account-status",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "active"
+                        }
+                    ]
                 },
                 {
                     "uuid": stable_uuid("user-svc-ingest"),
@@ -99,8 +132,23 @@ ssp = {
                     "short-name": "svc-ingest",
                     "description": "Automated service account for data ingestion pipeline",
                     "role-ids": ["service-account"],
-                    "authorized-date": "2026-01-01T00:00:00Z",
-                    "status": {"state": "active", "reason": "automated system process, no interactive login"}
+                    "props": [
+                        {
+                            "name": "authorized-date",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "2026-01-01T00:00:00Z"
+                        },
+                        {
+                            "name": "account-status",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "active"
+                        },
+                        {
+                            "name": "account-status-reason",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "automated system process, no interactive login"
+                        }
+                    ]
                 }
             ],
             "leveraged-authorizations": [

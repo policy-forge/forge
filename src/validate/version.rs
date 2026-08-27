@@ -12,7 +12,7 @@ pub const SCHEMA_VERSION_USED: &str = crate::oscal::metadata::OSCAL_VERSION;
 /// Result of inspecting `metadata.oscal-version` without selecting a schema.
 #[derive(Debug, Clone)]
 pub struct VersionInspection {
-    /// Exact string declaration when the field is a string.
+    /// Escaped and bounded declaration suitable for diagnostics when the field is a string.
     pub declared: Option<String>,
     /// Whether the declaration is in the supported v1.2.0-v1.2.3 range.
     pub supported: bool,
@@ -111,24 +111,37 @@ pub fn inspect_oscal_version(json: &Value, model_type: OscalModelType) -> Versio
 }
 
 fn version_error(path: String, message: String, actual: String) -> ValidationError {
-    ValidationError {
-        category: ValidationErrorCategory::Schema,
+    ValidationError::new(
+        ValidationErrorCategory::Schema,
         path,
         message,
-        expected: format!(
+        format!(
             "a canonical OSCAL version from {MIN_SUPPORTED_OSCAL_VERSION} through {SCHEMA_VERSION_USED}"
         ),
         actual,
-    }
+    )
 }
 
 fn escape_for_diagnostic(value: &str) -> String {
-    value.chars().take(100).flat_map(char::escape_default).collect()
+    // Escape first: escaping a control character can expand it substantially.
+    super::formatter::truncate_value(
+        &value.chars().flat_map(char::escape_default).collect::<String>(),
+        100,
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn schema_baseline_constants_are_canonical_and_ordered() {
+        let minimum = parse_version(MIN_SUPPORTED_OSCAL_VERSION)
+            .expect("minimum supported OSCAL version must be canonical");
+        let schema =
+            parse_version(SCHEMA_VERSION_USED).expect("schema OSCAL version must be canonical");
+        assert!(minimum <= schema, "minimum baseline must not exceed the schema baseline");
+    }
 
     #[test]
     fn supported_range_is_parsed_numerically() {
@@ -185,14 +198,45 @@ mod tests {
     }
 
     #[test]
-    fn invalid_declaration_is_bounded_in_report_context() {
-        let declaration = format!("{}\n{}", "x".repeat(99), "y".repeat(500));
+    fn unsupported_declaration_preserves_safe_report_fidelity() {
         let json = serde_json::json!({
-            "catalog": {"metadata": {"oscal-version": declaration}}
+            "catalog": {"metadata": {"oscal-version": "1.3.0"}}
+        });
+        let inspection = inspect_oscal_version(&json, OscalModelType::Catalog);
+        assert_eq!(inspection.declared.as_deref(), Some("1.3.0"));
+        assert!(!inspection.supported);
+        let error = inspection.error.expect("unsupported declaration must produce an error");
+        assert_eq!(error.actual(), "1.3.0");
+        assert!(error.message.contains("1.3.0"));
+
+        let json = serde_json::json!({
+            "catalog": {"metadata": {"oscal-version": "1.3.0\n\u{1b}[2J"}}
+        });
+        let inspection = inspect_oscal_version(&json, OscalModelType::Catalog);
+        let declared = inspection.declared.expect("string declarations are reported");
+        assert!(!declared.contains('\n'), "declaration must not forge output lines");
+        assert!(!declared.contains('\u{1b}'), "declaration must not contain terminal escapes");
+        assert!(declared.contains(r"\n"), "declaration must expose escaped controls");
+        assert_eq!(
+            inspection.error.expect("unsupported declaration must produce an error").actual(),
+            declared
+        );
+    }
+
+    #[test]
+    fn invalid_declaration_is_bounded_in_report_context() {
+        let declaration = format!("{}\n{}", "x".repeat(90), "y".repeat(500));
+        let json = serde_json::json!({
+            "catalog": {"metadata": {"oscal-version": declaration.clone()}}
         });
         let inspection = inspect_oscal_version(&json, OscalModelType::Catalog);
         let declared = inspection.declared.expect("string declaration should be reported");
-        assert_eq!(declared, format!("{}\\n", "x".repeat(99)));
+        assert_ne!(declared, declaration);
+        assert!(declared.chars().count() <= 103);
         assert!(!declared.contains('\n'));
+        assert!(declared.contains(r"\n"));
+        let error = inspection.error.expect("invalid declaration must produce an error");
+        assert_eq!(error.actual(), declared);
+        assert!(!error.message.contains('\n'));
     }
 }

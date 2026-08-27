@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use super::report::{ElementType, TraceReport};
+use super::report::{ElementType, TraceEntry, TraceReport};
 use super::resolver::validate_line_reference;
 use crate::sanitize::strip_control_chars;
 
@@ -9,60 +9,47 @@ use crate::sanitize::strip_control_chars;
 /// Columns: OSCAL Element ID, Element Type, Source Section, Source Line
 /// Includes header, separator, data rows, and summary footer.
 /// Unmapped elements show `[unmapped]` in source columns.
-/// Groups with section but no line show "\u{2014}" for Source Line.
+/// Groups with section but no line show "—" for Source Line.
 ///
-/// All source-derived strings have control characters stripped (SEC-5).
+/// All source-derived strings have control characters stripped and whitespace
+/// controls replaced with spaces so each entry occupies a single table row.
 #[must_use]
 pub fn format_trace_table(report: &TraceReport) -> String {
     let source_line_count = report.source_line_count;
     let headers = ["OSCAL Element ID", "Element Type", "Source Section", "Source Line"];
+    let display_cells = |entry: &TraceEntry| {
+        let (section, line) = match &entry.trace {
+            Some(meta) => (
+                format_table_cell(&meta.source_section),
+                format_source_line(meta.source_line, entry.element_type, source_line_count),
+            ),
+            None => ("[unmapped]".to_string(), "[unmapped]".to_string()),
+        };
+        [
+            format_table_cell(&entry.element_id),
+            entry.element_type.as_str().to_string(),
+            section,
+            line,
+        ]
+    };
 
-    // Compute display values for each entry
-    let rows: Vec<[String; 4]> = report
-        .entries
-        .iter()
-        .map(|entry| {
-            let (section, line) = match &entry.trace {
-                Some(meta) => {
-                    let section = strip_control_chars(&meta.source_section);
-                    let line =
-                        format_source_line(meta.source_line, entry.element_type, source_line_count);
-                    (section, line)
-                }
-                None => ("[unmapped]".to_string(), "[unmapped]".to_string()),
-            };
-            [
-                strip_control_chars(&entry.element_id),
-                entry.element_type.as_str().to_string(),
-                section,
-                line,
-            ]
-        })
-        .collect();
-
-    // First pass: compute max column widths
-    let mut widths = [0usize; 4];
-    for (i, header) in headers.iter().enumerate() {
-        widths[i] = header.len();
-    }
-    for row in &rows {
-        for (i, cell) in row.iter().enumerate() {
-            let display_len = cell.chars().count();
-            if display_len > widths[i] {
-                widths[i] = display_len;
-            }
+    // First pass: compute max column widths without retaining rendered rows.
+    let mut widths = headers.map(|header| header.chars().count());
+    for entry in &report.entries {
+        let cells = display_cells(entry);
+        for (index, cell) in cells.iter().enumerate() {
+            widths[index] = widths[index].max(cell.chars().count());
         }
     }
 
     let mut output = String::new();
 
-    // Staleness warning
+    // Staleness warning.
     if report.source_stale {
         output.push_str("Warning: Source file may have been modified since conversion (source is newer than artifact)\n\n");
     }
 
     // Writing to `String` via `fmt::Write` is infallible; `let _` is intentional.
-    // Header
     let _ = writeln!(
         output,
         "{:<w0$}  {:<w1$}  {:<w2$}  {:<w3$}",
@@ -76,7 +63,6 @@ pub fn format_trace_table(report: &TraceReport) -> String {
         w3 = widths[3],
     );
 
-    // Separator
     let _ = writeln!(
         output,
         "{:-<w0$}  {:-<w1$}  {:-<w2$}  {:-<w3$}",
@@ -90,8 +76,8 @@ pub fn format_trace_table(report: &TraceReport) -> String {
         w3 = widths[3],
     );
 
-    // Data rows
-    for row in &rows {
+    for entry in &report.entries {
+        let row = display_cells(entry);
         let _ = writeln!(
             output,
             "{:<w0$}  {:<w1$}  {:<w2$}  {:<w3$}",
@@ -106,57 +92,50 @@ pub fn format_trace_table(report: &TraceReport) -> String {
         );
     }
 
-    // Summary footer
-    let s = &report.summary;
-    let elem_word = if s.total_elements == 1 { "element" } else { "elements" };
+    let summary = report.summary();
+    let elem_word = if summary.total_elements == 1 { "element" } else { "elements" };
     let _ = write!(
         output,
         "\nSummary: {} {elem_word}, {} mapped, {} unmapped ({:.1}% coverage)\n",
-        s.total_elements,
-        s.mapped_elements,
-        s.unmapped_elements(),
-        s.coverage_percent()
+        summary.total_elements,
+        summary.mapped_elements,
+        summary.unmapped_elements(),
+        summary.coverage_percent()
     );
 
     output
 }
 
 fn format_source_line(
-    source_line: usize,
+    source_line: Option<usize>,
     element_type: ElementType,
     source_line_count: usize,
 ) -> String {
-    // Groups can be mapped at the section level without a concrete line number.
-    // In that case, display an em dash ("—") instead of the generic "0 ⚠" warning.
-    if source_line == 0 && element_type == ElementType::Group {
-        return "\u{2014}".to_string();
+    match source_line {
+        None if element_type == ElementType::Group => "—".to_string(),
+        None => "[missing] ⚠".to_string(),
+        Some(line) if validate_line_reference(Some(line), source_line_count) => line.to_string(),
+        Some(line) => format!("{line} ⚠"),
     }
-    if source_line == 0 {
-        return "0 \u{26A0}".to_string();
-    }
-    let line_str = source_line.to_string();
-    if validate_line_reference(source_line, source_line_count) {
-        line_str
-    } else {
-        format!("{line_str} \u{26A0}")
-    }
+}
+
+fn format_table_cell(value: &str) -> String {
+    strip_control_chars(&value.replace(['\n', '\r', '\t'], " "))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::trace::report::{ElementType, TraceEntry, TraceMetadata, TraceReport, TraceSummary};
+    use crate::trace::report::{ElementType, TraceEntry, TraceMetadata, TraceReport};
     use crate::types::OscalModelType;
     use std::path::PathBuf;
 
     fn make_report(entries: Vec<TraceEntry>, source_stale: bool) -> TraceReport {
-        let summary = TraceSummary::from_entries(&entries);
         TraceReport {
             artifact_path: PathBuf::from("artifact.json"),
             source_path: PathBuf::from("policy.md"),
             artifact_type: OscalModelType::Catalog,
             entries,
-            summary,
             source_stale,
             source_line_count: 100,
         }
@@ -173,7 +152,7 @@ mod tests {
                 trace: Some(TraceMetadata {
                     source_file: "policy.md".to_string(),
                     source_section: "Access Control".to_string(),
-                    source_line: 0,
+                    source_line: None,
                 }),
             },
             TraceEntry {
@@ -182,7 +161,7 @@ mod tests {
                 trace: Some(TraceMetadata {
                     source_file: "policy.md".to_string(),
                     source_section: "Access Control".to_string(),
-                    source_line: 10,
+                    source_line: Some(10),
                 }),
             },
             TraceEntry {
@@ -191,7 +170,7 @@ mod tests {
                 trace: Some(TraceMetadata {
                     source_file: "policy.md".to_string(),
                     source_section: "Access Control".to_string(),
-                    source_line: 25,
+                    source_line: Some(25),
                 }),
             },
         ];
@@ -209,7 +188,7 @@ mod tests {
                 trace: Some(TraceMetadata {
                     source_file: "policy.md".to_string(),
                     source_section: "Access Control".to_string(),
-                    source_line: 10,
+                    source_line: Some(10),
                 }),
             },
             TraceEntry {
@@ -238,7 +217,7 @@ mod tests {
             trace: Some(TraceMetadata {
                 source_file: "policy.md".to_string(),
                 source_section: "Access Control".to_string(),
-                source_line: 0,
+                source_line: None,
             }),
         }];
         let report = make_report(entries, false);
@@ -256,7 +235,7 @@ mod tests {
             trace: Some(TraceMetadata {
                 source_file: "p.md".to_string(),
                 source_section: "S".to_string(),
-                source_line: 1,
+                source_line: Some(1),
             }),
         }];
         let report = make_report(entries, false);
@@ -288,5 +267,36 @@ mod tests {
         let report = make_report(vec![], false);
         let output = format_trace_table(&report);
         assert!(!output.contains("Warning:"));
+    }
+
+    #[test]
+    fn source_derived_cells_replace_whitespace_controls() {
+        let report = make_report(
+            vec![TraceEntry {
+                element_id: "control\nwith\tid".to_string(),
+                element_type: ElementType::Control,
+                trace: Some(TraceMetadata {
+                    source_file: "policy.md".to_string(),
+                    source_section: "Access\nControl\tDone\rNow".to_string(),
+                    source_line: Some(1),
+                }),
+            }],
+            false,
+        );
+
+        let output = format_trace_table(&report);
+        assert!(output.contains("control with id"));
+        assert!(output.contains("Access Control Done Now"));
+        assert!(!output.contains("control\nwith"));
+        assert!(!output.contains("Access\nControl"));
+    }
+
+    #[test]
+    fn format_source_line_marks_missing_and_out_of_range_concrete_lines() {
+        assert_eq!(format_source_line(None, ElementType::Control, 100), "[missing] ⚠");
+        assert_eq!(
+            format_source_line(Some(101), ElementType::ImplementedRequirement, 100),
+            "101 ⚠"
+        );
     }
 }

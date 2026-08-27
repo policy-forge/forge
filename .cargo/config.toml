@@ -1,2 +1,3 @@
+# Keep Cargo's default retry budget; use CARGO_NET_RETRY for an explicitly flaky CI job.
 [net]
-retry = 10
+retry = 3

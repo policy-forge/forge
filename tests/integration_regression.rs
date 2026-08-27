@@ -54,13 +54,19 @@ fn phase1_catalog_structure_regression() {
 
     let catalog = read_json(&output_path);
 
-    // uuid must be a non-empty string
-    let uuid = catalog["catalog"]["uuid"].as_str().unwrap_or("");
-    assert!(!uuid.is_empty(), "catalog.uuid must be a non-empty string");
+    let uuid = catalog["catalog"]["uuid"].as_str().expect("catalog.uuid must be a string");
+    uuid::Uuid::parse_str(uuid)
+        .unwrap_or_else(|e| panic!("catalog.uuid must be a well-formed UUID, got '{uuid}': {e}"));
 
     // oscal-version must use the current baseline.
-    let oscal_version = catalog["catalog"]["metadata"]["oscal-version"].as_str().unwrap_or("");
-    assert_eq!(oscal_version, "1.2.3", "catalog.metadata.oscal-version must be '1.2.3'");
+    let oscal_version = catalog["catalog"]["metadata"]["oscal-version"]
+        .as_str()
+        .expect("catalog.metadata.oscal-version must be a string");
+    assert_eq!(
+        oscal_version,
+        forge::oscal::metadata::OSCAL_VERSION,
+        "catalog.metadata.oscal-version must match the current OSCAL baseline"
+    );
 
     // groups must be non-empty
     let groups = catalog["catalog"]["groups"].as_array().expect("catalog.groups must be an array");
@@ -99,9 +105,12 @@ fn phase1_component_structure_regression() {
 
     let comp_def = read_json(&output_path);
 
-    // component-definition.uuid must be present and non-empty
-    let uuid = comp_def["component-definition"]["uuid"].as_str().unwrap_or("");
-    assert!(!uuid.is_empty(), "component-definition.uuid must be a non-empty string");
+    let uuid = comp_def["component-definition"]["uuid"]
+        .as_str()
+        .expect("component-definition.uuid must be a string");
+    uuid::Uuid::parse_str(uuid).unwrap_or_else(|e| {
+        panic!("component-definition.uuid must be a well-formed UUID, got '{uuid}': {e}")
+    });
 
     // components must be non-empty
     let components = comp_def["component-definition"]["components"]

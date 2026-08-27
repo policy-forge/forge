@@ -16,6 +16,8 @@ use crate::{ForgeError, uuid::FORGE_NAMESPACE_UUID};
 
 pub const REPORT_SCHEMA_VERSION: &str = "forge.mapping-report/1";
 const UUID_SEED_VERSION: &str = "forge.mapping/1";
+const SOURCE_GAP_SUMMARY_KIND: &str = "source-gap-summary";
+const TARGET_GAP_SUMMARY_KIND: &str = "target-gap-summary";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MappingCollectionEnvelope {
@@ -183,6 +185,7 @@ pub struct OscalProp {
 #[serde(rename_all = "kebab-case")]
 pub struct GapSummary {
     pub uuid: Uuid,
+    /// OSCAL gap summaries carry controls only; unmapped statements remain in the review report.
     pub unmapped_controls: Vec<ControlSelection>,
 }
 
@@ -195,7 +198,8 @@ pub struct ControlSelection {
 #[derive(Debug, Clone, Serialize)]
 pub struct MappingReport {
     pub schema_version: &'static str,
-    pub status: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<&'static str>,
     pub source: ResourceEvidence,
     pub target: ResourceEvidence,
     pub scope: ReviewScope,
@@ -236,6 +240,10 @@ pub struct Participation {
     pub unmapped_ids: Vec<String>,
 }
 
+/// Validation gates for the stages completed before a report is rendered.
+///
+/// Each `true` value means the corresponding stage and every preceding stage completed
+/// successfully; mapping-schema validation is set only by [`BuildProduct::finalize_report`].
 #[derive(Debug, Clone, Serialize)]
 #[allow(clippy::struct_excessive_bools)] // Explicit gates make the machine report auditable.
 pub struct ValidationSummary {
@@ -243,6 +251,21 @@ pub struct ValidationSummary {
     pub resources_valid: bool,
     pub references_valid: bool,
     pub mapping_schema_valid: bool,
+}
+
+impl ValidationSummary {
+    const fn after_reference_validation() -> Self {
+        Self {
+            manifest_valid: true,
+            resources_valid: true,
+            references_valid: true,
+            mapping_schema_valid: false,
+        }
+    }
+
+    fn finalize_mapping_schema(&mut self, mapping_schema_valid: bool) {
+        self.mapping_schema_valid = mapping_schema_valid;
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -267,6 +290,14 @@ pub enum FindingSeverity {
 pub struct BuildProduct {
     pub artifact: MappingCollectionEnvelope,
     pub report: MappingReport,
+}
+
+impl BuildProduct {
+    /// Mark a fully analyzed report as complete after Mapping schema validation succeeds.
+    pub(crate) fn finalize_report(&mut self, mapping_schema_valid: bool) {
+        self.report.validation.finalize_mapping_schema(mapping_schema_valid);
+        self.report.status = mapping_schema_valid.then_some("complete");
+    }
 }
 
 /// Build typed OSCAL Mapping and deterministic report structures.
@@ -328,9 +359,9 @@ pub fn build(
         };
 
     let source_gap_summary =
-        gap_summary("source-gap-summary", &manifest.mapping.key, &source_controls.unmapped_ids);
+        gap_summary(SOURCE_GAP_SUMMARY_KIND, &manifest.mapping.key, &source_controls.unmapped_ids);
     let target_gap_summary =
-        gap_summary("target-gap-summary", &manifest.mapping.key, &target_controls.unmapped_ids);
+        gap_summary(TARGET_GAP_SUMMARY_KIND, &manifest.mapping.key, &target_controls.unmapped_ids);
 
     let parties = manifest
         .reviewers
@@ -402,7 +433,7 @@ pub fn build(
     };
     let report = MappingReport {
         schema_version: REPORT_SCHEMA_VERSION,
-        status: "complete",
+        status: None,
         source: source.evidence.clone(),
         target: target.evidence.clone(),
         scope: manifest.mapping.scope,
@@ -410,16 +441,11 @@ pub fn build(
         target_controls,
         source_statements,
         target_statements,
-        validation: ValidationSummary {
-            manifest_valid: true,
-            resources_valid: true,
-            references_valid: true,
-            mapping_schema_valid: false,
-        },
+        validation: ValidationSummary::after_reference_validation(),
         findings: Vec::new(),
         author_estimates: author_estimates(manifest),
         excerpts: if include_excerpts {
-            report_excerpts(&source.inventory, &target.inventory, manifest.mapping.scope)
+            report_excerpts(&source.inventory, &target.inventory, manifest.mapping.scope)?
         } else {
             Vec::new()
         },
@@ -465,7 +491,7 @@ fn report_excerpts(
     source: &Inventory,
     target: &Inventory,
     scope: ReviewScope,
-) -> Vec<ReportExcerpt> {
+) -> Result<Vec<ReportExcerpt>, ForgeError> {
     const MAX_REPORT_EXCERPTS: usize = 1_000;
     let kinds: &[SubjectType] = if scope == ReviewScope::ControlOnly {
         &[SubjectType::Control]
@@ -476,19 +502,24 @@ fn report_excerpts(
     for (side, inventory) in [("source", source), ("target", target)] {
         for &subject_type in kinds {
             for id in inventory.ids_of_type(subject_type) {
+                let Some(excerpt) = inventory.excerpt(subject_type, &id) else {
+                    continue;
+                };
                 if excerpts.len() == MAX_REPORT_EXCERPTS {
-                    return excerpts;
+                    return Err(mapping_error(format!(
+                        "report excerpts exceed the {MAX_REPORT_EXCERPTS} entry limit"
+                    )));
                 }
                 excerpts.push(ReportExcerpt {
                     side,
                     subject_type,
-                    excerpt: inventory.excerpt(subject_type, &id).unwrap_or("").to_string(),
+                    excerpt: excerpt.to_string(),
                     id,
                 });
             }
         }
     }
-    excerpts
+    Ok(excerpts)
 }
 
 fn build_map(
@@ -661,8 +692,8 @@ fn ensure_unique_uuids(
     let candidates = [
         stable_uuid("collection", &manifest.collection.key),
         stable_uuid("mapping", &manifest.mapping.key),
-        stable_uuid("source-gap-summary", &manifest.mapping.key),
-        stable_uuid("target-gap-summary", &manifest.mapping.key),
+        stable_uuid(SOURCE_GAP_SUMMARY_KIND, &manifest.mapping.key),
+        stable_uuid(TARGET_GAP_SUMMARY_KIND, &manifest.mapping.key),
     ];
     for uuid in candidates
         .into_iter()

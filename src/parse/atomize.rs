@@ -19,8 +19,10 @@ use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 const MAX_SPLITS_PER_REQUIREMENT: usize = 50;
 
 /// Maximum section nesting depth for recursive traversal (`DoS` protection).
-/// Consistent with `MAX_SECTION_DEPTH` in `component_definition.rs`.
-const MAX_SECTION_DEPTH: usize = 50;
+///
+/// Shared by stable-ID assignment and component/atomization traversals; each
+/// caller retains its explicit boundary semantics (F0711).
+pub(crate) const MAX_SECTION_DEPTH: usize = 50;
 
 /// Compiled regex pattern for detecting conjunction + normative verb boundaries.
 /// Pattern: `\b(and|or)\s+(must|shall|should|will)\b` (case-sensitive).
@@ -71,11 +73,28 @@ pub fn preliminary_id(text: &str, source_line: usize, atom_index: usize) -> Stri
     format!("{hash:x}")
 }
 
+/// Generate a preliminary ID scoped to a section's structural path.
+///
+/// `atomize_document` uses this internal helper so identical requirements on
+/// the same source line in separate sections do not collide before the
+/// pipeline replaces preliminary IDs with UUID v5 values.
+fn preliminary_id_with_section(
+    text: &str,
+    source_line: usize,
+    atom_index: usize,
+    section_context: &str,
+) -> String {
+    let input = format!("{section_context}|{text}|{source_line}|{atom_index}");
+    let hash = Sha256::digest(input.as_bytes());
+    format!("{hash:x}")
+}
+
 /// Extract the shared subject from a compound statement.
 ///
-/// Returns the text before `first_verb_pos`, trimmed. Returns `None` if empty.
+/// Returns the text before `first_verb_pos`, trimmed. Returns `None` for an
+/// empty subject or a non-character-boundary offset.
 fn extract_subject(text: &str, first_verb_pos: usize) -> Option<String> {
-    let subject = text[..first_verb_pos].trim();
+    let subject = text.get(..first_verb_pos)?.trim();
     if subject.is_empty() { None } else { Some(subject.to_string()) }
 }
 
@@ -91,6 +110,50 @@ fn reconstruct_clause(shared_subject: &str, clause: &str) -> String {
     }
 }
 
+/// Clone an input requirement while applying atomization-specific fields.
+///
+/// Enrichment performed before atomization remains attached to every output
+/// requirement, so this public API is safe to rerun on an enriched document.
+fn atomized_requirement(
+    requirement: &PolicyRequirement,
+    text: String,
+    atom_index: usize,
+    parent_text: Option<String>,
+    section_context: Option<&str>,
+) -> PolicyRequirement {
+    let mut atom = requirement.clone();
+    atom.stable_id = Some(section_context.map_or_else(
+        || preliminary_id(&text, requirement.source_line, atom_index),
+        |context| preliminary_id_with_section(&text, requirement.source_line, atom_index, context),
+    ));
+    atom.text = text;
+    atom.atom_index = atom_index;
+    atom.parent_text = parent_text;
+    atom
+}
+
+/// Infer a reusable subject only from the first clause preceding a split.
+///
+/// Restricting inference to that boundary prevents modal verbs in a lead-in
+/// sentence from determining every reconstructed clause.
+fn subject_before_first_split(text: &str, first_boundary: usize) -> Option<String> {
+    let first_clause = text.get(..first_boundary)?.trim();
+    let sentence_start = first_clause
+        .char_indices()
+        .rev()
+        .find_map(|(index, character)| {
+            matches!(character, '.' | ':' | ';' | '!' | '?').then_some(index + character.len_utf8())
+        })
+        .unwrap_or(0);
+    let sentence = first_clause[sentence_start..].trim_start();
+    let verb = FIRST_VERB_PATTERN.find_iter(sentence).last()?;
+    extract_subject(sentence, verb.start())
+}
+
+fn starts_with_normative_verb(text: &str) -> bool {
+    FIRST_VERB_PATTERN.find(text).is_some_and(|verb| verb.start() == 0)
+}
+
 /// Atomize a single policy requirement.
 ///
 /// Detects compound statements containing conjunctions ("and", "or") paired with
@@ -99,160 +162,115 @@ fn reconstruct_clause(shared_subject: &str, clause: &str) -> String {
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Parse` if regex matching fails.
-///
-/// # Panics
-///
-/// Panics if the regex engine returns a capture match without group 0 or group 2,
-/// which cannot happen with the `SPLIT_PATTERN` regex.
-///
-/// # Examples
-///
-/// ```
-/// use forge::model::PolicyRequirement;
-/// use forge::parse::atomize_requirement;
-///
-/// let req = PolicyRequirement {
-///     stable_id: None,
-///     text: "Systems must enforce MFA and must require complex passwords".to_string(),
-///     source_line: 42,
-///     nesting_depth: 0,
-///     atom_index: 0,
-///     parent_text: None,
-///     citations: vec![],
-///     modality: None,
-///     parameters: vec![],
-/// };
-///
-/// let result = atomize_requirement(&req).unwrap();
-/// assert!(result.was_split);
-/// assert_eq!(result.requirements.len(), 2);
-/// ```
+/// Returns `ForgeError::Parse` if regex matching yields an incomplete split capture
+/// or a non-character-boundary split range.
 pub fn atomize_requirement(
     requirement: &PolicyRequirement,
 ) -> Result<AtomizationResult, ForgeError> {
+    atomize_requirement_with_context(requirement, None)
+}
+
+fn preserved_atomization(
+    requirement: &PolicyRequirement,
+    section_context: Option<&str>,
+) -> AtomizationResult {
+    AtomizationResult {
+        requirements: vec![atomized_requirement(
+            requirement,
+            requirement.text.clone(),
+            0,
+            None,
+            section_context,
+        )],
+        was_split: false,
+        original_text: None,
+    }
+}
+
+fn atomize_requirement_with_context(
+    requirement: &PolicyRequirement,
+    section_context: Option<&str>,
+) -> Result<AtomizationResult, ForgeError> {
     let text = &requirement.text;
 
-    // Empty or whitespace-only text: preserve as-is (EC-7)
-    if text.trim().is_empty() {
-        return Ok(AtomizationResult {
-            requirements: vec![PolicyRequirement {
-                stable_id: Some(preliminary_id(text, requirement.source_line, 0)),
-                text: text.clone(),
-                source_line: requirement.source_line,
-                nesting_depth: requirement.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            }],
-            was_split: false,
-            original_text: None,
-        });
+    if text.trim().is_empty() || SPLIT_PATTERN.find_iter(text).next().is_none() {
+        return Ok(preserved_atomization(requirement, section_context));
     }
 
-    // Find all conjunction + normative verb boundaries
     let match_count = SPLIT_PATTERN.find_iter(text).count();
 
-    if match_count == 0 {
-        // No compound pattern detected: preserve as-is (FR-003, M-3)
-        return Ok(AtomizationResult {
-            requirements: vec![PolicyRequirement {
-                stable_id: Some(preliminary_id(text, requirement.source_line, 0)),
-                text: text.clone(),
-                source_line: requirement.source_line,
-                nesting_depth: requirement.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            }],
-            was_split: false,
-            original_text: None,
-        });
-    }
-
-    // Check max split count (SEC-5, FR-010, EC-9)
     let split_count = match_count + 1;
     if split_count > MAX_SPLITS_PER_REQUIREMENT {
         warn!(
             source_line = requirement.source_line,
-            split_count = split_count,
+            split_count,
             max = MAX_SPLITS_PER_REQUIREMENT,
             "Requirement would produce too many splits; preserved as-is"
         );
-        return Ok(AtomizationResult {
-            requirements: vec![PolicyRequirement {
-                stable_id: Some(preliminary_id(text, requirement.source_line, 0)),
-                text: text.clone(),
-                source_line: requirement.source_line,
-                nesting_depth: requirement.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            }],
-            was_split: false,
-            original_text: None,
-        });
+        return Ok(preserved_atomization(requirement, section_context));
     }
 
-    // Find position of the first normative verb in the text to extract shared subject
-    let shared_subject =
-        FIRST_VERB_PATTERN.find(text).and_then(|m| extract_subject(text, m.start()));
+    let shared_subject = SPLIT_PATTERN
+        .find(text)
+        .and_then(|first_split| subject_before_first_split(text, first_split.start()));
 
-    // Split text at conjunction + normative verb boundaries.
-    // For each match like "and must", we take text before the conjunction as a clause,
-    // then the next clause starts at the normative verb (capture group 2).
     let mut clauses = Vec::with_capacity(split_count);
     let mut last_end = 0;
-
-    for cap in SPLIT_PATTERN.captures_iter(text) {
-        let full_match = cap.get(0).unwrap();
-        let verb = cap.get(2).unwrap();
-
-        // Clause: text from last_end to start of conjunction
-        let clause = text[last_end..full_match.start()].trim();
-        if !clause.is_empty() {
-            clauses.push(clause.to_string());
+    for captures in SPLIT_PATTERN.captures_iter(text) {
+        let full_match = captures.get(0).ok_or_else(|| {
+            ForgeError::Parse("split pattern did not produce its full match".to_string())
+        })?;
+        let verb = captures.get(2).ok_or_else(|| {
+            ForgeError::Parse("split pattern did not produce its normative verb".to_string())
+        })?;
+        let clause = text.get(last_end..full_match.start()).ok_or_else(|| {
+            ForgeError::Parse(
+                "split pattern produced a non-character-boundary clause range".to_string(),
+            )
+        })?;
+        if !clause.trim().is_empty() {
+            clauses.push(clause.trim().to_string());
         }
-
-        // Next clause starts at the normative verb
         last_end = verb.start();
     }
 
-    // Final clause: from last verb position to end of text
-    let final_clause = text[last_end..].trim();
-    if !final_clause.is_empty() {
-        clauses.push(final_clause.to_string());
+    let final_clause = text.get(last_end..).ok_or_else(|| {
+        ForgeError::Parse(
+            "split pattern produced a non-character-boundary final clause range".to_string(),
+        )
+    })?;
+    if !final_clause.trim().is_empty() {
+        clauses.push(final_clause.trim().to_string());
     }
 
-    // Reconstruct clauses with shared subject
     let mut requirements = Vec::with_capacity(clauses.len());
     for (index, clause) in clauses.iter().enumerate() {
-        let full_text = if let Some(ref subject) = shared_subject {
-            reconstruct_clause(subject, clause)
-        } else {
-            clause.clone()
+        let full_text = match (shared_subject.as_deref(), starts_with_normative_verb(clause)) {
+            (Some(subject), true) => reconstruct_clause(subject, clause),
+            (Some(_), false) => {
+                warn!(
+                    source_line = requirement.source_line,
+                    clause, "Skipping atomization subject inference for non-normative clause"
+                );
+                clause.clone()
+            }
+            (None, _) => clause.clone(),
         };
 
-        requirements.push(PolicyRequirement {
-            stable_id: Some(preliminary_id(&full_text, requirement.source_line, index)),
-            text: full_text,
-            source_line: requirement.source_line,
-            nesting_depth: requirement.nesting_depth,
-            atom_index: index,
-            parent_text: Some(text.clone()),
-            citations: vec![],
-            modality: None,
-            parameters: vec![],
-        });
+        requirements.push(atomized_requirement(
+            requirement,
+            full_text,
+            index,
+            Some(text.clone()),
+            section_context,
+        ));
     }
 
-    Ok(AtomizationResult { requirements, was_split: true, original_text: Some(text.clone()) })
+    Ok(AtomizationResult {
+        requirements,
+        was_split: true,
+        original_text: Some(requirement.text.clone()),
+    })
 }
 
 /// Atomize all requirements in a `PolicyDocument`.
@@ -296,6 +314,7 @@ pub fn atomize_requirement(
 ///             citations: vec![],
 ///             modality: None,
 ///             parameters: vec![],
+///             parameters_extracted: false,
 ///         }],
 ///     }],
 /// };
@@ -310,7 +329,10 @@ pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, For
     let new_sections = document
         .sections
         .iter()
-        .map(|s| atomize_section(s, &mut split_count, &mut preserved_count))
+        .enumerate()
+        .map(|(index, section)| {
+            atomize_section(section, &mut split_count, &mut preserved_count, &index.to_string())
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     let total_after: usize = count_requirements_recursive(&new_sections);
@@ -333,8 +355,9 @@ fn atomize_section(
     section: &PolicySection,
     split_count: &mut usize,
     preserved_count: &mut usize,
+    section_path: &str,
 ) -> Result<PolicySection, ForgeError> {
-    atomize_section_inner(section, split_count, preserved_count, 0)
+    atomize_section_inner(section, split_count, preserved_count, 0, section_path)
 }
 
 fn atomize_section_inner(
@@ -342,13 +365,12 @@ fn atomize_section_inner(
     split_count: &mut usize,
     preserved_count: &mut usize,
     depth: usize,
+    section_path: &str,
 ) -> Result<PolicySection, ForgeError> {
-    // Always atomize requirements at this level, only skip child recursion
-    // when depth exceeds the safety limit.
     let mut new_requirements = Vec::new();
 
     for requirement in &section.requirements {
-        let result = atomize_requirement(requirement)?;
+        let result = atomize_requirement_with_context(requirement, Some(section_path))?;
         if result.was_split {
             *split_count += 1;
         } else {
@@ -357,18 +379,27 @@ fn atomize_section_inner(
         new_requirements.extend(result.requirements);
     }
 
-    let new_children = if depth > MAX_SECTION_DEPTH {
+    let new_children = if depth >= MAX_SECTION_DEPTH {
         tracing::trace!(
             depth,
             max = MAX_SECTION_DEPTH,
-            "max section depth exceeded; skipping child traversal"
+            "max section depth reached; skipping child traversal"
         );
         section.children.clone()
     } else {
         section
             .children
             .iter()
-            .map(|child| atomize_section_inner(child, split_count, preserved_count, depth + 1))
+            .enumerate()
+            .map(|(index, child)| {
+                atomize_section_inner(
+                    child,
+                    split_count,
+                    preserved_count,
+                    depth + 1,
+                    &format!("{section_path}/{index}"),
+                )
+            })
             .collect::<Result<Vec<_>, _>>()?
     };
 
@@ -388,12 +419,16 @@ fn count_requirements_recursive(sections: &[PolicySection]) -> usize {
 }
 
 fn count_requirements_recursive_inner(sections: &[PolicySection], depth: usize) -> usize {
-    if depth > MAX_SECTION_DEPTH {
-        return 0;
-    }
     sections
         .iter()
-        .map(|s| s.requirements.len() + count_requirements_recursive_inner(&s.children, depth + 1))
+        .map(|section| {
+            section.requirements.len()
+                + if depth < MAX_SECTION_DEPTH {
+                    count_requirements_recursive_inner(&section.children, depth + 1)
+                } else {
+                    0
+                }
+        })
         .sum()
 }
 
@@ -417,6 +452,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -826,6 +862,20 @@ mod tests {
     }
 
     #[test]
+    fn document_atomization_scopes_preliminary_ids_to_sections() {
+        let doc = make_doc(vec![
+            make_section("S1", vec![make_req("Systems must enforce MFA", 1)]),
+            make_section("S2", vec![make_req("Systems must enforce MFA", 1)]),
+        ]);
+
+        let atomized = atomize_document(&doc).unwrap();
+        assert_ne!(
+            atomized.sections[0].requirements[0].stable_id,
+            atomized.sections[1].requirements[0].stable_id
+        );
+    }
+
+    #[test]
     fn atomize_document_metadata_preserved() {
         let doc = make_doc(vec![]);
         let result = atomize_document(&doc).unwrap();
@@ -1029,5 +1079,44 @@ mod tests {
         let result = atomize_requirement(&req).unwrap();
         assert!(result.was_split);
         assert_eq!(result.requirements.len(), 50);
+    }
+
+    #[test]
+    fn atomization_preserves_prior_enrichment() {
+        let mut requirement = make_req("Systems must enforce MFA and must log access", 7);
+        requirement.citations = vec![crate::model::Citation {
+            id: "cite-1".to_string(),
+            text: "Reference".to_string(),
+            url: None,
+            source_requirement_id: Some("req-1".into()),
+        }];
+        requirement.modality = Some(crate::model::Modality::Normative);
+        requirement.parameters = vec![crate::model::PolicyParameter {
+            id: "req-1_prm_0".to_string(),
+            requirement_id: "req-1".into(),
+            label: "within 30 days".to_string(),
+            value: "30 days".to_string(),
+            parameter_type: crate::model::ParameterType::TimeWindow,
+            constraint: None,
+        }];
+        requirement.parameters_extracted = true;
+
+        let result = atomize_requirement(&requirement).unwrap();
+        assert!(result.was_split);
+        assert!(result.requirements.iter().all(|atom| {
+            atom.citations == requirement.citations
+                && atom.modality == requirement.modality
+                && atom.parameters == requirement.parameters
+                && atom.parameters_extracted
+        }));
+    }
+
+    #[test]
+    fn subject_inference_uses_the_first_split_clause() {
+        let requirement =
+            make_req("Section 4 will state: systems must enforce MFA and must log access", 7);
+
+        let result = atomize_requirement(&requirement).unwrap();
+        assert_eq!(result.requirements[1].text, "systems must log access");
     }
 }

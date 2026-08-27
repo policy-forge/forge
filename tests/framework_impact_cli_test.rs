@@ -970,7 +970,11 @@ fn symlinked_manifest_is_rejected_without_output() {
         output_path.to_str().unwrap(),
     ]);
     assert_eq!(result.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&result.stderr).contains("must not be a symbolic link"));
+    assert!(
+        String::from_utf8_lossy(&result.stderr).contains("symbolic link"),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
     assert!(!output_path.exists());
 }
 

@@ -15,33 +15,47 @@ use std::hint::black_box;
 use std::path::Path;
 
 use criterion::{Criterion, criterion_group, criterion_main};
+use forge::DEFAULT_MAX_SIZE_BYTES;
 
 /// Path to the committed 50-page synthetic policy fixture.
 const FIXTURE_PATH: &str = "tests/fixtures/synthetic-50page-policy.md";
 
-/// Maximum file size for ingest (10 MB).
-///
-/// Duplicated here because benchmarks cannot use the `tests/common` module.
-const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
+/// Prepare the shared document input for XML serialization benchmarks.
+fn prepared_document(fixture_path: &Path) -> forge::model::PolicyDocument {
+    let ingested = forge::ingest::ingest_file(fixture_path, DEFAULT_MAX_SIZE_BYTES)
+        .expect("fixture ingestion failed");
+    let content = ingested.reconstruct_content();
+    let sections = forge::parse::extract_sections(&content).expect("section extraction failed");
+    let clauses = forge::parse::extract_clauses(&content).expect("clause extraction failed");
+    let document = forge::model::assemble_document(&ingested, &sections, &clauses)
+        .expect("document assembly failed");
+    let atomized = forge::parse::atomize_document(&document).expect("document atomization failed");
+    let doc = forge::uuid::assign_stable_ids(atomized);
+    let doc = forge::citation::extract_citations(doc).expect("citation extraction failed");
+    let doc = forge::parse::annotate_modalities(doc).expect("modality annotation failed");
+    let mut doc = doc;
+    forge::parameter::extract_parameters(&mut doc).expect("parameter extraction failed");
+    doc
+}
 
 /// Pre-process a fixture through the full pipeline up to catalog assembly.
 fn build_catalog_from_fixture(fixture_path: &Path) -> forge::oscal::catalog::OscalCatalog {
-    let ingested = forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES).unwrap();
-    let content = ingested.reconstruct_content();
-    let sections = forge::parse::extract_sections(&content).unwrap();
-    let clauses = forge::parse::extract_clauses(&content).unwrap();
-    let document = forge::model::assemble_document(&ingested, &sections, &clauses).unwrap();
-    let atomized = forge::parse::atomize_document(&document).unwrap();
-    let doc = forge::uuid::assign_stable_ids(atomized);
-    let doc = forge::citation::extract_citations(doc).unwrap();
+    let doc = prepared_document(fixture_path);
 
     let mut trace_links = forge::TraceLinkCollection::new();
-    let mut catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
+    let mut catalog =
+        forge::oscal::build_catalog(&doc, Some(&mut trace_links)).expect("catalog assembly failed");
+    debug_assert!(
+        !catalog.groups.is_empty(),
+        "catalog assembly produced no groups for the XML benchmark"
+    );
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
 
-    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None).unwrap();
-    let citations = doc.collect_citations();
-    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations).unwrap();
+    let metadata =
+        forge::oscal::assemble_metadata(&doc.metadata, None).expect("metadata assembly failed");
+    let citations = forge::oscal::component_definition::collect_all_citations(&doc.sections);
+    let (back_matter_resources, _) =
+        forge::oscal::generate_back_matter(&citations).expect("back-matter generation failed");
     let back_matter = if back_matter_resources.is_empty() {
         None
     } else {
@@ -66,26 +80,15 @@ fn build_catalog_from_fixture(fixture_path: &Path) -> forge::oscal::catalog::Osc
 fn build_component_def_from_fixture(
     fixture_path: &Path,
 ) -> forge::oscal::component_definition::ComponentDefinition {
-    let ingested = forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES).unwrap();
-    let content = ingested.reconstruct_content();
-    let sections = forge::parse::extract_sections(&content).unwrap();
-    let clauses = forge::parse::extract_clauses(&content).unwrap();
-    let document = forge::model::assemble_document(&ingested, &sections, &clauses).unwrap();
-    let atomized = forge::parse::atomize_document(&document).unwrap();
-    let doc = forge::uuid::assign_stable_ids(atomized);
-    let doc = forge::citation::extract_citations(doc).unwrap();
-
-    let envelope =
-        forge::oscal::build_component_definition(&doc, None, None, Some("test.md")).unwrap();
+    let doc = prepared_document(fixture_path);
+    let envelope = forge::oscal::build_component_definition(&doc, None, None, Some("test.md"))
+        .expect("component-definition assembly failed");
     envelope.component_definition
 }
 
 fn bench_xml_serialization(c: &mut Criterion) {
     let fixture_path = Path::new(FIXTURE_PATH);
-    if !fixture_path.exists() {
-        tracing::warn!(fixture = %FIXTURE_PATH, "Skipping XML benchmark: fixture not found");
-        return;
-    }
+    assert!(fixture_path.exists(), "required benchmark fixture missing: {FIXTURE_PATH}");
 
     let mut group = c.benchmark_group("xml_serialization");
 
@@ -96,7 +99,7 @@ fn bench_xml_serialization(c: &mut Criterion) {
     group.bench_function("serialize_catalog_to_xml", |b| {
         b.iter(|| {
             let xml = forge::export::xml_serializer::serialize_catalog_to_xml(black_box(&catalog))
-                .unwrap();
+                .expect("catalog XML serialization benchmark must succeed");
             black_box(xml)
         });
     });
@@ -106,7 +109,7 @@ fn bench_xml_serialization(c: &mut Criterion) {
             let xml = forge::export::xml_serializer::serialize_component_definition_to_xml(
                 black_box(&component_def),
             )
-            .unwrap();
+            .expect("component definition XML serialization benchmark must succeed");
             black_box(xml)
         });
     });

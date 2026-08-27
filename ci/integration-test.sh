@@ -7,7 +7,7 @@
 # and verifies traceability reports.
 #
 # Usage: ./ci/integration-test.sh [FORGE_BIN]
-#   FORGE_BIN  Path to forge binary (default: auto-detect target/release/forge or cargo run)
+#   FORGE_BIN  Path to forge binary (default: auto-detect target/release/forge or build it)
 #
 # Exit codes:
 #   0  All checks passed
@@ -43,26 +43,27 @@ if [[ -z "${FORGE}" ]]; then
     elif [[ -x "target/debug/forge" ]]; then
         FORGE="target/debug/forge"
     else
-        # Fall back to cargo run (slower, works when binary not pre-built)
-        FORGE="cargo run --quiet --release --"
+        info "Building release forge binary"
+        cargo build --quiet --release
+        FORGE="target/release/forge"
     fi
 fi
 
 info "Using forge: ${FORGE}"
 
 # ─── Verify forge is functional ─────────────────────────────────────────
-if ! ${FORGE} --version >/dev/null 2>&1; then
+if ! "${FORGE}" --version >/dev/null 2>&1; then
     echo ""
     fail "forge binary not functional: ${FORGE}"
     echo "  Build it first:  cargo build --release"
     exit 1
 fi
-FORGE_VERSION=$(${FORGE} --version 2>&1)
+FORGE_VERSION=$("${FORGE}" --version 2>&1)
 info "Forge version: ${FORGE_VERSION}"
 
 # ─── Command availability checks ────────────────────────────────────────
 # Some commands (diff, trace) may not be in older releases.
-has_command() { ${FORGE} "$1" --help >/dev/null 2>&1; }
+has_command() { "${FORGE}" "$1" --help >/dev/null 2>&1; }
 
 HAS_DIFF=false
 HAS_TRACE=false
@@ -80,6 +81,11 @@ fi
 HAS_XMLLINT=false
 if command -v xmllint >/dev/null 2>&1; then
     HAS_XMLLINT=true
+fi
+
+HAS_PYTHON3=false
+if command -v python3 >/dev/null 2>&1; then
+    HAS_PYTHON3=true
 fi
 
 # ─── Test fixture ───────────────────────────────────────────────────────
@@ -131,6 +137,18 @@ check_skip() {
     fi
 }
 
+record_fail() {
+    TOTAL=$((TOTAL + 1))
+    FAILED=$((FAILED + 1))
+    fail "$*"
+}
+
+record_skip() {
+    TOTAL=$((TOTAL + 1))
+    SKIPPED=$((SKIPPED + 1))
+    skip "$*"
+}
+
 # ═══════════════════════════════════════════════════════════════════════
 # Step 1: Generate OSCAL models from test policy
 # ═══════════════════════════════════════════════════════════════════════
@@ -142,79 +160,78 @@ echo "════════════════════════�
 # --- 1a: Catalog (JSON) ---
 CATALOG_JSON="${TMPDIR}/catalog.json"
 check "Generate catalog (JSON)" \
-    ${FORGE} convert "${FIXTURE}" --strategy catalog --format json --output "${CATALOG_JSON}"
+    "${FORGE}" convert "${FIXTURE}" --strategy catalog --format json --output "${CATALOG_JSON}"
 
 # --- 1b: Catalog (XML) ---
 CATALOG_XML="${TMPDIR}/catalog.xml"
 check "Generate catalog (XML)" \
-    ${FORGE} convert "${FIXTURE}" --strategy catalog --format xml --output "${CATALOG_XML}"
+    "${FORGE}" convert "${FIXTURE}" --strategy catalog --format xml --output "${CATALOG_XML}"
 
 # --- 1c: Profile (JSON) — must be generated before component (used as --source-profile) ---
 # forge profile requires --include or --exclude. Extract control IDs from the catalog.
-CONTROL_IDS=$(grep -o '"id" *: *"[A-Za-z0-9_-]*"' "${CATALOG_JSON}" \
+CONTROL_IDS=$( { grep -o '"id" *: *"[A-Za-z0-9_-]*"' "${CATALOG_JSON}" \
     | sed 's/"id" *: *"//;s/"//' \
-    | grep -v '_smt$\|_gdn$\|_obj$\|title-' \
-    | head -20 \
+    | { grep -v '_smt$\|_gdn$\|_obj$\|title-' || true; } \
+    | sed -n '1,20p' \
     | tr '\n' ',' \
-    | sed 's/,$//')
+    | sed 's/,$//'; } || true )
 
 if [[ -z "${CONTROL_IDS}" ]]; then
-    TOTAL=$((TOTAL + 1))
-    FAILED=$((FAILED + 1))
-    fail "Generate profile (JSON) — no control IDs found in catalog"
+    record_fail "Generate profile (JSON) — no control IDs found in catalog"
 else
     PROFILE_JSON="${TMPDIR}/profile.json"
     check "Generate profile (JSON)" \
-        ${FORGE} profile --catalog "${CATALOG_JSON}" --include "${CONTROL_IDS}" --format json --output "${PROFILE_JSON}"
+        "${FORGE}" profile --catalog "${CATALOG_JSON}" --include "${CONTROL_IDS}" --format json --output "${PROFILE_JSON}"
 fi
 
 # --- 1d: Profile (XML) ---
 if [[ -n "${CONTROL_IDS}" && -f "${PROFILE_JSON}" ]]; then
     PROFILE_XML="${TMPDIR}/profile.xml"
     check "Generate profile (XML)" \
-        ${FORGE} profile --catalog "${CATALOG_JSON}" --include "${CONTROL_IDS}" --format xml --output "${PROFILE_XML}"
+        "${FORGE}" profile --catalog "${CATALOG_JSON}" --include "${CONTROL_IDS}" --format xml --output "${PROFILE_XML}"
 else
-    TOTAL=$((TOTAL + 1))
-    SKIPPED=$((SKIPPED + 1))
-    skip "Generate profile (XML) — skipped (profile JSON generation failed)"
+    record_skip "Generate profile (XML) — skipped (profile JSON generation failed)"
 fi
 
 # --- 1e: Component Definition (JSON) — requires --source-profile in v0.3.0+ ---
 COMP_JSON="${TMPDIR}/component-definition.json"
 if [[ -f "${PROFILE_JSON:-}" ]]; then
     check "Generate component-definition (JSON)" \
-        ${FORGE} convert "${FIXTURE}" --strategy component --format json \
+        "${FORGE}" convert "${FIXTURE}" --strategy component --format json \
             --source-profile "${PROFILE_JSON}" --output "${COMP_JSON}"
 else
-    TOTAL=$((TOTAL + 1))
-    FAILED=$((FAILED + 1))
-    fail "Generate component-definition (JSON) — profile not available for --source-profile"
+    record_fail "Generate component-definition (JSON) — profile not available for --source-profile"
 fi
 
 # --- 1f: Component Definition (XML) ---
 COMP_XML="${TMPDIR}/component-definition.xml"
 if [[ -f "${PROFILE_JSON:-}" ]]; then
     check "Generate component-definition (XML)" \
-        ${FORGE} convert "${FIXTURE}" --strategy component --format xml \
+        "${FORGE}" convert "${FIXTURE}" --strategy component --format xml \
             --source-profile "${PROFILE_JSON}" --output "${COMP_XML}"
 else
-    TOTAL=$((TOTAL + 1))
-    FAILED=$((FAILED + 1))
-    fail "Generate component-definition (XML) — profile not available for --source-profile"
+    record_fail "Generate component-definition (XML) — profile not available for --source-profile"
 fi
 
 # --- 1g: Assessment Plan (JSON) — secondary output of catalog + --import-ssp ---
 # --import-ssp was added after v0.2.0; check if the flag is supported.
 AP_JSON="${TMPDIR}/assessment-plan.json"
 HAS_IMPORT_SSP=false
-if ${FORGE} convert --help 2>&1 | grep -q '\-\-import-ssp'; then
+if "${FORGE}" convert --help 2>&1 | grep -q '\-\-import-ssp'; then
     HAS_IMPORT_SSP=true
 fi
 
 if ${HAS_IMPORT_SSP}; then
+    # --import-ssp currently embeds a sanitized href without opening the file;
+    # provision a minimal SSP so the check is meaningful and survives a future
+    # switch to actually parsing the reference.
+    SYSTEM_SSP="${TMPDIR}/system-ssp.json"
+    cat > "${SYSTEM_SSP}" <<'SSP_EOF'
+{"system-security-plan": {"uuid": "11111111-1111-4111-8111-111111111111", "metadata": {"title": "CI SSP fixture", "last-modified": "2026-08-26T00:00:00Z", "version": "1", "oscal-version": "1.1.3"}}}
+SSP_EOF
     check "Generate assessment-plan (JSON)" \
-        ${FORGE} convert "${FIXTURE}" --strategy catalog --format json \
-            --output "${TMPDIR}/catalog-ap.json" --import-ssp "./system-ssp.json"
+        "${FORGE}" convert "${FIXTURE}" --strategy catalog --format json \
+            --output "${TMPDIR}/catalog-ap.json" --import-ssp "${SYSTEM_SSP}"
 
     # The assessment plan is written as a secondary output alongside the catalog.
     # Its filename is derived from the input stem: {input_stem}-assessment-plan.json
@@ -233,17 +250,13 @@ if ${HAS_IMPORT_SSP}; then
         fi
     fi
 else
-    TOTAL=$((TOTAL + 2))
-    SKIPPED=$((SKIPPED + 2))
-    skip "Generate assessment-plan (JSON) — --import-ssp not available in this build"
-    skip "Assessment-plan file exists — --import-ssp not available"
+    record_skip "Generate assessment-plan (JSON) — --import-ssp not available in this build"
+    record_skip "Assessment-plan file exists — --import-ssp not available"
 fi
 
 # --- 1h: SSP — not exposed via CLI in current version ---
 # build_ssp() exists in the library but has no CLI subcommand yet.
-TOTAL=$((TOTAL + 1))
-SKIPPED=$((SKIPPED + 1))
-skip "Generate SSP (system-security-plan) — no CLI command yet (library-only: build_ssp)"
+record_skip "Generate SSP (system-security-plan) — no CLI command yet (library-only: build_ssp)"
 
 echo ""
 
@@ -257,11 +270,11 @@ echo "════════════════════════�
 
 # --- 2a: forge validate — catalog JSON ---
 check "Validate catalog JSON (forge validate)" \
-    ${FORGE} validate "${CATALOG_JSON}" --schema-type catalog --quiet
+    "${FORGE}" validate "${CATALOG_JSON}" --schema-type catalog --quiet
 
 # --- 2b: forge validate — component JSON ---
 check "Validate component JSON (forge validate)" \
-    ${FORGE} validate "${COMP_JSON}" --schema-type component-definition --quiet
+    "${FORGE}" validate "${COMP_JSON}" --schema-type component-definition --quiet
 
 # --- 2c: xmllint — catalog XML against XSD ---
 if ${HAS_XMLLINT}; then
@@ -290,39 +303,50 @@ else
 fi
 
 # --- 2e: Structural validation — profile JSON has expected root key ---
-if [[ -f "${PROFILE_JSON:-}" && -s "${PROFILE_JSON}" ]]; then
-    check "Profile JSON has 'profile' root key" \
-        python3 -c "
+if [[ -f "${PROFILE_JSON:-}" && -s "${PROFILE_JSON:-}" ]]; then
+    if ${HAS_PYTHON3}; then
+        check "Profile JSON has 'profile' root key" \
+            python3 -c '
 import json
-with open('${PROFILE_JSON}') as f:
-    data = json.load(f)
-assert 'profile' in data, 'Missing profile root key'
-"
+import sys
+with open(sys.argv[1], encoding="utf-8") as file:
+    data = json.load(file)
+assert "profile" in data, "Missing profile root key"
+' "${PROFILE_JSON}"
+    else
+        check_skip "Profile JSON root key — python3 not installed" false
+    fi
 else
-    TOTAL=$((TOTAL + 1))
-    SKIPPED=$((SKIPPED + 1))
-    skip "Profile JSON root key — profile not generated"
+    record_skip "Profile JSON root key — profile not generated"
 fi
 
 # --- 2f: Structural validation — assessment-plan JSON has expected root key ---
-if [[ -f "${AP_JSON}" && -s "${AP_JSON}" ]]; then
-    check "Assessment-plan JSON has 'assessment-plan' root key" \
-        python3 -c "
+if [[ -f "${AP_JSON:-}" && -s "${AP_JSON:-}" ]]; then
+    if ${HAS_PYTHON3}; then
+        check "Assessment-plan JSON has 'assessment-plan' root key" \
+            python3 -c '
 import json
-with open('${AP_JSON}') as f:
-    data = json.load(f)
-assert 'assessment-plan' in data, 'Missing assessment-plan root key'
-" 2>/dev/null
+import sys
+with open(sys.argv[1], encoding="utf-8") as file:
+    data = json.load(file)
+assert "assessment-plan" in data, "Missing assessment-plan root key"
+' "${AP_JSON}"
+    else
+        check_skip "Assessment-plan JSON root key — python3 not installed" false
+    fi
 else
     check_skip "Assessment-plan JSON root key — file not generated" false
 fi
 
 # --- 2g: forge validate — profile JSON (if supported in future) ---
-if ${FORGE} validate --help 2>&1 | grep -q "profile"; then
+if [[ -f "${PROFILE_JSON:-}" ]] \
+    && validate_help=$("${FORGE}" validate --help 2>&1) \
+    && grep -q -- '--schema-type' <<<"${validate_help}" \
+    && grep -Eq -- '(^|[^[:alnum:]_-])profile([^[:alnum:]_-]|$)' <<<"${validate_help}"; then
     check "Validate profile JSON (forge validate)" \
-        ${FORGE} validate "${PROFILE_JSON}" --schema-type profile --quiet
+        "${FORGE}" validate "${PROFILE_JSON}" --schema-type profile --quiet
 else
-    check_skip "Validate profile JSON (forge validate — schema-type 'profile' not yet supported)" false
+    record_skip "Validate profile JSON (forge validate) — profile not generated or unsupported"
 fi
 
 echo ""
@@ -340,7 +364,7 @@ if ${HAS_DIFF}; then
     GOLDEN_CATALOG="${GOLDEN_DIR}/expected-catalog.json"
     if [[ -f "${GOLDEN_CATALOG}" ]]; then
         check "Diff catalog vs golden (zero differences)" \
-            ${FORGE} diff "${GOLDEN_CATALOG}" "${CATALOG_JSON}"
+            "${FORGE}" diff "${GOLDEN_CATALOG}" "${CATALOG_JSON}"
     else
         check_skip "Diff catalog vs golden — golden file not found" false
     fi
@@ -349,15 +373,13 @@ if ${HAS_DIFF}; then
     GOLDEN_COMP="${GOLDEN_DIR}/expected-component-definition.json"
     if [[ -f "${GOLDEN_COMP}" ]]; then
         check "Diff component vs golden (zero differences)" \
-            ${FORGE} diff "${GOLDEN_COMP}" "${COMP_JSON}"
+            "${FORGE}" diff "${GOLDEN_COMP}" "${COMP_JSON}"
     else
         check_skip "Diff component vs golden — golden file not found" false
     fi
 else
-    TOTAL=$((TOTAL + 2))
-    SKIPPED=$((SKIPPED + 2))
-    skip "Diff catalog vs golden (forge diff not available)"
-    skip "Diff component vs golden (forge diff not available)"
+    record_skip "Diff catalog vs golden (forge diff not available)"
+    record_skip "Diff component vs golden (forge diff not available)"
 fi
 
 echo ""
@@ -374,22 +396,20 @@ if ${HAS_TRACE}; then
     TRACE_OUTPUT="${TMPDIR}/trace-report.txt"
 
     check "forge trace produces non-empty output" \
-        ${FORGE} trace "${CATALOG_JSON}" --source "${FIXTURE}" --output "${TRACE_OUTPUT}"
+        "${FORGE}" trace "${CATALOG_JSON}" --source "${FIXTURE}" --output "${TRACE_OUTPUT}"
 
     if [[ -f "${TRACE_OUTPUT}" ]]; then
         check "Trace report file is non-empty" \
             test -s "${TRACE_OUTPUT}"
     else
         # trace may write to stdout; re-run to capture
-        TRACE_STDOUT=$(${FORGE} trace "${CATALOG_JSON}" --source "${FIXTURE}" 2>/dev/null || true)
+        TRACE_STDOUT=$("${FORGE}" trace "${CATALOG_JSON}" --source "${FIXTURE}" 2>/dev/null || true)
         check "Trace stdout is non-empty" \
             test -n "${TRACE_STDOUT}"
     fi
 else
-    TOTAL=$((TOTAL + 2))
-    SKIPPED=$((SKIPPED + 2))
-    skip "forge trace produces non-empty output (command not available)"
-    skip "Trace report file is non-empty (command not available)"
+    record_skip "forge trace produces non-empty output (command not available)"
+    record_skip "Trace report file is non-empty (command not available)"
 fi
 
 echo ""
@@ -404,6 +424,9 @@ echo "════════════════════════�
 
 if [[ ${FAILED} -gt 0 ]]; then
     echo -e "${RED}Integration test FAILED${NC}"
+    exit 1
+elif [[ ${PASSED} -eq 0 ]]; then
+    echo -e "${RED}Integration test INCONCLUSIVE: every check skipped${NC}"
     exit 1
 else
     echo -e "${GREEN}Integration test PASSED${NC}"

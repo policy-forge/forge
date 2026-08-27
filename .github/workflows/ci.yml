@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -20,6 +24,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
 
@@ -34,18 +39,17 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Run tests
         run: cargo test --verbose
 
-      - name: Verify OSCAL schema provenance
-        run: cargo test --test schema_provenance_test --verbose
 
       - name: Lint
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Build release
         run: cargo build --release --verbose
@@ -57,28 +61,46 @@ jobs:
 
       - name: Run benchmarks
         if: matrix.os == 'ubuntu-latest'
-        run: cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3
+        run: cargo bench --bench pipeline_benchmark
 
+
+  # Audits run in a dedicated job so a test/lint/build failure in `test`
+  # cannot silently skip advisory, license, and supply-chain checks (F1062).
+  audit:
+    name: Supply-chain audits
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
+
+
+      # Tool binaries are independent of this project's dependency graph, so cache
+      # them by the workflow definition rather than Cargo.lock.
+      - name: Cache audit tooling
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-audit-tools-${{ hashFiles('.github/workflows/ci.yml') }}
       - name: Install cargo-audit
-        if: matrix.os == 'ubuntu-latest'
-        run: cargo install cargo-audit --locked
+        run: cargo install cargo-audit --locked --force
 
       - name: Security audit
-        if: matrix.os == 'ubuntu-latest'
         run: cargo audit
 
       - name: Install cargo-deny
-        if: matrix.os == 'ubuntu-latest'
-        run: cargo install cargo-deny --locked
+        run: cargo install cargo-deny --locked --force
 
       - name: License and advisory check
-        if: matrix.os == 'ubuntu-latest'
         run: cargo deny check
 
       - name: Install cargo-vet
-        if: matrix.os == 'ubuntu-latest'
-        run: cargo install cargo-vet --locked
+        run: cargo install cargo-vet --locked --force
 
       - name: Supply-chain audit
-        if: matrix.os == 'ubuntu-latest'
         run: cargo vet --locked

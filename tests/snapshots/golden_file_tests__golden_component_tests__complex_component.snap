@@ -10,7 +10,7 @@ expression: normalized
           "citation": {
             "text": "NIST SP 800-77"
           },
-          "description": "Referenced by requirement 77c45e0f-5b61-56c6-bccb-b006a61d6d9b",
+          "description": "Referenced by requirement c495a8c6-3109-508c-be77-061a4cd3c1d9",
           "title": "NIST SP 800-77",
           "uuid": "00000000-0000-0000-0000-000000000000"
         },
@@ -18,7 +18,7 @@ expression: normalized
           "citation": {
             "text": "FIPS 140-3"
           },
-          "description": "Referenced by requirement a4128754-7f47-5ac6-baee-91c82f2ce78a",
+          "description": "Referenced by requirement a8219a88-e50e-5346-b7d7-b612f046caa2",
           "title": "FIPS 140-3",
           "uuid": "00000000-0000-0000-0000-000000000000"
         },
@@ -26,7 +26,7 @@ expression: normalized
           "citation": {
             "text": "NIST SP 800-94"
           },
-          "description": "Referenced by requirement 9b00ccfe-e54f-53bc-983d-2ee6dff5ce4e",
+          "description": "Referenced by requirement e3b83c43-edec-50ba-a237-94e9708a5f4f",
           "title": "NIST SP 800-94",
           "uuid": "00000000-0000-0000-0000-000000000000"
         }
@@ -104,7 +104,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-AC-003",
-                "description": "Access permissions must be reviewed {{ insert: param, id-ref: p22e21047-4c17-583c-8504-c52186c44ba4_prm_0 }}",
+                "description": "Access permissions must be reviewed {{ insert: param, id-ref: e54cc003-0073-54fd-8847-d875b9556f32_prm_0 }}",
                 "links": [
                   {
                     "href": "input.md#line=13",
@@ -200,7 +200,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-AC-006",
-                "description": "Passwords must be {{ insert: param, id-ref: edd7dde4-95f0-5e5a-bc74-d395c3a285e0_prm_0 }} and include uppercase, lowercase, numbers, and symbols",
+                "description": "Passwords must be {{ insert: param, id-ref: p8fb56c31-0d6b-55d4-a6ca-7fa7e96e53d1_prm_0 }} and include uppercase, lowercase, numbers, and symbols",
                 "links": [
                   {
                     "href": "input.md#line=19",
@@ -424,7 +424,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-DP-004",
-                "description": "Encryption keys must be rotated {{ insert: param, id-ref: p6c3ccd4d-74c5-53c1-b96c-8ee71f7fcf9b_prm_0 }} and stored in a hardware security module",
+                "description": "Encryption keys must be rotated {{ insert: param, id-ref: cfe09b14-4583-5a0e-857a-aa01ead30462_prm_0 }} and stored in a hardware security module",
                 "links": [
                   {
                     "href": "input.md#line=34",
@@ -616,7 +616,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-IR-002",
-                "description": "An incident response plan must be tested {{ insert: param, id-ref: p959331fd-1060-536f-991c-616826fdbe7e_prm_0 }} through tabletop exercises",
+                "description": "An incident response plan must be tested {{ insert: param, id-ref: p30fcdbce-7419-500d-9a72-bd0ea208c124_prm_0 }} through tabletop exercises",
                 "links": [
                   {
                     "href": "input.md#line=51",
@@ -936,7 +936,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-CA-001",
-                "description": "Internal security audits must be conducted {{ insert: param, id-ref: p89464c05-973a-5a0c-9621-ac2e987fbdf0_prm_0 }}",
+                "description": "Internal security audits must be conducted {{ insert: param, id-ref: cca8523d-b4ae-55e2-916f-18639cb0e7b6_prm_0 }}",
                 "links": [
                   {
                     "href": "input.md#line=79",
@@ -968,7 +968,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-CA-002",
-                "description": "Third-party penetration testing must be performed {{ insert: param, id-ref: d2f3cc44-4d4d-5133-a5ca-5e018ed08107_prm_0 }} and findings must be remediated {{ insert: param, id-ref: d2f3cc44-4d4d-5133-a5ca-5e018ed08107_prm_1 }}",
+                "description": "Third-party penetration testing must be performed {{ insert: param, id-ref: be0ef430-0c29-5e48-aa4b-750214a2188c_prm_0 }} and findings must be remediated {{ insert: param, id-ref: be0ef430-0c29-5e48-aa4b-750214a2188c_prm_1 }}",
                 "links": [
                   {
                     "href": "input.md#line=80",
@@ -1000,7 +1000,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-CA-003",
-                "description": "Compliance reports must be submitted to the board of directors {{ insert: param, id-ref: ae0700a0-ff20-5fff-902d-0514e12a826f_prm_0 }}",
+                "description": "Compliance reports must be submitted to the board of directors {{ insert: param, id-ref: p0a68513a-b39d-5c26-9ef2-53aed7744adf_prm_0 }}",
                 "links": [
                   {
                     "href": "input.md#line=81",
@@ -1064,7 +1064,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-CA-005",
-                "description": "All policy exceptions must expire {{ insert: param, id-ref: p2971abdb-56e2-520c-a587-72445cc8e19e_prm_0 }}",
+                "description": "All policy exceptions must expire {{ insert: param, id-ref: dfed83c2-39df-58be-a3ce-e281ada2010b_prm_0 }}",
                 "links": [
                   {
                     "href": "input.md#line=82",

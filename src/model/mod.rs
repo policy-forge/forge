@@ -10,7 +10,7 @@ pub mod trace;
 
 use std::path::PathBuf;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Classification of a policy requirement's obligation strength.
 ///
@@ -29,6 +29,61 @@ pub enum Modality {
 }
 
 pub use assemble::assemble_document;
+
+/// A stable identifier for a policy requirement.
+///
+/// This transparent newtype prevents requirement references from being
+/// accidentally interchanged with unrelated strings while serializing as the
+/// established JSON string representation.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct RequirementId(String);
+
+impl RequirementId {
+    /// Borrow the underlying stable identifier.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<str> for RequirementId {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::ops::Deref for RequirementId {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for RequirementId {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
+impl From<String> for RequirementId {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&str> for RequirementId {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
+    }
+}
+
+impl From<RequirementId> for String {
+    fn from(value: RequirementId) -> Self {
+        value.0
+    }
+}
 
 /// Top-level domain model for a parsed policy document.
 ///
@@ -61,7 +116,7 @@ pub struct PolicyDocument {
 ///
 /// Extracted from YAML frontmatter when available, with fallback to
 /// heading-based extraction and sensible defaults.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DocumentMetadata {
     /// Document title.
     /// - Frontmatter `title` field, OR
@@ -88,6 +143,19 @@ pub struct DocumentMetadata {
     pub content_hash: Option<String>,
 }
 
+impl Default for DocumentMetadata {
+    fn default() -> Self {
+        Self {
+            title: String::new(),
+            version: "0.0.0".to_string(),
+            author: None,
+            date: None,
+            source_path: PathBuf::new(),
+            content_hash: None,
+        }
+    }
+}
+
 /// A hierarchical section within a policy document, mapped from a Markdown heading.
 ///
 /// Sections form a tree structure with parent-child relationships.
@@ -96,7 +164,8 @@ pub struct PolicySection {
     /// Section title (heading text).
     pub title: String,
 
-    /// Heading level: 1 for H1, 2 for H2, ..., 6 for H6.
+    /// Heading level: 1 for H1, 2 for H2, ..., 6 for H6; the synthetic
+    /// `Preamble` section alone uses 0.
     pub heading_level: u8,
 
     /// Source line number in the original document (1-based).
@@ -156,8 +225,16 @@ pub struct PolicyRequirement {
     pub modality: Option<Modality>,
 
     /// Parameters extracted from this requirement's text by WI-34.
-    /// Empty until parameter extraction runs.
+    /// Empty until parameter extraction runs or when no parameters are found.
     pub parameters: Vec<PolicyParameter>,
+
+    /// Whether parameter extraction has completed, including a completed run
+    /// that found no parameters.
+    ///
+    /// The default preserves documents created before explicit extraction state
+    /// was recorded. `false` is omitted from serialized output for wire compatibility.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub parameters_extracted: bool,
 }
 
 /// A parameterizable value extracted from a policy requirement (WI-34).
@@ -170,7 +247,7 @@ pub struct PolicyParameter {
     /// Deterministic identifier: `"{requirement_id}_prm_{position}"`.
     pub id: String,
     /// `stable_id` of the `PolicyRequirement` this parameter was extracted from.
-    pub requirement_id: String,
+    pub requirement_id: RequirementId,
     /// Human-readable label describing this parameter (e.g., `"within 30 days"`).
     pub label: String,
     /// The extracted parameter value as a string (e.g., `"30 days"`, `"annually"`).
@@ -229,7 +306,7 @@ pub struct Citation {
     pub url: Option<String>,
 
     /// `stable_id` of the `PolicyRequirement` that references this citation.
-    pub source_requirement_id: Option<String>,
+    pub source_requirement_id: Option<RequirementId>,
 }
 
 impl PolicySection {
@@ -260,22 +337,74 @@ impl PolicyDocument {
         self.sections.iter().map(PolicySection::total_sections).sum()
     }
 
-    /// Recursively collect all citations from every requirement in this document.
+    /// Debug-check postconditions required after stable-ID, modality, and
+    /// parameter enrichment have all completed.
+    ///
+    /// Pipeline stages call this at their final boundary in debug builds to
+    /// catch a reordered or omitted enrichment pass without affecting release
+    /// behavior.
+    pub(crate) fn debug_assert_fully_enriched(&self) {
+        fn visit(section: &PolicySection) {
+            for requirement in &section.requirements {
+                debug_assert!(
+                    requirement.stable_id.as_deref().is_some_and(|id| !id.is_empty()),
+                    "fully enriched requirement must have a stable ID"
+                );
+                debug_assert!(
+                    requirement.modality.is_some(),
+                    "fully enriched requirement needs modality"
+                );
+                debug_assert!(
+                    requirement.parameters_extracted,
+                    "fully enriched requirement must complete parameter extraction"
+                );
+                let oscal_requirement_id =
+                    crate::parameter::oscal_base_id(requirement.stable_id.as_deref().unwrap_or(""));
+                for parameter in &requirement.parameters {
+                    debug_assert_eq!(
+                        parameter.requirement_id.as_str(),
+                        oscal_requirement_id,
+                        "parameter must reference its owning requirement"
+                    );
+                }
+            }
+            for child in &section.children {
+                visit(child);
+            }
+        }
+
+        for section in &self.sections {
+            visit(section);
+        }
+    }
+
+    /// Recursively collect unique citations from every requirement in this document.
+    ///
+    /// When multiple requirements cite the same citation ID, the first occurrence
+    /// in document order is retained. This is the canonical input to back-matter
+    /// generation, whose resource identifiers must be unique.
     #[must_use]
     pub fn collect_citations(&self) -> Vec<Citation> {
-        fn walk(section: &PolicySection, out: &mut Vec<Citation>) {
-            for req in &section.requirements {
-                out.extend(req.citations.clone());
+        fn walk<'a>(section: &'a PolicySection, out: &mut Vec<&'a Citation>) {
+            for requirement in &section.requirements {
+                out.extend(&requirement.citations);
             }
             for child in &section.children {
                 walk(child, out);
             }
         }
-        let mut out = Vec::new();
+
+        let mut citations = Vec::with_capacity(self.total_requirements());
         for section in &self.sections {
-            walk(section, &mut out);
+            walk(section, &mut citations);
         }
-        out
+
+        let mut seen_ids = std::collections::HashSet::with_capacity(citations.len());
+        citations
+            .into_iter()
+            .filter(|citation| seen_ids.insert(citation.id.as_str()))
+            .cloned()
+            .collect()
     }
 }
 
@@ -305,6 +434,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -508,5 +638,83 @@ mod tests {
             }],
         };
         assert_eq!(doc.total_sections(), 3);
+    }
+
+    #[test]
+    fn metadata_default_uses_documented_version() {
+        assert_eq!(DocumentMetadata::default().version, "0.0.0");
+    }
+
+    #[test]
+    fn requirement_id_is_string_compatible_on_the_wire() {
+        let id = RequirementId::from("req-123");
+        assert_eq!(id.as_str(), "req-123");
+        assert_eq!(serde_json::to_string(&id).unwrap(), "\"req-123\"");
+        assert_eq!(String::from(id), "req-123");
+    }
+
+    #[test]
+    fn unprocessed_parameter_state_is_wire_compatible() {
+        let mut requirement = sample_requirement();
+        let serialized = serde_json::to_value(&requirement).unwrap();
+        assert!(serialized.get("parameters_extracted").is_none());
+
+        requirement.parameters_extracted = true;
+        let serialized = serde_json::to_value(&requirement).unwrap();
+        assert_eq!(serialized.get("parameters_extracted"), Some(&serde_json::Value::Bool(true)));
+    }
+
+    #[test]
+    fn total_requirements_and_citations_are_recursive_and_deduplicated() {
+        let mut parent_requirement = sample_requirement();
+        parent_requirement.citations = vec![Citation {
+            id: "shared".to_string(),
+            text: "first occurrence".to_string(),
+            url: None,
+            source_requirement_id: Some("req-parent".into()),
+        }];
+
+        let mut child_requirement = sample_requirement();
+        child_requirement.citations = vec![
+            Citation {
+                id: "shared".to_string(),
+                text: "later occurrence".to_string(),
+                url: None,
+                source_requirement_id: Some("req-child".into()),
+            },
+            Citation {
+                id: "unique".to_string(),
+                text: "unique occurrence".to_string(),
+                url: None,
+                source_requirement_id: Some("req-child".into()),
+            },
+        ];
+
+        let document = PolicyDocument {
+            id: "test".to_string(),
+            metadata: DocumentMetadata::default(),
+            sections: vec![PolicySection {
+                title: "Parent".to_string(),
+                heading_level: 1,
+                source_line: 1,
+                body_text: None,
+                requirements: vec![parent_requirement],
+                children: vec![PolicySection {
+                    title: "Child".to_string(),
+                    heading_level: 2,
+                    source_line: 2,
+                    body_text: None,
+                    requirements: vec![child_requirement],
+                    children: Vec::new(),
+                }],
+            }],
+        };
+
+        assert_eq!(document.total_requirements(), 2);
+        let citations = document.collect_citations();
+        assert_eq!(citations.len(), 2);
+        assert_eq!(citations[0].id, "shared");
+        assert_eq!(citations[0].source_requirement_id.as_deref(), Some("req-parent"));
+        assert_eq!(citations[1].id, "unique");
     }
 }

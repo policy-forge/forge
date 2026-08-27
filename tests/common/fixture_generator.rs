@@ -5,6 +5,8 @@
 //!
 //! # Determinism
 //! No randomness, no system time, no RNG. Two calls produce byte-identical output.
+// This module is compiled into every integration-test binary through `common`; only
+// fixture_determinism_test uses every helper, so per-binary dead-code diagnostics are expected.
 #![allow(dead_code)]
 
 use std::fmt::Write;
@@ -1059,7 +1061,7 @@ organization shall implement integrity verification mechanisms to detect any una
 modification of stored log data.",
                 requirements: &[
                     "Audit logs shall be transmitted to the centralized log management system within five minutes of generation and must use encrypted transport to protect log data in transit.",
-                    "Access to the log management system shall be restricted to authorized security personnel and must require multi-factor authentication for all access. See Section 1.2 for authentication requirements.",
+                    "Access to the log management system shall be restricted to authorized security personnel and must require multi-factor authentication for all access. See Section 1.3 for authentication requirements.",
                     "Log data integrity shall be protected through cryptographic hash verification and must generate alerts if any modification to stored log records is detected.",
                     "Log retention periods shall comply with the data retention schedule and must retain security event logs for a minimum of twelve months online and thirty-six months in archive storage.",
                     "The log management system shall provide indexed search capabilities and must support queries that return results within sixty seconds for searches spanning up to twelve months of data.",
@@ -1284,7 +1286,7 @@ const NIST_REFERENCES: &[&str] = &[
 /// - ~40 H3 subsections (3-5 per H2)
 /// - ~200 numbered policy requirements (normative language)
 /// - ~20 compound statements ("must X and must Y")
-/// - ~30 citations/references ("[NIST SP 800-53 AC-2]")
+/// - 40 plain-text standard references (one per subsection, cycling `NIST_REFERENCES`)
 /// - ~10 tables (role-responsibility matrices)
 ///
 /// # Determinism
@@ -1309,10 +1311,12 @@ pub fn generate_synthetic_policy() -> String {
 
     // ── Generate Each Domain (H2) ──
     let mut nist_idx: usize = 0;
+    let mut table_number: usize = 0;
     for (domain_idx, domain) in DOMAINS.iter().enumerate() {
         let domain_num = domain_idx + 1;
 
-        // H2 heading
+        // H2 heading. Writes target `String`, whose `fmt::Write` implementation is infallible;
+        // retargeting this generator to a fallible writer must propagate `fmt::Result`.
         let _ = write!(doc, "## {}. {}\n\n", domain_num, domain.title);
 
         // Domain intro
@@ -1341,6 +1345,8 @@ pub fn generate_synthetic_policy() -> String {
 
             // Table (if present)
             if let Some(table) = sub.table {
+                table_number += 1;
+                let _ = writeln!(doc, "Table {table_number}: {} Matrix\n", sub.title);
                 doc.push_str(table);
                 doc.push_str("\n\n");
             }
@@ -1363,6 +1369,11 @@ pub fn generate_synthetic_policy() -> String {
             nist_idx += 1;
         }
     }
+
+    doc.push_str("# Appendix A: Approved Disposal Methods\n\n");
+    doc.push_str("Approved disposal methods include cryptographic erasure, degaussing, shredding, and certified destruction appropriate to the data classification and storage medium.\n\n");
+    doc.push_str("# Appendix B: Vendor Assessment Questionnaire\n\n");
+    doc.push_str("The vendor assessment questionnaire covers security governance, access control, incident response, data protection, continuity, and independent assurance evidence.\n");
 
     doc
 }
@@ -1444,4 +1455,46 @@ Personnel responsible for implementing and maintaining {sub_lower} controls shou
 receive specialized training appropriate to their role and should maintain current \
 knowledge of emerging threats and countermeasures relevant to {domain_lower}.\n\n",
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fixture_determinism_test() {
+        let first = generate_synthetic_policy();
+        let second = generate_synthetic_policy();
+
+        assert_eq!(first, second, "synthetic policy generation must be deterministic");
+        assert!(
+            (140_000..250_000).contains(&first.len()),
+            "fixture size {} is outside the benchmark corpus range",
+            first.len()
+        );
+        assert!(
+            (20_000..30_000).contains(&first.split_whitespace().count()),
+            "fixture word count drifted from the benchmark corpus range"
+        );
+
+        let lines: Vec<&str> = first.lines().collect();
+        assert_eq!(lines.iter().filter(|line| line.starts_with("## ")).count(), 10);
+        assert_eq!(lines.iter().filter(|line| line.starts_with("### ")).count(), 40);
+        assert_eq!(lines.iter().filter(|line| line.starts_with("Table ")).count(), 10);
+        assert_eq!(lines.iter().filter(|line| line.starts_with("#### ")).count(), 3);
+        assert_eq!(
+            lines
+                .iter()
+                .filter(|line| {
+                    let trimmed = line.trim_start();
+                    trimmed
+                        .split_once(". ")
+                        .is_some_and(|(number, _)| number.chars().all(|ch| ch.is_ascii_digit()))
+                })
+                .count(),
+            200
+        );
+        assert!(first.contains("# Appendix A: Approved Disposal Methods"));
+        assert!(first.contains("# Appendix B: Vendor Assessment Questionnaire"));
+    }
 }

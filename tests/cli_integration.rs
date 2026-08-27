@@ -16,16 +16,6 @@ fn create_temp_md(dir: &TempDir, name: &str, content: &str) -> std::path::PathBu
 }
 
 #[test]
-fn help_shows_convert_and_validate() {
-    let output = forge_bin().arg("--help").output().expect("Failed to execute process");
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(output.status.success(), "Expected success, got: {stdout}");
-    assert!(stdout.contains("convert"), "Help should list 'convert' subcommand:\n{stdout}");
-    assert!(stdout.contains("validate"), "Help should list 'validate' subcommand:\n{stdout}");
-}
-
-#[test]
 fn no_args_shows_help() {
     let output = forge_bin().output().expect("Failed to execute process");
 
@@ -100,7 +90,7 @@ fn convert_valid_md_outputs_json() {
     assert!(json["catalog"]["uuid"].is_string(), "Should have 'uuid'");
 }
 
-// T008 [US2] CLI integration tests for pipeline output
+// WI-17-T008 [US2] CLI integration tests for pipeline output
 
 #[test]
 fn convert_stdout_outputs_valid_oscal_json() {
@@ -232,26 +222,6 @@ fn convert_invalid_pdf_shows_parse_error() {
 }
 
 #[test]
-fn convert_nonexistent_file_shows_not_found_error() {
-    let output = forge_bin()
-        .arg("convert")
-        .arg("nonexistent.md")
-        .arg("--strategy")
-        .arg("catalog")
-        .arg("--format")
-        .arg("json")
-        .output()
-        .expect("Failed to execute process");
-
-    assert!(!output.status.success(), "Expected non-zero exit code");
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("not found") || stderr.contains("No such file"),
-        "stderr should indicate file not found:\n{stderr}"
-    );
-}
-
-#[test]
 fn convert_directory_shows_not_a_file_error() {
     let dir = TempDir::new().unwrap();
     let dir_path = dir.path().join("subdir.md");
@@ -327,16 +297,7 @@ fn convert_oversized_file_with_max_size_override_succeeds() {
     assert!(json["catalog"].is_object(), "Should have catalog object");
 }
 
-#[test]
-fn max_size_flag_is_recognized_by_clap() {
-    let output =
-        forge_bin().arg("convert").arg("--help").output().expect("Failed to execute process");
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("max-size"), "Help should list --max-size flag:\n{stdout}");
-}
-
-// T016 [US4] CLI edge case tests
+// WI-17-T016 [US4] CLI edge case tests
 
 #[test]
 fn convert_empty_file_shows_error() {
@@ -442,9 +403,11 @@ fn convert_missing_format_flag_defaults_to_json() {
 #[test]
 fn convert_format_xml_produces_valid_xml() {
     let fixture = std::path::Path::new("tests/fixtures/sample_policy.md");
-    if !fixture.exists() {
-        return;
-    }
+    assert!(
+        fixture.exists(),
+        "Required fixture '{}' is missing — XML format coverage disabled",
+        fixture.display()
+    );
 
     let dir = TempDir::new().unwrap();
     let output_path = dir.path().join("catalog.xml");
@@ -498,7 +461,7 @@ fn convert_strategy_component_without_source_profile_errors() {
 }
 
 // =============================================================================
-// T006–T009, T022–T023: Component pipeline CLI integration tests (WI-18 Phase 2)
+// Component pipeline CLI integration tests (WI-18 Phase 2)
 // =============================================================================
 
 /// T006 [US1] — Full component pipeline produces valid Component Definition JSON.
@@ -615,7 +578,7 @@ fn convert_component_strategy_format_omitted_defaults_to_json() {
     );
 }
 
-/// T008 [US1] — --output writes Component Definition to file.
+/// WI-18-T008 [US1] — --output writes Component Definition to file.
 /// Covers: AC-6, M-8
 #[test]
 fn convert_component_strategy_output_to_file() {
@@ -735,7 +698,7 @@ fn convert_component_strategy_has_trace_props() {
     }
 }
 
-/// T022 [US1] — Zero extractable requirements produces empty implemented-requirements.
+/// WI-18-T022 [US1] — Zero extractable requirements produces empty implemented-requirements.
 /// Covers: EC-2
 #[test]
 fn convert_component_strategy_zero_requirements_empty_control_implementations() {
@@ -773,7 +736,7 @@ fn convert_component_strategy_zero_requirements_empty_control_implementations() 
 }
 
 // =============================================================================
-// T015–T016: Source Profile Validation (WI-18 Phase 4, US-4)
+// Source Profile Validation (WI-18 Phase 4, US-4)
 // =============================================================================
 
 /// T015 [US4] — Non-existent --source-profile path produces descriptive error and exits non-zero.
@@ -810,7 +773,7 @@ fn convert_component_strategy_nonexistent_source_profile_errors() {
     );
 }
 
-/// T016 [US4] — Directory path as --source-profile produces descriptive error and exits non-zero.
+/// WI-18-T016 [US4] — Directory path as --source-profile produces descriptive error and exits non-zero.
 /// Covers: SEC-3
 #[test]
 fn convert_component_strategy_directory_as_source_profile_errors() {
@@ -846,7 +809,7 @@ fn convert_component_strategy_directory_as_source_profile_errors() {
     );
 }
 
-/// T023 [US1] — Source profile with no matching control IDs still produces valid output.
+/// WI-18-T023 [US1] — Source profile with no matching control IDs still produces valid output.
 /// The pipeline uses `source_profile` as a string reference — it does not parse or validate the file.
 /// Covers: EC-3
 #[test]
@@ -892,23 +855,7 @@ fn convert_component_strategy_no_matching_control_ids() {
     );
 }
 
-// T023 [US5] Exit code integration tests
-
-#[test]
-fn exit_code_1_for_file_not_found() {
-    let output = forge_bin()
-        .arg("convert")
-        .arg("nonexistent.md")
-        .arg("--strategy")
-        .arg("catalog")
-        .arg("--format")
-        .arg("json")
-        .output()
-        .expect("Failed to execute process");
-
-    assert!(!output.status.success(), "Expected non-zero exit code");
-    assert_eq!(output.status.code(), Some(1), "FileNotFound should exit with code 1");
-}
+// WI-17-T023 [US5] Exit code integration tests
 
 #[test]
 fn exit_code_2_for_no_structure_detected() {
@@ -930,13 +877,27 @@ fn exit_code_2_for_no_structure_detected() {
     assert_eq!(output.status.code(), Some(2), "NoStructureDetected should exit with code 2");
 }
 
+// Convert reserves exit code 2 for malformed policy structure; validate reserves exit code 3
+// for an invalid OSCAL document, including a syntactically valid but unsupported root.
 #[test]
-fn exit_code_3_for_validate_command() {
-    let output =
-        forge_bin().arg("validate").arg("any.json").output().expect("Failed to execute process");
+fn exit_code_3_for_invalid_document_validate_command() {
+    let dir = TempDir::new().unwrap();
+    let invalid_document = dir.path().join("invalid-oscal.json");
+    std::fs::write(&invalid_document, r#"{\"not-oscal\": true}"#)
+        .expect("failed to write invalid OSCAL fixture");
 
-    assert!(!output.status.success(), "Expected non-zero exit code");
-    assert_eq!(output.status.code(), Some(3), "Validation error should exit with code 3");
+    let output = forge_bin()
+        .arg("validate")
+        .arg(&invalid_document)
+        .output()
+        .expect("failed to execute process");
+
+    assert_eq!(
+        output.status.code(),
+        Some(3),
+        "invalid OSCAL documents must use validate's exit code 3; stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 // =========================================================================
@@ -956,23 +917,17 @@ fn test_error_message_missing_file() {
         .output()
         .expect("Failed to execute process");
 
-    assert!(!output.status.success(), "Expected non-zero exit code");
+    assert_eq!(output.status.code(), Some(1), "missing input must exit with code 1");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-
-    // Should contain descriptive error with file path
     assert!(
         stderr.contains("not found") || stderr.contains("No such file"),
         "Error should mention file not found: {stderr}"
     );
-
-    // SEC-4: No internal Rust module paths in error
     assert!(
         !stderr.contains("src::") && !stderr.contains("src/"),
         "Error should not contain internal Rust paths (SEC-4): {stderr}"
     );
-
-    // No panic/backtrace
     assert!(
         !stderr.contains("panicked") && !stderr.contains("RUST_BACKTRACE"),
         "Error should not contain panic output: {stderr}"
@@ -1032,7 +987,7 @@ fn test_help_text_lists_all_subcommands() {
     );
 }
 
-/// T022 [US3] M-5: Convert help lists all options.
+/// WI-17-T022 [US3] M-5: Convert help lists all options.
 #[test]
 fn test_convert_help_lists_all_options() {
     let output =
@@ -1049,7 +1004,7 @@ fn test_convert_help_lists_all_options() {
     assert!(stdout.contains("source-profile"), "Should list --source-profile: {stdout}");
 }
 
-/// T023 [US3] M-5: Validate help lists all options.
+/// WI-17-T023 [US3] M-5: Validate help lists all options.
 #[test]
 fn test_validate_help_lists_all_options() {
     let output =
@@ -1101,14 +1056,11 @@ fn test_verbose_flag_shows_pipeline_stages() {
 
     assert!(output.status.success(), "Expected success with --verbose, stderr: {stderr}");
 
-    // SEC-7: tracing output should be on stderr, not stdout
-    // Verbose mode enables DEBUG level — should show some tracing output
-    assert!(!stderr.is_empty(), "Verbose mode should produce tracing output on stderr");
-
-    // Verify tracing output contains expected level indicators from tracing_subscriber
+    // SEC-7: tracing output should be on stderr, not stdout. Assert a FORGE
+    // pipeline event rather than a tracing-subscriber level rendering.
     assert!(
-        stderr.contains("DEBUG") || stderr.contains("INFO") || stderr.contains("TRACE"),
-        "Verbose mode should include DEBUG/INFO/TRACE level output on stderr: {stderr}"
+        stderr.contains("Serializing to JSON"),
+        "Verbose mode should emit the JSON serialization stage on stderr: {stderr}"
     );
 
     // stdout should contain JSON output, not tracing messages
@@ -1139,11 +1091,9 @@ fn test_quiet_flag_suppresses_output() {
 
     assert!(output.status.success(), "Expected success with --quiet, stderr: {stderr}");
 
-    // Quiet mode sets tracing_subscriber filter to "error" level, which suppresses
-    // INFO/WARN/DEBUG prefixes from tracing output (only ERROR-level messages appear).
     assert!(
-        !stderr.contains("INFO") && !stderr.contains("WARN") && !stderr.contains("DEBUG"),
-        "Quiet mode should suppress INFO/WARN/DEBUG on stderr: {stderr}"
+        !stderr.contains("Serializing to JSON"),
+        "Quiet mode should suppress the JSON serialization stage on stderr: {stderr}"
     );
 
     // stdout should still have JSON output
@@ -1196,7 +1146,10 @@ fn test_convert_max_size_overflow_produces_error() {
     assert!(!output.status.success(), "Expected non-zero exit code for overflow --max-size");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("too large"), "Should report --max-size value is too large: {stderr}");
+    assert!(
+        stderr.contains("not in 1..=51200"),
+        "Should reject --max-size outside its supported range: {stderr}"
+    );
 }
 
 // =========================================================================

@@ -34,8 +34,8 @@ impl fmt::Display for ArtifactType {
 pub struct ControlSnapshot {
     /// The control identifier (e.g., `"ac-1"`).
     pub control_id: String,
-    /// The UUID of the control.
-    pub uuid: String,
+    /// The UUID of the control, if present in the source artifact.
+    pub uuid: Option<String>,
     /// The control title, if present in the source document.
     pub title: Option<String>,
     /// The control description, if present in the source document.
@@ -46,17 +46,16 @@ pub struct ControlSnapshot {
 
 /// A single field-level change between two control snapshots.
 ///
-/// Captures the field name and its old and new string values.
-/// An empty `old_value` indicates the field was added; an empty `new_value`
-/// indicates the field was removed.
+/// `None` records an absent field, preserving the distinction between absent
+/// and present-but-empty values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldChange {
     /// The name of the field that changed (e.g., `"title"`, `"description"`).
     pub field_name: String,
-    /// The previous value of the field (empty string if the field was added).
-    pub old_value: String,
-    /// The new value of the field (empty string if the field was removed).
-    pub new_value: String,
+    /// The previous field value, or `None` if the field was absent.
+    pub old_value: Option<String>,
+    /// The new field value, or `None` if the field is absent.
+    pub new_value: Option<String>,
 }
 
 /// A per-control diff entry describing how a control differs between two artifacts.
@@ -69,26 +68,24 @@ pub enum DiffEntry {
     Added {
         /// The control identifier.
         control_id: String,
-        /// The UUID assigned in the new artifact.
-        new_uuid: String,
+        /// The UUID assigned in the new artifact, if present.
+        new_uuid: Option<String>,
     },
     /// The control is present only in the old artifact.
     Removed {
         /// The control identifier.
         control_id: String,
-        /// The UUID from the old artifact.
-        old_uuid: String,
+        /// The UUID from the old artifact, if present.
+        old_uuid: Option<String>,
     },
     /// The control exists in both artifacts but its field values differ.
     Changed {
         /// The control identifier.
         control_id: String,
-        /// The UUID from the old artifact.
-        old_uuid: String,
-        /// The UUID from the new artifact.
-        new_uuid: String,
-        /// Whether the UUID itself changed between artifacts.
-        uuid_changed: bool,
+        /// The UUID from the old artifact, if present.
+        old_uuid: Option<String>,
+        /// The UUID from the new artifact, if present.
+        new_uuid: Option<String>,
         /// The list of field-level changes detected.
         field_changes: Vec<FieldChange>,
     },
@@ -96,10 +93,10 @@ pub enum DiffEntry {
     UuidChanged {
         /// The control identifier.
         control_id: String,
-        /// The UUID from the old artifact.
-        old_uuid: String,
-        /// The UUID from the new artifact.
-        new_uuid: String,
+        /// The UUID from the old artifact, if present.
+        old_uuid: Option<String>,
+        /// The UUID from the new artifact, if present.
+        new_uuid: Option<String>,
     },
 }
 
@@ -113,7 +110,7 @@ impl DiffEntry {
     ///
     /// let entry = DiffEntry::Added {
     ///     control_id: "ac-1".into(),
-    ///     new_uuid: "abc-123".into(),
+    ///     new_uuid: Some("abc-123".into()),
     /// };
     /// assert_eq!(entry.control_id(), "ac-1");
     /// ```
@@ -124,6 +121,16 @@ impl DiffEntry {
             | Self::Removed { control_id, .. }
             | Self::Changed { control_id, .. }
             | Self::UuidChanged { control_id, .. } => control_id,
+        }
+    }
+
+    /// Returns whether this entry records a UUID change.
+    #[must_use]
+    pub fn uuid_changed(&self) -> bool {
+        match self {
+            Self::Changed { old_uuid, new_uuid, .. }
+            | Self::UuidChanged { old_uuid, new_uuid, .. } => old_uuid != new_uuid,
+            Self::Added { .. } | Self::Removed { .. } => false,
         }
     }
 }

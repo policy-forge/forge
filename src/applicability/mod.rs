@@ -6,6 +6,7 @@ pub mod model;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -19,7 +20,7 @@ use crate::mapping::model::{
 use crate::{ForgeError, OscalModelType, io, validate};
 
 type SourceSubjectKey = (String, SubjectType, String);
-type RelationshipKey = (String, SubjectType, String, SubjectType, String);
+type RelationshipKey = (Arc<str>, SubjectType, Arc<str>, SubjectType, Arc<str>);
 
 #[derive(Default)]
 struct MappingValidationState {
@@ -29,6 +30,18 @@ struct MappingValidationState {
     source_resources_by_href: BTreeMap<String, ResourceEvidence>,
     source_subject_fingerprints: BTreeMap<SourceSubjectKey, String>,
     relationship_polarities: BTreeMap<RelationshipKey, bool>,
+    relationship_components: BTreeSet<Arc<str>>,
+}
+
+impl MappingValidationState {
+    fn intern_relationship_component(&mut self, value: &str) -> Arc<str> {
+        if let Some(existing) = self.relationship_components.get(value) {
+            return Arc::clone(existing);
+        }
+        let interned = Arc::<str>::from(value);
+        self.relationship_components.insert(Arc::clone(&interned));
+        interned
+    }
 }
 
 /// Fully validated applicability inputs and their deterministic complete report.
@@ -36,6 +49,90 @@ pub(crate) struct PreparedAnalysis {
     pub report: model::ApplicabilityReport,
     pub manifest: manifest::ApplicabilityManifest,
     pub input_paths: Vec<PathBuf>,
+    input_fingerprints: Vec<PreparedInputFingerprint>,
+}
+
+#[derive(Debug)]
+struct PreparedInputFingerprint {
+    path: PathBuf,
+    sha256: String,
+    byte_len: u64,
+    max_bytes: u64,
+}
+
+impl PreparedAnalysis {
+    /// Verify that every input still matches the exact bytes used to prepare this analysis.
+    pub(crate) fn verify_input_fingerprints(&self) -> Result<(), ForgeError> {
+        verify_input_fingerprints(&self.input_fingerprints)
+    }
+}
+
+fn verify_input_fingerprints(inputs: &[PreparedInputFingerprint]) -> Result<(), ForgeError> {
+    for input in inputs {
+        let file = std::fs::File::open(&input.path).map_err(|cause| {
+            error(format!("cannot reopen prepared input '{}': {cause}", input.path.display()))
+        })?;
+        let metadata = file.metadata().map_err(|cause| {
+            error(format!("cannot inspect prepared input '{}': {cause}", input.path.display()))
+        })?;
+        if !metadata.is_file() {
+            return Err(error(format!(
+                "prepared input '{}' is not a regular file",
+                input.path.display()
+            )));
+        }
+        if metadata.len() > input.max_bytes {
+            return Err(error(format!(
+                "prepared input '{}' exceeds the {} byte limit",
+                input.path.display(),
+                input.max_bytes
+            )));
+        }
+        let mut bytes = Vec::new();
+        let mut bounded = std::io::Read::take(file, input.max_bytes.saturating_add(1));
+        std::io::Read::read_to_end(&mut bounded, &mut bytes).map_err(|cause| {
+            error(format!("cannot reread prepared input '{}': {cause}", input.path.display()))
+        })?;
+        if bytes.len() as u64 > input.max_bytes {
+            return Err(error(format!(
+                "prepared input '{}' exceeds the {} byte limit",
+                input.path.display(),
+                input.max_bytes
+            )));
+        }
+        if bytes.len() as u64 != input.byte_len || sha256(&bytes) != input.sha256 {
+            return Err(error(format!(
+                "prepared input '{}' changed after analysis preparation",
+                input.path.display()
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn capture_input_fingerprint(
+    path: &Path,
+    sha256: String,
+    max_bytes: u64,
+) -> Result<PreparedInputFingerprint, ForgeError> {
+    let metadata = std::fs::metadata(path).map_err(|cause| {
+        error(format!("cannot inspect prepared input '{}': {cause}", path.display()))
+    })?;
+    if !metadata.is_file() {
+        return Err(error(format!("prepared input '{}' is not a regular file", path.display())));
+    }
+    if metadata.len() > max_bytes {
+        return Err(error(format!(
+            "prepared input '{}' exceeds the {max_bytes} byte limit",
+            path.display()
+        )));
+    }
+    Ok(PreparedInputFingerprint {
+        path: path.to_path_buf(),
+        sha256,
+        byte_len: metadata.len(),
+        max_bytes,
+    })
 }
 
 /// Create an undecided, deterministic applicability manifest scaffold.
@@ -100,11 +197,8 @@ pub(crate) fn prepare_analysis(
     filters: model::ReportFilters,
 ) -> Result<PreparedAnalysis, ForgeError> {
     validate_filters(&filters)?;
-    io::check_file_size(manifest_path, manifest::MAX_MANIFEST_BYTES)
+    let manifest_bytes = io::read_bounded(manifest_path, manifest::MAX_MANIFEST_BYTES)
         .map_err(|cause| error(format!("manifest: {cause}")))?;
-    let manifest_bytes = std::fs::read(manifest_path).map_err(|cause| {
-        error(format!("cannot read manifest '{}': {cause}", manifest_path.display()))
-    })?;
     let parsed = manifest::parse(&manifest_bytes)?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
     let framework = inventory::load(manifest_dir, "$.framework", &parsed.framework)
@@ -115,15 +209,47 @@ pub(crate) fn prepare_analysis(
     let mut mapping_facts = BTreeMap::new();
     let mut evidence = Vec::new();
     let mut validation_state = MappingValidationState::default();
-    let mut inputs = vec![manifest_path.to_path_buf(), framework.path.clone()];
+    let mut input_fingerprints = vec![PreparedInputFingerprint {
+        path: manifest_path.to_path_buf(),
+        sha256: sha256(&manifest_bytes),
+        byte_len: manifest_bytes.len() as u64,
+        max_bytes: manifest::MAX_MANIFEST_BYTES,
+    }];
+    input_fingerprints.push(capture_input_fingerprint(
+        &framework.path,
+        framework.evidence.raw_sha256.clone(),
+        io::MAX_FILE_SIZE,
+    )?);
     if let Some(companion) = &parsed.framework.resolved_catalog {
-        inputs.push(manifest_dir.join(companion));
+        let companion_path = manifest_dir.join(companion);
+        let companion_sha256 =
+            framework.evidence.resolved_catalog_sha256.clone().ok_or_else(|| {
+                error("prepared Profile companion is missing its SHA-256 evidence")
+            })?;
+        input_fingerprints.push(capture_input_fingerprint(
+            &companion_path,
+            companion_sha256,
+            io::MAX_FILE_SIZE,
+        )?);
     }
+    let mut mapping_paths: Vec<PathBuf> = Vec::new();
     for (index, relative_path) in parsed.mapping_collections.iter().enumerate() {
         let path = manifest_dir.join(relative_path);
-        inputs.push(path.clone());
+        for previous in &mapping_paths {
+            if crate::mapping::paths_alias(&path, previous).map_err(relabel_mapping_error)? {
+                return Err(error(format!(
+                    "$.mapping_collections[{index}] aliases another Mapping Collection input"
+                )));
+            }
+        }
+        mapping_paths.push(path.clone());
         let loaded =
             load_mapping(&path, index, &framework, &mut mapping_facts, &mut validation_state)?;
+        input_fingerprints.push(capture_input_fingerprint(
+            &path,
+            loaded.raw_sha256.clone(),
+            io::MAX_FILE_SIZE,
+        )?);
         evidence.push(loaded);
     }
     evidence.sort_by(|left, right| left.uuid.cmp(&right.uuid));
@@ -138,7 +264,8 @@ pub(crate) fn prepare_analysis(
         filters,
     );
     validate_classification_counts(&report.counts)?;
-    Ok(PreparedAnalysis { report, manifest: parsed, input_paths: inputs })
+    let input_paths = input_fingerprints.iter().map(|input| input.path.clone()).collect();
+    Ok(PreparedAnalysis { report, manifest: parsed, input_paths, input_fingerprints })
 }
 
 /// Convert the CLI filter vocabulary into the report model vocabulary.
@@ -186,10 +313,8 @@ fn load_mapping(
     validation_state: &mut MappingValidationState,
 ) -> Result<model::MappingEvidence, ForgeError> {
     let label = format!("$.mapping_collections[{index}]");
-    io::check_file_size(path, io::MAX_FILE_SIZE)
-        .map_err(|cause| error(format!("{label}: {cause}")))?;
-    let bytes =
-        std::fs::read(path).map_err(|cause| error(format!("{label} cannot be read: {cause}")))?;
+    let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
+        .map_err(|cause| error(format!("{label} cannot be read: {cause}")))?;
     let value: Value = serde_json::from_slice(&bytes)
         .map_err(|cause| error(format!("{label} is not valid JSON: {cause}")))?;
     let detected =
@@ -302,7 +427,9 @@ fn mapping_reviewer_evidence(
             "{label}.mapping-collection.provenance must identify at least one mapping-reviewer"
         )));
     }
-    let party_uuids = parties.keys().copied().collect();
+    // The authorization set is restricted to parties actually holding the
+    // mapping-reviewer role — NOT every declared party (F0308).
+    let reviewer_authority: BTreeSet<uuid::Uuid> = reviewer_uuids.iter().copied().collect();
     let reviewers = reviewer_uuids
         .into_iter()
         .map(|uuid| -> Result<model::MappingReviewerEvidence, ForgeError> {
@@ -318,7 +445,7 @@ fn mapping_reviewer_evidence(
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok((reviewers, party_uuids))
+    Ok((reviewers, reviewer_authority))
 }
 
 fn validate_mapping_edges(
@@ -344,7 +471,7 @@ fn validate_mapping_edges(
         let reviewer_uuid = stable_uuid("party", reviewer_key);
         if !party_uuids.contains(&reviewer_uuid) {
             return Err(error(format!(
-                "{edge_label} FORGE 'reviewer-key' references undeclared reviewer '{reviewer_key}'"
+                "{edge_label} FORGE 'reviewer-key' references '{reviewer_key}' which is not a declared mapping-reviewer"
             )));
         }
         let reviewed_at = require_single_prop(&edge_label, &edge.props, "reviewed-at")?;
@@ -389,11 +516,11 @@ fn validate_mapping_edges(
             }
             for (source_type, source_id) in &source_subjects {
                 let relationship_key = (
-                    source_resource.raw_sha256.clone(),
+                    validation_state.intern_relationship_component(&source_resource.raw_sha256),
                     *source_type,
-                    source_id.clone(),
+                    validation_state.intern_relationship_component(source_id),
                     target.subject_type,
-                    target.id_ref.clone(),
+                    validation_state.intern_relationship_component(&target.id_ref),
                 );
                 if validation_state
                     .relationship_polarities
@@ -809,17 +936,18 @@ fn render_html_report(report: &model::ApplicabilityReport) -> String {
     let _ = writeln!(
         output,
         "<p>Schema <code>{}</code>; manifest SHA-256 <code>{}</code>.</p>",
-        report.schema_version, report.manifest_sha256
+        escape_html(report.schema_version),
+        escape_html(&report.manifest_sha256)
     );
     let _ = writeln!(
         output,
         "<p>Framework: {} <code>{}</code>, root UUID <code>{}</code>, version <code>{}</code>, OSCAL <code>{}</code>, SHA-256 <code>{}</code>.</p>",
-        report.framework.resource_type.as_str(),
+        escape_html(report.framework.resource_type.as_str()),
         escape_html(&report.framework.href),
-        report.framework.root_uuid,
+        escape_html(&report.framework.root_uuid),
         escape_html(&report.framework.document_version),
         escape_html(&report.framework.oscal_version),
-        report.framework.raw_sha256
+        escape_html(&report.framework.raw_sha256)
     );
     append_html_provenance(&mut output, report);
     append_html_counts(&mut output, report);
@@ -836,7 +964,7 @@ fn append_html_provenance(output: &mut String, report: &model::ApplicabilityRepo
             output,
             "<li>Applicability reviewer <code>{}</code> ({}, {})</li>",
             escape_html(&reviewer.key),
-            reviewer_type(reviewer.party_type),
+            escape_html(reviewer_type(reviewer.party_type)),
             escape_html(&reviewer.name)
         );
     }
@@ -844,27 +972,28 @@ fn append_html_provenance(output: &mut String, report: &model::ApplicabilityRepo
         let _ = writeln!(
             output,
             "<li>Mapping Collection <code>{}</code>, version <code>{}</code>, OSCAL <code>{}</code>, SHA-256 <code>{}</code>, reviewed <code>{}</code></li>",
-            mapping.uuid,
+            escape_html(&mapping.uuid.clone()),
             escape_html(&mapping.version),
             escape_html(&mapping.oscal_version),
-            mapping.raw_sha256,
+            escape_html(&mapping.raw_sha256),
             escape_html(&mapping.reviewed_at)
         );
         for source in &mapping.source_resources {
             let _ = writeln!(
                 output,
                 "<li>Policy source {} <code>{}</code>, root UUID <code>{}</code>, version <code>{}</code>, OSCAL <code>{}</code>, SHA-256 <code>{}</code></li>",
-                source.resource_type.as_str(),
+                escape_html(source.resource_type.as_str()),
                 escape_html(&source.href),
-                source.root_uuid,
+                escape_html(&source.root_uuid),
                 escape_html(&source.document_version),
                 escape_html(&source.oscal_version),
-                source.raw_sha256
+                escape_html(&source.raw_sha256)
             );
             if let Some(hash) = &source.resolved_catalog_sha256 {
                 let _ = writeln!(
                     output,
-                    "<li>Policy source resolved Catalog SHA-256 <code>{hash}</code></li>"
+                    "<li>Policy source resolved Catalog SHA-256 <code>{}</code></li>",
+                    escape_html(hash)
                 );
             }
         }
@@ -872,8 +1001,8 @@ fn append_html_provenance(output: &mut String, report: &model::ApplicabilityRepo
             let _ = writeln!(
                 output,
                 "<li>Mapping reviewer <code>{}</code> ({}, {})</li>",
-                reviewer.uuid,
-                reviewer_type(reviewer.reviewer_type),
+                escape_html(&reviewer.uuid.clone()),
+                escape_html(reviewer_type(reviewer.reviewer_type)),
                 escape_html(&reviewer.name)
             );
         }
@@ -916,7 +1045,7 @@ fn append_html_controls(output: &mut String, report: &model::ApplicabilityReport
             "<tr><td><code>{}</code></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
             escape_html(&control.control_id),
             escape_html(&control.groups.join(", ")),
-            control.classification.as_str(),
+            escape_html(control.classification.as_str()),
             control.reviewer_key.as_deref().map(escape_html).unwrap_or_default(),
             control.reviewed_at.as_deref().map(escape_html).unwrap_or_default(),
             control.rationale.as_deref().map(escape_html).unwrap_or_default(),
@@ -937,7 +1066,7 @@ fn append_html_queue(output: &mut String, report: &model::ApplicabilityReport) {
             output,
             "<tr><td><code>{}</code></td><td><code>{}</code></td><td>{}</td><td>{}</td></tr>",
             escape_html(&item.control_id),
-            item.reason_code,
+            escape_html(item.reason_code.as_str()),
             item.owner.as_deref().map(escape_html).unwrap_or_default(),
             item.revisit_date.as_deref().map(escape_html).unwrap_or_default()
         );
@@ -964,13 +1093,16 @@ fn review_required(
             let Some(as_of) = as_of else { return false };
             manifest.decisions.iter().any(|decision| {
                 decision.state == manifest::DecisionState::Deferred
-                    && decision.revisit_date.as_deref().is_some_and(|date| {
-                        chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
-                            .is_ok_and(|revisit| revisit < as_of)
-                    })
+                    && deferred_revisit_is_overdue(decision.revisit_date.as_deref(), as_of)
             })
         }
     }
+}
+
+fn deferred_revisit_is_overdue(revisit_date: Option<&str>, as_of: chrono::NaiveDate) -> bool {
+    revisit_date.is_some_and(|date| {
+        chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").map_or(true, |revisit| revisit < as_of)
+    })
 }
 
 fn parse_gate_date(
@@ -1043,10 +1175,8 @@ fn scaffold_framework(
     resolved_catalog: Option<&Path>,
     output: Option<&Path>,
 ) -> Result<(ResourceManifest, LoadedResource), ForgeError> {
-    io::check_file_size(path, io::MAX_FILE_SIZE)
-        .map_err(|cause| error(format!("framework: {cause}")))?;
-    let bytes =
-        std::fs::read(path).map_err(|cause| error(format!("framework cannot be read: {cause}")))?;
+    let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
+        .map_err(|cause| error(format!("framework cannot be read: {cause}")))?;
     let value: Value = serde_json::from_slice(&bytes)
         .map_err(|cause| error(format!("framework is not valid JSON: {cause}")))?;
     let resource_type = match validate::detect_model_type(&value)
@@ -1064,6 +1194,13 @@ fn scaffold_framework(
     if resource_type == ResourceType::Profile && resolved_catalog.is_none() {
         return Err(error("--resolved-catalog is required when the framework is a Profile"));
     }
+    let expected_resolved_catalog_sha256 = resolved_catalog
+        .map(|companion| {
+            let bytes = io::read_bounded(companion, io::MAX_FILE_SIZE)
+                .map_err(|cause| error(format!("resolved Catalog cannot be read: {cause}")))?;
+            Ok::<_, ForgeError>(sha256(&bytes))
+        })
+        .transpose()?;
     let temporary = ResourceManifest {
         resource_type,
         artifact: path.to_path_buf(),
@@ -1071,6 +1208,7 @@ fn scaffold_framework(
         resolved_catalog: resolved_catalog.map(Path::to_path_buf),
         resolved_catalog_attestation: resolved_catalog.map(|_| true),
         expected_sha256: None,
+        expected_resolved_catalog_sha256: expected_resolved_catalog_sha256.clone(),
         inventory: None,
     };
     let loaded = inventory::load(Path::new("."), "$.framework", &temporary)
@@ -1084,13 +1222,15 @@ fn scaffold_framework(
             .transpose()?,
         resolved_catalog_attestation: resolved_catalog.map(|_| false),
         expected_sha256: Some(loaded.evidence.raw_sha256.clone()),
+        expected_resolved_catalog_sha256: loaded.evidence.resolved_catalog_sha256.clone(),
         inventory: Some(loaded.snapshot()),
     };
     Ok((framework, loaded))
 }
 
 fn manifest_relative_path(path: &Path, output: Option<&Path>) -> Result<PathBuf, ForgeError> {
-    io::manifest_relative_path(path, output, "framework resource").map_err(error)
+    io::manifest_relative_path(path, output, "framework resource")
+        .map_err(|cause| error(cause.to_string()))
 }
 
 fn validate_destination(inputs: &[PathBuf], output: Option<&Path>) -> Result<(), ForgeError> {
@@ -1191,5 +1331,26 @@ mod tests {
     #[test]
     fn text_escape_preserves_printable_unicode_and_escapes_controls() {
         assert_eq!(escape("Sécurité\n"), "Sécurité\\n");
+    }
+
+    #[test]
+    fn malformed_deferred_revisit_date_requires_review() {
+        let as_of =
+            chrono::NaiveDate::from_ymd_opt(2026, 8, 26).expect("fixture date must be valid");
+        assert!(deferred_revisit_is_overdue(Some("not-a-date"), as_of));
+        assert!(!deferred_revisit_is_overdue(Some("2026-08-26"), as_of));
+    }
+
+    #[test]
+    fn prepared_input_verification_rejects_replaced_content() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let path = directory.path().join("input.json");
+        let original = br#"{"value":"original"}"#;
+        std::fs::write(&path, original).expect("write original input");
+        let fingerprint = capture_input_fingerprint(&path, sha256(original), io::MAX_FILE_SIZE)
+            .expect("capture input fingerprint");
+        std::fs::write(&path, br#"{"value":"replacement"}"#).expect("replace input");
+        let error = verify_input_fingerprints(&[fingerprint]).expect_err("replacement must fail");
+        assert!(error.to_string().contains("changed after analysis preparation"));
     }
 }

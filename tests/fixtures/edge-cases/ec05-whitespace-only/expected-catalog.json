@@ -1,0 +1,116 @@
+{
+  "catalog": {
+    "groups": [
+      {
+        "controls": [
+          {
+            "id": "POL-AR-001",
+            "links": [
+              {
+                "href": "input-original.md#line=9",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AR-001_smt",
+                "name": "statement",
+                "prose": "Systems must enforce multi-factor authentication."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input-original.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Rules"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "9"
+              }
+            ],
+            "title": "Systems must enforce multi-factor authentication."
+          },
+          {
+            "id": "POL-AR-002",
+            "links": [
+              {
+                "href": "input-original.md#line=10",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "constraints": [
+                  {
+                    "description": "exact: monthly"
+                  }
+                ],
+                "id": "d9544d7d-5a32-580f-a32f-7a41b5cfa90f_prm_0",
+                "label": "monthly",
+                "values": [
+                  "monthly"
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-AR-002_smt",
+                "name": "statement",
+                "prose": "Systems must review privileged access {{ insert: param, id-ref: d9544d7d-5a32-580f-a32f-7a41b5cfa90f_prm_0 }}."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input-original.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Access Rules"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "10"
+              }
+            ],
+            "title": "Systems must review privileged access {{ insert: param, id-ref: d9544d7d-5a32-580f-a32f-7a41b5cfa90f_prm_0 }}."
+          }
+        ],
+        "id": "access-rules",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Access Rules"
+          }
+        ],
+        "title": "Access Rules"
+      }
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:40.657978+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Stable ID Baseline",
+      "version": "1.0.0"
+    },
+    "uuid": "0383655b-07c8-49cb-93a6-da471e5050e1"
+  }
+}

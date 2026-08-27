@@ -1,32 +1,14 @@
 {
   "component-definition": {
-    "uuid": "3a65bfc1-b5e7-43cc-af2d-afc575a79cea",
-    "metadata": {
-      "title": "Timelines",
-      "last-modified": "2026-02-21T21:03:45.354275+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "components": [
       {
-        "uuid": "64fe51df-9520-5897-bef8-cfcae3473e93",
-        "type": "policy",
-        "title": "Timelines",
-        "description": "Documentary component representing the Timelines policy document.",
-        "props": [
-          {
-            "name": "source-file",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "input.md"
-          }
-        ],
         "control-implementations": [
           {
             "description": "Implementation narratives derived from Timelines.",
             "implemented-requirements": [
               {
                 "control-id": "POL-T-001",
-                "description": "Teams must review access requests {{ insert: param, id-ref: p223d1187-cc60-54fe-bb73-38885ebdb515_prm_0 }}.",
+                "description": "Teams must review access requests {{ insert: param, id-ref: a84fa2db-65a8-52ac-8eba-2acaaa579e56_prm_0 }}.",
                 "links": [
                   {
                     "href": "input.md#line=3",
@@ -54,11 +36,11 @@
                     "value": "normative"
                   }
                 ],
-                "uuid": "e41a8efd-4b12-5388-973e-2e601732d8c8"
+                "uuid": "12ad4f86-1a43-5241-a813-1e564b759bec"
               },
               {
                 "control-id": "POL-T-002",
-                "description": "Systems must use {{ insert: param, id-ref: c194d8e5-1b54-55bf-8f0b-b1332bd8bf2c_prm_0 }} keys for encrypted channels.",
+                "description": "Systems must use {{ insert: param, id-ref: e36a0a97-4cb5-5d12-a4b6-e3db3fb65fd7_prm_0 }} keys for encrypted channels.",
                 "links": [
                   {
                     "href": "input.md#line=4",
@@ -86,14 +68,32 @@
                     "value": "normative"
                   }
                 ],
-                "uuid": "bcbce80d-4b07-5557-a14a-56752e95d241"
+                "uuid": "60bcbcb0-a7a9-56bd-9114-1292fa1466b9"
               }
             ],
             "source": "source-profile.json",
             "uuid": "a1bb8684-34a9-531a-8c51-75a073a6acc7"
           }
-        ]
+        ],
+        "description": "Documentary component representing the Timelines policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "title": "Timelines",
+        "type": "policy",
+        "uuid": "9c4e9af9-6b56-5345-b583-1a587da472a7"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:01.490938+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Timelines",
+      "version": "0.0.0"
+    },
+    "uuid": "f01252a4-d292-4091-82cb-2b5e5a288534"
   }
 }

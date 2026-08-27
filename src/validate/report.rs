@@ -22,8 +22,13 @@ use super::error_types::{ValidationErrorCategory, ValidationReport};
 pub fn render_text_report(report: &ValidationReport) -> String {
     let declared = report.declared_oscal_version().unwrap_or("unavailable");
     if report.is_valid() {
+        let support_warning = if report.supported_input() {
+            ""
+        } else {
+            "\n  Warning: input support policy violation reported"
+        };
         return format!(
-            "Valid: {} artifact passes all validation.\n  Artifact: {}\n  Declared OSCAL version: {}\n  Schema version used: {}",
+            "Valid: {} artifact passes all validation.\n  Artifact: {}\n  Declared OSCAL version: {}\n  Schema version used: {}{support_warning}\n",
             report.model_type(),
             report.artifact_path(),
             declared,
@@ -31,22 +36,32 @@ pub fn render_text_report(report: &ValidationReport) -> String {
         );
     }
 
-    let mut output = String::new();
+    // Classify once so summary counts and rendered sections cannot diverge.
+    let schema_errors: Vec<_> = report
+        .errors()
+        .iter()
+        .filter(|error| error.category == ValidationErrorCategory::Schema)
+        .collect();
+    let semantic_errors: Vec<_> = report
+        .errors()
+        .iter()
+        .filter(|error| error.category == ValidationErrorCategory::Semantic)
+        .collect();
 
-    // Summary line
+    let mut output = String::new();
     let mut parts = Vec::new();
-    if report.schema_error_count() > 0 {
+    if !schema_errors.is_empty() {
         parts.push(format!(
             "{} schema error{}",
-            report.schema_error_count(),
-            if report.schema_error_count() == 1 { "" } else { "s" }
+            schema_errors.len(),
+            if schema_errors.len() == 1 { "" } else { "s" }
         ));
     }
-    if report.semantic_error_count() > 0 {
+    if !semantic_errors.is_empty() {
         parts.push(format!(
             "{} semantic error{}",
-            report.semantic_error_count(),
-            if report.semantic_error_count() == 1 { "" } else { "s" }
+            semantic_errors.len(),
+            if semantic_errors.len() == 1 { "" } else { "s" }
         ));
     }
     let _ = writeln!(output, "Validation failed: {}", parts.join(", "));
@@ -54,41 +69,32 @@ pub fn render_text_report(report: &ValidationReport) -> String {
     let _ = writeln!(output, "  Declared OSCAL version: {declared}");
     let _ = writeln!(output, "  Schema version used: {}", report.schema_version_used());
 
-    // Schema errors section
-    let schema_errors: Vec<_> =
-        report.errors().iter().filter(|e| e.category == ValidationErrorCategory::Schema).collect();
     if !schema_errors.is_empty() {
         output.push_str("\nSchema Errors:\n");
-        for (i, error) in schema_errors.iter().enumerate() {
+        for (index, error) in schema_errors.iter().enumerate() {
             let _ = write!(
                 output,
                 "  [{}] {} — {}\n      Expected: {}\n      Actual: {}\n",
-                i + 1,
+                index + 1,
                 error.path,
                 error.message,
                 error.expected,
-                error.actual
+                error.actual()
             );
         }
     }
 
-    // Semantic errors section
-    let semantic_errors: Vec<_> = report
-        .errors()
-        .iter()
-        .filter(|e| e.category == ValidationErrorCategory::Semantic)
-        .collect();
     if !semantic_errors.is_empty() {
         output.push_str("\nSemantic Errors:\n");
-        for (i, error) in semantic_errors.iter().enumerate() {
+        for (index, error) in semantic_errors.iter().enumerate() {
             let _ = write!(
                 output,
                 "  [{}] {} — {}\n      Expected: {}\n      Actual: {}\n",
-                i + 1,
+                index + 1,
                 error.path,
                 error.message,
                 error.expected,
-                error.actual
+                error.actual()
             );
         }
     }
@@ -102,13 +108,13 @@ pub fn render_text_report(report: &ValidationReport) -> String {
 /// Output MUST contain only `ValidationReport`/`ValidationError` fields (SEC-3).
 #[must_use]
 pub fn render_json_report(report: &ValidationReport) -> String {
-    serde_json::to_string_pretty(report).unwrap_or_else(|e| {
-        tracing::error!(error = %e, "ValidationReport serialization failed; returning fallback JSON structure");
-        // SEC-3: fallback must conform to ValidationReport schema (no extra fields).
-        format!(
-            r#"{{"artifact_path":"","model_type":"unknown","declared_oscal_version":null,"schema_version_used":"{}","supported_input":false,"is_valid":false,"errors":[],"schema_error_count":0,"semantic_error_count":0}}"#,
-            crate::validate::version::SCHEMA_VERSION_USED
-        )
+    serde_json::to_string_pretty(report).unwrap_or_else(|error| {
+        tracing::error!(error = %error, "ValidationReport serialization failed; returning fallback JSON structure");
+        let fallback = ValidationReport::new(String::new(), Vec::new());
+        serde_json::to_string_pretty(&fallback).unwrap_or_else(|fallback_error| {
+            tracing::error!(error = %fallback_error, "ValidationReport fallback serialization failed");
+            "{}".to_owned()
+        })
     })
 }
 
@@ -118,23 +124,23 @@ mod tests {
     use crate::validate::error_types::{ValidationError, ValidationErrorCategory};
 
     fn make_schema_error(path: &str, message: &str) -> ValidationError {
-        ValidationError {
-            category: ValidationErrorCategory::Schema,
-            path: path.to_string(),
-            message: message.to_string(),
-            expected: "expected value".to_string(),
-            actual: "actual value".to_string(),
-        }
+        ValidationError::new(
+            ValidationErrorCategory::Schema,
+            path.to_string(),
+            message.to_string(),
+            "expected value".to_string(),
+            "actual value",
+        )
     }
 
     fn make_semantic_error(path: &str, message: &str) -> ValidationError {
-        ValidationError {
-            category: ValidationErrorCategory::Semantic,
-            path: path.to_string(),
-            message: message.to_string(),
-            expected: "expected value".to_string(),
-            actual: "actual value".to_string(),
-        }
+        ValidationError::new(
+            ValidationErrorCategory::Semantic,
+            path.to_string(),
+            message.to_string(),
+            "expected value".to_string(),
+            "actual value",
+        )
     }
 
     // --- T025: render_text_report tests ---
@@ -144,6 +150,24 @@ mod tests {
         let report = ValidationReport::new("test.json".to_string(), vec![]);
         let text = render_text_report(&report);
         assert!(text.contains("Valid"));
+    }
+
+    #[test]
+    fn unsupported_valid_report_warns_in_text_and_json() {
+        let report = ValidationReport::new_with_context(
+            "legacy.json".to_string(),
+            "catalog".to_string(),
+            Some("1.0.0".to_string()),
+            false,
+            vec![],
+        );
+        let text = render_text_report(&report);
+        assert!(text.ends_with('\n'));
+        assert!(text.contains("input support policy violation"));
+
+        let json: serde_json::Value = serde_json::from_str(&render_json_report(&report)).unwrap();
+        assert_eq!(json["supported_input"], false);
+        assert_eq!(json["is_valid"], true);
     }
 
     #[test]

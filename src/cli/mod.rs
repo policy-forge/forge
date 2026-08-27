@@ -1,4 +1,4 @@
-/// Convert subcommand: policy document → OSCAL artifact.
+/// Config-check subcommand: inspect and validate project configuration.
 pub mod config_check;
 pub mod convert;
 /// Diff subcommand: compare two OSCAL artifacts.
@@ -85,7 +85,7 @@ pub enum Commands {
         output: Option<PathBuf>,
 
         /// Maximum input file size in MB (default: 10 or project configuration)
-        #[arg(long)]
+        #[arg(long, value_parser = clap::value_parser!(u64).range(1..=51_200))]
         max_size: Option<u64>,
 
         /// Source profile/baseline reference for component strategy (e.g., path to OSCAL profile JSON)
@@ -234,7 +234,10 @@ pub enum Commands {
         format: DriftOutputFormat,
     },
 
-    /// Analyze stable-ID migration between two source-policy revisions
+    /// Analyze stable-ID migration between two source-policy revisions.
+    ///
+    /// Inputs support `.md`, `.markdown`, `.pdf`, and `.docx`; other extensions
+    /// are rejected as unsupported input formats (exit 1).
     Migrate {
         /// Path to the old policy revision (.md, .markdown, .pdf, or .docx)
         old_policy: PathBuf,
@@ -321,9 +324,9 @@ pub enum Commands {
         #[arg(long = "set-param", num_args = 2, action = clap::ArgAction::Append, value_names = ["PARAM_ID", "VALUE"])]
         set_params: Vec<String>,
 
-        /// Override the last-modified timestamp (ISO 8601) for reproducible output.
+        /// Override the last-modified timestamp (RFC 3339) for reproducible output.
         #[arg(long)]
-        timestamp: Option<String>,
+        timestamp: Option<chrono::DateTime<chrono::Utc>>,
     },
 }
 
@@ -497,7 +500,7 @@ pub enum LifecycleCommand {
         role: crate::lifecycle::record::DeclaredRole,
         /// Explicit RFC 3339 event timestamp
         #[arg(long)]
-        at: String,
+        at: chrono::DateTime<chrono::Utc>,
         /// Bounded rationale for the transition
         #[arg(long)]
         rationale: String,
@@ -1162,20 +1165,23 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 replacement_version_key,
                 apply,
                 output,
-            } => crate::lifecycle::execute_transition(&crate::lifecycle::TransitionOptions {
-                record_path: record,
-                next_state: *next_state,
-                actor_key: actor,
-                role: *role,
-                timestamp: at,
-                rationale,
-                assertions,
-                impact_finding_ids,
-                replacement_policy_key: replacement_policy_key.as_deref(),
-                replacement_version_key: replacement_version_key.as_deref(),
-                apply: *apply,
-                output: output.as_deref(),
-            }),
+            } => {
+                let timestamp = at.to_rfc3339();
+                crate::lifecycle::execute_transition(&crate::lifecycle::TransitionOptions {
+                    record_path: record,
+                    next_state: *next_state,
+                    actor_key: actor,
+                    role: *role,
+                    timestamp: &timestamp,
+                    rationale,
+                    assertions,
+                    impact_finding_ids,
+                    replacement_policy_key: replacement_policy_key.as_deref(),
+                    replacement_version_key: replacement_version_key.as_deref(),
+                    apply: *apply,
+                    output: output.as_deref(),
+                })
+            }
             LifecycleCommand::Status { records, as_of, format, gate, output } => {
                 if crate::lifecycle::execute_status(
                     records,
@@ -1287,6 +1293,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             trace::execute(artifact, source, output.as_deref())
         }
         Commands::Profile { catalog, include, exclude, format, output, set_params, timestamp } => {
+            let timestamp = timestamp.as_ref().map(chrono::DateTime::to_rfc3339);
             profile::execute(
                 catalog,
                 include.as_deref(),
@@ -1305,6 +1312,43 @@ mod tests {
     use clap::Parser;
 
     use super::*;
+
+    #[test]
+    fn rejects_invalid_profile_timestamp_at_parse_time() {
+        let result = Cli::try_parse_from([
+            "forge",
+            "profile",
+            "--catalog",
+            "catalog.json",
+            "--include",
+            "ac-1",
+            "--timestamp",
+            "not-a-timestamp",
+        ]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_transition_timestamp_at_parse_time() {
+        let result = Cli::try_parse_from([
+            "forge",
+            "lifecycle",
+            "transition",
+            "--record",
+            "record.json",
+            "--to",
+            "approved",
+            "--actor",
+            "reviewer",
+            "--role",
+            "reviewer",
+            "--at",
+            "not-a-timestamp",
+            "--rationale",
+            "reviewed",
+        ]);
+        assert!(result.is_err());
+    }
 
     #[test]
     fn parse_convert_subcommand() {
@@ -2059,6 +2103,19 @@ mod tests {
             assert_eq!(output, Some(PathBuf::from("ssp.json")));
         } else {
             panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_rejects_out_of_range_max_size() {
+        for value in ["0", "51201"] {
+            let error =
+                match Cli::try_parse_from(["forge", "convert", "policy.md", "--max-size", value]) {
+                    Ok(_) => panic!("out-of-range --max-size {value} unexpectedly parsed"),
+                    Err(error) => error.to_string(),
+                };
+
+            assert!(error.contains("1..=51200"), "unexpected error: {error}");
         }
     }
 }

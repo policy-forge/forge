@@ -10,9 +10,8 @@ use super::summary::{BatchSummary, FileResult};
 
 /// Validate input paths before conversion.
 ///
-/// This is the **single owner** of the "no input files" invariant: callers must
-/// route through this function rather than duplicating the empty-input check.
-/// It is called by `execute_dispatch` at the top of every convert invocation.
+/// The CLI calls this before dispatching batch work. `run_batch_conversion` accepts
+/// prevalidated pairs so programmatic callers can choose their own validation boundary.
 ///
 /// Returns `Ok(())` if all paths are valid, or `Err` listing all invalid paths
 /// with reasons.
@@ -78,23 +77,33 @@ pub fn run_batch_conversion(
         convert_single_file(input, output, strategy, format, max_size_bytes, source_profile)
     };
 
-    let results = if jobs == 0 {
+    let (results, degraded_to_sequential) = if jobs == 0 {
         // Use rayon's global thread pool (already initialized, no allocation cost)
-        path_pairs.par_iter().map(convert).collect()
+        (path_pairs.par_iter().map(convert).collect(), false)
     } else {
         match rayon::ThreadPoolBuilder::new().num_threads(jobs).build() {
-            Ok(pool) => pool.install(|| path_pairs.par_iter().map(convert).collect()),
-            Err(e) => {
-                tracing::error!("Failed to create thread pool: {e}. Falling back to sequential.");
-                path_pairs.iter().map(convert).collect()
+            Ok(pool) => (pool.install(|| path_pairs.par_iter().map(convert).collect()), false),
+            Err(error) => {
+                tracing::error!(
+                    "Failed to create thread pool: {error}. Falling back to sequential."
+                );
+                (path_pairs.iter().map(convert).collect(), true)
             }
         }
     };
 
-    BatchSummary::from_results(results, batch_start.elapsed())
+    BatchSummary::from_results_with_execution_mode(
+        results,
+        batch_start.elapsed(),
+        degraded_to_sequential,
+    )
 }
 
 /// Convert a single file with panic isolation.
+///
+/// `run_pipeline` must remain free of shared mutable state: catching a panic is
+/// sound only when a failed conversion cannot leave state shared with sibling
+/// batch tasks inconsistent. With `panic = "abort"`, this isolation cannot return.
 fn convert_single_file(
     input: &Path,
     output: &Path,
@@ -103,26 +112,40 @@ fn convert_single_file(
     max_size_bytes: u64,
     source_profile: Option<&str>,
 ) -> FileResult {
-    let start = Instant::now();
-
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    convert_single_file_with(input, output, || {
         run_pipeline(input, output, strategy, format, max_size_bytes, source_profile)
-    }));
+    })
+}
 
+fn convert_single_file_with(
+    input: &Path,
+    output: &Path,
+    convert: impl FnOnce() -> Result<(), ForgeError>,
+) -> FileResult {
+    let start = Instant::now();
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(convert));
     let duration = start.elapsed();
 
     match result {
         Ok(Ok(())) => FileResult::success(input.to_path_buf(), output.to_path_buf(), duration),
-        Ok(Err(e)) => FileResult::failure(
-            input.to_path_buf(),
-            e.with_max_size_guidance().to_string(),
-            duration,
-        ),
-        Err(_) => FileResult::failure(
-            input.to_path_buf(),
-            "Internal error (panic during conversion)".to_string(),
-            duration,
-        ),
+        Ok(Err(error)) => {
+            FileResult::failure(input.to_path_buf(), error.with_max_size_guidance(), duration)
+        }
+        Err(payload) => {
+            let panic_detail = if let Some(message) = payload.downcast_ref::<&str>() {
+                *message
+            } else if let Some(message) = payload.downcast_ref::<String>() {
+                message.as_str()
+            } else {
+                "non-string panic payload"
+            };
+            tracing::error!(input = %input.display(), panic_detail, "batch conversion panicked");
+            FileResult::failure(
+                input.to_path_buf(),
+                ForgeError::BatchConversion("Internal error (panic during conversion)".to_string()),
+                duration,
+            )
+        }
     }
 }
 
@@ -188,5 +211,46 @@ mod tests {
         let result = validate_inputs(&[]);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("No input files"));
+    }
+
+    #[test]
+    fn panic_isolated_conversion_returns_generic_file_failure() {
+        let result = convert_single_file_with(
+            Path::new("input.md"),
+            Path::new("output.json"),
+            || -> Result<(), ForgeError> { panic!("injected panic") },
+        );
+
+        assert!(!result.is_success());
+        assert!(matches!(
+            result.outcome,
+            crate::batch::summary::FileOutcome::Failure { ref error }
+                if error.to_string().contains("Internal error (panic during conversion)")
+        ));
+    }
+
+    #[test]
+    fn single_worker_pool_converts_batch_without_fallback() {
+        let dir = TempDir::new().unwrap();
+        let input = dir.path().join("policy.md");
+        let output = dir.path().join("policy.json");
+        std::fs::write(
+            &input,
+            "# Policy\n\n## Access Control\n\n- The organization shall protect systems.\n",
+        )
+        .unwrap();
+
+        let summary = run_batch_conversion(
+            &[(input, output)],
+            Strategy::Catalog,
+            OutputFormat::Json,
+            1024 * 1024,
+            None,
+            1,
+        );
+
+        assert_eq!(summary.total_files(), 1);
+        assert_eq!(summary.succeeded(), 1);
+        assert!(!summary.degraded_to_sequential());
     }
 }

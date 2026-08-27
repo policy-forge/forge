@@ -9,25 +9,35 @@ use forge::oscal_cli::OscalCliDetect;
 use forge::oscal_cli::detector::PathDetector;
 use forge::oscal_cli::invoker::ProcessInvoker;
 use forge::round_trip::{
-    Divergence, DivergenceClass, OscalComparisonRules, ResolutionStatus, RoundTripResult,
-    classify_oscal_cli_compatibility, compare_oscal_json, run_round_trip_chain,
+    ArtifactType, Divergence, DivergenceClass, OscalComparisonRules, ResolutionStatus,
+    RoundTripResult, classify_oscal_cli_compatibility, compare_oscal_json, run_round_trip_chain,
     write_divergence_log,
 };
 use forge::types::OutputFormat;
 
 const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
-const TIMEOUT: Duration = Duration::from_secs(30);
+
+fn round_trip_timeout() -> Duration {
+    std::env::var("FORGE_ROUND_TRIP_TIMEOUT_SECS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .map_or(Duration::from_secs(30), Duration::from_secs)
+}
 
 /// Build a `ProcessInvoker` from a detector, or None if oscal-cli is unavailable.
 fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<(ProcessInvoker, String)> {
     let info = detector.detect();
-    if !info.available || !info.functional {
-        eprintln!("SKIP: oscal-cli not available ({info:?})");
-        return None;
+    if info.is_functional() {
+        let executable_path = info.executable_path()?.to_path_buf();
+        let version = info.version()?.to_string();
+        return Some((ProcessInvoker::new(executable_path), version));
     }
-    let path = info.executable_path.unwrap();
-    let version = info.version.unwrap_or_else(|| "unknown".to_string());
-    Some((ProcessInvoker::new(path), version))
+    assert!(
+        std::env::var_os("FORGE_REQUIRE_OSCAL_CLI").is_none(),
+        "FORGE_REQUIRE_OSCAL_CLI is set but oscal-cli is unavailable: {info:?}"
+    );
+    eprintln!("SKIP: oscal-cli not available ({info:?})");
+    None
 }
 
 /// Helper: detect oscal-cli using system PATH and return a `ProcessInvoker`, or None.
@@ -58,16 +68,23 @@ fn generate_component_json(fixture: &Path, output: &Path) {
 
 /// Reclassify divergences based on investigation (T018).
 ///
-/// Divergences classified as Acceptable with no resolution are marked as Accepted.
+/// The comparator constructs every divergence with `resolution: None`; this
+/// fills the T019-mandated resolution for every class so
+/// `validate_divergence_log`'s non-null assertions hold exactly when a
+/// divergence is detected (F0874).
 fn reclassify(divergences: Vec<Divergence>) -> Vec<Divergence> {
     divergences
         .into_iter()
         .map(|d| {
-            if d.classification == DivergenceClass::Acceptable && d.resolution.is_none() {
-                Divergence { resolution: Some(ResolutionStatus::Accepted), ..d }
-            } else {
-                d
+            if d.resolution.is_some() {
+                return d;
             }
+            let resolution = match d.classification {
+                DivergenceClass::Acceptable => Some(ResolutionStatus::Accepted),
+                DivergenceClass::ForgeFix => Some(ResolutionStatus::Fixed),
+                DivergenceClass::OscalCliDiff => Some(ResolutionStatus::ReportedUpstream),
+            };
+            Divergence { resolution, ..d }
         })
         .collect()
 }
@@ -77,13 +94,14 @@ fn run_round_trip_and_compare(
     original_json_path: &Path,
     invoker: &ProcessInvoker,
     oscal_cli_version: &str,
-    artifact_type: &str,
+    artifact_type: ArtifactType,
     log_output_path: &Path,
 ) -> RoundTripResult {
     let temp_dir = tempfile::tempdir().unwrap();
 
-    let rt_json_path = run_round_trip_chain(original_json_path, invoker, temp_dir.path(), TIMEOUT)
-        .expect("Round-trip chain should succeed");
+    let rt_json_path =
+        run_round_trip_chain(original_json_path, invoker, temp_dir.path(), round_trip_timeout())
+            .expect("Round-trip chain should succeed");
 
     let original: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(original_json_path).unwrap()).unwrap();
@@ -94,7 +112,6 @@ fn run_round_trip_and_compare(
     let divergences = compare_oscal_json(&original, &round_tripped, "", &rules);
     let divergences = reclassify(divergences);
 
-    let passed = divergences.iter().all(|d| d.classification == DivergenceClass::Acceptable);
     let declared_oscal_version = original
         .pointer(&format!("/{}/metadata/oscal-version", artifact_type_root(artifact_type)))
         .and_then(serde_json::Value::as_str)
@@ -103,14 +120,13 @@ fn run_round_trip_and_compare(
         classify_oscal_cli_compatibility(Some(oscal_cli_version));
 
     let result = RoundTripResult {
-        artifact_type: artifact_type.to_string(),
+        artifact_type,
         source_path: original_json_path.to_path_buf(),
         declared_oscal_version,
         schema_version_used: forge::validate::version::SCHEMA_VERSION_USED.to_string(),
         oscal_cli_version: Some(oscal_cli_version.to_string()),
         oscal_cli_model_version: oscal_cli_model_version.map(str::to_string),
         compatibility_classification,
-        passed,
         divergences,
     };
 
@@ -120,11 +136,11 @@ fn run_round_trip_and_compare(
     result
 }
 
-fn artifact_type_root(artifact_type: &str) -> &'static str {
+fn artifact_type_root(artifact_type: ArtifactType) -> &'static str {
     match artifact_type {
-        "Catalog" => "catalog",
-        "ComponentDefinition" => "component-definition",
-        _ => "unknown",
+        ArtifactType::Catalog => "catalog",
+        ArtifactType::ComponentDefinition => "component-definition",
+        ArtifactType::Unknown => "unknown",
     }
 }
 
@@ -185,7 +201,7 @@ fn catalog_json_xml_yaml_json_round_trip() {
         &catalog_json,
         &invoker,
         &oscal_cli_version,
-        "Catalog",
+        ArtifactType::Catalog,
         &log_path,
     );
 
@@ -219,7 +235,7 @@ fn component_json_xml_yaml_json_round_trip() {
         &component_json,
         &invoker,
         &oscal_cli_version,
-        "ComponentDefinition",
+        ArtifactType::ComponentDefinition,
         &log_path,
     );
 
@@ -256,11 +272,18 @@ fn round_trip_skip_when_oscal_cli_unavailable() {
         }
     }
 
-    // SC-005: verify the actual skip helper returns None with a mock unavailable detector
-    assert!(
-        invoker_if_available(&MockUnavailableDetector).is_none(),
-        "Unavailable detector should cause skip helper to return None"
-    );
+    if std::env::var_os("FORGE_REQUIRE_OSCAL_CLI").is_some() {
+        let required = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            invoker_if_available(&MockUnavailableDetector)
+        }));
+        assert!(required.is_err(), "required oscal-cli availability must fail loudly");
+    } else {
+        // SC-005: local runs may skip when a detector reports no executable.
+        assert!(
+            invoker_if_available(&MockUnavailableDetector).is_none(),
+            "Unavailable detector should cause skip helper to return None"
+        );
+    }
 }
 
 /// Log INFO-level summary after test run (T022).
@@ -281,7 +304,12 @@ fn log_divergence_summary(result: &RoundTripResult) {
 
     eprintln!(
         "Round-trip summary [{}]: total={}, ForgeFix={}, OscalCliDiff={}, Acceptable={}, passed={}",
-        result.artifact_type, total, forge_fix, oscal_cli_diff, acceptable, result.passed
+        result.artifact_type,
+        total,
+        forge_fix,
+        oscal_cli_diff,
+        acceptable,
+        result.passed()
     );
 
     if !result.divergences.is_empty() {

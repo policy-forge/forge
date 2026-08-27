@@ -211,6 +211,56 @@ pub struct SystemImplementation {
 
 // ─── SspComponent (inventory item) ─────────────────────────────────────
 
+/// Schema-defined type of a system component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ComponentType {
+    Software,
+    Hardware,
+    Service,
+    Network,
+}
+
+/// Schema-defined operational state of a system component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ComponentOperationalState {
+    Operational,
+    UnderDevelopment,
+    Disposition,
+}
+
+/// Schema-defined state of an authorized user account.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum UserAccountState {
+    Active,
+    Inactive,
+    Pending,
+    Disabled,
+}
+
+impl UserAccountState {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Inactive => "inactive",
+            Self::Pending => "pending",
+            Self::Disabled => "disabled",
+        }
+    }
+}
+
+/// Schema-defined implementation state for a component requirement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ControlImplementationState {
+    Planned,
+    Implemented,
+    Partial,
+    NotApplicable,
+}
+
 /// A system component/inventory item in the SSP.
 #[derive(Debug, Clone, Serialize)]
 pub struct SspComponent {
@@ -219,7 +269,7 @@ pub struct SspComponent {
 
     /// Component type (e.g., "software", "hardware", "service").
     #[serde(rename = "type")]
-    pub component_type: String,
+    pub component_type: ComponentType,
 
     /// Human-readable component title.
     pub title: String,
@@ -239,8 +289,8 @@ pub struct SspComponent {
 /// Status of a system component.
 #[derive(Debug, Clone, Serialize)]
 pub struct ComponentStatus {
-    /// Operational state (e.g., "operational", "under-development", "disposition").
-    pub state: String,
+    /// Operational state.
+    pub state: ComponentOperationalState,
 }
 
 /// A responsible role assignment for a component.
@@ -272,7 +322,7 @@ pub struct SspComponentInput {
     pub description: String,
 
     /// OSCAL component type (e.g., "software", "hardware", "service", "network").
-    pub component_type: String,
+    pub component_type: ComponentType,
 }
 
 /// Generate inventory-items (`SspComponent` entries) from component definitions.
@@ -294,35 +344,52 @@ pub struct SspComponentInput {
 /// # Examples
 ///
 /// ```
-/// use forge::oscal::ssp::{SspComponentInput, generate_inventory_items};
+/// use forge::oscal::ssp::{ComponentType, SspComponentInput, generate_inventory_items};
 ///
 /// let defs = vec![
 ///     SspComponentInput {
 ///         title: "Web Application Firewall".to_string(),
 ///         description: "Filters incoming HTTP traffic".to_string(),
-///         component_type: "software".to_string(),
+///         component_type: ComponentType::Software,
 ///     },
 /// ];
-/// let items = generate_inventory_items(&defs);
+/// let items = generate_inventory_items(&defs).unwrap();
 /// assert_eq!(items.len(), 1);
 /// assert_eq!(items[0].title, "Web Application Firewall");
 /// ```
-#[must_use]
-pub fn generate_inventory_items(definitions: &[SspComponentInput]) -> Vec<SspComponent> {
-    definitions
+///
+/// # Errors
+///
+/// Returns [`ForgeError::SspBuild`] when normalized component titles duplicate
+/// and would otherwise derive the same deterministic component UUID (F0624).
+pub fn generate_inventory_items(
+    definitions: &[SspComponentInput],
+) -> Result<Vec<SspComponent>, ForgeError> {
+    // Component UUIDs derive from the title alone, so duplicate titles would
+    // silently mint identical UUIDs and merge distinct components (F0624).
+    let mut seen_titles = std::collections::HashSet::new();
+    for def in definitions {
+        if !seen_titles.insert(def.title.trim().to_lowercase()) {
+            return Err(ForgeError::SspBuild(format!(
+                "duplicate component title {:?}: title-derived UUIDv5 would collide",
+                def.title
+            )));
+        }
+    }
+    Ok(definitions
         .iter()
         .map(|def| {
             let uuid = Uuid::new_v5(&COMPONENT_NAMESPACE, def.title.as_bytes()).to_string();
             SspComponent {
                 uuid,
-                component_type: def.component_type.clone(),
+                component_type: def.component_type,
                 title: def.title.clone(),
                 description: Some(def.description.clone()),
                 responsible_roles: vec![],
-                status: ComponentStatus { state: "operational".to_string() },
+                status: ComponentStatus { state: ComponentOperationalState::Operational },
             }
         })
-        .collect()
+        .collect())
 }
 
 // ─── Authorized Users ───────────────────────────────────────────────────
@@ -367,21 +434,27 @@ impl Serialize for AuthorizedUser {
     where
         S: Serializer,
     {
-        let mut field_count = 2;
-        field_count += usize::from(self.short_name.is_some());
-        field_count += usize::from(self.description.is_some());
-        field_count += usize::from(!self.role_ids.is_empty());
-
         let mut props = Vec::new();
         if let Some(authorized_date) = &self.authorized_date {
             props.push(template_prop("authorized-date", authorized_date));
         }
-        props.push(template_prop("account-status", &self.status.state));
+        props.push(template_prop("account-status", self.status.state.as_str()));
         if let Some(reason) = &self.status.reason {
             props.push(template_prop("account-status-reason", reason));
         }
-        field_count += usize::from(!props.is_empty());
 
+        if self.role_ids.is_empty() {
+            props.push(template_prop(
+                "role-ids",
+                "TODO: Define metadata roles and assign their role IDs.",
+            ));
+        }
+
+        let field_count = 2
+            + usize::from(self.short_name.is_some())
+            + usize::from(self.description.is_some())
+            + usize::from(!self.role_ids.is_empty())
+            + usize::from(!props.is_empty());
         let mut state = serializer.serialize_struct("AuthorizedUser", field_count)?;
         state.serialize_field("uuid", &self.uuid)?;
         state.serialize_field("title", &self.title)?;
@@ -391,12 +464,7 @@ impl Serialize for AuthorizedUser {
         if let Some(description) = &self.description {
             state.serialize_field("description", description)?;
         }
-        if self.role_ids.is_empty() {
-            props.push(template_prop(
-                "role-ids",
-                "TODO: Define metadata roles and assign their role IDs.",
-            ));
-        } else {
+        if !self.role_ids.is_empty() {
             state.serialize_field("role-ids", &self.role_ids)?;
         }
         if !props.is_empty() {
@@ -417,8 +485,8 @@ fn template_prop(name: &str, value: &str) -> OscalProp {
 /// Status of a user account.
 #[derive(Debug, Clone, Serialize)]
 pub struct UserStatus {
-    /// Account state: "active", "inactive", "pending", "disabled".
-    pub state: String,
+    /// Account state.
+    pub state: UserAccountState,
 
     /// Optional reason for the current state.
     /// <!-- TODO(reason): explain why the account is in this state if not active -->
@@ -490,8 +558,8 @@ impl Serialize for LeveragedAuthorization {
 /// Implementation status of a control for a specific component.
 #[derive(Debug, Clone, Serialize)]
 pub struct ImplementationStatus {
-    /// One of: "planned", "implemented", "partial", "not-applicable".
-    pub state: String,
+    /// Implementation state.
+    pub state: ControlImplementationState,
 }
 
 /// A by-component entry linking an implemented-requirement to a component.
@@ -586,7 +654,10 @@ pub fn build_ssp(
         ..Default::default()
     };
     let real_metadata =
-        assemble_metadata(&doc_meta, None).map_err(|e| ForgeError::SspBuild(e.to_string()))?;
+        assemble_metadata(&doc_meta, None).map_err(|source| ForgeError::SspBuildWithSource {
+            context: "assembling SSP metadata".to_string(),
+            source: Box::new(source),
+        })?;
 
     // Deterministic UUID v5 from policy title
     let seed = format!("{SSP_UUID_SEED}|{title}");
@@ -613,7 +684,7 @@ pub fn build_ssp(
                     description: Some("<!-- TODO(description): describe initial SSP scope and system boundary -->".to_string()),
                 }],
             },
-            system_id: Some(todo_system_id()),
+            system_id: None,
             import_profile: ImportProfile { href: "TODO-profile.json".to_string() },
             system_characteristics: build_system_characteristics(title),
             system_implementation,
@@ -661,7 +732,7 @@ pub fn build_ssp_skeleton(
     let control_ids = collect_catalog_control_ids(catalog);
 
     // Generate inventory items from component definitions
-    let inventory_items = generate_inventory_items(component_defs);
+    let inventory_items = generate_inventory_items(component_defs)?;
 
     // Collect component UUIDs for by-component linking
     let component_uuids: Vec<&str> = inventory_items.iter().map(|c| c.uuid.as_str()).collect();
@@ -702,7 +773,7 @@ fn build_system_characteristics(system_name: &str) -> SystemCharacteristics {
                         .to_string(),
             }],
         },
-        status: ComponentStatus { state: "under-development".to_string() },
+        status: ComponentStatus { state: ComponentOperationalState::UnderDevelopment },
         authorization_boundary: AuthorizationBoundary {
             description: "TODO: Describe the system authorization boundary.".to_string(),
         },
@@ -760,7 +831,7 @@ fn build_control_impl_reqs(
                         .to_string(),
                         component_uuid: (*comp_uuid).to_string(),
                         implementation_status: ImplementationStatus {
-                            state: "planned".to_string(),
+                            state: ControlImplementationState::Planned,
                         },
                         description: format!(
                             "<!-- TODO(by-component): describe how control {control_id} is implemented for this component -->"
@@ -814,7 +885,7 @@ fn build_placeholder_users() -> Vec<AuthorizedUser> {
                     .to_string(),
             ),
             status: UserStatus {
-                state: "active".to_string(),
+                state: UserAccountState::Active,
                 reason: None,
             },
         },
@@ -834,7 +905,7 @@ fn build_placeholder_users() -> Vec<AuthorizedUser> {
                     .to_string(),
             ),
             status: UserStatus {
-                state: "active".to_string(),
+                state: UserAccountState::Active,
                 reason: None,
             },
         },
@@ -855,7 +926,7 @@ fn build_placeholder_users() -> Vec<AuthorizedUser> {
                     .to_string(),
             ),
             status: UserStatus {
-                state: "active".to_string(),
+                state: UserAccountState::Active,
                 reason: Some(
                     "<!-- TODO(reason): e.g., 'automated system process, no interactive login' -->"
                         .to_string(),
@@ -920,6 +991,14 @@ mod tests {
     }
 
     #[test]
+    fn ssp_does_not_populate_legacy_system_id() {
+        let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
+
+        assert!(envelope.system_security_plan.system_id.is_none());
+        assert_eq!(envelope.system_security_plan.system_characteristics.system_ids.len(), 1);
+    }
+
+    #[test]
     fn ssp_has_revisions_with_todo_markers() {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let revisions = &envelope.system_security_plan.metadata.revisions;
@@ -963,6 +1042,27 @@ mod tests {
     }
 
     #[test]
+    fn authorized_user_serializes_every_emitted_field() {
+        let user = AuthorizedUser {
+            uuid: "user-uuid".to_string(),
+            title: "Named user".to_string(),
+            short_name: Some("named".to_string()),
+            description: Some("A test user".to_string()),
+            role_ids: vec!["system-owner".to_string()],
+            authorized_date: Some("2026-08-26".to_string()),
+            status: UserStatus {
+                state: UserAccountState::Active,
+                reason: Some("approved".to_string()),
+            },
+        };
+
+        let json = serde_json::to_value(user).unwrap();
+
+        assert_eq!(json["role-ids"][0].as_str(), Some("system-owner"));
+        assert_eq!(json["props"].as_array().map_or(0, Vec::len), 3);
+    }
+
+    #[test]
     fn ssp_users_have_unique_uuids() {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let users = &envelope.system_security_plan.system_implementation.users;
@@ -977,7 +1077,7 @@ mod tests {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let users = &envelope.system_security_plan.system_implementation.users;
         for user in users {
-            assert_eq!(user.status.state, "active");
+            assert_eq!(user.status.state, UserAccountState::Active);
         }
     }
 
@@ -1070,6 +1170,17 @@ mod tests {
     }
 
     #[test]
+    fn ssp_metadata_error_preserves_source() {
+        let error = build_ssp("Test Policy", "").unwrap_err();
+
+        assert!(matches!(
+            error,
+            ForgeError::SspBuildWithSource { ref context, .. } if context == "assembling SSP metadata"
+        ));
+        assert!(std::error::Error::source(&error).is_some());
+    }
+
+    #[test]
     fn ssp_json_is_parseable() {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
@@ -1087,15 +1198,15 @@ mod tests {
             SspComponentInput {
                 title: "Web Application Firewall".to_string(),
                 description: "Filters incoming HTTP traffic".to_string(),
-                component_type: "software".to_string(),
+                component_type: ComponentType::Software,
             },
             SspComponentInput {
                 title: "Database Server".to_string(),
                 description: "Primary PostgreSQL instance".to_string(),
-                component_type: "software".to_string(),
+                component_type: ComponentType::Software,
             },
         ];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         assert_eq!(items.len(), 2);
         assert_eq!(items[0].title, "Web Application Firewall");
         assert_eq!(items[1].title, "Database Server");
@@ -1106,10 +1217,10 @@ mod tests {
         let defs = vec![SspComponentInput {
             title: "Test Component".to_string(),
             description: "A test".to_string(),
-            component_type: "software".to_string(),
+            component_type: ComponentType::Software,
         }];
-        let items_a = generate_inventory_items(&defs);
-        let items_b = generate_inventory_items(&defs);
+        let items_a = generate_inventory_items(&defs).unwrap();
+        let items_b = generate_inventory_items(&defs).unwrap();
         assert_eq!(
             items_a[0].uuid, items_b[0].uuid,
             "Same component title must produce identical UUID"
@@ -1122,15 +1233,15 @@ mod tests {
             SspComponentInput {
                 title: "Component A".to_string(),
                 description: "A".to_string(),
-                component_type: "software".to_string(),
+                component_type: ComponentType::Software,
             },
             SspComponentInput {
                 title: "Component B".to_string(),
                 description: "B".to_string(),
-                component_type: "hardware".to_string(),
+                component_type: ComponentType::Hardware,
             },
         ];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         assert_ne!(items[0].uuid, items[1].uuid, "Different titles must produce different UUIDs");
     }
 
@@ -1139,9 +1250,9 @@ mod tests {
         let defs = vec![SspComponentInput {
             title: "Firewall".to_string(),
             description: "Network security".to_string(),
-            component_type: "network".to_string(),
+            component_type: ComponentType::Network,
         }];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         assert!(items[0].responsible_roles.is_empty());
         let json = serde_json::to_value(&items).unwrap();
         assert!(json[0].get("responsible-roles").is_none());
@@ -1159,7 +1270,7 @@ mod tests {
 
     #[test]
     fn generate_inventory_items_empty_input() {
-        let items = generate_inventory_items(&[]);
+        let items = generate_inventory_items(&[]).unwrap();
         assert!(items.is_empty());
     }
 
@@ -1168,15 +1279,15 @@ mod tests {
         let defs = vec![SspComponentInput {
             title: "Load Balancer".to_string(),
             description: "Distributes traffic across instances".to_string(),
-            component_type: "service".to_string(),
+            component_type: ComponentType::Service,
         }];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         let json = serde_json::to_string_pretty(&items).unwrap();
         let parsed: Vec<serde_json::Value> = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.len(), 1);
-        assert_eq!(parsed[0]["title"], "Load Balancer");
-        assert_eq!(parsed[0]["type"], "service");
-        assert_eq!(parsed[0]["status"]["state"], "operational");
+        assert_eq!(parsed[0]["title"].as_str(), Some("Load Balancer"));
+        assert_eq!(parsed[0]["type"].as_str(), Some("service"));
+        assert_eq!(parsed[0]["status"]["state"].as_str(), Some("operational"));
         assert!(parsed[0]["description"].as_str().unwrap().contains("Distributes"));
     }
 }

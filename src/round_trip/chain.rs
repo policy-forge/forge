@@ -8,21 +8,28 @@ use crate::oscal_cli::{ConvertArgs, OscalCliInvoke, OscalFormat};
 
 /// Execute the full oscal-cli conversion chain: JSON → XML → YAML → JSON.
 ///
-/// Creates intermediate files in `temp_dir` (artifact.xml, artifact.yaml, artifact-rt.json).
-/// Each conversion step has an independent `timeout`.
+/// Creates uniquely named intermediate files in `temp_dir`. Each conversion
+/// step has an independent `timeout`.
 ///
 /// # Errors
 ///
-/// Returns `ForgeError` if any conversion step fails or times out.
+/// Returns [`ForgeError::RoundTripStep`] with step and path context if a
+/// conversion step fails or times out.
 pub fn run_round_trip_chain(
     input_json_path: &Path,
     invoker: &dyn OscalCliInvoke,
     temp_dir: &Path,
     timeout: Duration,
 ) -> Result<PathBuf, ForgeError> {
-    let xml_path = temp_dir.join("artifact.xml");
-    let yaml_path = temp_dir.join("artifact.yaml");
-    let rt_json_path = temp_dir.join("artifact-rt.json");
+    let run_id = ::uuid::Uuid::new_v4();
+    let xml_path = temp_dir.join(format!("artifact-{run_id}.xml"));
+    let yaml_path = temp_dir.join(format!("artifact-{run_id}.yaml"));
+    let rt_json_path = temp_dir.join(format!("artifact-{run_id}-rt.json"));
+    let targets = [&xml_path, &yaml_path, &rt_json_path];
+
+    for target in targets {
+        let _ = std::fs::remove_file(target);
+    }
 
     let steps: &[(OscalFormat, &Path, &Path)] = &[
         (OscalFormat::Xml, input_json_path, &xml_path),
@@ -39,38 +46,83 @@ pub fn run_round_trip_chain(
             "Running oscal-cli convert step"
         );
 
-        let args = ConvertArgs {
-            input_path: input.to_path_buf(),
-            output_path: output.to_path_buf(),
-            output_format: *format,
-            timeout,
-        };
+        let input_path = input.canonicalize().map_err(ForgeError::Io)?;
+        let output_path = canonical_output_path(output)?;
+        let args = ConvertArgs { input_path, output_path, output_format: *format, timeout };
 
-        invoker.convert(&args)?;
+        match invoker.convert(&args) {
+            Ok(result) => {
+                for warning in result.warnings {
+                    tracing::warn!(step = step_num + 1, "oscal-cli convert warning: {warning}");
+                }
+            }
+            Err(source) => {
+                for target in targets {
+                    let _ = std::fs::remove_file(target);
+                }
+                return Err(ForgeError::RoundTripStep {
+                    step: step_num + 1,
+                    from: args.input_path.clone(),
+                    to: args.output_path.clone(),
+                    source: Box::new(source),
+                });
+            }
+        }
     }
 
     Ok(rt_json_path)
+}
+
+/// Canonicalize an existing output or its existing parent for a new output.
+fn canonical_output_path(path: &Path) -> Result<PathBuf, ForgeError> {
+    if path.exists() {
+        return path.canonicalize().map_err(ForgeError::Io);
+    }
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let filename = path.file_name().ok_or_else(|| {
+        ForgeError::InvalidArgument("round-trip output must have a file name".to_string())
+    })?;
+    parent
+        .canonicalize()
+        .map(|canonical_parent| canonical_parent.join(filename))
+        .map_err(ForgeError::Io)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::oscal_cli::{ConvertArgs, ConvertResult, ResolveArgs, ResolveResult};
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
 
-    /// Mock invoker that returns canned results for testing.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct RecordedCall {
+        format: String,
+        input: PathBuf,
+        output: PathBuf,
+        timeout: Duration,
+    }
+
+    /// Mock invoker that records every conversion request and returns canned results.
     struct MockInvoker {
-        call_count: AtomicUsize,
+        calls: Mutex<Vec<RecordedCall>>,
+
         fail_on_call: Option<usize>,
     }
 
     impl MockInvoker {
         fn new() -> Self {
-            Self { call_count: AtomicUsize::new(0), fail_on_call: None }
+            Self { calls: Mutex::new(Vec::new()), fail_on_call: None }
         }
 
         fn failing_on_call(call_number: usize) -> Self {
-            Self { call_count: AtomicUsize::new(0), fail_on_call: Some(call_number) }
+            Self { calls: Mutex::new(Vec::new()), fail_on_call: Some(call_number) }
+        }
+
+        fn calls(&self) -> Vec<RecordedCall> {
+            self.calls.lock().unwrap().clone()
         }
     }
 
@@ -80,78 +132,129 @@ mod tests {
         }
 
         fn convert(&self, args: &ConvertArgs) -> Result<ConvertResult, ForgeError> {
-            let call = self.call_count.fetch_add(1, Ordering::SeqCst) + 1;
+            let mut calls = self.calls.lock().unwrap();
+            let call = calls.len() + 1;
+            calls.push(RecordedCall {
+                format: args.output_format.to_cli_flag().to_string(),
+                input: args.input_path.clone(),
+                output: args.output_path.clone(),
+                timeout: args.timeout,
+            });
+            drop(calls);
 
             if self.fail_on_call == Some(call) {
                 return Err(ForgeError::OscalCliTimeout { timeout: args.timeout });
             }
 
-            // Create an empty output file to simulate conversion
+            // Create an empty output file to simulate conversion.
             std::fs::write(&args.output_path, b"{}").map_err(ForgeError::Io)?;
 
             Ok(ConvertResult { output_path: args.output_path.clone(), warnings: vec![] })
         }
     }
 
-    // T010(a): Happy path — chain calls convert() 3 times and returns final output path
+    fn assert_expected_chain(
+        calls: &[RecordedCall],
+        input: &Path,
+        final_output: &Path,
+        timeout: Duration,
+    ) {
+        let prefix = final_output
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .and_then(|stem| stem.strip_suffix("-rt"))
+            .expect("round-trip output has the expected file name");
+        let temp_dir = final_output
+            .parent()
+            .expect("round-trip output has a parent directory")
+            .canonicalize()
+            .expect("round-trip output parent is canonicalizable");
+        let xml_path = temp_dir.join(format!("{prefix}.xml"));
+        let yaml_path = temp_dir.join(format!("{prefix}.yaml"));
+        let final_output = temp_dir.join(format!("{prefix}-rt.json"));
+        let input = input.canonicalize().expect("round-trip input is canonicalizable");
+
+        assert_eq!(
+            calls,
+            &[
+                RecordedCall {
+                    format: "xml".to_string(),
+                    input: input.clone(),
+                    output: xml_path.clone(),
+                    timeout,
+                },
+                RecordedCall {
+                    format: "yaml".to_string(),
+                    input: xml_path,
+                    output: yaml_path.clone(),
+                    timeout,
+                },
+                RecordedCall {
+                    format: "json".to_string(),
+                    input: yaml_path,
+                    output: final_output,
+                    timeout,
+                },
+            ]
+        );
+    }
+
     #[test]
-    fn happy_path_calls_convert_three_times() {
+    fn happy_path_uses_the_expected_conversion_chain() {
         let invoker = MockInvoker::new();
         let temp_dir = tempfile::tempdir().unwrap();
         let input = temp_dir.path().join("input.json");
         std::fs::write(&input, b"{}").unwrap();
+        let timeout = Duration::from_secs(30);
 
-        let result =
-            run_round_trip_chain(&input, &invoker, temp_dir.path(), Duration::from_secs(30));
-        assert!(result.is_ok(), "Happy path should succeed: {result:?}");
+        let output_path = run_round_trip_chain(&input, &invoker, temp_dir.path(), timeout).unwrap();
 
-        let output_path = result.unwrap();
         assert!(output_path.exists(), "Final output file should exist");
-        assert_eq!(
-            invoker.call_count.load(Ordering::SeqCst),
-            3,
-            "Should call convert exactly 3 times"
-        );
+        assert_expected_chain(&invoker.calls(), &input, &output_path, timeout);
     }
 
-    // T010(b): Timeout on second call → returns OscalCliTimeout error
     #[test]
-    fn timeout_on_second_step_returns_error() {
+    fn failed_step_is_contextualized_and_removes_intermediates() {
         let invoker = MockInvoker::failing_on_call(2);
         let temp_dir = tempfile::tempdir().unwrap();
         let input = temp_dir.path().join("input.json");
         std::fs::write(&input, b"{}").unwrap();
 
-        let result =
-            run_round_trip_chain(&input, &invoker, temp_dir.path(), Duration::from_secs(30));
-        assert!(result.is_err(), "Should return error on timeout");
-        assert!(
-            matches!(result.unwrap_err(), ForgeError::OscalCliTimeout { .. }),
-            "Error should be OscalCliTimeout"
-        );
+        let error =
+            run_round_trip_chain(&input, &invoker, temp_dir.path(), Duration::from_secs(30))
+                .unwrap_err();
+        let calls = invoker.calls();
+
+        match error {
+            ForgeError::RoundTripStep { step, from, to, .. } => {
+                assert_eq!(step, 2);
+                assert_eq!(from, calls[0].output);
+                assert_eq!(to, calls[1].output);
+            }
+            other => panic!("expected round-trip step error, got {other:?}"),
+        }
+        assert!(calls.iter().all(|call| !call.output.exists()));
     }
 
-    // T020: Verify all three intermediate files are created with correct extensions
     #[test]
-    fn intermediate_files_have_correct_extensions() {
+    fn concurrent_runs_use_distinct_intermediate_paths() {
         let invoker = MockInvoker::new();
         let temp_dir = tempfile::tempdir().unwrap();
         let input = temp_dir.path().join("input.json");
         std::fs::write(&input, b"{}").unwrap();
 
-        let result =
-            run_round_trip_chain(&input, &invoker, temp_dir.path(), Duration::from_secs(30));
-        assert!(result.is_ok());
+        let (first, second) = std::thread::scope(|scope| {
+            let first = scope.spawn(|| {
+                run_round_trip_chain(&input, &invoker, temp_dir.path(), Duration::from_secs(30))
+            });
+            let second = scope.spawn(|| {
+                run_round_trip_chain(&input, &invoker, temp_dir.path(), Duration::from_secs(30))
+            });
+            (first.join().unwrap().unwrap(), second.join().unwrap().unwrap())
+        });
 
-        let xml_path = temp_dir.path().join("artifact.xml");
-        let yaml_path = temp_dir.path().join("artifact.yaml");
-        let rt_json_path = temp_dir.path().join("artifact-rt.json");
-
-        assert!(xml_path.exists(), "Intermediate XML file should exist");
-        assert!(yaml_path.exists(), "Intermediate YAML file should exist");
-        assert!(rt_json_path.exists(), "Final round-tripped JSON file should exist");
-
-        // Verify the returned path is the final JSON
-        assert_eq!(result.unwrap(), rt_json_path);
+        assert_ne!(first, second);
+        assert!(first.exists());
+        assert!(second.exists());
     }
 }

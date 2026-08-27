@@ -21,7 +21,7 @@ use crate::oscal::component_definition::{
     DocumentaryComponent,
 };
 use crate::oscal::implemented_requirements::{ControlImplementation, ImplementedRequirement};
-use crate::oscal::parts::{OscalPart, OscalProp};
+use crate::oscal::parts::{OscalPart, OscalPartName, OscalProp};
 
 // ─── XML Deserialization Structs ─────────────────────────────────────────
 //
@@ -129,6 +129,10 @@ struct XmlPart {
     props: Vec<XmlProp>,
     /// Prose content wrapped in `<p>` elements in OSCAL XML.
     /// Multiple `<p>` nodes are preserved and joined with newlines.
+    ///
+    /// # Limitation
+    /// FORGE currently accepts only text-only paragraphs. Rich OSCAL markup
+    /// such as `<em>` and `<strong>` is rejected with an explicit diagnostic.
     #[serde(default, rename = "p")]
     paragraphs: Vec<String>,
     #[serde(default, rename = "part")]
@@ -198,6 +202,10 @@ struct XmlImplementedRequirement {
 
 /// Handles `<description><p>text</p></description>` markup-multiline format.
 /// Multiple `<p>` elements are preserved and joined with newlines.
+///
+/// # Limitation
+/// Rich inline or block markup inside a paragraph is not representable by this
+/// text-only model and is rejected during deserialization.
 #[derive(Deserialize)]
 struct XmlDescription {
     #[serde(default, rename = "p")]
@@ -264,6 +272,35 @@ struct XmlRlink {
 
 // ─── Conversion Functions ────────────────────────────────────────────────
 
+fn reject_rich_prose(xml: &str) -> Result<(), ForgeError> {
+    let mut remainder = xml;
+    while let Some(start) = remainder.find("<p") {
+        let after_name = &remainder[start + 2..];
+        let Some(next) = after_name.chars().next() else {
+            break;
+        };
+        if !matches!(next, '>' | ' ' | '\t' | '\r' | '\n') {
+            remainder = after_name;
+            continue;
+        }
+        let Some(open_end) = after_name.find('>') else {
+            break;
+        };
+        let content = &after_name[open_end + 1..];
+        let Some(close_start) = content.find("</p>") else {
+            break;
+        };
+        if content[..close_start].contains('<') {
+            return Err(ForgeError::Serialization(
+                "unsupported markup inside OSCAL <p>; only text-only prose is supported"
+                    .to_string(),
+            ));
+        }
+        remainder = &content[close_start + "</p>".len()..];
+    }
+    Ok(())
+}
+
 fn convert_metadata(xml: XmlMetadata) -> OscalMetadata {
     OscalMetadata {
         title: xml.title,
@@ -277,6 +314,8 @@ fn convert_prop(xml: XmlProp) -> OscalProp {
     OscalProp { name: xml.name, value: xml.value, ns: xml.ns }
 }
 
+/// XML links without `@rel` are normalized to FORGE's required `reference`
+/// relation because the shared `OscalLink` model currently requires a relation.
 fn convert_link(xml: XmlLink) -> OscalLink {
     OscalLink {
         href: xml.href,
@@ -285,15 +324,22 @@ fn convert_link(xml: XmlLink) -> OscalLink {
     }
 }
 
-fn convert_part(xml: XmlPart) -> OscalPart {
+fn convert_part(xml: XmlPart) -> Result<OscalPart, ForgeError> {
+    let id = xml.id.ok_or_else(|| ForgeError::ExportInvalidOscal {
+        detail: format!("missing required @id on <part name=\"{}\"/>", xml.name),
+    })?;
+    let name =
+        xml.name.parse::<OscalPartName>().map_err(|error| ForgeError::ExportInvalidOscal {
+            detail: format!("invalid @name '{}' on <part>: {error}", xml.name),
+        })?;
     let prose = if xml.paragraphs.is_empty() { String::new() } else { xml.paragraphs.join("\n") };
-    OscalPart {
-        id: xml.id.unwrap_or_default(),
-        name: xml.name,
+    Ok(OscalPart {
+        id,
+        name,
         prose,
         props: xml.props.into_iter().map(convert_prop).collect(),
-        parts: xml.parts.into_iter().map(convert_part).collect(),
-    }
+        parts: xml.parts.into_iter().map(convert_part).collect::<Result<Vec<_>, _>>()?,
+    })
 }
 
 fn convert_param_constraint(xml: XmlParamConstraint) -> OscalParamConstraint {
@@ -310,8 +356,8 @@ fn convert_param(xml: XmlParam) -> OscalParam {
     }
 }
 
-fn convert_control(xml: XmlControl) -> OscalControl {
-    OscalControl {
+fn convert_control(xml: XmlControl) -> Result<OscalControl, ForgeError> {
+    Ok(OscalControl {
         id: xml.id,
         // OSCAL XML controls don't carry a uuid attribute; OscalControl.uuid is
         // #[serde(skip_serializing, default)] so this empty value never appears in output.
@@ -320,19 +366,19 @@ fn convert_control(xml: XmlControl) -> OscalControl {
         props: xml.props.into_iter().map(convert_prop).collect(),
         links: xml.links.into_iter().map(convert_link).collect(),
         params: xml.params.into_iter().map(convert_param).collect(),
-        parts: xml.parts.into_iter().map(convert_part).collect(),
-    }
+        parts: xml.parts.into_iter().map(convert_part).collect::<Result<Vec<_>, _>>()?,
+    })
 }
 
-fn convert_group(xml: XmlGroup) -> OscalGroup {
-    OscalGroup {
+fn convert_group(xml: XmlGroup) -> Result<OscalGroup, ForgeError> {
+    Ok(OscalGroup {
         id: xml.id,
         title: xml.title,
         props: xml.props.into_iter().map(convert_prop).collect(),
         links: xml.links.into_iter().map(convert_link).collect(),
-        controls: xml.controls.into_iter().map(convert_control).collect(),
-        groups: xml.groups.into_iter().map(convert_group).collect(),
-    }
+        controls: xml.controls.into_iter().map(convert_control).collect::<Result<Vec<_>, _>>()?,
+        groups: xml.groups.into_iter().map(convert_group).collect::<Result<Vec<_>, _>>()?,
+    })
 }
 
 fn convert_back_matter(xml: XmlBackMatter) -> Result<BackMatter, ForgeError> {
@@ -342,8 +388,8 @@ fn convert_back_matter(xml: XmlBackMatter) -> Result<BackMatter, ForgeError> {
 }
 
 fn convert_resource(xml: XmlResource) -> Result<BackMatterResource, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| ForgeError::ExportInvalidOscal {
-        detail: format!("invalid UUID '{}' in resource element", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| {
+        ForgeError::Serialization(format!("invalid UUID '{}' in resource element", xml.uuid))
     })?;
     let description = xml.description.map(|d| d.paragraphs.join("\n"));
     Ok(BackMatterResource {
@@ -365,25 +411,32 @@ fn convert_resource(xml: XmlResource) -> Result<BackMatterResource, ForgeError> 
 }
 
 fn convert_catalog(xml: XmlCatalog) -> Result<OscalCatalog, ForgeError> {
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!("invalid UUID in catalog: '{}' — {error}", xml.uuid))
+    })?;
     let back_matter = xml.back_matter.map(convert_back_matter).transpose()?;
     Ok(OscalCatalog {
-        uuid: xml.uuid,
+        uuid: uuid.to_string(),
         metadata: convert_metadata(xml.metadata),
-        controls: xml.controls.into_iter().map(convert_control).collect(),
-        groups: xml.groups.into_iter().map(convert_group).collect(),
+        controls: xml.controls.into_iter().map(convert_control).collect::<Result<Vec<_>, _>>()?,
+        groups: xml.groups.into_iter().map(convert_group).collect::<Result<Vec<_>, _>>()?,
         back_matter,
     })
 }
 
 fn convert_component(xml: XmlComponent) -> Result<DocumentaryComponent, ForgeError> {
-    let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!("invalid UUID in component: '{}' — {error}", xml.uuid))
+    })?;
+    let description =
+        xml.description.map(|description| description.paragraphs.join("\n")).unwrap_or_default();
     let control_implementations = xml
         .control_implementations
         .into_iter()
         .map(convert_control_implementation)
         .collect::<Result<Vec<_>, _>>()?;
     Ok(DocumentaryComponent {
-        uuid: xml.uuid,
+        uuid: uuid.to_string(),
         component_type: xml.component_type,
         title: xml.title,
         description,
@@ -395,8 +448,8 @@ fn convert_component(xml: XmlComponent) -> Result<DocumentaryComponent, ForgeErr
 fn convert_capability(
     xml: XmlCapability,
 ) -> Result<crate::oscal::component_definition::Capability, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| ForgeError::ExportInvalidOscal {
-        detail: format!("invalid UUID '{}' in capability element", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| {
+        ForgeError::Serialization(format!("invalid UUID '{}' in capability element", xml.uuid))
     })?;
     let control_implementations = xml
         .control_implementations
@@ -414,17 +467,21 @@ fn convert_capability(
 fn convert_control_implementation(
     xml: XmlControlImplementation,
 ) -> Result<ControlImplementation, ForgeError> {
-    Uuid::try_parse(&xml.uuid).map_err(|e| ForgeError::ExportInvalidOscal {
-        detail: format!("Invalid UUID in control-implementation: '{uuid}' — {e}", uuid = xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!(
+            "Invalid UUID in control-implementation: '{}' — {error}",
+            xml.uuid
+        ))
     })?;
-    let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
+    let description =
+        xml.description.map(|description| description.paragraphs.join("\n")).unwrap_or_default();
     let implemented_requirements = xml
         .implemented_requirements
         .into_iter()
         .map(convert_implemented_requirement)
         .collect::<Result<Vec<_>, _>>()?;
     Ok(ControlImplementation {
-        uuid: xml.uuid,
+        uuid: uuid.to_string(),
         source: xml.source,
         description,
         implemented_requirements,
@@ -434,12 +491,16 @@ fn convert_control_implementation(
 fn convert_implemented_requirement(
     xml: XmlImplementedRequirement,
 ) -> Result<ImplementedRequirement, ForgeError> {
-    Uuid::try_parse(&xml.uuid).map_err(|e| ForgeError::ExportInvalidOscal {
-        detail: format!("Invalid UUID in implemented-requirement: '{uuid}' — {e}", uuid = xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!(
+            "Invalid UUID in implemented-requirement: '{}' — {error}",
+            xml.uuid
+        ))
     })?;
-    let description = xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default();
+    let description =
+        xml.description.map(|description| description.paragraphs.join("\n")).unwrap_or_default();
     Ok(ImplementedRequirement {
-        uuid: xml.uuid,
+        uuid: uuid.to_string(),
         control_id: xml.control_id,
         description,
         props: xml.props.into_iter().map(convert_prop).collect(),
@@ -450,11 +511,17 @@ fn convert_implemented_requirement(
 fn convert_component_definition(
     xml: XmlComponentDefinition,
 ) -> Result<ComponentDefinition, ForgeError> {
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!(
+            "invalid UUID in component-definition: '{}' — {error}",
+            xml.uuid
+        ))
+    })?;
     let components =
         xml.components.into_iter().map(convert_component).collect::<Result<Vec<_>, _>>()?;
     let back_matter = xml.back_matter.map(convert_back_matter).transpose()?;
     Ok(ComponentDefinition {
-        uuid: xml.uuid,
+        uuid: uuid.to_string(),
         metadata: ComponentDefinitionMetadata {
             title: xml.metadata.title,
             last_modified: xml.metadata.last_modified,
@@ -479,8 +546,11 @@ fn convert_component_definition(
 /// structs, then converts to the shared `CatalogEnvelope` model.
 ///
 /// # Errors
-/// Returns `ForgeError::Serialization` if XML parsing fails.
+///
+/// Returns `ForgeError::ExportInvalidOscal` for missing part IDs and
+/// `ForgeError::Serialization` for malformed, unsupported, or invalid-UUID XML content.
 pub fn deserialize_catalog_from_xml(xml: &str) -> Result<CatalogEnvelope, ForgeError> {
+    reject_rich_prose(xml)?;
     let xml_catalog: XmlCatalog = quick_xml::de::from_str(xml).map_err(|e| {
         ForgeError::Serialization(format!("XML catalog deserialization failed: {e}"))
     })?;
@@ -493,10 +563,13 @@ pub fn deserialize_catalog_from_xml(xml: &str) -> Result<CatalogEnvelope, ForgeE
 /// deserialization structs, then converts to the shared `ComponentDefinitionEnvelope` model.
 ///
 /// # Errors
-/// Returns `ForgeError::Serialization` if XML parsing fails.
+/// Returns `ForgeError::Serialization` if XML parsing fails, prose uses unsupported markup,
+/// or an XML UUID is invalid.
+/// Returns `ForgeError::ExportInvalidOscal` for missing part IDs.
 pub fn deserialize_component_from_xml(
     xml: &str,
 ) -> Result<ComponentDefinitionEnvelope, ForgeError> {
+    reject_rich_prose(xml)?;
     let xml_cd: XmlComponentDefinition = quick_xml::de::from_str(xml).map_err(|e| {
         ForgeError::Serialization(format!("XML component-definition deserialization failed: {e}"))
     })?;
@@ -546,7 +619,7 @@ mod tests {
         let envelope = deserialize_catalog_from_xml(xml).unwrap();
         let control = &envelope.catalog.groups[0].controls[0];
         assert_eq!(control.parts.len(), 1);
-        assert_eq!(control.parts[0].name, "statement");
+        assert_eq!(control.parts[0].name, OscalPartName::Statement);
         assert_eq!(control.parts[0].prose, "All users must authenticate using MFA.");
     }
 
@@ -570,7 +643,7 @@ mod tests {
 <!DOCTYPE foo [
   <!ENTITY xxe "INJECTED">
 ]>
-<catalog xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="test">
+<catalog xmlns="http://csrc.nist.gov/ns/oscal/1.0" uuid="660e8400-e29b-41d4-a716-446655440000">
   <metadata>
     <title>&xxe;</title>
     <last-modified>2026-01-01T00:00:00Z</last-modified>
@@ -579,17 +652,9 @@ mod tests {
   </metadata>
 </catalog>"#;
 
-        // quick-xml should either error or not expand the entity
-        let result = deserialize_catalog_from_xml(malicious_xml);
-        if let Ok(envelope) = result {
-            // If parsing succeeds, entity must NOT have been expanded
-            assert_ne!(
-                envelope.catalog.metadata.title, "INJECTED",
-                "XXE entity expansion detected — security vulnerability!"
-            );
-        } else {
-            // Rejecting the document is also acceptable (safe behavior)
-        }
+        // quick-xml rejects a DTD with an unresolved custom entity; rejection
+        // is the required safe behavior and must not silently pass.
+        assert!(deserialize_catalog_from_xml(malicious_xml).is_err());
     }
 
     // ══════════════════════════════════════════════════════
@@ -810,5 +875,92 @@ mod tests {
             comp.control_implementations.is_empty(),
             "Component without control-implementations should deserialize with empty vec"
         );
+    }
+
+    #[test]
+    fn xml_deserialization_canonicalizes_all_component_uuids() {
+        let xml = r"<component-definition uuid='{660E8400-E29B-41D4-A716-446655440000}'>
+            <metadata><title>Test</title><last-modified>2026-01-01T00:00:00Z</last-modified><version>1</version><oscal-version>1.2.0</oscal-version></metadata>
+            <component uuid='{770E8400-E29B-41D4-A716-446655440000}' type='policy'><title>Component</title>
+              <control-implementation uuid='{880E8400-E29B-41D4-A716-446655440000}' source='profile.json'>
+                <implemented-requirement uuid='{990E8400-E29B-41D4-A716-446655440000}' control-id='AC-1'/>
+              </control-implementation>
+            </component>
+        </component-definition>";
+
+        let envelope = deserialize_component_from_xml(xml).unwrap();
+        let component_definition = &envelope.component_definition;
+        assert_eq!(component_definition.uuid, "660e8400-e29b-41d4-a716-446655440000");
+        let component = &component_definition.components[0];
+        assert_eq!(component.uuid, "770e8400-e29b-41d4-a716-446655440000");
+        assert_eq!(
+            component.control_implementations[0].uuid,
+            "880e8400-e29b-41d4-a716-446655440000"
+        );
+        assert_eq!(
+            component.control_implementations[0].implemented_requirements[0].uuid,
+            "990e8400-e29b-41d4-a716-446655440000"
+        );
+    }
+
+    #[test]
+    fn xml_deserialization_rejects_missing_part_id() {
+        let xml = r"<catalog uuid='660e8400-e29b-41d4-a716-446655440000'>
+            <metadata><title>Test</title><last-modified>2026-01-01T00:00:00Z</last-modified><version>1</version><oscal-version>1.2.0</oscal-version></metadata>
+            <control id='AC-1'><title>Control</title><part name='statement'><p>Text</p></part></control>
+        </catalog>";
+
+        let error = deserialize_catalog_from_xml(xml).unwrap_err();
+        assert!(error.to_string().contains("missing required @id"));
+    }
+
+    #[test]
+    fn xml_deserialization_rejects_unknown_part_name() {
+        let xml = r"<catalog uuid='660e8400-e29b-41d4-a716-446655440000'>
+            <metadata><title>Test</title><last-modified>2026-01-01T00:00:00Z</last-modified><version>1</version><oscal-version>1.2.0</oscal-version></metadata>
+            <control id='AC-1'><title>Control</title><part id='s1' name='unknown'><p>Text</p></part></control>
+        </catalog>";
+
+        let error = deserialize_catalog_from_xml(xml).unwrap_err();
+        assert!(error.to_string().contains("invalid @name 'unknown'"));
+    }
+
+    #[test]
+    fn xml_deserialization_rejects_rich_prose_with_explicit_error() {
+        let xml = r"<catalog uuid='660e8400-e29b-41d4-a716-446655440000'>
+            <metadata><title>Test</title><last-modified>2026-01-01T00:00:00Z</last-modified><version>1</version><oscal-version>1.2.0</oscal-version></metadata>
+            <control id='AC-1'><title>Control</title><part id='s1' name='statement'><p><em>Text</em></p></part></control>
+        </catalog>";
+
+        let error = deserialize_catalog_from_xml(xml).unwrap_err();
+        assert!(error.to_string().contains("unsupported markup"));
+    }
+
+    #[test]
+    fn xml_resource_property_namespace_round_trips() {
+        use crate::export::xml_serializer::serialize_catalog_to_xml;
+
+        let xml = r"<catalog uuid='660e8400-e29b-41d4-a716-446655440000'>
+            <metadata><title>Test</title><last-modified>2026-01-01T00:00:00Z</last-modified><version>1</version><oscal-version>1.2.0</oscal-version></metadata>
+            <back-matter><resource uuid='770e8400-e29b-41d4-a716-446655440000'><prop name='kind' value='evidence' ns='https://example.com/ns'/></resource></back-matter>
+        </catalog>";
+
+        let envelope = deserialize_catalog_from_xml(xml).unwrap();
+        assert_eq!(
+            envelope.catalog.back_matter.as_ref().unwrap().resources[0].props[0].ns.as_deref(),
+            Some("https://example.com/ns")
+        );
+        let serialized = serialize_catalog_to_xml(&envelope.catalog).unwrap();
+        assert!(serialized.contains(r#"ns="https://example.com/ns""#));
+    }
+
+    #[test]
+    fn xml_deserialization_canonicalizes_catalog_uuid() {
+        let xml = r"<catalog uuid='{660E8400-E29B-41D4-A716-446655440000}'>
+            <metadata><title>Test</title><last-modified>2026-01-01T00:00:00Z</last-modified><version>1</version><oscal-version>1.2.0</oscal-version></metadata>
+        </catalog>";
+
+        let envelope = deserialize_catalog_from_xml(xml).unwrap();
+        assert_eq!(envelope.catalog.uuid, "660e8400-e29b-41d4-a716-446655440000");
     }
 }

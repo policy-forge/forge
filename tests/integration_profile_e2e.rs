@@ -54,16 +54,56 @@ fn extract_control_ids(catalog: &Value) -> Vec<String> {
         if let Some(controls) = group["controls"].as_array() {
             let ids: Vec<String> = controls
                 .iter()
-                .take(2)
-                .filter_map(|c| c["id"].as_str())
+                .filter_map(|control| control["id"].as_str())
                 .map(std::string::ToString::to_string)
+                .take(2)
                 .collect();
             if !ids.is_empty() {
+                assert_eq!(
+                    ids.len(),
+                    2,
+                    "catalog fixture degradation: expected at least two controls with string ids"
+                );
                 return ids;
             }
         }
     }
     panic!("no controls found in catalog fixture")
+}
+
+fn assert_profile_xml_includes(content: &str, requested_id: &str) {
+    let mut reader = quick_xml::Reader::from_str(content);
+    reader.config_mut().trim_text(true);
+    let mut buffer = Vec::new();
+    let (mut saw_profile, mut saw_import, mut saw_include_controls, mut saw_requested_id) =
+        (false, false, false, false);
+    let mut inside_with_id = false;
+
+    loop {
+        match reader.read_event_into(&mut buffer).expect("profile XML must be well-formed") {
+            quick_xml::events::Event::Start(event) => match event.name().as_ref() {
+                b"profile" => saw_profile = true,
+                b"import" => saw_import = true,
+                b"include-controls" => saw_include_controls = true,
+                b"with-id" => inside_with_id = true,
+                _ => {}
+            },
+            quick_xml::events::Event::Text(text) if inside_with_id => {
+                saw_requested_id |= String::from_utf8_lossy(text.as_ref()).trim() == requested_id;
+            }
+            quick_xml::events::Event::End(event) if event.name().as_ref() == b"with-id" => {
+                inside_with_id = false;
+            }
+            quick_xml::events::Event::Eof => break,
+            _ => {}
+        }
+        buffer.clear();
+    }
+
+    assert!(saw_profile, "profile XML must contain a profile root");
+    assert!(saw_import, "profile XML must contain an import");
+    assert!(saw_include_controls, "profile XML must contain include-controls");
+    assert!(saw_requested_id, "profile XML must include requested control {requested_id}");
 }
 
 // ── M-2 / AC-3: include-controls ─────────────────────────────────────────────
@@ -209,7 +249,7 @@ fn profile_passes_schema_validation() {
         profile_path.to_str().unwrap(),
     ]);
 
-    // forge validate must exit 0 and report Valid
+    // forge validate must exit 0 and report its exact success token
     let output = forge_bin()
         .args(["validate", profile_path.to_str().unwrap()])
         .output()
@@ -217,8 +257,8 @@ fn profile_passes_schema_validation() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(output.status.success(), "forge validate failed:\n{stdout}");
     assert!(
-        stdout.contains("Valid") || stdout.contains("valid"),
-        "expected 'Valid' in validate output, got: {stdout}"
+        stdout.starts_with("Valid:"),
+        "expected forge validate success token 'Valid:', got: {stdout}"
     );
 }
 
@@ -351,14 +391,15 @@ fn profile_include_and_exclude_rejected() {
         .output()
         .expect("failed to run forge profile");
 
-    assert!(
-        !output.status.success(),
-        "forge profile should exit non-zero when both --include and --exclude are provided"
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "clap flag conflicts must use the conventional usage-error exit code 2"
     );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("cannot be used with") || stderr.contains("error"),
-        "expected usage error in stderr, got: {stderr}"
+        stderr.contains("cannot be used with"),
+        "expected clap mutual-exclusion error in stderr, got: {stderr}"
     );
 }
 
@@ -385,12 +426,7 @@ fn profile_xml_yaml_formats() {
         xml_path.to_str().unwrap(),
     ]);
     let xml_content = fs::read_to_string(&xml_path).expect("failed to read profile XML");
-    assert!(!xml_content.is_empty(), "profile XML must not be empty");
-    assert!(
-        xml_content.contains("<profile"),
-        "profile XML must contain <profile element, got: {}...",
-        &xml_content[..xml_content.len().min(200)]
-    );
+    assert_profile_xml_includes(&xml_content, &ids[0]);
 
     // YAML format — parse and assert profile.uuid is present
     let yaml_path = dir.path().join("profile.yaml");
@@ -408,6 +444,12 @@ fn profile_xml_yaml_formats() {
     let yaml_content = fs::read_to_string(&yaml_path).expect("failed to read profile YAML");
     let yaml_value: Value =
         serde_yaml::from_str(&yaml_content).expect("failed to parse profile YAML");
-    let uuid = yaml_value["profile"]["uuid"].as_str().unwrap_or("");
-    assert!(!uuid.is_empty(), "profile YAML must have a non-empty profile.uuid");
+    let with_ids = yaml_value["profile"]["imports"][0]["include-controls"][0]["with-ids"]
+        .as_array()
+        .expect("profile YAML must contain imports[0].include-controls[0].with-ids");
+    assert!(
+        with_ids.iter().any(|value| value.as_str() == Some(ids[0].as_str())),
+        "profile YAML must include requested control {}; got: {with_ids:?}",
+        ids[0]
+    );
 }

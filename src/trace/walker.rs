@@ -13,15 +13,14 @@ use super::report::{ElementType, TraceEntry};
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::TraceUnsupportedArtifact` if the model type is not
+/// Returns [`ForgeError::TraceUnsupportedArtifact`] if the model type is not
 /// recognized, is a Profile, or the top-level value is not a JSON object.
 pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, ForgeError> {
-    let model_type =
-        validate::detect_model_type(json).map_err(|_| ForgeError::TraceUnsupportedArtifact {
-            detail:
-                "Expected top-level key 'catalog' or 'component-definition' with an object value"
-                    .to_string(),
-        })?;
+    let model_type = validate::detect_model_type(json).map_err(|error| {
+        ForgeError::TraceUnsupportedArtifact {
+            detail: format!("Unable to identify traceable OSCAL artifact: {error}"),
+        }
+    })?;
 
     if model_type == OscalModelType::Profile {
         return Err(ForgeError::TraceUnsupportedArtifact {
@@ -50,6 +49,21 @@ pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, 
     Ok(model_type)
 }
 
+/// Return an OSCAL array field, warning when a present field has the wrong type.
+fn array_field<'a>(object: &'a serde_json::Value, field: &str) -> Option<&'a [serde_json::Value]> {
+    match object.get(field) {
+        Some(serde_json::Value::Array(values)) => Some(values),
+        Some(_) => {
+            tracing::warn!(field, "OSCAL trace field is present but not an array; skipping");
+            None
+        }
+        None => None,
+    }
+}
+
+/// Maximum nesting depth walked from programmatically constructed OSCAL values.
+const MAX_TRACE_WALK_DEPTH: usize = 100;
+
 /// Walk a Catalog's groups and controls, extracting trace entries.
 ///
 /// Recursively traverses nested groups and controls per the OSCAL catalog model.
@@ -58,16 +72,16 @@ pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, 
 pub fn walk_catalog_elements(catalog: &serde_json::Value) -> Vec<TraceEntry> {
     let mut entries = Vec::new();
 
-    if let Some(groups) = catalog.get("groups").and_then(|g| g.as_array()) {
+    if let Some(groups) = array_field(catalog, "groups") {
         for group in groups {
-            walk_group(group, &mut entries);
+            walk_group(group, &mut entries, 0);
         }
     }
 
-    // OSCAL allows controls directly under catalog (no group parent)
-    if let Some(controls) = catalog.get("controls").and_then(|c| c.as_array()) {
+    // OSCAL allows controls directly under catalog (no group parent).
+    if let Some(controls) = array_field(catalog, "controls") {
         for control in controls {
-            walk_control(control, &mut entries);
+            walk_control(control, &mut entries, 0);
         }
     }
 
@@ -75,54 +89,65 @@ pub fn walk_catalog_elements(catalog: &serde_json::Value) -> Vec<TraceEntry> {
 }
 
 /// Recursively walk a group: emit its entry, then recurse into child groups and controls.
-fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let group_id = group
-        .get("id")
-        .and_then(|v| v.as_str())
-        .unwrap_or_else(|| {
-            tracing::warn!("OSCAL group is missing required 'id' field");
-            "unknown-group"
-        })
-        .to_string();
+fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>, depth: usize) {
+    let entry_index = entries.len();
+    let group_id = if let Some(id) = group.get("id").and_then(serde_json::Value::as_str) {
+        id.to_string()
+    } else {
+        tracing::warn!("OSCAL group is missing required 'id' field");
+        format!("unknown-group-{entry_index}")
+    };
     entries.push(TraceEntry {
         element_id: group_id,
         element_type: ElementType::Group,
         trace: extract_trace_metadata(group),
     });
 
-    if let Some(child_groups) = group.get("groups").and_then(|g| g.as_array()) {
+    if depth >= MAX_TRACE_WALK_DEPTH {
+        tracing::warn!(depth, "OSCAL group nesting exceeds trace walk limit; skipping descendants");
+        return;
+    }
+
+    if let Some(child_groups) = array_field(group, "groups") {
         for child in child_groups {
-            walk_group(child, entries);
+            walk_group(child, entries, depth + 1);
         }
     }
 
-    if let Some(controls) = group.get("controls").and_then(|c| c.as_array()) {
+    if let Some(controls) = array_field(group, "controls") {
         for control in controls {
-            walk_control(control, entries);
+            walk_control(control, entries, depth + 1);
         }
     }
 }
 
 /// Recursively walk a control: emit its entry, then recurse into child controls.
-fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let control_id = control
-        .get("id")
-        .and_then(|v| v.as_str())
-        .unwrap_or_else(|| {
-            tracing::warn!("OSCAL control is missing required 'id' field");
-            "unknown-control"
-        })
-        .to_string();
+fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>, depth: usize) {
+    let entry_index = entries.len();
+    let control_id = if let Some(id) = control.get("id").and_then(serde_json::Value::as_str) {
+        id.to_string()
+    } else {
+        tracing::warn!("OSCAL control is missing required 'id' field");
+        format!("unknown-control-{entry_index}")
+    };
     entries.push(TraceEntry {
         element_id: control_id,
         element_type: ElementType::Control,
         trace: extract_trace_metadata(control),
     });
 
-    // OSCAL allows nested controls (e.g. control enhancements)
-    if let Some(children) = control.get("controls").and_then(|c| c.as_array()) {
+    if depth >= MAX_TRACE_WALK_DEPTH {
+        tracing::warn!(
+            depth,
+            "OSCAL control nesting exceeds trace walk limit; skipping descendants"
+        );
+        return;
+    }
+
+    // OSCAL allows nested controls (e.g. control enhancements).
+    if let Some(children) = array_field(control, "controls") {
         for child in children {
-            walk_control(child, entries);
+            walk_control(child, entries, depth + 1);
         }
     }
 }
@@ -133,14 +158,14 @@ fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
 pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
     let mut entries = Vec::new();
 
-    if let Some(components) = compdef.get("components").and_then(|c| c.as_array()) {
+    if let Some(components) = array_field(compdef, "components") {
         for component in components {
             collect_impl_requirements(component, &mut entries);
         }
     }
 
-    // OSCAL component-definitions may also group implementations under capabilities
-    if let Some(capabilities) = compdef.get("capabilities").and_then(|c| c.as_array()) {
+    // OSCAL component-definitions may also group implementations under capabilities.
+    if let Some(capabilities) = array_field(compdef, "capabilities") {
         for capability in capabilities {
             collect_impl_requirements(capability, &mut entries);
         }
@@ -151,27 +176,42 @@ pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
 
 /// Collect implemented-requirements from a component or capability's control-implementations.
 fn collect_impl_requirements(container: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let Some(control_impls) = container.get("control-implementations").and_then(|ci| ci.as_array())
-    else {
+    let Some(control_impls) = array_field(container, "control-implementations") else {
         return;
     };
 
-    for impl_block in control_impls {
-        let Some(impl_reqs) =
-            impl_block.get("implemented-requirements").and_then(|ir| ir.as_array())
-        else {
+    let container_id =
+        container.get("uuid").and_then(serde_json::Value::as_str).unwrap_or("unknown-container");
+
+    for (implementation_index, impl_block) in control_impls.iter().enumerate() {
+        let Some(impl_reqs) = array_field(impl_block, "implemented-requirements") else {
             continue;
         };
 
+        let implementation_source = impl_block
+            .get("source")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("unknown-source");
+        let implementation_id =
+            impl_block.get("uuid").and_then(serde_json::Value::as_str).map_or_else(
+                || format!("unknown-implementation-{implementation_index}"),
+                str::to_string,
+            );
+
         for req in impl_reqs {
-            let control_id = req
-                .get("control-id")
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown-requirement")
-                .to_string();
+            let control_id = if let Some(id) =
+                req.get("control-id").and_then(serde_json::Value::as_str)
+            {
+                id.to_string()
+            } else {
+                tracing::warn!("Implemented requirement is missing required 'control-id' field");
+                format!("unknown-requirement-{}", entries.len())
+            };
             let trace = extract_trace_metadata(req);
             entries.push(TraceEntry {
-                element_id: control_id,
+                element_id: format!(
+                    "{container_id}/{implementation_source}/{implementation_id}/{control_id}"
+                ),
                 element_type: ElementType::ImplementedRequirement,
                 trace,
             });
@@ -377,9 +417,9 @@ mod tests {
         for entry in &entries {
             assert_eq!(entry.element_type, ElementType::ImplementedRequirement);
         }
-        assert_eq!(entries[0].element_id, "POL-AC-001");
-        assert_eq!(entries[1].element_id, "POL-AC-002");
-        assert_eq!(entries[2].element_id, "POL-DP-001");
+        assert_eq!(entries[0].element_id, "comp-1/unknown-source/ci-1/POL-AC-001");
+        assert_eq!(entries[1].element_id, "comp-1/unknown-source/ci-1/POL-AC-002");
+        assert_eq!(entries[2].element_id, "comp-1/unknown-source/ci-1/POL-DP-001");
     }
 
     #[test]
@@ -387,5 +427,81 @@ mod tests {
         let compdef = json!({ "components": [] });
         let entries = walk_compdef_elements(&compdef);
         assert_eq!(entries.len(), 0);
+    }
+
+    #[test]
+    fn unsupported_artifact_preserves_validation_error_detail() {
+        let error = detect_artifact_type(&json!({})).unwrap_err();
+        let ForgeError::TraceUnsupportedArtifact { detail } = error else {
+            panic!("expected trace artifact error");
+        };
+        assert!(detail.contains("--schema-type"));
+    }
+
+    #[test]
+    fn missing_catalog_ids_receive_unique_fallbacks() {
+        let catalog = json!({
+            "groups": [{}, {}],
+            "controls": [{}, {}]
+        });
+
+        let entries = walk_catalog_elements(&catalog);
+        let ids: Vec<&str> = entries.iter().map(|entry| entry.element_id.as_str()).collect();
+        assert_eq!(
+            ids,
+            vec!["unknown-group-0", "unknown-group-1", "unknown-control-2", "unknown-control-3",]
+        );
+    }
+
+    #[test]
+    fn requirements_include_container_and_implementation_context() {
+        let compdef = json!({
+            "components": [
+                {
+                    "uuid": "component-one",
+                    "control-implementations": [{
+                        "uuid": "implementation-one",
+                        "source": "NIST-800-53",
+                        "implemented-requirements": [{ "control-id": "AC-1" }]
+                    }]
+                },
+                {
+                    "uuid": "component-two",
+                    "control-implementations": [{
+                        "uuid": "implementation-two",
+                        "source": "NIST-800-53",
+                        "implemented-requirements": [{ "control-id": "AC-1" }, {}]
+                    }]
+                }
+            ]
+        });
+
+        let entries = walk_compdef_elements(&compdef);
+        let ids: Vec<&str> = entries.iter().map(|entry| entry.element_id.as_str()).collect();
+        assert_eq!(ids[0], "component-one/NIST-800-53/implementation-one/AC-1");
+        assert_eq!(ids[1], "component-two/NIST-800-53/implementation-two/AC-1");
+        assert_eq!(ids[2], "component-two/NIST-800-53/implementation-two/unknown-requirement-2");
+        assert_ne!(ids[0], ids[1]);
+    }
+
+    #[test]
+    fn wrong_typed_collection_fields_are_skipped() {
+        let catalog = json!({ "groups": {}, "controls": "not-an-array" });
+        let compdef = json!({ "components": {}, "capabilities": 42 });
+
+        assert!(walk_catalog_elements(&catalog).is_empty());
+        assert!(walk_compdef_elements(&compdef).is_empty());
+    }
+
+    #[test]
+    fn deeply_nested_programmatic_controls_stop_at_walk_limit() {
+        let mut control = json!({ "id": "control-leaf" });
+        for index in (0..=MAX_TRACE_WALK_DEPTH).rev() {
+            control = json!({ "id": format!("control-{index}"), "controls": [control] });
+        }
+        let catalog = json!({ "controls": [control] });
+
+        let entries = walk_catalog_elements(&catalog);
+        assert_eq!(entries.len(), MAX_TRACE_WALK_DEPTH + 1);
     }
 }

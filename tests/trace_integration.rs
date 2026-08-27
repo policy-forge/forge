@@ -10,9 +10,9 @@ use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySe
 
 // ── Test Helpers ────────────────────────────────────────────────────────
 
-fn test_requirement(text: &str, stable_id: &str, line: usize) -> PolicyRequirement {
+fn test_requirement_opt(text: &str, stable_id: Option<&str>, line: usize) -> PolicyRequirement {
     PolicyRequirement {
-        stable_id: Some(stable_id.to_string()),
+        stable_id: stable_id.map(str::to_string),
         text: text.to_string(),
         source_line: line,
         nesting_depth: 0,
@@ -21,7 +21,12 @@ fn test_requirement(text: &str, stable_id: &str, line: usize) -> PolicyRequireme
         citations: vec![],
         modality: None,
         parameters: vec![],
+        parameters_extracted: false,
     }
+}
+
+fn test_requirement(text: &str, stable_id: &str, line: usize) -> PolicyRequirement {
+    test_requirement_opt(text, Some(stable_id), line)
 }
 
 fn test_section(
@@ -77,10 +82,41 @@ fn catalog_trace_one_link_per_control() {
     let mut trace_links = TraceLinkCollection::new();
     let catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
 
-    // One TraceLink per control
-    let total_controls: usize = catalog.groups.iter().map(|g| g.controls.len()).sum();
-    assert_eq!(trace_links.len(), total_controls);
+    // One TraceLink per control, paired by the catalog control UUID.
+    let mut control_ids: Vec<String> = catalog
+        .groups
+        .iter()
+        .flat_map(|group| group.controls.iter().map(|control| control.uuid.clone()))
+        .collect();
+    let mut trace_element_ids: Vec<String> =
+        trace_links.iter().map(|link| link.oscal_element_id.clone()).collect();
+    control_ids.sort();
+    trace_element_ids.sort();
+
+    assert_eq!(trace_element_ids, control_ids);
     assert_eq!(trace_links.len(), 3);
+}
+
+#[test]
+fn catalog_trace_missing_stable_id_does_not_commit_partial_links() {
+    let doc = test_document(vec![test_section(
+        "Access Control",
+        vec![
+            test_requirement("Auth.", "uuid-ac-1", 10),
+            test_requirement_opt("Missing ID.", None, 15),
+        ],
+        vec![],
+    )]);
+
+    let mut trace_links = TraceLinkCollection::new();
+    let result = forge::oscal::build_catalog(&doc, Some(&mut trace_links));
+
+    assert!(
+        matches!(&result, Err(forge::ForgeError::CatalogBuild(_))),
+        "a missing stable_id must return ForgeError::CatalogBuild, got: {result:?}"
+    );
+    // build_catalog commits buffered links only after a successful catalog build.
+    assert!(trace_links.is_empty(), "a failed build must not leak partial trace links");
 }
 
 #[test]
@@ -102,13 +138,20 @@ fn catalog_trace_json_path_format() {
     ]);
 
     let mut trace_links = TraceLinkCollection::new();
-    forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
+    let catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
 
-    // Verify dot-notation path format
-    let paths: Vec<&str> = trace_links.iter().map(|l| l.oscal_json_path.as_str()).collect();
-    assert_eq!(paths[0], "catalog.groups[0].controls[0]");
-    assert_eq!(paths[1], "catalog.groups[0].controls[1]");
-    assert_eq!(paths[2], "catalog.groups[1].controls[0]");
+    assert_eq!(trace_links.len(), 3);
+    for (group_index, group) in catalog.groups.iter().enumerate() {
+        for (control_index, control) in group.controls.iter().enumerate() {
+            let link = trace_links
+                .by_oscal_element(&control.uuid)
+                .expect("every catalog control must have a trace link");
+            assert_eq!(
+                link.oscal_json_path,
+                format!("catalog.groups[{group_index}].controls[{control_index}]")
+            );
+        }
+    }
 }
 
 #[test]
@@ -124,7 +167,7 @@ fn catalog_trace_source_location_fields() {
 
     let link = trace_links.by_oscal_element("uuid-ac-1").unwrap();
     assert_eq!(link.source_location.file_path, PathBuf::from("policies/security.md"));
-    assert_eq!(link.source_location.section_title, "Access Control");
+    assert_eq!(link.source_location.section_title.as_deref(), Some("Access Control"));
     assert_eq!(link.source_location.line_number, 42);
     assert_eq!(link.requirement_stable_id, "uuid-ac-1");
 }
@@ -169,12 +212,12 @@ fn catalog_trace_nested_section_uses_subsection_title() {
     // Parent requirement traces to parent section title
     let parent_links = trace_links.by_requirement("uuid-ac-1");
     assert_eq!(parent_links.len(), 1);
-    assert_eq!(parent_links[0].source_location.section_title, "Access Control");
+    assert_eq!(parent_links[0].source_location.section_title.as_deref(), Some("Access Control"));
 
     // Child requirement traces to child section title, not the parent
     let child_links = trace_links.by_requirement("uuid-pw-1");
     assert_eq!(child_links.len(), 1);
-    assert_eq!(child_links[0].source_location.section_title, "Password Policy");
+    assert_eq!(child_links[0].source_location.section_title.as_deref(), Some("Password Policy"));
 }
 
 // ── T023: Component definition trace capture ───────────────────────────
@@ -191,7 +234,7 @@ fn component_def_trace_empty_when_no_implemented_requirements() {
     let envelope =
         forge::oscal::build_component_definition(&doc, None, Some(&mut trace_links), None).unwrap();
 
-    // WI-15 not merged: no implemented-requirements → empty trace collection
+    // No source_profile supplied: no control-implementations are built, so trace capture is empty.
     assert!(trace_links.is_empty());
     assert_eq!(envelope.component_definition.components.len(), 1);
 }

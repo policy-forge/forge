@@ -1,4 +1,9 @@
 //! Shared duplicate-key-safe, bounded JSON parsing utilities.
+//!
+//! Limits apply to the decoded tree. Callers MUST still cap raw input bytes
+//! before parsing because wide, shallow JSON may allocate before its structural
+//! bounds can be inspected; `serde_json`'s own recursion limit can also reject a
+//! document before `Limits::max_depth` when configured higher.
 
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
@@ -11,13 +16,62 @@ pub(crate) struct Limits {
     pub(crate) max_string_bytes: usize,
 }
 
+/// Programmatic classification for strict JSON parsing failures.
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum StrictJsonError {
+    /// The input is not a complete JSON value.
+    #[error("invalid {label} JSON: {source}")]
+    InvalidJson {
+        /// Caller-provided input label.
+        label: String,
+        /// Underlying JSON decoder error.
+        #[source]
+        source: serde_json::Error,
+    },
+    /// Valid JSON was followed by extra data.
+    #[error("invalid trailing {label} data: {source}")]
+    TrailingData {
+        /// Caller-provided input label.
+        label: String,
+        /// Underlying JSON decoder error.
+        #[source]
+        source: serde_json::Error,
+    },
+    /// An object contains one duplicate key.
+    #[error("duplicate object key '{key}'")]
+    DuplicateKey {
+        /// Bounded, escaped key for diagnostics.
+        key: String,
+    },
+    /// A decoded value violates a configured structural bound.
+    #[error("{message}")]
+    BoundsViolation {
+        /// Bounded diagnostic identifying the failed constraint.
+        message: String,
+    },
+}
+
+const DUPLICATE_KEY_PREFIX: &str = "forge-strict-json-duplicate-key:";
+
 /// Parse one complete JSON value without duplicate object keys and enforce structural bounds.
-pub(crate) fn parse_value(bytes: &[u8], label: &str, limits: Limits) -> Result<Value, String> {
+pub(crate) fn parse_value(
+    bytes: &[u8],
+    label: &str,
+    limits: Limits,
+) -> Result<Value, StrictJsonError> {
     let mut deserializer = serde_json::Deserializer::from_slice(bytes);
-    let strict = StrictValue::deserialize(&mut deserializer)
-        .map_err(|cause| format!("invalid {label} JSON: {cause}"))?;
-    deserializer.end().map_err(|cause| format!("invalid trailing {label} data: {cause}"))?;
-    enforce_bounds(&strict.0, "$", 0, limits)?;
+    let strict = StrictValue::deserialize(&mut deserializer).map_err(|source| {
+        let message = source.to_string();
+        if let Some(key) = message.strip_prefix(DUPLICATE_KEY_PREFIX) {
+            StrictJsonError::DuplicateKey { key: key.to_string() }
+        } else {
+            StrictJsonError::InvalidJson { label: label.to_string(), source }
+        }
+    })?;
+    deserializer
+        .end()
+        .map_err(|source| StrictJsonError::TrailingData { label: label.to_string(), source })?;
+    enforce_bounds(&strict.0, &mut Vec::new(), 0, limits)?;
     Ok(strict.0)
 }
 
@@ -36,28 +90,82 @@ pub(crate) fn validate_lowercase_sha256(path: &str, value: &str) -> Result<(), S
     Ok(())
 }
 
-fn enforce_bounds(value: &Value, path: &str, depth: usize, limits: Limits) -> Result<(), String> {
+enum PathSegment<'a> {
+    Key(&'a str),
+    Index(usize),
+}
+
+fn enforce_bounds<'a>(
+    value: &'a Value,
+    segments: &mut Vec<PathSegment<'a>>,
+    depth: usize,
+    limits: Limits,
+) -> Result<(), StrictJsonError> {
     if depth > limits.max_depth {
-        return Err(format!("{path} exceeds maximum JSON depth {}", limits.max_depth));
+        return Err(bounds_error(
+            segments,
+            format!("exceeds maximum JSON depth {}", limits.max_depth),
+        ));
     }
     match value {
-        Value::String(text) if text.len() > limits.max_string_bytes => {
-            Err(format!("{path} exceeds maximum string length {} bytes", limits.max_string_bytes))
-        }
+        Value::String(text) if text.len() > limits.max_string_bytes => Err(bounds_error(
+            segments,
+            format!("exceeds maximum string length {} bytes", limits.max_string_bytes),
+        )),
         Value::Array(values) => {
             for (index, child) in values.iter().enumerate() {
-                enforce_bounds(child, &format!("{path}[{index}]"), depth + 1, limits)?;
+                segments.push(PathSegment::Index(index));
+                let result = enforce_bounds(child, segments, depth + 1, limits);
+                let _ = segments.pop();
+                result?;
             }
             Ok(())
         }
         Value::Object(values) => {
             for (key, child) in values {
-                enforce_bounds(child, &format!("{path}.{key}"), depth + 1, limits)?;
+                if key.len() > limits.max_string_bytes {
+                    return Err(bounds_error(
+                        segments,
+                        format!(
+                            "object key '{}' exceeds maximum string length {} bytes",
+                            bounded(key),
+                            limits.max_string_bytes
+                        ),
+                    ));
+                }
+                segments.push(PathSegment::Key(key));
+                let result = enforce_bounds(child, segments, depth + 1, limits);
+                let _ = segments.pop();
+                result?;
             }
             Ok(())
         }
         _ => Ok(()),
     }
+}
+
+fn bounds_error(segments: &[PathSegment<'_>], detail: impl AsRef<str>) -> StrictJsonError {
+    StrictJsonError::BoundsViolation {
+        message: format!("{} {}", render_path(segments), detail.as_ref()),
+    }
+}
+
+fn render_path(segments: &[PathSegment<'_>]) -> String {
+    let mut path = String::from("$");
+    for segment in segments {
+        match segment {
+            PathSegment::Key(key) => {
+                path.push('.');
+                path.push_str(&bounded(key));
+            }
+            PathSegment::Index(index) => {
+                path.push('[');
+                path.push_str(&index.to_string());
+                path.push(']');
+            }
+        }
+    }
+    path
 }
 
 struct StrictValue(Value);
@@ -145,9 +253,10 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
     {
         let mut values = Map::new();
         while let Some((key, value)) = object.next_entry::<String, StrictValue>()? {
-            if values.insert(key.clone(), value.0).is_some() {
-                return Err(de::Error::custom(format!("duplicate object key '{key}'")));
+            if values.contains_key(&key) {
+                return Err(de::Error::custom(format!("{DUPLICATE_KEY_PREFIX}{}", bounded(&key))));
             }
+            values.insert(key, value.0);
         }
         Ok(StrictValue(Value::Object(values)))
     }
@@ -160,27 +269,32 @@ mod tests {
     const LIMITS: Limits = Limits { max_depth: 2, max_string_bytes: 3 };
 
     #[test]
-    fn rejects_duplicate_keys_trailing_data_and_structural_bound_violations() {
-        assert!(
-            parse_value(br#"{"a":1,"a":2}"#, "test", LIMITS)
-                .unwrap_err()
-                .contains("duplicate object key")
-        );
-        assert!(
-            parse_value(b"{} {}", "test", LIMITS)
-                .unwrap_err()
-                .contains("invalid trailing test data")
-        );
-        assert!(
-            parse_value(br#"{"a":"four"}"#, "test", LIMITS)
-                .unwrap_err()
-                .contains("maximum string length 3 bytes")
-        );
-        assert!(
-            parse_value(br#"{"a":{"b":{"c":null}}}"#, "test", LIMITS)
-                .unwrap_err()
-                .contains("maximum JSON depth 2")
-        );
+    fn classifies_duplicate_trailing_and_bound_violations_without_raw_keys() {
+        assert!(matches!(
+            parse_value(br#"{"a":1,"a":2}"#, "test", LIMITS),
+            Err(super::StrictJsonError::DuplicateKey { .. })
+        ));
+        assert!(matches!(
+            parse_value(b"{} {}", "test", LIMITS),
+            Err(super::StrictJsonError::TrailingData { .. })
+        ));
+        assert!(matches!(
+            parse_value(br#"{"a":"four"}"#, "test", LIMITS),
+            Err(super::StrictJsonError::BoundsViolation { .. })
+        ));
+        assert!(matches!(
+            parse_value(br#"{"a":{"b":{"c":null}}}"#, "test", LIMITS),
+            Err(super::StrictJsonError::BoundsViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn bounds_apply_to_object_keys_and_escape_diagnostic_paths() {
+        let error = parse_value(br#"{"a\nverylong":1}"#, "test", LIMITS).unwrap_err();
+        let rendered = error.to_string();
+        assert!(rendered.contains("maximum string length 3 bytes"));
+        assert!(rendered.contains("a\\nverylong"));
+        assert!(!rendered.contains("a\nverylong"));
     }
 
     #[test]

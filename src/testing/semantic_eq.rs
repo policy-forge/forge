@@ -7,6 +7,9 @@
 
 use serde_json::Value;
 
+/// Match `serde_json`'s default nesting limit for programmatically built test values.
+const MAX_COMPARISON_DEPTH: usize = 128;
+
 /// Result of a semantic equivalence comparison between two OSCAL documents.
 #[derive(Debug, Clone)]
 pub struct EquivalenceResult {
@@ -33,33 +36,48 @@ pub struct EquivalenceDiff {
 ///
 /// Objects: keys compared as unordered sets; values compared recursively.
 /// Arrays: elements compared in order (OSCAL array order is significant per PRD M-6).
-/// Primitives: compared by value and type (PRD M-8).
+/// Primitives: compared by JSON semantic value. Numerically equal JSON numbers
+/// are equivalent even when their source representations differ.
 ///
 /// Returns `EquivalenceResult` with `is_equivalent = true` if the documents match,
 /// or a list of `EquivalenceDiff` entries describing each discrepancy.
 #[must_use]
 pub fn assert_semantic_equivalence(original: &Value, round_tripped: &Value) -> EquivalenceResult {
     let mut differences = Vec::new();
-    compare_values(original, round_tripped, "", &mut differences);
+    compare_values(original, round_tripped, "", &mut differences, 0);
     EquivalenceResult { is_equivalent: differences.is_empty(), differences }
 }
 
-/// Recursive comparison of JSON Value nodes.
-///
-/// Accumulates all differences into `diffs` with JSON Pointer-style paths.
 /// Escape a JSON object key for use in a JSON Pointer token per RFC 6901.
 /// `~` is replaced with `~0` and `/` is replaced with `~1`.
 fn escape_json_pointer_token(token: &str) -> String {
     token.replace('~', "~0").replace('/', "~1")
 }
 
-fn compare_values(expected: &Value, actual: &Value, path: &str, diffs: &mut Vec<EquivalenceDiff>) {
+/// Recursively compare JSON value nodes and accumulate every difference.
+fn compare_values(
+    expected: &Value,
+    actual: &Value,
+    path: &str,
+    diffs: &mut Vec<EquivalenceDiff>,
+    depth: usize,
+) {
+    if depth >= MAX_COMPARISON_DEPTH {
+        diffs.push(EquivalenceDiff {
+            path: path.to_string(),
+            description: format!("nesting deeper than {MAX_COMPARISON_DEPTH} levels"),
+            expected: None,
+            actual: None,
+        });
+        return;
+    }
+
     match (expected, actual) {
         (Value::Object(exp_map), Value::Object(act_map)) => {
-            compare_objects(exp_map, act_map, path, diffs);
+            compare_objects(exp_map, act_map, path, diffs, depth);
         }
         (Value::Array(exp_arr), Value::Array(act_arr)) => {
-            compare_arrays(exp_arr, act_arr, path, diffs);
+            compare_arrays(exp_arr, act_arr, path, diffs, depth);
         }
         _ => {
             compare_primitives(expected, actual, path, diffs);
@@ -72,11 +90,12 @@ fn compare_objects(
     act_map: &serde_json::Map<String, Value>,
     path: &str,
     diffs: &mut Vec<EquivalenceDiff>,
+    depth: usize,
 ) {
     for key in exp_map.keys() {
         let child_path = format!("{path}/{}", escape_json_pointer_token(key));
         if let Some(act_val) = act_map.get(key) {
-            compare_values(&exp_map[key], act_val, &child_path, diffs);
+            compare_values(&exp_map[key], act_val, &child_path, diffs, depth + 1);
         } else {
             diffs.push(EquivalenceDiff {
                 path: child_path,
@@ -104,6 +123,7 @@ fn compare_arrays(
     act_arr: &[Value],
     path: &str,
     diffs: &mut Vec<EquivalenceDiff>,
+    depth: usize,
 ) {
     if exp_arr.len() != act_arr.len() {
         diffs.push(EquivalenceDiff {
@@ -118,9 +138,25 @@ fn compare_arrays(
         });
     }
     let min_len = exp_arr.len().min(act_arr.len());
-    for i in 0..min_len {
-        let child_path = format!("{path}/{i}");
-        compare_values(&exp_arr[i], &act_arr[i], &child_path, diffs);
+    for index in 0..min_len {
+        let child_path = format!("{path}/{index}");
+        compare_values(&exp_arr[index], &act_arr[index], &child_path, diffs, depth + 1);
+    }
+    for (index, value) in exp_arr.iter().enumerate().skip(min_len) {
+        diffs.push(EquivalenceDiff {
+            path: format!("{path}/{index}"),
+            description: "missing element".to_string(),
+            expected: Some(format_value(value)),
+            actual: None,
+        });
+    }
+    for (index, value) in act_arr.iter().enumerate().skip(min_len) {
+        diffs.push(EquivalenceDiff {
+            path: format!("{path}/{index}"),
+            description: "extra element".to_string(),
+            expected: None,
+            actual: Some(format_value(value)),
+        });
     }
 }
 
@@ -133,6 +169,12 @@ fn compare_primitives(
     if expected == actual {
         return;
     }
+    if let (Value::Number(expected_number), Value::Number(actual_number)) = (expected, actual)
+        && expected_number.as_f64() == actual_number.as_f64()
+    {
+        return;
+    }
+
     let description = if discriminant_name(expected) == discriminant_name(actual) {
         "value mismatch".to_string()
     } else {
@@ -164,21 +206,21 @@ fn discriminant_name(value: &Value) -> &'static str {
 
 /// Format a `Value` as a compact display string for diff reporting.
 fn format_value(value: &Value) -> String {
-    match value {
+    let rendered = match value {
         Value::Null => "null".to_string(),
-        Value::Bool(b) => b.to_string(),
-        Value::Number(n) => n.to_string(),
-        Value::String(s) => format!("\"{s}\""),
+        Value::Bool(boolean) => boolean.to_string(),
+        Value::Number(number) => number.to_string(),
+        Value::String(text) => format!("\"{text}\""),
         Value::Array(_) | Value::Object(_) => {
-            let s =
-                serde_json::to_string(value).unwrap_or_else(|_| "<unrepresentable>".to_string());
-            if s.len() > 500 {
-                let truncated: String = s.chars().take(500).collect();
-                format!("{truncated}… ({} chars total)", s.chars().count())
-            } else {
-                s
-            }
+            serde_json::to_string(value).unwrap_or_else(|_| "<unrepresentable>".to_string())
         }
+    };
+    let char_count = rendered.chars().count();
+    if char_count > 500 {
+        let truncated: String = rendered.chars().take(500).collect();
+        format!("{truncated}… ({char_count} chars total)")
+    } else {
+        rendered
     }
 }
 
@@ -431,6 +473,47 @@ mod tests {
         assert_eq!(diff.actual.as_deref(), Some("2"));
     }
 
+    #[test]
+    fn array_length_mismatch_reports_each_surplus_element() {
+        let original = json!({ "items": ["first", "surplus"] });
+        let round_tripped = json!({ "items": ["first"] });
+
+        let result = assert_semantic_equivalence(&original, &round_tripped);
+
+        let surplus = result
+            .differences
+            .iter()
+            .find(|difference| difference.path == "/items/1")
+            .expect("surplus element must be reported at its index");
+        assert_eq!(surplus.description, "missing element");
+        assert_eq!(surplus.expected.as_deref(), Some("\"surplus\""));
+        assert!(surplus.actual.is_none());
+    }
+
+    #[test]
+    fn numerically_equal_number_representations_are_equivalent() {
+        let original = json!({ "value": 1 });
+        let round_tripped = json!({ "value": 1.0 });
+
+        assert!(assert_semantic_equivalence(&original, &round_tripped).is_equivalent);
+    }
+
+    #[test]
+    fn deeply_nested_programmatic_values_stop_at_comparison_limit() {
+        let mut original = Value::Null;
+        let mut round_tripped = Value::Null;
+        for _ in 0..150 {
+            original = json!({ "nested": original });
+            round_tripped = json!({ "nested": round_tripped });
+        }
+
+        let result = assert_semantic_equivalence(&original, &round_tripped);
+
+        assert!(!result.is_equivalent);
+        assert_eq!(result.differences.len(), 1);
+        assert_eq!(result.differences[0].description, "nesting deeper than 128 levels");
+    }
+
     // Additional edge-case tests for completeness
 
     #[test]
@@ -538,10 +621,19 @@ mod tests {
     }
 
     #[test]
-    fn format_value_truncates_multibyte_json_values_without_panic() {
+    fn format_value_truncates_multibyte_json_values_by_character_count() {
         let value = json!({ "description": format!("{}{}", "a".repeat(495), "認証".repeat(20)) });
         let formatted = format_value(&value);
 
-        assert!(!formatted.is_empty());
+        assert!(formatted.contains("… ("));
+        assert!(formatted.contains("chars total)"));
+    }
+
+    #[test]
+    fn format_value_truncates_large_string_values() {
+        let formatted = format_value(&Value::String("a".repeat(600)));
+
+        assert!(formatted.contains("… (602 chars total)"));
+        assert!(formatted.chars().count() < 550);
     }
 }

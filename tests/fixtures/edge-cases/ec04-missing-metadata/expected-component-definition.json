@@ -1,0 +1,67 @@
+{
+  "component-definition": {
+    "components": [
+      {
+        "control-implementations": [
+          {
+            "description": "Implementation narratives derived from input.",
+            "implemented-requirements": [
+              {
+                "control-id": "POL-I-001",
+                "description": "Systems must restrict privileged access to approved administrators.",
+                "links": [
+                  {
+                    "href": "input.md#line=3",
+                    "rel": "source"
+                  }
+                ],
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "3"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "uuid": "8e3ff519-b04d-56a9-a602-0f01a695fb2d"
+              }
+            ],
+            "source": "source-profile.json",
+            "uuid": "9299ca7c-81bd-5b5a-8b87-3358044660fe"
+          }
+        ],
+        "description": "Documentary component representing the input policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "title": "input",
+        "type": "policy",
+        "uuid": "7b23a2aa-d15d-5e46-8b58-3817ce490569"
+      }
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:40.615364+00:00",
+      "oscal-version": "1.2.3",
+      "title": "input",
+      "version": "0.0.0"
+    },
+    "uuid": "3546a09c-a57d-43af-b574-929537b076c2"
+  }
+}

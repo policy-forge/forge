@@ -30,25 +30,25 @@ use crate::uuid::FORGE_NAMESPACE_UUID;
 // T010: URL pattern — matches http:// or https:// followed by non-whitespace, non-delimiter chars.
 // SAFETY: static regex — panics only if regex literal is invalid
 static URL_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"https?://[^\s\)\]>,;]+").expect("URL regex must compile"));
+    LazyLock::new(|| Regex::new(r"(?i)https?://[^\s\)\]>,;]+").expect("URL regex must compile"));
 
 // T016: Bibliographic pattern — NIST SP, ISO, RFC, FIPS with optional Rev and Section suffixes.
 // SAFETY: static regex — panics only if regex literal is invalid
 static BIBLIO_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?")
+    Regex::new(r"(?i)\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?")
         .expect("Bibliographic regex must compile")
 });
 
 // T026: Scheme-less URL pattern — matches www. prefix (R-7).
 // SAFETY: static regex — panics only if regex literal is invalid
 static SCHEMELESS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\bwww\.[^\s\)\]>,;]+").expect("Scheme-less URL regex must compile")
+    Regex::new(r"(?i)\bwww\.[^\s\)\]>,;]+").expect("Scheme-less URL regex must compile")
 });
 
 // T030: Cross-reference pattern — Section X.Y, Appendix A, Table N (SEC-4).
 // SAFETY: static regex — panics only if regex literal is invalid
 static CROSSREF_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b(?:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b")
+    Regex::new(r"\b(?i:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b")
         .expect("Cross-reference regex must compile")
 });
 
@@ -79,12 +79,11 @@ fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), For
         if !req.citations.is_empty() {
             continue;
         }
-        let requirement_id = req.stable_id.as_deref().ok_or_else(|| {
-            ForgeError::Parse(format!(
-                "Requirement at line {} missing stable_id before citation extraction (run UUID assignment first)",
-                req.source_line
-            ))
-        })?;
+        let requirement_id =
+            req.stable_id.as_deref().ok_or_else(|| ForgeError::PipelineInvariant {
+                source_line: req.source_line,
+                context: "citation extraction requires stable IDs to be assigned first".to_string(),
+            })?;
         let (cleaned_text, citations) = extract_citations_from_text(requirement_id, &req.text)?;
         tracing::debug!(
             requirement_id = requirement_id,
@@ -116,13 +115,18 @@ fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), For
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Parse` if regex matching encounters an error.
+/// Returns `ForgeError::PipelineInvariant` when stable IDs have not been assigned
+/// before citation extraction.
 pub fn extract_citations_from_text(
     requirement_id: &str,
     text: &str,
 ) -> Result<(String, Vec<Citation>), ForgeError> {
     let mut citations = Vec::new();
     let mut matched_ranges: Vec<Range<usize>> = Vec::new();
+    // Occurrence ordinal per matched text so repeated identical citations
+    // derive distinct ids instead of colliding on one UUID (F0298).
+    let mut occurrences: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
 
     // US1: URL matches (highest priority)
     for m in URL_REGEX.find_iter(text) {
@@ -130,12 +134,16 @@ pub fn extract_citations_from_text(
         // Trim trailing sentence punctuation (periods are valid inside URLs but not at end)
         let url_text = raw.trim_end_matches('.').to_string();
         let trimmed_len = raw.len() - url_text.len();
-        let citation_id = generate_citation_id(requirement_id, &url_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &url_text,
+            *occurrences.entry(url_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: url_text.clone(),
             url: Some(url_text),
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(m.start()..(m.end() - trimmed_len));
     }
@@ -149,12 +157,16 @@ pub fn extract_citations_from_text(
         let raw = m.as_str();
         let url_text = raw.trim_end_matches('.').to_string();
         let trimmed_len = raw.len() - url_text.len();
-        let citation_id = generate_citation_id(requirement_id, &url_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &url_text,
+            *occurrences.entry(url_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: url_text.clone(),
             url: Some(url_text),
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(m.start()..(m.end() - trimmed_len));
     }
@@ -166,12 +178,16 @@ pub fn extract_citations_from_text(
             continue;
         }
         let ref_text = m.as_str().to_string();
-        let citation_id = generate_citation_id(requirement_id, &ref_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &ref_text,
+            *occurrences.entry(ref_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: ref_text,
             url: None,
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(range);
     }
@@ -183,28 +199,37 @@ pub fn extract_citations_from_text(
             continue;
         }
         let ref_text = m.as_str().to_string();
-        let citation_id = generate_citation_id(requirement_id, &ref_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &ref_text,
+            *occurrences.entry(ref_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: ref_text,
             url: None,
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(range);
     }
 
-    let cleaned = strip_matches(text, &matched_ranges);
-    let cleaned = normalize_prose(&cleaned);
+    if matched_ranges.is_empty() {
+        return Ok((text.to_string(), citations));
+    }
 
-    Ok((cleaned, citations))
+    Ok((normalize_prose(&strip_matches(text, &matched_ranges)), citations))
 }
 
 /// Generate a deterministic citation ID using UUID v5.
 ///
-/// Uses `FORGE_NAMESPACE_UUID` namespace with input `"{requirement_id}:{citation_text}"`.
+/// Uses `FORGE_NAMESPACE_UUID` namespace with input `"{requirement_id}:{occurrence}:{citation_text}"`.
 #[must_use]
-pub fn generate_citation_id(requirement_id: &str, citation_text: &str) -> String {
-    let input = format!("{requirement_id}:{citation_text}");
+pub fn generate_citation_id(
+    requirement_id: &str,
+    citation_text: &str,
+    occurrence: usize,
+) -> String {
+    let input = format!("{requirement_id}:{occurrence}:{citation_text}");
     Uuid::new_v5(&FORGE_NAMESPACE_UUID, input.as_bytes()).to_string()
 }
 
@@ -215,21 +240,28 @@ fn strip_matches(text: &str, ranges: &[Range<usize>]) -> String {
     }
 
     let mut sorted = ranges.to_vec();
-    sorted.sort_by_key(|r| r.start);
+    sorted.sort_by_key(|range| range.start);
+
+    let mut merged: Vec<Range<usize>> = Vec::with_capacity(sorted.len());
+    for range in sorted {
+        if let Some(previous) = merged.last_mut()
+            && range.start <= previous.end
+        {
+            previous.end = previous.end.max(range.end);
+        } else {
+            merged.push(range);
+        }
+    }
 
     let mut result = String::with_capacity(text.len());
     let mut last_end = 0;
 
-    for range in &sorted {
-        if range.start > last_end {
-            result.push_str(&text[last_end..range.start]);
-        }
+    for range in merged {
+        result.push_str(&text[last_end..range.start]);
         result.push(' ');
         last_end = range.end;
     }
-    if last_end < text.len() {
-        result.push_str(&text[last_end..]);
-    }
+    result.push_str(&text[last_end..]);
 
     result
 }
@@ -333,6 +365,10 @@ mod tests {
 
         assert_eq!(citations.len(), 2);
         assert_eq!(citations[0].url, citations[1].url);
+        assert_ne!(
+            citations[0].id, citations[1].id,
+            "duplicate occurrences must mint distinct ids (F0298)"
+        );
     }
 
     // EC-1: No citations text unchanged
@@ -343,6 +379,15 @@ mod tests {
 
         assert!(citations.is_empty());
         assert_eq!(text, "Users must authenticate before access");
+    }
+
+    #[test]
+    fn no_citations_preserve_prose_byte_for_byte() {
+        let original = "  Preserve\ttabs,  double spaces,\nand surrounding whitespace.  ";
+        let (text, citations) = extract_citations_from_text("req-1", original).unwrap();
+
+        assert!(citations.is_empty());
+        assert_eq!(text, original);
     }
 
     // EC-2: Whitespace normalization after stripping
@@ -407,28 +452,28 @@ mod tests {
     // T011: Citation ID generation tests
     #[test]
     fn citation_id_deterministic() {
-        let id1 = generate_citation_id("req-1", "https://example.com");
-        let id2 = generate_citation_id("req-1", "https://example.com");
+        let id1 = generate_citation_id("req-1", "https://example.com", 0);
+        let id2 = generate_citation_id("req-1", "https://example.com", 0);
         assert_eq!(id1, id2);
     }
 
     #[test]
     fn citation_id_different_for_different_citation_text() {
-        let id1 = generate_citation_id("req-1", "https://a.com");
-        let id2 = generate_citation_id("req-1", "https://b.com");
+        let id1 = generate_citation_id("req-1", "https://a.com", 0);
+        let id2 = generate_citation_id("req-1", "https://b.com", 0);
         assert_ne!(id1, id2);
     }
 
     #[test]
     fn citation_id_different_for_different_requirements() {
-        let id1 = generate_citation_id("req-1", "https://example.com");
-        let id2 = generate_citation_id("req-2", "https://example.com");
+        let id1 = generate_citation_id("req-1", "https://example.com", 0);
+        let id2 = generate_citation_id("req-2", "https://example.com", 0);
         assert_ne!(id1, id2);
     }
 
     #[test]
     fn citation_id_is_valid_uuid() {
-        let id = generate_citation_id("req-1", "https://example.com");
+        let id = generate_citation_id("req-1", "https://example.com", 0);
         assert!(uuid::Uuid::parse_str(&id).is_ok());
     }
 
@@ -536,6 +581,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -548,6 +594,17 @@ mod tests {
             children: vec![],
             requirements: reqs,
         }
+    }
+
+    #[test]
+    fn missing_stable_id_reports_pipeline_invariant() {
+        let mut requirement = make_req("req-1", "See https://example.com");
+        requirement.stable_id = None;
+        requirement.source_line = 42;
+        let mut section = make_section("Policy", vec![requirement]);
+
+        let error = extract_citations_from_section(&mut section).unwrap_err();
+        assert!(matches!(error, ForgeError::PipelineInvariant { source_line: 42, .. }));
     }
 
     // Multiple sections each with requirements
@@ -897,5 +954,23 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(elapsed.as_secs() < 1, "Regex took {elapsed:?} on deeply nested parens");
+    }
+
+    #[test]
+    fn mixed_case_citations_are_extracted() {
+        let (text, citations) = extract_citations_from_text(
+            "req-1",
+            "See HTTPS://EXAMPLE.COM and nist sp 800-53 Section AC-2.",
+        )
+        .unwrap();
+
+        assert_eq!(citations.len(), 2);
+        assert!(!text.contains("HTTPS://EXAMPLE.COM"));
+        assert!(!text.contains("nist sp 800-53 Section AC-2"));
+    }
+
+    #[test]
+    fn strip_matches_merges_overlapping_ranges() {
+        assert_eq!(strip_matches("abcdefgh", &[1..5, 3..7]), "a h");
     }
 }

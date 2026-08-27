@@ -3,6 +3,7 @@
 //! Converts raw `jsonschema` crate errors into user-friendly `ValidationError`
 //! structs with JSON Path notation, expected constraints, and truncated actual values.
 
+use jsonschema::error::{TypeKind, ValidationErrorKind};
 use serde_json::Value;
 
 use super::error_types::{ValidationError, ValidationErrorCategory};
@@ -22,63 +23,128 @@ pub fn truncate_value(value: &str, max_len: usize) -> String {
 
 /// Convert a JSON Pointer (RFC 6901) to JSON Path notation.
 ///
+/// Without the instance tree, numeric segments are treated as object keys. This
+/// conservative form never misrepresents a property as an array position.
+///
 /// # Examples
 /// - `""` → `"$"`
 /// - `"/catalog/metadata/uuid"` → `"$.catalog.metadata.uuid"`
-/// - `"/catalog/groups/0/controls/2/id"` → `"$.catalog.groups[0].controls[2].id"`
+/// - `"/cards/123"` → `"$.cards['123']"`
 ///
 /// Handles malformed pointers gracefully — no panics (SEC-6).
 #[must_use]
 pub fn pointer_to_json_path(pointer: &str) -> String {
+    pointer_to_json_path_inner(pointer, None)
+}
+
+fn pointer_to_json_path_for_instance(pointer: &str, json: &Value) -> String {
+    pointer_to_json_path_inner(pointer, Some(json))
+}
+
+fn pointer_to_json_path_inner(pointer: &str, mut current: Option<&Value>) -> String {
     if pointer.is_empty() {
         return "$".to_string();
     }
 
     let mut result = String::from("$");
+    let mut segments = pointer.split('/');
+    if pointer.starts_with('/') {
+        let _ = segments.next();
+    }
 
-    // Split on '/' and skip the first empty segment (from leading '/')
-    let segments: Vec<&str> = pointer.split('/').collect();
-    let start = usize::from(segments.first() == Some(&""));
-
-    for segment in &segments[start..] {
-        // RFC 6901: unescape ~1 → /, then ~0 → ~ (order matters)
-        let unescaped = segment.replace("~1", "/").replace("~0", "~");
-        if unescaped.chars().all(|c| c.is_ascii_digit()) && !unescaped.is_empty() {
+    for segment in segments {
+        let unescaped = unescape_pointer_segment(segment);
+        let index = current
+            .and_then(Value::as_array)
+            .and_then(|items| unescaped.parse::<usize>().ok().filter(|index| *index < items.len()));
+        if let Some(index) = index {
             result.push('[');
-            result.push_str(&unescaped);
+            result.push_str(&index.to_string());
             result.push(']');
+            current = current.and_then(Value::as_array).and_then(|items| items.get(index));
         } else {
-            result.push('.');
-            result.push_str(&unescaped);
+            append_property_segment(&mut result, &unescaped);
+            current =
+                current.and_then(Value::as_object).and_then(|entries| entries.get(&unescaped));
         }
     }
 
     result
 }
 
-/// Extract the actual value at a JSON Pointer path, serialized and truncated.
+fn unescape_pointer_segment(segment: &str) -> String {
+    // RFC 6901: unescape ~1 → /, then ~0 → ~ (order matters).
+    segment.replace("~1", "/").replace("~0", "~")
+}
+
+pub(crate) fn append_property_segment(path: &mut String, key: &str) {
+    if is_json_path_identifier(key) {
+        path.push('.');
+        path.push_str(key);
+    } else {
+        path.push_str("['");
+        for character in key.chars() {
+            match character {
+                '\\' => path.push_str("\\\\"),
+                '\'' => path.push_str("\\'"),
+                _ => path.push(character),
+            }
+        }
+        path.push_str("']");
+    }
+}
+
+fn is_json_path_identifier(key: &str) -> bool {
+    let mut characters = key.chars();
+    matches!(characters.next(), Some(character) if character.is_ascii_alphabetic() || character == '_')
+        && characters.all(|character| character.is_ascii_alphanumeric() || character == '_')
+}
+
+/// Extract the actual value at a JSON Pointer path as a bounded, safe preview.
 ///
-/// Navigates the JSON tree to the location specified by `pointer`,
-/// serializes the value found there, and truncates via `truncate_value()`.
-/// Returns `"(not found)"` if the path does not resolve.
+/// Secret-bearing properties are redacted. Containers are summarized rather than
+/// serialized, which prevents root-level constraints from echoing a document.
 fn extract_actual_value(json: &Value, pointer: &str) -> String {
-    if pointer.is_empty() {
-        return truncate_value(&json.to_string(), 100);
+    if pointer_has_sensitive_key(pointer) {
+        return "[redacted]".to_string();
     }
 
-    match json.pointer(pointer) {
-        Some(value) => {
-            let serialized = match value {
-                Value::String(s) => format!("\"{s}\""),
-                Value::Null => "null".to_string(),
-                Value::Bool(b) => b.to_string(),
-                Value::Number(n) => n.to_string(),
-                other => other.to_string(),
-            };
-            truncate_value(&serialized, 100)
-        }
+    match if pointer.is_empty() { Some(json) } else { json.pointer(pointer) } {
+        Some(value) => preview_value(value),
+        // This is a genuine pointer-resolution failure, not a schema claim.
         None => "(not found)".to_string(),
     }
+}
+
+fn pointer_has_sensitive_key(pointer: &str) -> bool {
+    pointer.rsplit('/').next().map(unescape_pointer_segment).is_some_and(|key| {
+        let key = key.to_ascii_lowercase();
+        [
+            "password",
+            "secret",
+            "token",
+            "api_key",
+            "apikey",
+            "session_id",
+            "sessionid",
+            "credential",
+            "authorization",
+        ]
+        .iter()
+        .any(|needle| key.contains(needle))
+    })
+}
+
+fn preview_value(value: &Value) -> String {
+    let preview = match value {
+        Value::String(text) => format!("\"{text}\""),
+        Value::Null => "null".to_string(),
+        Value::Bool(boolean) => boolean.to_string(),
+        Value::Number(number) => number.to_string(),
+        Value::Array(items) => format!("[{} items]", items.len()),
+        Value::Object(entries) => format!("{{{} keys}}", entries.len()),
+    };
+    truncate_value(&preview, 100)
 }
 
 /// Format a raw `jsonschema` crate error into an actionable `ValidationError`.
@@ -95,141 +161,61 @@ pub fn format_schema_error(
     json: &Value,
 ) -> ValidationError {
     let instance_path = raw_error.instance_path().to_string();
-    let path = pointer_to_json_path(&instance_path);
-    let raw_message = raw_error.to_string();
-
-    let (message, expected) = classify_error(&raw_message);
+    let path = pointer_to_json_path_for_instance(&instance_path, json);
+    let (message, expected) = classify_error(raw_error);
     let actual = extract_actual_value(json, &instance_path);
 
-    ValidationError { category: ValidationErrorCategory::Schema, path, message, expected, actual }
+    ValidationError::new(ValidationErrorCategory::Schema, path, message, expected, actual)
 }
 
-/// Classify a raw jsonschema error message into user-friendly message + expected.
+/// Classify a structured `jsonschema` error into a user-friendly message and expectation.
 ///
-/// SEC-2: Never pass through raw crate messages. This function produces
-/// sanitized, user-friendly descriptions by dispatching to focused classifiers.
-fn classify_error(raw_message: &str) -> (String, String) {
-    None.or_else(|| classify_required_property(raw_message))
-        .or_else(|| classify_type_mismatch(raw_message))
-        .or_else(|| classify_schema_mismatch(raw_message))
-        .or_else(|| classify_length_constraint(raw_message))
-        .or_else(|| classify_pattern_or_format(raw_message))
-        .or_else(|| classify_additional_properties(raw_message))
-        .or_else(|| classify_enum_constraint(raw_message))
-        .unwrap_or_else(|| {
-            // Fallback: generic schema error (SEC-2: sanitized, not raw crate message)
-            ("schema validation failed".to_string(), "valid value per schema".to_string())
-        })
-}
-
-/// `"\"field\" is a required property"`
-fn classify_required_property(msg: &str) -> Option<(String, String)> {
-    if !msg.contains("is a required property") {
-        return None;
-    }
-    let field = extract_quoted_value(msg).unwrap_or_else(|| "unknown".to_string());
-    Some((format!("required field missing: {field}"), "required field".to_string()))
-}
-
-/// `"value is not of type \"string\""`
-fn classify_type_mismatch(msg: &str) -> Option<(String, String)> {
-    if !msg.contains("is not of type") {
-        return None;
-    }
-    let type_name = extract_trailing_quoted(msg).unwrap_or_else(|| "unknown".to_string());
-    Some((format!("wrong type: expected {type_name}"), format!("type: {type_name}")))
-}
-
-/// `"value is not valid under any of the given schemas"`
-fn classify_schema_mismatch(msg: &str) -> Option<(String, String)> {
-    msg.contains("is not valid under any of the given schemas").then(|| {
-        ("value does not match any allowed schema".to_string(), "valid schema match".to_string())
-    })
-}
-
-/// `"string is longer/shorter than N characters"`
-fn classify_length_constraint(msg: &str) -> Option<(String, String)> {
-    if msg.contains("is longer than") {
-        let c = extract_length_constraint(msg, "longer");
-        return Some((format!("string too long: {c}"), format!("max length: {c}")));
-    }
-    if msg.contains("is shorter than") {
-        let c = extract_length_constraint(msg, "shorter");
-        return Some((format!("string too short: {c}"), format!("min length: {c}")));
-    }
-    None
-}
-
-/// `"value does not match pattern"` / `"is not a \"uri\" format"`
-fn classify_pattern_or_format(msg: &str) -> Option<(String, String)> {
-    if msg.contains("does not match") && msg.contains("pattern") {
-        return Some((
-            "value does not match required pattern".to_string(),
-            "pattern match".to_string(),
-        ));
-    }
-    if msg.contains("is not a") && msg.contains("format") {
-        let name = extract_trailing_quoted(msg).unwrap_or_else(|| "unknown".to_string());
-        return Some((format!("invalid format: expected {name}"), format!("format: {name}")));
-    }
-    None
-}
-
-/// `"Additional properties are not allowed (foo, bar)"`
-fn classify_additional_properties(msg: &str) -> Option<(String, String)> {
-    if !msg.contains("Additional properties are not allowed") {
-        return None;
-    }
-    let props = extract_parenthesized(msg);
-    Some((
-        format!("unexpected additional properties: {props}"),
-        "no additional properties".to_string(),
-    ))
-}
-
-/// `"value is not one of [...]"`
-fn classify_enum_constraint(msg: &str) -> Option<(String, String)> {
-    msg.contains("is not one of")
-        .then(|| ("value not in allowed set".to_string(), "one of the allowed values".to_string()))
-}
-
-/// Extract the first quoted value from a string (e.g., `"metadata"` from `"\"metadata\" is a..."`).
-fn extract_quoted_value(s: &str) -> Option<String> {
-    let start = s.find('"')?;
-    let rest = &s[start + 1..];
-    let end = rest.find('"')?;
-    Some(rest[..end].to_string())
-}
-
-/// Extract the last quoted value from a string.
-fn extract_trailing_quoted(s: &str) -> Option<String> {
-    let last_quote_end = s.rfind('"')?;
-    let before = &s[..last_quote_end];
-    let last_quote_start = before.rfind('"')?;
-    Some(before[last_quote_start + 1..].to_string())
-}
-
-/// Extract a length constraint number from a message containing "longer" or "shorter".
-fn extract_length_constraint(s: &str, keyword: &str) -> String {
-    if let Some(pos) = s.find(keyword) {
-        let after = &s[pos + keyword.len()..];
-        let trimmed = after.trim_start_matches(" than ");
-        let num: String = trimmed.chars().take_while(char::is_ascii_digit).collect();
-        if !num.is_empty() {
-            return format!("{num} characters");
+/// SEC-2: Never pass through raw crate messages. Classification uses the
+/// validator's structured error kind so wording changes cannot alter output.
+fn classify_error(error: &jsonschema::ValidationError) -> (String, String) {
+    match error.kind() {
+        ValidationErrorKind::Required { property } => {
+            let field = property.as_str().unwrap_or("unknown");
+            (format!("required field missing: {field}"), "required field".to_string())
         }
+        ValidationErrorKind::Type { kind } => {
+            let type_name = match kind {
+                TypeKind::Single(type_name) => type_name.to_string(),
+                TypeKind::Multiple(type_names) => type_names
+                    .into_iter()
+                    .map(|type_name| type_name.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            };
+            (format!("wrong type: expected {type_name}"), format!("type: {type_name}"))
+        }
+        ValidationErrorKind::AnyOf { .. } | ValidationErrorKind::OneOfNotValid { .. } => (
+            "value does not match any allowed schema".to_string(),
+            "valid schema match".to_string(),
+        ),
+        ValidationErrorKind::MaxLength { limit } => (
+            format!("string too long: {limit} characters"),
+            format!("max length: {limit} characters"),
+        ),
+        ValidationErrorKind::MinLength { limit } => (
+            format!("string too short: {limit} characters"),
+            format!("min length: {limit} characters"),
+        ),
+        ValidationErrorKind::Pattern { .. } => {
+            ("value does not match required pattern".to_string(), "pattern match".to_string())
+        }
+        ValidationErrorKind::Format { format } => {
+            (format!("invalid format: expected {format}"), format!("format: {format}"))
+        }
+        ValidationErrorKind::AdditionalProperties { unexpected } => (
+            format!("unexpected additional properties: {}", unexpected.join(", ")),
+            "no additional properties".to_string(),
+        ),
+        ValidationErrorKind::Enum { .. } => {
+            ("value not in allowed set".to_string(), "one of the allowed values".to_string())
+        }
+        _ => ("schema validation failed".to_string(), "valid value per schema".to_string()),
     }
-    "limit exceeded".to_string()
-}
-
-/// Extract content within parentheses.
-fn extract_parenthesized(s: &str) -> String {
-    if let Some(start) = s.find('(')
-        && let Some(end) = s.find(')')
-    {
-        return s[start + 1..end].to_string();
-    }
-    "unknown".to_string()
 }
 
 #[cfg(test)]
@@ -294,23 +280,26 @@ mod tests {
 
     #[test]
     fn pointer_with_array_indices() {
-        assert_eq!(pointer_to_json_path("/groups/0/controls/2/id"), "$.groups[0].controls[2].id");
+        assert_eq!(
+            pointer_to_json_path("/groups/0/controls/2/id"),
+            "$.groups['0'].controls['2'].id"
+        );
     }
 
     #[test]
     fn pointer_deeply_nested_6_levels() {
         assert_eq!(
             pointer_to_json_path("/catalog/groups/0/controls/5/parts/0/props/3/value"),
-            "$.catalog.groups[0].controls[5].parts[0].props[3].value"
+            "$.catalog.groups['0'].controls['5'].parts['0'].props['3'].value"
         );
     }
 
     #[test]
     fn pointer_rfc6901_escape_sequences() {
         // RFC 6901: ~1 → /, ~0 → ~
-        assert_eq!(pointer_to_json_path("/props~1name~0value"), "$.props/name~value");
-        assert_eq!(pointer_to_json_path("/a~0b"), "$.a~b");
-        assert_eq!(pointer_to_json_path("/a~1b"), "$.a/b");
+        assert_eq!(pointer_to_json_path("/props~1name~0value"), "$['props/name~value']");
+        assert_eq!(pointer_to_json_path("/a~0b"), "$['a~b']");
+        assert_eq!(pointer_to_json_path("/a~1b"), "$['a/b']");
     }
 
     #[test]
@@ -319,6 +308,20 @@ mod tests {
         let result = pointer_to_json_path("catalog/metadata");
         assert!(result.starts_with('$'));
         assert!(result.contains("catalog"));
+    }
+
+    #[test]
+    fn numeric_object_keys_are_quoted_while_instance_arrays_use_indices() {
+        assert_eq!(pointer_to_json_path("/cards/123"), "$.cards['123']");
+        let json = serde_json::json!({"cards": ["zero"]});
+        assert_eq!(pointer_to_json_path_for_instance("/cards/0", &json), "$.cards[0]");
+    }
+
+    #[test]
+    fn secret_named_properties_and_root_containers_are_not_echoed() {
+        let json = serde_json::json!({"password": "do-not-disclose", "token": "also-secret"});
+        assert_eq!(extract_actual_value(&json, "/password"), "[redacted]");
+        assert_eq!(extract_actual_value(&json, ""), "{2 keys}");
     }
 
     // --- T014: format_schema_error tests ---
@@ -374,6 +377,36 @@ mod tests {
     }
 
     #[test]
+    fn format_pattern_error_uses_structured_kind() {
+        let schema = serde_json::json!({"pattern": "^[apples]+C"});
+        let instance = serde_json::json!("banana");
+        let validator = jsonschema::validator_for(&schema).unwrap();
+        let errors: Vec<_> = validator.iter_errors(&instance).collect();
+
+        assert_eq!(errors[0].to_string(), r#""banana" does not match "^[apples]+C""#);
+
+        let formatted = format_schema_error(&errors[0], &instance);
+        assert_eq!(formatted.message, "value does not match required pattern");
+        assert_eq!(formatted.expected, "pattern match");
+        assert_eq!(formatted.actual(), "\"banana\"");
+    }
+
+    #[test]
+    fn format_format_error_uses_structured_kind() {
+        let schema = serde_json::json!({"format": "email"});
+        let instance = serde_json::json!("not-an-email");
+        let validator = jsonschema::options().should_validate_formats(true).build(&schema).unwrap();
+        let errors: Vec<_> = validator.iter_errors(&instance).collect();
+
+        assert_eq!(errors[0].to_string(), r#""not-an-email" is not a "email""#);
+
+        let formatted = format_schema_error(&errors[0], &instance);
+        assert_eq!(formatted.message, "invalid format: expected email");
+        assert_eq!(formatted.expected, "format: email");
+        assert_eq!(formatted.actual(), "\"not-an-email\"");
+    }
+
+    #[test]
     fn format_actual_value_truncated_to_100_chars() {
         let long_value = "x".repeat(200);
         let schema_json: Value = serde_json::from_str(
@@ -395,9 +428,9 @@ mod tests {
         let formatted = format_schema_error(&errors[0], &instance);
         // SEC-1: actual must be <= 100 chars + "..."
         assert!(
-            formatted.actual.chars().count() <= 103,
+            formatted.actual().chars().count() <= 103,
             "Actual should be truncated: {}",
-            formatted.actual
+            formatted.actual()
         );
     }
 
@@ -423,7 +456,7 @@ mod tests {
     fn extract_actual_at_root() {
         let json: Value = serde_json::from_str(r#"{"a": 1}"#).unwrap();
         let result = extract_actual_value(&json, "");
-        assert!(result.contains('a'));
+        assert_eq!(result, "{1 keys}");
     }
 
     #[test]

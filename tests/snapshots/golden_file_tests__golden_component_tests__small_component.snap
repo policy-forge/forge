@@ -76,7 +76,7 @@ expression: normalized
               },
               {
                 "control-id": "POL-AC-003",
-                "description": "User accounts must be reviewed {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: p24af1be3-5cd2-54b6-891b-ce6b45741971_prm_1 }}",
+                "description": "User accounts must be reviewed {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_1 }}",
                 "links": [
                   {
                     "href": "input.md#line=14",

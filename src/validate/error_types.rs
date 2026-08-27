@@ -39,8 +39,45 @@ pub struct ValidationError {
     /// What the schema or rule expected (e.g., "required string field").
     pub expected: String,
     /// What was actually found (e.g., "field not present").
-    /// Truncated to 100 characters with "..." suffix (SEC-1).
-    pub actual: String,
+    /// Guaranteed to contain at most 100 characters plus an ellipsis (SEC-1).
+    #[serde(deserialize_with = "deserialize_actual")]
+    actual: String,
+}
+
+impl ValidationError {
+    /// Create a validation error while enforcing the SEC-1 diagnostic-value cap.
+    #[must_use]
+    pub fn new(
+        category: ValidationErrorCategory,
+        path: String,
+        message: String,
+        expected: String,
+        actual: impl AsRef<str>,
+    ) -> Self {
+        Self { category, path, message, expected, actual: truncate_actual(actual.as_ref()) }
+    }
+
+    /// The bounded diagnostic representation of the actual value.
+    #[must_use]
+    pub fn actual(&self) -> &str {
+        &self.actual
+    }
+}
+
+fn deserialize_actual<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    String::deserialize(deserializer).map(|actual| truncate_actual(&actual))
+}
+
+fn truncate_actual(value: &str) -> String {
+    const MAX_ACTUAL_CHARS: usize = 100;
+    if value.chars().count() <= MAX_ACTUAL_CHARS {
+        value.to_string()
+    } else {
+        format!("{}...", value.chars().take(MAX_ACTUAL_CHARS).collect::<String>())
+    }
 }
 
 /// Aggregated validation report (PRD M-2, S-2).
@@ -78,17 +115,14 @@ impl<'de> Deserialize<'de> for ValidationReport {
             declared_oscal_version: Option<String>,
             #[serde(default = "current_schema_version")]
             schema_version_used: String,
+            // Reports written before this field existed cannot prove their
+            // input compatibility, so they default to the safe value.
             #[serde(default)]
             supported_input: Option<bool>,
-            // Legacy reports had `is_valid` but no `supported_input`. It is
-            // used only as a compatibility default; derived validity is still
-            // recomputed from `errors` below.
-            #[serde(default)]
-            is_valid: Option<bool>,
             errors: Vec<ValidationError>,
         }
         let raw = Raw::deserialize(deserializer)?;
-        let supported_input = raw.supported_input.or(raw.is_valid).unwrap_or(false);
+        let supported_input = raw.supported_input.unwrap_or(false);
         Ok(Self::new_with_schema_context(
             raw.artifact_path,
             raw.model_type,
@@ -139,8 +173,8 @@ impl ValidationReport {
     ) -> Self {
         let schema_error_count =
             errors.iter().filter(|e| e.category == ValidationErrorCategory::Schema).count();
-        let semantic_error_count =
-            errors.iter().filter(|e| e.category == ValidationErrorCategory::Semantic).count();
+        // Derive this count to preserve SEC-8 if categories are added later.
+        let semantic_error_count = errors.len() - schema_error_count;
         let is_valid = errors.is_empty();
 
         Self {
@@ -280,30 +314,33 @@ mod tests {
     // --- T005: ValidationError tests ---
 
     #[test]
-    fn validation_error_construction() {
-        let error = ValidationError {
-            category: ValidationErrorCategory::Schema,
-            path: "$.catalog.metadata.uuid".to_string(),
-            message: "required field missing".to_string(),
-            expected: "required string field".to_string(),
-            actual: "field not present".to_string(),
-        };
+    fn validation_error_constructor_and_deserializer_enforce_actual_cap() {
+        let error = ValidationError::new(
+            ValidationErrorCategory::Schema,
+            "$.catalog.metadata.uuid".to_string(),
+            "required field missing".to_string(),
+            "required string field".to_string(),
+            "x".repeat(101),
+        );
         assert_eq!(error.category, ValidationErrorCategory::Schema);
-        assert_eq!(error.path, "$.catalog.metadata.uuid");
-        assert_eq!(error.message, "required field missing");
-        assert_eq!(error.expected, "required string field");
-        assert_eq!(error.actual, "field not present");
+        assert_eq!(error.actual().chars().count(), 103);
+
+        let deserialized: ValidationError = serde_json::from_str(
+            r#"{"category":"Semantic","path":"$.x","message":"m","expected":"e","actual":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}"#,
+        )
+        .unwrap();
+        assert_eq!(deserialized.actual().chars().count(), 103);
     }
 
     #[test]
     fn validation_error_serialize_deserialize() {
-        let error = ValidationError {
-            category: ValidationErrorCategory::Semantic,
-            path: "$.catalog.back-matter.resources[0]".to_string(),
-            message: "orphaned link".to_string(),
-            expected: "referenced resource exists".to_string(),
-            actual: "resource not found".to_string(),
-        };
+        let error = ValidationError::new(
+            ValidationErrorCategory::Semantic,
+            "$.catalog.back-matter.resources[0]".to_string(),
+            "orphaned link".to_string(),
+            "referenced resource exists".to_string(),
+            "resource not found",
+        );
         let json = serde_json::to_string(&error).unwrap();
         let deserialized: ValidationError = serde_json::from_str(&json).unwrap();
         assert_eq!(error, deserialized);
@@ -311,8 +348,6 @@ mod tests {
 
     #[test]
     fn validation_error_actual_field_truncation_enforced_by_formatter() {
-        // Truncation is enforced by formatter::truncate_value() before construction.
-        // Verify that format_schema_error() produces truncated actual values.
         use crate::validate::formatter::format_schema_error;
 
         let long_value = "x".repeat(200);
@@ -328,12 +363,7 @@ mod tests {
         assert!(!errors.is_empty());
 
         let formatted = format_schema_error(&errors[0], &instance);
-        // SEC-1: actual must be truncated — 100 content chars + "..." = 103 max
-        assert!(
-            formatted.actual.chars().count() <= 103,
-            "Actual should be truncated to 103 chars max, got: {}",
-            formatted.actual.chars().count()
-        );
+        assert!(formatted.actual().chars().count() <= 103);
     }
 
     // --- T006: ValidationReport tests ---
@@ -348,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    fn legacy_valid_report_defaults_supported_input_to_true() {
+    fn legacy_report_defaults_supported_input_to_false() {
         let legacy = r#"{
             "artifact_path": "catalog.json",
             "is_valid": true,
@@ -358,7 +388,7 @@ mod tests {
         }"#;
         let report: ValidationReport = serde_json::from_str(legacy).unwrap();
         assert!(report.is_valid());
-        assert!(report.supported_input());
+        assert!(!report.supported_input());
     }
 
     #[test]

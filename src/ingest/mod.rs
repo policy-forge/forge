@@ -44,6 +44,9 @@ enum InputFormat {
 
 impl IngestedDocument {
     /// Reconstruct the full document content by joining all source lines.
+    ///
+    /// This normalizes line endings to LF and does not restore a trailing newline;
+    /// [`Self::fingerprint`] instead covers the original input bytes.
     #[must_use]
     pub fn reconstruct_content(&self) -> String {
         self.lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n")
@@ -98,13 +101,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
     let format = detect_format(ext)?;
 
     // Metadata checks: regular file + size limit
-    let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
-        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
-        std::io::ErrorKind::PermissionDenied => {
-            ForgeError::PermissionDenied { path: path.to_path_buf() }
-        }
-        _ => ForgeError::Io(e),
-    })?;
+    let metadata = std::fs::metadata(path).map_err(map_io_error(path))?;
     if !metadata.is_file() {
         return Err(ForgeError::NotAFile { path: path.to_path_buf() });
     }
@@ -116,13 +113,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         });
     }
 
-    let bytes = std::fs::read(path).map_err(|e| match e.kind() {
-        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
-        std::io::ErrorKind::PermissionDenied => {
-            ForgeError::PermissionDenied { path: path.to_path_buf() }
-        }
-        _ => ForgeError::Io(e),
-    })?;
+    let bytes = std::fs::read(path).map_err(map_io_error(path))?;
 
     if bytes.is_empty() {
         return Err(ForgeError::EmptyInput { path: path.to_path_buf() });
@@ -138,7 +129,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         InputFormat::Markdown => String::from_utf8(bytes)
             .map_err(|_| ForgeError::InvalidEncoding { path: path.to_path_buf() })?,
         InputFormat::Pdf => extract_pdf_content(path)?,
-        InputFormat::Docx => extract_docx_content(path, &bytes)?,
+        InputFormat::Docx => extract_docx_content(path, &bytes, max_size_bytes)?,
     };
 
     let lines: Vec<SourceLine> = content
@@ -147,13 +138,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         .map(|(i, text)| SourceLine { number: i + 1, text: text.to_string() })
         .collect();
 
-    let source_path = path.canonicalize().map_err(|e| match e.kind() {
-        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
-        std::io::ErrorKind::PermissionDenied => {
-            ForgeError::PermissionDenied { path: path.to_path_buf() }
-        }
-        _ => ForgeError::Io(e),
-    })?;
+    let source_path = path.canonicalize().map_err(map_io_error(path))?;
 
     Ok(IngestedDocument { source_path, fingerprint, lines })
 }
@@ -167,6 +152,16 @@ fn detect_format(extension: &str) -> Result<InputFormat, ForgeError> {
     }
 }
 
+fn map_io_error(path: &Path) -> impl Fn(std::io::Error) -> ForgeError + '_ {
+    move |error| match error.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: path.to_path_buf() }
+        }
+        _ => ForgeError::Io(error),
+    }
+}
+
 fn extract_pdf_content(path: &Path) -> Result<String, ForgeError> {
     let extracted = pdf_extract::extract_text(path)
         .map_err(|e| ForgeError::Parse(format!("failed to extract PDF text: {e}")))?;
@@ -176,16 +171,30 @@ fn extract_pdf_content(path: &Path) -> Result<String, ForgeError> {
     Ok(markdownize_extracted_text(&extracted))
 }
 
-fn extract_docx_content(path: &Path, bytes: &[u8]) -> Result<String, ForgeError> {
+fn extract_docx_content(
+    path: &Path,
+    bytes: &[u8],
+    max_size_bytes: u64,
+) -> Result<String, ForgeError> {
     let cursor = Cursor::new(bytes);
     let mut archive = ZipArchive::new(cursor)
         .map_err(|e| ForgeError::Parse(format!("failed to open DOCX archive: {e}")))?;
-    let mut document_xml = String::new();
-    archive
+    let entry = archive
         .by_name("word/document.xml")
-        .map_err(|e| ForgeError::Parse(format!("DOCX missing word/document.xml: {e}")))?
-        .read_to_string(&mut document_xml)
+        .map_err(|e| ForgeError::Parse(format!("DOCX missing word/document.xml: {e}")))?;
+    let cap = max_size_bytes.saturating_mul(64);
+    let mut document_xml = Vec::new();
+    entry
+        .take(cap.saturating_add(1))
+        .read_to_end(&mut document_xml)
         .map_err(|e| ForgeError::Parse(format!("failed to read DOCX document.xml: {e}")))?;
+    if u64::try_from(document_xml.len()).is_ok_and(|len| len > cap) {
+        return Err(ForgeError::Parse(
+            "DOCX word/document.xml exceeds decompression budget".to_owned(),
+        ));
+    }
+    let document_xml = String::from_utf8(document_xml)
+        .map_err(|_| ForgeError::Parse("DOCX word/document.xml is not valid UTF-8".to_owned()))?;
 
     let extracted = extract_docx_document_xml(&document_xml)?;
     if extracted.trim().is_empty() {
@@ -305,14 +314,20 @@ fn heading_level_from_docx_style(style: &str) -> Option<usize> {
         .filter(|level| (1..=6).contains(level))
 }
 
+/// Convert extracted document text to the limited Markdown consumed by the parser.
+///
+/// This heuristic is irreversible: it promotes the first non-empty line and
+/// heading-like lines, and logs each rewrite at debug level for auditability.
 fn markdownize_extracted_text(text: &str) -> String {
     let mut output = Vec::new();
     let mut emitted_title = false;
     for line in text.lines().map(str::trim).filter(|line| !line.is_empty()) {
         if !emitted_title {
+            tracing::debug!(rewritten_line = line, "promoting extracted line to Markdown title");
             output.push(format!("# {line}"));
             emitted_title = true;
         } else if looks_like_heading(line) {
+            tracing::debug!(rewritten_line = line, "promoting extracted line to Markdown heading");
             output.push(format!("## {line}"));
         } else {
             output.push(line.to_string());
@@ -354,7 +369,8 @@ mod tests {
         let path = dir.path().join("policy.docx");
         let file = fs::File::create(&path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
-        let options = zip::write::SimpleFileOptions::default();
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
         zip.start_file("word/document.xml", options).unwrap();
         zip.write_all(document_xml.as_bytes()).unwrap();
         zip.finish().unwrap();
@@ -529,6 +545,24 @@ mod tests {
         assert!(content.contains("# Access Control"));
         assert!(content.contains("- Users must authenticate with MFA."));
         assert!(content.contains("| Role | Requirement |"));
+    }
+
+    #[test]
+    fn docx_document_xml_exceeding_decompression_budget_is_rejected() {
+        let dir = TempDir::new().unwrap();
+        let max_size_bytes = 1_024;
+        let budget = max_size_bytes * 64;
+        let document_xml = "x".repeat(usize::try_from(budget + 1).expect("test budget fits usize"));
+        let path = create_docx(&dir, &document_xml);
+
+        assert!(fs::metadata(&path).unwrap().len() <= max_size_bytes);
+        let err = ingest_file(&path, max_size_bytes).unwrap_err();
+
+        assert!(matches!(
+            err,
+            ForgeError::Parse(ref message)
+                if message == "DOCX word/document.xml exceeds decompression budget"
+        ));
     }
 
     #[test]

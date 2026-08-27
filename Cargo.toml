@@ -2,30 +2,38 @@
 name = "forge"
 version = "1.1.0"
 edition = "2024"
+rust-version = "1.85"
 license = "MIT"
-
+description = "Convert Markdown security policies into OSCAL artifacts."
+repository = "https://github.com/policy-forge/forge"
+readme = "README.md"
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 pulldown-cmark = "0.13"
 regex = "1"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 serde_yaml = { package = "serde_yaml_ng", version = "0.10" }
-sha2 = "0.10.9"
-thiserror = "2.0.18"
-tracing = "0.1.44"
+sha2 = "0.10"
+thiserror = "2"
+tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
-url = "2.5"
-uuid = { version = "1.20.0", features = ["serde", "v4", "v5"] }
-jsonschema = { version = "0.45.0", default-features = false }
+url = "2"
+uuid = { version = "1", features = ["serde", "v4", "v5"] }
+# Embedded/local schemas do not need HTTP or filesystem resolvers; enable defaults for external `$ref`s.
+jsonschema = { version = "0.45", default-features = false }
 quick-xml = { version = "0.41", features = ["serialize"] }
 rayon = "1"
-tempfile = "3.25.0"
+tempfile = "3"
 pdf-extract = "0.12"
-zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
 toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }
+
+[features]
+# Exposes test helpers to optimized downstream test harnesses when explicitly requested.
+testing = []
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -38,8 +46,8 @@ pedantic = "warn"
 unsafe_code = "warn"
 
 [dev-dependencies]
-criterion = { version = "0.8.2", features = ["html_reports"] }
-insta = { version = "1.46.3", features = ["json"] }
+criterion = { version = "0.8", features = ["html_reports"] }
+insta = { version = "1", features = ["json"] }
 proptest = "1"
 
 [[bench]]

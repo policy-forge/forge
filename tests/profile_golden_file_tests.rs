@@ -7,7 +7,32 @@
 
 mod common;
 
+use chrono::{DateTime, Utc};
 use forge::oscal::profile::{ProfileRoot, SelectionMode, build_profile};
+
+fn fixed_timestamp() -> DateTime<Utc> {
+    DateTime::parse_from_rfc3339("2026-01-01T00:00:00Z")
+        .expect("fixed RFC 3339 timestamp")
+        .with_timezone(&Utc)
+}
+
+fn normalized_profile_value(
+    control_ids: Vec<String>,
+    selection_mode: SelectionMode,
+) -> serde_json::Value {
+    let profile = build_profile(
+        "/fixed/path/catalog.json",
+        control_ids,
+        selection_mode,
+        &[],
+        Some(fixed_timestamp()),
+    )
+    .expect("build_profile should succeed");
+
+    let root = ProfileRoot { profile };
+    let value = serde_json::to_value(&root).expect("serialization must succeed");
+    common::normalize_for_snapshot(&value)
+}
 
 // ---------------------------------------------------------------------------
 // US2: Golden-file snapshot tests (T005)
@@ -19,22 +44,14 @@ use forge::oscal::profile::{ProfileRoot, SelectionMode, build_profile};
 /// (UUIDs and `last-modified` timestamps).
 ///
 /// Note: `build_profile` does NOT read the catalog file (see guardrails),
-/// so we pass a fixed path. `sanitize_artifact_path` extracts the filename,
+/// so the helper passes a fixed path. `sanitize_artifact_path` extracts the filename,
 /// producing a deterministic `href` in the output.
 #[test]
 fn golden_include_only() {
-    let profile = build_profile(
-        "/fixed/path/catalog.json",
+    let normalized = normalized_profile_value(
         vec!["AC-1".into(), "AC-2".into(), "AC-3".into()],
         SelectionMode::Include,
-        &[],
-        None,
-    )
-    .expect("build_profile should succeed");
-
-    let root = ProfileRoot { profile };
-    let value = serde_json::to_value(&root).expect("Serialization must succeed");
-    let normalized = common::normalize_for_snapshot(&value);
+    );
 
     insta::assert_json_snapshot!("golden_include_only", &normalized);
 }
@@ -45,24 +62,24 @@ fn golden_include_only() {
 /// (UUIDs and `last-modified` timestamps).
 ///
 /// Note: `build_profile` does NOT read the catalog file (see guardrails),
-/// so we pass a fixed path. `sanitize_artifact_path` extracts the filename,
+/// so the helper passes a fixed path. `sanitize_artifact_path` extracts the filename,
 /// producing a deterministic `href` in the output.
 #[test]
 fn golden_exclude_only() {
-    let profile = build_profile(
-        "/fixed/path/catalog.json",
-        vec!["AC-9".into(), "AC-10".into()],
-        SelectionMode::Exclude,
-        &[],
-        None,
-    )
-    .expect("build_profile should succeed");
-
-    let root = ProfileRoot { profile };
-    let value = serde_json::to_value(&root).expect("Serialization must succeed");
-    let normalized = common::normalize_for_snapshot(&value);
+    let normalized =
+        normalized_profile_value(vec!["AC-9".into(), "AC-10".into()], SelectionMode::Exclude);
 
     insta::assert_json_snapshot!("golden_exclude_only", &normalized);
+}
+
+/// C-2: an empty selection preserves the documented empty-imports shape.
+///
+/// This is intentionally not schema validated: the current OSCAL profile schema requires at
+/// least one import, while `build_profile` documents and emits this empty selection.
+#[test]
+fn empty_selection_serializes_empty_imports() {
+    let normalized = normalized_profile_value(vec![], SelectionMode::Include);
+    assert_eq!(normalized["profile"]["imports"], serde_json::json!([]));
 }
 
 // TODO(WI-31): remove #[ignore] when --set-param is implemented

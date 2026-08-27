@@ -1,15 +1,16 @@
 //! Criterion benchmarks for parameter extraction (T040, WI-34).
 //!
-//! Measures `extract_parameters()` on a synthetic `PolicyDocument` with 500
-//! requirements (mix of parameterized and non-parameterized), each ~100 characters.
+//! Measures `extract_parameters()` on a narrow synthetic `PolicyDocument` corpus with 500
+//! requirements (a fixed mix of parameterized and non-parameterized text).
 //!
-//! PRD performance target (NF-1): p95 completion ≤1 second for the full corpus.
-//! SEC-3 complementary: demonstrates `regex` crate's linear-time guarantee empirically.
+//! The timings are a regression signal for this corpus; they do not establish p95 latency for
+//! production policies or empirically prove linear-time behavior for all inputs.
 
 use std::hint::black_box;
 use std::path::PathBuf;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
+
 use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 use forge::parameter::extract_parameters;
 
@@ -50,6 +51,7 @@ fn make_req(i: usize, text: &str) -> PolicyRequirement {
         citations: vec![],
         modality: None,
         parameters: vec![],
+        parameters_extracted: false,
     }
 }
 
@@ -86,43 +88,35 @@ fn make_synthetic_document(n: usize) -> PolicyDocument {
     }
 }
 
-/// T040: Benchmark `extract_parameters()` on 500 requirements.
-///
-/// PRD NF-1 target: p95 ≤1 second. This bench verifies the implementation
-/// is fast enough on a representative corpus.
+/// Benchmark parameter extraction with fresh documents prepared outside the timed region.
+fn bench_extract_parameters(c: &mut Criterion, name: &str, requirement_count: usize) {
+    let doc = make_synthetic_document(requirement_count);
+
+    c.bench_function(name, |b| {
+        b.iter_batched(
+            || doc.clone(),
+            |mut document| {
+                black_box(extract_parameters(&mut document))
+                    .expect("parameter extraction benchmark must not fail");
+            },
+            BatchSize::SmallInput,
+        );
+    });
+}
+
+/// Benchmark the 500-requirement synthetic corpus.
 fn bench_extract_parameters_500(c: &mut Criterion) {
-    let doc = make_synthetic_document(500);
-
-    c.bench_function("extract_parameters/500_requirements", |b| {
-        b.iter(|| {
-            let mut d = black_box(doc.clone());
-            extract_parameters(&mut d).expect("extract_parameters must not fail");
-        });
-    });
+    bench_extract_parameters(c, "extract_parameters/500_requirements", 500);
 }
 
-/// Benchmark with 100 requirements.
+/// Benchmark the 100-requirement synthetic corpus.
 fn bench_extract_parameters_100(c: &mut Criterion) {
-    let doc = make_synthetic_document(100);
-
-    c.bench_function("extract_parameters/100_requirements", |b| {
-        b.iter(|| {
-            let mut d = black_box(doc.clone());
-            extract_parameters(&mut d).expect("extract_parameters must not fail");
-        });
-    });
+    bench_extract_parameters(c, "extract_parameters/100_requirements", 100);
 }
 
-/// Benchmark a single parameterized requirement (baseline).
+/// Benchmark one requirement as a baseline.
 fn bench_extract_parameters_single(c: &mut Criterion) {
-    let doc = make_synthetic_document(1);
-
-    c.bench_function("extract_parameters/1_requirement", |b| {
-        b.iter(|| {
-            let mut d = black_box(doc.clone());
-            extract_parameters(&mut d).expect("extract_parameters must not fail");
-        });
-    });
+    bench_extract_parameters(c, "extract_parameters/1_requirement", 1);
 }
 
 criterion_group!(

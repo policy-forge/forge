@@ -25,10 +25,14 @@
 //! }
 //! ```
 
+/// Default maximum input size for conversion paths (10 MiB).
+pub const DEFAULT_MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
+
 /// Human-reviewed framework applicability and policy-gap analysis.
 pub mod applicability;
 /// Batch processing: parallel conversion of multiple policy files.
 pub mod batch;
+/// Citation extraction from normative requirement text.
 pub mod citation;
 /// CLI argument parsing and subcommand dispatch.
 pub mod cli;
@@ -42,7 +46,9 @@ pub mod error;
 pub mod export;
 /// Read-only framework revision impact analysis.
 pub mod framework;
+/// Input file ingestion and content reconstruction.
 pub mod ingest;
+/// Filesystem I/O helpers and file-size limits.
 pub mod io;
 mod json_strict;
 /// Deterministic local policy lifecycle records and review queues.
@@ -51,23 +57,34 @@ pub mod lifecycle;
 pub mod mapping;
 /// Read-only policy revision migration analysis.
 pub mod migration;
+/// Core policy document domain model and assembly.
 pub mod model;
+/// OSCAL model construction and serialization structures.
 pub mod oscal;
+/// Optional external OSCAL CLI discovery and invocation.
 pub mod oscal_cli;
+/// Parameter extraction from policy requirement prose.
 pub mod parameter;
+/// Markdown parsing and policy requirement atomization.
 pub mod parse;
+/// End-to-end policy-to-OSCAL conversion pipelines.
 pub mod pipeline;
+/// OSCAL artifact round-trip validation.
 pub mod round_trip;
 /// Input sanitization utilities (control-character stripping, etc.).
 pub mod sanitize;
+/// Conversion statistics and human-readable summaries.
 pub mod summary;
+#[cfg(any(test, debug_assertions, feature = "testing"))]
 #[doc(hidden)]
 pub mod testing;
 /// Traceability report generation (link OSCAL elements back to source policy).
 pub mod trace;
+/// Shared CLI-facing output and conversion type enums.
 pub mod types;
 /// Deterministic UUID v5 generation for stable OSCAL identifiers.
 pub mod uuid;
+/// OSCAL schema and semantic validation.
 pub mod validate;
 
 pub use batch::{BatchSummary, FileOutcome, FileResult, format_batch_summary};

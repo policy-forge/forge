@@ -4,21 +4,26 @@ mod common;
 
 use std::path::Path;
 
-use common::MAX_SIZE_BYTES;
+use common::DEFAULT_MAX_SIZE_BYTES;
 use forge::cli::OutputFormat;
 
 /// Helper: run catalog pipeline with XML format, return XML string.
 fn run_catalog_xml(fixture: &Path) -> String {
-    forge::pipeline::run_catalog_pipeline(fixture, MAX_SIZE_BYTES, &OutputFormat::Xml, None)
+    forge::pipeline::run_catalog_pipeline(fixture, DEFAULT_MAX_SIZE_BYTES, &OutputFormat::Xml, None)
         .unwrap_or_else(|e| panic!("Catalog XML pipeline failed: {e}"))
         .content
 }
 
 /// Helper: run catalog pipeline with JSON format, return JSON string.
 fn run_catalog_json(fixture: &Path) -> String {
-    forge::pipeline::run_catalog_pipeline(fixture, MAX_SIZE_BYTES, &OutputFormat::Json, None)
-        .unwrap_or_else(|e| panic!("Catalog JSON pipeline failed: {e}"))
-        .content
+    forge::pipeline::run_catalog_pipeline(
+        fixture,
+        DEFAULT_MAX_SIZE_BYTES,
+        &OutputFormat::Json,
+        None,
+    )
+    .unwrap_or_else(|e| panic!("Catalog JSON pipeline failed: {e}"))
+    .content
 }
 
 // ─── T030: Catalog XML Integration Test ───────────────────────────────────
@@ -26,9 +31,7 @@ fn run_catalog_json(fixture: &Path) -> String {
 #[test]
 fn catalog_xml_contains_required_elements() {
     let fixture = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let xml = run_catalog_xml(fixture);
 
@@ -58,9 +61,7 @@ fn catalog_xml_contains_required_elements() {
 #[test]
 fn catalog_xml_has_uuid_attribute() {
     let fixture = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let xml = run_catalog_xml(fixture);
 
@@ -79,9 +80,7 @@ fn catalog_xml_has_uuid_attribute() {
 #[test]
 fn catalog_json_and_xml_have_equivalent_metadata() {
     let fixture = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let json_str = run_catalog_json(fixture);
     let xml_str = run_catalog_xml(fixture);
@@ -117,9 +116,7 @@ fn catalog_json_and_xml_have_equivalent_metadata() {
 #[test]
 fn catalog_json_and_xml_have_same_group_and_control_count() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let json_str = run_catalog_json(fixture);
     let xml_str = run_catalog_xml(fixture);
@@ -156,9 +153,7 @@ fn catalog_json_fixture_round_trips_to_xml() {
     // T038: Read a valid OSCAL Catalog JSON, deserialize to CatalogEnvelope,
     // serialize inner catalog to XML, verify output is valid XML with matching data.
     let fixture = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     // First generate JSON from the pipeline
     let json_str = run_catalog_json(fixture);
@@ -198,9 +193,7 @@ fn catalog_json_fixture_round_trips_to_xml() {
 #[test]
 fn catalog_xml_contains_param_elements_for_parameterized_requirements() {
     let fixture = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let xml = run_catalog_xml(fixture);
 
@@ -250,14 +243,10 @@ fn catalog_xml_with_params_validates_against_xsd() {
     }
 
     let fixture = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let xsd_path = Path::new("tests/fixtures/xsd/oscal_catalog_schema.xsd");
-    if common::skip_if_missing(xsd_path) {
-        return;
-    }
+    common::require_fixture(xsd_path);
 
     let xml = run_catalog_xml(fixture);
 

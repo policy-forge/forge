@@ -17,6 +17,10 @@ const MAX_JSON_DEPTH: usize = 64;
 const STRICT_JSON_LIMITS: crate::json_strict::Limits =
     crate::json_strict::Limits { max_depth: MAX_JSON_DEPTH, max_string_bytes: MAX_STRING_BYTES };
 
+/// Parsed disposition records for one exact prior report.
+///
+/// `prior_report_sha256` is format-validated here only; callers MUST recompute and compare it
+/// with the actual prior report before applying dispositions.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct DispositionFile {
@@ -56,35 +60,39 @@ impl DispositionStatus {
 
 /// Read and validate a local disposition file.
 ///
+/// Returned dispositions are sorted ascending by `finding_id` and their `decided_at` values are
+/// normalized to UTC RFC 3339 seconds.
+///
 /// # Errors
 ///
 /// Returns [`ForgeError::FrameworkImpact`] for unsafe files or invalid contracts.
 pub fn load(path: &Path) -> Result<DispositionFile, ForgeError> {
-    let metadata = crate::io::regular_file_metadata(path, "disposition file").map_err(error)?;
-    if metadata.len() > MAX_DISPOSITION_BYTES {
-        return Err(error(format!(
-            "disposition file exceeds the {MAX_DISPOSITION_BYTES} byte limit"
-        )));
-    }
-    let bytes = std::fs::read(path).map_err(|cause| {
+    let bytes = crate::io::read_bounded(path, MAX_DISPOSITION_BYTES).map_err(|cause| {
         error(format!("cannot read disposition file '{}': {cause}", path.display()))
     })?;
     parse(&bytes)
 }
 
 fn parse(bytes: &[u8]) -> Result<DispositionFile, ForgeError> {
+    if bytes.len() as u64 > MAX_DISPOSITION_BYTES {
+        return Err(error(format!(
+            "disposition file exceeds the {MAX_DISPOSITION_BYTES} byte limit"
+        )));
+    }
     let value = parse_strict_value(bytes, "disposition")?;
     let mut file: DispositionFile = serde_json::from_value(value)
         .map_err(|cause| error(format!("invalid disposition contract: {cause}")))?;
-    validate(&mut file)?;
+    validate_and_normalize(&mut file)?;
     Ok(file)
 }
 
 pub(crate) fn parse_strict_value(bytes: &[u8], label: &str) -> Result<Value, ForgeError> {
-    crate::json_strict::parse_value(bytes, label, STRICT_JSON_LIMITS).map_err(error)
+    crate::json_strict::parse_value(bytes, label, STRICT_JSON_LIMITS)
+        .map_err(|cause| error(cause.to_string()))
 }
 
-fn validate(file: &mut DispositionFile) -> Result<(), ForgeError> {
+/// Validate disposition contracts and normalize the result by ascending `finding_id`.
+fn validate_and_normalize(file: &mut DispositionFile) -> Result<(), ForgeError> {
     if file.schema_version != DISPOSITION_SCHEMA_VERSION {
         return Err(error(format!(
             "unsupported disposition schema_version '{}'; expected {DISPOSITION_SCHEMA_VERSION}",
@@ -98,7 +106,7 @@ fn validate(file: &mut DispositionFile) -> Result<(), ForgeError> {
         )));
     }
     let mut finding_ids = BTreeSet::new();
-    for (index, disposition) in file.dispositions.iter().enumerate() {
+    for (index, disposition) in file.dispositions.iter_mut().enumerate() {
         let path = format!("$.dispositions[{index}]");
         uuid::Uuid::parse_str(&disposition.finding_id)
             .map_err(|_| error(format!("{path}.finding_id must be a UUID")))?;
@@ -108,10 +116,12 @@ fn validate(file: &mut DispositionFile) -> Result<(), ForgeError> {
         validate_nonempty(&format!("{path}.decided_by"), &disposition.decided_by)?;
         validate_nonempty(&format!("{path}.decided_at"), &disposition.decided_at)?;
         validate_nonempty(&format!("{path}.rationale"), &disposition.rationale)?;
-        chrono::DateTime::parse_from_rfc3339(&disposition.decided_at)
+        let decided_at = chrono::DateTime::parse_from_rfc3339(&disposition.decided_at)
             .map_err(|_| error(format!("{path}.decided_at must be an RFC 3339 timestamp")))?;
+        disposition.decided_at =
+            decided_at.to_utc().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     }
-    file.dispositions.sort_by(|left, right| left.finding_id.cmp(&right.finding_id));
+    file.dispositions.sort_unstable_by(|left, right| left.finding_id.cmp(&right.finding_id));
     Ok(())
 }
 
@@ -136,9 +146,8 @@ mod tests {
 
     use super::{
         DISPOSITION_SCHEMA_VERSION, DispositionFile, DispositionRecord, DispositionStatus,
-        MAX_DISPOSITIONS, MAX_STRING_BYTES, parse, validate,
+        MAX_DISPOSITION_BYTES, MAX_DISPOSITIONS, MAX_STRING_BYTES, parse, validate_and_normalize,
     };
-
     const FIRST_ID: &str = "00000000-0000-4000-8000-000000000001";
     const SECOND_ID: &str = "00000000-0000-4000-8000-000000000002";
 
@@ -178,6 +187,18 @@ mod tests {
             prior_report_sha256: "0".repeat(64),
             dispositions: vec![valid_record(FIRST_ID)],
         }
+    }
+
+    #[test]
+    fn parser_rejects_oversized_disposition_bytes() {
+        let bytes = vec![
+            b' ';
+            usize::try_from(MAX_DISPOSITION_BYTES)
+                .expect("disposition byte limit fits usize")
+                + 1
+        ];
+        let error = parse(&bytes).expect_err("oversized disposition must fail");
+        assert!(error.to_string().contains("disposition file exceeds"));
     }
 
     #[test]
@@ -242,10 +263,20 @@ mod tests {
         invalid_time["dispositions"][0]["decided_at"] = json!("not-a-time");
         assert!(parse_error(&invalid_time).contains("must be an RFC 3339 timestamp"));
 
+        let mut offset_time = valid_value();
+        offset_time["dispositions"][0]["decided_at"] = json!("2026-08-25T12:34:56+02:00");
+        let normalized =
+            parse(&serde_json::to_vec(&offset_time).expect("serialize offset disposition fixture"))
+                .expect("valid offset timestamp");
+        assert_eq!(normalized.dispositions[0].decided_at, "2026-08-25T10:34:56Z");
+
         let mut oversized = valid_file();
         oversized.dispositions[0].rationale = "x".repeat(MAX_STRING_BYTES + 1);
         assert!(
-            validate(&mut oversized).unwrap_err().to_string().contains("must contain between 1")
+            validate_and_normalize(&mut oversized)
+                .unwrap_err()
+                .to_string()
+                .contains("must contain between 1")
         );
     }
 
@@ -255,12 +286,15 @@ mod tests {
         let mut too_many = valid_file();
         too_many.dispositions = vec![record; MAX_DISPOSITIONS + 1];
         assert!(
-            validate(&mut too_many).unwrap_err().to_string().contains("must contain between 1")
+            validate_and_normalize(&mut too_many)
+                .unwrap_err()
+                .to_string()
+                .contains("must contain between 1")
         );
 
         let mut sortable = valid_file();
         sortable.dispositions = vec![valid_record(SECOND_ID), valid_record(FIRST_ID)];
-        validate(&mut sortable).expect("valid disposition records");
+        validate_and_normalize(&mut sortable).expect("valid disposition records");
         assert_eq!(sortable.dispositions[0].finding_id, FIRST_ID);
         assert_eq!(sortable.dispositions[1].finding_id, SECOND_ID);
     }

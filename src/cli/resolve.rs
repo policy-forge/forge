@@ -16,6 +16,7 @@ use crate::oscal_cli::{OscalCliDetect, OscalCliInvoke, ResolveArgs};
 ///
 /// * `ForgeError::FileNotFound` — input file does not exist.
 /// * `ForgeError::ResolveInputNotJson` — input file is not `.json`.
+/// * `ForgeError::InvalidArgument` — input is not a regular file.
 /// * `ForgeError::OscalCliNotFound` — oscal-cli not on PATH.
 /// * `ForgeError::OscalCliNotFunctional` — oscal-cli found but broken.
 /// * `ForgeError::OscalCliExecution` — oscal-cli exited non-zero.
@@ -64,6 +65,12 @@ pub fn execute(
         }
         _ => ForgeError::Io(e),
     })?;
+    if !std::fs::metadata(&canonical_input).map_err(ForgeError::Io)?.is_file() {
+        return Err(ForgeError::InvalidArgument(format!(
+            "input '{}' is not a regular file",
+            input.display()
+        )));
+    }
 
     // Derive default output path if not provided
     let output_path = match output {
@@ -71,38 +78,29 @@ pub fn execute(
         None => derive_default_output_path(&canonical_input),
     };
 
-    // Detect oscal-cli
-    let cli_info = detector.detect();
+    let canonical_output = canonicalize_output_path(&output_path)?;
+    ensure_output_differs_from_input(&canonical_output, &canonical_input)?;
 
-    if !cli_info.available {
+    let cli_info = detector.detect();
+    if !cli_info.is_available() {
         return Err(ForgeError::OscalCliNotFound);
     }
-
-    if !cli_info.functional {
+    if !cli_info.is_functional() {
         return Err(ForgeError::OscalCliNotFunctional {
-            path: cli_info.executable_path.unwrap_or_else(|| PathBuf::from("oscal-cli")),
-            detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
+            path: cli_info
+                .executable_path()
+                .map_or_else(|| PathBuf::from("oscal-cli"), Path::to_path_buf),
+            detail: cli_info.detail().unwrap_or("oscal-cli version check failed").to_string(),
         });
     }
-
-    // SEC-6: Log detected binary path
-    info!(
-        oscal_cli_path = %cli_info.executable_path.as_deref().unwrap_or(Path::new("unknown")).display(),
-        oscal_cli_version = cli_info.version.as_deref().unwrap_or("unknown"),
-        "Detected oscal-cli"
-    );
-
-    // Build invoker and resolve
-    let invoker = ProcessInvoker::new(cli_info.executable_path.ok_or_else(|| {
-        ForgeError::OscalCliNotFunctional {
-            path: PathBuf::from("oscal-cli"),
-            detail: "oscal-cli reported as functional but has no executable path".to_string(),
-        }
-    })?);
+    let executable_path =
+        cli_info.executable_path().map(Path::to_path_buf).ok_or(ForgeError::OscalCliNotFound)?;
+    info!(oscal_cli_path = %executable_path.display(), "Resolving with oscal-cli");
+    let invoker = ProcessInvoker::new(executable_path);
 
     let resolve_args = ResolveArgs {
         profile_path: canonical_input,
-        output_path,
+        output_path: canonical_output,
         timeout: Duration::from_secs(timeout_secs),
     };
 
@@ -125,37 +123,75 @@ pub fn execute(
 /// * `ForgeError::OscalCliNotFound` — oscal-cli not on PATH (exit code 4).
 /// * `ForgeError::OscalCliNotFunctional` — oscal-cli found but broken (exit code 4).
 fn execute_check(detector: &dyn OscalCliDetect) -> Result<(), ForgeError> {
-    let info = detector.detect();
-
-    if !info.available {
-        // Error propagates to main.rs which prints to stderr; no stdout message needed.
+    let cli_info = detector.detect();
+    if !cli_info.is_available() {
         return Err(ForgeError::OscalCliNotFound);
     }
-
-    if !info.functional {
-        let path = info.executable_path.unwrap_or_else(|| PathBuf::from("unknown"));
+    if !cli_info.is_functional() {
         return Err(ForgeError::OscalCliNotFunctional {
-            path,
-            detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
+            path: cli_info
+                .executable_path()
+                .map_or_else(|| PathBuf::from("oscal-cli"), Path::to_path_buf),
+            detail: cli_info.detail().unwrap_or("oscal-cli version check failed").to_string(),
         });
     }
-
-    println!(
-        "oscal-cli: {} ({})",
-        info.version.as_deref().unwrap_or("unknown version"),
-        info.executable_path.as_deref().unwrap_or(Path::new("unknown")).display()
-    );
+    let executable_path = cli_info.executable_path().ok_or(ForgeError::OscalCliNotFound)?;
+    let version = cli_info.version().ok_or_else(|| ForgeError::OscalCliNotFunctional {
+        path: executable_path.to_path_buf(),
+        detail: "oscal-cli version check produced no version".to_string(),
+    })?;
+    println!("oscal-cli: {version} ({})", executable_path.display());
     Ok(())
+}
+
+/// Canonicalize an output path, including a not-yet-created leaf below an
+/// existing canonical parent, before it enters an oscal-cli argument struct.
+fn canonicalize_output_path(output: &Path) -> Result<PathBuf, ForgeError> {
+    match output.canonicalize() {
+        Ok(path) => Ok(path),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            let parent = output
+                .parent()
+                .filter(|parent| !parent.as_os_str().is_empty())
+                .unwrap_or_else(|| Path::new("."));
+            let parent = parent.canonicalize().map_err(ForgeError::Io)?;
+            let filename = output.file_name().ok_or_else(|| {
+                ForgeError::InvalidArgument("output path must name a file".to_string())
+            })?;
+            Ok(parent.join(filename))
+        }
+        Err(error) => Err(ForgeError::Io(error)),
+    }
 }
 
 /// Derive the default output path: `<stem>-resolved.json` in the same directory.
 fn derive_default_output_path(input: &Path) -> PathBuf {
-    let stem = input.file_stem().and_then(|s| s.to_str()).unwrap_or("profile");
+    let stem = input
+        .file_stem()
+        .filter(|stem| !stem.is_empty())
+        .map_or_else(|| "profile".to_string(), |stem| stem.to_string_lossy().into_owned());
     let filename = format!("{stem}-resolved.json");
     match input.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent.join(filename),
         _ => PathBuf::from(filename),
     }
+}
+
+/// Reject an output that aliases the canonical input profile (F0348).
+fn ensure_output_differs_from_input(
+    output_path: &Path,
+    canonical_input: &Path,
+) -> Result<(), ForgeError> {
+    if output_path == canonical_input
+        || output_path.canonicalize().is_ok_and(|path| path == canonical_input)
+    {
+        return Err(ForgeError::InvalidArgument(format!(
+            "output path '{}' must differ from the input profile '{}'",
+            output_path.display(),
+            canonical_input.display()
+        )));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -165,10 +201,32 @@ mod tests {
     // --- T025: Default output path derivation ---
 
     #[test]
+    fn canonicalizes_resolve_output_before_invocation() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("resolved.json");
+
+        let canonical = canonicalize_output_path(&output).unwrap();
+
+        assert_eq!(canonical, directory.path().canonicalize().unwrap().join("resolved.json"));
+    }
+
+    #[test]
     fn derive_default_output_path_standard() {
         let input = PathBuf::from("/tmp/my-profile.json");
         let output = derive_default_output_path(&input);
         assert_eq!(output, PathBuf::from("/tmp/my-profile-resolved.json"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn derive_default_output_path_preserves_non_utf8_stem_lossily() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let input = PathBuf::from(std::ffi::OsStr::from_bytes(b"profile-\xff.json"));
+        let output = derive_default_output_path(&input);
+
+        assert_ne!(output, PathBuf::from("profile-resolved.json"));
+        assert!(output.to_string_lossy().ends_with("-resolved.json"));
     }
 
     #[test]
@@ -201,6 +259,30 @@ mod tests {
         assert!(matches!(result, Err(ForgeError::ResolveInputNotJson { .. })));
     }
 
+    #[test]
+    fn input_directory_returns_invalid_argument() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let directory = temp_dir.path().join("profile.json");
+        std::fs::create_dir(&directory).unwrap();
+
+        let error = execute(Some(&directory), None, false, 60, None)
+            .expect_err("directories must not be sent to oscal-cli");
+
+        assert!(matches!(error, ForgeError::InvalidArgument(_)));
+        assert!(error.to_string().contains(&directory.display().to_string()));
+    }
+
+    #[test]
+    fn output_aliasing_input_is_rejected() {
+        let input = tempfile::NamedTempFile::with_suffix(".json").unwrap();
+        let canonical_input = input.path().canonicalize().unwrap();
+
+        let error = ensure_output_differs_from_input(input.path(), &canonical_input)
+            .expect_err("output must not overwrite the source profile");
+
+        assert!(error.to_string().contains("must differ from the input profile"), "{error}");
+    }
+
     // --- T051: --check with oscal-cli available (mock via PATH search) ---
     // These are tested by the execute_check function with constructed OscalCliInfo.
 
@@ -221,12 +303,10 @@ mod tests {
         struct MockDetector;
         impl OscalCliDetect for MockDetector {
             fn detect(&self) -> crate::oscal_cli::OscalCliInfo {
-                crate::oscal_cli::OscalCliInfo {
-                    available: true,
-                    functional: true,
-                    version: Some("1.0.3".to_string()),
-                    executable_path: Some(PathBuf::from("/usr/local/bin/oscal-cli")),
-                }
+                crate::oscal_cli::OscalCliInfo::functional(
+                    PathBuf::from("/usr/local/bin/oscal-cli"),
+                    "1.0.3".to_string(),
+                )
             }
         }
         let result = execute_check(&MockDetector);
@@ -238,12 +318,10 @@ mod tests {
         struct MockDetector;
         impl OscalCliDetect for MockDetector {
             fn detect(&self) -> crate::oscal_cli::OscalCliInfo {
-                crate::oscal_cli::OscalCliInfo {
-                    available: true,
-                    functional: false,
-                    version: None,
-                    executable_path: Some(PathBuf::from("/usr/bin/oscal-cli")),
-                }
+                crate::oscal_cli::OscalCliInfo::not_functional(
+                    PathBuf::from("/usr/bin/oscal-cli"),
+                    "version check failed".to_string(),
+                )
             }
         }
         let result = execute_check(&MockDetector);
@@ -259,7 +337,7 @@ mod tests {
         // Use an oscal-cli-path that doesn't exist to force "not found"
         let result =
             execute(Some(tmp.path()), None, false, 60, Some(Path::new("/nonexistent/oscal-cli")));
-        assert!(matches!(result, Err(ForgeError::OscalCliNotFound)));
+        assert!(matches!(result, Err(ForgeError::OscalCliNotFound)), "{result:?}");
     }
 
     // --- T038: Other commands don't check oscal-cli ---

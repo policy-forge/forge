@@ -21,8 +21,10 @@ fn format_size(bytes: &u64) -> String {
     let bytes = *bytes;
     if bytes < 1_048_576 {
         format!("{:.1}KB", bytes as f64 / 1024.0)
-    } else {
+    } else if bytes < 1_073_741_824 {
         format!("{:.1}MB", bytes as f64 / 1_048_576.0)
+    } else {
+        format!("{:.1}GB", bytes as f64 / 1_073_741_824.0)
     }
 }
 
@@ -131,7 +133,7 @@ pub enum ForgeError {
         path: PathBuf,
     },
 
-    /// The path does not refer to a regular file (e.g., it is a directory or symlink).
+    /// The path does not refer to a regular file (e.g., it is a directory, broken symlink, or special file).
     #[error("'{}' is not a regular file.", path.display())]
     NotAFile {
         /// The path that is not a regular file.
@@ -177,6 +179,16 @@ pub enum ForgeError {
     #[error("SSP build error: {0}")]
     SspBuild(String),
 
+    /// An SSP build failed while preserving its underlying source error.
+    #[error("SSP build error: {context}: {source}")]
+    SspBuildWithSource {
+        /// Build-stage context.
+        context: String,
+        /// Underlying failure.
+        #[source]
+        source: Box<ForgeError>,
+    },
+
     /// A trustworthy OSCAL Control Mapping artifact could not be produced.
     #[error("Control Mapping build error: {0}")]
     MappingBuild(String),
@@ -204,6 +216,16 @@ pub enum ForgeError {
     /// A trustworthy framework impact report could not be produced.
     #[error("Framework impact analysis error: {0}")]
     FrameworkImpact(String),
+
+    /// Framework impact construction failed while preserving its source error.
+    #[error("Framework impact analysis error: {context}: {source}")]
+    FrameworkImpactWithSource {
+        /// Operation context.
+        context: String,
+        /// Underlying failure.
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
 
     /// Completed framework impact analysis requires action under the selected gate.
     #[error("Framework changes require human review")]
@@ -292,6 +314,9 @@ pub enum ForgeError {
     /// Displayed without its own `error:` prefix because `main` already wraps
     /// every message in `Error: …`; carrying both prefixes produced
     /// `Error: error: …`.
+    ///
+    /// Warning: this no-prefix contract applies only when rendered through `main`;
+    /// other renderers receive the raw clap usage text.
     #[error("{0}")]
     MissingRequiredArgument(String),
 
@@ -357,10 +382,34 @@ pub enum ForgeError {
     MigrationHasChanges,
 
     /// A trustworthy, complete policy migration report could not be produced.
-    #[error("Migration analysis error: {0}")]
+    #[error("Migration error: {0}")]
     MigrationError(String),
 
-    /// Round-trip validation failed: the re-parsed output does not match the original.
+    /// A generic error during full pipeline preparation that identifies the
+    /// source line where an ordering invariant was violated.
+    #[error("Pipeline invariant violated at source line {source_line}: {context}")]
+    PipelineInvariant {
+        /// 1-based source line associated with the invariant failure.
+        source_line: usize,
+        /// Human-readable invariant context.
+        context: String,
+    },
+
+    /// A conversion leg in a round-trip chain failed.
+    #[error("Round-trip step {step} ({from} -> {to}) failed: {source}")]
+    RoundTripStep {
+        /// Zero-based chain step.
+        step: usize,
+        /// Input artifact path for this leg.
+        from: PathBuf,
+        /// Output artifact path for this leg.
+        to: PathBuf,
+        /// Underlying conversion failure.
+        #[source]
+        source: Box<ForgeError>,
+    },
+
+    /// Round-trip validation found unresolved divergences.
     #[error("Round-trip validation failed: {0} unresolved divergence(s)")]
     RoundTripFailed(usize),
 
@@ -372,6 +421,16 @@ pub enum ForgeError {
     /// Serialization to JSON, XML, or YAML failed.
     #[error("Serialization error: {0}")]
     Serialization(String),
+
+    /// YAML serialization failed with its source error preserved.
+    #[error("YAML serialization error ({context}): {source}")]
+    YamlSerialization {
+        /// Serialization boundary.
+        context: String,
+        /// YAML crate source error.
+        #[source]
+        source: serde_yaml::Error,
+    },
 
     /// Validation against the OSCAL JSON Schema failed.
     #[error("Schema validation failed: {0}")]
@@ -430,6 +489,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::OscalCliTimeout { .. }
         | ForgeError::ResolveInputNotJson { .. }
         | ForgeError::Serialization(_)
+        | ForgeError::YamlSerialization { .. }
         | ForgeError::DiffHasChanges
         | ForgeError::DriftDetected
         | ForgeError::MigrationHasChanges
@@ -444,10 +504,12 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::DiffError(_)
         | ForgeError::MigrationError(_)
         | ForgeError::SspBuild(_)
+        | ForgeError::SspBuildWithSource { .. }
         | ForgeError::MappingBuild(_)
         | ForgeError::Lifecycle(_)
         | ForgeError::ApplicabilityAnalysis(_)
         | ForgeError::FrameworkImpact(_)
+        | ForgeError::FrameworkImpactWithSource { .. }
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)
@@ -456,7 +518,9 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::AssessmentPlanBuild(_)
         | ForgeError::ParameterExtraction(_)
         | ForgeError::TraceUnsupportedArtifact { .. }
-        | ForgeError::AmbiguousArtifact { .. } => 2,
+        | ForgeError::AmbiguousArtifact { .. }
+        | ForgeError::PipelineInvariant { .. }
+        | ForgeError::RoundTripStep { .. } => 2,
 
         // Exit 3: Validation/Config errors
         ForgeError::Validation(_) | ForgeError::Config(_) | ForgeError::SchemaValidation(_) => 3,
@@ -678,6 +742,16 @@ mod tests {
             limit_bytes: 10 * 1_048_576,
         };
         assert_eq!(err.to_string(), "File '/tmp/huge.md' is 15.0MB, exceeding the 10.0MB limit.");
+    }
+
+    #[test]
+    fn file_too_large_display_uses_gigabytes() {
+        let err = ForgeError::FileTooLarge {
+            path: PathBuf::from("/tmp/huge.md"),
+            size_bytes: 2 * 1_073_741_824,
+            limit_bytes: 1_073_741_824,
+        };
+        assert_eq!(err.to_string(), "File '/tmp/huge.md' is 2.0GB, exceeding the 1.0GB limit.");
     }
 
     #[test]

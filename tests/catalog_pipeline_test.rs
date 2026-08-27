@@ -34,12 +34,12 @@ fn smoke_test_full_pipeline_produces_valid_oscal_json() {
     let top_keys: Vec<&String> = json.as_object().unwrap().keys().collect();
     assert_eq!(top_keys, vec!["catalog"], "Top-level should only contain 'catalog' key");
 
-    // Verify groups contain controls
+    // YAML front matter is metadata, never a policy group (F0006).
     let groups = catalog["groups"].as_array().unwrap();
     assert_eq!(
         groups.len(),
-        4,
-        "full_policy.md has 3 content sections + 1 preamble group = 4 groups. Got: {}",
+        3,
+        "full_policy.md has 3 content sections; front matter must not produce a phantom group. Got: {}",
         groups.len()
     );
     for group in groups {

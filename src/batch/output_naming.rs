@@ -5,11 +5,20 @@ use crate::cli::OutputFormat;
 
 /// Derive output file paths for all inputs, with collision avoidance.
 ///
+/// Paths are assigned in input order: the first colliding input keeps the bare
+/// filename and later inputs receive suffixes. Generated names are also checked
+/// against paths already on disk, but this function does not reserve its results.
+///
 /// Rules:
 /// 1. Output filename = `{input_stem}.{format_extension}`
 /// 2. If `output_dir` is Some, place in that directory
 /// 3. If `output_dir` is None, place in current directory
-/// 4. For collisions (same stem from different dirs), append `_{n}` suffix (n starts at 2)
+/// 4. For collisions (same stem from different dirs, or a file already on
+///    disk), append `_{n}` suffix (n starts at 2)
+/// 5. An output equal to its own input path (same file, `output_dir` is None)
+///    is always suffixed so conversion never overwrites its source (F0286)
+/// 6. Claimed generated paths compare ASCII case-insensitively to avoid collisions
+///    on common case-insensitive filesystems (F0287).
 #[must_use]
 pub fn derive_output_paths(
     input_paths: &[PathBuf],
@@ -18,25 +27,35 @@ pub fn derive_output_paths(
 ) -> Vec<(PathBuf, PathBuf)> {
     let ext = format.as_extension();
     let base_dir = output_dir.unwrap_or_else(|| Path::new("."));
-    let mut claimed: HashSet<PathBuf> = HashSet::new();
-    // Track next suffix per stem for O(1) collision resolution
-    let mut next_suffix: HashMap<String, u32> = HashMap::new();
+    // ASCII-fold generated names because common target filesystems are case-insensitive.
+    let mut claimed: HashSet<Vec<u8>> = HashSet::new();
+    // Track next suffix per case-folded stem for O(1) collision resolution.
+    let mut next_suffix: HashMap<Vec<u8>, u32> = HashMap::new();
     let mut result = Vec::with_capacity(input_paths.len());
 
     for input in input_paths {
-        let stem = input.file_stem().map_or_else(
-            || input.to_string_lossy().into_owned(),
-            |s| s.to_string_lossy().into_owned(),
-        );
+        let stem = input
+            .file_stem()
+            .filter(|stem| !stem.is_empty())
+            .unwrap_or_else(|| std::ffi::OsStr::new("output"));
+        let stem_key = ascii_case_folded_bytes(stem);
 
-        let candidate = base_dir.join(format!("{stem}.{ext}"));
+        let candidate = base_dir.join(output_filename(stem, ext));
 
-        let output_path = if claimed.contains(&candidate) {
-            let n = next_suffix.entry(stem.clone()).or_insert(2);
+        // A name is taken if minted in this call, already on disk, or equal
+        // to the input it would overwrite (F0286).
+        let taken = |path: &Path| {
+            claimed.contains(&ascii_case_folded_bytes(path.as_os_str()))
+                || path.exists()
+                || (output_dir.is_none() && same_file(input, path))
+        };
+
+        let output_path = if taken(&candidate) {
+            let n = next_suffix.entry(stem_key).or_insert(2);
             loop {
-                let suffixed = base_dir.join(format!("{stem}_{n}.{ext}"));
+                let suffixed = base_dir.join(suffixed_output_filename(stem, *n, ext));
                 *n += 1;
-                if !claimed.contains(&suffixed) {
+                if !taken(&suffixed) {
                     break suffixed;
                 }
             }
@@ -44,11 +63,39 @@ pub fn derive_output_paths(
             candidate
         };
 
-        claimed.insert(output_path.clone());
+        claimed.insert(ascii_case_folded_bytes(output_path.as_os_str()));
         result.push((input.clone(), output_path));
     }
 
     result
+}
+
+/// Cheap lexical identity probe used only for the self-clobber guard; a
+/// canonicalizing comparison is unnecessary because `output_dir: None`
+/// derives outputs in the current directory from the given input spelling.
+fn same_file(input: &Path, output: &Path) -> bool {
+    input == output
+}
+
+fn output_filename(stem: &std::ffi::OsStr, extension: &str) -> std::ffi::OsString {
+    let mut filename = stem.to_os_string();
+    filename.push(".");
+    filename.push(extension);
+    filename
+}
+
+fn suffixed_output_filename(
+    stem: &std::ffi::OsStr,
+    suffix: u32,
+    extension: &str,
+) -> std::ffi::OsString {
+    let mut filename = stem.to_os_string();
+    filename.push(format!("_{suffix}.{extension}"));
+    filename
+}
+
+fn ascii_case_folded_bytes(value: &std::ffi::OsStr) -> Vec<u8> {
+    value.as_encoded_bytes().iter().map(u8::to_ascii_lowercase).collect()
 }
 
 #[cfg(test)]
@@ -78,6 +125,15 @@ mod tests {
         let pairs = derive_output_paths(&inputs, OutputFormat::Json, Some(Path::new("/out")));
         assert_eq!(pairs[0].1, PathBuf::from("/out/policy.json"));
         assert_eq!(pairs[1].1, PathBuf::from("/out/policy_2.json"));
+    }
+
+    #[test]
+    fn ascii_case_variants_receive_distinct_outputs() {
+        let inputs = vec![PathBuf::from("/one/policy.md"), PathBuf::from("/two/POLICY.md")];
+        let pairs = derive_output_paths(&inputs, OutputFormat::Json, Some(Path::new("/out")));
+
+        assert_eq!(pairs[0].1, PathBuf::from("/out/policy.json"));
+        assert_eq!(pairs[1].1, PathBuf::from("/out/POLICY_2.json"));
     }
 
     #[test]
@@ -120,5 +176,39 @@ mod tests {
         assert_eq!(pairs[0].1, PathBuf::from("/out/policy.json"));
         assert_eq!(pairs[1].1, PathBuf::from("/out/policy_2.json"));
         assert_eq!(pairs[2].1, PathBuf::from("/out/policy_3.json"));
+    }
+
+    #[test]
+    fn existing_output_on_disk_is_never_overwritten() {
+        let dir = tempfile::tempdir().unwrap();
+        let input = dir.path().join("policy.md");
+        let existing = dir.path().join("policy.json");
+        std::fs::write(&input, "policy").unwrap();
+        std::fs::write(&existing, "existing output").unwrap();
+
+        let pairs = derive_output_paths(&[input], OutputFormat::Json, Some(dir.path()));
+
+        assert_eq!(pairs[0].1, dir.path().join("policy_2.json"));
+    }
+
+    #[test]
+    fn json_input_is_never_its_own_json_output() {
+        let dir = tempfile::tempdir().unwrap();
+        let input = dir.path().join("policy.json");
+        std::fs::write(&input, "{}").unwrap();
+        let pairs =
+            derive_output_paths(std::slice::from_ref(&input), OutputFormat::Json, Some(dir.path()));
+
+        assert_eq!(pairs[0].1, dir.path().join("policy_2.json"));
+        assert_ne!(pairs[0].0, pairs[0].1);
+    }
+
+    #[test]
+    fn componentless_path_uses_safe_output_stem() {
+        let dir = tempfile::tempdir().unwrap();
+        let pairs =
+            derive_output_paths(&[PathBuf::from("/")], OutputFormat::Json, Some(dir.path()));
+
+        assert_eq!(pairs[0].1, dir.path().join("output.json"));
     }
 }

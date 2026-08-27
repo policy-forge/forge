@@ -21,6 +21,7 @@ pub const OSCAL_NS: &str = "http://csrc.nist.gov/ns/oscal/1.0";
 
 /// XML indentation: 2 spaces per level.
 const INDENT_SIZE: usize = 2;
+const MAX_PART_DEPTH: usize = 128;
 
 // ─── Error Mapping ───────────────────────────────────────────────────────
 
@@ -64,11 +65,20 @@ fn write_metadata<W: Write>(
 ///
 /// Writes: `<prop name="..." value="..." [ns="..."] />`
 fn write_prop<W: Write>(writer: &mut Writer<W>, prop: &OscalProp) -> Result<(), ForgeError> {
+    write_prop_fields(writer, &prop.name, &prop.value, prop.ns.as_deref())
+}
+
+fn write_prop_fields<W: Write>(
+    writer: &mut Writer<W>,
+    name: &str,
+    value: &str,
+    ns: Option<&str>,
+) -> Result<(), ForgeError> {
     let mut elem = BytesStart::new("prop");
-    elem.push_attribute(("name", prop.name.as_str()));
-    elem.push_attribute(("value", prop.value.as_str()));
-    if let Some(ns) = &prop.ns {
-        elem.push_attribute(("ns", ns.as_str()));
+    elem.push_attribute(("name", name));
+    elem.push_attribute(("value", value));
+    if let Some(ns) = ns {
+        elem.push_attribute(("ns", ns));
     }
     writer.write_event(Event::Empty(elem)).map_err(map_xml_err)?;
     Ok(())
@@ -107,6 +117,7 @@ fn write_param<W: Write>(
 
 /// Write a single OSCAL link element.
 ///
+/// The shared model requires a relation, so every serialized link emits `rel`.
 /// When `link.text` is `None`: emit self-closing `<link href="..." rel="..." />`
 /// using `Event::Empty`.
 /// When `link.text` is `Some(t)`: emit `<link href="..." rel="..."><text>t</text></link>`
@@ -131,32 +142,37 @@ fn write_link<W: Write>(writer: &mut Writer<W>, link: &OscalLink) -> Result<(), 
 
 /// Write a single OSCAL part element with children in XSD order.
 ///
-/// Writes: `<part id="..." name="...">` → prop*, `<p>prose</p>`, part* → `</part>`
-///
-/// # Recursion
-///
-/// Recurses for nested sub-parts (position 4). Practical policy documents
-/// rarely exceed 5–10 levels of nesting; the default stack can accommodate
-/// thousands of levels safely.
+/// Writes: `<part id="..." name="...">` → prop*, `<p>prose</p>`, part* → `</part>`.
+/// Nested parts are limited to `MAX_PART_DEPTH` levels to prevent stack exhaustion.
 fn write_part<W: Write>(writer: &mut Writer<W>, part: &OscalPart) -> Result<(), ForgeError> {
+    write_part_bounded(writer, part, 1)
+}
+
+fn write_part_bounded<W: Write>(
+    writer: &mut Writer<W>,
+    part: &OscalPart,
+    depth: usize,
+) -> Result<(), ForgeError> {
+    if depth > MAX_PART_DEPTH {
+        return Err(ForgeError::Serialization(format!(
+            "part nesting exceeds maximum depth {MAX_PART_DEPTH}"
+        )));
+    }
+
+    let name = part.name.to_string();
     let mut elem = BytesStart::new("part");
     elem.push_attribute(("id", part.id.as_str()));
-    elem.push_attribute(("name", part.name.as_str()));
+    elem.push_attribute(("name", name.as_str()));
     writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
 
-    // Props in XSD order (position 2)
     for prop in &part.props {
         write_prop(writer, prop)?;
     }
-
-    // Prose as <p> element (position 3 — blockElementGroup)
     if !part.prose.is_empty() {
         write_text_element(writer, "p", &part.prose)?;
     }
-
-    // Nested parts (position 4)
     for sub_part in &part.parts {
-        write_part(writer, sub_part)?;
+        write_part_bounded(writer, sub_part, depth + 1)?;
     }
 
     writer.write_event(Event::End(BytesEnd::new("part"))).map_err(map_xml_err)?;
@@ -203,10 +219,7 @@ fn write_resource<W: Write>(
 
     // Props (position 3)
     for prop in &resource.props {
-        let mut prop_elem = BytesStart::new("prop");
-        prop_elem.push_attribute(("name", prop.name.as_str()));
-        prop_elem.push_attribute(("value", prop.value.as_str()));
-        writer.write_event(Event::Empty(prop_elem)).map_err(map_xml_err)?;
+        write_prop_fields(writer, &prop.name, &prop.value, prop.ns.as_deref())?;
     }
 
     // Citation (position 5)
@@ -272,7 +285,7 @@ fn write_control<W: Write>(
 
 /// Write a single OSCAL group element with children in XSD order.
 ///
-/// Writes: `<group id="...">` → title, prop*, link*, control* → `</group>`
+/// Writes: `<group id="...">` → title, prop*, link*, group*, control* → `</group>`
 fn write_group<W: Write>(writer: &mut Writer<W>, group: &OscalGroup) -> Result<(), ForgeError> {
     let mut elem = BytesStart::new("group");
     elem.push_attribute(("id", group.id.as_str()));
@@ -289,6 +302,11 @@ fn write_group<W: Write>(writer: &mut Writer<W>, group: &OscalGroup) -> Result<(
     // Links (position 4)
     for link in &group.links {
         write_link(writer, link)?;
+    }
+
+    // Nested sub-groups (XSD GroupType order: group* before control*)
+    for subgroup in &group.groups {
+        write_group(writer, subgroup)?;
     }
 
     // Controls (position 7)
@@ -551,6 +569,11 @@ pub fn serialize_catalog_to_xml(catalog: &OscalCatalog) -> Result<String, ForgeE
         write_group(&mut writer, group)?;
     }
 
+    // Root-level controls (CatalogType permits control* after group*)
+    for control in &catalog.controls {
+        write_control(&mut writer, control)?;
+    }
+
     if let Some(bm) = &catalog.back_matter {
         write_back_matter(&mut writer, bm)?;
     }
@@ -606,7 +629,7 @@ pub fn serialize_component_definition_to_xml(
     Ok(xml)
 }
 
-/// Serialize an OSCAL Profile to a valid OSCAL v1.2.3 XML string.
+/// Serialize an OSCAL Profile to a valid OSCAL v1.2.0 XML string.
 ///
 /// Produces a complete XML document with:
 /// - XML declaration (`<?xml version="1.0" encoding="UTF-8"?>`)
@@ -627,7 +650,8 @@ pub fn serialize_profile_to_xml(
     let mut writer = create_xml_writer(&mut buf)?;
 
     write_root_start(&mut writer, "profile", &profile.uuid.to_string())?;
-    let last_modified_str = profile.metadata.last_modified.to_rfc3339();
+    let last_modified_str =
+        profile.metadata.last_modified.to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true);
     write_metadata(
         &mut writer,
         &profile.metadata.title,
@@ -661,6 +685,7 @@ mod tests {
     };
     use crate::oscal::catalog::OscalMetadata;
     use crate::oscal::component_definition::ComponentDefinitionMetadata;
+    use crate::oscal::parts::OscalPartName;
 
     // ── Test helpers ──────────────────────────────────────
 
@@ -682,7 +707,7 @@ mod tests {
             params: vec![],
             parts: vec![OscalPart {
                 id: format!("{id}_smt"),
-                name: "statement".to_string(),
+                name: OscalPartName::Statement,
                 prose: title.to_string(),
                 parts: vec![],
                 props: vec![],
@@ -858,7 +883,7 @@ mod tests {
         let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
         let part = OscalPart {
             id: "POL-AC-001_smt".to_string(),
-            name: "statement".to_string(),
+            name: OscalPartName::Statement,
             prose: "All users must use MFA.".to_string(),
             parts: vec![],
             props: vec![],
@@ -876,11 +901,11 @@ mod tests {
         let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
         let part = OscalPart {
             id: "POL-AC-001_smt".to_string(),
-            name: "statement".to_string(),
+            name: OscalPartName::Statement,
             prose: "Parent statement.".to_string(),
             parts: vec![OscalPart {
                 id: "POL-AC-001_smt.a".to_string(),
-                name: "item".to_string(),
+                name: OscalPartName::Item,
                 prose: "Sub-item A.".to_string(),
                 parts: vec![],
                 props: vec![],
@@ -904,7 +929,7 @@ mod tests {
         let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
         let part = OscalPart {
             id: "POL-AC-001_smt".to_string(),
-            name: "statement".to_string(),
+            name: OscalPartName::Statement,
             prose: String::new(),
             parts: vec![],
             props: vec![],
@@ -966,14 +991,16 @@ mod tests {
             props: vec![Prop {
                 name: "url-status".to_string(),
                 value: "unvalidated".to_string(),
-                ns: None,
+                ns: Some("https://example.com/ns".to_string()),
             }],
             citation: None,
             rlinks: vec![Rlink { href: "not-a-url".to_string(), media_type: None }],
         };
         write_resource(&mut writer, &resource).unwrap();
         let xml = String::from_utf8(buf).unwrap();
-        assert!(xml.contains(r#"<prop name="url-status" value="unvalidated"/>"#));
+        assert!(xml.contains(
+            r#"<prop name="url-status" value="unvalidated" ns="https://example.com/ns"/>"#
+        ));
     }
 
     #[test]
@@ -1064,7 +1091,7 @@ mod tests {
             params: vec![],
             parts: vec![OscalPart {
                 id: "POL-AC-001_smt".to_string(),
-                name: "statement".to_string(),
+                name: OscalPartName::Statement,
                 prose: "All users must use MFA.".to_string(),
                 parts: vec![],
                 props: vec![],
@@ -1414,7 +1441,7 @@ mod tests {
                     params: vec![],
                     parts: vec![OscalPart {
                         id: "test_smt".to_string(),
-                        name: "statement".to_string(),
+                        name: OscalPartName::Statement,
                         prose: "]]> CDATA escape & <!-- comment -->".to_string(),
                         parts: vec![],
                         props: vec![],
@@ -1542,15 +1569,15 @@ mod tests {
                     params: vec![],
                     parts: vec![OscalPart {
                         id: "deep_smt".to_string(),
-                        name: "statement".to_string(),
+                        name: OscalPartName::Statement,
                         prose: "Level 1".to_string(),
                         parts: vec![OscalPart {
                             id: "deep_smt.a".to_string(),
-                            name: "item".to_string(),
+                            name: OscalPartName::Item,
                             prose: "Level 2".to_string(),
                             parts: vec![OscalPart {
                                 id: "deep_smt.a.1".to_string(),
-                                name: "item".to_string(),
+                                name: OscalPartName::Item,
                                 prose: "Level 3".to_string(),
                                 parts: vec![],
                                 props: vec![],
@@ -1569,6 +1596,31 @@ mod tests {
         assert!(xml.contains("Level 2"));
         assert!(xml.contains("Level 3"));
         assert!(xml.contains(r#"id="deep_smt.a.1""#));
+    }
+
+    #[test]
+    fn part_nesting_over_limit_returns_serialization_error() {
+        let mut part = OscalPart {
+            id: "leaf".to_string(),
+            name: OscalPartName::Item,
+            prose: String::new(),
+            props: vec![],
+            parts: vec![],
+        };
+        for depth in 0..MAX_PART_DEPTH {
+            part = OscalPart {
+                id: format!("part-{depth}"),
+                name: OscalPartName::Item,
+                prose: String::new(),
+                props: vec![],
+                parts: vec![part],
+            };
+        }
+
+        let mut buffer = Vec::new();
+        let mut writer = Writer::new(&mut buffer);
+        let error = write_part(&mut writer, &part).unwrap_err();
+        assert!(error.to_string().contains("part nesting exceeds maximum depth"));
     }
 
     // ══════════════════════════════════════════════════════

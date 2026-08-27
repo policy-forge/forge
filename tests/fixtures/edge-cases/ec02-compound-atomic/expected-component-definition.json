@@ -1,25 +1,7 @@
 {
   "component-definition": {
-    "uuid": "5a081b14-e775-4c07-8eee-5a29267e96a1",
-    "metadata": {
-      "title": "Control Statements",
-      "last-modified": "2026-02-21T21:03:42.127355+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "components": [
       {
-        "uuid": "2033536d-4dec-587c-90a7-bd33509cbe7f",
-        "type": "policy",
-        "title": "Control Statements",
-        "description": "Documentary component representing the Control Statements policy document.",
-        "props": [
-          {
-            "name": "source-file",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "input.md"
-          }
-        ],
         "control-implementations": [
           {
             "description": "Implementation narratives derived from Control Statements.",
@@ -54,7 +36,7 @@
                     "value": "normative"
                   }
                 ],
-                "uuid": "b53fbd2d-6545-59fb-8c5d-3149184c9035"
+                "uuid": "c5735c58-0601-509e-bbc9-da88c2a4cc05"
               },
               {
                 "control-id": "POL-CS-002",
@@ -86,7 +68,7 @@
                     "value": "normative"
                   }
                 ],
-                "uuid": "ef85520e-5c4a-5ea9-8480-1097079803f9"
+                "uuid": "a281b740-e7ee-56c0-ae5a-37145cdd5f74"
               },
               {
                 "control-id": "POL-CS-003",
@@ -118,14 +100,32 @@
                     "value": "normative"
                   }
                 ],
-                "uuid": "87410706-4e16-5119-9b98-172d84a6201a"
+                "uuid": "e961a18d-878b-5ee9-8759-6492621d01cb"
               }
             ],
             "source": "source-profile.json",
             "uuid": "03cf6c89-40fa-586b-9d5c-c7de84768ea8"
           }
-        ]
+        ],
+        "description": "Documentary component representing the Control Statements policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "title": "Control Statements",
+        "type": "policy",
+        "uuid": "df30bab3-2719-50c9-87ba-c3d0b5c58295"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:01.316686+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Control Statements",
+      "version": "0.0.0"
+    },
+    "uuid": "2d91c8dc-76e0-4742-946f-042b6934d4af"
   }
 }

@@ -23,6 +23,7 @@ fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
         citations: vec![],
         modality: None,
         parameters: vec![],
+        parameters_extracted: false,
     }
 }
 
@@ -37,6 +38,7 @@ fn make_req_no_id(text: &str, source_line: usize) -> PolicyRequirement {
         citations: vec![],
         modality: None,
         parameters: vec![],
+        parameters_extracted: false,
     }
 }
 

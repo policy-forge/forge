@@ -479,7 +479,7 @@ pub fn execute_transition(options: &TransitionOptions<'_>) -> Result<(), ForgeEr
             for artifact in std::iter::once(&record.policy.source)
                 .chain(record.policy.generated_artifacts.iter())
             {
-                if paths_alias(path, &base.join(&artifact.path))? {
+                if paths_alias(path, &confined_join(base, &artifact.path)?)? {
                     return Err(error("proposal output aliases a lifecycle artifact"));
                 }
             }
@@ -533,11 +533,9 @@ fn fingerprint(
     record_dir: &Path,
     require_oscal: bool,
 ) -> Result<ArtifactFingerprint, ForgeError> {
-    validate_input_path(path)?;
-    io::check_file_size(path, io::MAX_FILE_SIZE)
+    reject_symlink_components(path)?;
+    let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
         .map_err(|source| error(format!("artifact '{}': {source}", path.display())))?;
-    let bytes = std::fs::read(path)
-        .map_err(|source| error(format!("cannot read artifact '{}': {source}", path.display())))?;
     let (oscal_type, root_uuid) = if require_oscal {
         let value: Value = serde_json::from_slice(&bytes).map_err(|source| {
             error(format!("generated artifact '{}' is not JSON: {source}", path.display()))
@@ -598,12 +596,12 @@ fn current_artifacts(
     record: &LifecycleRecord,
 ) -> Result<CurrentArtifacts, ForgeError> {
     let base = record_directory(record_path)?;
-    let source_path = base.join(&record.policy.source.path);
+    let source_path = confined_join(&base, &record.policy.source.path)?;
     let source = fingerprint(&source_path, &base, false)?;
     let mut generated = Vec::new();
     let mut identity_changes = Vec::new();
     for expected in &record.policy.generated_artifacts {
-        let path = base.join(&expected.path);
+        let path = confined_join(&base, &expected.path)?;
         let actual = fingerprint(&path, &base, true)?;
         if actual.oscal_type != expected.oscal_type || actual.root_uuid != expected.root_uuid {
             identity_changes.push(expected.path.clone());
@@ -618,6 +616,23 @@ fn current_artifacts(
         },
         identity_changes,
     })
+}
+
+/// Join a record-stored artifact path onto `base` after re-asserting that the
+/// stored path names an artifact below the lifecycle record directory. Rejecting
+/// parent-directory components prevents a hostile record from redirecting
+/// artifact reads or alias checks outside that boundary.
+fn confined_join(base: &Path, raw: &str) -> Result<PathBuf, ForgeError> {
+    let drive_prefixed = raw.as_bytes().get(1) == Some(&b':')
+        && raw.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
+    let relative = !drive_prefixed
+        && Path::new(raw).components().all(|component| matches!(component, Component::Normal(_)));
+    if !relative {
+        return Err(error(format!(
+            "lifecycle artifact path '{raw}' must be a relative path without '.', '..', absolute, or drive-prefix components"
+        )));
+    }
+    Ok(base.join(raw))
 }
 
 fn approved_fingerprints(record: &LifecycleRecord) -> Option<FingerprintSet> {
@@ -918,7 +933,7 @@ fn validate_report_destination(
         for artifact in
             std::iter::once(&record.policy.source).chain(record.policy.generated_artifacts.iter())
         {
-            if paths_alias(output, &base.join(&artifact.path))? {
+            if paths_alias(output, &confined_join(base, &artifact.path)?)? {
                 return Err(error("report output aliases a lifecycle artifact"));
             }
         }
@@ -966,8 +981,11 @@ fn hard_link_count(path: &Path) -> Result<u64, ForgeError> {
 }
 
 #[cfg(not(any(unix, windows)))]
-fn hard_link_count(_path: &Path) -> Result<u64, ForgeError> {
-    Ok(1)
+fn hard_link_count(path: &Path) -> Result<u64, ForgeError> {
+    Err(error(format!(
+        "hard-link verification is not supported for '{}' on this platform",
+        path.display()
+    )))
 }
 
 fn validate_write_target(path: &Path) -> Result<(), ForgeError> {
@@ -1010,27 +1028,33 @@ fn record_directory(path: &Path) -> Result<PathBuf, ForgeError> {
         .map_err(|source| error(format!("cannot resolve record directory: {source}")))
 }
 
+/// Express an artifact path relative to the lifecycle record directory.
+///
+/// Artifact paths must remain below that directory so serialized records cannot
+/// later redirect lifecycle reads outside their trust boundary.
 fn relative_path(base: &Path, target: &Path) -> Result<String, ForgeError> {
-    let base_components: Vec<_> = base.components().collect();
-    let target_components: Vec<_> = target.components().collect();
-    let common = base_components
-        .iter()
-        .zip(&target_components)
-        .take_while(|(left, right)| path_components_equal(left, right))
-        .count();
-    if common == 0 {
-        return Err(error("cannot express artifact path relative to lifecycle record"));
-    }
-    let mut path = PathBuf::new();
-    for component in &base_components[common..] {
-        if matches!(component, Component::Normal(_)) {
-            path.push("..");
+    let mut target_components = target.components();
+    for base_component in base.components() {
+        let Some(target_component) = target_components.next() else {
+            return Err(error("artifact must be located beneath lifecycle record directory"));
+        };
+        if !path_components_equal(&base_component, &target_component) {
+            return Err(error("artifact must be located beneath lifecycle record directory"));
         }
     }
-    for component in &target_components[common..] {
-        path.push(component.as_os_str());
+
+    let mut relative = PathBuf::new();
+    for component in target_components {
+        let Component::Normal(component) = component else {
+            return Err(error("artifact must be located beneath lifecycle record directory"));
+        };
+        relative.push(component);
     }
-    path.to_str()
+    if relative.as_os_str().is_empty() {
+        return Err(error("artifact path must identify a file beneath lifecycle record directory"));
+    }
+    relative
+        .to_str()
         .map(str::to_string)
         .ok_or_else(|| error("artifact path is not valid UTF-8 and cannot be stored in JSON"))
 }
@@ -1188,7 +1212,28 @@ mod tests {
     }
 
     #[test]
-    fn relative_path_handles_sibling_directories() {
+    fn confined_join_rejects_escaping_paths() {
+        let base = Path::new("/records");
+        assert_eq!(
+            confined_join(base, "artifacts/policy.md").expect("descendant path"),
+            base.join("artifacts/policy.md")
+        );
+        let absolute = if cfg!(windows) { r"C:\evil\policy.md" } else { "/etc/passwd" };
+        for raw in [
+            "../artifacts/policy.md",
+            "artifacts/../policy.md",
+            "./policy.md",
+            ".",
+            absolute,
+            r"C:\evil\policy.md",
+        ] {
+            let error = confined_join(base, raw).expect_err(raw);
+            assert!(error.to_string().contains("must be a relative path"), "{raw}: {error}");
+        }
+    }
+
+    #[test]
+    fn relative_path_rejects_sibling_directories() {
         let temporary = tempfile::tempdir().expect("temporary directory");
         let records = temporary.path().join("records");
         let artifacts = temporary.path().join("artifacts");
@@ -1197,9 +1242,11 @@ mod tests {
         let artifact = artifacts.join("policy.md");
         std::fs::write(&artifact, "policy").expect("artifact");
 
-        assert_eq!(
-            relative_path(&records, &artifact).expect("relative path"),
-            Path::new("..").join("artifacts").join("policy.md").to_string_lossy()
+        let error =
+            relative_path(&records, &artifact).expect_err("sibling artifact must be rejected");
+        assert!(
+            error.to_string().contains("must be located beneath lifecycle record directory"),
+            "{error}"
         );
     }
 
@@ -1228,10 +1275,10 @@ mod tests {
         assert_eq!(
             relative_path(
                 Path::new(r"\\?\C:\Work\records"),
-                Path::new(r"c:\work\artifacts\policy.md")
+                Path::new(r"c:\work\records\artifacts\policy.md")
             )
             .expect("relative path"),
-            Path::new("..").join("artifacts").join("policy.md").to_string_lossy()
+            Path::new("artifacts").join("policy.md").to_string_lossy()
         );
     }
 

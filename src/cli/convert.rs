@@ -6,6 +6,9 @@ use crate::batch;
 use crate::cli::{OutputFormat, OutputType, Strategy};
 use crate::model::{PolicyDocument, PolicySection};
 
+/// Maximum section nesting depth, kept consistent with stable-ID assignment.
+const MAX_SECTION_DEPTH: usize = 50;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct RequirementLocator {
     section_path: String,
@@ -13,50 +16,68 @@ struct RequirementLocator {
     atom_index: usize,
 }
 
-fn collect_stable_ids(document: &PolicyDocument) -> HashMap<RequirementLocator, String> {
+fn collect_stable_ids(
+    document: &PolicyDocument,
+) -> Result<HashMap<RequirementLocator, String>, ForgeError> {
     let mut map = HashMap::new();
     for section in &document.sections {
-        collect_stable_ids_from_section(section, &section.title, &mut map);
+        collect_stable_ids_from_section(section, &section.title, 0, &mut map)?;
     }
-    map
+    Ok(map)
 }
 
 fn collect_stable_ids_from_section(
     section: &PolicySection,
     section_path: &str,
+    depth: usize,
     map: &mut HashMap<RequirementLocator, String>,
-) {
+) -> Result<(), ForgeError> {
     for requirement in &section.requirements {
         if let Some(stable_id) = &requirement.stable_id {
-            map.insert(
-                RequirementLocator {
-                    section_path: section_path.to_string(),
-                    source_line: requirement.source_line,
-                    atom_index: requirement.atom_index,
-                },
-                stable_id.clone(),
-            );
+            let locator = RequirementLocator {
+                section_path: section_path.to_string(),
+                source_line: requirement.source_line,
+                atom_index: requirement.atom_index,
+            };
+            if map.insert(locator.clone(), stable_id.clone()).is_some() {
+                return Err(ForgeError::Validation(format!(
+                    "stable ID comparison found duplicate requirement locator '{}', line {}, atom {}",
+                    locator.section_path, locator.source_line, locator.atom_index
+                )));
+            }
         }
+    }
+
+    // Match stable-ID assignment: requirements at this level remain visible, but
+    // recursion stops beyond the shared DoS safety limit.
+    if depth > MAX_SECTION_DEPTH {
+        tracing::trace!(
+            depth,
+            max = MAX_SECTION_DEPTH,
+            "max section depth exceeded; skipping stable-ID comparison traversal"
+        );
+        return Ok(());
     }
 
     for child in &section.children {
         let child_path = format!("{section_path}/{}", child.title);
-        collect_stable_ids_from_section(child, &child_path, map);
+        collect_stable_ids_from_section(child, &child_path, depth + 1, map)?;
     }
+    Ok(())
 }
 
 fn count_substantive_stable_id_changes(
     current: &PolicyDocument,
     baseline: &PolicyDocument,
-) -> usize {
-    let current_ids = collect_stable_ids(current);
-    let baseline_ids = collect_stable_ids(baseline);
+) -> Result<usize, ForgeError> {
+    let current_ids = collect_stable_ids(current)?;
+    let baseline_ids = collect_stable_ids(baseline)?;
 
     // Both branches count the same set: locators present in both maps whose
     // IDs differ. Iterating over the smaller map reduces HashMap lookups while
     // preserving identical semantics (locators only in one map are skipped by
     // both branches via `is_some_and`).
-    if current_ids.len() <= baseline_ids.len() {
+    let changed_count = if current_ids.len() <= baseline_ids.len() {
         current_ids
             .iter()
             .filter(|(locator, current_id)| {
@@ -70,7 +91,8 @@ fn count_substantive_stable_id_changes(
                 current_ids.get(*locator).is_some_and(|current_id| current_id != *baseline_id)
             })
             .count()
-    }
+    };
+    Ok(changed_count)
 }
 
 /// Convert a max-size value in MB to bytes, with overflow check.
@@ -84,23 +106,27 @@ fn add_max_size_guidance(error: ForgeError) -> ForgeError {
     error.with_max_size_guidance()
 }
 
-/// Validate and resolve `--source-profile` for component strategy.
+/// Validate and normalize `--source-profile` for component strategy.
 ///
-/// Returns `Ok(None)` if no profile was provided (with a warning),
-/// `Ok(Some(path))` if valid, or `Err` if empty/whitespace-only or file not found.
+/// Returns `Err(ForgeError::InvalidArgument)` if no profile was provided (mandatory for
+/// schema-valid component definitions), `Err(ForgeError::Validation)` if empty or
+/// whitespace-only, `Err` if the path is missing or not a regular file, and otherwise
+/// `Ok(Some(trimmed_path))`.
 fn resolve_source_profile(source_profile: Option<&str>) -> Result<Option<&str>, ForgeError> {
     match source_profile {
         None => Err(ForgeError::InvalidArgument(
             "--source-profile is required for component definitions to produce schema-valid output"
                 .to_string(),
         )),
-        Some(p) if p.trim().is_empty() => {
-            Err(ForgeError::Validation("--source-profile must not be empty".to_string()))
-        }
-        Some(p) => {
-            let profile_path = Path::new(p);
-            validate_regular_file(profile_path, "--source-profile")?;
-            Ok(Some(p))
+        Some(profile) => {
+            let profile = profile.trim();
+            if profile.is_empty() {
+                return Err(ForgeError::Validation(
+                    "--source-profile must not be empty".to_string(),
+                ));
+            }
+            validate_regular_file(Path::new(profile), "--source-profile")?;
+            Ok(Some(profile))
         }
     }
 }
@@ -122,13 +148,13 @@ fn validate_regular_file(path: &Path, flag_name: &str) -> Result<(), ForgeError>
 }
 
 fn emit_stable_id_change_warning_if_needed(
+    current_doc: &crate::model::PolicyDocument,
     input: &Path,
     baseline: &Path,
     max_size_bytes: u64,
 ) -> Result<(), ForgeError> {
     let baseline_doc = crate::pipeline::prepare_document(baseline, max_size_bytes)?;
-    let current_doc = crate::pipeline::prepare_document(input, max_size_bytes)?;
-    let changed_count = count_substantive_stable_id_changes(&current_doc, &baseline_doc);
+    let changed_count = count_substantive_stable_id_changes(current_doc, &baseline_doc)?;
 
     if changed_count > 0 {
         tracing::warn!(
@@ -192,36 +218,36 @@ fn execute_ssp(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     }
 
     let max_size_bytes = max_size_to_bytes(opts.max_size)?;
-
     if let Some(baseline) = opts.stable_id_baseline {
         validate_regular_file(baseline, "--stable-id-baseline")?;
     }
+    let source_profile = opts.source_profile.map(str::trim).filter(|profile| !profile.is_empty());
+    if let Some(profile) = source_profile {
+        validate_regular_file(Path::new(profile), "--source-profile")?;
+    }
 
     let start = std::time::Instant::now();
-
-    // Steps 1-7: shared pipeline stages to extract document metadata
     let doc = crate::pipeline::prepare_document(opts.input, max_size_bytes)
         .map_err(add_max_size_guidance)?;
+    if let Some(baseline) = opts.stable_id_baseline {
+        emit_stable_id_change_warning_if_needed(&doc, opts.input, baseline, max_size_bytes)
+            .map_err(add_max_size_guidance)?;
+    }
 
     let title = doc.metadata.title.clone();
     let version = doc.metadata.version.clone();
-
     let catalog = crate::oscal::build_catalog(&doc, None)?;
 
-    // Build SSP skeleton with policy-derived control-implementation entries.
     let envelope = crate::oscal::build_ssp_skeleton(
         &title,
         &version,
         &catalog,
         &[],
-        opts.source_profile.unwrap_or(""),
+        source_profile.unwrap_or(""),
     )?;
 
-    // Serialize to JSON (SSP is JSON-only)
     let content = serde_json::to_string_pretty(&envelope)
-        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-
-    // Write output
+        .map_err(|error| ForgeError::Serialization(error.to_string()))?;
     crate::cli::output::write_output(&content, opts.output)?;
 
     if !opts.quiet {
@@ -344,7 +370,8 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
     if batch_summary.has_failures() {
         Err(ForgeError::BatchConversion(format!(
             "{} of {} files failed",
-            batch_summary.failed, batch_summary.total_files
+            batch_summary.failed(),
+            batch_summary.total_files()
         )))
     } else {
         Ok(())
@@ -358,26 +385,44 @@ pub fn execute_dispatch(input: &[PathBuf], opts: &ConvertOptions<'_>) -> Result<
 /// Returns `ForgeError` if the conversion fails.
 pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     let max_size_bytes = max_size_to_bytes(opts.max_size)?;
-
-    if let Some(baseline) = opts.stable_id_baseline {
+    let prepared_doc = if let Some(baseline) = opts.stable_id_baseline {
         validate_regular_file(baseline, "--stable-id-baseline")?;
-        emit_stable_id_change_warning_if_needed(opts.input, baseline, max_size_bytes)
+        let current_doc = crate::pipeline::prepare_document(opts.input, max_size_bytes)
             .map_err(add_max_size_guidance)?;
-    }
+        emit_stable_id_change_warning_if_needed(&current_doc, opts.input, baseline, max_size_bytes)
+            .map_err(add_max_size_guidance)?;
+        Some(current_doc)
+    } else {
+        None
+    };
 
     let start = std::time::Instant::now();
-
     let strategy = effective_strategy(opts);
 
-    let mut result = match strategy {
-        Strategy::Catalog => crate::pipeline::run_catalog_pipeline(
+    let mut result = match (strategy, prepared_doc) {
+        (Strategy::Catalog, Some(doc)) => crate::pipeline::run_catalog_pipeline_prepared(
+            opts.input,
+            &doc,
+            *opts.format,
+            opts.import_ssp,
+        ),
+        (Strategy::Catalog, None) => crate::pipeline::run_catalog_pipeline(
             opts.input,
             max_size_bytes,
             opts.format,
             opts.import_ssp,
         ),
-        Strategy::Component => {
-            // Runtime validation for --source-profile (SEC-3, SEC-4, EC-4)
+        (Strategy::Component, Some(doc)) => {
+            let profile_ref = resolve_source_profile(opts.source_profile)?;
+            crate::pipeline::run_component_pipeline_prepared(
+                opts.input,
+                &doc,
+                profile_ref,
+                *opts.format,
+                opts.import_ssp,
+            )
+        }
+        (Strategy::Component, None) => {
             let profile_ref = resolve_source_profile(opts.source_profile)?;
             crate::pipeline::run_component_pipeline(
                 opts.input,
@@ -390,18 +435,11 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     }
     .map_err(add_max_size_guidance)?;
 
-    // Write primary output
+    let secondary_paths = secondary_output_paths(&result.secondary_outputs, opts.output)?;
     crate::cli::output::write_output(&result.content, opts.output)?;
-
-    // Write secondary artifacts (e.g., assessment plan)
-    for secondary in &result.secondary_outputs {
-        let ap_dir = opts.output.and_then(|p| p.parent());
-        let ap_path = ap_dir.map_or_else(
-            || std::path::PathBuf::from(&secondary.filename),
-            |d| d.join(&secondary.filename),
-        );
-        crate::cli::output::write_output(&secondary.content, Some(&ap_path))?;
-        tracing::info!(path = %ap_path.display(), "Secondary artifact written");
+    for (secondary, path) in result.secondary_outputs.iter().zip(secondary_paths) {
+        crate::cli::output::write_output(&secondary.content, Some(&path))?;
+        tracing::info!(path = %path.display(), "Secondary artifact written");
     }
 
     if opts.summary && !opts.quiet {
@@ -414,6 +452,39 @@ pub fn execute(opts: &ConvertOptions<'_>) -> Result<(), ForgeError> {
     }
 
     Ok(())
+}
+
+fn secondary_output_paths(
+    secondary_outputs: &[crate::pipeline::SecondaryOutput],
+    output: Option<&Path>,
+) -> Result<Vec<PathBuf>, ForgeError> {
+    if secondary_outputs.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let Some(output) = output else {
+        eprintln!("assessment plan suppressed: primary output is stdout");
+        return Ok(Vec::new());
+    };
+    let output_directory =
+        output.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    let metadata = std::fs::metadata(output_directory).map_err(|error| {
+        ForgeError::Validation(format!(
+            "Output directory '{}' cannot be inspected before writing assessment plans: {error}",
+            output_directory.display()
+        ))
+    })?;
+    if !metadata.is_dir() {
+        return Err(ForgeError::Validation(format!(
+            "Output directory '{}' is not a directory",
+            output_directory.display()
+        )));
+    }
+
+    Ok(secondary_outputs
+        .iter()
+        .map(|secondary| output_directory.join(&secondary.filename))
+        .collect())
 }
 
 #[cfg(test)]
@@ -473,6 +544,7 @@ version: "1.0.0"
                     citations: vec![],
                     modality: None,
                     parameters: vec![],
+                    parameters_extracted: false,
                 }],
             }],
         }
@@ -509,6 +581,7 @@ version: "1.0.0"
                         citations: vec![],
                         modality: None,
                         parameters: vec![],
+                        parameters_extracted: false,
                     })
                     .collect(),
             }],
@@ -556,6 +629,13 @@ version: "1.0.0"
             err.to_string().contains("--source-profile must not be empty"),
             "Expected empty source-profile error, got: {err}"
         );
+    }
+
+    #[test]
+    fn component_source_profile_is_trimmed_before_pipeline_use() {
+        let padded = format!("  {SAMPLE_PROFILE}  ");
+        let resolved = resolve_source_profile(Some(&padded)).unwrap();
+        assert_eq!(resolved, Some(SAMPLE_PROFILE));
     }
 
     #[test]
@@ -705,6 +785,84 @@ version: "1.0.0"
     }
 
     #[test]
+    fn ssp_rejects_nonexistent_source_profile() {
+        let directory = TempDir::new()
+            .unwrap_or_else(|error| panic!("failed to create temporary directory: {error}"));
+        let input = write_policy(&directory);
+        let output = directory.path().join("ssp.json");
+        let strategy = Strategy::Catalog;
+        let format = OutputFormat::Json;
+        let to = OutputType::Ssp;
+        let opts = ConvertOptions {
+            input: &input,
+            strategy: &strategy,
+            format: &format,
+            output: Some(&output),
+            max_size: 10,
+            source_profile: Some("missing-profile.json"),
+            stable_id_baseline: None,
+            import_ssp: None,
+            summary: false,
+            quiet: true,
+            jobs: 0,
+            to: Some(&to),
+        };
+
+        let error = execute_ssp(&opts).unwrap_err();
+
+        assert!(
+            matches!(error, ForgeError::Validation(message) if message.contains("--source-profile"))
+        );
+    }
+
+    #[test]
+    fn ssp_whitespace_source_profile_uses_todo_placeholder() {
+        let directory = TempDir::new()
+            .unwrap_or_else(|error| panic!("failed to create temporary directory: {error}"));
+        let input = write_policy(&directory);
+        let output = directory.path().join("ssp.json");
+        let strategy = Strategy::Catalog;
+        let format = OutputFormat::Json;
+        let to = OutputType::Ssp;
+        let opts = ConvertOptions {
+            input: &input,
+            strategy: &strategy,
+            format: &format,
+            output: Some(&output),
+            max_size: 10,
+            source_profile: Some("  "),
+            stable_id_baseline: None,
+            import_ssp: None,
+            summary: false,
+            quiet: true,
+            jobs: 0,
+            to: Some(&to),
+        };
+
+        execute_ssp(&opts).unwrap_or_else(|error| panic!("unexpected SSP failure: {error}"));
+        let actual: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(output)
+                .unwrap_or_else(|error| panic!("failed to read SSP fixture: {error}")),
+        )
+        .unwrap_or_else(|error| panic!("failed to parse SSP JSON: {error}"));
+
+        assert_eq!(actual["system-security-plan"]["import-profile"]["href"], "TODO-profile.json");
+    }
+
+    #[test]
+    fn assessment_plans_are_suppressed_when_primary_output_is_stdout() {
+        let secondary = crate::pipeline::SecondaryOutput {
+            filename: "assessment-plan.json".to_string(),
+            content: "{}".to_string(),
+        };
+
+        let paths = secondary_output_paths(&[secondary], None)
+            .unwrap_or_else(|error| panic!("unexpected secondary output failure: {error}"));
+
+        assert!(paths.is_empty());
+    }
+
+    #[test]
     fn to_ssp_rejects_non_json_format() {
         let dir = TempDir::new().unwrap();
         let input = write_policy(&dir);
@@ -736,7 +894,7 @@ version: "1.0.0"
         let baseline = single_requirement_doc("Access", "11111111-1111-1111-1111-111111111111");
         let current = single_requirement_doc("Access", "22222222-2222-2222-2222-222222222222");
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 1);
     }
 
@@ -745,7 +903,7 @@ version: "1.0.0"
         let baseline = single_requirement_doc("Access", "11111111-1111-1111-1111-111111111111");
         let current = single_requirement_doc("Monitoring", "22222222-2222-2222-2222-222222222222");
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 0);
     }
 
@@ -764,8 +922,21 @@ version: "1.0.0"
             ],
         );
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 1);
+    }
+
+    #[test]
+    fn stable_id_comparison_rejects_duplicate_requirement_locators() {
+        let duplicate = multi_requirement_doc(
+            "Access",
+            &[
+                (10, 0, "11111111-1111-1111-1111-111111111111"),
+                (10, 0, "22222222-2222-2222-2222-222222222222"),
+            ],
+        );
+        let error = count_substantive_stable_id_changes(&duplicate, &duplicate).unwrap_err();
+        assert!(error.to_string().contains("duplicate requirement locator"));
     }
 
     #[test]
@@ -782,7 +953,7 @@ version: "1.0.0"
             ],
         );
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 0);
     }
 }

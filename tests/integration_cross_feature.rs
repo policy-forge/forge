@@ -16,9 +16,12 @@
 //! Uses the CLI subprocess pattern (`env!("CARGO_BIN_EXE_forge")`) for end-to-end coverage.
 
 use serde_json::Value;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 use tempfile::TempDir;
 
 // ── MIXED_POLICY fixture ──────────────────────────────────────────────────────
@@ -53,7 +56,31 @@ fn forge_bin() -> Command {
 }
 
 fn run_forge(args: &[&str]) -> std::process::Output {
-    let output = forge_bin().args(args).output().expect("failed to execute forge");
+    let mut child = forge_bin()
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("failed to execute forge");
+    let deadline = Instant::now() + Duration::from_secs(120);
+    loop {
+        if child.try_wait().expect("failed to poll forge").is_some() {
+            break;
+        }
+        if Instant::now() >= deadline {
+            child.kill().expect("failed to kill timed-out forge");
+            let output =
+                child.wait_with_output().expect("failed to collect timed-out forge output");
+            panic!(
+                "forge {:?} timed out after 120s\nstdout: {}\nstderr: {}",
+                args,
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    let output = child.wait_with_output().expect("failed to collect forge output");
     assert!(
         output.status.success(),
         "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
@@ -94,9 +121,9 @@ fn catalog_from_mixed_policy(dir: &TempDir) -> PathBuf {
     catalog_path
 }
 
-/// Collect all `prop[name=modality].value` strings from every control in a catalog JSON.
-fn collect_modality_props(catalog: &Value) -> Vec<String> {
-    let mut result = Vec::new();
+/// Collect `prop[name=modality]` values keyed by their owning control ID.
+fn collect_modality_props(catalog: &Value) -> BTreeMap<String, Vec<(String, String)>> {
+    let mut result = BTreeMap::new();
     if let Some(groups) = catalog["catalog"]["groups"].as_array() {
         for group in groups {
             if let Some(controls) = group["controls"].as_array() {
@@ -104,31 +131,38 @@ fn collect_modality_props(catalog: &Value) -> Vec<String> {
             }
         }
     }
-    result.sort();
     result
 }
 
-fn collect_modality_from_controls(controls: &[Value], out: &mut Vec<String>) {
+fn collect_modality_from_controls(
+    controls: &[Value],
+    out: &mut BTreeMap<String, Vec<(String, String)>>,
+) {
     for control in controls {
-        if let Some(props) = control["props"].as_array() {
-            for prop in props {
-                if prop["name"].as_str() == Some("modality")
-                    && let Some(v) = prop["value"].as_str()
-                {
-                    out.push(v.to_string());
+        let control_id =
+            control["id"].as_str().expect("every compared control must have an id").to_string();
+        let props = out.entry(control_id).or_default();
+        if let Some(control_props) = control["props"].as_array() {
+            for prop in control_props {
+                if prop["name"].as_str() == Some("modality") {
+                    let value = prop["value"]
+                        .as_str()
+                        .expect("modality prop must have a string value")
+                        .to_string();
+                    props.push(("modality".to_string(), value));
                 }
             }
         }
-        // Recurse into nested controls
+        props.sort();
         if let Some(sub) = control["controls"].as_array() {
             collect_modality_from_controls(sub, out);
         }
     }
 }
 
-/// Collect all `{param.id, sorted param.values}` pairs from every control in a catalog JSON.
-fn collect_params(catalog: &Value) -> Vec<(String, Vec<String>)> {
-    let mut result = Vec::new();
+/// Collect parameters keyed by their owning control ID.
+fn collect_params(catalog: &Value) -> BTreeMap<String, Vec<(String, Vec<String>)>> {
+    let mut result = BTreeMap::new();
     if let Some(groups) = catalog["catalog"]["groups"].as_array() {
         for group in groups {
             if let Some(controls) = group["controls"].as_array() {
@@ -136,38 +170,100 @@ fn collect_params(catalog: &Value) -> Vec<(String, Vec<String>)> {
             }
         }
     }
-    result.sort_by(|a, b| a.0.cmp(&b.0));
     result
 }
 
-fn collect_params_from_controls(controls: &[Value], out: &mut Vec<(String, Vec<String>)>) {
+fn collect_params_from_controls(
+    controls: &[Value],
+    out: &mut BTreeMap<String, Vec<(String, Vec<String>)>>,
+) {
     for control in controls {
+        let control_id =
+            control["id"].as_str().expect("every compared control must have an id").to_string();
+        let params_out = out.entry(control_id).or_default();
         if let Some(params) = control["params"].as_array() {
             for param in params {
-                if let Some(id) = param["id"].as_str() {
-                    let mut values: Vec<String> = param["values"]
-                        .as_array()
-                        .unwrap_or(&vec![])
-                        .iter()
-                        .filter_map(|v| v.as_str().map(std::string::ToString::to_string))
-                        .collect();
-                    values.sort();
-                    out.push((id.to_string(), values));
-                }
+                let param_id = param["id"]
+                    .as_str()
+                    .expect("every compared parameter must have an id")
+                    .to_string();
+                let mut values: Vec<String> = param["values"]
+                    .as_array()
+                    .expect("every compared parameter must have values")
+                    .iter()
+                    .map(|value| {
+                        value.as_str().expect("parameter values must be strings").to_string()
+                    })
+                    .collect();
+                values.sort();
+                params_out.push((param_id, values));
             }
         }
-        // Recurse into nested controls
+        params_out.sort();
         if let Some(sub) = control["controls"].as_array() {
             collect_params_from_controls(sub, out);
         }
     }
 }
 
-/// Count all controls across all groups in a catalog JSON.
+/// Count all controls across all groups recursively.
 fn count_controls(catalog: &Value) -> usize {
+    fn count(controls: &[Value]) -> usize {
+        controls
+            .iter()
+            .map(|control| 1 + control["controls"].as_array().map_or(0, |children| count(children)))
+            .sum()
+    }
     catalog["catalog"]["groups"].as_array().map_or(0, |groups| {
-        groups.iter().map(|g| g["controls"].as_array().map_or(0, Vec::len)).sum()
+        groups
+            .iter()
+            .map(|group| group["controls"].as_array().map_or(0, |controls| count(controls)))
+            .sum()
     })
+}
+
+fn assert_catalog_round_trip_preserves<T>(
+    intermediate_format: &str,
+    value_name: &str,
+    collect: impl Fn(&Value) -> T,
+    is_present: impl Fn(&T) -> bool,
+) where
+    T: std::fmt::Debug + PartialEq,
+{
+    let dir = TempDir::new().unwrap();
+    let catalog_path = catalog_from_mixed_policy(&dir);
+    let original = collect(&read_json(&catalog_path));
+    assert!(
+        is_present(&original),
+        "original catalog must have at least one {value_name} for this test to be meaningful"
+    );
+
+    let intermediate_path = dir.path().join(format!("catalog.{intermediate_format}"));
+    run_forge(&[
+        "export",
+        catalog_path.to_str().unwrap(),
+        "--format",
+        intermediate_format,
+        "--output",
+        intermediate_path.to_str().unwrap(),
+    ]);
+    let roundtripped_path = dir.path().join("catalog_rt.json");
+    run_forge(&[
+        "export",
+        intermediate_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--output",
+        roundtripped_path.to_str().unwrap(),
+    ]);
+
+    let roundtripped = collect(&read_json(&roundtripped_path));
+    assert_eq!(
+        original, roundtripped,
+        "{value_name} must be identical after JSON→{intermediate_format}→JSON\n\
+         original:     {original:?}\n\
+         round-tripped: {roundtripped:?}"
+    );
 }
 
 // ── M-5 / AC-6: normative and advisory props in JSON ────────────────────────
@@ -181,11 +277,11 @@ fn normative_props_present_in_json() {
     let modalities = collect_modality_props(&catalog);
 
     assert!(
-        modalities.iter().any(|m| m == "normative"),
+        modalities.values().flatten().any(|(_, value)| value == "normative"),
         "expected at least one control with modality=normative, got: {modalities:?}"
     );
     assert!(
-        modalities.iter().any(|m| m == "advisory"),
+        modalities.values().flatten().any(|(_, value)| value == "advisory"),
         "expected at least one control with modality=advisory, got: {modalities:?}"
     );
 }
@@ -194,87 +290,20 @@ fn normative_props_present_in_json() {
 
 #[test]
 fn normative_props_survive_xml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_modalities = collect_modality_props(&original);
-    assert!(
-        !original_modalities.is_empty(),
-        "original catalog must have at least one modality prop"
-    );
-
-    // JSON → XML → JSON
-    let xml_path = dir.path().join("catalog.xml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
-        "xml",
-        "--output",
-        xml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        xml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_modalities = collect_modality_props(&roundtripped);
-
-    assert_eq!(
-        original_modalities, roundtripped_modalities,
-        "modality props must be identical after JSON→XML→JSON round-trip\
-        \n  original:     {original_modalities:?}\
-        \n  round-tripped: {roundtripped_modalities:?}"
-    );
+    assert_catalog_round_trip_preserves("xml", "modality prop", collect_modality_props, |values| {
+        !values.is_empty()
+    });
 }
 
 // ── M-5 / AC-8: normative/advisory props survive JSON→YAML→JSON round-trip ──
 
 #[test]
 fn normative_props_survive_yaml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_modalities = collect_modality_props(&original);
-    assert!(
-        !original_modalities.is_empty(),
-        "original catalog must have at least one modality prop"
-    );
-
-    // JSON → YAML → JSON
-    let yaml_path = dir.path().join("catalog.yaml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
+    assert_catalog_round_trip_preserves(
         "yaml",
-        "--output",
-        yaml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        yaml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_modalities = collect_modality_props(&roundtripped);
-
-    assert_eq!(
-        original_modalities, roundtripped_modalities,
-        "modality props must be identical after JSON→YAML→JSON round-trip\
-        \n  original:     {original_modalities:?}\
-        \n  round-tripped: {roundtripped_modalities:?}"
+        "modality prop",
+        collect_modality_props,
+        |values| !values.is_empty(),
     );
 }
 
@@ -291,22 +320,82 @@ fn atomized_normative_advisory_each_gets_correct_prop() {
     // The atomizer splits on "and should" → 2 controls from 1 bullet.
     // Total expected controls: 4 bullets + 1 extra from split = 5.
     let total_controls = count_controls(&catalog);
-    assert!(
-        total_controls >= 5,
-        "expected >= 5 controls (atomizer should split compound bullet 4 into 2); got: {total_controls}"
+    assert_eq!(
+        total_controls, 5,
+        "expected exactly 5 controls (atomizer should split compound bullet 4 into 2); got: {total_controls}"
     );
 
-    // Each atomized control must carry its own modality prop.
-    // After the split, at least one control must be normative and one advisory.
+    // EACH atomized half of the compound bullet must carry its own correct
+    // modality prop — global presence alone would pass even if both halves
+    // were misattributed (F0844).
+    let mfa = find_control_by_text(&catalog, "must enforce MFA")
+        .expect("atomized 'must enforce MFA' control should exist");
+    let notify = find_control_by_text(&catalog, "should notify administrators")
+        .expect("atomized 'should notify administrators' control should exist");
+    assert_eq!(
+        control_modality(mfa),
+        Some("normative"),
+        "'must enforce MFA' half must be normative; control: {mfa}"
+    );
+    assert_eq!(
+        control_modality(notify),
+        Some("advisory"),
+        "'should notify administrators' half must be advisory; control: {notify}"
+    );
+
+    // Secondary guard: at least one of each across the catalog.
     let modalities = collect_modality_props(&catalog);
     assert!(
-        modalities.iter().any(|m| m == "normative"),
+        modalities.values().flatten().any(|(_, value)| value == "normative"),
         "expected at least one normative control from compound sentence; modalities: {modalities:?}"
     );
     assert!(
-        modalities.iter().any(|m| m == "advisory"),
+        modalities.values().flatten().any(|(_, value)| value == "advisory"),
         "expected at least one advisory control from compound sentence; modalities: {modalities:?}"
     );
+}
+
+/// Find the first catalog control whose title or part prose contains `needle`.
+fn find_control_by_text<'a>(catalog: &'a Value, needle: &str) -> Option<&'a Value> {
+    fn scan_controls<'a>(controls: &'a [Value], needle: &str) -> Option<&'a Value> {
+        for control in controls {
+            let title = control["title"].as_str().unwrap_or_default();
+            // Search only statement prose: guidance parts copy the entire
+            // source subsection, so they would match every needle.
+            let prose = control["parts"]
+                .as_array()
+                .map(|parts| {
+                    parts
+                        .iter()
+                        .filter(|p| p["name"].as_str() == Some("statement"))
+                        .filter_map(|p| p["prose"].as_str())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                })
+                .unwrap_or_default();
+            if title.contains(needle) || prose.contains(needle) {
+                return Some(control);
+            }
+            if let Some(nested) = control["controls"].as_array()
+                && let Some(found) = scan_controls(nested, needle)
+            {
+                return Some(found);
+            }
+        }
+        None
+    }
+    catalog["catalog"]["groups"]
+        .as_array()?
+        .iter()
+        .filter_map(|g| g["controls"].as_array())
+        .find_map(|controls| scan_controls(controls, needle))
+}
+
+/// Read a control's `prop[name=modality].value`, if present.
+fn control_modality(control: &Value) -> Option<&str> {
+    control["props"].as_array()?.iter().find_map(|prop| {
+        (prop["name"].as_str() == Some("modality")).then(|| prop["value"].as_str())?
+    })
 }
 
 // ── M-5 / AC-7: param elements present in JSON ──────────────────────────────
@@ -335,86 +424,16 @@ fn param_elements_present_in_json() {
 
 #[test]
 fn param_elements_survive_xml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_params = collect_params(&original);
-    assert!(
-        !original_params.is_empty(),
-        "original catalog must have at least one param for this test to be meaningful"
-    );
-
-    // JSON → XML → JSON
-    let xml_path = dir.path().join("catalog.xml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
-        "xml",
-        "--output",
-        xml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        xml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_params = collect_params(&roundtripped);
-
-    assert_eq!(
-        original_params, roundtripped_params,
-        "params must be identical after JSON→XML→JSON round-trip\
-        \n  original:     {original_params:?}\
-        \n  round-tripped: {roundtripped_params:?}"
-    );
+    assert_catalog_round_trip_preserves("xml", "parameter", collect_params, |values| {
+        !values.is_empty()
+    });
 }
 
 // ── M-5 / AC-8: param elements survive JSON→YAML→JSON round-trip ────────────
 
 #[test]
 fn param_elements_survive_yaml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_params = collect_params(&original);
-    assert!(
-        !original_params.is_empty(),
-        "original catalog must have at least one param for this test to be meaningful"
-    );
-
-    // JSON → YAML → JSON
-    let yaml_path = dir.path().join("catalog.yaml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
-        "yaml",
-        "--output",
-        yaml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        yaml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_params = collect_params(&roundtripped);
-
-    assert_eq!(
-        original_params, roundtripped_params,
-        "params must be identical after JSON→YAML→JSON round-trip\
-        \n  original:     {original_params:?}\
-        \n  round-tripped: {roundtripped_params:?}"
-    );
+    assert_catalog_round_trip_preserves("yaml", "parameter", collect_params, |values| {
+        !values.is_empty()
+    });
 }

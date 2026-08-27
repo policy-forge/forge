@@ -322,12 +322,28 @@ pub fn load_file(path: &Path, source: SourceKind) -> Result<ProjectConfig, Forge
     let bytes = fs::read(path).map_err(|e| {
         ForgeError::Config(format!("cannot read config file {}: {e}", path.display()))
     })?;
+    check_read_size(path, &bytes)?;
+
     let text = String::from_utf8(bytes).map_err(|_| {
         ForgeError::Config(format!("{}: configuration file is not valid UTF-8", path.display()))
     })?;
 
     parse_and_validate(path, source, &text)
         .map_err(|msg| ForgeError::Config(format!("{}: {msg}", path.display())))
+}
+
+/// Enforce the configuration size limit on the bytes actually read.
+fn check_read_size(path: &Path, bytes: &[u8]) -> Result<(), ForgeError> {
+    if u64::try_from(bytes.len()).is_ok_and(|len| len > MAX_CONFIG_SIZE) {
+        return Err(ForgeError::Config(format!(
+            "{}: configuration exceeds the {} MiB limit after read ({} bytes)",
+            path.display(),
+            MAX_CONFIG_SIZE / (1024 * 1024),
+            bytes.len()
+        )));
+    }
+
+    Ok(())
 }
 
 /// Parse and validate config text. Returns the validated settings or a
@@ -1137,6 +1153,14 @@ mod tests {
         let err =
             load_file(&dir.path().join(CONFIG_FILE_NAME), SourceKind::Discovered).unwrap_err();
         assert!(err.to_string().contains("exceeds"), "{err}");
+    }
+
+    #[test]
+    fn post_read_size_limit_is_enforced() {
+        let bytes = vec![0; usize::try_from(MAX_CONFIG_SIZE + 1).expect("test limit fits usize")];
+        let err = check_read_size(Path::new("forge.toml"), &bytes).unwrap_err();
+
+        assert!(err.to_string().contains("exceeds the 1 MiB limit after read"));
     }
 
     #[test]

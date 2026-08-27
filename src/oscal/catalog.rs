@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use super::parts::{OscalPart, OscalProp, build_control_parts, build_control_props};
+use super::parts::{OscalPart, OscalProp, build_control_parts};
 use crate::error::ForgeError;
 use crate::model::trace::{SourceLocation, TraceLink, TraceLinkCollection};
 use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
@@ -96,7 +96,7 @@ pub struct OscalControl {
     /// Not serialized — OSCAL catalog schema does not allow uuid on controls.
     #[serde(skip_serializing, default)]
     pub uuid: String,
-    /// Derived title (first sentence, 120-char cap).
+    /// Derived title (full first sentence; never truncated).
     pub title: String,
     /// Links to back matter resources (WI-12).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -240,7 +240,9 @@ pub fn generate_section_abbreviation(section_title: &str) -> String {
 ///
 /// Pattern: `{prefix}-{abbreviation}-{NNN}` where the index is
 /// 0-based internally and displayed as 1-based. Zero-padded to
-/// 3 digits; extends naturally past 999.
+/// 3 digits; extends naturally past 999. The abbreviation may include a
+/// four-hex collision suffix (for example, `AC-dd3e`), producing a
+/// four-segment control ID such as `POL-AC-dd3e-001`.
 ///
 /// # Examples
 ///
@@ -258,10 +260,13 @@ pub fn generate_control_id(abbreviation: &str, requirement_index: usize, prefix:
 
 /// Derive a control title from requirement text.
 ///
-/// 1. Find first sentence (up to first `.`, `!`, or `?`)
+/// 1. Find first sentence (up to first `.`, `!`, or `?`, excluding decimal points)
 /// 2. If no sentence-ending punctuation, use full text
 /// 3. Trim whitespace
-/// 4. If length exceeds 120 characters, truncate and append `...`
+///
+/// The full sentence is always stored — never clipped: truncation bisected
+/// markup and `{{ insert: param }}` tokens and factually dropped words
+/// (F0007).
 ///
 /// # Examples
 ///
@@ -281,18 +286,28 @@ pub fn generate_control_id(abbreviation: &str, requirement_index: usize, prefix:
 /// ```
 #[must_use]
 pub fn derive_control_title(requirement_text: &str) -> String {
-    let sentence = requirement_text
-        .find(['.', '!', '?'])
-        .map_or(requirement_text, |pos| &requirement_text[..=pos]);
+    let sentence_end = requirement_text.char_indices().find_map(|(position, character)| {
+        if !matches!(character, '.' | '!' | '?') {
+            return None;
+        }
 
-    let trimmed = sentence.trim();
+        let is_decimal_point = character == '.'
+            && requirement_text[..position]
+                .chars()
+                .next_back()
+                .is_some_and(|previous| previous.is_ascii_digit())
+            && requirement_text[position + character.len_utf8()..]
+                .chars()
+                .next()
+                .is_some_and(|next| next.is_ascii_digit());
 
-    if trimmed.chars().count() > 120 {
-        let truncated: String = trimmed.chars().take(120).collect();
-        format!("{truncated}...")
-    } else {
-        trimmed.to_string()
-    }
+        (!is_decimal_point).then_some(position + character.len_utf8())
+    });
+
+    sentence_end.map_or_else(
+        || requirement_text.trim().to_string(),
+        |end| requirement_text[..end].trim().to_string(),
+    )
 }
 
 /// Recursively collect all requirements from a section and
@@ -331,7 +346,9 @@ pub(crate) fn collect_requirements_with_section(
 /// Build an OSCAL Catalog from a [`PolicyDocument`].
 ///
 /// Optionally records a [`TraceLink`] for every generated control into the
-/// provided [`TraceLinkCollection`]. Pass `None` for backward compatibility.
+/// provided [`TraceLinkCollection`]. Trace links are committed only after the
+/// entire catalog has been built successfully. Pass `None` for backward
+/// compatibility.
 ///
 /// # Errors
 ///
@@ -340,11 +357,12 @@ pub(crate) fn collect_requirements_with_section(
 /// is detected for the same requirement.
 pub fn build_catalog(
     document: &PolicyDocument,
-    mut trace_links: Option<&mut TraceLinkCollection>,
+    trace_links: Option<&mut TraceLinkCollection>,
 ) -> Result<OscalCatalog, ForgeError> {
     let mut group_id_counts: HashMap<String, Vec<String>> = HashMap::new();
     let mut abbrev_counts: HashMap<String, Vec<String>> = HashMap::new();
     let mut groups = Vec::new();
+    let mut buffered_trace_links = Vec::new();
 
     for (idx, section) in document.sections.iter().enumerate() {
         let group_id = resolve_group_id(&section.title, idx, &mut group_id_counts);
@@ -364,18 +382,7 @@ pub fn build_catalog(
             })?;
 
             let control_id = generate_control_id(&abbreviation, req_idx, "POL");
-            let mut control_props = build_control_props(req);
-            if let Some(modality) = req.modality {
-                let modality_value = match modality {
-                    crate::model::Modality::Normative => "normative",
-                    crate::model::Modality::Advisory => "advisory",
-                };
-                control_props.push(OscalProp {
-                    name: "modality".to_string(),
-                    ns: None,
-                    value: modality_value.to_string(),
-                });
-            }
+            let control_props = modality_props(req);
             // T031: Emit OSCAL params from extracted PolicyParameters (WI-34)
             let params: Vec<OscalParam> =
                 req.parameters.iter().map(crate::parameter::to_oscal_param).collect();
@@ -385,29 +392,29 @@ pub fn build_catalog(
                 title: derive_control_title(&req.text),
                 links: vec![],
                 params,
-                parts: build_control_parts(&control_id, req, req_section.body_text.as_deref()),
+                // Section prose is guidance only when one direct requirement owns it;
+                // list-derived sibling requirements must not each receive the same body text.
+                parts: build_control_parts(
+                    &control_id,
+                    req,
+                    (req_section.requirements.len() == 1)
+                        .then_some(req_section.body_text.as_deref())
+                        .flatten(),
+                ),
                 props: control_props,
             });
 
-            // Record trace link for this control (T020)
-            if let Some(ref mut tl) = trace_links {
-                let trace = TraceLink {
+            if trace_links.is_some() {
+                buffered_trace_links.push(TraceLink {
                     requirement_stable_id: stable_id.clone(),
                     oscal_json_path: format!("catalog.groups[{idx}].controls[{req_idx}]"),
                     oscal_element_id: stable_id.clone(),
                     source_location: SourceLocation {
                         file_path: document.metadata.source_path.clone(),
-                        section_title: req_section.title.clone(),
+                        section_title: Some(req_section.title.clone()),
                         line_number: req.source_line,
                     },
-                };
-                tl.record(trace).map_err(|e| {
-                    ForgeError::CatalogBuild(format!(
-                        "Failed to record trace link for requirement '{stable_id}' in section '{}' at line {}: {e}",
-                        req_section.title,
-                        req.source_line,
-                    ))
-                })?;
+                });
             }
         }
 
@@ -419,6 +426,34 @@ pub fn build_catalog(
             controls,
             groups: vec![],
         });
+    }
+
+    if let Some(trace_links) = trace_links {
+        let mut element_ids = std::collections::HashSet::with_capacity(buffered_trace_links.len());
+        for trace in &buffered_trace_links {
+            if !element_ids.insert(trace.oscal_element_id.clone())
+                || trace_links.by_oscal_element(&trace.oscal_element_id).is_some()
+            {
+                let section_title =
+                    trace.source_location.section_title.as_deref().unwrap_or("<unknown>");
+                return Err(ForgeError::CatalogBuild(format!(
+                    "Failed to record trace link for requirement '{}' in section '{section_title}' at line {}: duplicate OSCAL element id",
+                    trace.requirement_stable_id, trace.source_location.line_number,
+                )));
+            }
+        }
+
+        for trace in buffered_trace_links {
+            let stable_id = trace.requirement_stable_id.clone();
+            let section_title =
+                trace.source_location.section_title.as_deref().unwrap_or("<unknown>").to_string();
+            let line_number = trace.source_location.line_number;
+            trace_links.record(trace).map_err(|e| {
+                ForgeError::CatalogBuild(format!(
+                    "Failed to record trace link for requirement '{stable_id}' in section '{section_title}' at line {line_number}: {e}",
+                ))
+            })?;
+        }
     }
 
     let total_controls: usize = groups.iter().map(|g| g.controls.len()).sum();
@@ -435,6 +470,16 @@ pub fn build_catalog(
         controls: vec![],
         groups,
         back_matter: None,
+    })
+}
+
+fn modality_props(requirement: &PolicyRequirement) -> Vec<OscalProp> {
+    requirement.modality.map_or_else(Vec::new, |modality| {
+        let value = match modality {
+            crate::model::Modality::Normative => "normative",
+            crate::model::Modality::Advisory => "advisory",
+        };
+        vec![OscalProp { name: "modality".to_string(), ns: None, value: value.to_string() }]
     })
 }
 
@@ -455,12 +500,16 @@ fn resolve_group_id(
         return format!("group-{index}");
     }
     let titles = counts.entry(base.clone()).or_default();
+    // Salt by the occurrence ordinal of this exact title so the same title
+    // appearing three or more times still mints distinct IDs (F0609).
+    let occurrence = titles.iter().filter(|seen| *seen == title).count();
     titles.push(title.to_string());
     if titles.len() == 1 {
         base
     } else {
         let mut hasher = Sha256::new();
         hasher.update(title.as_bytes());
+        hasher.update((occurrence as u64).to_le_bytes());
         let hash = hasher.finalize();
         let suffix = format!("{:02x}{:02x}", hash[0], hash[1]);
         format!("{base}-{suffix}")
@@ -471,8 +520,12 @@ fn resolve_group_id(
 ///
 /// The first title to claim a base abbreviation keeps it bare. Subsequent
 /// titles that produce the same base abbreviation receive a hash suffix
-/// derived from their content (first 2 bytes of SHA-256, hex-encoded).
-/// This makes the disambiguation stable regardless of encounter order.
+/// derived from their content (first 2 bytes of SHA-256, hex-encoded), salted
+/// by the title's occurrence ordinal so identical titles colliding three or
+/// more times still receive distinct suffixes (F0609). Output is deterministic
+/// for a fixed section ordering: the first title keeps the bare abbreviation,
+/// while later collisions receive content-derived suffixes. Reordering sections
+/// can therefore change the affected control IDs.
 pub(crate) fn resolve_abbreviation(
     title: &str,
     counts: &mut HashMap<String, Vec<String>>,
@@ -481,6 +534,7 @@ pub(crate) fn resolve_abbreviation(
 
     let base = generate_section_abbreviation(title);
     let titles = counts.entry(base.clone()).or_default();
+    let occurrence = titles.iter().filter(|seen| *seen == title).count();
     titles.push(title.to_string());
 
     if titles.len() == 1 {
@@ -488,6 +542,7 @@ pub(crate) fn resolve_abbreviation(
     } else {
         let mut hasher = Sha256::new();
         hasher.update(title.as_bytes());
+        hasher.update((occurrence as u64).to_le_bytes());
         let hash = hasher.finalize();
         let suffix = format!("{:02x}{:02x}", hash[0], hash[1]);
         debug!(
@@ -504,15 +559,22 @@ pub(crate) fn resolve_abbreviation(
 
 /// Collect all control IDs from a built OSCAL Catalog.
 ///
-/// Iterates `catalog.groups[].controls[].id` in declaration order.
-/// Returns an empty Vec if the catalog has no groups or controls.
-/// Does NOT deduplicate — deduplication is performed by `build_assessment_plan`.
+/// Walks root-level `catalog.controls` and every group recursively (nested
+/// sub-groups included) in declaration order. Returns an empty Vec if the
+/// catalog has no controls. Does NOT deduplicate — deduplication is performed
+/// by `build_assessment_plan`.
 #[must_use]
 pub fn collect_control_ids_from_catalog(catalog: &OscalCatalog) -> Vec<String> {
-    catalog.groups.iter().flat_map(|g| g.controls.iter()).map(|c| c.id.clone()).collect()
+    fn walk(groups: &[OscalGroup], out: &mut Vec<String>) {
+        for group in groups {
+            out.extend(group.controls.iter().map(|c| c.id.clone()));
+            walk(&group.groups, out);
+        }
+    }
+    let mut ids: Vec<String> = catalog.controls.iter().map(|c| c.id.clone()).collect();
+    walk(&catalog.groups, &mut ids);
+    ids
 }
-
-// ─── Tests ──────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -520,6 +582,7 @@ mod tests {
 
     use super::*;
     use crate::model::DocumentMetadata;
+    use crate::oscal::parts::OscalPartName;
 
     // ── Test helpers ────────────────────────────────────
 
@@ -534,6 +597,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -548,6 +612,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -705,15 +770,28 @@ mod tests {
     }
 
     #[test]
-    fn title_truncation() {
+    fn title_preserves_decimal_without_sentence_terminator() {
+        assert_eq!(
+            derive_control_title("Require TLS 1.3 for all communications"),
+            "Require TLS 1.3 for all communications"
+        );
+    }
+
+    #[test]
+    fn title_stops_after_sentence_containing_decimal() {
+        assert_eq!(derive_control_title("Version 2.0 released. More."), "Version 2.0 released.");
+    }
+
+    #[test]
+    fn title_long_text_is_stored_in_full() {
         let long = "Organizations must implement \
             comprehensive security controls including \
             multi-factor authentication and role-based \
             access control for all system users across \
             every department.";
         let title = derive_control_title(long);
-        assert!(title.ends_with("..."));
-        assert_eq!(title.chars().count(), 123);
+        assert_eq!(title, long);
+        assert!(!title.ends_with("..."), "titles must never be clipped (F0007)");
     }
 
     #[test]
@@ -784,8 +862,8 @@ mod tests {
         let d = doc(vec![sec("Data Protection", vec![]), sec("Data Protection!", vec![])]);
         let cat = build_catalog(&d, None).unwrap();
         assert_eq!(cat.groups[0].id, "data-protection");
-        // Hash suffix from SHA-256 of "Data Protection!" → 4d3c
-        assert_eq!(cat.groups[1].id, "data-protection-4d3c");
+        // Hash suffix from SHA-256 of "Data Protection!" → ee55 (occurrence-salted)
+        assert_eq!(cat.groups[1].id, "data-protection-ee55");
     }
 
     #[test]
@@ -806,10 +884,10 @@ mod tests {
         ]);
         let cat = build_catalog(&d, None).unwrap();
         assert_eq!(cat.groups[0].controls[0].id, "POL-AC-001");
-        // Hash suffix from SHA-256 of "Application Configuration" → dd3e
-        assert_eq!(cat.groups[1].controls[0].id, "POL-AC-dd3e-001");
-        // Hash suffix from SHA-256 of "Audit Compliance" → c5c6
-        assert_eq!(cat.groups[2].controls[0].id, "POL-AC-c5c6-001");
+        // Hash suffix from SHA-256 of "Application Configuration" → d11b (occurrence-salted)
+        assert_eq!(cat.groups[1].controls[0].id, "POL-AC-d11b-001");
+        // Hash suffix from SHA-256 of "Audit Compliance" → b4d4
+        assert_eq!(cat.groups[2].controls[0].id, "POL-AC-b4d4-001");
     }
 
     // ── T017: missing stable_id error ───────────────────
@@ -824,6 +902,20 @@ mod tests {
     }
 
     // ── T021: build_catalog full controls ───────────────
+
+    #[test]
+    fn catalog_trace_links_remain_empty_when_duplicate_ids_fail() {
+        let document = doc(vec![sec(
+            "Access Control",
+            vec![req("First requirement.", "duplicate"), req("Second requirement.", "duplicate")],
+        )]);
+        let mut trace_links = TraceLinkCollection::new();
+
+        let result = build_catalog(&document, Some(&mut trace_links));
+
+        assert!(result.is_err());
+        assert!(trace_links.is_empty(), "trace links must not be committed after a failed build");
+    }
 
     #[test]
     fn catalog_controls_mapping() {
@@ -1026,14 +1118,14 @@ mod tests {
 
         // Verify collision resolution with content-based hash suffixes
         assert_eq!(cat.groups[0].controls[0].id, "POL-AC-001");
-        // Hash suffix from SHA-256 of "Application Configuration" → dd3e
-        assert_eq!(cat.groups[1].controls[0].id, "POL-AC-dd3e-001");
-        // Hash suffix from SHA-256 of "Audit Compliance" → c5c6
-        assert_eq!(cat.groups[2].controls[0].id, "POL-AC-c5c6-001");
-        // Hash suffix from SHA-256 of "Authentication Checks" → bc96
-        assert_eq!(cat.groups[3].controls[0].id, "POL-AC-bc96-001");
-        // Hash suffix from SHA-256 of "Authorization Controls" → 634a
-        assert_eq!(cat.groups[4].controls[0].id, "POL-AC-634a-001");
+        // Hash suffix from SHA-256 of "Application Configuration" → d11b (occurrence-salted)
+        assert_eq!(cat.groups[1].controls[0].id, "POL-AC-d11b-001");
+        // Hash suffix from SHA-256 of "Audit Compliance" → b4d4
+        assert_eq!(cat.groups[2].controls[0].id, "POL-AC-b4d4-001");
+        // Hash suffix from SHA-256 of "Authentication Checks" → 97c4
+        assert_eq!(cat.groups[3].controls[0].id, "POL-AC-97c4-001");
+        // Hash suffix from SHA-256 of "Authorization Controls" → 67f9
+        assert_eq!(cat.groups[4].controls[0].id, "POL-AC-67f9-001");
 
         // All 10 IDs unique
         let mut ids: Vec<&str> =
@@ -1069,6 +1161,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -1085,7 +1178,7 @@ mod tests {
         for group in &cat.groups {
             for ctrl in &group.controls {
                 assert!(!ctrl.parts.is_empty(), "Control {} has no parts", ctrl.id);
-                assert_eq!(ctrl.parts[0].name, "statement");
+                assert_eq!(ctrl.parts[0].name, OscalPartName::Statement);
                 assert!(
                     ctrl.parts[0].id.ends_with("_smt"),
                     "Statement part id '{}' does not end with _smt",
@@ -1117,7 +1210,6 @@ mod tests {
 
     #[test]
     fn test_props_omitted_when_empty() {
-        // source_line: 0 means build_control_props returns empty vec
         let r = PolicyRequirement {
             stable_id: Some("u1".to_string()),
             text: "Test requirement.".to_string(),
@@ -1128,6 +1220,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         };
         let d = doc(vec![sec("Test", vec![r])]);
         let cat = build_catalog(&d, None).unwrap();
@@ -1157,12 +1250,12 @@ mod tests {
         assert_eq!(ctrl.parts.len(), 2, "Expected statement + guidance parts");
 
         // First part: statement
-        assert_eq!(ctrl.parts[0].name, "statement");
+        assert_eq!(ctrl.parts[0].name, OscalPartName::Statement);
         assert!(ctrl.parts[0].id.ends_with("_smt"));
         assert_eq!(ctrl.parts[0].prose, "Users shall authenticate.");
 
         // Second part: guidance
-        assert_eq!(ctrl.parts[1].name, "guidance");
+        assert_eq!(ctrl.parts[1].name, OscalPartName::Guidance);
         assert!(
             ctrl.parts[1].id.ends_with("_gdn"),
             "Guidance part id '{}' does not end with _gdn",
@@ -1172,13 +1265,28 @@ mod tests {
     }
 
     #[test]
+    fn sibling_controls_do_not_duplicate_section_guidance() {
+        let d = doc(vec![sec_with_body(
+            "Access Control",
+            "Shared section context.",
+            vec![
+                req("Users shall authenticate.", "u1"),
+                req("Administrators shall review access.", "u2"),
+            ],
+        )]);
+        let catalog = build_catalog(&d, None).unwrap();
+
+        assert!(catalog.groups[0].controls.iter().all(|control| control.parts.len() == 1));
+    }
+
+    #[test]
     fn test_catalog_no_guidance_without_body_text() {
         let d = doc(vec![sec("Access Control", vec![req("Auth required.", "u1")])]);
         let cat = build_catalog(&d, None).unwrap();
         let ctrl = &cat.groups[0].controls[0];
 
         assert_eq!(ctrl.parts.len(), 1, "Expected only statement part when no body_text");
-        assert_eq!(ctrl.parts[0].name, "statement");
+        assert_eq!(ctrl.parts[0].name, OscalPartName::Statement);
     }
 
     // ── T024: JSON serialization OSCAL v1.2.0 shape ─────
@@ -1222,8 +1330,7 @@ mod tests {
 
     #[test]
     fn test_json_props_omitted_without_trace_embedding() {
-        // After WI-17, build_control_props returns vec![] — trace props are
-        // added by embed_trace_in_catalog post-processing, not inline.
+        // Trace props are added by embed_trace_in_catalog post-processing, not inline.
         let d = doc(vec![sec("Access Control", vec![req_with_line("Auth required.", "u1", 42)])]);
         let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };
