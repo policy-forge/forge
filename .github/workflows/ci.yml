@@ -88,19 +88,19 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-audit-tools-${{ hashFiles('.github/workflows/ci.yml') }}
       - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
+        run: cargo install cargo-audit --locked --force
 
       - name: Security audit
         run: cargo audit
 
       - name: Install cargo-deny
-        run: cargo install cargo-deny --locked
+        run: cargo install cargo-deny --locked --force
 
       - name: License and advisory check
         run: cargo deny check
 
       - name: Install cargo-vet
-        run: cargo install cargo-vet --locked
+        run: cargo install cargo-vet --locked --force
 
       - name: Supply-chain audit
         run: cargo vet --locked
