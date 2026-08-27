@@ -26,7 +26,7 @@ recovered the same day (compact-verdict protocol + scouts persisting full report
 | 1 — criticals | F0480, F1054 fixed; F0383 invalid | **done, commit `c3d68d1`** |
 | 2 — high (53) | 52 remediated; F0617 reclassified low by validator | **done, commit `ae31ff5`** — full fmt/clippy/test gate green |
 | 3 — medium (310) | source, CLI, validation, mapping, trace, diff/export, workflow, benchmark, and test-contract fixes | **done, commits `68580d8`, `85798c6`** — full fmt/clippy/test gate green |
-| 4 — low (322) | 321 remediated; F0778 reclassified invalid after type audit | **done, commit pending** — full fmt/clippy/test gate green (2,029 tests) |
+| 4 — low (322) | 321 remediated; F0778 reclassified invalid after type audit | **done, commit `d887143`** — fmt/clippy/test green (2,029 tests); benchmark, audit, and deny green |
 
 ## Remediation grouping (for tranch 2+)
 
