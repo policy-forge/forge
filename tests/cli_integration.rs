@@ -932,13 +932,27 @@ fn exit_code_2_for_no_structure_detected() {
     assert_eq!(output.status.code(), Some(2), "NoStructureDetected should exit with code 2");
 }
 
+// Convert reserves exit code 2 for malformed policy structure; validate reserves exit code 3
+// for an invalid OSCAL document, including a syntactically valid but unsupported root.
 #[test]
-fn exit_code_3_for_validate_command() {
-    let output =
-        forge_bin().arg("validate").arg("any.json").output().expect("Failed to execute process");
+fn exit_code_3_for_invalid_document_validate_command() {
+    let dir = TempDir::new().unwrap();
+    let invalid_document = dir.path().join("invalid-oscal.json");
+    std::fs::write(&invalid_document, r#"{\"not-oscal\": true}"#)
+        .expect("failed to write invalid OSCAL fixture");
 
-    assert!(!output.status.success(), "Expected non-zero exit code");
-    assert_eq!(output.status.code(), Some(3), "Validation error should exit with code 3");
+    let output = forge_bin()
+        .arg("validate")
+        .arg(&invalid_document)
+        .output()
+        .expect("failed to execute process");
+
+    assert_eq!(
+        output.status.code(),
+        Some(3),
+        "invalid OSCAL documents must use validate's exit code 3; stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 // =========================================================================
@@ -1198,7 +1212,10 @@ fn test_convert_max_size_overflow_produces_error() {
     assert!(!output.status.success(), "Expected non-zero exit code for overflow --max-size");
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("too large"), "Should report --max-size value is too large: {stderr}");
+    assert!(
+        stderr.contains("not in 1..=51200"),
+        "Should reject --max-size outside its supported range: {stderr}"
+    );
 }
 
 // =========================================================================

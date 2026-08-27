@@ -10,7 +10,7 @@ use uuid::Uuid;
 use super::manifest::{FrameworkResource, FrameworkRole, ImpactManifest, MappingDependency};
 use super::model::{
     ChangeClass, ChangeSummary, FindingPriority, IdentityMigrationEvidence, ImpactFilters,
-    ImpactFinding, ImpactReport, REPORT_SCHEMA_VERSION, ReasonCode, RequiredAction,
+    ImpactFinding, ImpactReport, REPORT_SCHEMA_VERSION, ReasonCode, ReportStatus, RequiredAction,
     SubjectFingerprint,
 };
 use crate::mapping::inventory::{Inventory, LoadedResource};
@@ -138,7 +138,7 @@ pub fn analyze(
     summary.new_controls = new.inventory.count(SubjectType::Control);
     let mut report = ImpactReport {
         schema_version: REPORT_SCHEMA_VERSION,
-        status: "complete",
+        status: ReportStatus::Complete,
         old: old.evidence,
         new: new.evidence,
         summary,
@@ -159,8 +159,8 @@ pub fn analyze(
             &mut input_paths,
         )?;
     }
-    update_disposition_summary(&mut report);
     apply_filters(&mut report);
+    update_disposition_summary(&mut report);
     Ok((report, input_paths))
 }
 
@@ -185,7 +185,7 @@ fn validate_filters(filters: &ImpactFilters) -> Result<(), ForgeError> {
     }
     if let Some(policy_source) = &filters.policy_source {
         crate::applicability::manifest::validate_report_href("--policy-source", policy_source)
-            .map_err(|error| impact_error(strip_applicability_error_prefix(&error.to_string())))?;
+            .map_err(map_applicability_error)?;
     }
     Ok(())
 }
@@ -275,11 +275,9 @@ fn apply_dispositions(
     report: &mut ImpactReport,
     input_paths: &mut Vec<PathBuf>,
 ) -> Result<(), ForgeError> {
-    crate::io::regular_file_metadata(prior_report_path, "$.prior_report").map_err(impact_error)?;
-    io::check_file_size(prior_report_path, super::disposition::MAX_PRIOR_REPORT_BYTES)
-        .map_err(|error| impact_error(format!("$.prior_report: {error}")))?;
-    let prior_bytes = std::fs::read(prior_report_path)
-        .map_err(|error| impact_error(format!("$.prior_report: {error}")))?;
+    let prior_bytes =
+        io::read_bounded(prior_report_path, super::disposition::MAX_PRIOR_REPORT_BYTES)
+            .map_err(|error| impact_error(format!("$.prior_report: {error}")))?;
     let dispositions = super::disposition::load(disposition_path)?;
     if sha256(&prior_bytes) != dispositions.prior_report_sha256 {
         return Err(impact_error(
@@ -301,12 +299,7 @@ fn apply_dispositions(
     if prior_finding_ids.len() != prior["findings"].as_array().map_or(0, Vec::len) {
         return Err(impact_error("$.prior_report contains duplicate finding IDs"));
     }
-    let current_finding_indexes: BTreeMap<_, _> = report
-        .findings
-        .iter()
-        .enumerate()
-        .map(|(index, finding)| (finding.finding_id.clone(), index))
-        .collect();
+    let current_finding_indexes = current_finding_indexes(&report.findings)?;
     for disposition in dispositions.dispositions {
         if !prior_finding_ids.contains(disposition.finding_id.as_str()) {
             return Err(impact_error(format!(
@@ -324,6 +317,22 @@ fn apply_dispositions(
     input_paths.push(prior_report_path.to_path_buf());
     input_paths.push(disposition_path.to_path_buf());
     Ok(())
+}
+
+fn current_finding_indexes(
+    findings: &[ImpactFinding],
+) -> Result<BTreeMap<String, usize>, ForgeError> {
+    let mut indexes = BTreeMap::new();
+    for (index, finding) in findings.iter().enumerate() {
+        let finding_id = finding.finding_id.clone();
+        if indexes.insert(finding_id.clone(), index).is_some() {
+            return Err(impact_error(format!(
+                "analysis produced duplicate finding id '{}'",
+                bounded(&finding_id)
+            )));
+        }
+    }
+    Ok(indexes)
 }
 
 fn validate_prior_report(prior: &Value, report: &ImpactReport) -> Result<(), ForgeError> {
@@ -392,7 +401,7 @@ fn load_framework_resource(
         inventory: None,
     };
     let loaded = crate::mapping::inventory::load(manifest_dir, path_label, &descriptor)
-        .map_err(|error| impact_error(strip_error_prefix(&error.to_string())))?;
+        .map_err(map_mapping_error)?;
     if loaded.evidence.resolved_catalog_sha256 != resource.expected_resolved_catalog_sha256 {
         return Err(impact_error(format!(
             "{path_label}.expected_resolved_catalog_sha256 does not match the supplied Profile companion"
@@ -422,8 +431,7 @@ fn load_successor_map(
     path: &Path,
     input_paths: &mut Vec<PathBuf>,
 ) -> Result<crate::migration::successor::SuccessorMap, ForgeError> {
-    let successor_map = crate::migration::successor::load(path)
-        .map_err(|error| impact_error(strip_migration_error_prefix(&error.to_string())))?;
+    let successor_map = crate::migration::successor::load(path).map_err(map_migration_error)?;
     input_paths.push(path.to_path_buf());
     Ok(successor_map)
 }
@@ -563,12 +571,11 @@ fn load_applicability(
     portfolio: &MappingPortfolio,
     input_paths: &mut Vec<PathBuf>,
 ) -> Result<crate::applicability::PreparedAnalysis, ForgeError> {
-    crate::io::regular_file_metadata(path, "$.applicability_manifest").map_err(impact_error)?;
     let prepared = crate::applicability::prepare_analysis(
         path,
         crate::applicability::model::ReportFilters::default(),
     )
-    .map_err(|error| impact_error(strip_applicability_error_prefix(&error.to_string())))?;
+    .map_err(map_applicability_error)?;
     if !same_resource_identity(&prepared.report.framework, &old.evidence) {
         return Err(impact_error(
             "$.applicability_manifest references a different old framework baseline",
@@ -610,10 +617,7 @@ fn load_applicability(
             )));
         }
     }
-    for input in &prepared.input_paths {
-        crate::io::regular_file_metadata(input, "$.applicability_manifest dependency")
-            .map_err(impact_error)?;
-    }
+    prepared.verify_input_fingerprints().map_err(map_applicability_error)?;
     input_paths.extend(prepared.input_paths.iter().cloned());
     Ok(prepared)
 }
@@ -642,19 +646,16 @@ fn load_mapping_references(
     for (index, dependency) in dependencies.iter().enumerate() {
         let label = format!("$.mapping_collections[{index}]");
         let path = manifest_dir.join(&dependency.artifact);
-        crate::io::regular_file_metadata(&path, &label).map_err(impact_error)?;
         for previous in &mapping_paths {
             if crate::mapping::paths_alias(&path, previous)
-                .map_err(|error| impact_error(strip_error_prefix(&error.to_string())))?
+                .map_err(|error| impact_error(format!("{label}.artifact: {error}")))?
             {
                 return Err(impact_error(format!(
                     "{label}.artifact aliases another Mapping Collection input"
                 )));
             }
         }
-        io::check_file_size(&path, io::MAX_FILE_SIZE)
-            .map_err(|error| impact_error(format!("{label}.artifact: {error}")))?;
-        let bytes = std::fs::read(&path)
+        let bytes = io::read_bounded(&path, io::MAX_FILE_SIZE)
             .map_err(|error| impact_error(format!("{label}.artifact: {error}")))?;
         let raw_sha256 = sha256(&bytes);
         let value = parse_mapping_value(&bytes, &label)?;
@@ -702,7 +703,7 @@ fn load_mapping_references(
 
 fn parse_mapping_value(bytes: &[u8], label: &str) -> Result<Value, ForgeError> {
     crate::json_strict::parse_value(bytes, &format!("{label}.artifact"), MAPPING_JSON_LIMITS)
-        .map_err(impact_error)
+        .map_err(|error| impact_error(error.to_string()))
 }
 
 fn validate_mapping(label: &str, value: &Value) -> Result<(), ForgeError> {
@@ -766,7 +767,7 @@ fn inventory_mapping(
             &format!("{mapping_path}.policy-resource.href"),
             &policy.href,
         )
-        .map_err(|error| impact_error(strip_applicability_error_prefix(&error.to_string())))?;
+        .map_err(map_applicability_error)?;
         verify_old_resource(&mapping_path, framework, old)?;
         let policy_identity = require_forge_prop(&policy.props, "root-uuid", &mapping_path)?;
         for (map_index, map) in mapping.maps.iter().enumerate() {
@@ -1208,16 +1209,25 @@ fn summarize(changes: &[super::model::ControlChange], findings: &[ImpactFinding]
     summary
 }
 
-fn strip_error_prefix(message: &str) -> String {
-    message.strip_prefix("Control Mapping build error: ").unwrap_or(message).to_string()
+fn map_mapping_error(error: ForgeError) -> ForgeError {
+    match error {
+        ForgeError::MappingBuild(message) => impact_error(message),
+        other => impact_error(other.to_string()),
+    }
 }
 
-fn strip_applicability_error_prefix(message: &str) -> String {
-    message.strip_prefix("Applicability analysis error: ").unwrap_or(message).to_string()
+fn map_applicability_error(error: ForgeError) -> ForgeError {
+    match error {
+        ForgeError::ApplicabilityAnalysis(message) => impact_error(message),
+        other => impact_error(other.to_string()),
+    }
 }
 
-fn strip_migration_error_prefix(message: &str) -> String {
-    message.strip_prefix("Migration analysis error: ").unwrap_or(message).to_string()
+fn map_migration_error(error: ForgeError) -> ForgeError {
+    match error {
+        ForgeError::MigrationError(message) => impact_error(message),
+        other => impact_error(other.to_string()),
+    }
 }
 
 fn sha256(bytes: &[u8]) -> String {
@@ -1234,8 +1244,17 @@ mod tests {
 
     use serde_json::json;
 
-    use super::{MAX_FINDINGS, classify, ensure_finding_slot, parse_mapping_value};
+    use super::{
+        MAX_FINDINGS, apply_filters, classify, current_finding_indexes, ensure_finding_slot,
+        parse_mapping_value, update_disposition_summary, validate_prior_report,
+    };
+    use crate::framework::disposition::{DispositionRecord, DispositionStatus};
+    use crate::framework::model::{
+        ChangeClass, ChangeSummary, FindingPriority, ImpactFilters, ImpactFinding, ImpactReport,
+        ReasonCode, ReportStatus, RequiredAction,
+    };
     use crate::mapping::inventory::Inventory;
+    use crate::mapping::inventory::ResourceEvidence;
     use crate::mapping::manifest::{ResourceManifest, ResourceType, SubjectType};
     use crate::migration::successor::{RelationshipType, SuccessorMap, SuccessorRelationship};
 
@@ -1253,7 +1272,7 @@ mod tests {
             "$.mapping_collections[0]",
         )
         .unwrap_err();
-        assert!(duplicate.to_string().contains("duplicate object key 'mapping-collection'"));
+        assert!(duplicate.to_string().contains("duplicate object key"), "{duplicate}");
 
         let oversized = format!(r#"{{"value":"{}"}}"#, "x".repeat(64 * 1024 + 1));
         let bounded =
@@ -1368,6 +1387,55 @@ mod tests {
         );
     }
 
+    #[test]
+    fn disposition_summary_describes_only_emitted_findings() {
+        let mut visible = test_finding("visible", "group-visible");
+        visible.disposition = None;
+        let mut hidden = test_finding("hidden", "group-hidden");
+        hidden.disposition = Some(DispositionRecord {
+            finding_id: "hidden".to_string(),
+            status: DispositionStatus::Resolved,
+            decided_by: "reviewer".to_string(),
+            decided_at: "2026-08-26T00:00:00Z".to_string(),
+            rationale: "reviewed".to_string(),
+        });
+        let mut report = test_report(vec![visible, hidden]);
+        report.filters.group = Some("group-visible".to_string());
+
+        apply_filters(&mut report);
+        update_disposition_summary(&mut report);
+
+        assert_eq!(report.findings.len(), 1);
+        assert_eq!(report.filtered_out_findings.len(), 1);
+        assert_eq!(report.summary.undispositioned, 1);
+        assert_eq!(report.summary.dispositioned_resolved, 0);
+    }
+
+    #[test]
+    fn duplicate_current_finding_ids_are_rejected() {
+        let error = current_finding_indexes(&[
+            test_finding("duplicate", "group"),
+            test_finding("duplicate", "group"),
+        ])
+        .expect_err("duplicate IDs must fail");
+        assert!(error.to_string().contains("analysis produced duplicate finding id 'duplicate'"));
+    }
+
+    #[test]
+    fn prior_report_from_a_different_resource_pair_is_rejected() {
+        let report = test_report(vec![test_finding("finding", "group")]);
+        let mut prior = serde_json::json!({
+            "schema_version": crate::framework::model::REPORT_SCHEMA_VERSION,
+            "status": "complete",
+            "old": serde_json::to_value(&report.old).expect("serialize old evidence"),
+            "new": serde_json::to_value(&report.new).expect("serialize new evidence"),
+            "findings": []
+        });
+        prior["old"]["raw_sha256"] = serde_json::Value::String("f".repeat(64));
+        let error = validate_prior_report(&prior, &report).expect_err("different pair must fail");
+        assert!(error.to_string().contains("old/new resource evidence does not match"));
+    }
+
     fn inventory(controls: &[(&str, &str)]) -> Inventory {
         let directory = tempfile::tempdir().expect("temporary inventory directory");
         let artifact = directory.path().join("catalog.json");
@@ -1433,6 +1501,57 @@ mod tests {
             approved_by: "reviewer".to_string(),
             approved_at: "2026-08-26T12:00:00Z".to_string(),
             rationale: "Reviewed migration.".to_string(),
+        }
+    }
+
+    fn test_report(findings: Vec<ImpactFinding>) -> ImpactReport {
+        let resource = ResourceEvidence {
+            resource_type: ResourceType::Catalog,
+            href: "catalog.json".to_string(),
+            raw_sha256: "a".repeat(64),
+            root_uuid: "11111111-1111-4111-8111-111111111111".to_string(),
+            document_version: "1.0.0".to_string(),
+            oscal_version: crate::oscal::OSCAL_VERSION.to_string(),
+            resolved_catalog_sha256: None,
+        };
+        ImpactReport {
+            schema_version: crate::framework::model::REPORT_SCHEMA_VERSION,
+            status: ReportStatus::Complete,
+            old: resource.clone(),
+            new: resource,
+            summary: ChangeSummary::default(),
+            filters: ImpactFilters::default(),
+            matched_findings: findings.len(),
+            changes: Vec::new(),
+            findings,
+            filtered_out_findings: Vec::new(),
+            prior_only_dispositions: Vec::new(),
+        }
+    }
+
+    fn test_finding(finding_id: &str, group: &str) -> ImpactFinding {
+        ImpactFinding {
+            finding_id: finding_id.to_string(),
+            priority: FindingPriority::ReviewRequired,
+            reason_code: ReasonCode::ControlContentChanged,
+            required_action: RequiredAction::ReviewControlChange,
+            subject_id: "control".to_string(),
+            change_class: ChangeClass::ContentChanged,
+            old_sha256: None,
+            new_sha256: None,
+            old_subjects: Vec::new(),
+            new_subjects: Vec::new(),
+            migration: None,
+            dependency_path: Vec::new(),
+            framework_groups: vec![group.to_string()],
+            affected_artifact_id: None,
+            dependency_id: None,
+            policy_resource_identity: None,
+            prior_gap_classification: None,
+            prior_decision_state: None,
+            owner: None,
+            policy_sources: Vec::new(),
+            disposition: None,
         }
     }
 }

@@ -533,11 +533,9 @@ fn fingerprint(
     record_dir: &Path,
     require_oscal: bool,
 ) -> Result<ArtifactFingerprint, ForgeError> {
-    validate_input_path(path)?;
-    io::check_file_size(path, io::MAX_FILE_SIZE)
+    reject_symlink_components(path)?;
+    let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
         .map_err(|source| error(format!("artifact '{}': {source}", path.display())))?;
-    let bytes = std::fs::read(path)
-        .map_err(|source| error(format!("cannot read artifact '{}': {source}", path.display())))?;
     let (oscal_type, root_uuid) = if require_oscal {
         let value: Value = serde_json::from_slice(&bytes).map_err(|source| {
             error(format!("generated artifact '{}' is not JSON: {source}", path.display()))

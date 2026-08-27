@@ -4,6 +4,8 @@
 //! end-to-end, verifying the full pipeline from `PolicyDocument` input
 //! to atomized `PolicyDocument` output.
 
+use std::collections::HashSet;
+
 use forge::parse::{atomize_document, atomize_requirement};
 
 mod common;
@@ -54,10 +56,14 @@ fn split_requirements_have_sequential_atom_index_and_shared_source_line() {
     let reqs = &result.sections[0].requirements;
 
     assert_eq!(reqs.len(), 3);
+    let original_text = "All employees must complete security training and must acknowledge the acceptable use policy or must request a waiver";
+    let fragment_texts: HashSet<&str> = reqs.iter().map(|req| req.text.as_str()).collect();
+    assert_eq!(fragment_texts.len(), reqs.len(), "split fragments must have distinct text");
     for (i, req) in reqs.iter().enumerate() {
         assert_eq!(req.atom_index, i);
         assert_eq!(req.source_line, 42);
-        assert!(req.parent_text.is_some());
+        assert!(!req.text.trim().is_empty(), "split fragment must not be empty");
+        assert_eq!(req.parent_text.as_deref(), Some(original_text));
     }
 }
 
@@ -112,6 +118,7 @@ fn atomize_requirement_preserves_text_byte_for_byte() {
     let req = make_req(original_text, 7);
     let result = atomize_requirement(&req).unwrap();
 
+    assert_eq!(result.requirements.len(), 1, "atomic requirement must remain a single requirement");
     assert_eq!(result.requirements[0].text, original_text);
 }
 
@@ -129,6 +136,7 @@ fn all_stable_ids_are_64_char_hex_in_document() {
     );
 
     let result = atomize_document(&doc).unwrap();
+    let mut stable_ids = HashSet::new();
     for section in &result.sections {
         for req in &section.requirements {
             let id = req.stable_id.as_deref().expect("stable_id should be set after atomization");
@@ -138,6 +146,7 @@ fn all_stable_ids_are_64_char_hex_in_document() {
                 "Non-hex char in ID for: {}",
                 req.text
             );
+            assert!(stable_ids.insert(id), "Duplicate stable ID for: {}", req.text);
         }
     }
 }

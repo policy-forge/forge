@@ -590,7 +590,8 @@ fn baseline_check_rejects_resolved_catalog_companion_hash_changes() {
     ]);
     assert_eq!(check.status.code(), Some(2));
     assert!(
-        String::from_utf8_lossy(&check.stderr).contains("expected_resolved_catalog_sha256 mismatch"),
+        String::from_utf8_lossy(&check.stderr)
+            .contains("expected_resolved_catalog_sha256 mismatch"),
         "{}",
         String::from_utf8_lossy(&check.stderr)
     );

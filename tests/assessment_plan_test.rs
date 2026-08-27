@@ -207,7 +207,7 @@ fn normalized_ap_json(ap: &serde_json::Value) -> serde_json::Value {
 
 fn assert_v1_2_3_assessment_plan_schema_valid(ap: &serde_json::Value) {
     let schema: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/schemas/oscal_assessment-plan_schema.json"))
+        serde_json::from_str(include_str!("../schemas/oscal_assessment-plan_schema.json"))
             .expect("official assessment plan schema must parse");
     let validator =
         jsonschema::validator_for(&schema).expect("assessment plan schema must compile");
@@ -321,7 +321,7 @@ fn component_ap_subject_with_component_ref() {
 
 // ─── Schema-adjacent validation: required OSCAL AP fields ────────────────
 
-/// Verify the assessment plan contains all required OSCAL v1.2.0 fields.
+/// Verify the assessment plan contains all required OSCAL v1.2.3 fields.
 #[test]
 fn ap_contains_required_oscal_ap_fields() {
     let fixture = Path::new(FIXTURE);

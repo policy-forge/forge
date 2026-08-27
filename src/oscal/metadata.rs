@@ -51,33 +51,35 @@ pub struct OscalMetadata {
     pub oscal_version: String,
 }
 
-/// Options for overriding auto-generated metadata values (primarily for testing).
+/// Options for overriding auto-generated metadata values.
 ///
-/// Production callers pass `None` to `assemble_metadata`. Test callers
-/// construct `MetadataOptions` with fixed UUID and/or timestamp for
-/// deterministic assertions.
+/// Production callers may set `timestamp_override` to produce reproducible
+/// artifacts. `uuid_override` is intended only for deterministic tests;
+/// production artifact identities should use generated UUID v4 values.
 #[derive(Debug, Default)]
 pub struct MetadataOptions {
-    /// Override the auto-generated UUID v4 (for deterministic tests).
+    /// Override the generated UUID v4 for deterministic test fixtures.
     pub uuid_override: Option<Uuid>,
 
-    /// Override the auto-generated timestamp (for deterministic tests).
+    /// Override the generated timestamp for deterministic tests or reproducible production output.
     pub timestamp_override: Option<DateTime<Utc>>,
 }
 
 /// Assemble OSCAL metadata from a `PolicyDocument`'s `DocumentMetadata`.
 ///
-/// Produces a complete `OscalMetadata` struct with all five required fields.
-/// Uses UUID v4 for artifact identity and current UTC timestamp unless overridden.
+/// Produces all four required serialized metadata fields plus an internal UUID
+/// used for the enclosing artifact root. Uses UUID v4 and the current UTC
+/// timestamp unless overridden.
 ///
 /// # Arguments
 ///
 /// * `doc_metadata` — Reference to the source document's metadata (title, version)
-/// * `options` — Optional overrides for UUID and timestamp (for deterministic tests)
+/// * `options` — Optional UUID and timestamp overrides; timestamp overrides support
+///   reproducible production output, while UUID overrides are for deterministic tests
 ///
 /// # Errors
 ///
-/// Currently infallible. Returns `Result` for API consistency and future extensibility.
+/// Returns [`ForgeError::Validation`] when title or version is empty.
 ///
 /// # Security
 ///
@@ -90,12 +92,14 @@ pub fn assemble_metadata(
     doc_metadata: &DocumentMetadata,
     options: Option<MetadataOptions>,
 ) -> Result<OscalMetadata, ForgeError> {
-    let opts = options.unwrap_or_default();
-
     if doc_metadata.title.is_empty() {
-        tracing::warn!("DocumentMetadata title is empty; OSCAL metadata.title will be empty");
+        return Err(ForgeError::Validation("OSCAL metadata title must not be empty".to_string()));
+    }
+    if doc_metadata.version.is_empty() {
+        return Err(ForgeError::Validation("OSCAL metadata version must not be empty".to_string()));
     }
 
+    let opts = options.unwrap_or_default();
     Ok(OscalMetadata {
         uuid: opts.uuid_override.unwrap_or_else(Uuid::new_v4),
         title: doc_metadata.title.clone(),
@@ -249,14 +253,26 @@ mod tests {
 
     // --- US3: Edge Case Tests ---
 
-    /// T017: Pass empty title, assert metadata.title is empty string (EC-1).
+    /// T017: Empty title is rejected before producing schema-invalid OSCAL metadata.
     #[test]
-    fn assemble_empty_title_passes_through() {
+    fn assemble_empty_title_returns_validation_error() {
         let doc_meta =
             DocumentMetadata { title: String::new(), version: "1.0".into(), ..Default::default() };
 
-        let result = assemble_metadata(&doc_meta, None).unwrap();
-        assert_eq!(result.title, "", "Empty title should pass through unchanged");
+        let error = assemble_metadata(&doc_meta, None).unwrap_err();
+        assert!(matches!(error, ForgeError::Validation(detail) if detail.contains("title")));
+    }
+
+    #[test]
+    fn assemble_empty_version_returns_validation_error() {
+        let doc_meta = DocumentMetadata {
+            title: "Policy".into(),
+            version: String::new(),
+            ..Default::default()
+        };
+
+        let error = assemble_metadata(&doc_meta, None).unwrap_err();
+        assert!(matches!(error, ForgeError::Validation(detail) if detail.contains("version")));
     }
 
     /// T018: Pass version "0.0.0", assert metadata.version equals "0.0.0" (EC-2).

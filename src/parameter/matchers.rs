@@ -93,36 +93,47 @@ impl ParameterMatcher for TimeWindowMatcher {
 /// Minimum threshold pattern: qualifier + numeric value (with optional suffix).
 static THRESHOLD_MIN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"(?i)(?P<qualifier>at\s+least|minimum|no\s+fewer\s+than|no\s+less\s+than)\s+(?P<value>\d+[\w-]*)",
+        r"(?i)\b(?P<qualifier>at\s+least|minimum|no\s+fewer\s+than|no\s+less\s+than)\s+(?P<value>\d+(?:\.\d+)?(?:-bit)?)",
     )
     .expect("THRESHOLD_MIN regex is valid")
 });
 
 /// Maximum threshold pattern: qualifier + numeric value (with optional suffix).
 static THRESHOLD_MAX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)(?P<qualifier>no\s+more\s+than|maximum|at\s+most)\s+(?P<value>\d+[\w-]*)")
+    Regex::new(r"(?i)\b(?P<qualifier>no\s+more\s+than|maximum|at\s+most)\s+(?P<value>\d+(?:\.\d+)?(?:-bit)?)")
         .expect("THRESHOLD_MAX regex is valid")
 });
 
 /// Detects threshold parameters: "at least N", "minimum N", "no more than N".
 pub(crate) struct ThresholdMatcher;
 
+/// Whether a numeric capture ends at a token boundary rather than a date or identifier.
+fn has_numeric_value_boundary(text: &str, end: usize) -> bool {
+    text[end..].chars().next().is_none_or(|character| {
+        !character.is_alphanumeric() && character != '_' && !matches!(character, '-' | '/' | '.')
+    })
+}
 impl ParameterMatcher for ThresholdMatcher {
     fn find_parameters(&self, text: &str) -> Vec<ParameterMatch> {
         let mut matches = Vec::new();
 
-        for cap in THRESHOLD_MIN.captures_iter(text) {
-            let m = cap.get(0).expect("full match always present");
-            let qualifier = cap.name("qualifier").expect("qualifier group").as_str();
-            let value = cap.name("value").expect("value group").as_str().to_string();
-            // Normalize whitespace in qualifier for label
+        for captures in THRESHOLD_MIN.captures_iter(text) {
+            let (Some(full_match), Some(qualifier), Some(value)) =
+                (captures.get(0), captures.name("qualifier"), captures.name("value"))
+            else {
+                continue;
+            };
+            if !has_numeric_value_boundary(text, full_match.end()) {
+                continue;
+            }
+            let value = value.as_str().to_string();
             let qualifier_norm: String =
-                qualifier.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
+                qualifier.as_str().split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
             let label = format!("{qualifier_norm} {value}");
             matches.push(ParameterMatch {
-                start: m.start(),
-                end: m.end(),
-                matched_text: m.as_str().to_string(),
+                start: full_match.start(),
+                end: full_match.end(),
+                matched_text: full_match.as_str().to_string(),
                 value: value.clone(),
                 parameter_type: ParameterType::Threshold,
                 label,
@@ -133,17 +144,23 @@ impl ParameterMatcher for ThresholdMatcher {
             });
         }
 
-        for cap in THRESHOLD_MAX.captures_iter(text) {
-            let m = cap.get(0).expect("full match always present");
-            let qualifier = cap.name("qualifier").expect("qualifier group").as_str();
-            let value = cap.name("value").expect("value group").as_str().to_string();
+        for captures in THRESHOLD_MAX.captures_iter(text) {
+            let (Some(full_match), Some(qualifier), Some(value)) =
+                (captures.get(0), captures.name("qualifier"), captures.name("value"))
+            else {
+                continue;
+            };
+            if !has_numeric_value_boundary(text, full_match.end()) {
+                continue;
+            }
+            let value = value.as_str().to_string();
             let qualifier_norm: String =
-                qualifier.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
+                qualifier.as_str().split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
             let label = format!("{qualifier_norm} {value}");
             matches.push(ParameterMatch {
-                start: m.start(),
-                end: m.end(),
-                matched_text: m.as_str().to_string(),
+                start: full_match.start(),
+                end: full_match.end(),
+                matched_text: full_match.as_str().to_string(),
                 value: value.clone(),
                 parameter_type: ParameterType::Threshold,
                 label,
@@ -154,8 +171,7 @@ impl ParameterMatcher for ThresholdMatcher {
             });
         }
 
-        // Sort by start position (callers may expect sorted output)
-        matches.sort_by_key(|m| m.start);
+        matches.sort_by_key(|parameter_match| parameter_match.start);
         matches
     }
 }
@@ -174,28 +190,42 @@ static FREQUENCY: LazyLock<Regex> = LazyLock::new(|| {
 /// Detects frequency parameters: "annually", "quarterly", "at least monthly".
 pub(crate) struct FrequencyMatcher;
 
+/// Reject matches that begin inside hyphenated or alphabetic compound cadence terms.
+fn is_compound_frequency_suffix(text: &str, start: usize) -> bool {
+    text[..start]
+        .chars()
+        .next_back()
+        .is_some_and(|character| character == '-' || character.is_ascii_alphabetic())
+}
 impl ParameterMatcher for FrequencyMatcher {
     fn find_parameters(&self, text: &str) -> Vec<ParameterMatch> {
         FREQUENCY
             .captures_iter(text)
-            .map(|cap| {
-                let m = cap.get(0).expect("full match always present");
-                let has_prefix = cap.name("prefix").is_some_and(|p| !p.as_str().is_empty());
-                let value = cap.name("value").expect("value group").as_str().to_lowercase();
+            .filter_map(|captures| {
+                let (Some(full_match), Some(value)) = (captures.get(0), captures.name("value"))
+                else {
+                    return None;
+                };
+                if is_compound_frequency_suffix(text, full_match.start()) {
+                    return None;
+                }
+                let has_prefix =
+                    captures.name("prefix").is_some_and(|prefix| !prefix.as_str().is_empty());
+                let value = value.as_str().to_lowercase();
                 let (label, constraint_type) = if has_prefix {
                     (format!("at least {value}"), ConstraintType::Minimum)
                 } else {
                     (value.clone(), ConstraintType::Exact)
                 };
-                ParameterMatch {
-                    start: m.start(),
-                    end: m.end(),
-                    matched_text: m.as_str().to_string(),
+                Some(ParameterMatch {
+                    start: full_match.start(),
+                    end: full_match.end(),
+                    matched_text: full_match.as_str().to_string(),
                     value: value.clone(),
                     parameter_type: ParameterType::Frequency,
                     label,
                     constraint: Some(ParameterConstraint { constraint_type, value }),
-                }
+                })
             })
             .collect()
     }
@@ -587,5 +617,28 @@ mod tests {
         let _ = th.find_parameters(&adversarial);
         let _ = fr.find_parameters(&adversarial);
         let _ = qu.find_parameters(&adversarial);
+    }
+
+    #[test]
+    fn threshold_rejects_qualifiers_embedded_in_identifiers() {
+        let matcher = ThresholdMatcher;
+        assert!(matcher.find_parameters("MAXIMUMLoginAge 3").is_empty());
+        assert!(matcher.find_parameters("prefixminimum 4").is_empty());
+    }
+
+    #[test]
+    fn threshold_rejects_hyphenated_and_date_values() {
+        let matcher = ThresholdMatcher;
+        assert!(matcher.find_parameters("no less than 90-180 days").is_empty());
+        assert!(matcher.find_parameters("at most 12/31/2026").is_empty());
+        assert_eq!(matcher.find_parameters("minimum 128-bit")[0].value, "128-bit");
+    }
+
+    #[test]
+    fn frequency_rejects_compound_cadence_suffixes() {
+        let matcher = FrequencyMatcher;
+        assert!(matcher.find_parameters("Backups run semi-monthly").is_empty());
+        assert!(matcher.find_parameters("Reviews are bi-weekly").is_empty());
+        assert_eq!(matcher.find_parameters("Reviews are monthly")[0].value, "monthly");
     }
 }

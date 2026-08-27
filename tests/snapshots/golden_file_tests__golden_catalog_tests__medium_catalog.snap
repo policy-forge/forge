@@ -402,7 +402,7 @@ expression: normalized
                 "value": "27"
               }
             ],
-            "title": "Data in transit must be protected using TLS 1."
+            "title": "Data in transit must be protected using TLS 1.2 or higher"
           },
           {
             "id": "POL-DP-004",

@@ -16,6 +16,7 @@ use crate::oscal_cli::{OscalCliDetect, OscalCliInvoke, ResolveArgs};
 ///
 /// * `ForgeError::FileNotFound` — input file does not exist.
 /// * `ForgeError::ResolveInputNotJson` — input file is not `.json`.
+/// * `ForgeError::InvalidArgument` — input is not a regular file.
 /// * `ForgeError::OscalCliNotFound` — oscal-cli not on PATH.
 /// * `ForgeError::OscalCliNotFunctional` — oscal-cli found but broken.
 /// * `ForgeError::OscalCliExecution` — oscal-cli exited non-zero.
@@ -64,6 +65,12 @@ pub fn execute(
         }
         _ => ForgeError::Io(e),
     })?;
+    if !std::fs::metadata(&canonical_input).map_err(ForgeError::Io)?.is_file() {
+        return Err(ForgeError::InvalidArgument(format!(
+            "input '{}' is not a regular file",
+            canonical_input.display()
+        )));
+    }
 
     // Derive default output path if not provided
     let output_path = match output {
@@ -73,34 +80,38 @@ pub fn execute(
 
     ensure_output_differs_from_input(&output_path, &canonical_input)?;
 
-    // Detect oscal-cli
+    // Detect oscal-cli. The outcome carries only data valid for its state.
     let cli_info = detector.detect();
-
-    if !cli_info.available {
+    if !cli_info.is_available() {
         return Err(ForgeError::OscalCliNotFound);
     }
-
-    if !cli_info.functional {
+    if !cli_info.is_functional() {
         return Err(ForgeError::OscalCliNotFunctional {
-            path: cli_info.executable_path.unwrap_or_else(|| PathBuf::from("oscal-cli")),
-            detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
+            path: cli_info
+                .executable_path()
+                .map_or_else(|| PathBuf::from("oscal-cli"), Path::to_path_buf),
+            detail: cli_info.detail().unwrap_or("oscal-cli version check failed").to_string(),
         });
     }
+    let executable_path =
+        cli_info.executable_path().map(Path::to_path_buf).ok_or(ForgeError::OscalCliNotFound)?;
+    let version = cli_info
+        .version()
+        .ok_or_else(|| ForgeError::OscalCliNotFunctional {
+            path: executable_path.clone(),
+            detail: "oscal-cli version check produced no version".to_string(),
+        })?
+        .to_string();
 
     // SEC-6: Log detected binary path
     info!(
-        oscal_cli_path = %cli_info.executable_path.as_deref().unwrap_or(Path::new("unknown")).display(),
-        oscal_cli_version = cli_info.version.as_deref().unwrap_or("unknown"),
+        oscal_cli_path = %executable_path.display(),
+        oscal_cli_version = %version,
         "Detected oscal-cli"
     );
 
     // Build invoker and resolve
-    let invoker = ProcessInvoker::new(cli_info.executable_path.ok_or_else(|| {
-        ForgeError::OscalCliNotFunctional {
-            path: PathBuf::from("oscal-cli"),
-            detail: "oscal-cli reported as functional but has no executable path".to_string(),
-        }
-    })?);
+    let invoker = ProcessInvoker::new(executable_path);
 
     let resolve_args = ResolveArgs {
         profile_path: canonical_input,
@@ -127,26 +138,24 @@ pub fn execute(
 /// * `ForgeError::OscalCliNotFound` — oscal-cli not on PATH (exit code 4).
 /// * `ForgeError::OscalCliNotFunctional` — oscal-cli found but broken (exit code 4).
 fn execute_check(detector: &dyn OscalCliDetect) -> Result<(), ForgeError> {
-    let info = detector.detect();
-
-    if !info.available {
-        // Error propagates to main.rs which prints to stderr; no stdout message needed.
+    let cli_info = detector.detect();
+    if !cli_info.is_available() {
         return Err(ForgeError::OscalCliNotFound);
     }
-
-    if !info.functional {
-        let path = info.executable_path.unwrap_or_else(|| PathBuf::from("unknown"));
+    if !cli_info.is_functional() {
         return Err(ForgeError::OscalCliNotFunctional {
-            path,
-            detail: "oscal-cli --version check failed (Java may be missing)".to_string(),
+            path: cli_info
+                .executable_path()
+                .map_or_else(|| PathBuf::from("oscal-cli"), Path::to_path_buf),
+            detail: cli_info.detail().unwrap_or("oscal-cli version check failed").to_string(),
         });
     }
-
-    println!(
-        "oscal-cli: {} ({})",
-        info.version.as_deref().unwrap_or("unknown version"),
-        info.executable_path.as_deref().unwrap_or(Path::new("unknown")).display()
-    );
+    let executable_path = cli_info.executable_path().ok_or(ForgeError::OscalCliNotFound)?;
+    let version = cli_info.version().ok_or_else(|| ForgeError::OscalCliNotFunctional {
+        path: executable_path.to_path_buf(),
+        detail: "oscal-cli version check produced no version".to_string(),
+    })?;
+    println!("oscal-cli: {version} ({})", executable_path.display());
     Ok(())
 }
 
@@ -221,6 +230,19 @@ mod tests {
     }
 
     #[test]
+    fn input_directory_returns_invalid_argument() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let directory = temp_dir.path().join("profile.json");
+        std::fs::create_dir(&directory).unwrap();
+
+        let error = execute(Some(&directory), None, false, 60, None)
+            .expect_err("directories must not be sent to oscal-cli");
+
+        assert!(matches!(error, ForgeError::InvalidArgument(_)));
+        assert!(error.to_string().contains(&directory.display().to_string()));
+    }
+
+    #[test]
     fn output_aliasing_input_is_rejected() {
         let input = tempfile::NamedTempFile::with_suffix(".json").unwrap();
         let canonical_input = input.path().canonicalize().unwrap();
@@ -251,12 +273,10 @@ mod tests {
         struct MockDetector;
         impl OscalCliDetect for MockDetector {
             fn detect(&self) -> crate::oscal_cli::OscalCliInfo {
-                crate::oscal_cli::OscalCliInfo {
-                    available: true,
-                    functional: true,
-                    version: Some("1.0.3".to_string()),
-                    executable_path: Some(PathBuf::from("/usr/local/bin/oscal-cli")),
-                }
+                crate::oscal_cli::OscalCliInfo::functional(
+                    PathBuf::from("/usr/local/bin/oscal-cli"),
+                    "1.0.3".to_string(),
+                )
             }
         }
         let result = execute_check(&MockDetector);
@@ -268,12 +288,10 @@ mod tests {
         struct MockDetector;
         impl OscalCliDetect for MockDetector {
             fn detect(&self) -> crate::oscal_cli::OscalCliInfo {
-                crate::oscal_cli::OscalCliInfo {
-                    available: true,
-                    functional: false,
-                    version: None,
-                    executable_path: Some(PathBuf::from("/usr/bin/oscal-cli")),
-                }
+                crate::oscal_cli::OscalCliInfo::not_functional(
+                    PathBuf::from("/usr/bin/oscal-cli"),
+                    "version check failed".to_string(),
+                )
             }
         }
         let result = execute_check(&MockDetector);

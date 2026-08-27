@@ -66,6 +66,9 @@ pub fn execute_check(
 
 /// Create a deterministic, unapproved manifest skeleton with inventories and fingerprints.
 ///
+/// Profile companions start with `resolved_catalog_attestation: false`; a reviewer MUST set it to
+/// `true` only after reviewing the resolved Catalog before using the scaffold with `build` or `check`.
+///
 /// # Errors
 ///
 /// Returns [`ForgeError`] for invalid resources, missing Profile companions, unsafe aliases, or
@@ -127,10 +130,8 @@ fn scaffold_resource(
     output: Option<&Path>,
     label: &str,
 ) -> Result<manifest::ResourceManifest, ForgeError> {
-    io::check_file_size(path, io::MAX_FILE_SIZE)
-        .map_err(|error| mapping_error(format!("{label} resource: {error}")))?;
     let bytes =
-        std::fs::read(path).map_err(|error| mapping_error(format!("{label} resource: {error}")))?;
+        inventory::read_bounded_file(path, io::MAX_FILE_SIZE, &format!("{label} resource"))?;
     let value: serde_json::Value = serde_json::from_slice(&bytes)
         .map_err(|error| mapping_error(format!("{label} resource is not JSON: {error}")))?;
     let resource_type = match validate::detect_model_type(&value)
@@ -152,10 +153,11 @@ fn scaffold_resource(
     }
     let expected_resolved_catalog_sha256 = resolved_catalog
         .map(|companion| {
-            io::check_file_size(companion, io::MAX_FILE_SIZE)
-                .map_err(|error| mapping_error(format!("{label} resolved Catalog: {error}")))?;
-            let bytes = std::fs::read(companion)
-                .map_err(|error| mapping_error(format!("{label} resolved Catalog: {error}")))?;
+            let bytes = inventory::read_bounded_file(
+                companion,
+                io::MAX_FILE_SIZE,
+                &format!("{label} resolved Catalog"),
+            )?;
             Ok::<_, ForgeError>(format!("{:x}", Sha256::digest(&bytes)))
         })
         .transpose()?;
@@ -185,7 +187,8 @@ fn scaffold_resource(
 }
 
 fn manifest_relative_path(path: &Path, output: Option<&Path>) -> Result<PathBuf, ForgeError> {
-    crate::io::manifest_relative_path(path, output, "mapping resource").map_err(mapping_error)
+    crate::io::manifest_relative_path(path, output, "mapping resource")
+        .map_err(|error| mapping_error(format!("mapping resource: {error}")))
 }
 
 fn safe_file_label(path: &Path) -> String {
@@ -198,10 +201,8 @@ fn prepare(
     baseline_path: Option<&Path>,
     include_excerpts: bool,
 ) -> Result<PreparedBuild, ForgeError> {
-    io::check_file_size(manifest_path, manifest::MAX_MANIFEST_BYTES)
-        .map_err(|error| mapping_error(format!("manifest: {error}")))?;
-    let manifest_bytes = std::fs::read(manifest_path)
-        .map_err(|error| mapping_error(format!("manifest: {error}")))?;
+    let manifest_bytes =
+        inventory::read_bounded_file(manifest_path, manifest::MAX_MANIFEST_BYTES, "manifest")?;
     let manifest = manifest::parse(&manifest_bytes)?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
     let source = inventory::load(manifest_dir, "$.mapping.source", &manifest.mapping.source)?;
@@ -214,7 +215,6 @@ fn prepare(
         &artifact_value,
         crate::OscalModelType::Mapping,
     )?;
-    product.report.validation.mapping_schema_valid = true;
     if let Some(path) = baseline_path {
         baseline::analyze(
             path,
@@ -224,6 +224,7 @@ fn prepare(
             &mut product.report,
         )?;
     }
+    product.finalize_report(true);
     let mut artifact_json = serde_json::to_string_pretty(&product.artifact)
         .map_err(|error| mapping_error(format!("Mapping JSON serialization failed: {error}")))?;
     artifact_json.push('\n');
@@ -258,7 +259,7 @@ fn render_text_report(report: &model::MappingReport) -> String {
     let mut output = String::new();
     output.push_str("FORGE Control Mapping review report\n");
     let _ = writeln!(output, "schema: {}", report.schema_version);
-    let _ = writeln!(output, "status: {}", report.status);
+    let _ = writeln!(output, "status: {}", report.status.unwrap_or("incomplete"));
     let scope = match report.scope {
         manifest::ReviewScope::ControlOnly => "control-only",
         manifest::ReviewScope::ControlPlusStatement => "control-plus-statement",
@@ -372,13 +373,16 @@ fn review_required(report: &model::MappingReport, fail_on: &MappingFailOn) -> bo
         MappingFailOn::Never => false,
         MappingFailOn::Any => !report.findings.is_empty(),
         MappingFailOn::Stale => report.findings.iter().any(|finding| {
-            matches!(finding.code.as_str(), "stale_reference" | "subject_type_changed")
+            matches!(
+                finding.code.as_str(),
+                baseline::CODE_STALE_REFERENCE | baseline::CODE_SUBJECT_TYPE_CHANGED
+            )
         }),
         MappingFailOn::SubjectChange => {
-            report.findings.iter().any(|finding| finding.code == "subject_changed")
+            report.findings.iter().any(|finding| finding.code == baseline::CODE_SUBJECT_CHANGED)
         }
         MappingFailOn::GapIncrease => {
-            report.findings.iter().any(|finding| finding.code == "new_gap")
+            report.findings.iter().any(|finding| finding.code == baseline::CODE_NEW_GAP)
         }
     }
 }
@@ -518,4 +522,71 @@ fn escape(value: &str) -> String {
 
 fn mapping_error(message: impl Into<String>) -> ForgeError {
     ForgeError::MappingBuild(message.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn report_with(code: &str) -> model::MappingReport {
+        let evidence = inventory::ResourceEvidence {
+            resource_type: manifest::ResourceType::Catalog,
+            href: "resource.json".to_string(),
+            raw_sha256: "a".repeat(64),
+            root_uuid: "00000000-0000-4000-8000-000000000000".to_string(),
+            document_version: "1.0.0".to_string(),
+            oscal_version: crate::oscal::OSCAL_VERSION.to_string(),
+            resolved_catalog_sha256: None,
+        };
+        let participation = model::Participation {
+            eligible: 0,
+            referenced: 0,
+            ratio: 0.0,
+            unmapped_ids: Vec::new(),
+        };
+        model::MappingReport {
+            schema_version: model::REPORT_SCHEMA_VERSION,
+            status: Some("complete"),
+            source: evidence.clone(),
+            target: evidence,
+            scope: manifest::ReviewScope::ControlOnly,
+            source_controls: participation.clone(),
+            target_controls: participation.clone(),
+            source_statements: participation.clone(),
+            target_statements: participation,
+            validation: model::ValidationSummary {
+                manifest_valid: true,
+                resources_valid: true,
+                references_valid: true,
+                mapping_schema_valid: true,
+            },
+            findings: vec![model::ImpactFinding {
+                severity: model::FindingSeverity::Review,
+                code: code.to_string(),
+                path: "$.mapping".to_string(),
+                message: "fixture".to_string(),
+                old_fingerprint: None,
+                new_fingerprint: None,
+            }],
+            author_estimates: Vec::new(),
+            excerpts: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn fail_on_gates_follow_emitted_baseline_codes() {
+        assert!(review_required(
+            &report_with(baseline::CODE_STALE_REFERENCE),
+            &MappingFailOn::Stale
+        ));
+        assert!(review_required(
+            &report_with(baseline::CODE_SUBJECT_TYPE_CHANGED),
+            &MappingFailOn::Stale
+        ));
+        assert!(review_required(
+            &report_with(baseline::CODE_SUBJECT_CHANGED),
+            &MappingFailOn::SubjectChange
+        ));
+        assert!(review_required(&report_with(baseline::CODE_NEW_GAP), &MappingFailOn::GapIncrease));
+    }
 }

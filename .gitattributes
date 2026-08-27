@@ -14,15 +14,11 @@
 *.sh text eol=lf
 
 # Official NIST OSCAL release assets are byte-pinned by the provenance manifest.
-# Do not normalize or whitespace-check their upstream formatting.
-schemas/oscal_catalog_schema.json -text -whitespace
-schemas/oscal_component_schema.json -text -whitespace
-schemas/oscal_profile_schema.json -text -whitespace
-tests/fixtures/schemas/* -text -whitespace
-tests/fixtures/xsd/oscal_catalog_schema.xsd -text -whitespace
-tests/fixtures/xsd/oscal_component_schema.xsd -text -whitespace
-tests/fixtures/xsd/oscal_profile_schema.xsd -text -whitespace
-tests/fixtures/xsd/oscal_complete_schema.xsd -text -whitespace
+# This block must remain after *.json text eol=lf: gitattributes is last-match-wins.
+# Do not normalize their upstream formatting.
+schemas/oscal_*.json -text
+tests/fixtures/schemas/** -text
+tests/fixtures/xsd/*.xsd -text
 
 # Force CRLF for Windows batch scripts
 *.bat text eol=crlf

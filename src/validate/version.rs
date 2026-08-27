@@ -81,7 +81,7 @@ pub fn inspect_oscal_version(json: &Value, model_type: OscalModelType) -> Versio
 
         let safe_declared = escape_for_diagnostic(declared);
         return VersionInspection {
-            declared: Some(safe_declared.clone()),
+            declared: Some(declared.to_string()),
             supported: false,
             error: Some(version_error(
                 path,
@@ -111,19 +111,23 @@ pub fn inspect_oscal_version(json: &Value, model_type: OscalModelType) -> Versio
 }
 
 fn version_error(path: String, message: String, actual: String) -> ValidationError {
-    ValidationError {
-        category: ValidationErrorCategory::Schema,
+    ValidationError::new(
+        ValidationErrorCategory::Schema,
         path,
         message,
-        expected: format!(
+        format!(
             "a canonical OSCAL version from {MIN_SUPPORTED_OSCAL_VERSION} through {SCHEMA_VERSION_USED}"
         ),
         actual,
-    }
+    )
 }
 
 fn escape_for_diagnostic(value: &str) -> String {
-    value.chars().take(100).flat_map(char::escape_default).collect()
+    // Escape first: escaping a control character can expand it substantially.
+    super::formatter::truncate_value(
+        &value.chars().flat_map(char::escape_default).collect::<String>(),
+        100,
+    )
 }
 
 #[cfg(test)]
@@ -188,11 +192,13 @@ mod tests {
     fn invalid_declaration_is_bounded_in_report_context() {
         let declaration = format!("{}\n{}", "x".repeat(99), "y".repeat(500));
         let json = serde_json::json!({
-            "catalog": {"metadata": {"oscal-version": declaration}}
+            "catalog": {"metadata": {"oscal-version": declaration.clone()}}
         });
         let inspection = inspect_oscal_version(&json, OscalModelType::Catalog);
         let declared = inspection.declared.expect("string declaration should be reported");
-        assert_eq!(declared, format!("{}\\n", "x".repeat(99)));
-        assert!(!declared.contains('\n'));
+        assert_eq!(declared, declaration);
+        let error = inspection.error.expect("invalid declaration must produce an error");
+        assert!(error.actual().chars().count() <= 103);
+        assert!(!error.actual().contains('\n'));
     }
 }

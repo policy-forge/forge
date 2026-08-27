@@ -10,10 +10,11 @@ pub fn collect_remarks(value: &serde_json::Value, collected: &mut Vec<String>) {
     match value {
         serde_json::Value::Object(map) => {
             for (key, val) in map {
-                if key == "remarks"
-                    && let Some(s) = val.as_str()
-                {
-                    collected.push(s.to_string());
+                if key == "remarks" {
+                    let Some(remarks) = val.as_str() else {
+                        panic!("remarks value must be a string, got {val}");
+                    };
+                    collected.push(remarks.to_string());
                 }
                 collect_remarks(val, collected);
             }
@@ -24,5 +25,33 @@ pub fn collect_remarks(value: &serde_json::Value, collected: &mut Vec<String>) {
             }
         }
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::collect_remarks;
+
+    #[test]
+    fn collects_nested_string_remarks() {
+        let value = serde_json::json!({
+            "remarks": "root",
+            "nested": [{"remarks": "child"}],
+        });
+        let mut collected = Vec::new();
+
+        collect_remarks(&value, &mut collected);
+
+        collected.sort();
+        assert_eq!(collected, vec!["child", "root"]);
+    }
+
+    #[test]
+    #[should_panic(expected = "remarks value must be a string")]
+    fn rejects_non_string_remarks() {
+        let value = serde_json::json!({"remarks": ["not a string"]});
+        let mut collected = Vec::new();
+
+        collect_remarks(&value, &mut collected);
     }
 }

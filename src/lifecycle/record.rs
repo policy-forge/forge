@@ -593,13 +593,9 @@ fn validate_approval(
     // `/1` records and their migrated `/2` legacy-event windows cannot gain
     // historical author assertions retroactively; preserve their established
     // read/migrate contract. New `/2` approvals still fail closed (F0490).
-    let require_author_evidence =
-        record.schema_version == SCHEMA_VERSION && record.history[event_index].legacy_event_id.is_none();
-    validate_separation(
-        &record.approval_policy.separation,
-        &evidence,
-        require_author_evidence,
-    )
+    let require_author_evidence = record.schema_version == SCHEMA_VERSION
+        && record.history[event_index].legacy_event_id.is_none();
+    validate_separation(&record.approval_policy.separation, &evidence, require_author_evidence)
 }
 
 fn validate_separation(
@@ -1083,10 +1079,7 @@ mod tests {
         );
         sign_events(&mut record);
 
-        assert!(
-            validate(&record).is_ok(),
-            "legacy evidence must remain readable/migratable"
-        );
+        assert!(validate(&record).is_ok(), "legacy evidence must remain readable/migratable");
     }
 
     #[test]

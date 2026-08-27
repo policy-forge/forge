@@ -21,6 +21,7 @@ pub const OSCAL_NS: &str = "http://csrc.nist.gov/ns/oscal/1.0";
 
 /// XML indentation: 2 spaces per level.
 const INDENT_SIZE: usize = 2;
+const MAX_PART_DEPTH: usize = 128;
 
 // ─── Error Mapping ───────────────────────────────────────────────────────
 
@@ -64,11 +65,20 @@ fn write_metadata<W: Write>(
 ///
 /// Writes: `<prop name="..." value="..." [ns="..."] />`
 fn write_prop<W: Write>(writer: &mut Writer<W>, prop: &OscalProp) -> Result<(), ForgeError> {
+    write_prop_fields(writer, &prop.name, &prop.value, prop.ns.as_deref())
+}
+
+fn write_prop_fields<W: Write>(
+    writer: &mut Writer<W>,
+    name: &str,
+    value: &str,
+    ns: Option<&str>,
+) -> Result<(), ForgeError> {
     let mut elem = BytesStart::new("prop");
-    elem.push_attribute(("name", prop.name.as_str()));
-    elem.push_attribute(("value", prop.value.as_str()));
-    if let Some(ns) = &prop.ns {
-        elem.push_attribute(("ns", ns.as_str()));
+    elem.push_attribute(("name", name));
+    elem.push_attribute(("value", value));
+    if let Some(ns) = ns {
+        elem.push_attribute(("ns", ns));
     }
     writer.write_event(Event::Empty(elem)).map_err(map_xml_err)?;
     Ok(())
@@ -107,6 +117,7 @@ fn write_param<W: Write>(
 
 /// Write a single OSCAL link element.
 ///
+/// The shared model requires a relation, so every serialized link emits `rel`.
 /// When `link.text` is `None`: emit self-closing `<link href="..." rel="..." />`
 /// using `Event::Empty`.
 /// When `link.text` is `Some(t)`: emit `<link href="..." rel="..."><text>t</text></link>`
@@ -131,32 +142,36 @@ fn write_link<W: Write>(writer: &mut Writer<W>, link: &OscalLink) -> Result<(), 
 
 /// Write a single OSCAL part element with children in XSD order.
 ///
-/// Writes: `<part id="..." name="...">` → prop*, `<p>prose</p>`, part* → `</part>`
-///
-/// # Recursion
-///
-/// Recurses for nested sub-parts (position 4). Practical policy documents
-/// rarely exceed 5–10 levels of nesting; the default stack can accommodate
-/// thousands of levels safely.
+/// Writes: `<part id="..." name="...">` → prop*, `<p>prose</p>`, part* → `</part>`.
+/// Nested parts are limited to `MAX_PART_DEPTH` levels to prevent stack exhaustion.
 fn write_part<W: Write>(writer: &mut Writer<W>, part: &OscalPart) -> Result<(), ForgeError> {
+    write_part_bounded(writer, part, 1)
+}
+
+fn write_part_bounded<W: Write>(
+    writer: &mut Writer<W>,
+    part: &OscalPart,
+    depth: usize,
+) -> Result<(), ForgeError> {
+    if depth > MAX_PART_DEPTH {
+        return Err(ForgeError::Serialization(format!(
+            "part nesting exceeds maximum depth {MAX_PART_DEPTH}"
+        )));
+    }
+
     let mut elem = BytesStart::new("part");
     elem.push_attribute(("id", part.id.as_str()));
     elem.push_attribute(("name", part.name.as_str()));
     writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
 
-    // Props in XSD order (position 2)
     for prop in &part.props {
         write_prop(writer, prop)?;
     }
-
-    // Prose as <p> element (position 3 — blockElementGroup)
     if !part.prose.is_empty() {
         write_text_element(writer, "p", &part.prose)?;
     }
-
-    // Nested parts (position 4)
     for sub_part in &part.parts {
-        write_part(writer, sub_part)?;
+        write_part_bounded(writer, sub_part, depth + 1)?;
     }
 
     writer.write_event(Event::End(BytesEnd::new("part"))).map_err(map_xml_err)?;
@@ -203,10 +218,7 @@ fn write_resource<W: Write>(
 
     // Props (position 3)
     for prop in &resource.props {
-        let mut prop_elem = BytesStart::new("prop");
-        prop_elem.push_attribute(("name", prop.name.as_str()));
-        prop_elem.push_attribute(("value", prop.value.as_str()));
-        writer.write_event(Event::Empty(prop_elem)).map_err(map_xml_err)?;
+        write_prop_fields(writer, &prop.name, &prop.value, prop.ns.as_deref())?;
     }
 
     // Citation (position 5)
@@ -976,14 +988,16 @@ mod tests {
             props: vec![Prop {
                 name: "url-status".to_string(),
                 value: "unvalidated".to_string(),
-                ns: None,
+                ns: Some("https://example.com/ns".to_string()),
             }],
             citation: None,
             rlinks: vec![Rlink { href: "not-a-url".to_string(), media_type: None }],
         };
         write_resource(&mut writer, &resource).unwrap();
         let xml = String::from_utf8(buf).unwrap();
-        assert!(xml.contains(r#"<prop name="url-status" value="unvalidated"/>"#));
+        assert!(xml.contains(
+            r#"<prop name="url-status" value="unvalidated" ns="https://example.com/ns"/>"#
+        ));
     }
 
     #[test]
@@ -1579,6 +1593,31 @@ mod tests {
         assert!(xml.contains("Level 2"));
         assert!(xml.contains("Level 3"));
         assert!(xml.contains(r#"id="deep_smt.a.1""#));
+    }
+
+    #[test]
+    fn part_nesting_over_limit_returns_serialization_error() {
+        let mut part = OscalPart {
+            id: "leaf".to_string(),
+            name: "item".to_string(),
+            prose: String::new(),
+            props: vec![],
+            parts: vec![],
+        };
+        for depth in 0..MAX_PART_DEPTH {
+            part = OscalPart {
+                id: format!("part-{depth}"),
+                name: "item".to_string(),
+                prose: String::new(),
+                props: vec![],
+                parts: vec![part],
+            };
+        }
+
+        let mut buffer = Vec::new();
+        let mut writer = Writer::new(&mut buffer);
+        let error = write_part(&mut writer, &part).unwrap_err();
+        assert!(error.to_string().contains("part nesting exceeds maximum depth"));
     }
 
     // ══════════════════════════════════════════════════════

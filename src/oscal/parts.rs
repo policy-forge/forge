@@ -72,9 +72,10 @@ pub struct OscalProp {
 
 // ─── Builder Functions ──────────────────────────────────────────────────
 
-/// Generate a part ID from a control ID and a suffix.
+/// Generate a schema-safe part ID from a control ID and a suffix.
 ///
-/// Convention: `{control-id}_{suffix}`
+/// Non-identifier characters are replaced with `-`, and IDs that do not begin
+/// with an ASCII letter are prefixed with `id-`.
 ///
 /// # Examples
 ///
@@ -86,7 +87,25 @@ pub struct OscalProp {
 /// ```
 #[must_use]
 pub fn generate_part_id(control_id: &str, suffix: &str) -> String {
-    format!("{control_id}_{suffix}")
+    sanitize_oscal_id(&format!("{control_id}_{suffix}"))
+}
+
+/// Sanitize an OSCAL identifier to its NCName-compatible subset.
+fn sanitize_oscal_id(raw: &str) -> String {
+    let mut sanitized = String::with_capacity(raw.len());
+    for character in raw.chars() {
+        if character.is_ascii_alphanumeric() || matches!(character, '.' | '_' | '-') {
+            sanitized.push(character);
+        } else {
+            sanitized.push('-');
+        }
+    }
+
+    if sanitized.chars().next().is_none_or(|character| !character.is_ascii_alphabetic()) {
+        sanitized.insert_str(0, "id-");
+    }
+
+    sanitized
 }
 
 /// Generate statement parts (and optionally guidance parts) for a control.
@@ -97,7 +116,8 @@ pub fn generate_part_id(control_id: &str, suffix: &str) -> String {
 /// When `guidance_text` is `Some(non_empty_text)`, also produces a guidance
 /// part with `name: "guidance"` and prose from the guidance text.
 ///
-/// Logs `tracing::warn` if `requirement.text` is empty or whitespace-only (EC-1, EC-2).
+/// Logs `tracing::warn` and marks the statement with an `empty-text` property if
+/// `requirement.text` is empty or whitespace-only (EC-1, EC-2).
 ///
 /// # Arguments
 ///
@@ -121,6 +141,7 @@ pub fn generate_part_id(control_id: &str, suffix: &str) -> String {
 ///     citations: vec![],
 ///     modality: None,
 ///     parameters: vec![],
+///     parameters_extracted: false,
 /// };
 ///
 /// let parts = build_control_parts("POL-AC-001", &req, None);
@@ -137,8 +158,8 @@ pub fn build_control_parts(
 ) -> Vec<OscalPart> {
     let mut parts = Vec::with_capacity(2);
 
-    // Warn on empty or whitespace-only requirement text (EC-1, EC-2, SEC-2).
-    if requirement.text.trim().is_empty() {
+    let empty_text = requirement.text.trim().is_empty();
+    if empty_text {
         warn!(control_id, "Empty/whitespace requirement text — statement prose preserved as-is");
     }
 
@@ -149,7 +170,11 @@ pub fn build_control_parts(
         name: "statement".to_string(),
         prose: requirement.text.clone(),
         parts: vec![],
-        props: vec![],
+        props: if empty_text {
+            vec![OscalProp { name: "empty-text".to_string(), ns: None, value: "true".to_string() }]
+        } else {
+            vec![]
+        },
     });
 
     // Guidance part — only when guidance_text is Some and non-empty.
@@ -186,6 +211,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -208,7 +234,8 @@ mod tests {
 
     #[test]
     fn test_generate_part_id_special_chars() {
-        assert_eq!(generate_part_id("POL-DP&P-001", "smt"), "POL-DP&P-001_smt");
+        assert_eq!(generate_part_id("POL-DP&P-001", "smt"), "POL-DP-P-001_smt");
+        assert_eq!(generate_part_id("1POL", "smt"), "id-1POL_smt");
     }
 
     // ── T007: build_control_parts (statement-only, no guidance) ───────
@@ -293,6 +320,9 @@ mod tests {
         assert_eq!(parts.len(), 1);
         assert_eq!(parts[0].name, "statement");
         assert_eq!(parts[0].prose, "");
+        assert_eq!(parts[0].props.len(), 1);
+        assert_eq!(parts[0].props[0].name, "empty-text");
+        assert_eq!(parts[0].props[0].value, "true");
     }
 
     #[test]
@@ -302,6 +332,7 @@ mod tests {
 
         assert_eq!(parts.len(), 1);
         assert_eq!(parts[0].prose, "   \t\n  ");
+        assert_eq!(parts[0].props[0].name, "empty-text");
     }
 
     #[test]

@@ -4,23 +4,19 @@ use super::types::{ControlSnapshot, DiffEntry, DiffSummary, FieldChange};
 
 /// Compare two control maps and produce a list of diff entries.
 ///
-/// Walks both `old_map` and `new_map` to detect:
-/// - **Added** controls: present in `new_map` but not `old_map`
-/// - **Removed** controls: present in `old_map` but not `new_map`
-/// - **Changed** controls: match on control ID but differ in title, description,
-///   or statement prose
-/// - **`UuidChanged`**: same control ID, no field changes, but different UUID
-///
-/// Results are sorted by control ID for deterministic output.
+/// Walks both `old_map` and `new_map` to detect additions, removals, field
+/// changes, and UUID-only changes. Results are sorted by control ID.
 #[must_use]
-#[allow(clippy::implicit_hasher)]
-pub fn compare_controls(
-    old_map: &HashMap<String, ControlSnapshot>,
-    new_map: &HashMap<String, ControlSnapshot>,
-) -> Vec<DiffEntry> {
+pub fn compare_controls<SO, SN>(
+    old_map: &HashMap<String, ControlSnapshot, SO>,
+    new_map: &HashMap<String, ControlSnapshot, SN>,
+) -> Vec<DiffEntry>
+where
+    SO: std::hash::BuildHasher,
+    SN: std::hash::BuildHasher,
+{
     let mut entries = Vec::new();
 
-    // Added: in new but not in old
     for (id, new_snap) in new_map {
         if !old_map.contains_key(id) {
             entries
@@ -28,7 +24,6 @@ pub fn compare_controls(
         }
     }
 
-    // Removed + Matched: single pass over old_map
     for (id, old_snap) in old_map {
         let Some(new_snap) = new_map.get(id) else {
             entries.push(DiffEntry::Removed {
@@ -42,71 +37,69 @@ pub fn compare_controls(
         let uuid_differs = old_snap.uuid != new_snap.uuid;
 
         match (uuid_differs, field_changes.is_empty()) {
-            (true, true) => {
-                entries.push(DiffEntry::UuidChanged {
-                    control_id: id.clone(),
-                    old_uuid: old_snap.uuid.clone(),
-                    new_uuid: new_snap.uuid.clone(),
-                });
-            }
-            (true, false) => {
-                entries.push(DiffEntry::Changed {
-                    control_id: id.clone(),
-                    old_uuid: old_snap.uuid.clone(),
-                    new_uuid: new_snap.uuid.clone(),
-                    uuid_changed: true,
-                    field_changes,
-                });
-            }
-            (false, false) => {
-                entries.push(DiffEntry::Changed {
-                    control_id: id.clone(),
-                    old_uuid: old_snap.uuid.clone(),
-                    new_uuid: new_snap.uuid.clone(),
-                    uuid_changed: false,
-                    field_changes,
-                });
-            }
+            (true, true) => entries.push(DiffEntry::UuidChanged {
+                control_id: id.clone(),
+                old_uuid: old_snap.uuid.clone(),
+                new_uuid: new_snap.uuid.clone(),
+            }),
+            (_, false) => entries.push(DiffEntry::Changed {
+                control_id: id.clone(),
+                old_uuid: old_snap.uuid.clone(),
+                new_uuid: new_snap.uuid.clone(),
+                field_changes,
+            }),
             (false, true) => {}
         }
     }
 
-    // FR-010: Sort by control_id ascending
-    entries.sort_by(|a, b| a.control_id().cmp(b.control_id()));
+    entries.sort_unstable_by(|a, b| a.control_id().cmp(b.control_id()));
     entries
 }
 
 fn compute_field_changes(old: &ControlSnapshot, new: &ControlSnapshot) -> Vec<FieldChange> {
     let mut changes = Vec::new();
 
-    // Title comparison
     if old.title != new.title {
         changes.push(FieldChange {
             field_name: "title".to_string(),
-            old_value: old.title.clone().unwrap_or_default(),
-            new_value: new.title.clone().unwrap_or_default(),
+            old_value: old.title.clone(),
+            new_value: new.title.clone(),
         });
     }
 
-    // Description comparison (Component Definition)
     if old.description != new.description {
         changes.push(FieldChange {
             field_name: "description".to_string(),
-            old_value: old.description.clone().unwrap_or_default(),
-            new_value: new.description.clone().unwrap_or_default(),
+            old_value: old.description.clone(),
+            new_value: new.description.clone(),
         });
     }
 
-    // Parts prose comparison (Catalog statements)
-    let max_len = old.parts_prose.len().max(new.parts_prose.len());
-    for i in 0..max_len {
-        let old_val = old.parts_prose.get(i).map_or("", String::as_str);
-        let new_val = new.parts_prose.get(i).map_or("", String::as_str);
-        if old_val != new_val {
+    // Preserve positional meaning while removing the unaffected common prefix
+    // and suffix. Snapshot part IDs would provide a stronger long-term anchor.
+    let common_prefix = old
+        .parts_prose
+        .iter()
+        .zip(&new.parts_prose)
+        .take_while(|(old_value, new_value)| old_value == new_value)
+        .count();
+    let common_suffix = old.parts_prose[common_prefix..]
+        .iter()
+        .rev()
+        .zip(new.parts_prose[common_prefix..].iter().rev())
+        .take_while(|(old_value, new_value)| old_value == new_value)
+        .count();
+    let old_changed = &old.parts_prose[common_prefix..old.parts_prose.len() - common_suffix];
+    let new_changed = &new.parts_prose[common_prefix..new.parts_prose.len() - common_suffix];
+
+    for offset in 0..old_changed.len().max(new_changed.len()) {
+        let old_value = old_changed.get(offset);
+        let new_value = new_changed.get(offset);
+        if old_value != new_value {
             changes.push(FieldChange {
-                field_name: format!("statement[{i}]"),
-                old_value: old_val.to_string(),
-                new_value: new_val.to_string(),
+                field_name: format!("statement[{}]", common_prefix + offset),
+                old_value: old_value.cloned(),
+                new_value: new_value.cloned(),
             });
         }
     }
@@ -196,9 +189,9 @@ mod tests {
         let new = to_map(vec![snap("POL-AC-001", "", "New Title", &["New Prose"])]);
         let entries = compare_controls(&old, &new);
         assert_eq!(entries.len(), 1);
-        if let DiffEntry::Changed { control_id, field_changes, uuid_changed, .. } = &entries[0] {
+        if let DiffEntry::Changed { control_id, field_changes, .. } = &entries[0] {
             assert_eq!(control_id, "POL-AC-001");
-            assert!(!uuid_changed);
+            assert!(!entries[0].uuid_changed());
             let field_names: Vec<_> =
                 field_changes.iter().map(|fc| fc.field_name.as_str()).collect();
             assert!(field_names.contains(&"title"));
@@ -251,13 +244,41 @@ mod tests {
     }
 
     #[test]
+    fn statement_prepend_reports_only_inserted_statement() {
+        let old = to_map(vec![snap("AC-1", "", "Title", &["second", "third"])]);
+        let new = to_map(vec![snap("AC-1", "", "Title", &["first", "second", "third"])]);
+
+        let entries = compare_controls(&old, &new);
+        let DiffEntry::Changed { field_changes, .. } = &entries[0] else {
+            panic!("Expected Changed entry");
+        };
+        assert_eq!(field_changes.len(), 1);
+        assert_eq!(field_changes[0].field_name, "statement[0]");
+        assert_eq!(field_changes[0].old_value, None);
+        assert_eq!(field_changes[0].new_value.as_deref(), Some("first"));
+    }
+
+    #[test]
+    fn statement_middle_insertion_has_bounded_changes() {
+        let old = to_map(vec![snap("AC-1", "", "Title", &["first", "third"])]);
+        let new = to_map(vec![snap("AC-1", "", "Title", &["first", "second", "third"])]);
+
+        let entries = compare_controls(&old, &new);
+        let DiffEntry::Changed { field_changes, .. } = &entries[0] else {
+            panic!("Expected Changed entry");
+        };
+        assert_eq!(field_changes.len(), 1);
+        assert_eq!(field_changes[0].field_name, "statement[1]");
+    }
+
+    #[test]
     fn test_same_uuid_different_content_is_changed() {
         let old = to_map(vec![snap("POL-AC-001", "same-uuid", "Old Title", &[])]);
         let new = to_map(vec![snap("POL-AC-001", "same-uuid", "New Title", &[])]);
         let entries = compare_controls(&old, &new);
         assert_eq!(entries.len(), 1);
-        if let DiffEntry::Changed { uuid_changed, .. } = &entries[0] {
-            assert!(!uuid_changed);
+        if matches!(&entries[0], DiffEntry::Changed { .. }) {
+            assert!(!entries[0].uuid_changed());
         } else {
             panic!("Expected Changed entry");
         }
@@ -304,11 +325,10 @@ mod tests {
                 control_id: "D".into(),
                 old_uuid: String::new(),
                 new_uuid: String::new(),
-                uuid_changed: false,
                 field_changes: vec![FieldChange {
                     field_name: "title".into(),
-                    old_value: "old".into(),
-                    new_value: "new".into(),
+                    old_value: Some("old".into()),
+                    new_value: Some("new".into()),
                 }],
             },
         ];
@@ -347,16 +367,16 @@ mod tests {
         assert!(entries.is_empty());
     }
 
-    // Co-occurrence: UUID changed AND fields changed → Changed{uuid_changed:true}
-    // Does NOT produce a UuidChanged entry; does NOT increment uuid_changes
+    // Co-occurrence: UUID and fields changed → Changed with a derived UUID change.
+    // It does not produce a UuidChanged entry or increment uuid_changes.
     #[test]
     fn test_co_occurrence_uuid_and_field_changes() {
         let old = to_map(vec![snap("POL-AC-001", "old-uuid", "Old Title", &["Old Prose"])]);
         let new = to_map(vec![snap("POL-AC-001", "new-uuid", "New Title", &["New Prose"])]);
         let entries = compare_controls(&old, &new);
         assert_eq!(entries.len(), 1);
-        if let DiffEntry::Changed { uuid_changed, field_changes, .. } = &entries[0] {
-            assert!(uuid_changed);
+        if let DiffEntry::Changed { field_changes, .. } = &entries[0] {
+            assert!(entries[0].uuid_changed());
             assert!(!field_changes.is_empty());
         } else {
             panic!("Expected Changed entry, not UuidChanged");
@@ -380,16 +400,15 @@ mod tests {
                 control_id: "B".into(),
                 old_uuid: "old2".into(),
                 new_uuid: "new2".into(),
-                uuid_changed: true,
                 field_changes: vec![FieldChange {
                     field_name: "title".into(),
-                    old_value: "x".into(),
-                    new_value: "y".into(),
+                    old_value: Some("x".into()),
+                    new_value: Some("y".into()),
                 }],
             },
         ];
         let summary = build_summary(&entries, 3, 3);
-        assert_eq!(summary.uuid_changes, 1); // Only UuidChanged, not Changed{uuid_changed:true}
+        assert_eq!(summary.uuid_changes, 1); // Only UuidChanged entries count here.
         assert_eq!(summary.changed, 1);
     }
 
@@ -417,5 +436,36 @@ mod tests {
         } else {
             panic!("Expected Changed entry");
         }
+    }
+
+    #[test]
+    fn aggregated_component_descriptions_remain_visible_in_diff() {
+        let old = to_map(vec![ControlSnapshot {
+            control_id: "AC-1".into(),
+            uuid: String::new(),
+            title: None,
+            description: Some("First implementation\nSecond implementation".into()),
+            parts_prose: vec![],
+        }]);
+        let new = to_map(vec![ControlSnapshot {
+            control_id: "AC-1".into(),
+            uuid: String::new(),
+            title: None,
+            description: Some("First implementation\nUpdated implementation".into()),
+            parts_prose: vec![],
+        }]);
+
+        let entries = compare_controls(&old, &new);
+        let DiffEntry::Changed { field_changes, .. } = &entries[0] else {
+            panic!("Expected Changed entry");
+        };
+        assert_eq!(
+            field_changes[0].old_value.as_deref(),
+            Some("First implementation\nSecond implementation")
+        );
+        assert_eq!(
+            field_changes[0].new_value.as_deref(),
+            Some("First implementation\nUpdated implementation")
+        );
     }
 }

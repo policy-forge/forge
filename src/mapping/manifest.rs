@@ -129,6 +129,9 @@ pub struct ResourceInventorySnapshot {
     pub oscal_version: String,
     pub control_ids: Vec<String>,
     pub statement_ids: Vec<String>,
+    /// Stable digest of the eligible subject type, identifier, and fingerprint tuples.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fingerprint_digest: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
@@ -308,7 +311,7 @@ pub fn parse(bytes: &[u8]) -> Result<MappingManifest, ForgeError> {
     deserializer
         .end()
         .map_err(|error| mapping_error(format!("invalid trailing manifest data: {error}")))?;
-    enforce_value_bounds(&strict.0, "$", 0)?;
+    enforce_value_bounds(&strict.0, &mut Vec::new(), 0)?;
     let manifest: MappingManifest = serde_json::from_value(strict.0)
         .map_err(|error| mapping_error(format!("invalid manifest contract: {error}")))?;
     validate_contract(&manifest)?;
@@ -439,7 +442,7 @@ fn validate_resource(path: &str, resource: &ResourceManifest) -> Result<(), Forg
         validate_local_json_path(&format!("{path}.resolved_catalog"), companion)?;
         if resource.resolved_catalog_attestation != Some(true) {
             return Err(mapping_error(format!(
-                "{path}.resolved_catalog_attestation must be true to record reviewer attestation that the companion represents this Profile"
+                "{path}.resolved_catalog_attestation must be true after reviewing the init scaffold's resolved Catalog companion"
             )));
         }
         let Some(hash) = &resource.expected_resolved_catalog_sha256 else {
@@ -519,24 +522,38 @@ fn non_empty(path: &str, value: &str) -> Result<(), ForgeError> {
     }
 }
 
-fn enforce_value_bounds(value: &Value, path: &str, depth: usize) -> Result<(), ForgeError> {
+fn enforce_value_bounds<'a>(
+    value: &'a Value,
+    segments: &mut Vec<JsonPathSegment<'a>>,
+    depth: usize,
+) -> Result<(), ForgeError> {
     const MAX_DEPTH: usize = 64;
     if depth > MAX_DEPTH {
-        return Err(mapping_error(format!("{path} exceeds maximum JSON depth {MAX_DEPTH}")));
+        return Err(mapping_error(format!(
+            "{} exceeds maximum JSON depth {MAX_DEPTH}",
+            render_json_path(segments)
+        )));
     }
     match value {
         Value::String(text) if text.len() > MAX_STRING_BYTES => Err(mapping_error(format!(
-            "{path} exceeds maximum string length {MAX_STRING_BYTES} bytes"
+            "{} exceeds maximum string length {MAX_STRING_BYTES} bytes",
+            render_json_path(segments)
         ))),
         Value::Array(values) => {
             for (index, child) in values.iter().enumerate() {
-                enforce_value_bounds(child, &format!("{path}[{index}]"), depth + 1)?;
+                segments.push(JsonPathSegment::Index(index));
+                let result = enforce_value_bounds(child, segments, depth + 1);
+                segments.pop();
+                result?;
             }
             Ok(())
         }
         Value::Object(values) => {
             for (key, child) in values {
-                enforce_value_bounds(child, &format!("{path}.{key}"), depth + 1)?;
+                segments.push(JsonPathSegment::Key(key));
+                let result = enforce_value_bounds(child, segments, depth + 1);
+                segments.pop();
+                result?;
             }
             Ok(())
         }
@@ -546,6 +563,30 @@ fn enforce_value_bounds(value: &Value, path: &str, depth: usize) -> Result<(), F
 
 fn bounded(value: &str) -> String {
     value.chars().take(120).flat_map(char::escape_default).collect()
+}
+
+#[derive(Clone, Copy)]
+enum JsonPathSegment<'a> {
+    Index(usize),
+    Key(&'a str),
+}
+
+fn render_json_path(segments: &[JsonPathSegment<'_>]) -> String {
+    let mut path = String::from("$");
+    for segment in segments {
+        match segment {
+            JsonPathSegment::Index(index) => {
+                path.push('[');
+                path.push_str(&index.to_string());
+                path.push(']');
+            }
+            JsonPathSegment::Key(key) => {
+                path.push('.');
+                path.push_str(&bounded(key));
+            }
+        }
+    }
+    path
 }
 
 fn mapping_error(message: impl Into<String>) -> ForgeError {
@@ -712,5 +753,15 @@ mod tests {
             invalid_utf8_error.to_string().contains("invalid manifest JSON"),
             "{invalid_utf8_error}"
         );
+    }
+
+    #[test]
+    fn nested_bound_errors_escape_object_keys() {
+        let value = serde_json::json!({"unsafe\nkey": "x".repeat(MAX_STRING_BYTES + 1)});
+        let error = enforce_value_bounds(&value, &mut Vec::new(), 0)
+            .expect_err("oversized nested string must fail");
+        let message = error.to_string();
+        assert!(message.contains("unsafe\\nkey"), "{message}");
+        assert!(!message.contains("unsafe\nkey"), "{message}");
     }
 }

@@ -224,21 +224,20 @@ fn edge_both_flags_returns_error() {
     assert!(result.is_err(), "Providing both --include and --exclude must return an error");
     let err = result.unwrap_err();
     let msg = err.to_string();
-    assert!(
-        msg.contains("mutually exclusive")
-            || msg.contains("--include")
-            || msg.contains("--exclude"),
-        "Error must reference mutual exclusivity or the conflicting flags, got: {msg}"
+    assert_eq!(
+        msg, "Invalid argument: --include and --exclude are mutually exclusive",
+        "both profile selection flags must report the mutual-exclusion error"
     );
 }
 
 /// Non-existent catalog path returns a descriptive error.
 #[test]
 fn edge_invalid_catalog_path() {
-    let nonexistent = std::path::Path::new("/tmp/nonexistent-catalog-99999.json");
+    let dir = tempfile::tempdir().expect("failed to create temporary directory");
+    let nonexistent = dir.path().join("nonexistent-catalog.json");
 
     let result = forge::cli::profile::execute(
-        nonexistent,
+        &nonexistent,
         Some("AC-1"),
         None,
         &forge::cli::OutputFormat::Json,

@@ -38,11 +38,11 @@ fn collect_resource_uuids(json: &Value, model_type: OscalModelType) -> HashSet<S
 
     if let Some(root) = json.get(model_type.as_str())
         && let Some(resources) = root.pointer("/back-matter/resources")
-        && let Some(arr) = resources.as_array()
+        && let Some(resources) = resources.as_array()
     {
-        for resource in arr {
+        for resource in resources {
             if let Some(uuid) = resource.get("uuid").and_then(Value::as_str) {
-                uuids.insert(uuid.to_string());
+                uuids.insert(uuid.to_ascii_lowercase());
             }
         }
     }
@@ -59,8 +59,8 @@ fn check_orphaned_links(json: &Value, model_type: OscalModelType) -> Vec<Validat
     let resource_uuids = collect_resource_uuids(json, model_type);
     let mut errors = Vec::new();
 
-    // Recursively walk JSON tree looking for href fields starting with "#"
-    walk_for_orphaned_links(json, "$", &resource_uuids, &mut errors);
+    // Recursively walk JSON tree looking for href fields starting with "#".
+    walk_for_orphaned_links(json, &resource_uuids, &mut errors);
 
     errors
 }
@@ -68,69 +68,96 @@ fn check_orphaned_links(json: &Value, model_type: OscalModelType) -> Vec<Validat
 /// Maximum recursion depth for JSON tree walking (`DoS` protection).
 const MAX_WALK_DEPTH: usize = 100;
 
-/// Recursively walk the JSON tree tracking path, looking for orphaned `href` references.
+/// Recursively walk the JSON tree tracking paths, looking for orphaned `href` references.
 fn walk_for_orphaned_links(
     value: &Value,
-    current_path: &str,
     resource_uuids: &HashSet<String>,
     errors: &mut Vec<ValidationError>,
 ) {
-    walk_for_orphaned_links_inner(value, current_path, resource_uuids, errors, 0);
+    let mut current_path = String::from("$");
+    walk_for_orphaned_links_inner(value, &mut current_path, resource_uuids, errors, 0);
 }
 
 fn walk_for_orphaned_links_inner(
     value: &Value,
-    current_path: &str,
+    current_path: &mut String,
     resource_uuids: &HashSet<String>,
     errors: &mut Vec<ValidationError>,
     depth: usize,
 ) {
-    if depth > MAX_WALK_DEPTH {
-        tracing::trace!(path = %current_path, depth, max = MAX_WALK_DEPTH, "max walk depth exceeded; skipping further traversal");
+    if depth >= MAX_WALK_DEPTH {
+        tracing::trace!(path = %current_path, depth, max = MAX_WALK_DEPTH, "max walk depth exceeded; semantic validation is incomplete");
+        errors.push(ValidationError::new(
+            ValidationErrorCategory::Semantic,
+            current_path.clone(),
+            "semantic validation incomplete: orphaned-link traversal reached maximum depth"
+                .to_string(),
+            format!("orphaned-link traversal depth at most {MAX_WALK_DEPTH}"),
+            "traversal stopped before this value",
+        ));
         return;
     }
+
     match value {
         Value::Object(map) => {
-            // Check if this object has an href that starts with "#"
-            // SEC-5: do NOT follow external URLs (non-# hrefs)
+            // SEC-5: do NOT follow external URLs (non-# hrefs).
             if let Some(href_value) = map.get("href")
-                && let Some(href_str) = href_value.as_str()
-                && let Some(uuid) = href_str.strip_prefix('#')
-                && !resource_uuids.contains(uuid)
+                && let Some(href) = href_value.as_str()
+                && let Some(fragment) = href.strip_prefix('#')
             {
-                errors.push(ValidationError {
-                    category: ValidationErrorCategory::Semantic,
-                    path: format!("{current_path}.href"),
-                    message: format!(
-                        "orphaned link: reference #{uuid} not found in back-matter resources"
-                    ),
-                    expected: "referenced resource exists in back-matter".to_string(),
-                    actual: truncate_value(&format!("#{uuid}"), 100),
-                });
+                let (message, actual) = if fragment.is_empty() {
+                    ("invalid local link: empty fragment".to_string(), "#".to_string())
+                } else if !resource_uuids.contains(&fragment.to_ascii_lowercase()) {
+                    (
+                        format!(
+                            "orphaned link: reference #{fragment} not found in back-matter resources"
+                        ),
+                        format!("#{fragment}"),
+                    )
+                } else {
+                    (String::new(), String::new())
+                };
+                if !message.is_empty() {
+                    let path_len = current_path.len();
+                    super::formatter::append_property_segment(current_path, "href");
+                    errors.push(ValidationError::new(
+                        ValidationErrorCategory::Semantic,
+                        current_path.clone(),
+                        message,
+                        "referenced resource exists in back-matter".to_string(),
+                        truncate_value(&actual, 100),
+                    ));
+                    current_path.truncate(path_len);
+                }
             }
 
-            // Recurse into all child values
             for (key, child) in map {
-                let child_path = format!("{current_path}.{key}");
+                let path_len = current_path.len();
+                super::formatter::append_property_segment(current_path, key);
                 walk_for_orphaned_links_inner(
                     child,
-                    &child_path,
+                    current_path,
                     resource_uuids,
                     errors,
                     depth + 1,
                 );
+                current_path.truncate(path_len);
             }
         }
-        Value::Array(arr) => {
-            for (i, child) in arr.iter().enumerate() {
-                let child_path = format!("{current_path}[{i}]");
+        Value::Array(array) => {
+            for (index, child) in array.iter().enumerate() {
+                let path_len = current_path.len();
+                current_path.push('[');
+                current_path.push_str(&index.to_string());
+                current_path.push(']');
                 walk_for_orphaned_links_inner(
                     child,
-                    &child_path,
+                    current_path,
                     resource_uuids,
                     errors,
                     depth + 1,
                 );
+                current_path.truncate(path_len);
             }
         }
         _ => {}
@@ -182,38 +209,36 @@ fn check_component_control_ids(json: &Value) -> Vec<ValidationError> {
 
                 match req.get("control-id") {
                     Some(Value::String(control_id)) => {
-                        // Valid control-ids must have at least one alphanumeric character
+                        // Valid control-ids must have at least one alphanumeric character.
                         if !control_id.chars().any(char::is_alphanumeric) {
-                            errors.push(ValidationError {
-                                category: ValidationErrorCategory::Semantic,
-                                path: base_path,
-                                message: format!(
+                            errors.push(ValidationError::new(
+                                ValidationErrorCategory::Semantic,
+                                base_path,
+                                format!(
                                     "invalid control-id: \"{control_id}\" contains no alphanumeric characters"
                                 ),
-                                expected: "non-empty string with at least one alphanumeric character".to_string(),
-                                actual: truncate_value(&format!("\"{control_id}\""), 100),
-                            });
+                                "non-empty string with at least one alphanumeric character".to_string(),
+                                truncate_value(&format!("\"{control_id}\""), 100),
+                            ));
                         }
                     }
                     Some(_) => {
-                        errors.push(ValidationError {
-                            category: ValidationErrorCategory::Semantic,
-                            path: base_path,
-                            message: "control-id must be a string".to_string(),
-                            expected: "non-empty string with at least one alphanumeric character"
-                                .to_string(),
-                            actual: "non-string value".to_string(),
-                        });
+                        errors.push(ValidationError::new(
+                            ValidationErrorCategory::Semantic,
+                            base_path,
+                            "control-id must be a string".to_string(),
+                            "non-empty string with at least one alphanumeric character".to_string(),
+                            "non-string value",
+                        ));
                     }
                     None => {
-                        errors.push(ValidationError {
-                            category: ValidationErrorCategory::Semantic,
-                            path: base_path,
-                            message: "missing control-id in implemented-requirement".to_string(),
-                            expected: "non-empty string with at least one alphanumeric character"
-                                .to_string(),
-                            actual: "field not present".to_string(),
-                        });
+                        errors.push(ValidationError::new(
+                            ValidationErrorCategory::Semantic,
+                            base_path,
+                            "missing control-id in implemented-requirement".to_string(),
+                            "non-empty string with at least one alphanumeric character".to_string(),
+                            "field not present",
+                        ));
                     }
                 }
             }
@@ -353,6 +378,21 @@ mod tests {
     }
 
     #[test]
+    fn uuid_fragments_match_case_insensitively_and_bare_hash_is_invalid() {
+        let valid = serde_json::json!({
+            "catalog": {
+                "back-matter": {"resources": [{"uuid": "abc-def"}]},
+                "links": [{"href": "#ABC-DEF"}]
+            }
+        });
+        assert!(check_orphaned_links(&valid, OscalModelType::Catalog).is_empty());
+
+        let invalid = serde_json::json!({"catalog": {"links": [{"href": "#"}]}});
+        let errors = check_orphaned_links(&invalid, OscalModelType::Catalog);
+        assert!(errors.iter().any(|error| error.message.contains("empty fragment")));
+    }
+
+    #[test]
     fn no_links_no_errors() {
         // PRD EC-4: artifact with no links → no errors
         let json: Value = serde_json::from_str(
@@ -402,11 +442,8 @@ mod tests {
             serde_json::json!({"catalog": {"back-matter": {"resources": []}, "data": json}});
 
         let errors = check_orphaned_links(&wrapper, OscalModelType::Catalog);
-        // The deeply nested orphaned link should NOT be found (depth guard stops traversal)
         assert!(
-            errors.is_empty(),
-            "Should not find orphaned link beyond MAX_WALK_DEPTH, found {} errors",
-            errors.len()
+            errors.iter().any(|error| error.message.contains("semantic validation incomplete"))
         );
     }
 

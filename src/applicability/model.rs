@@ -103,11 +103,39 @@ pub struct ControlResult {
     pub policy_sources: Vec<String>,
 }
 
+/// Closed vocabulary for machine-readable review queue reasons.
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReviewReason {
+    ReviewedNoPositiveRelationship,
+    NoReviewedMapping,
+    DeferredScopeDecision,
+    ScopeDecisionRequired,
+}
+
+impl ReviewReason {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::ReviewedNoPositiveRelationship => "reviewed-no-positive-relationship",
+            Self::NoReviewedMapping => "no-reviewed-mapping",
+            Self::DeferredScopeDecision => "deferred-scope-decision",
+            Self::ScopeDecisionRequired => "scope-decision-required",
+        }
+    }
+}
+
+impl std::fmt::Display for ReviewReason {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
 /// Stable, machine-readable human review queue entry.
 #[derive(Debug, Clone, Serialize)]
 pub struct ReviewQueueItem {
     pub control_id: String,
-    pub reason_code: &'static str,
+    pub reason_code: ReviewReason,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -152,6 +180,8 @@ pub fn build_report(
     mapping_facts: &BTreeMap<String, ControlMappingFacts>,
     filters: ReportFilters,
 ) -> ApplicabilityReport {
+    let mut mapping_collections = mapping_collections;
+    sort_mapping_collections(&mut mapping_collections);
     let decisions: BTreeMap<_, _> = manifest
         .decisions
         .iter()
@@ -210,6 +240,10 @@ pub fn build_report(
     }
 }
 
+fn sort_mapping_collections(mapping_collections: &mut [MappingEvidence]) {
+    mapping_collections.sort_unstable_by(|left, right| left.uuid.cmp(&right.uuid));
+}
+
 fn classify(
     decision: Option<&ControlDecision>,
     positive_mapping_count: usize,
@@ -232,10 +266,12 @@ fn classify(
 fn review_queue_item(control: &ControlResult) -> Option<ReviewQueueItem> {
     let reason_code = match control.classification {
         GapClassification::ApplicableMapped | GapClassification::NotApplicable => return None,
-        GapClassification::ApplicableReviewedNoRelationship => "reviewed-no-positive-relationship",
-        GapClassification::ApplicableUnmapped => "no-reviewed-mapping",
-        GapClassification::Deferred => "deferred-scope-decision",
-        GapClassification::UnderReview => "scope-decision-required",
+        GapClassification::ApplicableReviewedNoRelationship => {
+            ReviewReason::ReviewedNoPositiveRelationship
+        }
+        GapClassification::ApplicableUnmapped => ReviewReason::NoReviewedMapping,
+        GapClassification::Deferred => ReviewReason::DeferredScopeDecision,
+        GapClassification::UnderReview => ReviewReason::ScopeDecisionRequired,
     };
     Some(ReviewQueueItem {
         control_id: control.control_id.clone(),
@@ -277,6 +313,48 @@ impl ClassificationCounts {
             GapClassification::NotApplicable => self.not_applicable += 1,
             GapClassification::Deferred => self.deferred += 1,
             GapClassification::UnderReview => self.under_review += 1,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn review_reason_serialization_preserves_the_queue_contract() {
+        for reason in [
+            ReviewReason::ReviewedNoPositiveRelationship,
+            ReviewReason::NoReviewedMapping,
+            ReviewReason::DeferredScopeDecision,
+            ReviewReason::ScopeDecisionRequired,
+        ] {
+            assert_eq!(
+                serde_json::to_value(reason).expect("serialize review reason"),
+                reason.as_str()
+            );
+        }
+    }
+
+    #[test]
+    fn mapping_evidence_ordering_is_owned_by_the_report_builder() {
+        let mut mapping_collections = vec![mapping_evidence("z"), mapping_evidence("a")];
+        sort_mapping_collections(&mut mapping_collections);
+        assert_eq!(
+            mapping_collections.iter().map(|evidence| evidence.uuid.as_str()).collect::<Vec<_>>(),
+            ["a", "z"]
+        );
+    }
+
+    fn mapping_evidence(uuid: &str) -> MappingEvidence {
+        MappingEvidence {
+            uuid: uuid.to_string(),
+            raw_sha256: "a".repeat(64),
+            version: "1.0.0".to_string(),
+            oscal_version: "1.2.3".to_string(),
+            reviewed_at: "2026-08-26T00:00:00Z".to_string(),
+            reviewers: Vec::new(),
+            source_resources: Vec::new(),
         }
     }
 }

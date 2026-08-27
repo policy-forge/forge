@@ -14,7 +14,7 @@ use crate::model::trace::TraceLinkCollection;
 use crate::model::{Citation, DocumentMetadata, PolicyDocument, PolicySection};
 use crate::oscal::back_matter::BackMatter;
 use crate::oscal::metadata::assemble_metadata;
-use crate::uuid::COMPONENT_NAMESPACE;
+use crate::uuid::{BACK_MATTER_NAMESPACE, COMPONENT_NAMESPACE};
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
@@ -121,12 +121,12 @@ pub struct DocumentaryComponent {
 /// - Empty `control-implementations` placeholder (populated by WI-15)
 /// - Optional back matter (via WI-12 `generate_back_matter`)
 ///
-/// Optionally records trace links into the provided [`TraceLinkCollection`].
+/// The `trace_links` parameter is retained for API compatibility but is currently ignored.
 /// Pass `None` for backward compatibility.
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::ComponentDefinitionBuild` if back matter generation fails.
+/// Returns the back-matter error variant when citation resource generation fails.
 pub fn build_component_definition(
     document: &PolicyDocument,
     source_profile: Option<&str>,
@@ -146,12 +146,11 @@ pub fn build_component_definition(
     let assembled = assemble_metadata(&resolved_meta, None)?;
 
     // Step 3: Build control-implementations (WI-15) when source_profile is provided
-    let resolved_source_file = source_file.unwrap_or("");
     let control_implementations = match source_profile {
         Some(profile) => crate::oscal::implemented_requirements::build_control_implementations(
             document,
             profile,
-            resolved_source_file,
+            source_file,
         )?,
         None => vec![],
     };
@@ -160,15 +159,14 @@ pub fn build_component_definition(
     let component_uuid = generate_component_uuid(&title, &version, &document.id);
     let description = format!("Documentary component representing the {title} policy document.");
 
-    let component_props = if resolved_source_file.is_empty() {
-        vec![]
-    } else {
-        vec![crate::oscal::parts::OscalProp {
-            name: crate::oscal::trace_embedding::PROP_SOURCE_FILE.to_string(),
-            ns: Some(crate::oscal::trace_embedding::FORGE_TRACE_NS.to_string()),
-            value: resolved_source_file.to_string(),
-        }]
-    };
+    let component_props =
+        source_file.filter(|path| !path.is_empty()).map_or_else(Vec::new, |path| {
+            vec![crate::oscal::parts::OscalProp {
+                name: crate::oscal::trace_embedding::PROP_SOURCE_FILE.to_string(),
+                ns: Some(crate::oscal::trace_embedding::FORGE_TRACE_NS.to_string()),
+                value: path.to_string(),
+            }]
+        });
 
     let component = DocumentaryComponent {
         uuid: component_uuid.to_string(),
@@ -185,8 +183,14 @@ pub fn build_component_definition(
         None
     } else {
         let (resources, _resource_map) =
-            crate::oscal::back_matter::generate_back_matter(&all_citations)
-                .map_err(|e| ForgeError::ComponentDefinitionBuild(e.to_string()))?;
+            crate::oscal::back_matter::generate_back_matter(&all_citations).map_err(|error| {
+                match error {
+                    ForgeError::BackMatter(detail) => ForgeError::BackMatter(format!(
+                        "while generating component-definition back matter: {detail}"
+                    )),
+                    other => other,
+                }
+            })?;
 
         if resources.is_empty() { None } else { Some(BackMatter { resources }) }
     };
@@ -236,24 +240,34 @@ const MAX_SECTION_DEPTH: usize = 50;
 /// Maximum number of unique citations to collect (`DoS` protection).
 const MAX_CITATIONS: usize = 10_000;
 
-/// Recursively collect all unique citations from all requirements across all sections.
+/// Recursively collect citations that produce unique back-matter resources.
 ///
-/// Deduplicates by citation `id` to prevent duplicate back-matter resources.
-/// Enforces depth and count bounds to prevent unbounded memory allocation.
+/// Deduplicates by the same UUID identity used by `generate_back_matter`, rather
+/// than the citation ID, to prevent duplicate OSCAL resource UUIDs. Enforces
+/// depth and count bounds to prevent unbounded memory allocation.
 #[must_use]
 pub fn collect_all_citations(sections: &[PolicySection]) -> Vec<Citation> {
     let mut citations = Vec::new();
-    let mut seen = HashSet::new();
+    let mut seen_resource_uuids = HashSet::new();
     for section in sections {
-        collect_citations_from_section(section, &mut citations, &mut seen, 0);
+        collect_citations_from_section(section, &mut citations, &mut seen_resource_uuids, 0);
     }
     citations
+}
+
+fn citation_resource_uuid(citation: &Citation) -> Uuid {
+    let normalized = crate::uuid::normalize_for_hashing(&citation.text);
+    let hash_input = match &citation.url {
+        Some(url) => format!("{normalized}\n{url}"),
+        None => normalized,
+    };
+    Uuid::new_v5(&BACK_MATTER_NAMESPACE, hash_input.as_bytes())
 }
 
 fn collect_citations_from_section(
     section: &PolicySection,
     citations: &mut Vec<Citation>,
-    seen: &mut HashSet<String>,
+    seen_resource_uuids: &mut HashSet<Uuid>,
     depth: usize,
 ) {
     if depth > MAX_SECTION_DEPTH {
@@ -272,13 +286,16 @@ fn collect_citations_from_section(
             if citations.len() >= MAX_CITATIONS {
                 return;
             }
-            if seen.insert(citation.id.clone()) {
+            // Invalid IDs must reach the generator so it can return its typed error.
+            if citation.id.is_empty()
+                || seen_resource_uuids.insert(citation_resource_uuid(citation))
+            {
                 citations.push(citation.clone());
             }
         }
     }
     for child in &section.children {
-        collect_citations_from_section(child, citations, seen, depth + 1);
+        collect_citations_from_section(child, citations, seen_resource_uuids, depth + 1);
     }
 }
 
@@ -378,6 +395,7 @@ mod tests {
             citations: vec![citation],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -430,15 +448,17 @@ mod tests {
         let comp = &components[0];
 
         // (2) type is "policy"
-        assert_eq!(comp["type"], "policy");
+        assert_eq!(comp["type"].as_str(), Some("policy"));
 
         // (3) title matches PolicyDocument title
-        assert_eq!(comp["title"], "Corporate Security Policy");
+        assert_eq!(comp["title"].as_str(), Some("Corporate Security Policy"));
 
         // (4) description matches template
         assert_eq!(
-            comp["description"],
-            "Documentary component representing the Corporate Security Policy policy document."
+            comp["description"].as_str(),
+            Some(
+                "Documentary component representing the Corporate Security Policy policy document."
+            )
         );
 
         // (5) uuid is present and non-empty
@@ -579,7 +599,7 @@ mod tests {
             id: "cite-1".to_string(),
             text: "NIST SP 800-53".to_string(),
             url: Some("https://example.com/sp800-53".to_string()),
-            source_requirement_id: Some("req-1".to_string()),
+            source_requirement_id: Some("req-1".into()),
         };
         let doc = test_document_with_sections(
             "Corporate Security Policy",
@@ -603,13 +623,13 @@ mod tests {
             id: "cite-1".to_string(),
             text: "NIST SP 800-53".to_string(),
             url: Some("https://example.com/sp800-53".to_string()),
-            source_requirement_id: Some("req-1".to_string()),
+            source_requirement_id: Some("req-1".into()),
         };
         let citation2 = Citation {
             id: "cite-1".to_string(),
             text: "NIST SP 800-53".to_string(),
             url: Some("https://example.com/sp800-53".to_string()),
-            source_requirement_id: Some("req-2".to_string()),
+            source_requirement_id: Some("req-2".into()),
         };
         let doc = test_document_with_sections(
             "Corporate Security Policy",
@@ -625,6 +645,61 @@ mod tests {
         let envelope = build_component_definition(&doc, None, None, None).unwrap();
         let bm = envelope.component_definition.back_matter.as_ref().unwrap();
         assert_eq!(bm.resources.len(), 1, "Duplicate citations should produce one resource");
+    }
+
+    #[test]
+    fn test_back_matter_deduplicates_distinct_citation_ids_with_same_resource_identity() {
+        let citation1 = Citation {
+            id: "cite-1".to_string(),
+            text: "NIST SP 800-53".to_string(),
+            url: Some("https://example.com/sp800-53".to_string()),
+            source_requirement_id: Some("req-1".into()),
+        };
+        let citation2 = Citation {
+            id: "cite-2".to_string(),
+            text: "NIST SP 800-53".to_string(),
+            url: Some("https://example.com/sp800-53".to_string()),
+            source_requirement_id: Some("req-2".into()),
+        };
+        let doc = test_document_with_sections(
+            "Corporate Security Policy",
+            "2.0",
+            vec![test_section(
+                "Access Control",
+                vec![
+                    test_requirement_with_citation("All users must authenticate.", citation1),
+                    test_requirement_with_citation("All administrators must use MFA.", citation2),
+                ],
+            )],
+        );
+
+        let envelope = build_component_definition(&doc, None, None, None).unwrap();
+        let back_matter = envelope.component_definition.back_matter.as_ref().unwrap();
+        assert_eq!(back_matter.resources.len(), 1);
+    }
+
+    #[test]
+    fn test_back_matter_error_preserves_its_variant_and_context() {
+        let citation = Citation {
+            id: String::new(),
+            text: "NIST SP 800-53".to_string(),
+            url: None,
+            source_requirement_id: None,
+        };
+        let doc = test_document_with_sections(
+            "Corporate Security Policy",
+            "2.0",
+            vec![test_section(
+                "Access Control",
+                vec![test_requirement_with_citation("All users must authenticate.", citation)],
+            )],
+        );
+
+        let error = build_component_definition(&doc, None, None, None).unwrap_err();
+        assert!(matches!(
+            error,
+            ForgeError::BackMatter(detail) if detail.contains("component-definition back matter")
+        ));
     }
 
     #[test]
@@ -742,9 +817,9 @@ mod tests {
         let props = comp["props"].as_array().expect("Must have props array");
         assert_eq!(props.len(), 1, "Must have exactly 1 source-file prop");
 
-        assert_eq!(props[0]["name"], "source-file");
-        assert_eq!(props[0]["ns"], "https://forge.policy-forge.github.io/ns/trace");
-        assert_eq!(props[0]["value"], "policies/security.md");
+        assert_eq!(props[0]["name"].as_str(), Some("source-file"));
+        assert_eq!(props[0]["ns"].as_str(), Some("https://forge.policy-forge.github.io/ns/trace"));
+        assert_eq!(props[0]["value"].as_str(), Some("policies/security.md"));
     }
 
     #[test]
@@ -789,6 +864,7 @@ mod tests {
                     citations: vec![],
                     modality: None,
                     parameters: vec![],
+                    parameters_extracted: false,
                 }],
             )],
         );
@@ -803,6 +879,37 @@ mod tests {
 
         let ci = &comp.control_implementations[0];
         assert_eq!(ci.source, "baseline.json");
+    }
+
+    #[test]
+    fn test_source_profile_without_source_file_omits_requirement_trace_data() {
+        let doc = test_document_with_sections(
+            "Test Policy",
+            "1.0",
+            vec![test_section(
+                "Access Control",
+                vec![PolicyRequirement {
+                    text: "Users shall authenticate.".to_string(),
+                    source_line: 1,
+                    nesting_depth: 0,
+                    stable_id: Some("uuid-1".to_string()),
+                    atom_index: 0,
+                    parent_text: None,
+                    citations: vec![],
+                    modality: None,
+                    parameters: vec![],
+                    parameters_extracted: false,
+                }],
+            )],
+        );
+
+        let envelope =
+            build_component_definition(&doc, Some("./baseline.json"), None, None).unwrap();
+        let implemented_requirement = &envelope.component_definition.components[0]
+            .control_implementations[0]
+            .implemented_requirements[0];
+        assert!(implemented_requirement.props.is_empty());
+        assert!(implemented_requirement.links.is_empty());
     }
 
     // ─── T022: No trace data in remarks (Component Definition) — SEC-1, SEC-2, M-7 ──
@@ -826,6 +933,7 @@ mod tests {
                     citations: vec![],
                     modality: None,
                     parameters: vec![],
+                    parameters_extracted: false,
                 }],
             )],
         );

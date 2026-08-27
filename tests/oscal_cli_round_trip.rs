@@ -21,13 +21,17 @@ const TIMEOUT: Duration = Duration::from_secs(30);
 /// Build a `ProcessInvoker` from a detector, or None if oscal-cli is unavailable.
 fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<(ProcessInvoker, String)> {
     let info = detector.detect();
-    if !info.available || !info.functional {
-        eprintln!("SKIP: oscal-cli not available ({info:?})");
-        return None;
+    if info.is_functional() {
+        let executable_path = info.executable_path()?.to_path_buf();
+        let version = info.version()?.to_string();
+        return Some((ProcessInvoker::new(executable_path), version));
     }
-    let path = info.executable_path.unwrap();
-    let version = info.version.unwrap_or_else(|| "unknown".to_string());
-    Some((ProcessInvoker::new(path), version))
+    assert!(
+        std::env::var_os("FORGE_REQUIRE_OSCAL_CLI").is_none(),
+        "FORGE_REQUIRE_OSCAL_CLI is set but oscal-cli is unavailable: {info:?}"
+    );
+    eprintln!("SKIP: oscal-cli not available ({info:?})");
+    None
 }
 
 /// Helper: detect oscal-cli using system PATH and return a `ProcessInvoker`, or None.
@@ -101,7 +105,6 @@ fn run_round_trip_and_compare(
     let divergences = compare_oscal_json(&original, &round_tripped, "", &rules);
     let divergences = reclassify(divergences);
 
-    let passed = divergences.iter().all(|d| d.classification == DivergenceClass::Acceptable);
     let declared_oscal_version = original
         .pointer(&format!("/{}/metadata/oscal-version", artifact_type_root(artifact_type)))
         .and_then(serde_json::Value::as_str)
@@ -117,7 +120,6 @@ fn run_round_trip_and_compare(
         oscal_cli_version: Some(oscal_cli_version.to_string()),
         oscal_cli_model_version: oscal_cli_model_version.map(str::to_string),
         compatibility_classification,
-        passed,
         divergences,
     };
 
@@ -263,11 +265,18 @@ fn round_trip_skip_when_oscal_cli_unavailable() {
         }
     }
 
-    // SC-005: verify the actual skip helper returns None with a mock unavailable detector
-    assert!(
-        invoker_if_available(&MockUnavailableDetector).is_none(),
-        "Unavailable detector should cause skip helper to return None"
-    );
+    if std::env::var_os("FORGE_REQUIRE_OSCAL_CLI").is_some() {
+        let required = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            invoker_if_available(&MockUnavailableDetector)
+        }));
+        assert!(required.is_err(), "required oscal-cli availability must fail loudly");
+    } else {
+        // SC-005: local runs may skip when a detector reports no executable.
+        assert!(
+            invoker_if_available(&MockUnavailableDetector).is_none(),
+            "Unavailable detector should cause skip helper to return None"
+        );
+    }
 }
 
 /// Log INFO-level summary after test run (T022).
@@ -288,7 +297,12 @@ fn log_divergence_summary(result: &RoundTripResult) {
 
     eprintln!(
         "Round-trip summary [{}]: total={}, ForgeFix={}, OscalCliDiff={}, Acceptable={}, passed={}",
-        result.artifact_type, total, forge_fix, oscal_cli_diff, acceptable, result.passed
+        result.artifact_type,
+        total,
+        forge_fix,
+        oscal_cli_diff,
+        acceptable,
+        result.passed()
     );
 
     if !result.divergences.is_empty() {

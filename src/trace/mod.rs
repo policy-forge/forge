@@ -15,11 +15,15 @@ pub mod resolver;
 /// Walk the OSCAL output tree and collect trace references.
 pub mod walker;
 
+use std::fs::{File, Metadata};
+use std::io::Read;
 use std::path::Path;
+use std::time::SystemTime;
 
 use crate::error::ForgeError;
 use crate::types::OscalModelType;
-use report::{TraceReport, TraceSummary};
+use report::TraceReport;
+use resolver::Staleness;
 
 /// Generate a complete traceability report from an OSCAL artifact and source policy.
 ///
@@ -38,25 +42,20 @@ pub fn generate_trace_report(
     artifact_path: &Path,
     source_path: &Path,
 ) -> Result<TraceReport, ForgeError> {
-    // Read and parse artifact JSON (handles FileNotFound via Io mapping)
+    // Read and parse artifact JSON (handles FileNotFound via I/O mapping).
     let artifact_content = read_file(artifact_path)?;
     let json: serde_json::Value = serde_json::from_str(&artifact_content)
-        .map_err(|e| ForgeError::Parse(format!("Invalid JSON in artifact: {e}")))?;
+        .map_err(|error| ForgeError::Parse(format!("Invalid JSON in artifact: {error}")))?;
 
-    // Read source file for line count validation
-    let source_content = read_file(source_path)?;
+    // Read the source content and mtime from the same opened-file snapshot.
+    let (source_content, source_modified) = read_source_file(source_path)?;
     let source_line_count = source_content.lines().count();
 
-    // Detect artifact type and walk elements
     let art_type = walker::detect_artifact_type(&json)?;
     let entries = match art_type {
-        OscalModelType::Catalog => {
-            let catalog = &json["catalog"];
-            walker::walk_catalog_elements(catalog)
-        }
+        OscalModelType::Catalog => walker::walk_catalog_elements(&json["catalog"]),
         OscalModelType::ComponentDefinition => {
-            let compdef = &json["component-definition"];
-            walker::walk_compdef_elements(compdef)
+            walker::walk_compdef_elements(&json["component-definition"])
         }
         OscalModelType::Profile => {
             return Err(ForgeError::TraceUnsupportedArtifact {
@@ -70,42 +69,124 @@ pub fn generate_trace_report(
         }
     };
 
-    // Compute summary
-    let summary = TraceSummary::from_entries(&entries);
-
-    // Check source staleness
     let metadata_last_modified = json
         .get(art_type.as_str())
-        .and_then(|v| v.get("metadata"))
-        .and_then(|m| m.get("last-modified"))
-        .and_then(|v| v.as_str());
-    let source_stale = resolver::check_source_staleness(source_path, metadata_last_modified);
+        .and_then(|value| value.get("metadata"))
+        .and_then(|metadata| metadata.get("last-modified"))
+        .and_then(serde_json::Value::as_str);
+    let source_stale = matches!(
+        resolver::check_source_staleness(source_modified, metadata_last_modified),
+        Staleness::Stale
+    );
 
     Ok(TraceReport {
         artifact_path: artifact_path.to_path_buf(),
         source_path: source_path.to_path_buf(),
         artifact_type: art_type,
         entries,
-        summary,
         source_stale,
         source_line_count,
     })
 }
 
-/// Read a file, mapping `NotFound` to `ForgeError::FileNotFound`,
-/// `PermissionDenied` to `ForgeError::PermissionDenied`, and other I/O errors to `ForgeError::Io`.
+/// Read a file with consistent path-aware I/O errors and a bounded buffer.
 fn read_file(path: &Path) -> Result<String, ForgeError> {
-    // Guard against oversized files; ignore NotFound so read_to_string maps it.
-    match crate::io::check_file_size(path, crate::io::MAX_FILE_SIZE) {
-        Ok(_) => {}
-        Err(ForgeError::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => {}
-        Err(e) => return Err(e),
+    let (file, _) = open_file(path)?;
+    read_open_file(path, file)
+}
+
+/// Read source content with the mtime observed from the same open file handle.
+fn read_source_file(path: &Path) -> Result<(String, Option<SystemTime>), ForgeError> {
+    let (file, metadata) = open_file(path)?;
+    let source_modified = metadata.modified().ok();
+    let content = read_open_file(path, file)?;
+    Ok((content, source_modified))
+}
+
+/// Open a regular trace input and reject known oversized files before reading.
+fn open_file(path: &Path) -> Result<(File, Metadata), ForgeError> {
+    let file = File::open(path).map_err(|error| map_io_error(path, error))?;
+    let metadata = file.metadata().map_err(|error| map_io_error(path, error))?;
+    if metadata.len() > crate::io::MAX_FILE_SIZE {
+        return Err(ForgeError::FileTooLarge {
+            path: path.to_path_buf(),
+            size_bytes: metadata.len(),
+            limit_bytes: crate::io::MAX_FILE_SIZE,
+        });
     }
-    std::fs::read_to_string(path).map_err(|e| match e.kind() {
+    Ok((file, metadata))
+}
+
+/// Read an opened file without ever buffering more than the configured limit.
+fn read_open_file(path: &Path, file: File) -> Result<String, ForgeError> {
+    read_open_file_bounded(path, file, crate::io::MAX_FILE_SIZE)
+}
+
+fn read_open_file_bounded(path: &Path, file: File, max_bytes: u64) -> Result<String, ForgeError> {
+    let mut content = String::new();
+    let bytes_read = u64::try_from(
+        file.take(max_bytes + 1)
+            .read_to_string(&mut content)
+            .map_err(|error| map_io_error(path, error))?,
+    )
+    .map_err(|_| ForgeError::Io(std::io::Error::other("bounded read count exceeds u64")))?;
+    if bytes_read > max_bytes {
+        return Err(ForgeError::FileTooLarge {
+            path: path.to_path_buf(),
+            size_bytes: bytes_read,
+            limit_bytes: max_bytes,
+        });
+    }
+    Ok(content)
+}
+
+/// Normalize I/O errors consistently across metadata and content reads.
+fn map_io_error(path: &Path, error: std::io::Error) -> ForgeError {
+    match error.kind() {
         std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
         std::io::ErrorKind::PermissionDenied => {
             ForgeError::PermissionDenied { path: path.to_path_buf() }
         }
-        _ => ForgeError::Io(e),
-    })
+        _ => ForgeError::Io(error),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{Error, ErrorKind, Write};
+
+    #[test]
+    fn permission_errors_are_normalized_before_or_during_reads() {
+        let path = Path::new("protected.md");
+        assert!(matches!(
+            map_io_error(path, Error::from(ErrorKind::PermissionDenied)),
+            ForgeError::PermissionDenied { path: error_path } if error_path == path
+        ));
+    }
+
+    #[test]
+    fn bounded_reader_rejects_content_over_its_limit() {
+        let mut temp = tempfile::NamedTempFile::new().unwrap();
+        temp.write_all(b"abc").unwrap();
+        let file = File::open(temp.path()).unwrap();
+
+        match read_open_file_bounded(temp.path(), file, 2) {
+            Err(ForgeError::FileTooLarge { size_bytes, limit_bytes, .. }) => {
+                assert_eq!(size_bytes, 3);
+                assert_eq!(limit_bytes, 2);
+            }
+            result => panic!("expected bounded read to reject content, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn source_read_returns_content_and_same_handle_mtime_snapshot() {
+        let mut temp = tempfile::NamedTempFile::new().unwrap();
+        temp.write_all(b"one\ntwo\n").unwrap();
+
+        let (content, modified) = read_source_file(temp.path()).unwrap();
+        assert_eq!(content.lines().count(), 2);
+        assert!(modified.is_some());
+    }
 }

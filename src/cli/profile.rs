@@ -12,7 +12,7 @@ use crate::oscal::profile::{ProfileRoot, SelectionMode, build_profile, parse_con
 ///
 /// # Arguments
 ///
-/// * `catalog` — Path to the source Catalog file (checked for existence).
+/// * `catalog` — Path to the source Catalog file (must be a regular file).
 /// * `include` — Comma-separated control IDs to include, or `None`.
 /// * `exclude` — Comma-separated control IDs to exclude, or `None`.
 /// * `format` — Output format: `json`, `xml`, or `yaml`.
@@ -23,18 +23,17 @@ use crate::oscal::profile::{ProfileRoot, SelectionMode, build_profile, parse_con
 /// # Errors
 ///
 /// * `ForgeError::InvalidArgument` — neither `--include` nor `--exclude` nor `--set-param`
-///   provided, or empty control ID list after parsing. C-2: when `--set-param` is given without
-///   a selection flag, a warning is emitted and the Profile is generated with empty imports (exit 0).
+///   provided, empty parameter IDs, a non-regular catalog path, or a non-UTF-8 catalog path.
 /// * `ForgeError::FileNotFound` — catalog path does not exist.
-/// * `ForgeError::Io` — output file write failure.
+/// * `ForgeError::Io` — catalog metadata cannot be read or output cannot be written.
 ///
 /// # Behavior
 ///
 /// 1. Validate exactly one of `include` or `exclude` is `Some` (C-2: warn if neither + `set_params`).
-/// 2. Check that `catalog` path exists.
+/// 2. Validate that `catalog` is a regular file with a UTF-8-safe path.
 /// 3. Parse control IDs via `parse_control_ids`.
 /// 4. Determine `SelectionMode`.
-/// 5. Call `build_profile` with parsed param overrides.
+/// 5. Call `build_profile` with parsed parameter overrides.
 /// 6. Wrap in `ProfileRoot` and serialize.
 /// 7. Write to `output` path or stdout.
 pub fn execute(
@@ -46,22 +45,13 @@ pub fn execute(
     set_params: &[String],
     timestamp: Option<&str>,
 ) -> Result<(), ForgeError> {
-    // Parse param overrides from flat [id, value, id, value, ...] slice
     let pairs = parse_set_param_pairs(set_params)?;
-    for (id, _) in &pairs {
-        if id.trim().is_empty() {
-            return Err(ForgeError::InvalidArgument(
-                "Empty or whitespace-only --set-param ID".to_string(),
-            ));
-        }
-    }
     tracing::info!(
         param_count = pairs.len(),
         "profile: {} parameter override(s) specified",
         pairs.len()
     );
 
-    // Step 1: validate exactly one selection flag is provided; C-2 produces empty imports
     let (control_ids, mode) = match (include, exclude) {
         (Some(inc), None) => (parse_control_ids(inc)?, SelectionMode::Include),
         (None, Some(exc)) => (parse_control_ids(exc)?, SelectionMode::Exclude),
@@ -71,7 +61,6 @@ pub fn execute(
                     "Either --include or --exclude must be provided".to_string(),
                 ));
             }
-            // C-2: --set-param without --include/--exclude → warn, continue with no imports (exit 0)
             eprintln!(
                 "warning: --set-param specified without --include or --exclude; the Profile will have no control imports"
             );
@@ -81,19 +70,26 @@ pub fn execute(
             (vec![], SelectionMode::Include)
         }
         (Some(_), Some(_)) => {
-            // clap conflicts_with handles this case; defensive fallback
             return Err(ForgeError::InvalidArgument(
                 "--include and --exclude are mutually exclusive".to_string(),
             ));
         }
     };
 
-    // Step 2: check catalog exists
-    if !catalog.exists() {
-        return Err(ForgeError::FileNotFound { path: catalog.to_path_buf() });
+    match std::fs::metadata(catalog) {
+        Ok(metadata) if metadata.is_file() => {}
+        Ok(_) => {
+            return Err(ForgeError::InvalidArgument(format!(
+                "catalog path '{}' is not a regular file",
+                catalog.display()
+            )));
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Err(ForgeError::FileNotFound { path: catalog.to_path_buf() });
+        }
+        Err(error) => return Err(ForgeError::Io(error)),
     }
 
-    // Step 3: parse optional timestamp override
     let ts_override = match timestamp {
         Some(ts_str) => {
             let parsed = chrono::DateTime::parse_from_rfc3339(ts_str).map_err(|e| {
@@ -106,10 +102,14 @@ pub fn execute(
         None => None,
     };
 
-    // Step 4: build profile with param overrides
-    let catalog_str = catalog.to_string_lossy();
+    let catalog_str = catalog.to_str().ok_or_else(|| {
+        ForgeError::InvalidArgument(format!(
+            "catalog path '{}' is not valid UTF-8; refusing to embed a corrupted href",
+            catalog.display()
+        ))
+    })?;
     let control_count = control_ids.len();
-    let oscal_profile = build_profile(&catalog_str, control_ids, mode, &pairs, ts_override)?;
+    let oscal_profile = build_profile(catalog_str, control_ids, mode, &pairs, ts_override)?;
 
     info!(
         catalog = %catalog.display(),
@@ -117,7 +117,6 @@ pub fn execute(
         "Profile generation complete"
     );
 
-    // Step 6: wrap and serialize
     let root = ProfileRoot { profile: oscal_profile };
     let serialized = match format {
         OutputFormat::Json => serde_json::to_string_pretty(&root).map_err(|e| {
@@ -129,28 +128,90 @@ pub fn execute(
         OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(&root)?,
     };
 
-    // Step 7: write to file or stdout
     crate::cli::output::write_output(&serialized, output)?;
 
     Ok(())
 }
 
-/// Parse a flat `[id, value, id, value, ...]` slice into `(id, value)` pairs.
+/// Parse a flat `[id, value, id, value, ...]` slice into normalized `(id, value)` pairs.
 ///
 /// Returns `Err(ForgeError::InvalidArgument)` if the slice has an odd length
-/// (i.e., an unpaired value). In practice clap's `num_args = 2` prevents this,
-/// but the check is retained as a defensive invariant.
+/// (i.e., an unpaired value) or an ID is empty after trimming. In practice clap's
+/// `num_args = 2` prevents the former, but the check is retained as a defensive invariant.
 fn parse_set_param_pairs(set_params: &[String]) -> Result<Vec<(String, String)>, ForgeError> {
-    if !set_params.len().is_multiple_of(2) {
+    if set_params.len() % 2 != 0 {
         return Err(ForgeError::InvalidArgument(format!(
             "--set-param requires ID VALUE pairs but received an odd number of arguments ({})",
             set_params.len()
         )));
     }
-    Ok(set_params
-        .as_chunks::<2>()
-        .0
-        .iter()
-        .map(|[id, value]| (id.clone(), value.clone()))
-        .collect())
+
+    set_params
+        .chunks_exact(2)
+        .map(|pair| {
+            let id = pair[0].trim();
+            let value = &pair[1];
+            if id.is_empty() {
+                return Err(ForgeError::InvalidArgument(
+                    "Empty or whitespace-only --set-param ID".to_string(),
+                ));
+            }
+            Ok((id.to_string(), value.clone()))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ffi::OsStr;
+    use std::path::Path;
+
+    use super::{execute, parse_set_param_pairs};
+    use crate::error::ForgeError;
+    use crate::types::OutputFormat;
+
+    #[test]
+    fn parameter_identifier_is_trimmed_before_profile_generation() {
+        let pairs = parse_set_param_pairs(&[" prm ".to_string(), "value".to_string()])
+            .unwrap_or_else(|error| panic!("unexpected parse failure: {error}"));
+
+        assert_eq!(pairs, [("prm".to_string(), "value".to_string())]);
+    }
+
+    #[test]
+    fn catalog_directory_is_rejected_as_non_regular_file() {
+        let directory = tempfile::tempdir()
+            .unwrap_or_else(|error| panic!("failed to create temporary directory: {error}"));
+        let error =
+            execute(directory.path(), Some("ac-1"), None, &OutputFormat::Json, None, &[], None)
+                .unwrap_err();
+
+        assert!(
+            matches!(error, ForgeError::InvalidArgument(message) if message.contains("not a regular file"))
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn non_utf8_catalog_path_is_rejected_without_lossy_href() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let directory = tempfile::tempdir()
+            .unwrap_or_else(|error| panic!("failed to create temporary directory: {error}"));
+        let catalog = directory.path().join(OsStr::from_bytes(b"catalog-\xff.json"));
+        if let Err(error) = std::fs::write(&catalog, "{}") {
+            // Some Unix filesystems (notably macOS defaults) reject malformed
+            // UTF-8 path bytes before FORGE can exercise its own boundary.
+            eprintln!("skipping non-UTF-8 path test: {error}");
+            return;
+        }
+
+        let error =
+            execute(Path::new(&catalog), Some("ac-1"), None, &OutputFormat::Json, None, &[], None)
+                .unwrap_err();
+
+        assert!(
+            matches!(error, ForgeError::InvalidArgument(message) if message.contains("not valid UTF-8"))
+        );
+    }
 }

@@ -30,6 +30,8 @@ pub fn execute(
         MigrationOutputFormat::Text => crate::migration::format_text(&report),
         MigrationOutputFormat::Json => crate::migration::format_json(&report)?,
     };
+    // Analysis can be slow enough for an output path to be swapped after the first check.
+    reject_output_alias(output, old_policy, new_policy, successor_map)?;
     crate::cli::output::write_output(&rendered, output)
         .map_err(|error| ForgeError::MigrationError(error.to_string()))?;
     Ok(report.has_reviewable_changes())
@@ -44,41 +46,86 @@ fn reject_output_alias(
     let Some(output) = output else {
         return Ok(());
     };
-    let output_identity = path_identity(output, "--output path")?;
     for (label, input) in [("old policy path", old_policy), ("new policy path", new_policy)] {
-        let input_identity = path_identity(input, label)?;
-        if output_identity == input_identity {
+        if paths_alias(output, input)? {
             return Err(ForgeError::MigrationError(format!(
                 "--output must not overwrite the {label}"
             )));
         }
     }
-    if let Some(successor_map) = successor_map {
-        let successor_identity = path_identity(successor_map, "successor map path")?;
-        if output_identity == successor_identity {
-            return Err(ForgeError::MigrationError(
-                "--output must not overwrite the successor map path".to_string(),
-            ));
-        }
+    if let Some(successor_map) = successor_map
+        && paths_alias(output, successor_map)?
+    {
+        return Err(ForgeError::MigrationError(
+            "--output must not overwrite the successor map path".to_string(),
+        ));
     }
     Ok(())
 }
 
 fn path_identity(path: &Path, role: &str) -> Result<PathBuf, ForgeError> {
-    if path.exists() {
-        return path.canonicalize().map_err(|error| {
-            ForgeError::MigrationError(format!("unable to resolve {role}: {error}"))
-        });
+    match path.canonicalize() {
+        Ok(canonical_path) => Ok(canonical_path),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            let parent = path
+                .parent()
+                .filter(|parent| !parent.as_os_str().is_empty())
+                .unwrap_or(Path::new("."));
+            let canonical_parent = parent.canonicalize().map_err(|parent_error| {
+                ForgeError::MigrationError(format!(
+                    "unable to resolve parent directory of {role}: {parent_error}"
+                ))
+            })?;
+            let file_name = path
+                .file_name()
+                .ok_or_else(|| ForgeError::MigrationError(format!("{role} must name a file")))?;
+            Ok(canonical_parent.join(file_name))
+        }
+        Err(error) => Err(ForgeError::MigrationError(format!("unable to resolve {role}: {error}"))),
     }
-    let parent =
-        path.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    let canonical_parent = parent.canonicalize().map_err(|error| {
-        ForgeError::MigrationError(format!("unable to resolve parent directory of {role}: {error}"))
-    })?;
-    let file_name = path
-        .file_name()
-        .ok_or_else(|| ForgeError::MigrationError(format!("{role} must name a file")))?;
-    Ok(canonical_parent.join(file_name))
+}
+
+fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
+    if path_identity(left, "--output path")? == path_identity(right, "input path")? {
+        return Ok(true);
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        let left_metadata = match std::fs::metadata(left) {
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+            Err(error) => {
+                return Err(ForgeError::MigrationError(format!(
+                    "unable to inspect '--output path': {error}"
+                )));
+            }
+        };
+        let right_metadata = match std::fs::metadata(right) {
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+            Err(error) => {
+                return Err(ForgeError::MigrationError(format!(
+                    "unable to inspect input path: {error}"
+                )));
+            }
+        };
+        Ok(left_metadata.dev() == right_metadata.dev()
+            && left_metadata.ino() == right_metadata.ino())
+    }
+
+    #[cfg(windows)]
+    {
+        crate::mapping::paths_alias(left, right)
+            .map_err(|error| ForgeError::MigrationError(error.to_string()))
+    }
+
+    #[cfg(not(any(unix, windows)))]
+    {
+        Ok(false)
+    }
 }
 
 #[cfg(test)]
@@ -96,6 +143,28 @@ mod tests {
         assert!(matches!(result, Err(ForgeError::MigrationError(_))));
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn rejects_output_hard_linked_to_an_input() {
+        let directory = tempfile::tempdir()
+            .unwrap_or_else(|error| panic!("failed to create temporary directory: {error}"));
+        let old = directory.path().join("old.md");
+        let new = directory.path().join("new.md");
+        let output = directory.path().join("report.json");
+        std::fs::write(&old, "# Old\n")
+            .unwrap_or_else(|error| panic!("failed to write old policy: {error}"));
+        std::fs::write(&new, "# New\n")
+            .unwrap_or_else(|error| panic!("failed to write new policy: {error}"));
+        std::fs::hard_link(&old, &output)
+            .unwrap_or_else(|error| panic!("failed to create hard link: {error}"));
+
+        let result = reject_output_alias(Some(&output), &old, &new, None);
+
+        assert!(
+            matches!(result, Err(ForgeError::MigrationError(message)) if message.contains("old policy path"))
+        );
+    }
+
     #[test]
     fn missing_input_directory_names_the_input_role() {
         let directory = tempfile::tempdir().unwrap();
@@ -105,7 +174,7 @@ mod tests {
         std::fs::write(&new, "# New\n").unwrap();
 
         let error = reject_output_alias(Some(&output), &old, &new, None).unwrap_err().to_string();
-        assert!(error.contains("parent directory of old policy path"), "unexpected error: {error}");
+        assert!(error.contains("parent directory of input path"), "unexpected error: {error}");
         assert!(!error.contains("output directory"), "unexpected error: {error}");
     }
 }

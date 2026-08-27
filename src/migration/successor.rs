@@ -131,7 +131,7 @@ pub fn parse(bytes: &[u8]) -> Result<SuccessorMap, ForgeError> {
         )));
     }
     let value = crate::json_strict::parse_value(bytes, "successor map", STRICT_JSON_LIMITS)
-        .map_err(error)?;
+        .map_err(|cause| error(cause.to_string()))?;
     let mut map: SuccessorMap = serde_json::from_value(value)
         .map_err(|cause| error(format!("invalid successor map contract: {cause}")))?;
     validate(&mut map)?;
@@ -157,7 +157,7 @@ fn validate(map: &mut SuccessorMap) -> Result<(), ForgeError> {
         validate_cardinality(&path, relationship)?;
         normalize_ids(&format!("{path}.old_ids"), &mut relationship.old_ids)?;
         normalize_ids(&format!("{path}.new_ids"), &mut relationship.new_ids)?;
-        if relationship.old_ids.iter().any(|id| relationship.new_ids.binary_search(id).is_ok()) {
+        if relationship.old_ids.iter().any(|id| relationship.new_ids.contains(id)) {
             return Err(error(format!("{path} must not map an identifier to itself")));
         }
         for id in &relationship.old_ids {
@@ -179,8 +179,17 @@ fn validate(map: &mut SuccessorMap) -> Result<(), ForgeError> {
         validate_nonempty(&format!("{path}.approved_by"), &relationship.approved_by)?;
         validate_nonempty(&format!("{path}.rationale"), &relationship.rationale)?;
         validate_nonempty(&format!("{path}.approved_at"), &relationship.approved_at)?;
-        chrono::DateTime::parse_from_rfc3339(&relationship.approved_at)
+        let approved_at = chrono::DateTime::parse_from_rfc3339(&relationship.approved_at)
             .map_err(|_| error(format!("{path}.approved_at must be an RFC 3339 timestamp")))?;
+        if approved_at.offset().local_minus_utc() != 0 {
+            return Err(error(format!("{path}.approved_at must be a UTC RFC 3339 timestamp")));
+        }
+    }
+    if let Some(identifier) = used_old.intersection(&used_new).next() {
+        return Err(error(format!(
+            "identifier '{}' must not be both a prior and successor identifier",
+            crate::json_strict::bounded(identifier)
+        )));
     }
     map.relationships.sort_by(|left, right| {
         (left.relationship, left.old_ids.as_slice(), left.new_ids.as_slice()).cmp(&(
@@ -261,11 +270,88 @@ mod tests {
     }
 
     #[test]
+    fn rejects_chained_cyclic_and_self_successor_identifiers() {
+        for relationships in [
+            vec![
+                SuccessorRelationship {
+                    relationship: RelationshipType::Successor,
+                    old_ids: vec!["A".to_string()],
+                    new_ids: vec!["B".to_string()],
+                    approved_by: "reviewer".to_string(),
+                    approved_at: "2026-08-25T12:00:00Z".to_string(),
+                    rationale: "reviewed".to_string(),
+                },
+                SuccessorRelationship {
+                    relationship: RelationshipType::Successor,
+                    old_ids: vec!["B".to_string()],
+                    new_ids: vec!["C".to_string()],
+                    approved_by: "reviewer".to_string(),
+                    approved_at: "2026-08-25T12:00:00Z".to_string(),
+                    rationale: "reviewed".to_string(),
+                },
+            ],
+            vec![
+                SuccessorRelationship {
+                    relationship: RelationshipType::Successor,
+                    old_ids: vec!["A".to_string()],
+                    new_ids: vec!["B".to_string()],
+                    approved_by: "reviewer".to_string(),
+                    approved_at: "2026-08-25T12:00:00Z".to_string(),
+                    rationale: "reviewed".to_string(),
+                },
+                SuccessorRelationship {
+                    relationship: RelationshipType::Successor,
+                    old_ids: vec!["B".to_string()],
+                    new_ids: vec!["A".to_string()],
+                    approved_by: "reviewer".to_string(),
+                    approved_at: "2026-08-25T12:00:00Z".to_string(),
+                    rationale: "reviewed".to_string(),
+                },
+            ],
+        ] {
+            let mut map = SuccessorMap {
+                schema_version: SUCCESSOR_MAP_SCHEMA_VERSION.to_string(),
+                relationships,
+            };
+            assert!(
+                validate(&mut map).unwrap_err().to_string().contains("both a prior and successor")
+            );
+        }
+
+        let mut self_map = SuccessorMap {
+            schema_version: SUCCESSOR_MAP_SCHEMA_VERSION.to_string(),
+            relationships: vec![SuccessorRelationship {
+                relationship: RelationshipType::Successor,
+                old_ids: vec!["A".to_string()],
+                new_ids: vec!["A".to_string()],
+                approved_by: "reviewer".to_string(),
+                approved_at: "2026-08-25T12:00:00Z".to_string(),
+                rationale: "reviewed".to_string(),
+            }],
+        };
+        assert!(
+            validate(&mut self_map)
+                .unwrap_err()
+                .to_string()
+                .contains("must not map an identifier to itself")
+        );
+    }
+
+    #[test]
     fn relationship_as_str_values_match_their_serialized_contracts() {
         for value in [RelationshipType::Successor, RelationshipType::Split, RelationshipType::Merge]
         {
             assert_eq!(serde_json::to_value(value).unwrap(), value.as_str());
         }
+    }
+
+    #[test]
+    fn declaration_approval_timestamp_must_be_utc() {
+        let error = parse(
+            br#"{"schema_version":"forge.successor-map/1","relationships":[{"relationship":"successor","old_ids":["old"],"new_ids":["new"],"approved_by":"reviewer","approved_at":"2026-08-25T12:00:00+01:00","rationale":"reviewed"}]}"#,
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("must be a UTC RFC 3339 timestamp"));
     }
 
     #[test]

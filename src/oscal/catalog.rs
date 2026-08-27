@@ -240,7 +240,9 @@ pub fn generate_section_abbreviation(section_title: &str) -> String {
 ///
 /// Pattern: `{prefix}-{abbreviation}-{NNN}` where the index is
 /// 0-based internally and displayed as 1-based. Zero-padded to
-/// 3 digits; extends naturally past 999.
+/// 3 digits; extends naturally past 999. The abbreviation may include a
+/// four-hex collision suffix (for example, `AC-dd3e`), producing a
+/// four-segment control ID such as `POL-AC-dd3e-001`.
 ///
 /// # Examples
 ///
@@ -258,7 +260,7 @@ pub fn generate_control_id(abbreviation: &str, requirement_index: usize, prefix:
 
 /// Derive a control title from requirement text.
 ///
-/// 1. Find first sentence (up to first `.`, `!`, or `?`)
+/// 1. Find first sentence (up to first `.`, `!`, or `?`, excluding decimal points)
 /// 2. If no sentence-ending punctuation, use full text
 /// 3. Trim whitespace
 ///
@@ -284,11 +286,28 @@ pub fn generate_control_id(abbreviation: &str, requirement_index: usize, prefix:
 /// ```
 #[must_use]
 pub fn derive_control_title(requirement_text: &str) -> String {
-    let sentence = requirement_text
-        .find(['.', '!', '?'])
-        .map_or(requirement_text, |pos| &requirement_text[..=pos]);
+    let sentence_end = requirement_text.char_indices().find_map(|(position, character)| {
+        if !matches!(character, '.' | '!' | '?') {
+            return None;
+        }
 
-    sentence.trim().to_string()
+        let is_decimal_point = character == '.'
+            && requirement_text[..position]
+                .chars()
+                .next_back()
+                .is_some_and(|previous| previous.is_ascii_digit())
+            && requirement_text[position + character.len_utf8()..]
+                .chars()
+                .next()
+                .is_some_and(|next| next.is_ascii_digit());
+
+        (!is_decimal_point).then_some(position + character.len_utf8())
+    });
+
+    sentence_end.map_or_else(
+        || requirement_text.trim().to_string(),
+        |end| requirement_text[..end].trim().to_string(),
+    )
 }
 
 /// Recursively collect all requirements from a section and
@@ -327,7 +346,9 @@ pub(crate) fn collect_requirements_with_section(
 /// Build an OSCAL Catalog from a [`PolicyDocument`].
 ///
 /// Optionally records a [`TraceLink`] for every generated control into the
-/// provided [`TraceLinkCollection`]. Pass `None` for backward compatibility.
+/// provided [`TraceLinkCollection`]. Trace links are committed only after the
+/// entire catalog has been built successfully. Pass `None` for backward
+/// compatibility.
 ///
 /// # Errors
 ///
@@ -336,11 +357,12 @@ pub(crate) fn collect_requirements_with_section(
 /// is detected for the same requirement.
 pub fn build_catalog(
     document: &PolicyDocument,
-    mut trace_links: Option<&mut TraceLinkCollection>,
+    trace_links: Option<&mut TraceLinkCollection>,
 ) -> Result<OscalCatalog, ForgeError> {
     let mut group_id_counts: HashMap<String, Vec<String>> = HashMap::new();
     let mut abbrev_counts: HashMap<String, Vec<String>> = HashMap::new();
     let mut groups = Vec::new();
+    let mut buffered_trace_links = Vec::new();
 
     for (idx, section) in document.sections.iter().enumerate() {
         let group_id = resolve_group_id(&section.title, idx, &mut group_id_counts);
@@ -360,18 +382,7 @@ pub fn build_catalog(
             })?;
 
             let control_id = generate_control_id(&abbreviation, req_idx, "POL");
-            let mut control_props: Vec<OscalProp> = Vec::new();
-            if let Some(modality) = req.modality {
-                let modality_value = match modality {
-                    crate::model::Modality::Normative => "normative",
-                    crate::model::Modality::Advisory => "advisory",
-                };
-                control_props.push(OscalProp {
-                    name: "modality".to_string(),
-                    ns: None,
-                    value: modality_value.to_string(),
-                });
-            }
+            let control_props = modality_props(req);
             // T031: Emit OSCAL params from extracted PolicyParameters (WI-34)
             let params: Vec<OscalParam> =
                 req.parameters.iter().map(crate::parameter::to_oscal_param).collect();
@@ -385,25 +396,17 @@ pub fn build_catalog(
                 props: control_props,
             });
 
-            // Record trace link for this control (T020)
-            if let Some(ref mut tl) = trace_links {
-                let trace = TraceLink {
+            if trace_links.is_some() {
+                buffered_trace_links.push(TraceLink {
                     requirement_stable_id: stable_id.clone(),
                     oscal_json_path: format!("catalog.groups[{idx}].controls[{req_idx}]"),
                     oscal_element_id: stable_id.clone(),
                     source_location: SourceLocation {
                         file_path: document.metadata.source_path.clone(),
-                        section_title: req_section.title.clone(),
+                        section_title: Some(req_section.title.clone()),
                         line_number: req.source_line,
                     },
-                };
-                tl.record(trace).map_err(|e| {
-                    ForgeError::CatalogBuild(format!(
-                        "Failed to record trace link for requirement '{stable_id}' in section '{}' at line {}: {e}",
-                        req_section.title,
-                        req.source_line,
-                    ))
-                })?;
+                });
             }
         }
 
@@ -415,6 +418,34 @@ pub fn build_catalog(
             controls,
             groups: vec![],
         });
+    }
+
+    if let Some(trace_links) = trace_links {
+        let mut element_ids = std::collections::HashSet::with_capacity(buffered_trace_links.len());
+        for trace in &buffered_trace_links {
+            if !element_ids.insert(trace.oscal_element_id.clone())
+                || trace_links.by_oscal_element(&trace.oscal_element_id).is_some()
+            {
+                let section_title =
+                    trace.source_location.section_title.as_deref().unwrap_or("<unknown>");
+                return Err(ForgeError::CatalogBuild(format!(
+                    "Failed to record trace link for requirement '{}' in section '{section_title}' at line {}: duplicate OSCAL element id",
+                    trace.requirement_stable_id, trace.source_location.line_number,
+                )));
+            }
+        }
+
+        for trace in buffered_trace_links {
+            let stable_id = trace.requirement_stable_id.clone();
+            let section_title =
+                trace.source_location.section_title.as_deref().unwrap_or("<unknown>").to_string();
+            let line_number = trace.source_location.line_number;
+            trace_links.record(trace).map_err(|e| {
+                ForgeError::CatalogBuild(format!(
+                    "Failed to record trace link for requirement '{stable_id}' in section '{section_title}' at line {line_number}: {e}",
+                ))
+            })?;
+        }
     }
 
     let total_controls: usize = groups.iter().map(|g| g.controls.len()).sum();
@@ -431,6 +462,16 @@ pub fn build_catalog(
         controls: vec![],
         groups,
         back_matter: None,
+    })
+}
+
+fn modality_props(requirement: &PolicyRequirement) -> Vec<OscalProp> {
+    requirement.modality.map_or_else(Vec::new, |modality| {
+        let value = match modality {
+            crate::model::Modality::Normative => "normative",
+            crate::model::Modality::Advisory => "advisory",
+        };
+        vec![OscalProp { name: "modality".to_string(), ns: None, value: value.to_string() }]
     })
 }
 
@@ -473,8 +514,10 @@ fn resolve_group_id(
 /// titles that produce the same base abbreviation receive a hash suffix
 /// derived from their content (first 2 bytes of SHA-256, hex-encoded), salted
 /// by the title's occurrence ordinal so identical titles colliding three or
-/// more times still receive distinct suffixes (F0609). This keeps the
-/// disambiguation stable regardless of encounter order.
+/// more times still receive distinct suffixes (F0609). Output is deterministic
+/// for a fixed section ordering: the first title keeps the bare abbreviation,
+/// while later collisions receive content-derived suffixes. Reordering sections
+/// can therefore change the affected control IDs.
 pub(crate) fn resolve_abbreviation(
     title: &str,
     counts: &mut HashMap<String, Vec<String>>,
@@ -545,6 +588,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -559,6 +603,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -716,6 +761,19 @@ mod tests {
     }
 
     #[test]
+    fn title_preserves_decimal_without_sentence_terminator() {
+        assert_eq!(
+            derive_control_title("Require TLS 1.3 for all communications"),
+            "Require TLS 1.3 for all communications"
+        );
+    }
+
+    #[test]
+    fn title_stops_after_sentence_containing_decimal() {
+        assert_eq!(derive_control_title("Version 2.0 released. More."), "Version 2.0 released.");
+    }
+
+    #[test]
     fn title_long_text_is_stored_in_full() {
         let long = "Organizations must implement \
             comprehensive security controls including \
@@ -835,6 +893,20 @@ mod tests {
     }
 
     // ── T021: build_catalog full controls ───────────────
+
+    #[test]
+    fn catalog_trace_links_remain_empty_when_duplicate_ids_fail() {
+        let document = doc(vec![sec(
+            "Access Control",
+            vec![req("First requirement.", "duplicate"), req("Second requirement.", "duplicate")],
+        )]);
+        let mut trace_links = TraceLinkCollection::new();
+
+        let result = build_catalog(&document, Some(&mut trace_links));
+
+        assert!(result.is_err());
+        assert!(trace_links.is_empty(), "trace links must not be committed after a failed build");
+    }
 
     #[test]
     fn catalog_controls_mapping() {
@@ -1080,6 +1152,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -1139,6 +1212,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         };
         let d = doc(vec![sec("Test", vec![r])]);
         let cat = build_catalog(&d, None).unwrap();

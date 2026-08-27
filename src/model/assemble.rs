@@ -13,24 +13,44 @@ use crate::parse::{ExtractedContent, ExtractedListItem, SectionNode};
 use super::frontmatter::parse_frontmatter;
 use super::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 
+/// Build a requirement in its pre-enrichment state from one extracted item.
+fn forge_requirement(item: &ExtractedListItem) -> PolicyRequirement {
+    PolicyRequirement {
+        stable_id: None,
+        text: item.text.clone(),
+        source_line: item.source_line,
+        nesting_depth: item.nesting_depth,
+        atom_index: 0,
+        parent_text: None,
+        citations: Vec::new(),
+        modality: None,
+        parameters: Vec::new(),
+        parameters_extracted: false,
+    }
+}
+
+/// Validate the recursive sibling-order invariant required by range ownership.
+fn validate_section_tree(section_nodes: &[SectionNode]) -> Result<(), ForgeError> {
+    for siblings in section_nodes.windows(2) {
+        if siblings[0].source_line >= siblings[1].source_line {
+            return Err(ForgeError::Parse(format!(
+                "section siblings must have strictly ascending source lines; found {} then {}",
+                siblings[0].source_line, siblings[1].source_line
+            )));
+        }
+    }
+
+    for section in section_nodes {
+        validate_section_tree(&section.children)?;
+    }
+    Ok(())
+}
+
 /// Map a slice of `SectionNode`s and `ExtractedListItem`s into `PolicySection`s.
 ///
-/// Associates each list item with its containing section by line range:
-/// - For sibling sections at the same level, each section owns the line range
-///   `[section.source_line, next_sibling.source_line)`.
-/// - The last sibling owns `[section.source_line, usize::MAX)`.
-/// - Children are processed recursively within their parent's range.
-///
-/// # Arguments
-///
-/// * `section_nodes` - Top-level (or sibling) section nodes from the parse layer.
-/// * `list_items` - All list items that could belong to these sections or their children.
-///
-/// # Returns
-///
-/// A vector of `PolicySection`s with requirements populated from matching list items.
-/// Returns a "Preamble" section if `section_nodes` is empty but `list_items` is not.
-/// Returns an empty vector if both are empty.
+/// Associates each list item with its containing section by line range. Items
+/// preceding the first heading attach to a synthetic `Preamble`; when no
+/// headings exist, all list items belong to that single `Preamble` section.
 pub(crate) fn map_sections(
     section_nodes: &[SectionNode],
     list_items: &[&ExtractedListItem],
@@ -39,60 +59,31 @@ pub(crate) fn map_sections(
         if list_items.is_empty() {
             return Vec::new();
         }
-        // SEC-5: Don't silently drop orphaned list items
-        let requirements: Vec<PolicyRequirement> = list_items
-            .iter()
-            .map(|item| PolicyRequirement {
-                stable_id: None,
-                text: item.text.clone(),
-                source_line: item.source_line,
-                nesting_depth: item.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            })
-            .collect();
+
+        let requirements = list_items.iter().map(|item| forge_requirement(item)).collect();
         return vec![PolicySection {
             title: "Preamble".to_string(),
             heading_level: 0,
             source_line: list_items[0].source_line,
             body_text: None,
-            children: vec![],
+            children: Vec::new(),
             requirements,
         }];
     }
 
     let first_heading_line = section_nodes[0].source_line;
-
-    // Collect list items before the first heading into a Preamble section
     let preamble_items: Vec<&ExtractedListItem> =
         list_items.iter().copied().filter(|item| item.source_line < first_heading_line).collect();
 
     let mut result = Vec::new();
-
     if !preamble_items.is_empty() {
-        let requirements: Vec<PolicyRequirement> = preamble_items
-            .iter()
-            .map(|item| PolicyRequirement {
-                stable_id: None,
-                text: item.text.clone(),
-                source_line: item.source_line,
-                nesting_depth: item.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            })
-            .collect();
+        let requirements = preamble_items.iter().map(|item| forge_requirement(item)).collect();
         result.push(PolicySection {
             title: "Preamble".to_string(),
             heading_level: 0,
             source_line: preamble_items[0].source_line,
             body_text: None,
-            children: vec![],
+            children: Vec::new(),
             requirements,
         });
     }
@@ -116,39 +107,22 @@ fn map_sections_recursive(
     );
 
     let mut result = Vec::with_capacity(section_nodes.len());
-
-    for (i, node) in section_nodes.iter().enumerate() {
+    for (index, node) in section_nodes.iter().enumerate() {
         let range_start = node.source_line;
-        let range_end = section_nodes.get(i + 1).map_or(usize::MAX, |next| next.source_line);
+        let range_end = section_nodes.get(index + 1).map_or(usize::MAX, |next| next.source_line);
 
-        // Filter list items within this section's line range.
         let items_in_range: Vec<&ExtractedListItem> = list_items
             .iter()
             .copied()
             .filter(|item| item.source_line >= range_start && item.source_line < range_end)
             .collect();
 
-        // Recursively process children, passing only items within this section's range.
         let children = map_sections_recursive(&node.children, &items_in_range);
-
-        // Items consumed by children should not also be requirements of the parent.
-        // Collect all source lines owned by children's ranges.
-        let child_owned: Vec<(usize, usize)> = build_child_ranges(&node.children);
-
-        let requirements: Vec<PolicyRequirement> = items_in_range
+        let child_owned = build_child_ranges(&node.children);
+        let requirements = items_in_range
             .iter()
             .filter(|item| !is_in_child_range(item.source_line, &child_owned))
-            .map(|item| PolicyRequirement {
-                stable_id: None,
-                text: item.text.clone(),
-                source_line: item.source_line,
-                nesting_depth: item.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            })
+            .map(|item| forge_requirement(item))
             .collect();
 
         result.push(PolicySection {
@@ -189,63 +163,55 @@ fn filename_stem(path: &Path) -> String {
 
 /// Assemble a `PolicyDocument` from ingestion and extraction outputs.
 ///
-/// Bridges the three extraction outputs into a unified domain model:
-/// - `IngestedDocument` provides file path, content hash, raw content
-/// - `Vec<SectionNode>` provides heading hierarchy
-/// - `ExtractedContent` provides list items, tables, paragraphs
-///
-/// # Arguments
-///
-/// * `ingested` - Reference to the ingested document (from WI-2)
-/// * `sections` - Section hierarchy tree (from WI-3)
-/// * `clauses` - Extracted content (from WI-4)
-///
-/// # Returns
-///
-/// * `Ok(PolicyDocument)` - Complete domain model with all sections and requirements
-/// * `Err(ForgeError)` - Fatal error preventing assembly
-///
 /// # Errors
 ///
-/// Returns `ForgeError::Parse` if section tree structure is invalid.
-/// Does NOT error on malformed YAML frontmatter (warns to stderr, uses fallback).
+/// Returns `ForgeError::Parse` when sibling section source lines are not
+/// strictly ascending. Malformed YAML frontmatter only emits a warning and
+/// falls back to derived metadata.
 pub fn assemble_document(
     ingested: &IngestedDocument,
     sections: &[SectionNode],
     clauses: &ExtractedContent,
 ) -> Result<PolicyDocument, ForgeError> {
+    validate_section_tree(sections)?;
+
+    if !clauses.tables.is_empty() || !clauses.paragraphs.is_empty() {
+        tracing::debug!(
+            table_count = clauses.tables.len(),
+            paragraph_count = clauses.paragraphs.len(),
+            "Extracted tables and paragraphs are not represented in the policy document"
+        );
+    }
+
     let content = ingested.reconstruct_content();
     let frontmatter = parse_frontmatter(&content);
 
-    // Resolve title: frontmatter -> first H1 heading -> filename stem
     let title = frontmatter
         .as_ref()
-        .and_then(|fm| fm.title.clone())
-        .or_else(|| sections.iter().find(|s| s.heading_level == 1).map(|s| s.title.clone()))
+        .and_then(|frontmatter| frontmatter.title.clone())
+        .or_else(|| {
+            sections
+                .iter()
+                .find(|section| section.heading_level == 1)
+                .map(|section| section.title.clone())
+        })
         .unwrap_or_else(|| filename_stem(&ingested.source_path));
-
-    // Resolve version: frontmatter -> "0.0.0"
     let version = frontmatter
         .as_ref()
-        .and_then(|fm| fm.version.clone())
+        .and_then(|frontmatter| frontmatter.version.clone())
         .unwrap_or_else(|| "0.0.0".to_string());
-
-    // Author and date come from frontmatter only
-    let author = frontmatter.as_ref().and_then(|fm| fm.author.clone());
-    let date = frontmatter.as_ref().and_then(|fm| fm.date.clone());
 
     let metadata = DocumentMetadata {
         title,
         version,
-        author,
-        date,
+        author: frontmatter.as_ref().and_then(|frontmatter| frontmatter.author.clone()),
+        date: frontmatter.as_ref().and_then(|frontmatter| frontmatter.date.clone()),
         source_path: ingested.source_path.clone(),
         content_hash: Some(ingested.fingerprint.clone()),
     };
 
     let item_refs: Vec<&ExtractedListItem> = clauses.list_items.iter().collect();
     let mapped_sections = map_sections(sections, &item_refs);
-
     let id = filename_stem(&ingested.source_path);
 
     Ok(PolicyDocument { id, metadata, sections: mapped_sections })
@@ -925,5 +891,33 @@ mod tests {
             output_req_count, input_item_count,
             "Requirement count mismatch: some requirements were silently dropped (SEC-5)"
         );
+    }
+
+    #[test]
+    fn assemble_rejects_nonascending_sibling_source_lines() {
+        let ingested = make_ingested("invalid.md", "# First\n# Second\n");
+        let sections = vec![
+            SectionNode {
+                title: "First".to_string(),
+                heading_level: 1,
+                source_line: 2,
+                body_text: None,
+                children: Vec::new(),
+            },
+            SectionNode {
+                title: "Second".to_string(),
+                heading_level: 1,
+                source_line: 2,
+                body_text: None,
+                children: Vec::new(),
+            },
+        ];
+        let clauses =
+            ExtractedContent { list_items: Vec::new(), tables: Vec::new(), paragraphs: Vec::new() };
+
+        assert!(matches!(
+            assemble_document(&ingested, &sections, &clauses),
+            Err(ForgeError::Parse(message)) if message.contains("strictly ascending")
+        ));
     }
 }

@@ -890,11 +890,21 @@ fn init_rejects_a_symlink_in_an_input_path_component() {
         "Component Safe Policy",
         "--owner",
         "owner",
+        "--party",
+        "owner=owner",
+        "--party",
+        "reviewer=reviewer",
+        "--party",
+        "approver=approver",
         "--next-review",
         "2027-08-25",
     ]);
     assert_eq!(result.status.code(), Some(2));
-    assert!(String::from_utf8_lossy(&result.stderr).contains("is a symlink"));
+    assert!(
+        String::from_utf8_lossy(&result.stderr).contains("is a symlink"),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
     assert!(!output.exists());
 }
 

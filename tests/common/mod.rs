@@ -13,7 +13,7 @@ use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySe
 ///
 /// - UUID-format strings → `"00000000-0000-0000-0000-000000000000"`
 /// - `last-modified` string values → `"2026-01-01T00:00:00Z"`
-/// - Absolute path strings (starting with `/` or a Windows drive letter) → `"NORMALIZED_PATH"`
+/// - Repo-local and Windows absolute path strings → `"NORMALIZED_PATH"`
 ///
 /// Normalization is applied recursively to all JSON values.
 pub fn normalize_for_snapshot(value: &serde_json::Value) -> serde_json::Value {
@@ -49,7 +49,7 @@ pub fn normalize_for_snapshot(value: &serde_json::Value) -> serde_json::Value {
         Value::String(s) => {
             if UUID_RE.is_match(s) {
                 Value::String("00000000-0000-0000-0000-000000000000".to_string())
-            } else if s.starts_with('/') || is_windows_path(s) {
+            } else if is_repo_local_path(s) || is_windows_path(s) {
                 Value::String("NORMALIZED_PATH".to_string())
             } else {
                 value.clone()
@@ -59,13 +59,19 @@ pub fn normalize_for_snapshot(value: &serde_json::Value) -> serde_json::Value {
     }
 }
 
-/// Returns true if the string looks like a Windows absolute path (e.g. `C:\...`).
+/// Returns true when a path belongs to this checkout rather than OSCAL content.
+fn is_repo_local_path(s: &str) -> bool {
+    Path::new(s).starts_with(Path::new(env!("CARGO_MANIFEST_DIR")))
+}
+
+/// Returns true if the string looks like a Windows absolute path.
 fn is_windows_path(s: &str) -> bool {
     let mut chars = s.chars();
     matches!(
         (chars.next(), chars.next(), chars.next()),
         (Some(c), Some(':'), Some('\\' | '/')) if c.is_ascii_alphabetic()
-    )
+    ) || s.starts_with(r"\\?\")
+        || s.starts_with(r"\\")
 }
 
 /// Maximum file size for ingest in tests (10 MB).
@@ -96,6 +102,7 @@ pub fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
         citations: vec![],
         modality: None,
         parameters: vec![],
+        parameters_extracted: false,
     }
 }
 
@@ -122,5 +129,30 @@ pub fn make_doc(title: &str, sections: Vec<PolicySection>) -> PolicyDocument {
             content_hash: None,
         },
         sections,
+    }
+}
+
+#[cfg(test)]
+mod normalization_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn preserves_slash_prefixed_oscal_hrefs() {
+        let value = normalize_for_snapshot(&json!({"href": "/oscal/cat/1.1.3"}));
+        assert_eq!(value["href"], "/oscal/cat/1.1.3");
+    }
+
+    #[test]
+    fn normalizes_checkout_and_windows_absolute_paths() {
+        let checkout = format!("{}/tests/fixture.md", env!("CARGO_MANIFEST_DIR"));
+        let value = normalize_for_snapshot(&json!({
+            "checkout": checkout,
+            "unc": r"\\server\share\fixture.md",
+            "verbatim": r"\\?\C:\fixture.md",
+        }));
+        assert_eq!(value["checkout"], "NORMALIZED_PATH");
+        assert_eq!(value["unc"], "NORMALIZED_PATH");
+        assert_eq!(value["verbatim"], "NORMALIZED_PATH");
     }
 }

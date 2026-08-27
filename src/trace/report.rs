@@ -37,9 +37,10 @@ pub struct TraceMetadata {
     pub source_file: String,
     /// Source section title (from `source-section` prop).
     pub source_section: String,
-    /// 1-based source line number (from `source-line` prop, parsed).
-    /// 0 means no line number (e.g., groups).
-    pub source_line: usize,
+    /// Optional 1-based source line number parsed from the `source-line` prop.
+    ///
+    /// Groups may be mapped to a section without a concrete source line.
+    pub source_line: Option<usize>,
 }
 
 /// A single entry in the traceability report.
@@ -103,12 +104,18 @@ pub struct TraceReport {
     pub artifact_type: OscalModelType,
     /// All trace entries (one per walked OSCAL element).
     pub entries: Vec<TraceEntry>,
-    /// Computed summary statistics.
-    pub summary: TraceSummary,
-    /// True if source file mtime > OSCAL metadata.last-modified.
+    /// True if the source file is newer than the OSCAL metadata timestamp.
     pub source_stale: bool,
-    /// Number of lines in the source policy file, for line reference validation.
+    /// Number of lines observed while reading the source policy file.
     pub source_line_count: usize,
+}
+
+impl TraceReport {
+    /// Compute summary statistics from the report's current entries.
+    #[must_use]
+    pub fn summary(&self) -> TraceSummary {
+        TraceSummary::from_entries(&self.entries)
+    }
 }
 
 #[cfg(test)]
@@ -122,11 +129,11 @@ mod tests {
         let meta = TraceMetadata {
             source_file: "policy.md".to_string(),
             source_section: "Access Control".to_string(),
-            source_line: 42,
+            source_line: Some(42),
         };
         assert_eq!(meta.source_file, "policy.md");
         assert_eq!(meta.source_section, "Access Control");
-        assert_eq!(meta.source_line, 42);
+        assert_eq!(meta.source_line, Some(42));
     }
 
     #[test]
@@ -137,7 +144,7 @@ mod tests {
             trace: Some(TraceMetadata {
                 source_file: "policy.md".to_string(),
                 source_section: "Access Control".to_string(),
-                source_line: 10,
+                source_line: Some(10),
             }),
         };
         assert!(entry.trace.is_some());
@@ -162,7 +169,7 @@ mod tests {
                 trace: Some(TraceMetadata {
                     source_file: "p.md".to_string(),
                     source_section: "S".to_string(),
-                    source_line: 1,
+                    source_line: Some(1),
                 }),
             },
             TraceEntry {
@@ -171,7 +178,7 @@ mod tests {
                 trace: Some(TraceMetadata {
                     source_file: "p.md".to_string(),
                     source_section: "S".to_string(),
-                    source_line: 2,
+                    source_line: Some(2),
                 }),
             },
         ];
@@ -191,7 +198,7 @@ mod tests {
                 trace: Some(TraceMetadata {
                     source_file: "p.md".to_string(),
                     source_section: "S".to_string(),
-                    source_line: 1,
+                    source_line: Some(1),
                 }),
             },
             TraceEntry {
@@ -229,5 +236,28 @@ mod tests {
         assert_eq!(summary.mapped_elements, 0);
         assert_eq!(summary.unmapped_elements(), 0);
         assert!((summary.coverage_percent() - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn report_summary_reflects_entry_mutations() {
+        let mut report = TraceReport {
+            artifact_path: std::path::PathBuf::from("artifact.json"),
+            source_path: std::path::PathBuf::from("source.md"),
+            artifact_type: OscalModelType::Catalog,
+            entries: vec![],
+            source_stale: false,
+            source_line_count: 0,
+        };
+
+        report.entries.push(TraceEntry {
+            element_id: "control-1".to_string(),
+            element_type: ElementType::Control,
+            trace: None,
+        });
+
+        let summary = report.summary();
+        assert_eq!(summary.total_elements, 1);
+        assert_eq!(summary.mapped_elements, 0);
+        assert_eq!(summary.unmapped_elements(), 1);
     }
 }

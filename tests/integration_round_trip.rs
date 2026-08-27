@@ -7,7 +7,9 @@
 use forge::testing::assert_semantic_equivalence;
 use serde_json::Value;
 use std::fs;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 use tempfile::TempDir;
 
 fn forge_bin() -> Command {
@@ -15,7 +17,31 @@ fn forge_bin() -> Command {
 }
 
 fn run_forge(args: &[&str]) -> std::process::Output {
-    let output = forge_bin().args(args).output().expect("failed to execute forge");
+    let mut child = forge_bin()
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("failed to execute forge");
+    let deadline = Instant::now() + Duration::from_secs(120);
+    loop {
+        if child.try_wait().expect("failed to poll forge").is_some() {
+            break;
+        }
+        if Instant::now() >= deadline {
+            child.kill().expect("failed to kill timed-out forge");
+            let output =
+                child.wait_with_output().expect("failed to collect timed-out forge output");
+            panic!(
+                "forge {:?} timed out after 120s\nstdout: {}\nstderr: {}",
+                args,
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    let output = child.wait_with_output().expect("failed to collect forge output");
     assert!(
         output.status.success(),
         "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",
@@ -35,16 +61,27 @@ fn read_json(path: &std::path::Path) -> Value {
 /// Remove `control-implementations` from all components in a component-definition JSON.
 ///
 /// XML serialization intentionally omits this field (WI-28 normalization pattern, EC-5).
-fn clear_control_implementations(value: &mut Value) {
-    if let Some(comp_def) = value.pointer_mut("/component-definition")
-        && let Some(components) = comp_def.get_mut("components").and_then(Value::as_array_mut)
-    {
-        for component in components {
-            if let Some(obj) = component.as_object_mut() {
-                obj.remove("control-implementations");
-            }
-        }
-    }
+fn clear_control_implementations(value: &mut Value) -> usize {
+    let component_definition = value
+        .pointer_mut("/component-definition")
+        .expect("component-definition root must be present for normalization");
+    let components = component_definition
+        .get_mut("components")
+        .and_then(Value::as_array_mut)
+        .expect("component-definition.components must be an array for normalization");
+
+    components
+        .iter_mut()
+        .map(|component| {
+            usize::from(
+                component
+                    .as_object_mut()
+                    .expect("component-definition.components entries must be objects")
+                    .remove("control-implementations")
+                    .is_some(),
+            )
+        })
+        .sum()
 }
 
 // ── M-1 / AC-1: Catalog JSON → XML → JSON ────────────────────────────────────
@@ -197,8 +234,12 @@ fn component_definition_json_xml_json_round_trip() {
     let mut round_tripped = read_json(&rt_path);
 
     // Normalize: XML intentionally omits control-implementations (WI-28/EC-5)
-    clear_control_implementations(&mut original);
+    let original_removals = clear_control_implementations(&mut original);
     clear_control_implementations(&mut round_tripped);
+    assert!(
+        original_removals > 0,
+        "component normalization must remove at least one control-implementations field"
+    );
 
     let result = assert_semantic_equivalence(&original, &round_tripped);
     assert!(

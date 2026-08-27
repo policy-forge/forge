@@ -1,6 +1,8 @@
 //! Local OSCAL resource validation and deterministic subject inventories.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -101,13 +103,34 @@ impl Inventory {
 impl LoadedResource {
     #[must_use]
     pub fn snapshot(&self) -> ResourceInventorySnapshot {
+        Self::build_snapshot(&self.evidence, &self.inventory)
+    }
+
+    fn build_snapshot(
+        evidence: &ResourceEvidence,
+        inventory: &Inventory,
+    ) -> ResourceInventorySnapshot {
         ResourceInventorySnapshot {
-            root_uuid: self.evidence.root_uuid.clone(),
-            document_version: self.evidence.document_version.clone(),
-            oscal_version: self.evidence.oscal_version.clone(),
-            control_ids: self.inventory.ids_of_type(SubjectType::Control).into_iter().collect(),
-            statement_ids: self.inventory.ids_of_type(SubjectType::Statement).into_iter().collect(),
+            root_uuid: evidence.root_uuid.clone(),
+            document_version: evidence.document_version.clone(),
+            oscal_version: evidence.oscal_version.clone(),
+            control_ids: inventory.ids_of_type(SubjectType::Control).into_iter().collect(),
+            statement_ids: inventory.ids_of_type(SubjectType::Statement).into_iter().collect(),
+            fingerprint_digest: Some(Self::inventory_fingerprint_digest(inventory)),
         }
+    }
+
+    fn inventory_fingerprint_digest(inventory: &Inventory) -> String {
+        let mut hasher = Sha256::new();
+        for (subject_type, subjects) in &inventory.subjects {
+            for (id, fingerprint) in subjects {
+                for value in [subject_type.as_str(), id, fingerprint] {
+                    hasher.update((value.len() as u64).to_be_bytes());
+                    hasher.update(value.as_bytes());
+                }
+            }
+        }
+        format!("{:x}", hasher.finalize())
     }
 }
 
@@ -130,7 +153,7 @@ pub fn load(
     resource: &ResourceManifest,
 ) -> Result<LoadedResource, ForgeError> {
     let artifact_path = manifest_dir.join(&resource.artifact);
-    let bytes = read_bounded_json(&artifact_path, path_label)?;
+    let bytes = read_bounded_file(&artifact_path, io::MAX_FILE_SIZE, path_label)?;
     let raw_sha256 = sha256(&bytes);
     if let Some(expected) = &resource.expected_sha256
         && expected != &raw_sha256
@@ -163,7 +186,7 @@ pub fn load(
             mapping_error(format!("{path_label}.resolved_catalog is required for a Profile"))
         })?;
         let companion_path = manifest_dir.join(companion);
-        let companion_bytes = read_bounded_json(&companion_path, path_label)?;
+        let companion_bytes = read_bounded_file(&companion_path, io::MAX_FILE_SIZE, path_label)?;
         let resolved_catalog_sha256 = sha256(&companion_bytes);
         let expected_resolved_catalog_sha256 =
             resource.expected_resolved_catalog_sha256.as_ref().ok_or_else(|| {
@@ -194,13 +217,7 @@ pub fn load(
     };
 
     if let Some(expected) = &resource.inventory {
-        let actual = ResourceInventorySnapshot {
-            root_uuid: evidence.root_uuid.clone(),
-            document_version: evidence.document_version.clone(),
-            oscal_version: evidence.oscal_version.clone(),
-            control_ids: inventory.ids_of_type(SubjectType::Control).into_iter().collect(),
-            statement_ids: inventory.ids_of_type(SubjectType::Statement).into_iter().collect(),
-        };
+        let actual = LoadedResource::build_snapshot(&evidence, &inventory);
         if expected != &actual {
             return Err(mapping_error(format!(
                 "{path_label}.inventory no longer matches the supplied resource; regenerate or review the manifest"
@@ -218,28 +235,29 @@ pub(crate) fn validate_schema(
     let validator = validate::compiled_validator(model).map_err(|error| {
         mapping_error(format!("{path_label} schema compilation failed: {error}"))
     })?;
-    let mut errors: Vec<_> = validator
+    let mut schema_errors: Vec<_> = validator
         .iter_errors(json)
         .take(MAX_SCHEMA_ERRORS + 1)
         .map(|error| error.to_string())
         .collect();
-    let version = validate::version::inspect_oscal_version(json, model);
-    if let Some(error) = version.error {
-        errors.push(error.message);
+    let truncated = schema_errors.len() > MAX_SCHEMA_ERRORS;
+    schema_errors.truncate(MAX_SCHEMA_ERRORS);
+    let version_error = validate::version::inspect_oscal_version(json, model).error;
+    if schema_errors.is_empty() && version_error.is_none() {
+        return Ok(());
     }
-    if !errors.is_empty() {
-        let truncated = errors.len() > MAX_SCHEMA_ERRORS;
-        errors.truncate(MAX_SCHEMA_ERRORS);
-        let mut detail = errors.into_iter().take(10).collect::<Vec<_>>().join("; ");
-        if truncated {
-            detail.push_str("; additional schema errors omitted at configured bound");
+
+    let mut detail = schema_errors.into_iter().take(10).collect::<Vec<_>>().join("; ");
+    if truncated {
+        detail.push_str("; additional schema errors omitted at configured bound");
+    }
+    if let Some(error) = version_error {
+        if !detail.is_empty() {
+            detail.push_str("; ");
         }
-        return Err(mapping_error(format!(
-            "{path_label} is not a valid {}: {detail}",
-            model.as_str()
-        )));
+        detail.push_str(&error.message);
     }
-    Ok(())
+    Err(mapping_error(format!("{path_label} is not a valid {}: {detail}", model.as_str())))
 }
 
 fn extract_evidence(
@@ -408,43 +426,109 @@ fn insert_subject<'a>(
     let excerpt = value
         .get(if subject_type == SubjectType::Control { "title" } else { "prose" })
         .and_then(Value::as_str)
-        .unwrap_or("")
-        .chars()
-        .take(160)
-        .collect();
+        .map(|text| text.chars().take(160).collect::<String>());
     inventory.subjects.entry(subject_type).or_default().insert(id.to_string(), fingerprint);
-    inventory.excerpts.entry(subject_type).or_default().insert(id.to_string(), excerpt);
+    if let Some(excerpt) = excerpt {
+        inventory.excerpts.entry(subject_type).or_default().insert(id.to_string(), excerpt);
+    }
     Ok(id)
 }
 
 fn canonical_subject_sha256(value: &Value) -> Result<String, ForgeError> {
-    let mut canonical = value.clone();
-    strip_forge_fingerprint_props(&mut canonical);
-    let bytes = serde_json::to_vec(&canonical)
-        .map_err(|error| mapping_error(format!("subject fingerprint failed: {error}")))?;
+    let mut bytes = Vec::new();
+    write_canonical_json(&mut bytes, value)?;
     Ok(sha256(&bytes))
 }
 
-fn strip_forge_fingerprint_props(value: &mut Value) {
+fn write_canonical_json(out: &mut Vec<u8>, value: &Value) -> Result<(), ForgeError> {
     match value {
-        Value::Object(object) => {
-            if let Some(Value::Array(props)) = object.get_mut("props") {
-                props.retain(|prop| {
-                    !(prop.get("ns").and_then(Value::as_str) == Some(FORGE_MAPPING_NS)
-                        && prop.get("name").and_then(Value::as_str) == Some("subject-sha256"))
-                });
-            }
-            for child in object.values_mut() {
-                strip_forge_fingerprint_props(child);
+        Value::Null => out.extend_from_slice(b"null"),
+        Value::Bool(value) => {
+            if *value {
+                out.extend_from_slice(b"true");
+            } else {
+                out.extend_from_slice(b"false");
             }
         }
+        Value::Number(number) => out.extend_from_slice(canonical_number(number)?.as_bytes()),
+        Value::String(value) => serde_json::to_writer(&mut *out, value)
+            .map_err(|error| mapping_error(format!("subject fingerprint failed: {error}")))?,
         Value::Array(values) => {
-            for child in values {
-                strip_forge_fingerprint_props(child);
+            out.push(b'[');
+            for (index, value) in values.iter().enumerate() {
+                if index != 0 {
+                    out.push(b',');
+                }
+                write_canonical_json(out, value)?;
             }
+            out.push(b']');
         }
-        _ => {}
+        Value::Object(values) => {
+            out.push(b'{');
+            let mut keys: Vec<_> = values.keys().collect();
+            keys.sort_unstable();
+            for (index, key) in keys.into_iter().enumerate() {
+                if index != 0 {
+                    out.push(b',');
+                }
+                serde_json::to_writer(&mut *out, key).map_err(|error| {
+                    mapping_error(format!("subject fingerprint failed: {error}"))
+                })?;
+                out.push(b':');
+                let child = values.get(key).ok_or_else(|| {
+                    mapping_error("subject fingerprint lost an object member while canonicalizing")
+                })?;
+                if key == "props" {
+                    write_canonical_props(out, child)?;
+                } else {
+                    write_canonical_json(out, child)?;
+                }
+            }
+            out.push(b'}');
+        }
     }
+    Ok(())
+}
+
+fn write_canonical_props(out: &mut Vec<u8>, value: &Value) -> Result<(), ForgeError> {
+    let Value::Array(props) = value else {
+        return write_canonical_json(out, value);
+    };
+    out.push(b'[');
+    let mut emitted = 0_usize;
+    for prop in props {
+        let is_fingerprint = prop.get("ns").and_then(Value::as_str) == Some(FORGE_MAPPING_NS)
+            && prop.get("name").and_then(Value::as_str) == Some("subject-sha256");
+        if is_fingerprint {
+            continue;
+        }
+        if emitted != 0 {
+            out.push(b',');
+        }
+        write_canonical_json(out, prop)?;
+        emitted += 1;
+    }
+    out.push(b']');
+    Ok(())
+}
+
+fn canonical_number(number: &serde_json::Number) -> Result<String, ForgeError> {
+    if let Some(value) = number.as_i64() {
+        return Ok(value.to_string());
+    }
+    if let Some(value) = number.as_u64() {
+        return Ok(value.to_string());
+    }
+    let value = number
+        .as_f64()
+        .ok_or_else(|| mapping_error("subject fingerprint contains an unsupported JSON number"))?;
+    if value == 0.0 {
+        return Ok("0".to_string());
+    }
+    if value.fract() == 0.0 && value.abs() < 1e21 {
+        return Ok(format!("{value:.0}"));
+    }
+    Ok(value.to_string())
 }
 
 fn enforce_depth(path_label: &str, depth: usize) -> Result<(), ForgeError> {
@@ -457,10 +541,48 @@ fn enforce_depth(path_label: &str, depth: usize) -> Result<(), ForgeError> {
     }
 }
 
-fn read_bounded_json(path: &Path, label: &str) -> Result<Vec<u8>, ForgeError> {
-    io::check_file_size(path, io::MAX_FILE_SIZE)
+/// Read a direct regular file through one bounded descriptor.
+///
+/// # Errors
+///
+/// Rejects symbolic links, non-regular files, and content exceeding `max_bytes`.
+pub(crate) fn read_bounded_file(
+    path: &Path,
+    max_bytes: u64,
+    label: &str,
+) -> Result<Vec<u8>, ForgeError> {
+    io::regular_file_metadata(path, label).map_err(mapping_error)?;
+    let file = File::open(path).map_err(|error| mapping_error(format!("{label}: {error}")))?;
+    let metadata = file.metadata().map_err(|error| mapping_error(format!("{label}: {error}")))?;
+    if !metadata.is_file() {
+        return Err(mapping_error(format!("{label} must be a regular file")));
+    }
+    if metadata.len() > max_bytes {
+        return Err(mapping_error(format!(
+            "{label}: {}",
+            ForgeError::FileTooLarge {
+                path: path.to_path_buf(),
+                size_bytes: metadata.len(),
+                limit_bytes: max_bytes,
+            }
+        )));
+    }
+
+    let mut bytes = Vec::new();
+    file.take(max_bytes.saturating_add(1))
+        .read_to_end(&mut bytes)
         .map_err(|error| mapping_error(format!("{label}: {error}")))?;
-    std::fs::read(path).map_err(|error| mapping_error(format!("{label}: {error}")))
+    if bytes.len() as u64 > max_bytes {
+        return Err(mapping_error(format!(
+            "{label}: {}",
+            ForgeError::FileTooLarge {
+                path: path.to_path_buf(),
+                size_bytes: bytes.len() as u64,
+                limit_bytes: max_bytes,
+            }
+        )));
+    }
+    Ok(bytes)
 }
 
 fn sha256(bytes: &[u8]) -> String {
@@ -515,5 +637,64 @@ mod tests {
             load(directory.path(), "$.mapping.target", &profile_resource(expected.clone()))
                 .expect("matching resolved Catalog hash is accepted");
         assert_eq!(loaded.evidence.resolved_catalog_sha256.as_deref(), Some(expected.as_str()));
+    }
+
+    #[test]
+    fn canonical_subject_fingerprint_ignores_object_order_and_integral_number_spelling() {
+        let first: Value = serde_json::from_str(
+            r#"{"title":"Control","priority":1,"nested":{"a":true,"b":false}}"#,
+        )
+        .expect("first JSON");
+        let reordered: Value = serde_json::from_str(
+            r#"{"nested":{"b":false,"a":true},"priority":1.0,"title":"Control"}"#,
+        )
+        .expect("reordered JSON");
+
+        assert_eq!(
+            canonical_subject_sha256(&first).expect("first fingerprint"),
+            canonical_subject_sha256(&reordered).expect("reordered fingerprint")
+        );
+    }
+
+    #[test]
+    fn missing_subject_excerpt_remains_absent() {
+        let value = serde_json::json!({"id": "ac-1"});
+        let mut inventory = Inventory {
+            subjects: BTreeMap::new(),
+            ids: BTreeMap::new(),
+            ineligible_parts: BTreeMap::new(),
+            excerpts: BTreeMap::new(),
+            control_groups: BTreeMap::new(),
+            group_ids: BTreeSet::new(),
+            ambiguous_group_ids: BTreeSet::new(),
+        };
+
+        insert_subject("fixture", &value, SubjectType::Control, &mut inventory)
+            .expect("subject without title remains eligible");
+        assert_eq!(inventory.excerpt(SubjectType::Control, "ac-1"), None);
+    }
+
+    #[test]
+    fn inventory_snapshot_digest_changes_with_subject_content() {
+        let mut inventory = Inventory {
+            subjects: BTreeMap::from([(
+                SubjectType::Control,
+                BTreeMap::from([("ac-1".to_string(), "a".repeat(64))]),
+            )]),
+            ids: BTreeMap::from([("ac-1".to_string(), SubjectType::Control)]),
+            ineligible_parts: BTreeMap::new(),
+            excerpts: BTreeMap::new(),
+            control_groups: BTreeMap::new(),
+            group_ids: BTreeSet::new(),
+            ambiguous_group_ids: BTreeSet::new(),
+        };
+        let original = LoadedResource::inventory_fingerprint_digest(&inventory);
+        inventory
+            .subjects
+            .get_mut(&SubjectType::Control)
+            .expect("control subjects")
+            .insert("ac-1".to_string(), "b".repeat(64));
+
+        assert_ne!(original, LoadedResource::inventory_fingerprint_digest(&inventory));
     }
 }

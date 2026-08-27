@@ -10,13 +10,13 @@ Validation failed: 5 schema errors, 1 semantic error
 Schema Errors:
   [1] $.catalog.metadata — required field missing: last-modified
       Expected: required field
-      Actual: {"title":"Broken Catalog"}
+      Actual: {1 keys}
   [2] $.catalog.metadata — required field missing: version
       Expected: required field
-      Actual: {"title":"Broken Catalog"}
+      Actual: {1 keys}
   [3] $.catalog.metadata — required field missing: oscal-version
       Expected: required field
-      Actual: {"title":"Broken Catalog"}
+      Actual: {1 keys}
   [4] $.catalog.uuid — value does not match required pattern
       Expected: pattern match
       Actual: "123e4567-e89b-12d3-a456-426614174000"

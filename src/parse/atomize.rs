@@ -91,6 +91,46 @@ fn reconstruct_clause(shared_subject: &str, clause: &str) -> String {
     }
 }
 
+/// Clone an input requirement while applying atomization-specific fields.
+///
+/// Enrichment performed before atomization remains attached to every output
+/// requirement, so this public API is safe to rerun on an enriched document.
+fn atomized_requirement(
+    requirement: &PolicyRequirement,
+    text: String,
+    atom_index: usize,
+    parent_text: Option<String>,
+) -> PolicyRequirement {
+    let mut atom = requirement.clone();
+    atom.stable_id = Some(preliminary_id(&text, requirement.source_line, atom_index));
+    atom.text = text;
+    atom.atom_index = atom_index;
+    atom.parent_text = parent_text;
+    atom
+}
+
+/// Infer a reusable subject only from the first clause preceding a split.
+///
+/// Restricting inference to that boundary prevents modal verbs in a lead-in
+/// sentence from determining every reconstructed clause.
+fn subject_before_first_split(text: &str, first_boundary: usize) -> Option<String> {
+    let first_clause = text.get(..first_boundary)?.trim();
+    let sentence_start = first_clause
+        .char_indices()
+        .rev()
+        .find_map(|(index, character)| {
+            matches!(character, '.' | ':' | ';' | '!' | '?').then_some(index + character.len_utf8())
+        })
+        .unwrap_or(0);
+    let sentence = first_clause[sentence_start..].trim_start();
+    let verb = FIRST_VERB_PATTERN.find_iter(sentence).last()?;
+    extract_subject(sentence, verb.start())
+}
+
+fn starts_with_normative_verb(text: &str) -> bool {
+    FIRST_VERB_PATTERN.find(text).is_some_and(|verb| verb.start() == 0)
+}
+
 /// Atomize a single policy requirement.
 ///
 /// Detects compound statements containing conjunctions ("and", "or") paired with
@@ -99,157 +139,86 @@ fn reconstruct_clause(shared_subject: &str, clause: &str) -> String {
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Parse` if regex matching fails.
-///
-/// # Panics
-///
-/// Panics if the regex engine returns a capture match without group 0 or group 2,
-/// which cannot happen with the `SPLIT_PATTERN` regex.
-///
-/// # Examples
-///
-/// ```
-/// use forge::model::PolicyRequirement;
-/// use forge::parse::atomize_requirement;
-///
-/// let req = PolicyRequirement {
-///     stable_id: None,
-///     text: "Systems must enforce MFA and must require complex passwords".to_string(),
-///     source_line: 42,
-///     nesting_depth: 0,
-///     atom_index: 0,
-///     parent_text: None,
-///     citations: vec![],
-///     modality: None,
-///     parameters: vec![],
-/// };
-///
-/// let result = atomize_requirement(&req).unwrap();
-/// assert!(result.was_split);
-/// assert_eq!(result.requirements.len(), 2);
-/// ```
+/// Returns `ForgeError::Parse` if regex matching yields an incomplete split capture.
 pub fn atomize_requirement(
     requirement: &PolicyRequirement,
 ) -> Result<AtomizationResult, ForgeError> {
     let text = &requirement.text;
 
-    // Empty or whitespace-only text: preserve as-is (EC-7)
+    // Empty or whitespace-only text: preserve as-is (EC-7).
     if text.trim().is_empty() {
         return Ok(AtomizationResult {
-            requirements: vec![PolicyRequirement {
-                stable_id: Some(preliminary_id(text, requirement.source_line, 0)),
-                text: text.clone(),
-                source_line: requirement.source_line,
-                nesting_depth: requirement.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            }],
+            requirements: vec![atomized_requirement(requirement, text.clone(), 0, None)],
             was_split: false,
             original_text: None,
         });
     }
 
-    // Find all conjunction + normative verb boundaries
     let match_count = SPLIT_PATTERN.find_iter(text).count();
-
     if match_count == 0 {
-        // No compound pattern detected: preserve as-is (FR-003, M-3)
         return Ok(AtomizationResult {
-            requirements: vec![PolicyRequirement {
-                stable_id: Some(preliminary_id(text, requirement.source_line, 0)),
-                text: text.clone(),
-                source_line: requirement.source_line,
-                nesting_depth: requirement.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            }],
+            requirements: vec![atomized_requirement(requirement, text.clone(), 0, None)],
             was_split: false,
             original_text: None,
         });
     }
 
-    // Check max split count (SEC-5, FR-010, EC-9)
     let split_count = match_count + 1;
     if split_count > MAX_SPLITS_PER_REQUIREMENT {
         warn!(
             source_line = requirement.source_line,
-            split_count = split_count,
+            split_count,
             max = MAX_SPLITS_PER_REQUIREMENT,
             "Requirement would produce too many splits; preserved as-is"
         );
         return Ok(AtomizationResult {
-            requirements: vec![PolicyRequirement {
-                stable_id: Some(preliminary_id(text, requirement.source_line, 0)),
-                text: text.clone(),
-                source_line: requirement.source_line,
-                nesting_depth: requirement.nesting_depth,
-                atom_index: 0,
-                parent_text: None,
-                citations: vec![],
-                modality: None,
-                parameters: vec![],
-            }],
+            requirements: vec![atomized_requirement(requirement, text.clone(), 0, None)],
             was_split: false,
             original_text: None,
         });
     }
 
-    // Find position of the first normative verb in the text to extract shared subject
-    let shared_subject =
-        FIRST_VERB_PATTERN.find(text).and_then(|m| extract_subject(text, m.start()));
+    let shared_subject = SPLIT_PATTERN
+        .find(text)
+        .and_then(|first_split| subject_before_first_split(text, first_split.start()));
 
-    // Split text at conjunction + normative verb boundaries.
-    // For each match like "and must", we take text before the conjunction as a clause,
-    // then the next clause starts at the normative verb (capture group 2).
     let mut clauses = Vec::with_capacity(split_count);
     let mut last_end = 0;
+    for captures in SPLIT_PATTERN.captures_iter(text) {
+        let full_match = captures.get(0).ok_or_else(|| {
+            ForgeError::Parse("split pattern did not produce its full match".to_string())
+        })?;
+        let verb = captures.get(2).ok_or_else(|| {
+            ForgeError::Parse("split pattern did not produce its normative verb".to_string())
+        })?;
 
-    for cap in SPLIT_PATTERN.captures_iter(text) {
-        let full_match = cap.get(0).unwrap();
-        let verb = cap.get(2).unwrap();
-
-        // Clause: text from last_end to start of conjunction
         let clause = text[last_end..full_match.start()].trim();
         if !clause.is_empty() {
             clauses.push(clause.to_string());
         }
-
-        // Next clause starts at the normative verb
         last_end = verb.start();
     }
 
-    // Final clause: from last verb position to end of text
     let final_clause = text[last_end..].trim();
     if !final_clause.is_empty() {
         clauses.push(final_clause.to_string());
     }
 
-    // Reconstruct clauses with shared subject
     let mut requirements = Vec::with_capacity(clauses.len());
     for (index, clause) in clauses.iter().enumerate() {
-        let full_text = if let Some(ref subject) = shared_subject {
-            reconstruct_clause(subject, clause)
-        } else {
-            clause.clone()
+        let full_text = match (shared_subject.as_deref(), starts_with_normative_verb(clause)) {
+            (Some(subject), true) => reconstruct_clause(subject, clause),
+            (Some(_), false) => {
+                warn!(
+                    source_line = requirement.source_line,
+                    clause, "Skipping atomization subject inference for non-normative clause"
+                );
+                (*clause).clone()
+            }
+            (None, _) => (*clause).clone(),
         };
 
-        requirements.push(PolicyRequirement {
-            stable_id: Some(preliminary_id(&full_text, requirement.source_line, index)),
-            text: full_text,
-            source_line: requirement.source_line,
-            nesting_depth: requirement.nesting_depth,
-            atom_index: index,
-            parent_text: Some(text.clone()),
-            citations: vec![],
-            modality: None,
-            parameters: vec![],
-        });
+        requirements.push(atomized_requirement(requirement, full_text, index, Some(text.clone())));
     }
 
     Ok(AtomizationResult { requirements, was_split: true, original_text: Some(text.clone()) })
@@ -296,6 +265,7 @@ pub fn atomize_requirement(
 ///             citations: vec![],
 ///             modality: None,
 ///             parameters: vec![],
+///             parameters_extracted: false,
 ///         }],
 ///     }],
 /// };
@@ -417,6 +387,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -1029,5 +1000,44 @@ mod tests {
         let result = atomize_requirement(&req).unwrap();
         assert!(result.was_split);
         assert_eq!(result.requirements.len(), 50);
+    }
+
+    #[test]
+    fn atomization_preserves_prior_enrichment() {
+        let mut requirement = make_req("Systems must enforce MFA and must log access", 7);
+        requirement.citations = vec![crate::model::Citation {
+            id: "cite-1".to_string(),
+            text: "Reference".to_string(),
+            url: None,
+            source_requirement_id: Some("req-1".into()),
+        }];
+        requirement.modality = Some(crate::model::Modality::Normative);
+        requirement.parameters = vec![crate::model::PolicyParameter {
+            id: "req-1_prm_0".to_string(),
+            requirement_id: "req-1".into(),
+            label: "within 30 days".to_string(),
+            value: "30 days".to_string(),
+            parameter_type: crate::model::ParameterType::TimeWindow,
+            constraint: None,
+        }];
+        requirement.parameters_extracted = true;
+
+        let result = atomize_requirement(&requirement).unwrap();
+        assert!(result.was_split);
+        assert!(result.requirements.iter().all(|atom| {
+            atom.citations == requirement.citations
+                && atom.modality == requirement.modality
+                && atom.parameters == requirement.parameters
+                && atom.parameters_extracted
+        }));
+    }
+
+    #[test]
+    fn subject_inference_uses_the_first_split_clause() {
+        let requirement =
+            make_req("Section 4 will state: systems must enforce MFA and must log access", 7);
+
+        let result = atomize_requirement(&requirement).unwrap();
+        assert_eq!(result.requirements[1].text, "systems must log access");
     }
 }

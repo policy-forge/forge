@@ -4,6 +4,8 @@ use serde::Serialize;
 pub const MIGRATION_REPORT_SCHEMA_VERSION: &str = "forge.migration-report/1";
 
 /// Raw source-policy provenance included in every report.
+///
+/// `sha256` is a 64-character lowercase hexadecimal SHA-256 digest of the raw source bytes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SourceProvenance {
     pub label: String,
@@ -69,7 +71,7 @@ impl PartialEq for InventoryRequirement {
 
 impl Eq for InventoryRequirement {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Classification {
     Unchanged,
@@ -101,19 +103,9 @@ impl Classification {
         }
     }
 
+    /// Declaration order defines precedence when report entries are sorted.
     pub(crate) const fn rank(self) -> u8 {
-        match self {
-            Self::Unchanged => 0,
-            Self::DeclaredSuccessor => 1,
-            Self::DeclaredSplit => 2,
-            Self::DeclaredMerge => 3,
-            Self::ObservedIdChange => 4,
-            Self::SubstantiveChangeCandidate => 5,
-            Self::AtomizationChangeCandidate => 6,
-            Self::Ambiguous => 7,
-            Self::Retired => 8,
-            Self::Added => 9,
-        }
+        self as u8
     }
 }
 
@@ -146,6 +138,22 @@ impl EvidenceCode {
             Self::SectionPathChanged => "section_path_changed",
             Self::SourceLineChanged => "source_line_changed",
             Self::AtomIndexChanged => "atom_index_changed",
+        }
+    }
+
+    #[must_use]
+    pub const fn indicates_location_drift(self) -> bool {
+        match self {
+            Self::ExactId
+            | Self::ReviewerDeclaration
+            | Self::UniqueNormalizedText
+            | Self::SameLocator
+            | Self::DuplicateNormalizedText
+            | Self::CompetingLocator => false,
+            Self::SourceFileChanged
+            | Self::SectionPathChanged
+            | Self::SourceLineChanged
+            | Self::AtomIndexChanged => true,
         }
     }
 }
@@ -193,6 +201,9 @@ impl ApprovalStatus {
 }
 
 /// Reviewer evidence preserved verbatim for a declared identity relationship.
+///
+/// `approved_by` is personal data and MUST NOT be emitted to logs or non-report diagnostics.
+/// `approved_at` is an RFC 3339 UTC timestamp validated when the declaration is loaded.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct DeclarationEvidence {
     pub approved_by: String,
@@ -232,6 +243,19 @@ pub struct MigrationSummary {
     pub old_requirements: MigrationOutcomeCounts,
     /// New-side requirement counts by outcome; these sum to `total_new`.
     pub new_requirements: MigrationOutcomeCounts,
+}
+
+impl MigrationSummary {
+    /// Validate the requirement-side totals promised by this report contract.
+    pub(crate) const fn validate(&self) -> Result<(), &'static str> {
+        if self.old_requirements.total() != self.total_old {
+            return Err("old requirement outcome counts do not sum to total_old");
+        }
+        if self.new_requirements.total() != self.total_new {
+            return Err("new requirement outcome counts do not sum to total_new");
+        }
+        Ok(())
+    }
 }
 
 /// Number of requirements assigned to each outcome on one side of a migration.
@@ -285,15 +309,7 @@ impl MigrationReport {
     pub fn has_reviewable_changes(&self) -> bool {
         self.entries.iter().any(|entry| {
             entry.classification != Classification::Unchanged
-                || entry.evidence.iter().any(|evidence| {
-                    matches!(
-                        evidence,
-                        EvidenceCode::SourceFileChanged
-                            | EvidenceCode::SectionPathChanged
-                            | EvidenceCode::SourceLineChanged
-                            | EvidenceCode::AtomIndexChanged
-                    )
-                })
+                || entry.evidence.iter().copied().any(EvidenceCode::indicates_location_drift)
         })
     }
 }
@@ -389,5 +405,64 @@ mod tests {
         {
             assert_json_name(value, value.as_str());
         }
+    }
+
+    #[test]
+    fn migration_summary_validates_requirement_totals() {
+        let summary = MigrationSummary {
+            total_old: 1,
+            total_new: 1,
+            unchanged: 1,
+            declared_successors: 0,
+            declared_splits: 0,
+            declared_merges: 0,
+            observed_id_changes: 0,
+            substantive_change_candidates: 0,
+            atomization_change_candidates: 0,
+            ambiguity_groups: 0,
+            retired: 0,
+            added: 0,
+            old_requirements: MigrationOutcomeCounts {
+                unchanged: 1,
+                ..MigrationOutcomeCounts::default()
+            },
+            new_requirements: MigrationOutcomeCounts {
+                unchanged: 1,
+                ..MigrationOutcomeCounts::default()
+            },
+        };
+        assert_eq!(summary.validate(), Ok(()));
+
+        let mut invalid = summary;
+        invalid.total_new = 2;
+        assert_eq!(
+            invalid.validate(),
+            Err("new requirement outcome counts do not sum to total_new")
+        );
+    }
+
+    #[test]
+    fn location_drift_classifies_every_evidence_code() {
+        for (evidence, indicates_drift) in [
+            (EvidenceCode::ExactId, false),
+            (EvidenceCode::ReviewerDeclaration, false),
+            (EvidenceCode::UniqueNormalizedText, false),
+            (EvidenceCode::SameLocator, false),
+            (EvidenceCode::DuplicateNormalizedText, false),
+            (EvidenceCode::CompetingLocator, false),
+            (EvidenceCode::SourceFileChanged, true),
+            (EvidenceCode::SectionPathChanged, true),
+            (EvidenceCode::SourceLineChanged, true),
+            (EvidenceCode::AtomIndexChanged, true),
+        ] {
+            assert_eq!(evidence.indicates_location_drift(), indicates_drift);
+        }
+    }
+
+    #[test]
+    fn classification_rank_tracks_declaration_order() {
+        assert_eq!(Classification::Unchanged.rank(), 0);
+        assert_eq!(Classification::DeclaredSuccessor.rank(), 1);
+        assert_eq!(Classification::Added.rank(), 9);
     }
 }

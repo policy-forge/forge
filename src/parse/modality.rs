@@ -141,12 +141,10 @@ fn annotate_section(section: &mut PolicySection) {
         let result = detect_modality(req);
 
         if result.is_default || result.has_conflict {
-            let preview: String = req.text.chars().take(120).collect();
             if result.is_default {
-                warn!(text = preview, "No modality verb detected — defaulting to Normative");
+                warn!("No modality verb detected — defaulting to Normative");
             } else {
                 warn!(
-                    text = preview,
                     verbs = ?result.matched_verbs,
                     "Conflicting normative/advisory verbs — Normative wins"
                 );
@@ -185,6 +183,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 

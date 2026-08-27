@@ -4,7 +4,7 @@ expression: "String::from_utf8(first.stdout.clone()).expect(\"UTF-8 report\")"
 ---
 {
   "schema_version": "forge.applicability-report/1",
-  "manifest_sha256": "97d6f8be3f66be1ba868ebe5958a2e7b91357080bdb447a23c8241f5b29dab6a",
+  "manifest_sha256": "bb4cb9be4e056e1e6d176bf65d67675b18b2842d0ef846d95c9360550a323505",
   "framework": {
     "resource_type": "catalog",
     "href": "framework.json",

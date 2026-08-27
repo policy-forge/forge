@@ -9,6 +9,8 @@ use super::divergence::RoundTripResult;
 /// Write a `RoundTripResult` as a pretty-printed JSON file.
 ///
 /// Creates or overwrites the file at `output_path`. Parent directory must exist.
+/// Serialization completes in memory before the destination is opened, so a
+/// serialization failure cannot truncate an existing report.
 ///
 /// # Errors
 ///
@@ -17,14 +19,9 @@ pub fn write_divergence_log(
     result: &RoundTripResult,
     output_path: &Path,
 ) -> Result<(), ForgeError> {
-    let file = std::fs::File::create(output_path)?;
-    if let Err(e) = serde_json::to_writer_pretty(file, result) {
-        if e.is_io() {
-            return Err(ForgeError::Io(e.into()));
-        }
-        return Err(ForgeError::Serialization(e.to_string()));
-    }
-    Ok(())
+    let content = serde_json::to_vec_pretty(result)
+        .map_err(|error| ForgeError::Serialization(error.to_string()))?;
+    std::fs::write(output_path, content).map_err(ForgeError::Io)
 }
 
 #[cfg(test)]
@@ -45,7 +42,6 @@ mod tests {
             oscal_cli_model_version: Some("1.1.2".to_string()),
             compatibility_classification:
                 crate::round_trip::CompatibilityClassification::AdvisoryOlderModelBaseline,
-            passed: true,
             divergences: vec![],
         };
 
@@ -70,10 +66,11 @@ mod tests {
             oscal_cli_model_version: Some("1.1.2".to_string()),
             compatibility_classification:
                 crate::round_trip::CompatibilityClassification::AdvisoryOlderModelBaseline,
-            passed: false,
             divergences: vec![
                 Divergence {
                     json_path: "/catalog/metadata/title".to_string(),
+                    expected_index: None,
+                    actual_index: None,
                     expected: serde_json::json!("My Security Policy"),
                     actual: serde_json::json!("my-security-policy"),
                     classification: DivergenceClass::ForgeFix,
@@ -82,6 +79,8 @@ mod tests {
                 },
                 Divergence {
                     json_path: "/catalog/groups/0/controls".to_string(),
+                    expected_index: None,
+                    actual_index: None,
                     expected: serde_json::json!([]),
                     actual: serde_json::Value::Null,
                     classification: DivergenceClass::Acceptable,
@@ -112,9 +111,10 @@ mod tests {
             oscal_cli_model_version: None,
             compatibility_classification:
                 crate::round_trip::CompatibilityClassification::Unavailable,
-            passed: false,
             divergences: vec![Divergence {
                 json_path: "/component-definition/metadata/version".to_string(),
+                expected_index: None,
+                actual_index: None,
                 expected: serde_json::json!("1.0"),
                 actual: serde_json::json!("1.0.0"),
                 classification: DivergenceClass::OscalCliDiff,

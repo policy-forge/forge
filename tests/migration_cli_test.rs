@@ -48,7 +48,7 @@ fn analysis_failure_exits_two_without_partial_report() {
 
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
-    assert!(String::from_utf8_lossy(&output.stderr).contains("Migration analysis error"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Migration error"));
 }
 
 #[test]

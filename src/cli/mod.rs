@@ -85,7 +85,7 @@ pub enum Commands {
         output: Option<PathBuf>,
 
         /// Maximum input file size in MB (default: 10 or project configuration)
-        #[arg(long)]
+        #[arg(long, value_parser = clap::value_parser!(u64).range(1..=51_200))]
         max_size: Option<u64>,
 
         /// Source profile/baseline reference for component strategy (e.g., path to OSCAL profile JSON)
@@ -2059,6 +2059,19 @@ mod tests {
             assert_eq!(output, Some(PathBuf::from("ssp.json")));
         } else {
             panic!("Expected Convert command");
+        }
+    }
+
+    #[test]
+    fn parse_convert_rejects_out_of_range_max_size() {
+        for value in ["0", "51201"] {
+            let error =
+                match Cli::try_parse_from(["forge", "convert", "policy.md", "--max-size", value]) {
+                    Ok(_) => panic!("out-of-range --max-size {value} unexpectedly parsed"),
+                    Err(error) => error.to_string(),
+                };
+
+            assert!(error.contains("1..=51200"), "unexpected error: {error}");
         }
     }
 }

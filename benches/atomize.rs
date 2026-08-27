@@ -1,26 +1,15 @@
 //! Criterion benchmarks for the atomization pipeline.
 
+#[path = "common/atomize.rs"]
+mod atomize_fixture;
+
 use std::hint::black_box;
 use std::path::PathBuf;
 
+use atomize_fixture::make_req;
 use criterion::{Criterion, criterion_group, criterion_main};
-use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
+use forge::model::{DocumentMetadata, PolicyDocument, PolicySection};
 use forge::parse::{atomize_document, atomize_requirement, preliminary_id};
-
-// NOTE: mirrors tests/common/mod.rs — kept local since benches cannot import test modules
-fn make_req(text: &str, source_line: usize) -> PolicyRequirement {
-    PolicyRequirement {
-        stable_id: None,
-        text: text.to_string(),
-        source_line,
-        nesting_depth: 0,
-        atom_index: 0,
-        parent_text: None,
-        citations: vec![],
-        modality: None,
-        parameters: vec![],
-    }
-}
 
 fn bench_atomize_compound(c: &mut Criterion) {
     let req = make_req("Systems must enforce MFA and must require complex passwords", 1);
@@ -38,12 +27,36 @@ fn bench_atomize_atomic(c: &mut Criterion) {
 
 fn bench_atomize_document_100(c: &mut Criterion) {
     let mut requirements = Vec::with_capacity(100);
-    for i in 0..50 {
-        requirements
-            .push(make_req("Systems must enforce MFA and must require complex passwords", i + 1));
-    }
-    for i in 50..100 {
-        requirements.push(make_req("All systems must enforce MFA", i + 1));
+    for i in 0..100 {
+        let text = if i % 2 == 0 {
+            format!("System {i} must enforce MFA and must require complex passwords")
+        } else {
+            format!("System {i} should notify administrators of policy violations")
+        };
+        let mut requirement = make_req(&text, i + 1);
+        requirement.nesting_depth = [0_u8, 1, 2][i % 3];
+        requirement.stable_id = Some(format!("bench-req-{i}"));
+
+        if i % 10 == 0 {
+            requirement.citations.push(forge::model::Citation {
+                id: format!("citation-{i}"),
+                text: format!("NIST SP 800-53 AC-{i}"),
+                url: Some(format!("https://example.test/controls/{i}")),
+                source_requirement_id: requirement.stable_id.clone().map(Into::into),
+            });
+        }
+        if i % 15 == 0 {
+            requirement.parameters.push(forge::model::PolicyParameter {
+                id: format!("bench-req-{i}_prm_0"),
+                requirement_id: format!("bench-req-{i}").into(),
+                label: "within 30 days".to_string(),
+                value: "30 days".to_string(),
+                parameter_type: forge::model::ParameterType::TimeWindow,
+                constraint: None,
+            });
+            requirement.parameters_extracted = true;
+        }
+        requirements.push(requirement);
     }
     let doc = PolicyDocument {
         id: "bench".to_string(),

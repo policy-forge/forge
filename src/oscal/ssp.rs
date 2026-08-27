@@ -384,11 +384,6 @@ impl Serialize for AuthorizedUser {
     where
         S: Serializer,
     {
-        let mut field_count = 2;
-        field_count += usize::from(self.short_name.is_some());
-        field_count += usize::from(self.description.is_some());
-        field_count += usize::from(!self.role_ids.is_empty());
-
         let mut props = Vec::new();
         if let Some(authorized_date) = &self.authorized_date {
             props.push(template_prop("authorized-date", authorized_date));
@@ -397,8 +392,19 @@ impl Serialize for AuthorizedUser {
         if let Some(reason) = &self.status.reason {
             props.push(template_prop("account-status-reason", reason));
         }
-        field_count += usize::from(!props.is_empty());
 
+        if self.role_ids.is_empty() {
+            props.push(template_prop(
+                "role-ids",
+                "TODO: Define metadata roles and assign their role IDs.",
+            ));
+        }
+
+        let field_count = 2
+            + usize::from(self.short_name.is_some())
+            + usize::from(self.description.is_some())
+            + usize::from(!self.role_ids.is_empty())
+            + usize::from(!props.is_empty());
         let mut state = serializer.serialize_struct("AuthorizedUser", field_count)?;
         state.serialize_field("uuid", &self.uuid)?;
         state.serialize_field("title", &self.title)?;
@@ -408,12 +414,7 @@ impl Serialize for AuthorizedUser {
         if let Some(description) = &self.description {
             state.serialize_field("description", description)?;
         }
-        if self.role_ids.is_empty() {
-            props.push(template_prop(
-                "role-ids",
-                "TODO: Define metadata roles and assign their role IDs.",
-            ));
-        } else {
+        if !self.role_ids.is_empty() {
             state.serialize_field("role-ids", &self.role_ids)?;
         }
         if !props.is_empty() {
@@ -630,7 +631,7 @@ pub fn build_ssp(
                     description: Some("<!-- TODO(description): describe initial SSP scope and system boundary -->".to_string()),
                 }],
             },
-            system_id: Some(todo_system_id()),
+            system_id: None,
             import_profile: ImportProfile { href: "TODO-profile.json".to_string() },
             system_characteristics: build_system_characteristics(title),
             system_implementation,
@@ -937,6 +938,14 @@ mod tests {
     }
 
     #[test]
+    fn ssp_does_not_populate_legacy_system_id() {
+        let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
+
+        assert!(envelope.system_security_plan.system_id.is_none());
+        assert_eq!(envelope.system_security_plan.system_characteristics.system_ids.len(), 1);
+    }
+
+    #[test]
     fn ssp_has_revisions_with_todo_markers() {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let revisions = &envelope.system_security_plan.metadata.revisions;
@@ -977,6 +986,27 @@ mod tests {
                     && prop["value"].as_str().is_some_and(|value| value.contains("TODO"))
             }));
         }
+    }
+
+    #[test]
+    fn authorized_user_serializes_every_emitted_field() {
+        let user = AuthorizedUser {
+            uuid: "user-uuid".to_string(),
+            title: "Named user".to_string(),
+            short_name: Some("named".to_string()),
+            description: Some("A test user".to_string()),
+            role_ids: vec!["system-owner".to_string()],
+            authorized_date: Some("2026-08-26".to_string()),
+            status: UserStatus {
+                state: "active".to_string(),
+                reason: Some("approved".to_string()),
+            },
+        };
+
+        let json = serde_json::to_value(user).unwrap();
+
+        assert_eq!(json["role-ids"][0].as_str(), Some("system-owner"));
+        assert_eq!(json["props"].as_array().map_or(0, Vec::len), 3);
     }
 
     #[test]

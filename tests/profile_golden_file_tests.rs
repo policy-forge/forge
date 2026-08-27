@@ -7,7 +7,14 @@
 
 mod common;
 
+use chrono::{DateTime, Utc};
 use forge::oscal::profile::{ProfileRoot, SelectionMode, build_profile};
+
+fn fixed_timestamp() -> DateTime<Utc> {
+    DateTime::parse_from_rfc3339("2026-01-01T00:00:00Z")
+        .expect("fixed RFC 3339 timestamp")
+        .with_timezone(&Utc)
+}
 
 // ---------------------------------------------------------------------------
 // US2: Golden-file snapshot tests (T005)
@@ -28,7 +35,7 @@ fn golden_include_only() {
         vec!["AC-1".into(), "AC-2".into(), "AC-3".into()],
         SelectionMode::Include,
         &[],
-        None,
+        Some(fixed_timestamp()),
     )
     .expect("build_profile should succeed");
 
@@ -54,7 +61,7 @@ fn golden_exclude_only() {
         vec!["AC-9".into(), "AC-10".into()],
         SelectionMode::Exclude,
         &[],
-        None,
+        Some(fixed_timestamp()),
     )
     .expect("build_profile should succeed");
 

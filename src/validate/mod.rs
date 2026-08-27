@@ -87,6 +87,9 @@ pub enum ValidateError {
         model_type: String,
         /// The error message from the schema compiler.
         message: String,
+        /// Structured compiler or schema-parse cause.
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
     },
 
     /// The artifact contains multiple OSCAL model types in one file.
@@ -111,40 +114,33 @@ pub enum ValidateError {
 
 /// Detect the OSCAL model type from a parsed JSON value.
 ///
-/// Inspects top-level keys: `"catalog"` → `Catalog`, `"component-definition"` → `ComponentDefinition`.
+/// Inspects top-level object roots: `catalog` → `Catalog`,
+/// `component-definition` → `ComponentDefinition`, `profile` → `Profile`,
+/// and `mapping-collection` → `Mapping`. Roots mapped to `null` or another
+/// non-object value are ignored. Exactly one recognized root must be present.
 ///
 /// # Errors
 ///
-/// Returns `ValidateError::UnknownModelType` if no recognized top-level key is found.
+/// Returns [`ValidateError::UnknownModelType`] when no recognized object root
+/// is found, or [`ValidateError::AmbiguousArtifact`] when multiple roots exist.
 pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> {
-    // Check for ambiguity: multiple recognized OSCAL root keys
-    let mut found = Vec::new();
-    if json.get("catalog").is_some() {
-        found.push("catalog");
-    }
-    if json.get("component-definition").is_some() {
-        found.push("component-definition");
-    }
-    if json.get("profile").is_some() {
-        found.push("profile");
-    }
-    if json.get("mapping-collection").is_some() {
-        found.push("mapping-collection");
-    }
-    if found.len() > 1 {
-        return Err(ValidateError::AmbiguousArtifact { detail: found.join(", ") });
-    }
+    let roots = [
+        ("catalog", OscalModelType::Catalog),
+        ("component-definition", OscalModelType::ComponentDefinition),
+        ("profile", OscalModelType::Profile),
+        ("mapping-collection", OscalModelType::Mapping),
+    ];
+    let found: Vec<_> = roots
+        .iter()
+        .filter(|(root, _)| matches!(json.get(*root), Some(Value::Object(_))))
+        .collect();
 
-    if json.get("catalog").is_some() {
-        Ok(OscalModelType::Catalog)
-    } else if json.get("component-definition").is_some() {
-        Ok(OscalModelType::ComponentDefinition)
-    } else if json.get("profile").is_some() {
-        Ok(OscalModelType::Profile)
-    } else if json.get("mapping-collection").is_some() {
-        Ok(OscalModelType::Mapping)
-    } else {
-        Err(ValidateError::UnknownModelType)
+    match found.as_slice() {
+        [] => Err(ValidateError::UnknownModelType),
+        [(_, model)] => Ok(*model),
+        _ => Err(ValidateError::AmbiguousArtifact {
+            detail: found.iter().map(|(root, _)| *root).collect::<Vec<_>>().join(", "),
+        }),
     }
 }
 
@@ -154,7 +150,7 @@ pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> 
 ///
 /// # Errors
 ///
-/// Returns `ValidateError::SchemaCompilation` if the embedded schema cannot be parsed.
+/// Returns [`ValidateError::SchemaCompilation`] if the embedded schema cannot be parsed.
 pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
     debug!("Loading embedded OSCAL schema for {model_type}");
     let schema_str = match model_type {
@@ -173,23 +169,24 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
     };
 
     let schema =
-        serde_json::from_str(schema_str).map_err(|e| ValidateError::SchemaCompilation {
+        serde_json::from_str(schema_str).map_err(|source| ValidateError::SchemaCompilation {
             model_type: model_type.to_string(),
-            message: e.to_string(),
+            message: source.to_string(),
+            source: Box::new(source),
         })?;
     debug!("Schema loaded successfully for {model_type}");
     Ok(schema)
 }
 
-static CATALOG_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
-static COMPONENT_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
-static PROFILE_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
-static MAPPING_VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+static CATALOG_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+static COMPONENT_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+static PROFILE_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+static MAPPING_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 
 /// Return the process-wide compiled validator for an OSCAL model.
 ///
-/// Compilation success or failure is cached so concurrent and repeated validation paths use the
-/// same immutable validator and deterministic error.
+/// Successful compilation is cached. Failures are deliberately retried so each
+/// returned [`ValidateError::SchemaCompilation`] retains its typed source chain.
 pub(crate) fn compiled_validator(
     model_type: OscalModelType,
 ) -> Result<&'static jsonschema::Validator, ValidateError> {
@@ -199,14 +196,43 @@ pub(crate) fn compiled_validator(
         OscalModelType::Profile => &PROFILE_VALIDATOR,
         OscalModelType::Mapping => &MAPPING_VALIDATOR,
     };
-    let result = cell.get_or_init(|| {
-        let schema = load_schema(model_type).map_err(|error| error.to_string())?;
-        jsonschema::validator_for(&schema).map_err(|error| error.to_string())
-    });
-    result.as_ref().map_err(|message| ValidateError::SchemaCompilation {
+    if let Some(validator) = cell.get() {
+        return Ok(validator);
+    }
+
+    let schema = load_schema(model_type)?;
+    let validator =
+        jsonschema::validator_for(&schema).map_err(|source| ValidateError::SchemaCompilation {
+            model_type: model_type.to_string(),
+            message: source.to_string(),
+            source: Box::new(source),
+        })?;
+    let _ = cell.set(validator);
+
+    cell.get().ok_or_else(|| ValidateError::SchemaCompilation {
         model_type: model_type.to_string(),
-        message: message.clone(),
+        message: "compiled validator was unavailable after initialization".to_string(),
+        source: Box::new(std::io::Error::other("validator cache initialization failed")),
     })
+}
+
+/// Collect schema and version-policy errors in JSON Path notation for both public validation paths.
+fn collect_schema_and_version_errors(
+    json: &Value,
+    model_type: OscalModelType,
+) -> Result<(Vec<ValidationError>, Option<String>, bool), ValidateError> {
+    let validator = compiled_validator(model_type)?;
+    let mut errors = validator
+        .iter_errors(json)
+        .map(|error| formatter::format_schema_error(&error, json))
+        .collect::<Vec<_>>();
+    let version = version::inspect_oscal_version(json, model_type);
+    let declared = version.declared;
+    let supported = version.supported;
+    if let Some(error) = version.error {
+        errors.push(error);
+    }
+    Ok((errors, declared, supported))
 }
 
 /// Validate a JSON value against the OSCAL schema for the given model type.
@@ -215,77 +241,86 @@ pub(crate) fn compiled_validator(
 ///
 /// # Errors
 ///
-/// Returns `ValidateError::SchemaCompilation` if the schema cannot be compiled.
+/// Returns [`ValidateError::SchemaCompilation`] if the schema cannot be compiled.
 pub fn validate_artifact(
     json: &Value,
     model_type: OscalModelType,
 ) -> Result<ValidationResult, ValidateError> {
-    let validator = compiled_validator(model_type)?;
-
-    let mut errors: Vec<SchemaError> = validator
-        .iter_errors(json)
-        .map(|error| {
-            let instance_path = error.instance_path().to_string();
-            let schema_path = error.schema_path().to_string();
-            SchemaError {
-                message: error.to_string(),
-                instance_path: if instance_path.is_empty() { None } else { Some(instance_path) },
-                schema_path: if schema_path.is_empty() { None } else { Some(schema_path) },
-            }
-        })
-        .collect();
-
-    let version = version::inspect_oscal_version(json, model_type);
-    if let Some(error) = version.error {
-        errors.push(SchemaError {
+    let (errors, declared_oscal_version, supported_input) =
+        collect_schema_and_version_errors(json, model_type)?;
+    let schema_errors = errors
+        .into_iter()
+        .map(|error| SchemaError {
             message: error.message,
-            instance_path: Some(format!("/{}/metadata/oscal-version", model_type.as_str())),
+            instance_path: Some(error.path),
             schema_path: None,
-        });
-    }
+        })
+        .collect::<Vec<_>>();
 
-    if errors.is_empty() {
+    if schema_errors.is_empty() {
         info!("Schema validation passed for {model_type}");
     } else {
-        info!("Schema validation failed for {model_type}: {} error(s)", errors.len());
+        info!("Schema validation failed for {model_type}: {} error(s)", schema_errors.len());
     }
 
     Ok(ValidationResult {
-        is_valid: errors.is_empty(),
+        is_valid: schema_errors.is_empty(),
         model_type,
-        declared_oscal_version: version.declared,
+        declared_oscal_version,
         schema_version_used: version::SCHEMA_VERSION_USED,
-        supported_input: version.supported,
-        errors,
+        supported_input,
+        errors: schema_errors,
     })
+}
+
+/// Read one validation artifact while enforcing the 50MB limit (SEC-3).
+///
+/// The limit is enforced on bytes read from one open descriptor, preventing a
+/// metadata/read time-of-check-time-of-use race. Like `File::open`, this API
+/// follows symlinks; callers that prohibit symlinks must enforce that policy
+/// before invoking it.
+///
+/// # Errors
+///
+/// Returns [`ValidateError::FileTooLarge`] when more than the configured limit
+/// can be read, or [`ValidateError::FileRead`] for open/read failures.
+#[allow(clippy::cast_precision_loss)]
+pub fn read_bounded_file(path: &Path) -> Result<Vec<u8>, ValidateError> {
+    use std::io::Read as _;
+
+    let file = std::fs::File::open(path)
+        .map_err(|source| ValidateError::FileRead { path: path.to_path_buf(), source })?;
+    let mut bytes = Vec::new();
+    file.take(MAX_VALIDATE_FILE_SIZE + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|source| ValidateError::FileRead { path: path.to_path_buf(), source })?;
+    if bytes.len() as u64 > MAX_VALIDATE_FILE_SIZE {
+        return Err(ValidateError::FileTooLarge {
+            size_mb: bytes.len() as f64 / (1024.0 * 1024.0),
+            limit_mb: MAX_VALIDATE_FILE_SIZE / (1024 * 1024),
+        });
+    }
+    Ok(bytes)
 }
 
 /// Check file size against the 50MB limit (SEC-3).
 ///
+/// Prefer [`read_bounded_file`] and validate the returned bytes. This legacy
+/// preflight preserves the public API but cannot bind its read to a later read.
+///
 /// # Errors
 ///
-/// Returns `ValidateError::FileTooLarge` if the file exceeds the limit.
-/// Returns `ValidateError::FileRead` if the file metadata cannot be read.
-#[allow(clippy::cast_precision_loss)]
+/// Returns [`ValidateError::FileTooLarge`] when the input exceeds the configured
+/// limit, or [`ValidateError::FileRead`] when it cannot be opened or read.
 pub fn check_file_size(path: &Path) -> Result<(), ValidateError> {
-    let metadata = std::fs::metadata(path)
-        .map_err(|e| ValidateError::FileRead { path: path.to_path_buf(), source: e })?;
-    let size = metadata.len();
-    if size > MAX_VALIDATE_FILE_SIZE {
-        return Err(ValidateError::FileTooLarge {
-            size_mb: size as f64 / (1024.0 * 1024.0),
-            limit_mb: MAX_VALIDATE_FILE_SIZE / (1024 * 1024),
-        });
-    }
-    Ok(())
+    read_bounded_file(path).map(|_| ())
 }
 
 /// Run full validation (schema + semantic) and produce a `ValidationReport`.
 ///
 /// This is the main entry point for enhanced validation (WI-20).
-/// Uses `load_schema()` + `jsonschema::validator_for()` directly to get raw
-/// `jsonschema::ValidationError`s, transforms each through `format_schema_error()`,
-/// then runs `SemanticValidator` for semantic checks, and combines results.
+/// Reuses the schema and version-policy collection shared with
+/// [`validate_artifact`], then runs `SemanticValidator` and combines results.
 ///
 /// MUST collect ALL errors from both passes (PRD M-2).
 /// MUST NOT stop at the first error.
@@ -298,26 +333,11 @@ pub fn run_full_validation(
     json: &Value,
     model_type: OscalModelType,
 ) -> Result<error_types::ValidationReport, ValidateError> {
-    let validator = compiled_validator(model_type)?;
+    let (mut all_errors, declared_oscal_version, supported_input) =
+        collect_schema_and_version_errors(json, model_type)?;
 
-    // Schema validation: collect all raw errors and format them
-    let mut schema_errors: Vec<error_types::ValidationError> = validator
-        .iter_errors(json)
-        .map(|error| formatter::format_schema_error(&error, json))
-        .collect();
-
-    let version = version::inspect_oscal_version(json, model_type);
-    if let Some(error) = version.error.clone() {
-        schema_errors.push(error);
-    }
-
-    // Semantic validation
     let semantic_validator = semantic::SemanticValidator;
-    let semantic_errors = semantic_validator.validate(json, model_type);
-
-    // Combine all errors
-    let mut all_errors = schema_errors;
-    all_errors.extend(semantic_errors);
+    all_errors.extend(semantic_validator.validate(json, model_type));
 
     if all_errors.is_empty() {
         info!("Full validation passed for {model_type}");
@@ -328,8 +348,8 @@ pub fn run_full_validation(
     Ok(error_types::ValidationReport::new_with_context(
         artifact_path.to_string(),
         model_type.to_string(),
-        version.declared,
-        version.supported,
+        declared_oscal_version,
+        supported_input,
         all_errors,
     ))
 }
@@ -379,6 +399,13 @@ mod tests {
     }
 
     // --- load_schema tests (T012) ---
+
+    #[test]
+    fn detect_model_type_rejects_null_and_non_object_roots() {
+        for json in [serde_json::json!({"catalog": null}), serde_json::json!({"profile": []})] {
+            assert!(matches!(detect_model_type(&json), Err(ValidateError::UnknownModelType)));
+        }
+    }
 
     #[test]
     fn load_schema_catalog_returns_valid_json() {

@@ -652,7 +652,9 @@ fn whitespace_padded_filters_and_missing_output_directories_are_rejected_clearly
     assert_eq!(output.status.code(), Some(2));
     assert!(
         String::from_utf8_lossy(&output.stderr)
-            .contains("output directory 'missing' does not exist")
+            .contains("cannot resolve manifest directory 'missing'"),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
     );
 
     let analyze_output = run_in(

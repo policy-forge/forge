@@ -14,6 +14,7 @@ pub mod formatter;
 /// Diff domain types: `DiffReport`, `ControlSnapshot`, `DiffEntry`, `FieldChange`.
 pub mod types;
 
+use std::io::Read;
 use std::path::Path;
 
 use crate::error::ForgeError;
@@ -30,42 +31,20 @@ pub use types::{ArtifactType, DiffReport};
 ///
 /// Returns `ForgeError::DiffError` for file, JSON, or artifact-type errors.
 pub fn diff_artifacts(old_path: &Path, new_path: &Path) -> Result<DiffReport, ForgeError> {
-    // Read files directly (no TOCTOU exists() pre-check)
-    let old_text = read_diff_file(old_path)?;
-    let new_text = read_diff_file(new_path)?;
+    let (old_type, old_controls) = load_snapshot(old_path)?;
+    let (new_type, new_controls) = load_snapshot(new_path)?;
 
-    // Parse JSON
-    let old_json: serde_json::Value = serde_json::from_str(&old_text).map_err(|e| {
-        ForgeError::DiffError(format!("Invalid JSON in '{}': {e}", old_path.display()))
-    })?;
-    let new_json: serde_json::Value = serde_json::from_str(&new_text).map_err(|e| {
-        ForgeError::DiffError(format!("Invalid JSON in '{}': {e}", new_path.display()))
-    })?;
-
-    // Detect artifact types (reuses validate::detect_model_type)
-    let old_type = to_artifact_type(&old_json, old_path)?;
-    let new_type = to_artifact_type(&new_json, new_path)?;
-
-    // Validate same type
     if old_type != new_type {
         return Err(ForgeError::DiffError(format!(
             "Artifact type mismatch: old is {old_type}, new is {new_type}"
         )));
     }
 
-    // Extract controls
-    let old_controls = extractor::extract_controls(&old_json, &old_type);
-    let new_controls = extractor::extract_controls(&new_json, &new_type);
-
     let total_old = old_controls.len();
     let total_new = new_controls.len();
-
     tracing::debug!(total_old, total_new, "Control counts extracted");
 
-    // Compare
     let entries = engine::compare_controls(&old_controls, &new_controls);
-
-    // Build summary
     let summary = engine::build_summary(&entries, total_old, total_new);
 
     Ok(DiffReport {
@@ -78,18 +57,55 @@ pub fn diff_artifacts(old_path: &Path, new_path: &Path) -> Result<DiffReport, Fo
 }
 
 fn read_diff_file(path: &Path) -> Result<String, ForgeError> {
-    // Guard against oversized files; ignore I/O errors (e.g. NotFound) so
-    // read_to_string produces the user-facing DiffError below.
-    match crate::io::check_file_size(path, crate::io::MAX_FILE_SIZE) {
-        Ok(_) | Err(ForgeError::Io(_)) => {}
-        Err(e) => return Err(ForgeError::DiffError(e.to_string())),
-    }
-    std::fs::read_to_string(path).map_err(|e| match e.kind() {
+    let file = std::fs::File::open(path).map_err(|error| match error.kind() {
         std::io::ErrorKind::NotFound => {
             ForgeError::DiffError(format!("File not found: '{}'", path.display()))
         }
-        _ => ForgeError::DiffError(format!("Failed to read '{}': {e}", path.display())),
-    })
+        _ => ForgeError::DiffError(format!("Failed to read '{}': {error}", path.display())),
+    })?;
+    let metadata = file.metadata().map_err(|error| {
+        ForgeError::DiffError(format!("Failed to inspect '{}': {error}", path.display()))
+    })?;
+    if !metadata.is_file() {
+        return Err(ForgeError::DiffError(format!("'{}' is not a regular file", path.display())));
+    }
+    if metadata.len() > crate::io::MAX_FILE_SIZE {
+        return Err(ForgeError::DiffError(format!(
+            "'{}' exceeds the {} byte size limit",
+            path.display(),
+            crate::io::MAX_FILE_SIZE
+        )));
+    }
+
+    let capacity = usize::try_from(metadata.len()).map_err(|_| {
+        ForgeError::DiffError(format!("'{}' size cannot be represented in memory", path.display()))
+    })?;
+    let mut content = String::with_capacity(capacity);
+    file.take(crate::io::MAX_FILE_SIZE + 1).read_to_string(&mut content).map_err(|error| {
+        ForgeError::DiffError(format!("Failed to read '{}': {error}", path.display()))
+    })?;
+    if content.len() as u64 > crate::io::MAX_FILE_SIZE {
+        return Err(ForgeError::DiffError(format!(
+            "'{}' exceeds the {} byte size limit",
+            path.display(),
+            crate::io::MAX_FILE_SIZE
+        )));
+    }
+    Ok(content)
+}
+
+fn load_snapshot(
+    path: &Path,
+) -> Result<(ArtifactType, std::collections::HashMap<String, types::ControlSnapshot>), ForgeError> {
+    let text = read_diff_file(path)?;
+    let json: serde_json::Value = serde_json::from_str(&text).map_err(|error| {
+        ForgeError::DiffError(format!("Invalid JSON in '{}': {error}", path.display()))
+    })?;
+    let artifact_type = to_artifact_type(&json, path)?;
+    let controls = extractor::extract_controls(&json, &artifact_type);
+    drop(json);
+    drop(text);
+    Ok((artifact_type, controls))
 }
 
 fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactType, ForgeError> {
@@ -104,8 +120,8 @@ fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactTyp
             "'{}': Control Mapping artifacts are not supported by diff; expected Catalog or ComponentDefinition",
             path.display()
         ))),
-        Err(_) => Err(ForgeError::DiffError(format!(
-            "'{}': not a recognized OSCAL artifact; expected 'catalog' or 'component-definition' root key",
+        Err(error) => Err(ForgeError::DiffError(format!(
+            "'{}': expected a single supported OSCAL root key ('catalog' or 'component-definition'): {error}",
             path.display()
         ))),
     }
@@ -270,5 +286,20 @@ mod tests {
         assert_eq!(report.summary.added, 1);
         assert_eq!(report.summary.total_old, 1);
         assert_eq!(report.summary.total_new, 2);
+    }
+
+    #[test]
+    fn test_ambiguous_oscal_artifact_reports_detected_roots() {
+        let ambiguous = serde_json::json!({
+            "catalog": {},
+            "component-definition": {}
+        });
+        let old_file = write_json_file(&ambiguous);
+        let new_file = write_json_file(&ambiguous);
+
+        let error = diff_artifacts(old_file.path(), new_file.path()).unwrap_err();
+        let message = error.to_string();
+        assert!(message.contains("catalog"));
+        assert!(message.contains("component-definition"));
     }
 }

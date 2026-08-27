@@ -1309,6 +1309,7 @@ pub fn generate_synthetic_policy() -> String {
 
     // ── Generate Each Domain (H2) ──
     let mut nist_idx: usize = 0;
+    let mut table_number: usize = 0;
     for (domain_idx, domain) in DOMAINS.iter().enumerate() {
         let domain_num = domain_idx + 1;
 
@@ -1341,6 +1342,8 @@ pub fn generate_synthetic_policy() -> String {
 
             // Table (if present)
             if let Some(table) = sub.table {
+                table_number += 1;
+                let _ = writeln!(doc, "Table {table_number}: {} Matrix\n", sub.title);
                 doc.push_str(table);
                 doc.push_str("\n\n");
             }
@@ -1363,6 +1366,11 @@ pub fn generate_synthetic_policy() -> String {
             nist_idx += 1;
         }
     }
+
+    doc.push_str("# Appendix A: Approved Disposal Methods\n\n");
+    doc.push_str("Approved disposal methods include cryptographic erasure, degaussing, shredding, and certified destruction appropriate to the data classification and storage medium.\n\n");
+    doc.push_str("# Appendix B: Vendor Assessment Questionnaire\n\n");
+    doc.push_str("The vendor assessment questionnaire covers security governance, access control, incident response, data protection, continuity, and independent assurance evidence.\n");
 
     doc
 }
@@ -1444,4 +1452,46 @@ Personnel responsible for implementing and maintaining {sub_lower} controls shou
 receive specialized training appropriate to their role and should maintain current \
 knowledge of emerging threats and countermeasures relevant to {domain_lower}.\n\n",
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fixture_determinism_test() {
+        let first = generate_synthetic_policy();
+        let second = generate_synthetic_policy();
+
+        assert_eq!(first, second, "synthetic policy generation must be deterministic");
+        assert!(
+            (140_000..250_000).contains(&first.len()),
+            "fixture size {} is outside the benchmark corpus range",
+            first.len()
+        );
+        assert!(
+            (20_000..30_000).contains(&first.split_whitespace().count()),
+            "fixture word count drifted from the benchmark corpus range"
+        );
+
+        let lines: Vec<&str> = first.lines().collect();
+        assert_eq!(lines.iter().filter(|line| line.starts_with("## ")).count(), 10);
+        assert_eq!(lines.iter().filter(|line| line.starts_with("### ")).count(), 40);
+        assert_eq!(lines.iter().filter(|line| line.starts_with("Table ")).count(), 10);
+        assert_eq!(lines.iter().filter(|line| line.starts_with("#### ")).count(), 3);
+        assert_eq!(
+            lines
+                .iter()
+                .filter(|line| {
+                    let trimmed = line.trim_start();
+                    trimmed
+                        .split_once(". ")
+                        .is_some_and(|(number, _)| number.chars().all(|ch| ch.is_ascii_digit()))
+                })
+                .count(),
+            200
+        );
+        assert!(first.contains("# Appendix A: Approved Disposal Methods"));
+        assert!(first.contains("# Appendix B: Vendor Assessment Questionnaire"));
+    }
 }

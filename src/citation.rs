@@ -79,12 +79,11 @@ fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), For
         if !req.citations.is_empty() {
             continue;
         }
-        let requirement_id = req.stable_id.as_deref().ok_or_else(|| {
-            ForgeError::Parse(format!(
-                "Requirement at line {} missing stable_id before citation extraction (run UUID assignment first)",
-                req.source_line
-            ))
-        })?;
+        let requirement_id =
+            req.stable_id.as_deref().ok_or_else(|| ForgeError::PipelineInvariant {
+                source_line: req.source_line,
+                context: "citation extraction requires stable IDs to be assigned first".to_string(),
+            })?;
         let (cleaned_text, citations) = extract_citations_from_text(requirement_id, &req.text)?;
         tracing::debug!(
             requirement_id = requirement_id,
@@ -116,7 +115,8 @@ fn extract_citations_from_section(section: &mut PolicySection) -> Result<(), For
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Parse` if regex matching encounters an error.
+/// Returns `ForgeError::PipelineInvariant` when stable IDs have not been assigned
+/// before citation extraction.
 pub fn extract_citations_from_text(
     requirement_id: &str,
     text: &str,
@@ -143,7 +143,7 @@ pub fn extract_citations_from_text(
             id: citation_id,
             text: url_text.clone(),
             url: Some(url_text),
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(m.start()..(m.end() - trimmed_len));
     }
@@ -166,7 +166,7 @@ pub fn extract_citations_from_text(
             id: citation_id,
             text: url_text.clone(),
             url: Some(url_text),
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(m.start()..(m.end() - trimmed_len));
     }
@@ -187,7 +187,7 @@ pub fn extract_citations_from_text(
             id: citation_id,
             text: ref_text,
             url: None,
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(range);
     }
@@ -208,15 +208,16 @@ pub fn extract_citations_from_text(
             id: citation_id,
             text: ref_text,
             url: None,
-            source_requirement_id: Some(requirement_id.to_string()),
+            source_requirement_id: Some(requirement_id.into()),
         });
         matched_ranges.push(range);
     }
 
-    let cleaned = strip_matches(text, &matched_ranges);
-    let cleaned = normalize_prose(&cleaned);
+    if matched_ranges.is_empty() {
+        return Ok((text.to_string(), citations));
+    }
 
-    Ok((cleaned, citations))
+    Ok((normalize_prose(&strip_matches(text, &matched_ranges)), citations))
 }
 
 /// Generate a deterministic citation ID using UUID v5.
@@ -371,6 +372,15 @@ mod tests {
 
         assert!(citations.is_empty());
         assert_eq!(text, "Users must authenticate before access");
+    }
+
+    #[test]
+    fn no_citations_preserve_prose_byte_for_byte() {
+        let original = "  Preserve\ttabs,  double spaces,\nand surrounding whitespace.  ";
+        let (text, citations) = extract_citations_from_text("req-1", original).unwrap();
+
+        assert!(citations.is_empty());
+        assert_eq!(text, original);
     }
 
     // EC-2: Whitespace normalization after stripping
@@ -564,6 +574,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -576,6 +587,17 @@ mod tests {
             children: vec![],
             requirements: reqs,
         }
+    }
+
+    #[test]
+    fn missing_stable_id_reports_pipeline_invariant() {
+        let mut requirement = make_req("req-1", "See https://example.com");
+        requirement.stable_id = None;
+        requirement.source_line = 42;
+        let mut section = make_section("Policy", vec![requirement]);
+
+        let error = extract_citations_from_section(&mut section).unwrap_err();
+        assert!(matches!(error, ForgeError::PipelineInvariant { source_line: 42, .. }));
     }
 
     // Multiple sections each with requirements

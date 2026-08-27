@@ -16,9 +16,9 @@ fn generate_report_from_catalog_fixture() {
     assert_eq!(report.artifact_type, OscalModelType::Catalog);
     // 2 groups + 4 controls = 6 entries
     assert_eq!(report.entries.len(), 6);
-    assert_eq!(report.summary.total_elements, 6);
-    assert_eq!(report.summary.mapped_elements, 6);
-    assert_eq!(report.summary.unmapped_elements(), 0);
+    assert_eq!(report.summary().total_elements, 6);
+    assert_eq!(report.summary().mapped_elements, 6);
+    assert_eq!(report.summary().unmapped_elements(), 0);
 
     // Verify groups
     assert_eq!(report.entries[0].element_id, "access-control");
@@ -30,7 +30,7 @@ fn generate_report_from_catalog_fixture() {
     assert_eq!(report.entries[1].element_type, ElementType::Control);
     assert!(report.entries[1].trace.is_some());
     let meta = report.entries[1].trace.as_ref().unwrap();
-    assert_eq!(meta.source_line, 5);
+    assert_eq!(meta.source_line, Some(5));
     assert_eq!(meta.source_section, "Access Control");
 }
 
@@ -50,9 +50,9 @@ fn generate_report_from_compdef_fixture() {
         assert!(entry.trace.is_some());
     }
 
-    assert_eq!(report.entries[0].element_id, "POL-AC-001");
-    assert_eq!(report.entries[1].element_id, "POL-AC-002");
-    assert_eq!(report.entries[2].element_id, "POL-DP-001");
+    assert_eq!(report.entries[0].element_id, "comp-uuid-1/catalog-uuid/ci-uuid-1/POL-AC-001");
+    assert_eq!(report.entries[1].element_id, "comp-uuid-1/catalog-uuid/ci-uuid-1/POL-AC-002");
+    assert_eq!(report.entries[2].element_id, "comp-uuid-1/catalog-uuid/ci-uuid-1/POL-DP-001");
 }
 
 // T028: Integration test — error cases
@@ -148,9 +148,9 @@ fn partial_trace_coverage() {
     let unmapped = report.entries.iter().find(|e| e.element_id == "POL-AC-002").unwrap();
     assert!(unmapped.trace.is_none());
 
-    assert_eq!(report.summary.mapped_elements, 2); // group + POL-AC-001
-    assert_eq!(report.summary.unmapped_elements(), 1);
-    assert!(report.summary.coverage_percent() < 100.0);
+    assert_eq!(report.summary().mapped_elements, 2); // group + POL-AC-001
+    assert_eq!(report.summary().unmapped_elements(), 1);
+    assert!(report.summary().coverage_percent() < 100.0);
 
     let table = format_trace_table(&report);
     assert!(table.contains("[unmapped]"));
@@ -166,9 +166,9 @@ fn no_trace_metadata() {
 
     // 1 group (no props, so unmapped) + 2 controls (no props, so unmapped) = 3 entries
     assert_eq!(report.entries.len(), 3);
-    assert_eq!(report.summary.mapped_elements, 0);
-    assert_eq!(report.summary.unmapped_elements(), 3);
-    assert!((report.summary.coverage_percent() - 0.0).abs() < f64::EPSILON);
+    assert_eq!(report.summary().mapped_elements, 0);
+    assert_eq!(report.summary().unmapped_elements(), 3);
+    assert!((report.summary().coverage_percent() - 0.0).abs() < f64::EPSILON);
 
     let table = format_trace_table(&report);
     assert!(table.contains("0.0% coverage"));

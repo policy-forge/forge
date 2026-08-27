@@ -58,11 +58,8 @@ pub fn execute_impact(
     fail_on: &FrameworkFailOn,
     filters: model::ImpactFilters,
 ) -> Result<bool, ForgeError> {
-    crate::io::regular_file_metadata(manifest_path, "manifest").map_err(impact_error)?;
-    io::check_file_size(manifest_path, manifest::MAX_MANIFEST_BYTES)
+    let bytes = io::read_bounded(manifest_path, manifest::MAX_MANIFEST_BYTES)
         .map_err(|error| impact_error(format!("manifest: {error}")))?;
-    let bytes =
-        std::fs::read(manifest_path).map_err(|error| impact_error(format!("manifest: {error}")))?;
     let manifest = manifest::parse(&bytes)?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
     let (report, mut inputs) = analysis::analyze(manifest_dir, &manifest, filters)?;
@@ -95,7 +92,7 @@ fn render_markdown(report: &model::ImpactReport) -> String {
     let mut output = String::new();
     output.push_str("# FORGE framework change impact report\n\n");
     let _ = writeln!(output, "- Schema: {}", markdown_escape(report.schema_version));
-    let _ = writeln!(output, "- Status: {}", markdown_escape(report.status));
+    let _ = writeln!(output, "- Status: {}", markdown_escape(report.status.as_str()));
     output.push_str("\n## Resources\n\n");
     output.push_str(
         "| Revision | Type | SHA-256 | Root UUID | Document version | OSCAL version | Resolved catalog SHA-256 |\n",
@@ -132,8 +129,8 @@ fn render_markdown(report: &model::ImpactReport) -> String {
             "| {} | {} | {} | {} |",
             change.change_class.as_str(),
             markdown_escape(&change.subject_id),
-            change.old_sha256.as_deref().unwrap_or("none"),
-            change.new_sha256.as_deref().unwrap_or("none")
+            change.old_sha256.as_deref().map_or_else(|| "none".to_owned(), markdown_escape),
+            change.new_sha256.as_deref().map_or_else(|| "none".to_owned(), markdown_escape)
         );
     }
 
@@ -171,7 +168,7 @@ fn render_html(report: &model::ImpactReport) -> String {
         output,
         "<dl><dt>Schema</dt><dd><code>{}</code></dd><dt>Status</dt><dd><code>{}</code></dd></dl>",
         html_escape(report.schema_version),
-        html_escape(report.status)
+        html_escape(report.status.as_str())
     );
     output.push_str("<h2>Resources</h2>\n<table>\n<thead><tr><th>Revision</th><th>Type</th><th>SHA-256</th><th>Root UUID</th><th>Document version</th><th>OSCAL version</th><th>Resolved catalog SHA-256</th></tr></thead>\n<tbody>\n");
     for (revision, resource) in [("Old", &report.old), ("New", &report.new)] {
@@ -200,8 +197,8 @@ fn render_html(report: &model::ImpactReport) -> String {
             "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
             change.change_class.as_str(),
             html_escape(&change.subject_id),
-            change.old_sha256.as_deref().unwrap_or("none"),
-            change.new_sha256.as_deref().unwrap_or("none")
+            change.old_sha256.as_deref().map_or_else(|| "none".to_owned(), html_escape),
+            change.new_sha256.as_deref().map_or_else(|| "none".to_owned(), html_escape)
         );
     }
     output.push_str("</tbody>\n</table>\n<h2>Review findings</h2>\n<table>\n<thead><tr><th>Priority</th><th>Reason</th><th>Finding</th><th>Control</th><th>Action</th><th>Disposition</th><th>Dependency path</th></tr></thead>\n<tbody>\n");
@@ -274,6 +271,8 @@ fn html_escape(value: &str) -> String {
             '>' => escaped.push_str("&gt;"),
             '"' => escaped.push_str("&quot;"),
             '\'' => escaped.push_str("&#39;"),
+            '\n' => escaped.push_str("&#10;"),
+            '\r' => escaped.push_str("&#13;"),
             _ => escaped.push(character),
         }
     }
@@ -303,7 +302,7 @@ fn render_github_annotations(report: &model::ImpactReport) -> String {
             github_property(&format!("FORGE framework impact: {}", finding.reason_code.as_str()));
         let disposition =
             finding.disposition.as_ref().map_or("none", |value| value.status.as_str());
-        let message = github_data(&format!(
+        let message = github_property(&format!(
             "finding={} control={} change={} action={} disposition={} path={}",
             finding.finding_id,
             finding.subject_id,
@@ -329,7 +328,7 @@ fn render_text(report: &model::ImpactReport) -> String {
     let mut output = String::new();
     output.push_str("FORGE framework change impact report\n");
     let _ = writeln!(output, "schema: {}", report.schema_version);
-    let _ = writeln!(output, "status: {}", report.status);
+    let _ = writeln!(output, "status: {}", report.status.as_str());
     let _ = writeln!(
         output,
         "old: sha256={} root-uuid={} version={} oscal-version={}",
@@ -438,8 +437,9 @@ fn validate_destination(inputs: &[PathBuf], output: Option<&Path>) -> Result<(),
 }
 
 fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
-    crate::mapping::paths_alias(left, right).map_err(|error| {
-        impact_error(error.to_string().replace("Control Mapping build error: ", ""))
+    crate::mapping::paths_alias(left, right).map_err(|error| match error {
+        ForgeError::MappingBuild(message) => impact_error(message),
+        other => impact_error(other.to_string()),
     })
 }
 
@@ -460,20 +460,26 @@ mod tests {
     use crate::framework::disposition::{DispositionRecord, DispositionStatus};
     use crate::framework::model::{
         ChangeClass, ChangeSummary, ControlChange, FindingPriority, ImpactFinding, ImpactReport,
-        ReasonCode, RequiredAction,
+        ReasonCode, ReportStatus, RequiredAction,
     };
     use crate::mapping::inventory::ResourceEvidence;
     use crate::mapping::manifest::ResourceType;
 
     use super::{
         decision_state_filter, gate_fires, github_data, github_property, html_escape,
-        markdown_escape, priority_filter, render_html, render_markdown,
+        markdown_escape, priority_filter, render_github_annotations, render_html, render_markdown,
     };
 
     #[test]
     fn github_workflow_command_fields_are_escaped() {
         assert_eq!(github_data("100%\nnext\r"), "100%25%0Anext%0D");
         assert_eq!(github_property("a:b,c%"), "a%3Ab%2Cc%25");
+
+        let mut report = report_with_injected_content();
+        report.findings[0].subject_id = "control,with:delimiter".to_owned();
+        let annotations = render_github_annotations(&report);
+        assert!(annotations.contains("control%2Cwith%3Adelimiter"));
+        assert!(!annotations.contains("control,with:delimiter"));
     }
 
     #[test]
@@ -510,13 +516,17 @@ mod tests {
 
     #[test]
     fn markdown_and_html_reports_are_deterministic_and_escape_injected_content() {
-        let report = report_with_injected_content();
+        let mut report = report_with_injected_content();
+        report.changes[0].old_sha256 = Some("old|sha".to_owned());
+        report.changes[0].new_sha256 = Some("new<script>".to_owned());
 
         let markdown = render_markdown(&report);
         assert_eq!(markdown, render_markdown(&report));
         assert!(markdown.starts_with("# FORGE framework change impact report\n"));
         assert!(markdown.contains("- Status: complete"));
         assert!(markdown.contains("control\\|with\\*markup&lt;script&gt;"));
+        assert!(markdown.contains("old\\|sha"));
+        assert!(markdown.contains("new&lt;script&gt;"));
         assert!(markdown.contains("source&#10;\\|row -> &lt;img src=x onerror=alert\\(1\\)&gt;"));
         assert!(!markdown.contains("<script>"));
         assert!(!markdown.contains("\n|row"));
@@ -526,7 +536,8 @@ mod tests {
         assert!(html.starts_with("<!doctype html>\n<html lang=\"en\">"));
         assert!(html.contains("<dt>Status</dt><dd><code>complete</code></dd>"));
         assert!(html.contains("control|with*markup&lt;script&gt;"));
-        assert!(html.contains("source\n|row"));
+        assert!(html.contains("<td>old|sha</td><td>new&lt;script&gt;</td>"));
+        assert!(html.contains("source&#10;|row"));
         assert!(!html.contains("<script>"));
         assert!(!html.contains("<img src=x onerror=alert(1)>"));
         assert!(html.ends_with("</html>\n"));
@@ -605,7 +616,7 @@ mod tests {
         };
         ImpactReport {
             schema_version: crate::framework::model::REPORT_SCHEMA_VERSION,
-            status: "complete",
+            status: ReportStatus::Complete,
             old: resource.clone(),
             new: resource,
             summary: ChangeSummary {

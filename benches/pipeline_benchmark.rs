@@ -30,7 +30,7 @@ const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 
 // ─── Full Pipeline Helper ───────────────────────────────────────────────
 
-/// Runs the full catalog pipeline and returns the serialized JSON string.
+/// Runs the full catalog pipeline and returns the validated serialized JSON string.
 ///
 /// Mirrors `src/pipeline.rs::run_catalog_pipeline` but captures the JSON
 /// string instead of writing to file/stdout. Composes public API functions
@@ -61,12 +61,29 @@ fn run_full_catalog_pipeline(fixture_path: &Path) -> Result<String, forge::Forge
     let mut doc = doc;
     forge::parameter::extract_parameters(&mut doc)?;
 
-    // Step 4: Catalog Assembly (delegates to shared helper)
+    // Step 4: Catalog assembly
     let envelope = build_catalog_envelope(&doc)?;
 
-    // Step 5: Serialize
-    serde_json::to_string_pretty(&envelope)
-        .map_err(|e| forge::ForgeError::Serialization(e.to_string()))
+    // Step 5: Production serializes, parses to a value, then validates schema
+    // and semantic invariants before returning the JSON payload.
+    let json = serde_json::to_string_pretty(&envelope)
+        .map_err(|error| forge::ForgeError::Serialization(error.to_string()))?;
+    let value = serde_json::from_str(&json)
+        .map_err(|error| forge::ForgeError::Serialization(error.to_string()))?;
+    let report = forge::validate::run_full_validation(
+        "generated benchmark catalog",
+        &value,
+        forge::OscalModelType::Catalog,
+    )
+    .map_err(|error| forge::ForgeError::SchemaValidation(error.to_string()))?;
+    if !report.is_valid() {
+        return Err(forge::ForgeError::SchemaValidation(format!(
+            "{} validation error(s) in generated benchmark catalog",
+            report.errors().len()
+        )));
+    }
+
+    Ok(json)
 }
 
 // ─── Full Pipeline Benchmark ────────────────────────────────────────────
@@ -74,7 +91,8 @@ fn run_full_catalog_pipeline(fixture_path: &Path) -> Result<String, forge::Forge
 /// Benchmark the full catalog pipeline end-to-end.
 ///
 /// Measures ingest → parse → assemble → atomize → IDs → citations →
-/// catalog → traces → metadata → `back_matter` → serialize.
+/// modality annotation → parameter extraction → catalog → traces → metadata →
+/// `back_matter` → serialize → validate.
 ///
 /// Uses extended measurement time (10s) for stable results on potentially
 /// multi-second pipeline runs.
@@ -83,6 +101,22 @@ fn bench_full_pipeline(c: &mut Criterion) {
     assert!(
         fixture_path.exists(),
         "Synthetic fixture must exist at {FIXTURE_PATH} — run fixture generator first"
+    );
+
+    let ingested = forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES)
+        .expect("benchmark fixture ingestion must succeed");
+    let content = ingested.reconstruct_content();
+    let sections = forge::parse::extract_sections(&content)
+        .expect("benchmark fixture section parsing must succeed");
+    let clauses = forge::parse::extract_clauses(&content)
+        .expect("benchmark fixture clause parsing must succeed");
+    let document = forge::model::assemble_document(&ingested, &sections, &clauses)
+        .expect("benchmark fixture assembly must succeed");
+    let atomized = forge::parse::atomize_document(&document)
+        .expect("benchmark fixture atomization must succeed");
+    assert!(
+        atomized.sections.iter().any(|section| !section.requirements.is_empty()),
+        "fixture produced no atomized requirements"
     );
 
     let mut group = c.benchmark_group("full_pipeline");
@@ -184,6 +218,8 @@ fn bench_per_stage(c: &mut Criterion) {
     // Pre-compute parse output for atomize stage
     let sections = forge::parse::extract_sections(&content).unwrap();
     let clauses = forge::parse::extract_clauses(&content).unwrap();
+    assert!(!sections.is_empty(), "fixture produced no sections");
+    assert!(!clauses.list_items.is_empty(), "fixture produced no list-item requirements");
 
     // ── Stage 3: Atomize ──
     group.bench_function("atomize", |b| {
@@ -201,8 +237,8 @@ fn bench_per_stage(c: &mut Criterion) {
         });
     });
 
-    // Pre-compute atomize output for catalog assembly stage
     let document = forge::model::assemble_document(&ingested, &sections, &clauses).unwrap();
+    assert!(document.total_requirements() > 0, "fixture assembled no requirements");
     let atomized = forge::parse::atomize_document(&document).unwrap();
     let doc_for_catalog = forge::uuid::assign_stable_ids(atomized);
     let doc_for_catalog = forge::citation::extract_citations(doc_for_catalog).unwrap();

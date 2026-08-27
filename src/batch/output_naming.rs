@@ -13,6 +13,8 @@ use crate::cli::OutputFormat;
 ///    disk), append `_{n}` suffix (n starts at 2)
 /// 5. An output equal to its own input path (same file, `output_dir` is None)
 ///    is always suffixed so conversion never overwrites its source (F0286)
+/// 6. Claimed generated paths compare ASCII case-insensitively to avoid collisions
+///    on common case-insensitive filesystems (F0287).
 #[must_use]
 pub fn derive_output_paths(
     input_paths: &[PathBuf],
@@ -21,8 +23,9 @@ pub fn derive_output_paths(
 ) -> Vec<(PathBuf, PathBuf)> {
     let ext = format.as_extension();
     let base_dir = output_dir.unwrap_or_else(|| Path::new("."));
-    let mut claimed: HashSet<PathBuf> = HashSet::new();
-    // Track next suffix per stem for O(1) collision resolution
+    // ASCII-fold generated names because common target filesystems are case-insensitive.
+    let mut claimed: HashSet<String> = HashSet::new();
+    // Track next suffix per case-folded stem for O(1) collision resolution.
     let mut next_suffix: HashMap<String, u32> = HashMap::new();
     let mut result = Vec::with_capacity(input_paths.len());
 
@@ -37,13 +40,13 @@ pub fn derive_output_paths(
         // A name is taken if minted in this call, already on disk, or equal
         // to the input it would overwrite (F0286).
         let taken = |path: &Path| {
-            claimed.contains(path)
+            claimed.contains(&path.to_string_lossy().to_ascii_lowercase())
                 || path.exists()
                 || (output_dir.is_none() && same_file(input, path))
         };
 
         let output_path = if taken(&candidate) {
-            let n = next_suffix.entry(stem.clone()).or_insert(2);
+            let n = next_suffix.entry(stem.to_ascii_lowercase()).or_insert(2);
             loop {
                 let suffixed = base_dir.join(format!("{stem}_{n}.{ext}"));
                 *n += 1;
@@ -55,7 +58,7 @@ pub fn derive_output_paths(
             candidate
         };
 
-        claimed.insert(output_path.clone());
+        claimed.insert(output_path.to_string_lossy().to_ascii_lowercase());
         result.push((input.clone(), output_path));
     }
 
@@ -96,6 +99,15 @@ mod tests {
         let pairs = derive_output_paths(&inputs, OutputFormat::Json, Some(Path::new("/out")));
         assert_eq!(pairs[0].1, PathBuf::from("/out/policy.json"));
         assert_eq!(pairs[1].1, PathBuf::from("/out/policy_2.json"));
+    }
+
+    #[test]
+    fn ascii_case_variants_receive_distinct_outputs() {
+        let inputs = vec![PathBuf::from("/one/policy.md"), PathBuf::from("/two/POLICY.md")];
+        let pairs = derive_output_paths(&inputs, OutputFormat::Json, Some(Path::new("/out")));
+
+        assert_eq!(pairs[0].1, PathBuf::from("/out/policy.json"));
+        assert_eq!(pairs[1].1, PathBuf::from("/out/POLICY_2.json"));
     }
 
     #[test]

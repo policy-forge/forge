@@ -250,7 +250,12 @@ pub fn build_profile(
         seed_parts.push(param_id);
         seed_parts.push(value);
     }
-    let seed = seed_parts.join("|");
+    let mut seed = String::new();
+    for part in seed_parts {
+        seed.push_str(&part.len().to_string());
+        seed.push(':');
+        seed.push_str(part);
+    }
     let uuid = Uuid::new_v5(&crate::uuid::PROFILE_NAMESPACE, seed.as_bytes());
 
     let imports = if control_ids.is_empty() {
@@ -652,6 +657,28 @@ mod tests {
         )
         .unwrap();
         assert_eq!(p1.uuid, p2.uuid, "Same inputs should produce same UUID");
+    }
+
+    #[test]
+    fn profile_uuid_distinguishes_ambiguous_control_id_boundaries() {
+        let combined = build_profile(
+            "catalog.json",
+            vec!["AC-1|AC-2".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        let separate = build_profile(
+            "catalog.json",
+            vec!["AC-1".to_string(), "AC-2".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+
+        assert_ne!(combined.uuid, separate.uuid);
     }
 
     #[test]

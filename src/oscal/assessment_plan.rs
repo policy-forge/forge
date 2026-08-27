@@ -7,8 +7,36 @@
 use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use serde::Serialize;
+use serde::{Serialize, Serializer};
+
+/// Subjects shared between the assessment-plan root and each associated activity.
+pub type SharedAssessmentSubjects = Arc<Vec<AssessmentSubject>>;
+
+fn serialize_shared_subjects<S>(
+    subjects: &SharedAssessmentSubjects,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    subjects.as_ref().serialize(serializer)
+}
+
+#[expect(
+    clippy::ref_option,
+    reason = "serde serialize_with callbacks receive a reference to the field"
+)]
+fn serialize_optional_shared_subjects<S>(
+    subjects: &Option<SharedAssessmentSubjects>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    subjects.as_deref().serialize(serializer)
+}
 
 use crate::error::ForgeError;
 use crate::model::{DocumentMetadata, PolicyRequirement};
@@ -45,8 +73,12 @@ pub struct AssessmentPlan {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tasks: Option<Vec<AssessmentTask>>,
     /// Optional assessment subjects referencing documentary components (WI-42).
-    #[serde(rename = "assessment-subjects", skip_serializing_if = "Option::is_none")]
-    pub assessment_subjects: Option<Vec<AssessmentSubject>>,
+    #[serde(
+        rename = "assessment-subjects",
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_optional_shared_subjects"
+    )]
+    pub assessment_subjects: Option<SharedAssessmentSubjects>,
 }
 
 /// OSCAL metadata for the Assessment Plan.
@@ -135,8 +167,9 @@ pub struct AssociatedActivity {
     /// Reference to the matching activity in `local-definitions.activities`.
     #[serde(rename = "activity-uuid")]
     pub activity_uuid: String,
-    /// Subjects to which this activity applies.
-    pub subjects: Vec<AssessmentSubject>,
+    /// Subjects to which this activity applies, shared with the plan root.
+    #[serde(serialize_with = "serialize_shared_subjects")]
+    pub subjects: SharedAssessmentSubjects,
 }
 
 /// Local Assessment Plan definitions referenced by tasks.
@@ -202,7 +235,7 @@ pub struct SubjectRef {
 ///
 /// # Errors
 ///
-/// * `ForgeError::Validation` — if `import_ssp_href` is empty or whitespace-only
+/// * `ForgeError::Validation` — if `control_ids` or `import_ssp_href` is empty
 /// * `ForgeError::AssessmentPlanBuild` — if metadata assembly fails
 pub fn build_assessment_plan(
     control_ids: &[String],
@@ -216,11 +249,14 @@ pub fn build_assessment_plan(
 
     // Sort + dedup control IDs (SEC-3)
     let mut sorted_ids: Vec<String> = control_ids.to_vec();
-    sorted_ids.sort();
+    sorted_ids.sort_unstable();
     sorted_ids.dedup();
 
     if sorted_ids.is_empty() {
-        tracing::warn!("Zero controls found — Assessment Plan will have empty include-controls");
+        return Err(ForgeError::Validation(
+            "conversion produced zero controls; refusing to emit an Assessment Plan with an empty include-controls array"
+                .to_string(),
+        ));
     }
 
     // S-2: Use shared assemble_metadata function
@@ -232,8 +268,19 @@ pub fn build_assessment_plan(
     let real_metadata = crate::oscal::assemble_metadata(&doc_meta, None)
         .map_err(|e| ForgeError::AssessmentPlanBuild(e.to_string()))?;
 
-    // UUID v5 seed: deterministic from sorted control IDs + SSP href (SEC-4)
-    let seed = format!("assessment-plan|{}|{}", sorted_ids.join(","), import_ssp_href);
+    // Canonicalize the emitted href before hashing so equivalent logical inputs
+    // produce the same UUID. Length-prefix each sorted control ID to keep the
+    // seed injective when an ID contains a delimiter.
+    let canonical_href = crate::io::sanitize_artifact_path(Path::new(import_ssp_href));
+    let mut seed = format!("assessment-plan|{}", sorted_ids.len());
+    for id in &sorted_ids {
+        seed.push('|');
+        seed.push_str(&id.len().to_string());
+        seed.push(':');
+        seed.push_str(id);
+    }
+    seed.push('|');
+    seed.push_str(&canonical_href);
     let uuid = generate_stable_id(&seed);
 
     let deduped_count = sorted_ids.len();
@@ -249,9 +296,7 @@ pub fn build_assessment_plan(
                 version: real_metadata.version,
                 oscal_version: real_metadata.oscal_version,
             },
-            import_ssp: ImportSsp {
-                href: crate::io::sanitize_artifact_path(std::path::Path::new(import_ssp_href)),
-            },
+            import_ssp: ImportSsp { href: canonical_href },
             local_definitions: None,
             reviewed_controls: ReviewedControls {
                 description: Some(format!(
@@ -354,12 +399,12 @@ where
                     req.text
                 ),
                 activity_uuid: activity_uuid.to_string(),
-                subjects: vec![AssessmentSubject {
+                subjects: Arc::new(vec![AssessmentSubject {
                     subject_type: "component".to_string(),
                     description: "Policy components in assessment scope".to_string(),
                     include_all: Some(IncludeAllSubjects {}),
                     include_subjects: None,
-                }],
+                }]),
             };
 
             AssessmentTask {
@@ -451,12 +496,13 @@ pub fn complete_assessment_plan(
         "Completing Assessment Plan with tasks and subjects"
     );
 
+    let subjects = Arc::new(subjects);
     let mut activities = Vec::new();
     let mut activity_uuids = HashSet::new();
     for task in &mut tasks {
         if let Some(associated) = &mut task.associated_activities {
             for activity in associated {
-                activity.subjects.clone_from(&subjects);
+                activity.subjects = Arc::clone(&subjects);
                 if activity_uuids.insert(activity.uuid.clone()) {
                     activities.push(ActivityDefinition {
                         uuid: activity.uuid.clone(),
@@ -530,15 +576,14 @@ mod tests {
         );
     }
 
-    // ─── T004: EC-1 — Zero controls → empty include-controls ───────────
+    // ─── T004: EC-1 — Zero controls is rejected ────────────────────────
 
     #[test]
-    fn ec1_zero_controls_empty_include_controls() {
-        let ids: Vec<String> = vec![];
-        let envelope = build_assessment_plan(&ids, "./ssp.json", "Policy").unwrap();
-        let controls =
-            &envelope.assessment_plan.reviewed_controls.control_selections[0].include_controls;
-        assert!(controls.is_empty());
+    fn ec1_zero_controls_returns_validation_error() {
+        let error = build_assessment_plan(&[], "./ssp.json", "Policy").unwrap_err();
+
+        assert!(matches!(error, ForgeError::Validation(_)));
+        assert!(error.to_string().contains("zero controls"));
     }
 
     // ─── T004: EC-3 — Duplicate IDs → deduplicated output ──────────────
@@ -597,6 +642,26 @@ mod tests {
             envelope_a.assessment_plan.uuid, envelope_b.assessment_plan.uuid,
             "Same inputs must produce identical UUIDs"
         );
+    }
+
+    #[test]
+    fn assessment_plan_uuid_uses_canonical_ssp_href() {
+        let ids = vec!["AC-001".to_string()];
+        let relative = build_assessment_plan(&ids, "./ssp/system-ssp.json", "Policy").unwrap();
+        let absolute =
+            build_assessment_plan(&ids, "/different/path/system-ssp.json", "Policy").unwrap();
+
+        assert_eq!(relative.assessment_plan.uuid, absolute.assessment_plan.uuid);
+    }
+
+    #[test]
+    fn assessment_plan_uuid_length_prefixes_control_ids() {
+        let first = vec!["A,B".to_string(), "C".to_string()];
+        let second = vec!["A".to_string(), "B,C".to_string()];
+        let first = build_assessment_plan(&first, "./ssp.json", "Policy").unwrap();
+        let second = build_assessment_plan(&second, "./ssp.json", "Policy").unwrap();
+
+        assert_ne!(first.assessment_plan.uuid, second.assessment_plan.uuid);
     }
 
     // ─── T011: AC-3 — import-ssp.href equals provided path ────────────
@@ -669,6 +734,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 
@@ -867,6 +933,36 @@ mod tests {
 
         let error = complete_assessment_plan(&mut envelope, tasks, Vec::new()).unwrap_err();
         assert!(matches!(error, ForgeError::Validation(_)));
+    }
+
+    #[test]
+    fn complete_plan_shares_subjects_with_all_activities() {
+        let ids = vec!["AC-001".to_string()];
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let tasks = generate_assessment_tasks(&[
+            make_req("req-1", "All users must use MFA"),
+            make_req("req-2", "All users must use encryption"),
+        ]);
+        let subjects = create_assessment_subjects(None, "Test Policy");
+
+        complete_assessment_plan(&mut envelope, tasks, subjects).unwrap();
+
+        let root_subjects = envelope.assessment_plan.assessment_subjects.as_ref().unwrap();
+        let tasks = envelope.assessment_plan.tasks.as_ref().unwrap();
+        let first = &tasks[0].associated_activities.as_ref().unwrap()[0].subjects;
+        let second = &tasks[1].associated_activities.as_ref().unwrap()[0].subjects;
+        assert!(Arc::ptr_eq(root_subjects, first));
+        assert!(Arc::ptr_eq(first, second));
+
+        let json = serde_json::to_value(&envelope).unwrap();
+        assert_eq!(json["assessment-plan"]["assessment-subjects"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            json["assessment-plan"]["tasks"][0]["associated-activities"][0]["subjects"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
     }
 
     #[test]

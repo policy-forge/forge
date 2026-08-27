@@ -8,12 +8,56 @@ use proptest::prelude::*;
 use forge::model::PolicyRequirement;
 use forge::parse::atomize_requirement;
 
+macro_rules! atomize_or_fail {
+    ($requirement:expr) => {
+        match atomize_requirement($requirement) {
+            Ok(result) => result,
+            Err(error) => {
+                prop_assert!(false, "atomizer rejected {:?}: {error}", $requirement.text);
+                unreachable!()
+            }
+        }
+    };
+}
+
+macro_rules! assert_citation_extractor_live {
+    () => {
+        prop_assert!(
+            forge::citation::extract_citations_from_text("req-prop", "comply with policy").is_ok(),
+            "citation extractor must accept the baseline input"
+        );
+    };
+}
+
 // ─── Atomization Property Tests ────────────────────────────────────────────
 
+#[test]
+fn atomize_unicode_multiline_and_bullet_inputs_do_not_panic() {
+    for text in [
+        "Café systems must protect data\nand retain records.",
+        "- Systems must support 多要素認証\n- Systems must log access",
+        "Organization shall process 東京 requirements",
+    ] {
+        let requirement = PolicyRequirement {
+            stable_id: None,
+            text: text.to_string(),
+            source_line: 1,
+            nesting_depth: 0,
+            atom_index: 0,
+            parent_text: None,
+            citations: vec![],
+            modality: None,
+            parameters: vec![],
+            parameters_extracted: false,
+        };
+        let _ = atomize_requirement(&requirement);
+    }
+}
+
 proptest! {
-    /// P-1: Atomization never panics on arbitrary ASCII input.
+    /// P-1: Atomization never panics on arbitrary Unicode input.
     #[test]
-    fn atomize_never_panics(text in "[ -~]{0,500}") {
+    fn atomize_never_panics(text in prop::string::string_regex(r"(?s).{0,500}").expect("valid Unicode strategy")) {
         let req = PolicyRequirement {
             stable_id: None,
             text,
@@ -24,13 +68,14 @@ proptest! {
             citations: vec![],
             modality: None,
             parameters: vec![],
+        parameters_extracted: false,
         };
         let _ = atomize_requirement(&req);
     }
 
     /// P-2: Atomization always produces at least 1 requirement.
     #[test]
-    fn atomize_produces_at_least_one(text in ".{0,300}") {
+    fn atomize_produces_at_least_one(text in prop::string::string_regex(r"(?s).{0,300}").expect("valid Unicode strategy")) {
         let req = PolicyRequirement {
             stable_id: None,
             text,
@@ -41,14 +86,15 @@ proptest! {
             citations: vec![],
             modality: None,
             parameters: vec![],
+        parameters_extracted: false,
         };
-        let result = atomize_requirement(&req).unwrap();
+        let result = atomize_or_fail!(&req);
         prop_assert!(!result.requirements.is_empty());
     }
 
     /// P-3: Atomization never exceeds MAX_SPLITS_PER_REQUIREMENT (50).
     #[test]
-    fn atomize_bounded_output(text in ".{0,500}") {
+    fn atomize_bounded_output(text in prop::string::string_regex(r"(?s).{0,500}").expect("valid Unicode strategy")) {
         let req = PolicyRequirement {
             stable_id: None,
             text,
@@ -59,8 +105,9 @@ proptest! {
             citations: vec![],
             modality: None,
             parameters: vec![],
+        parameters_extracted: false,
         };
-        let result = atomize_requirement(&req).unwrap();
+        let result = atomize_or_fail!(&req);
         prop_assert!(result.requirements.len() <= 50);
     }
 
@@ -77,8 +124,9 @@ proptest! {
             citations: vec![],
             modality: None,
             parameters: vec![],
+        parameters_extracted: false,
         };
-        let result = atomize_requirement(&req).unwrap();
+        let result = atomize_or_fail!(&req);
         for r in &result.requirements {
             let id = r.stable_id.as_ref().unwrap();
             prop_assert!(!id.is_empty(), "stable_id must be non-empty");
@@ -101,8 +149,9 @@ proptest! {
             citations: vec![],
             modality: None,
             parameters: vec![],
+        parameters_extracted: false,
         };
-        let result = atomize_requirement(&req).unwrap();
+        let result = atomize_or_fail!(&req);
         for r in &result.requirements {
             prop_assert_eq!(r.source_line, line);
         }
@@ -121,9 +170,10 @@ proptest! {
             citations: vec![],
             modality: None,
             parameters: vec![],
+        parameters_extracted: false,
         };
-        let r1 = atomize_requirement(&req).unwrap();
-        let r2 = atomize_requirement(&req).unwrap();
+        let r1 = atomize_or_fail!(&req);
+        let r2 = atomize_or_fail!(&req);
         prop_assert_eq!(r1.requirements.len(), r2.requirements.len());
         for (a, b) in r1.requirements.iter().zip(r2.requirements.iter()) {
             prop_assert_eq!(&a.stable_id, &b.stable_id);
@@ -152,8 +202,9 @@ proptest! {
             citations: vec![],
             modality: None,
             parameters: vec![],
+        parameters_extracted: false,
         };
-        let result = atomize_requirement(&req).unwrap();
+        let result = atomize_or_fail!(&req);
         if result.was_split {
             for r in &result.requirements {
                 prop_assert!(r.parent_text.is_some(), "Split requirements must have parent_text");
@@ -166,26 +217,34 @@ proptest! {
 // ─── Citation Extraction Property Tests ────────────────────────────────────
 
 proptest! {
-    /// P-8: Citation extraction never panics on arbitrary ASCII input.
+    /// P-8: Citation extraction never panics on arbitrary Unicode input.
     #[test]
-    fn citation_never_panics(text in "[ -~]{0,500}") {
+    fn citation_never_panics(text in prop::string::string_regex(r"(?s).{0,500}").expect("valid Unicode strategy")) {
         let _ = forge::citation::extract_citations_from_text("req-prop", &text);
     }
 
-    /// P-9: Cleaned text never contains double spaces after citation stripping.
+    /// P-9: Citation stripping normalizes its own gaps but preserves uncited prose byte-for-byte.
     #[test]
     fn citation_no_double_spaces(text in "[ -~]{0,300}") {
-        if let Ok((cleaned, _)) = forge::citation::extract_citations_from_text("req-prop", &text) {
-            prop_assert!(
-                !cleaned.contains("  "),
-                "Cleaned text should not contain double spaces. Got: {cleaned:?}"
-            );
+        assert_citation_extractor_live!();
+        if let Ok((cleaned, citations)) =
+            forge::citation::extract_citations_from_text("req-prop", &text)
+        {
+            if citations.is_empty() {
+                prop_assert_eq!(cleaned, text, "uncited prose must remain unchanged");
+            } else {
+                prop_assert!(
+                    !cleaned.contains("  "),
+                    "Citation-stripped text should not contain double spaces. Got: {cleaned:?}"
+                );
+            }
         }
     }
 
     /// P-10: Citation extraction is deterministic.
     #[test]
     fn citation_deterministic(text in "[ -~]{0,300}") {
+        assert_citation_extractor_live!();
         let r1 = forge::citation::extract_citations_from_text("req-prop", &text);
         let r2 = forge::citation::extract_citations_from_text("req-prop", &text);
         match (r1, r2) {
@@ -197,7 +256,9 @@ proptest! {
                     prop_assert_eq!(&a.text, &b.text);
                 }
             }
-            (Err(_), Err(_)) => {}
+            (Err(error1), Err(error2)) => {
+                prop_assert_eq!(error1.to_string(), error2.to_string());
+            }
             _ => prop_assert!(false, "Determinism violation: one succeeded and one failed"),
         }
     }
@@ -205,6 +266,7 @@ proptest! {
     /// P-11: All extracted citation IDs are valid UUIDs.
     #[test]
     fn citation_ids_are_valid_uuids(text in "[ -~]{0,300}") {
+        assert_citation_extractor_live!();
         if let Ok((_, citations)) = forge::citation::extract_citations_from_text("req-prop", &text) {
             for c in &citations {
                 prop_assert!(
@@ -219,6 +281,7 @@ proptest! {
     /// P-12: Citation text extracted is a substring of the original text.
     #[test]
     fn citation_text_is_substring_of_original(text in "[ -~]{0,300}") {
+        assert_citation_extractor_live!();
         if let Ok((_, citations)) = forge::citation::extract_citations_from_text("req-prop", &text) {
             for c in &citations {
                 prop_assert!(
@@ -238,7 +301,13 @@ proptest! {
         path in "[a-z/]{0,30}",
     ) {
         let text = format!("See https://{domain}/{path} for details");
-        let (_, citations) = forge::citation::extract_citations_from_text("req-prop", &text).unwrap();
+        let (_, citations) = match forge::citation::extract_citations_from_text("req-prop", &text) {
+            Ok(result) => result,
+            Err(error) => {
+                prop_assert!(false, "citation extractor rejected {text:?}: {error}");
+                unreachable!()
+            }
+        };
         prop_assert!(!citations.is_empty(), "Should extract at least one URL citation");
         for c in &citations {
             if let Some(url) = &c.url {

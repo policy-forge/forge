@@ -128,16 +128,19 @@ fn write_item(output: &mut String, side: &str, item: &InventoryRequirement) {
 }
 
 fn escape_controls(value: &str) -> String {
-    value
-        .chars()
-        .flat_map(|character| {
-            if character.is_control() {
-                character.escape_default().collect::<Vec<_>>()
-            } else {
-                vec![character]
-            }
-        })
-        .collect()
+    if !value.chars().any(char::is_control) {
+        return value.to_string();
+    }
+
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        if character.is_control() {
+            escaped.extend(character.escape_default());
+        } else {
+            escaped.push(character);
+        }
+    }
+    escaped
 }
 
 #[cfg(test)]

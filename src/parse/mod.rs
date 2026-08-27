@@ -145,6 +145,9 @@ pub fn extract_sections(content: &str) -> Result<Vec<SectionNode>, ForgeError> {
             Event::Code(code) if in_heading => {
                 title_buf.push_str(&code);
             }
+            Event::SoftBreak | Event::HardBreak if in_heading => {
+                title_buf.push(' ');
+            }
             Event::Text(_)
             | Event::Code(_)
             | Event::SoftBreak
@@ -607,5 +610,16 @@ mod tests {
             }
         }
         assert_eq!(md_count, 25, "Expected 25 .md files in example_data/");
+    }
+
+    #[test]
+    fn hard_and_soft_breaks_separate_heading_words() {
+        // Multi-line setext headings emit inline break events within the
+        // heading span; they must not concatenate words (F0705).
+        let sections =
+            extract_sections("Access\nControl\n======\n\nAudit\nLogging\n------\n").unwrap();
+
+        assert_eq!(sections[0].title, "Access Control");
+        assert_eq!(sections[0].children[0].title, "Audit Logging");
     }
 }

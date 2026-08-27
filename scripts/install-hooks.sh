@@ -4,11 +4,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-HOOKS_DIR="${REPO_ROOT}/.git/hooks"
+HOOKS_DIR="$(git -C "${REPO_ROOT}" rev-parse --path-format=absolute --git-path hooks)" || {
+    echo "[install-hooks] not inside a git repository" >&2
+    exit 1
+}
 PRE_COMMIT_HOOK="${HOOKS_DIR}/pre-commit"
 
 if [[ ! -d "${HOOKS_DIR}" ]]; then
-    echo "[install-hooks] .git/hooks not found. Run this from a git clone."
+    echo "[install-hooks] hooks directory not found: ${HOOKS_DIR}" >&2
     exit 1
 fi
 

@@ -78,20 +78,26 @@ pub fn run_batch_conversion(
         convert_single_file(input, output, strategy, format, max_size_bytes, source_profile)
     };
 
-    let results = if jobs == 0 {
+    let (results, degraded_to_sequential) = if jobs == 0 {
         // Use rayon's global thread pool (already initialized, no allocation cost)
-        path_pairs.par_iter().map(convert).collect()
+        (path_pairs.par_iter().map(convert).collect(), false)
     } else {
         match rayon::ThreadPoolBuilder::new().num_threads(jobs).build() {
-            Ok(pool) => pool.install(|| path_pairs.par_iter().map(convert).collect()),
-            Err(e) => {
-                tracing::error!("Failed to create thread pool: {e}. Falling back to sequential.");
-                path_pairs.iter().map(convert).collect()
+            Ok(pool) => (pool.install(|| path_pairs.par_iter().map(convert).collect()), false),
+            Err(error) => {
+                tracing::error!(
+                    "Failed to create thread pool: {error}. Falling back to sequential."
+                );
+                (path_pairs.iter().map(convert).collect(), true)
             }
         }
     };
 
-    BatchSummary::from_results(results, batch_start.elapsed())
+    BatchSummary::from_results_with_execution_mode(
+        results,
+        batch_start.elapsed(),
+        degraded_to_sequential,
+    )
 }
 
 /// Convert a single file with panic isolation.
@@ -113,16 +119,24 @@ fn convert_single_file(
 
     match result {
         Ok(Ok(())) => FileResult::success(input.to_path_buf(), output.to_path_buf(), duration),
-        Ok(Err(e)) => FileResult::failure(
-            input.to_path_buf(),
-            e.with_max_size_guidance().to_string(),
-            duration,
-        ),
-        Err(_) => FileResult::failure(
-            input.to_path_buf(),
-            "Internal error (panic during conversion)".to_string(),
-            duration,
-        ),
+        Ok(Err(error)) => {
+            FileResult::failure(input.to_path_buf(), error.with_max_size_guidance(), duration)
+        }
+        Err(payload) => {
+            let panic_detail = if let Some(message) = payload.downcast_ref::<&str>() {
+                *message
+            } else if let Some(message) = payload.downcast_ref::<String>() {
+                message.as_str()
+            } else {
+                "non-string panic payload"
+            };
+            tracing::error!(input = %input.display(), panic_detail, "batch conversion panicked");
+            FileResult::failure(
+                input.to_path_buf(),
+                ForgeError::BatchConversion("Internal error (panic during conversion)".to_string()),
+                duration,
+            )
+        }
     }
 }
 

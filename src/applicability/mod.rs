@@ -36,6 +36,90 @@ pub(crate) struct PreparedAnalysis {
     pub report: model::ApplicabilityReport,
     pub manifest: manifest::ApplicabilityManifest,
     pub input_paths: Vec<PathBuf>,
+    input_fingerprints: Vec<PreparedInputFingerprint>,
+}
+
+#[derive(Debug)]
+struct PreparedInputFingerprint {
+    path: PathBuf,
+    sha256: String,
+    byte_len: u64,
+    max_bytes: u64,
+}
+
+impl PreparedAnalysis {
+    /// Verify that every input still matches the exact bytes used to prepare this analysis.
+    pub(crate) fn verify_input_fingerprints(&self) -> Result<(), ForgeError> {
+        verify_input_fingerprints(&self.input_fingerprints)
+    }
+}
+
+fn verify_input_fingerprints(inputs: &[PreparedInputFingerprint]) -> Result<(), ForgeError> {
+    for input in inputs {
+        let file = std::fs::File::open(&input.path).map_err(|cause| {
+            error(format!("cannot reopen prepared input '{}': {cause}", input.path.display()))
+        })?;
+        let metadata = file.metadata().map_err(|cause| {
+            error(format!("cannot inspect prepared input '{}': {cause}", input.path.display()))
+        })?;
+        if !metadata.is_file() {
+            return Err(error(format!(
+                "prepared input '{}' is not a regular file",
+                input.path.display()
+            )));
+        }
+        if metadata.len() > input.max_bytes {
+            return Err(error(format!(
+                "prepared input '{}' exceeds the {} byte limit",
+                input.path.display(),
+                input.max_bytes
+            )));
+        }
+        let mut bytes = Vec::new();
+        let mut bounded = std::io::Read::take(file, input.max_bytes.saturating_add(1));
+        std::io::Read::read_to_end(&mut bounded, &mut bytes).map_err(|cause| {
+            error(format!("cannot reread prepared input '{}': {cause}", input.path.display()))
+        })?;
+        if bytes.len() as u64 > input.max_bytes {
+            return Err(error(format!(
+                "prepared input '{}' exceeds the {} byte limit",
+                input.path.display(),
+                input.max_bytes
+            )));
+        }
+        if bytes.len() as u64 != input.byte_len || sha256(&bytes) != input.sha256 {
+            return Err(error(format!(
+                "prepared input '{}' changed after analysis preparation",
+                input.path.display()
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn capture_input_fingerprint(
+    path: &Path,
+    sha256: String,
+    max_bytes: u64,
+) -> Result<PreparedInputFingerprint, ForgeError> {
+    let metadata = std::fs::metadata(path).map_err(|cause| {
+        error(format!("cannot inspect prepared input '{}': {cause}", path.display()))
+    })?;
+    if !metadata.is_file() {
+        return Err(error(format!("prepared input '{}' is not a regular file", path.display())));
+    }
+    if metadata.len() > max_bytes {
+        return Err(error(format!(
+            "prepared input '{}' exceeds the {max_bytes} byte limit",
+            path.display()
+        )));
+    }
+    Ok(PreparedInputFingerprint {
+        path: path.to_path_buf(),
+        sha256,
+        byte_len: metadata.len(),
+        max_bytes,
+    })
 }
 
 /// Create an undecided, deterministic applicability manifest scaffold.
@@ -100,11 +184,8 @@ pub(crate) fn prepare_analysis(
     filters: model::ReportFilters,
 ) -> Result<PreparedAnalysis, ForgeError> {
     validate_filters(&filters)?;
-    io::check_file_size(manifest_path, manifest::MAX_MANIFEST_BYTES)
+    let manifest_bytes = io::read_bounded(manifest_path, manifest::MAX_MANIFEST_BYTES)
         .map_err(|cause| error(format!("manifest: {cause}")))?;
-    let manifest_bytes = std::fs::read(manifest_path).map_err(|cause| {
-        error(format!("cannot read manifest '{}': {cause}", manifest_path.display()))
-    })?;
     let parsed = manifest::parse(&manifest_bytes)?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
     let framework = inventory::load(manifest_dir, "$.framework", &parsed.framework)
@@ -115,15 +196,47 @@ pub(crate) fn prepare_analysis(
     let mut mapping_facts = BTreeMap::new();
     let mut evidence = Vec::new();
     let mut validation_state = MappingValidationState::default();
-    let mut inputs = vec![manifest_path.to_path_buf(), framework.path.clone()];
+    let mut input_fingerprints = vec![PreparedInputFingerprint {
+        path: manifest_path.to_path_buf(),
+        sha256: sha256(&manifest_bytes),
+        byte_len: manifest_bytes.len() as u64,
+        max_bytes: manifest::MAX_MANIFEST_BYTES,
+    }];
+    input_fingerprints.push(capture_input_fingerprint(
+        &framework.path,
+        framework.evidence.raw_sha256.clone(),
+        io::MAX_FILE_SIZE,
+    )?);
     if let Some(companion) = &parsed.framework.resolved_catalog {
-        inputs.push(manifest_dir.join(companion));
+        let companion_path = manifest_dir.join(companion);
+        let companion_sha256 =
+            framework.evidence.resolved_catalog_sha256.clone().ok_or_else(|| {
+                error("prepared Profile companion is missing its SHA-256 evidence")
+            })?;
+        input_fingerprints.push(capture_input_fingerprint(
+            &companion_path,
+            companion_sha256,
+            io::MAX_FILE_SIZE,
+        )?);
     }
+    let mut mapping_paths: Vec<PathBuf> = Vec::new();
     for (index, relative_path) in parsed.mapping_collections.iter().enumerate() {
         let path = manifest_dir.join(relative_path);
-        inputs.push(path.clone());
+        for previous in &mapping_paths {
+            if crate::mapping::paths_alias(&path, previous).map_err(relabel_mapping_error)? {
+                return Err(error(format!(
+                    "$.mapping_collections[{index}] aliases another Mapping Collection input"
+                )));
+            }
+        }
+        mapping_paths.push(path.clone());
         let loaded =
             load_mapping(&path, index, &framework, &mut mapping_facts, &mut validation_state)?;
+        input_fingerprints.push(capture_input_fingerprint(
+            &path,
+            loaded.raw_sha256.clone(),
+            io::MAX_FILE_SIZE,
+        )?);
         evidence.push(loaded);
     }
     evidence.sort_by(|left, right| left.uuid.cmp(&right.uuid));
@@ -138,7 +251,8 @@ pub(crate) fn prepare_analysis(
         filters,
     );
     validate_classification_counts(&report.counts)?;
-    Ok(PreparedAnalysis { report, manifest: parsed, input_paths: inputs })
+    let input_paths = input_fingerprints.iter().map(|input| input.path.clone()).collect();
+    Ok(PreparedAnalysis { report, manifest: parsed, input_paths, input_fingerprints })
 }
 
 /// Convert the CLI filter vocabulary into the report model vocabulary.
@@ -186,10 +300,8 @@ fn load_mapping(
     validation_state: &mut MappingValidationState,
 ) -> Result<model::MappingEvidence, ForgeError> {
     let label = format!("$.mapping_collections[{index}]");
-    io::check_file_size(path, io::MAX_FILE_SIZE)
-        .map_err(|cause| error(format!("{label}: {cause}")))?;
-    let bytes =
-        std::fs::read(path).map_err(|cause| error(format!("{label} cannot be read: {cause}")))?;
+    let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
+        .map_err(|cause| error(format!("{label} cannot be read: {cause}")))?;
     let value: Value = serde_json::from_slice(&bytes)
         .map_err(|cause| error(format!("{label} is not valid JSON: {cause}")))?;
     let detected =
@@ -1045,10 +1157,8 @@ fn scaffold_framework(
     resolved_catalog: Option<&Path>,
     output: Option<&Path>,
 ) -> Result<(ResourceManifest, LoadedResource), ForgeError> {
-    io::check_file_size(path, io::MAX_FILE_SIZE)
-        .map_err(|cause| error(format!("framework: {cause}")))?;
-    let bytes =
-        std::fs::read(path).map_err(|cause| error(format!("framework cannot be read: {cause}")))?;
+    let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
+        .map_err(|cause| error(format!("framework cannot be read: {cause}")))?;
     let value: Value = serde_json::from_slice(&bytes)
         .map_err(|cause| error(format!("framework is not valid JSON: {cause}")))?;
     let resource_type = match validate::detect_model_type(&value)
@@ -1068,9 +1178,7 @@ fn scaffold_framework(
     }
     let expected_resolved_catalog_sha256 = resolved_catalog
         .map(|companion| {
-            io::check_file_size(companion, io::MAX_FILE_SIZE)
-                .map_err(|cause| error(format!("resolved Catalog: {cause}")))?;
-            let bytes = std::fs::read(companion)
+            let bytes = io::read_bounded(companion, io::MAX_FILE_SIZE)
                 .map_err(|cause| error(format!("resolved Catalog cannot be read: {cause}")))?;
             Ok::<_, ForgeError>(sha256(&bytes))
         })
@@ -1103,7 +1211,8 @@ fn scaffold_framework(
 }
 
 fn manifest_relative_path(path: &Path, output: Option<&Path>) -> Result<PathBuf, ForgeError> {
-    io::manifest_relative_path(path, output, "framework resource").map_err(error)
+    io::manifest_relative_path(path, output, "framework resource")
+        .map_err(|cause| error(cause.to_string()))
 }
 
 fn validate_destination(inputs: &[PathBuf], output: Option<&Path>) -> Result<(), ForgeError> {
@@ -1204,5 +1313,18 @@ mod tests {
     #[test]
     fn text_escape_preserves_printable_unicode_and_escapes_controls() {
         assert_eq!(escape("Sécurité\n"), "Sécurité\\n");
+    }
+
+    #[test]
+    fn prepared_input_verification_rejects_replaced_content() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let path = directory.path().join("input.json");
+        let original = br#"{"value":"original"}"#;
+        std::fs::write(&path, original).expect("write original input");
+        let fingerprint = capture_input_fingerprint(&path, sha256(original), io::MAX_FILE_SIZE)
+            .expect("capture input fingerprint");
+        std::fs::write(&path, br#"{"value":"replacement"}"#).expect("replace input");
+        let error = verify_input_fingerprints(&[fingerprint]).expect_err("replacement must fail");
+        assert!(error.to_string().contains("changed after analysis preparation"));
     }
 }

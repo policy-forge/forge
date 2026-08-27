@@ -357,10 +357,34 @@ pub enum ForgeError {
     MigrationHasChanges,
 
     /// A trustworthy, complete policy migration report could not be produced.
-    #[error("Migration analysis error: {0}")]
+    #[error("Migration error: {0}")]
     MigrationError(String),
 
-    /// Round-trip validation failed: the re-parsed output does not match the original.
+    /// A generic error during full pipeline preparation that identifies the
+    /// source line where an ordering invariant was violated.
+    #[error("Pipeline invariant violated at source line {source_line}: {context}")]
+    PipelineInvariant {
+        /// 1-based source line associated with the invariant failure.
+        source_line: usize,
+        /// Human-readable invariant context.
+        context: String,
+    },
+
+    /// A conversion leg in a round-trip chain failed.
+    #[error("Round-trip step {step} ({from} -> {to}) failed: {source}")]
+    RoundTripStep {
+        /// Zero-based chain step.
+        step: usize,
+        /// Input artifact path for this leg.
+        from: PathBuf,
+        /// Output artifact path for this leg.
+        to: PathBuf,
+        /// Underlying conversion failure.
+        #[source]
+        source: Box<ForgeError>,
+    },
+
+    /// Round-trip validation found unresolved divergences.
     #[error("Round-trip validation failed: {0} unresolved divergence(s)")]
     RoundTripFailed(usize),
 
@@ -456,7 +480,9 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::AssessmentPlanBuild(_)
         | ForgeError::ParameterExtraction(_)
         | ForgeError::TraceUnsupportedArtifact { .. }
-        | ForgeError::AmbiguousArtifact { .. } => 2,
+        | ForgeError::AmbiguousArtifact { .. }
+        | ForgeError::PipelineInvariant { .. }
+        | ForgeError::RoundTripStep { .. } => 2,
 
         // Exit 3: Validation/Config errors
         ForgeError::Validation(_) | ForgeError::Config(_) | ForgeError::SchemaValidation(_) => 3,

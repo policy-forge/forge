@@ -4,7 +4,7 @@
 //! `run_catalog_pipeline` function that transforms a Markdown policy
 //! document into OSCAL Catalog JSON or XML.
 
-use std::path::Path;
+use std::{path::Path, sync::OnceLock};
 
 use crate::error::ForgeError;
 use crate::model::PolicyDocument;
@@ -53,12 +53,153 @@ fn validate_and_serialize<T: serde::Serialize>(
     )
     .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
     if !report.is_valid() {
+        const MAX_REPORTED_ERRORS: usize = 5;
+        let errors = report.errors();
+        let details = errors
+            .iter()
+            .take(MAX_REPORTED_ERRORS)
+            .map(|error| format!("{error:?}"))
+            .collect::<Vec<_>>()
+            .join("; ");
+        let omitted = errors.len().saturating_sub(MAX_REPORTED_ERRORS);
+        let suffix = if omitted == 0 {
+            String::new()
+        } else {
+            format!("; {omitted} additional error(s) omitted")
+        };
         return Err(ForgeError::SchemaValidation(format!(
-            "{} validation error(s) in generated {label}",
-            report.errors().len()
+            "{} validation error(s) in generated {label}: {details}{suffix}",
+            errors.len()
         )));
     }
     Ok(json)
+}
+
+/// Compile and cache the embedded OSCAL 1.2.3 Assessment Plan schema.
+fn assessment_plan_validator() -> Result<&'static jsonschema::Validator, ForgeError> {
+    static ASSESSMENT_PLAN_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+
+    if let Some(validator) = ASSESSMENT_PLAN_VALIDATOR.get() {
+        return Ok(validator);
+    }
+
+    let schema: serde_json::Value =
+        serde_json::from_str(include_str!("../schemas/oscal_assessment-plan_schema.json"))
+            .map_err(|error| {
+                ForgeError::SchemaValidation(format!(
+                    "failed to parse embedded OSCAL 1.2.3 assessment-plan schema: {error}"
+                ))
+            })?;
+    let validator = jsonschema::validator_for(&schema).map_err(|error| {
+        ForgeError::SchemaValidation(format!(
+            "failed to compile embedded OSCAL 1.2.3 assessment-plan schema: {error}"
+        ))
+    })?;
+    let _ = ASSESSMENT_PLAN_VALIDATOR.set(validator);
+
+    ASSESSMENT_PLAN_VALIDATOR.get().ok_or_else(|| {
+        ForgeError::SchemaValidation(
+            "compiled assessment-plan schema validator was unavailable after initialization"
+                .to_string(),
+        )
+    })
+}
+
+/// Validate and serialize an Assessment Plan envelope for secondary output.
+///
+/// Assessment Plans intentionally have no [`crate::validate::OscalModelType`]:
+/// exposing one would broaden the public CLI schema options. This boundary performs
+/// schema validation only because semantic validation is unavailable for this OSCAL root.
+fn validate_and_serialize_assessment_plan<T: serde::Serialize>(
+    envelope: &T,
+) -> Result<String, ForgeError> {
+    const MAX_REPORTED_ERRORS: usize = 5;
+
+    let content = serde_json::to_string_pretty(envelope)
+        .map_err(|error| ForgeError::Serialization(error.to_string()))?;
+    let json: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|error| ForgeError::Serialization(error.to_string()))?;
+    let errors = assessment_plan_validator()?
+        .iter_errors(&json)
+        .map(|error| error.to_string())
+        .collect::<Vec<_>>();
+
+    if errors.is_empty() {
+        return Ok(content);
+    }
+
+    let details = errors.iter().take(MAX_REPORTED_ERRORS).cloned().collect::<Vec<_>>().join("; ");
+    let omitted = errors.len().saturating_sub(MAX_REPORTED_ERRORS);
+    let suffix = if omitted == 0 {
+        String::new()
+    } else {
+        format!("; {omitted} additional error(s) omitted")
+    };
+    Err(ForgeError::SchemaValidation(format!(
+        "{} schema validation error(s) in generated assessment plan: {details}{suffix}",
+        errors.len()
+    )))
+}
+
+/// Build a validated Assessment Plan secondary output.
+fn assessment_plan_secondary_output(
+    input_path: &Path,
+    envelope: &crate::oscal::AssessmentPlanEnvelope,
+) -> Result<SecondaryOutput, ForgeError> {
+    Ok(SecondaryOutput {
+        filename: derive_ap_filename(input_path),
+        content: validate_and_serialize_assessment_plan(envelope)?,
+    })
+}
+
+/// Build common conversion statistics after a successfully validated primary artifact.
+fn conversion_statistics(
+    sections_parsed: usize,
+    requirements_extracted: usize,
+    controls_generated: usize,
+    strategy: Strategy,
+) -> crate::summary::ConversionStatistics {
+    crate::summary::ConversionStatistics {
+        sections_parsed,
+        requirements_extracted,
+        controls_generated,
+        validation_status: crate::summary::ValidationStatus::Passed,
+        strategy,
+        ..Default::default()
+    }
+}
+
+/// Select the requested serialization format after JSON validation succeeds.
+fn serialize_in_requested_format(
+    format: OutputFormat,
+    json: String,
+    xml: impl FnOnce() -> Result<String, ForgeError>,
+    yaml: impl FnOnce() -> Result<String, ForgeError>,
+) -> Result<String, ForgeError> {
+    match format {
+        OutputFormat::Json => {
+            tracing::info!("Serializing to JSON");
+            Ok(json)
+        }
+        OutputFormat::Xml => {
+            tracing::info!("Serializing to XML");
+            xml()
+        }
+        OutputFormat::Yaml => {
+            tracing::info!("Serializing to YAML");
+            yaml()
+        }
+    }
+}
+
+/// Warn consistently when a prepared document used the metadata version fallback.
+fn warn_if_default_document_version(doc: &PolicyDocument, input_path: &Path) {
+    if doc.metadata.version == "0.0.0" {
+        tracing::warn!(
+            source = %input_path.display(),
+            "document version not found; defaulting OSCAL metadata version to 0.0.0"
+        );
+    }
 }
 
 /// Shared pipeline stages: ingest, parse, atomize, assign IDs, extract citations, extract parameters.
@@ -139,23 +280,29 @@ pub fn run_catalog_pipeline(
     format: &OutputFormat,
     import_ssp_href: Option<&str>,
 ) -> Result<PipelineOutput, ForgeError> {
-    use crate::summary::{ValidationStatus, count_catalog_controls};
+    let document = prepare_document(input_path, max_size_bytes)?;
+    run_catalog_pipeline_prepared(input_path, &document, *format, import_ssp_href)
+}
 
-    // Steps 1-9: shared pipeline stages
-    let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
-    if doc_with_ids.metadata.version == "0.0.0" {
-        tracing::warn!(
-            source = %input_path.display(),
-            "document version not found; defaulting OSCAL metadata version to 0.0.0"
-        );
-    }
+/// Generate a catalog from a document already prepared by the shared pipeline stages.
+///
+/// This permits callers that need the prepared document for stable-ID comparison to
+/// avoid re-ingesting and re-parsing the primary input.
+pub(crate) fn run_catalog_pipeline_prepared(
+    input_path: &Path,
+    doc_with_ids: &PolicyDocument,
+    format: OutputFormat,
+    import_ssp_href: Option<&str>,
+) -> Result<PipelineOutput, ForgeError> {
+    use crate::summary::count_catalog_controls;
+    warn_if_default_document_version(doc_with_ids, input_path);
 
     let sections_parsed = doc_with_ids.total_sections();
     let requirements_extracted = doc_with_ids.total_requirements();
 
     // Step 8: Build catalog (with trace link capture)
     let mut trace_links = crate::model::trace::TraceLinkCollection::new();
-    let mut catalog = crate::oscal::build_catalog(&doc_with_ids, Some(&mut trace_links))?;
+    let mut catalog = crate::oscal::build_catalog(doc_with_ids, Some(&mut trace_links))?;
 
     tracing::info!(
         trace_link_count = trace_links.len(),
@@ -181,18 +328,15 @@ pub fn run_catalog_pipeline(
         Some(crate::oscal::BackMatter { resources: back_matter_resources })
     };
 
-    let oscal_catalog = crate::oscal::OscalCatalog {
-        uuid: real_metadata.uuid.to_string(),
-        metadata: crate::oscal::catalog::OscalMetadata {
-            title: real_metadata.title,
-            last_modified: real_metadata.last_modified.to_rfc3339(),
-            version: real_metadata.version,
-            oscal_version: real_metadata.oscal_version,
-        },
-        controls: vec![],
-        groups: catalog.groups,
-        back_matter,
+    catalog.uuid = real_metadata.uuid.to_string();
+    catalog.metadata = crate::oscal::catalog::OscalMetadata {
+        title: real_metadata.title,
+        last_modified: real_metadata.last_modified.to_rfc3339(),
+        version: real_metadata.version,
+        oscal_version: real_metadata.oscal_version,
     };
+    catalog.back_matter = back_matter;
+    let oscal_catalog = catalog;
 
     let controls_generated = count_catalog_controls(&oscal_catalog);
 
@@ -203,80 +347,74 @@ pub fn run_catalog_pipeline(
     let json =
         validate_and_serialize(&envelope, "catalog", crate::validate::OscalModelType::Catalog)?;
 
-    let stats = crate::summary::ConversionStatistics {
+    let stats = conversion_statistics(
         sections_parsed,
         requirements_extracted,
         controls_generated,
-        validation_status: ValidationStatus::Passed,
-        strategy: Strategy::Catalog,
-        ..Default::default()
-    };
+        Strategy::Catalog,
+    );
 
-    // Serialize to the requested format
-    let content = match format {
-        OutputFormat::Json => json,
-        OutputFormat::Xml => {
-            crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog)?
-        }
-        OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(&envelope)?,
-    };
+    let content = serialize_in_requested_format(
+        format,
+        json,
+        || crate::export::xml_serializer::serialize_catalog_to_xml(&envelope.catalog),
+        || crate::export::yaml::serialize_to_yaml(&envelope),
+    )?;
 
-    // WI-41: Build Assessment Plan secondary output if --import-ssp was provided
+    // WI-41/WI-42: Build the assessment-plan secondary output when requested.
     let mut secondary_outputs = Vec::new();
     if let Some(href) = import_ssp_href {
         let control_ids =
             crate::oscal::catalog::collect_control_ids_from_catalog(&envelope.catalog);
-        // Build the WI-41 skeleton with reviewed-controls
         let mut ap_envelope = crate::oscal::build_assessment_plan(
             &control_ids,
             href,
             &envelope.catalog.metadata.title,
         )?;
-        // WI-42: Wire in assessment tasks and subjects
-        let requirements = collect_all_requirements(&doc_with_ids);
+        let requirements = collect_all_requirements(doc_with_ids);
         let tasks = crate::oscal::generate_assessment_tasks(&requirements);
-        let subjects = crate::oscal::create_assessment_subjects(
-            None, // Catalog pipeline: no component definition UUID available
-            &envelope.catalog.metadata.title,
-        );
+        let subjects =
+            crate::oscal::create_assessment_subjects(None, &envelope.catalog.metadata.title);
         crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects)?;
-        let ap_json = serde_json::to_string_pretty(&ap_envelope)
-            .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-        let filename = derive_ap_filename(input_path);
-        secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
+        secondary_outputs.push(assessment_plan_secondary_output(input_path, &ap_envelope)?);
     }
 
-    Ok(PipelineOutput { content, format: *format, secondary_outputs, statistics: stats })
+    Ok(PipelineOutput { content, format, secondary_outputs, statistics: stats })
 }
 
 /// Derive the suggested filename for an assessment plan based on the input path.
 fn derive_ap_filename(input_path: &Path) -> String {
     let ap_path = crate::oscal::derive_ap_output_path(input_path, None);
-    ap_path
-        .file_name()
-        .map_or_else(|| "assessment-plan.json".to_owned(), |f| f.to_string_lossy().into_owned())
+    ap_path.file_name().map_or_else(
+        || "assessment-plan.json".to_owned(),
+        |file| file.to_string_lossy().into_owned(),
+    )
 }
 
-/// Recursively collect all `PolicyRequirements` from a `PolicyDocument`'s section tree.
-///
-/// Traverses sections in depth-first order, collecting references to every
-/// requirement. Used to feed `generate_assessment_tasks` at the end of catalog
-/// and component pipelines.
+/// Recursively collect requirements in depth-first section order.
 fn collect_all_requirements(doc: &PolicyDocument) -> Vec<&crate::model::PolicyRequirement> {
     fn collect_section<'a>(
         section: &'a crate::model::PolicySection,
-        out: &mut Vec<&'a crate::model::PolicyRequirement>,
+        requirements: &mut Vec<&'a crate::model::PolicyRequirement>,
     ) {
-        out.extend(section.requirements.iter());
+        requirements.extend(section.requirements.iter());
         for child in &section.children {
-            collect_section(child, out);
+            collect_section(child, requirements);
         }
     }
-    let mut reqs = Vec::new();
+    let mut requirements = Vec::new();
     for section in &doc.sections {
-        collect_section(section, &mut reqs);
+        collect_section(section, &mut requirements);
     }
-    reqs
+    requirements
+}
+
+/// Return a filename-only source label without exposing caller path components.
+fn component_source_file_label(input_path: &Path) -> String {
+    input_path.file_name().map_or_else(
+        || "unknown-file".to_string(),
+        |file_name| file_name.to_string_lossy().into_owned(),
+    )
 }
 
 /// Orchestrates the full component pipeline: ingest → parse → normalize → map → serialize.
@@ -301,19 +439,21 @@ pub fn run_component_pipeline(
     format: &OutputFormat,
     import_ssp_href: Option<&str>,
 ) -> Result<PipelineOutput, ForgeError> {
-    use crate::summary::ValidationStatus;
+    let document = prepare_document(input_path, max_size_bytes)?;
+    run_component_pipeline_prepared(input_path, &document, source_profile, *format, import_ssp_href)
+}
 
+/// Generate a component definition from a document prepared by the shared pipeline stages.
+pub(crate) fn run_component_pipeline_prepared(
+    input_path: &Path,
+    doc_with_ids: &PolicyDocument,
+    source_profile: Option<&str>,
+    format: OutputFormat,
+    import_ssp_href: Option<&str>,
+) -> Result<PipelineOutput, ForgeError> {
     // S-3: Pipeline stage progress logging (visible with --verbose)
-    tracing::info!("Ingesting and parsing policy document");
-
-    // Steps 1-9: shared pipeline stages
-    let doc_with_ids = prepare_document(input_path, max_size_bytes)?;
-    if doc_with_ids.metadata.version == "0.0.0" {
-        tracing::warn!(
-            source = %input_path.display(),
-            "document version not found; defaulting OSCAL metadata version to 0.0.0"
-        );
-    }
+    tracing::info!("Building component definition from prepared policy document");
+    warn_if_default_document_version(doc_with_ids, input_path);
 
     let sections_parsed = doc_with_ids.total_sections();
     let requirements_extracted = doc_with_ids.total_requirements();
@@ -325,11 +465,9 @@ pub fn run_component_pipeline(
 
     // Step 10: Build component definition with source_profile and source_file (WI-17)
     // SEC-1: Use filename-only to prevent absolute path leakage into OSCAL output
-    let source_file_str = input_path
-        .file_name()
-        .map_or_else(|| input_path.display().to_string(), |f| f.to_string_lossy().into_owned());
+    let source_file_str = component_source_file_label(input_path);
     let envelope = crate::oscal::build_component_definition(
-        &doc_with_ids,
+        doc_with_ids,
         source_profile,
         None,
         Some(&source_file_str),
@@ -353,63 +491,51 @@ pub fn run_component_pipeline(
         crate::validate::OscalModelType::ComponentDefinition,
     )?;
 
-    let stats = crate::summary::ConversionStatistics {
+    let stats = conversion_statistics(
         sections_parsed,
         requirements_extracted,
         controls_generated,
-        validation_status: ValidationStatus::Passed,
-        strategy: Strategy::Component,
-        ..Default::default()
-    };
+        Strategy::Component,
+    );
 
-    // Serialize to the requested format
-    let content = match format {
-        OutputFormat::Json => {
-            tracing::info!("Serializing to JSON");
-            json
-        }
-        OutputFormat::Xml => {
-            tracing::info!("Serializing to XML");
+    let content = serialize_in_requested_format(
+        format,
+        json,
+        || {
             crate::export::xml_serializer::serialize_component_definition_to_xml(
                 &envelope.component_definition,
-            )?
-        }
-        OutputFormat::Yaml => {
-            tracing::info!("Serializing to YAML");
-            crate::export::yaml::serialize_to_yaml(&envelope)?
-        }
-    };
+            )
+        },
+        || crate::export::yaml::serialize_to_yaml(&envelope),
+    )?;
 
-    // WI-41: Build Assessment Plan secondary output if --import-ssp was provided
+    // WI-41/WI-42: Build the assessment-plan secondary output when requested.
     let mut secondary_outputs = Vec::new();
     if let Some(href) = import_ssp_href {
         let control_ids =
             crate::oscal::component_definition::collect_control_ids_from_component_def(&envelope);
-        // Build the WI-41 skeleton with reviewed-controls
         let mut ap_envelope = crate::oscal::build_assessment_plan(
             &control_ids,
             href,
             &envelope.component_definition.metadata.title,
         )?;
-        // WI-42: Wire in assessment tasks and subjects
-        let requirements = collect_all_requirements(&doc_with_ids);
+        let requirements = collect_all_requirements(doc_with_ids);
         let tasks = crate::oscal::generate_assessment_tasks(&requirements);
         let subjects = crate::oscal::create_assessment_subjects(
             Some(&envelope.component_definition.uuid),
             &envelope.component_definition.metadata.title,
         );
         crate::oscal::complete_assessment_plan(&mut ap_envelope, tasks, subjects)?;
-        let ap_json = serde_json::to_string_pretty(&ap_envelope)
-            .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-        let filename = derive_ap_filename(input_path);
-        secondary_outputs.push(SecondaryOutput { filename, content: ap_json });
+        secondary_outputs.push(assessment_plan_secondary_output(input_path, &ap_envelope)?);
     }
 
-    Ok(PipelineOutput { content, format: *format, secondary_outputs, statistics: stats })
+    Ok(PipelineOutput { content, format, secondary_outputs, statistics: stats })
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use super::*;
     use tempfile::TempDir;
 
@@ -421,10 +547,9 @@ mod tests {
         let path = dir.path().join("empty.md");
         std::fs::write(&path, "").unwrap();
         let result = run_catalog_pipeline(&path, 10 * 1_048_576, &OutputFormat::Json, None);
-        match result.unwrap_err() {
-            ForgeError::EmptyInput { .. } => {}
-            other => panic!("Expected EmptyInput, got: {other:?}"),
-        }
+        let ForgeError::EmptyInput { .. } = result.unwrap_err() else {
+            panic!("Expected EmptyInput");
+        };
     }
 
     #[test]
@@ -433,10 +558,9 @@ mod tests {
         let path = dir.path().join("flat.md");
         std::fs::write(&path, "Just plain text without any structure.\n").unwrap();
         let result = run_catalog_pipeline(&path, 10 * 1_048_576, &OutputFormat::Json, None);
-        match result.unwrap_err() {
-            ForgeError::NoStructureDetected { .. } => {}
-            other => panic!("Expected NoStructureDetected, got: {other:?}"),
-        }
+        let ForgeError::NoStructureDetected { .. } = result.unwrap_err() else {
+            panic!("Expected NoStructureDetected");
+        };
     }
 
     // --- T034: Catalog pipeline auto-validation uses ValidationReport (WI-20) ---
@@ -489,6 +613,51 @@ mod tests {
                 panic!("Expected Ok or SchemaValidation error, got: {other:?}");
             }
         }
+    }
+
+    #[test]
+    fn assessment_plan_output_uses_input_derived_filename() {
+        assert_eq!(derive_ap_filename(Path::new("policy.md")), "policy-assessment-plan.json");
+    }
+
+    #[test]
+    fn valid_assessment_plan_is_emitted_as_secondary_output() {
+        let envelope = crate::oscal::build_assessment_plan(
+            &["ac-1".to_string()],
+            "./ssp.json",
+            "Example policy",
+        )
+        .expect("assessment plan should build");
+
+        let output = assessment_plan_secondary_output(Path::new("policy.md"), &envelope)
+            .expect("valid assessment plan should be emitted");
+
+        assert_eq!(output.filename, "policy-assessment-plan.json");
+        assert!(output.content.contains("\"assessment-plan\""));
+    }
+
+    #[test]
+    fn schema_invalid_assessment_plan_mutation_is_rejected_before_output() {
+        let mut envelope = crate::oscal::build_assessment_plan(
+            &["ac-1".to_string()],
+            "./ssp.json",
+            "Example policy",
+        )
+        .expect("assessment plan should build");
+        envelope.assessment_plan.uuid.clear();
+
+        let result = assessment_plan_secondary_output(Path::new("policy.md"), &envelope);
+
+        assert!(
+            matches!(result, Err(ForgeError::SchemaValidation(_))),
+            "schema-invalid assessment plans must not produce a secondary output"
+        );
+    }
+
+    #[test]
+    fn component_source_label_never_falls_back_to_full_path() {
+        assert_eq!(component_source_file_label(Path::new("/")), "unknown-file");
+        assert_eq!(component_source_file_label(Path::new("/private/policy.md")), "policy.md");
     }
 
     // --- T036: Auto-validation errors go to stderr only (SEC-7) ---

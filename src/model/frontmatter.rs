@@ -31,44 +31,70 @@ pub(crate) struct FrontmatterData {
     pub date: Option<String>,
 }
 
+/// Return the byte offset of the first complete closing frontmatter fence.
+///
+/// Fences are recognized only when an entire line is `---`; scanning line by
+/// line accepts mixed line endings and handles an immediately closed block.
+fn closing_fence_offset(content: &str) -> Option<usize> {
+    let mut offset = 0;
+    for line in content.split_inclusive('\n') {
+        let line_without_newline = line.strip_suffix('\n').unwrap_or(line);
+        let fence = line_without_newline.strip_suffix('\r').unwrap_or(line_without_newline);
+        if fence == "---" {
+            return Some(offset);
+        }
+        offset += line.len();
+    }
+    None
+}
+
 /// Parse YAML frontmatter from document content.
 ///
-/// Frontmatter must be delimited by `---\n` at the very start of the document.
-/// Returns `None` if no frontmatter is present or if parsing fails.
+/// Frontmatter must be delimited by a `---` line at the very start of the
+/// document. Both LF and CRLF line endings are accepted. Returns `None` if no
+/// complete frontmatter block is present or if its YAML is malformed.
 /// Malformed YAML emits a warning via tracing, not a panic *(SEC-1, SEC-6)*.
-///
-/// # Arguments
-///
-/// * `content` - Raw document content that may contain YAML frontmatter.
-///
-/// # Returns
-///
-/// `Some(FrontmatterData)` if valid YAML frontmatter was found and parsed,
-/// `None` otherwise (no frontmatter, empty input, or malformed YAML).
 pub(crate) fn parse_frontmatter(content: &str) -> Option<FrontmatterData> {
-    // SEC-3: Empty input returns None
     if content.is_empty() {
         return None;
     }
 
-    // Frontmatter must start with a `---` line at the beginning of the
-    // document; tolerate both LF and CRLF openers (F0568 — the closer search
-    // below already accepts CRLF, so the opener must too).
     let rest = content.strip_prefix("---\r\n").or_else(|| content.strip_prefix("---\n"))?;
+    let end = closing_fence_offset(rest)?;
+    let raw_yaml = &rest[..end];
+    let normalized_yaml;
+    let yaml = if raw_yaml.contains('\r') {
+        normalized_yaml = raw_yaml.replace("\r\n", "\n");
+        &normalized_yaml
+    } else {
+        raw_yaml
+    };
 
-    // Find the closing "---" delimiter (must be on its own line, not mid-line)
-    let end = rest
-        .find("\n---\n")
-        .or_else(|| rest.find("\n---\r\n"))
-        .or_else(|| rest.strip_suffix("\n---").map(str::len))
-        .or_else(|| rest.strip_suffix("\r\n---").map(str::len))?;
-    let yaml_str = &rest[..end];
+    if yaml.trim().is_empty() {
+        return Some(FrontmatterData { title: None, version: None, author: None, date: None });
+    }
 
-    // SEC-1, SEC-6: Deserialize gracefully — no unwrap()
-    match serde_yaml::from_str(yaml_str) {
+    let value: serde_yaml::Value = match serde_yaml::from_str(yaml) {
+        Ok(value) => value,
+        Err(error) => {
+            tracing::warn!("Failed to parse YAML frontmatter: {error}");
+            return None;
+        }
+    };
+
+    if let Some(mapping) = value.as_mapping() {
+        for key in mapping.keys() {
+            let key = key.as_str().unwrap_or("<non-string>");
+            if !matches!(key, "title" | "version" | "author" | "date") {
+                tracing::warn!(key, "Ignoring unrecognized YAML frontmatter key");
+            }
+        }
+    }
+
+    match serde_yaml::from_value(value) {
         Ok(data) => Some(data),
-        Err(e) => {
-            tracing::warn!("Failed to parse YAML frontmatter: {e}");
+        Err(error) => {
+            tracing::warn!("Failed to parse YAML frontmatter: {error}");
             None
         }
     }
@@ -181,7 +207,7 @@ version: 1.0.0
     /// Triple dashes appearing mid-line in YAML content must NOT be treated as a closing delimiter.
     #[test]
     fn mid_line_triple_dash_not_treated_as_delimiter() {
-        let content = "---\ntitle: some---value\nversion: 1.0\n---\n";
+        let content = "---\ntitle: some---value\nversion: \"1.0\"\n---\n";
         let result = parse_frontmatter(content);
         assert!(result.is_some(), "Mid-line --- should not close the frontmatter block");
         let data = result.unwrap();
@@ -201,11 +227,25 @@ version: 1.0.0
 
     #[test]
     fn crlf_frontmatter_parses_like_lf_twin() {
-        let lf = "---\ntitle: CRLF Policy\nversion: 2.0\n---\n\n# Section\n";
-        let crlf = "---\r\ntitle: CRLF Policy\r\nversion: 2.0\r\n---\r\n\r\n# Section\r\n";
+        let lf = "---\ntitle: CRLF Policy\nversion: \"2.0\"\n---\n\n# Section\n";
+        let crlf = "---\r\ntitle: CRLF Policy\r\nversion: \"2.0\"\r\n---\r\n\r\n# Section\r\n";
         let a = parse_frontmatter(lf).expect("LF front matter parses");
         let b = parse_frontmatter(crlf).expect("CRLF front matter must also parse (F0568)");
         assert_eq!(a.title, b.title);
         assert_eq!(a.version, b.version);
+    }
+
+    #[test]
+    fn immediately_closed_frontmatter_is_valid() {
+        let parsed = parse_frontmatter("---\n---\n# Body").expect("empty frontmatter is valid");
+        assert_eq!(parsed.title, None);
+        assert_eq!(parsed.version, None);
+    }
+
+    #[test]
+    fn first_mixed_ending_fence_terminates_frontmatter() {
+        let content = "---\ntitle: First\r\n---\r\ntitle: Not Frontmatter\n---\n";
+        let parsed = parse_frontmatter(content).expect("first fence terminates frontmatter");
+        assert_eq!(parsed.title.as_deref(), Some("First"));
     }
 }

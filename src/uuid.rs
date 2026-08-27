@@ -217,6 +217,7 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 ///             citations: vec![],
 ///             modality: None,
 ///             parameters: vec![],
+///             parameters_extracted: false,
 ///         }],
 ///         children: vec![],
 ///     }],
@@ -583,6 +584,7 @@ mod tests {
             citations: vec![],
             modality: None,
             parameters: vec![],
+            parameters_extracted: false,
         }
     }
 

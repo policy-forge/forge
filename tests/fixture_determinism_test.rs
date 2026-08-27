@@ -59,10 +59,15 @@ fn committed_fixture_matches_generator() {
     let fixture_path = Path::new("tests/fixtures/synthetic-50page-policy.md");
     assert!(fixture_path.exists(), "Committed fixture must exist at {}", fixture_path.display());
 
-    let committed = std::fs::read_to_string(fixture_path)
-        .expect("Should be able to read the committed fixture file");
     let generated = common::fixture_generator::generate_synthetic_policy();
 
+    if std::env::var_os("UPDATE_SYNTHETIC_FIXTURE").is_some() {
+        std::fs::write(fixture_path, &generated)
+            .expect("Should update the committed synthetic fixture");
+    }
+
+    let committed = std::fs::read_to_string(fixture_path)
+        .expect("Should be able to read the committed fixture file");
     assert_eq!(
         committed,
         generated,

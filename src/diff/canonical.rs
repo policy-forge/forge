@@ -5,6 +5,7 @@
 //! ignores only the fields FORGE currently generates nondeterministically:
 //! the artifact root `uuid` and `metadata.last-modified`.
 
+use std::io::Read;
 use std::path::Path;
 
 use serde_json::Value;
@@ -18,6 +19,9 @@ use crate::types::OscalModelType;
 /// Increment this value whenever the set of ignored fields or comparison
 /// semantics changes.
 pub const DRIFT_COMPARISON_CONTRACT_VERSION: u8 = 1;
+
+/// JSON field paths excluded by the v1 comparison contract.
+const EXCLUDED_FIELDS: &[&[&str]] = &[&["uuid"], &["metadata", "last-modified"]];
 
 /// Outcome of a canonical artifact comparison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,7 +111,13 @@ impl ArtifactRole {
 
 fn parse_artifact(path: &Path, role: ArtifactRole) -> Result<Value, ForgeError> {
     let role_name = role.as_str();
-    let metadata = std::fs::metadata(path).map_err(|error| {
+    let file = std::fs::File::open(path).map_err(|error| {
+        ForgeError::DiffError(format!(
+            "unable to inspect {role_name} artifact ({:?})",
+            error.kind()
+        ))
+    })?;
+    let metadata = file.metadata().map_err(|error| {
         ForgeError::DiffError(format!(
             "unable to inspect {role_name} artifact ({:?})",
             error.kind()
@@ -123,8 +133,24 @@ fn parse_artifact(path: &Path, role: ArtifactRole) -> Result<Value, ForgeError> 
         )));
     }
 
-    let text = std::fs::read_to_string(path).map_err(|error| {
+    let capacity = usize::try_from(metadata.len()).map_err(|_| {
+        ForgeError::DiffError(format!("{role_name} artifact size cannot be represented in memory"))
+    })?;
+    let mut bytes = Vec::with_capacity(capacity);
+    file.take(crate::io::MAX_FILE_SIZE + 1).read_to_end(&mut bytes).map_err(|error| {
         ForgeError::DiffError(format!("unable to read {role_name} artifact ({:?})", error.kind()))
+    })?;
+    if bytes.len() as u64 > crate::io::MAX_FILE_SIZE {
+        return Err(ForgeError::DiffError(format!(
+            "{role_name} artifact exceeds the {} byte comparison limit",
+            crate::io::MAX_FILE_SIZE
+        )));
+    }
+    let text = String::from_utf8(bytes).map_err(|error| {
+        ForgeError::DiffError(format!(
+            "unable to read {role_name} artifact ({:?})",
+            error.utf8_error()
+        ))
     })?;
     serde_json::from_str(&text).map_err(|error| {
         ForgeError::DiffError(format!(
@@ -171,16 +197,22 @@ fn canonicalize(
         ))
     })?;
 
-    // Contract v1 exclusions. Do not add fields here without incrementing
-    // DRIFT_COMPARISON_CONTRACT_VERSION and documenting the security impact.
-    root.remove("uuid");
-    let metadata = root.get_mut("metadata").and_then(Value::as_object_mut).ok_or_else(|| {
-        ForgeError::DiffError(format!(
-            "{} artifact must contain a '{root_key}.metadata' JSON object",
-            role.as_str()
-        ))
-    })?;
-    metadata.remove("last-modified");
+    for excluded_path in EXCLUDED_FIELDS {
+        let (field, parent_path) = excluded_path.split_last().ok_or_else(|| {
+            ForgeError::DiffError("drift comparison exclusion path must not be empty".to_string())
+        })?;
+        let mut object = &mut *root;
+        for parent in parent_path {
+            object = object.get_mut(*parent).and_then(Value::as_object_mut).ok_or_else(|| {
+                ForgeError::DiffError(format!(
+                    "{} artifact must contain a '{root_key}.{}' JSON object",
+                    role.as_str(),
+                    parent_path.join(".")
+                ))
+            })?;
+        }
+        object.remove(*field);
+    }
 
     Ok(())
 }
@@ -318,5 +350,11 @@ mod tests {
 
         let error = compare_artifacts_for_drift(committed.path(), generated.path()).unwrap_err();
         assert!(error.to_string().contains("type mismatch"));
+    }
+
+    #[test]
+    fn exclusion_table_matches_v1_contract() {
+        assert_eq!(DRIFT_COMPARISON_CONTRACT_VERSION, 1);
+        assert_eq!(EXCLUDED_FIELDS, &[&["uuid"][..], &["metadata", "last-modified"][..]]);
     }
 }

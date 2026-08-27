@@ -60,19 +60,18 @@ impl DispositionStatus {
 ///
 /// Returns [`ForgeError::FrameworkImpact`] for unsafe files or invalid contracts.
 pub fn load(path: &Path) -> Result<DispositionFile, ForgeError> {
-    let metadata = crate::io::regular_file_metadata(path, "disposition file").map_err(error)?;
-    if metadata.len() > MAX_DISPOSITION_BYTES {
-        return Err(error(format!(
-            "disposition file exceeds the {MAX_DISPOSITION_BYTES} byte limit"
-        )));
-    }
-    let bytes = std::fs::read(path).map_err(|cause| {
+    let bytes = crate::io::read_bounded(path, MAX_DISPOSITION_BYTES).map_err(|cause| {
         error(format!("cannot read disposition file '{}': {cause}", path.display()))
     })?;
     parse(&bytes)
 }
 
 fn parse(bytes: &[u8]) -> Result<DispositionFile, ForgeError> {
+    if bytes.len() as u64 > MAX_DISPOSITION_BYTES {
+        return Err(error(format!(
+            "disposition file exceeds the {MAX_DISPOSITION_BYTES} byte limit"
+        )));
+    }
     let value = parse_strict_value(bytes, "disposition")?;
     let mut file: DispositionFile = serde_json::from_value(value)
         .map_err(|cause| error(format!("invalid disposition contract: {cause}")))?;
@@ -81,7 +80,8 @@ fn parse(bytes: &[u8]) -> Result<DispositionFile, ForgeError> {
 }
 
 pub(crate) fn parse_strict_value(bytes: &[u8], label: &str) -> Result<Value, ForgeError> {
-    crate::json_strict::parse_value(bytes, label, STRICT_JSON_LIMITS).map_err(error)
+    crate::json_strict::parse_value(bytes, label, STRICT_JSON_LIMITS)
+        .map_err(|cause| error(cause.to_string()))
 }
 
 fn validate(file: &mut DispositionFile) -> Result<(), ForgeError> {
@@ -111,7 +111,7 @@ fn validate(file: &mut DispositionFile) -> Result<(), ForgeError> {
         chrono::DateTime::parse_from_rfc3339(&disposition.decided_at)
             .map_err(|_| error(format!("{path}.decided_at must be an RFC 3339 timestamp")))?;
     }
-    file.dispositions.sort_by(|left, right| left.finding_id.cmp(&right.finding_id));
+    file.dispositions.sort_unstable_by(|left, right| left.finding_id.cmp(&right.finding_id));
     Ok(())
 }
 
@@ -136,9 +136,8 @@ mod tests {
 
     use super::{
         DISPOSITION_SCHEMA_VERSION, DispositionFile, DispositionRecord, DispositionStatus,
-        MAX_DISPOSITIONS, MAX_STRING_BYTES, parse, validate,
+        MAX_DISPOSITION_BYTES, MAX_DISPOSITIONS, MAX_STRING_BYTES, parse, validate,
     };
-
     const FIRST_ID: &str = "00000000-0000-4000-8000-000000000001";
     const SECOND_ID: &str = "00000000-0000-4000-8000-000000000002";
 
@@ -178,6 +177,18 @@ mod tests {
             prior_report_sha256: "0".repeat(64),
             dispositions: vec![valid_record(FIRST_ID)],
         }
+    }
+
+    #[test]
+    fn parser_rejects_oversized_disposition_bytes() {
+        let bytes = vec![
+            b' ';
+            usize::try_from(MAX_DISPOSITION_BYTES)
+                .expect("disposition byte limit fits usize")
+                + 1
+        ];
+        let error = parse(&bytes).expect_err("oversized disposition must fail");
+        assert!(error.to_string().contains("disposition file exceeds"));
     }
 
     #[test]

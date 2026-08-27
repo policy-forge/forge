@@ -12,7 +12,8 @@ use crate::trace::generate_trace_report;
 ///
 /// Returns `ForgeError` if artifact reading, parsing, or output writing fails.
 pub fn execute(artifact: &Path, source: &Path, output: Option<&Path>) -> Result<(), ForgeError> {
-    let report = generate_trace_report(artifact, source)?;
+    let report = generate_trace_report(artifact, source)
+        .map_err(|error| contextualize_trace_input_error(error, artifact, source))?;
     let table = format_trace_table(&report);
 
     crate::cli::output::write_output(&table, output)?;
@@ -21,4 +22,46 @@ pub fn execute(artifact: &Path, source: &Path, output: Option<&Path>) -> Result<
     }
 
     Ok(())
+}
+
+fn contextualize_trace_input_error(
+    error: ForgeError,
+    artifact: &Path,
+    source: &Path,
+) -> ForgeError {
+    match error {
+        ForgeError::Parse(detail) => ForgeError::Parse(format!(
+            "Failed to generate trace report from artifact '{}' and source '{}': {detail}",
+            artifact.display(),
+            source.display()
+        )),
+        ForgeError::Io(source_error) => ForgeError::Io(std::io::Error::new(
+            source_error.kind(),
+            format!(
+                "Failed to read trace inputs artifact '{}' and source '{}': {source_error}",
+                artifact.display(),
+                source.display()
+            ),
+        )),
+        other => other,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_utf8_source_error_names_source_path() {
+        let directory = tempfile::tempdir().unwrap();
+        let artifact = directory.path().join("catalog.json");
+        let source = directory.path().join("policy.md");
+        std::fs::write(&artifact, r#"{"catalog": {"groups": []}}"#).unwrap();
+        std::fs::write(&source, [0xff]).unwrap();
+
+        let error = execute(&artifact, &source, None)
+            .expect_err("a non-UTF-8 source must fail trace generation");
+
+        assert!(error.to_string().contains(&source.display().to_string()), "{error}");
+    }
 }

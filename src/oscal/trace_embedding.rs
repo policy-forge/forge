@@ -30,19 +30,17 @@ pub const LINK_REL_SOURCE: &str = "source";
 
 /// Percent-encode special characters in a file path for use in link href.
 ///
-/// Encodes: `%` -> `%25`, ` ` (space) -> `%20`, `#` -> `%23` (per RFC 3986 EC-6).
-///
-/// Only path-critical characters are encoded because inputs are local file paths
-/// (not arbitrary URIs). Characters like `?`, `&`, `=` are not expected in file
-/// paths and are left as-is to keep the encoding minimal and predictable.
-///
-/// `%` is encoded FIRST to avoid double-encoding.
+/// Encodes every RFC 3986 reserved character, plus spaces, so a file name
+/// cannot alter the path, query, or fragment of its generated source link.
+/// Existing percent signs are encoded as `%25` to avoid treating input as an
+/// already-encoded URI.
 /// Maximum file path length accepted for href encoding (4096 per POSIX `PATH_MAX`).
 const MAX_HREF_PATH_LENGTH: usize = 4096;
 
+/// Percent-encode RFC 3986 reserved characters in a file name used as an href path.
 fn encode_href_path(path: &str) -> String {
-    // Guard against excessively long paths (DoS / allocation risk)
-    // Use char boundary-safe truncation to avoid panic on non-ASCII UTF-8 paths.
+    // Guard against excessively long paths (DoS / allocation risk). Use a
+    // char-boundary-safe truncation to avoid panic on non-ASCII UTF-8 paths.
     let safe_path = if path.len() > MAX_HREF_PATH_LENGTH {
         let mut end = MAX_HREF_PATH_LENGTH;
         while end > 0 && !path.is_char_boundary(end) {
@@ -52,7 +50,34 @@ fn encode_href_path(path: &str) -> String {
     } else {
         path
     };
-    safe_path.replace('%', "%25").replace(' ', "%20").replace('#', "%23")
+
+    let mut encoded = String::with_capacity(safe_path.len());
+    for character in safe_path.chars() {
+        match character {
+            ':' => encoded.push_str("%3A"),
+            '/' => encoded.push_str("%2F"),
+            '?' => encoded.push_str("%3F"),
+            '#' => encoded.push_str("%23"),
+            '[' => encoded.push_str("%5B"),
+            ']' => encoded.push_str("%5D"),
+            '@' => encoded.push_str("%40"),
+            '!' => encoded.push_str("%21"),
+            '$' => encoded.push_str("%24"),
+            '&' => encoded.push_str("%26"),
+            character if character == char::from(39_u8) => encoded.push_str("%27"),
+            '(' => encoded.push_str("%28"),
+            ')' => encoded.push_str("%29"),
+            '*' => encoded.push_str("%2A"),
+            '+' => encoded.push_str("%2B"),
+            ',' => encoded.push_str("%2C"),
+            ';' => encoded.push_str("%3B"),
+            '=' => encoded.push_str("%3D"),
+            '%' => encoded.push_str("%25"),
+            ' ' => encoded.push_str("%20"),
+            _ => encoded.push(character),
+        }
+    }
+    encoded
 }
 
 /// Build 3 namespaced trace props for a source location.
@@ -132,10 +157,22 @@ fn annotate_group(
     let mut group_section_title: Option<String> = None;
 
     for control in &mut group.controls {
-        if let Some(title) = annotate_control(control, trace_links) {
+        if let Some(section_title) = annotate_control(control, trace_links) {
             *annotated_controls += 1;
-            if group_section_title.is_none() {
-                group_section_title = Some(title);
+            if let Some(section_title) = section_title.section_title {
+                match group_section_title.as_deref() {
+                    None => group_section_title = Some(section_title),
+                    Some(first_section) if first_section != section_title => {
+                        tracing::debug!(
+                            group_id = %group.id,
+                            control_id = %control.id,
+                            first_section,
+                            source_section = %section_title,
+                            "Controls in group span source sections"
+                        );
+                    }
+                    Some(_) => {}
+                }
             }
         }
     }
@@ -154,28 +191,39 @@ fn annotate_group(
     }
 }
 
-/// Inject trace props/link into a control; returns the source section title
-/// when a trace link was found.
+struct TraceAnnotation {
+    section_title: Option<String>,
+}
+
+/// Inject trace props/link into a control; returns annotation metadata when a
+/// trace link was found.
 fn annotate_control(
     control: &mut OscalControl,
     trace_links: &TraceLinkCollection,
-) -> Option<String> {
+) -> Option<TraceAnnotation> {
     let trace = trace_links.by_oscal_element(&control.uuid)?;
     let loc = &trace.source_location;
-    // SEC-1: Use filename-only to prevent absolute path leakage into
-    // OSCAL output (consistent with component pipeline at pipeline.rs:205).
-    let file = loc
-        .file_path
-        .file_name()
-        .map_or_else(|| "unknown-file".to_string(), |f| f.to_string_lossy().into_owned());
+    // SEC-1: Use filename-only to prevent absolute path leakage into OSCAL
+    // output (consistent with component pipeline at pipeline.rs:205).
+    let file = if let Some(file_name) = loc.file_path.file_name() {
+        file_name.to_string_lossy().into_owned()
+    } else {
+        tracing::warn!(
+            control_id = %control.id,
+            source_path = %loc.file_path.display(),
+            "Trace source path has no file name; using unknown-file"
+        );
+        "unknown-file".to_string()
+    };
+    let section_title = loc.section_title.as_deref().unwrap_or("unknown-section");
 
-    let props = build_trace_props(&file, &loc.section_title, loc.line_number);
+    let props = build_trace_props(&file, section_title, loc.line_number);
     control.props.extend(props);
 
     let link = build_trace_link(&file, loc.line_number);
     control.links.push(link);
 
-    Some(loc.section_title.clone())
+    Some(TraceAnnotation { section_title: loc.section_title.clone() })
 }
 
 #[cfg(test)]
@@ -206,12 +254,20 @@ mod tests {
 
     #[test]
     fn encode_normal_path_unchanged() {
-        assert_eq!(encode_href_path("policies/access-control.md"), "policies/access-control.md");
+        assert_eq!(encode_href_path("access-control.md"), "access-control.md");
     }
 
     #[test]
     fn encode_combined_special_chars() {
         assert_eq!(encode_href_path("my file#1%.md"), "my%20file%231%25.md");
+    }
+
+    #[test]
+    fn encode_all_rfc3986_reserved_characters() {
+        assert_eq!(
+            encode_href_path("a:/?#[]@!$&'()*+,;=b"),
+            "a%3A%2F%3F%23%5B%5D%40%21%24%26%27%28%29%2A%2B%2C%3B%3Db"
+        );
     }
 
     #[test]
@@ -342,7 +398,7 @@ mod tests {
             oscal_element_id: element_id.to_string(),
             source_location: SourceLocation {
                 file_path: PathBuf::from(file),
-                section_title: section.to_string(),
+                section_title: Some(section.to_string()),
                 line_number: line,
             },
         }
@@ -390,6 +446,29 @@ mod tests {
         assert_eq!(catalog.groups[0].controls[1].props[2].value, "25");
         assert_eq!(catalog.groups[0].controls[0].links[0].href, "policy.md#line=10");
         assert_eq!(catalog.groups[0].controls[1].links[0].href, "policy.md#line=25");
+    }
+
+    #[test]
+    fn embed_trace_keeps_first_group_section_when_children_differ() {
+        let mut catalog = test_catalog(vec![OscalGroup {
+            id: "mixed".to_string(),
+            title: "Mixed".to_string(),
+            props: vec![],
+            links: vec![],
+            controls: vec![
+                test_control("POL-AC-001", "uuid-1"),
+                test_control("POL-IA-001", "uuid-2"),
+            ],
+            groups: vec![],
+        }]);
+        let mut trace_links = TraceLinkCollection::new();
+        trace_links.record(test_trace_link("uuid-1", "policy.md", "Access Control", 10)).unwrap();
+        trace_links.record(test_trace_link("uuid-2", "policy.md", "Identification", 20)).unwrap();
+
+        embed_trace_in_catalog(&mut catalog, &trace_links);
+
+        assert_eq!(catalog.groups[0].props[0].value, "Access Control");
+        assert_eq!(catalog.groups[0].controls[1].props[1].value, "Identification");
     }
 
     #[test]
@@ -464,6 +543,29 @@ mod tests {
         embed_trace_in_catalog(&mut catalog, &tl);
 
         // Group should have NO props (EC-4)
+        assert!(catalog.groups[0].props.is_empty());
+    }
+
+    #[test]
+    fn embed_trace_uses_control_fallback_without_inventing_group_section() {
+        let mut catalog = test_catalog(vec![OscalGroup {
+            id: "access-control".to_string(),
+            title: "Access Control".to_string(),
+            props: vec![],
+            links: vec![],
+            controls: vec![test_control("POL-AC-001", "uuid-1")],
+            groups: vec![],
+        }]);
+        let mut trace = test_trace_link("uuid-1", "", "Access Control", 10);
+        trace.source_location.section_title = None;
+        let mut trace_links = TraceLinkCollection::new();
+        trace_links.record(trace).unwrap();
+
+        embed_trace_in_catalog(&mut catalog, &trace_links);
+
+        let control = &catalog.groups[0].controls[0];
+        assert_eq!(control.props[0].value, "unknown-file");
+        assert_eq!(control.props[1].value, "unknown-section");
         assert!(catalog.groups[0].props.is_empty());
     }
 

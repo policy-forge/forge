@@ -51,6 +51,7 @@ fn make_req(i: usize, text: &str) -> PolicyRequirement {
         citations: vec![],
         modality: None,
         parameters: vec![],
+        parameters_extracted: false,
     }
 }
 

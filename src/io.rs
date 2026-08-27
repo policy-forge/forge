@@ -21,6 +21,13 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
     let mut tmp = tempfile::NamedTempFile::new_in(parent)?;
     tmp.write_all(content)?;
     tmp.as_file().sync_all()?;
+    #[cfg(unix)]
+    if let Ok(existing) = std::fs::metadata(path) {
+        use std::os::unix::fs::PermissionsExt;
+        let permissions = std::fs::Permissions::from_mode(existing.permissions().mode());
+        // Best effort: a concurrent removal must not prevent an otherwise-safe write.
+        let _ = std::fs::set_permissions(tmp.path(), permissions);
+    }
     let persisted = tmp.persist(path).map_err(|e| {
         ForgeError::Io(std::io::Error::other(format!(
             "Failed to persist temp file to '{}': {e}",
@@ -40,7 +47,13 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
 /// Returns `ForgeError::FileTooLarge` if the file exceeds `max_bytes`, or
 /// `ForgeError::Io` if file metadata cannot be read.
 pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
-    let metadata = std::fs::metadata(path)?;
+    let metadata = std::fs::symlink_metadata(path)?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(ForgeError::Io(std::io::Error::other(format!(
+            "'{}' must be a regular file, not a symbolic link or special file",
+            path.display()
+        ))));
+    }
     let size = metadata.len();
     if size > max_bytes {
         return Err(ForgeError::FileTooLarge {
@@ -50,6 +63,56 @@ pub fn check_file_size(path: &Path, max_bytes: u64) -> Result<u64, ForgeError> {
         });
     }
     Ok(size)
+}
+
+/// Read a regular, non-symlink file through one bounded file handle.
+///
+/// The returned bytes are capped at `max_bytes`; a file that grows while being
+/// read is rejected after at most one additional byte rather than buffered without
+/// limit. Callers that consume content MUST prefer this over `check_file_size`
+/// followed by a separate path-based read.
+///
+/// # Errors
+///
+/// Returns `ForgeError::FileTooLarge` when the held handle reports or produces
+/// more than `max_bytes`, and `ForgeError::Io` for open/read or file-type errors.
+pub fn read_bounded(path: &Path, max_bytes: u64) -> Result<Vec<u8>, ForgeError> {
+    use std::io::Read;
+
+    let path_metadata = std::fs::symlink_metadata(path)?;
+    if path_metadata.file_type().is_symlink() || !path_metadata.is_file() {
+        return Err(ForgeError::Io(std::io::Error::other(format!(
+            "'{}' must be a regular file, not a symbolic link or special file",
+            path.display()
+        ))));
+    }
+
+    let file = std::fs::File::open(path)?;
+    let metadata = file.metadata()?;
+    if !metadata.is_file() {
+        return Err(ForgeError::Io(std::io::Error::other(format!(
+            "'{}' must be a regular file",
+            path.display()
+        ))));
+    }
+    if metadata.len() > max_bytes {
+        return Err(ForgeError::FileTooLarge {
+            path: path.to_path_buf(),
+            size_bytes: metadata.len(),
+            limit_bytes: max_bytes,
+        });
+    }
+
+    let mut bytes = Vec::new();
+    file.take(max_bytes.saturating_add(1)).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > max_bytes {
+        return Err(ForgeError::FileTooLarge {
+            path: path.to_path_buf(),
+            size_bytes: bytes.len() as u64,
+            limit_bytes: max_bytes,
+        });
+    }
+    Ok(bytes)
 }
 
 /// Return metadata only when `path` names a regular file directly, never through a symlink.
@@ -70,21 +133,42 @@ pub(crate) fn manifest_relative_path(
     path: &Path,
     output: Option<&Path>,
     resource_kind: &str,
-) -> Result<PathBuf, String> {
-    let target = path
-        .canonicalize()
-        .map_err(|cause| format!("cannot resolve {resource_kind} '{}': {cause}", path.display()))?;
+) -> Result<PathBuf, ForgeError> {
+    let metadata = std::fs::symlink_metadata(path).map_err(|cause| {
+        ForgeError::Io(std::io::Error::new(
+            cause.kind(),
+            format!("cannot resolve {resource_kind} '{}': {cause}", path.display()),
+        ))
+    })?;
+    if metadata.file_type().is_symlink() || !metadata.is_file() {
+        return Err(ForgeError::InvalidArgument(format!(
+            "{resource_kind} '{}' must be a regular non-symlink file",
+            path.display()
+        )));
+    }
+    let target = path.canonicalize().map_err(|cause| {
+        ForgeError::Io(std::io::Error::new(
+            cause.kind(),
+            format!("cannot resolve {resource_kind} '{}': {cause}", path.display()),
+        ))
+    })?;
     let manifest_dir_path = output
         .and_then(Path::parent)
         .filter(|parent| !parent.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
-    if !manifest_dir_path.is_dir() {
-        return Err(format!("output directory '{}' does not exist", manifest_dir_path.display()));
-    }
-    let manifest_dir = manifest_dir_path
-        .canonicalize()
-        .map_err(|cause| format!("cannot resolve manifest directory: {cause}"))?;
-    Ok(relative_path(&manifest_dir, &target).unwrap_or(target))
+    let manifest_dir = manifest_dir_path.canonicalize().map_err(|cause| {
+        ForgeError::Io(std::io::Error::new(
+            cause.kind(),
+            format!("cannot resolve manifest directory '{}': {cause}", manifest_dir_path.display()),
+        ))
+    })?;
+    relative_path(&manifest_dir, &target).ok_or_else(|| {
+        ForgeError::InvalidArgument(format!(
+            "cannot express {resource_kind} '{}' relative to manifest directory '{}'",
+            path.display(),
+            manifest_dir_path.display()
+        ))
+    })
 }
 
 fn relative_path(base: &Path, target: &Path) -> Option<PathBuf> {
@@ -113,8 +197,13 @@ fn relative_path(base: &Path, target: &Path) -> Option<PathBuf> {
 /// Extract filename from a path to prevent absolute path leaks in OSCAL artifacts.
 #[must_use]
 pub fn sanitize_artifact_path(path: &Path) -> String {
-    path.file_name()
-        .map_or_else(|| path.to_string_lossy().into_owned(), |n| n.to_string_lossy().into_owned())
+    path.components()
+        .rev()
+        .find_map(|component| match component {
+            Component::Normal(name) => Some(name.to_string_lossy().into_owned()),
+            _ => None,
+        })
+        .unwrap_or_else(|| "artifact".to_string())
 }
 
 #[cfg(test)]
@@ -163,6 +252,18 @@ mod tests {
     }
 
     #[test]
+    fn read_bounded_rejects_content_beyond_the_held_limit() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("big.json");
+        std::fs::write(&path, b"12345").unwrap();
+
+        assert!(matches!(
+            read_bounded(&path, 4),
+            Err(ForgeError::FileTooLarge { limit_bytes: 4, .. })
+        ));
+    }
+
+    #[test]
     fn regular_file_metadata_rejects_directories() {
         let dir = tempfile::tempdir().unwrap();
         let error = regular_file_metadata(dir.path(), "input").unwrap_err();
@@ -197,5 +298,59 @@ mod tests {
     fn sanitize_handles_relative_path() {
         let path = Path::new("../docs/catalog.json");
         assert_eq!(sanitize_artifact_path(path), "catalog.json");
+    }
+
+    #[test]
+    fn sanitize_componentless_paths_never_echoes_absolute_input() {
+        assert_eq!(sanitize_artifact_path(Path::new("/")), "artifact");
+        assert_eq!(sanitize_artifact_path(Path::new("sub/..")), "sub");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_preserves_existing_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("out.json");
+        std::fs::write(&path, "old").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+
+        write_atomic(&path, b"new").unwrap();
+
+        assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o644);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn check_file_size_rejects_symlinks() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.json");
+        let link = dir.path().join("link.json");
+        std::fs::write(&target, "{}").unwrap();
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        assert!(check_file_size(&link, 1024).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn manifest_relative_path_rejects_resource_symlink() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.json");
+        let link = dir.path().join("link.json");
+        let output = dir.path().join("manifest.json");
+        std::fs::write(&target, "{}").unwrap();
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        let error = manifest_relative_path(&link, Some(&output), "resource").unwrap_err();
+        assert!(
+            matches!(error, ForgeError::InvalidArgument(message) if message.contains("non-symlink"))
+        );
+    }
+
+    #[test]
+    fn relative_path_refuses_targets_without_a_common_prefix() {
+        assert_eq!(relative_path(Path::new("/manifest"), Path::new("resource.json")), None);
     }
 }

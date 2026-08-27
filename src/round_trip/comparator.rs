@@ -1,5 +1,7 @@
 //! OSCAL-aware recursive JSON comparison algorithm.
 
+use std::collections::HashMap;
+
 use serde_json::Value;
 
 use super::divergence::{Divergence, DivergenceClass};
@@ -22,7 +24,7 @@ pub fn compare_oscal_json(
     rules: &OscalComparisonRules,
 ) -> Vec<Divergence> {
     let mut divergences = Vec::new();
-    compare_values(expected, actual, path, rules, &mut divergences);
+    compare_values(expected, actual, path, rules, None, &mut divergences);
     divergences
 }
 
@@ -31,15 +33,29 @@ fn compare_values(
     actual: &Value,
     path: &str,
     rules: &OscalComparisonRules,
+    positions: Option<(usize, usize)>,
     divergences: &mut Vec<Divergence>,
 ) {
+    if rules.ignored_paths.iter().any(|ignored| {
+        path == ignored || path.strip_prefix(ignored).is_some_and(|suffix| suffix.starts_with('/'))
+    }) {
+        return;
+    }
+
     match (expected, actual) {
         (Value::Object(exp_map), Value::Object(act_map)) => {
             for key in exp_map.keys() {
                 let child_path = format!("{path}/{key}");
                 match act_map.get(key) {
                     Some(act_val) => {
-                        compare_values(&exp_map[key], act_val, &child_path, rules, divergences);
+                        compare_values(
+                            &exp_map[key],
+                            act_val,
+                            &child_path,
+                            rules,
+                            positions,
+                            divergences,
+                        );
                     }
                     None => {
                         divergences.push(missing_key_divergence(
@@ -49,6 +65,7 @@ fn compare_values(
                             &exp_map[key],
                             "Empty array in expected vs absent key in actual",
                             "Key present in expected but absent in actual",
+                            positions,
                         ));
                     }
                 }
@@ -63,23 +80,26 @@ fn compare_values(
                         &act_map[key],
                         "Absent key in expected vs empty array in actual",
                         "Extra key in actual not present in expected",
+                        positions,
                     ));
                 }
             }
         }
         (Value::Array(exp_arr), Value::Array(act_arr)) => {
             let key_name = path.rsplit('/').next().unwrap_or("");
-            if rules.unordered_array_paths.contains(key_name) {
+            if rules.unordered_array_keys.contains(key_name) {
                 compare_unordered_array(exp_arr, act_arr, path, rules, divergences);
             } else {
-                compare_ordered_array(exp_arr, act_arr, path, rules, divergences);
+                compare_ordered_array(exp_arr, act_arr, path, rules, positions, divergences);
             }
         }
         _ => {
             if expected != actual {
-                let acceptable = acceptable_scalar_normalization(expected, actual, path);
+                let acceptable = acceptable_scalar_normalization(expected, actual, path, rules);
                 divergences.push(Divergence {
                     json_path: path.to_string(),
+                    expected_index: positions.map(|(expected_index, _)| expected_index),
+                    actual_index: positions.map(|(_, actual_index)| actual_index),
                     expected: expected.clone(),
                     actual: actual.clone(),
                     classification: if acceptable.is_some() {
@@ -108,12 +128,13 @@ fn acceptable_scalar_normalization(
     expected: &Value,
     actual: &Value,
     path: &str,
+    rules: &OscalComparisonRules,
 ) -> Option<&'static str> {
     let (Some(expected), Some(actual)) = (expected.as_str(), actual.as_str()) else {
         return None;
     };
 
-    if path.ends_with("/last-modified")
+    if rules.acceptable_timestamp_path_suffixes.iter().any(|suffix| path.ends_with(suffix))
         && let (Ok(expected), Ok(actual)) = (
             chrono::DateTime::parse_from_rfc3339(expected),
             chrono::DateTime::parse_from_rfc3339(actual),
@@ -194,6 +215,7 @@ fn missing_key_divergence(
     present_value: &Value,
     empty_array_desc: &str,
     non_empty_desc: &str,
+    positions: Option<(usize, usize)>,
 ) -> Divergence {
     let is_empty_array = present_value.as_array().is_some_and(Vec::is_empty);
     let (classification, description) = if is_empty_array {
@@ -201,7 +223,16 @@ fn missing_key_divergence(
     } else {
         (DivergenceClass::ForgeFix, non_empty_desc.to_string())
     };
-    Divergence { json_path, expected, actual, classification, description, resolution: None }
+    Divergence {
+        json_path,
+        expected_index: positions.map(|(expected_index, _)| expected_index),
+        actual_index: positions.map(|(_, actual_index)| actual_index),
+        expected,
+        actual,
+        classification,
+        description,
+        resolution: None,
+    }
 }
 
 fn compare_ordered_array(
@@ -209,16 +240,21 @@ fn compare_ordered_array(
     act_arr: &[Value],
     path: &str,
     rules: &OscalComparisonRules,
+    positions: Option<(usize, usize)>,
     divergences: &mut Vec<Divergence>,
 ) {
     let max_len = exp_arr.len().max(act_arr.len());
     for i in 0..max_len {
         let child_path = format!("{path}/{i}");
         match (exp_arr.get(i), act_arr.get(i)) {
-            (Some(e), Some(a)) => compare_values(e, a, &child_path, rules, divergences),
+            (Some(e), Some(a)) => {
+                compare_values(e, a, &child_path, rules, positions, divergences);
+            }
             (Some(e), None) => {
                 divergences.push(Divergence {
                     json_path: child_path,
+                    expected_index: positions.map(|(expected_index, _)| expected_index),
+                    actual_index: positions.map(|(_, actual_index)| actual_index),
                     expected: e.clone(),
                     actual: Value::Null,
                     classification: DivergenceClass::ForgeFix,
@@ -230,6 +266,8 @@ fn compare_ordered_array(
             (None, Some(a)) => {
                 divergences.push(Divergence {
                     json_path: child_path,
+                    expected_index: positions.map(|(expected_index, _)| expected_index),
+                    actual_index: positions.map(|(_, actual_index)| actual_index),
                     expected: Value::Null,
                     actual: a.clone(),
                     classification: DivergenceClass::ForgeFix,
@@ -243,6 +281,35 @@ fn compare_ordered_array(
     }
 }
 
+struct ArrayIndexes<'a> {
+    exact: HashMap<String, Vec<usize>>,
+    uuid: HashMap<&'a str, Vec<usize>>,
+    name_ns: HashMap<(&'a str, Option<&'a str>), Vec<usize>>,
+}
+
+impl<'a> ArrayIndexes<'a> {
+    fn for_values(values: &'a [Value]) -> Self {
+        let mut indexes =
+            Self { exact: HashMap::new(), uuid: HashMap::new(), name_ns: HashMap::new() };
+
+        for (index, value) in values.iter().enumerate() {
+            indexes.exact.entry(canonical_value_key(value)).or_default().push(index);
+            if let Some(uuid) = value.get("uuid").and_then(Value::as_str) {
+                indexes.uuid.entry(uuid).or_default().push(index);
+            }
+            if let Some(name) = value.get("name").and_then(Value::as_str) {
+                indexes
+                    .name_ns
+                    .entry((name, value.get("ns").and_then(Value::as_str)))
+                    .or_default()
+                    .push(index);
+            }
+        }
+
+        indexes
+    }
+}
+
 fn compare_unordered_array(
     exp_arr: &[Value],
     act_arr: &[Value],
@@ -250,20 +317,30 @@ fn compare_unordered_array(
     rules: &OscalComparisonRules,
     divergences: &mut Vec<Divergence>,
 ) {
-    let mut matched_actual: Vec<bool> = vec![false; act_arr.len()];
+    let indexes = ArrayIndexes::for_values(act_arr);
+    let mut matched_actual = vec![false; act_arr.len()];
 
-    for (exp_idx, exp_elem) in exp_arr.iter().enumerate() {
-        let match_idx = find_matching_element(exp_elem, act_arr, &matched_actual);
-
-        if let Some(act_idx) = match_idx {
-            matched_actual[act_idx] = true;
-            let child_path = format!("{path}/{exp_idx}");
-            compare_values(exp_elem, &act_arr[act_idx], &child_path, rules, divergences);
+    for (expected_index, expected_element) in exp_arr.iter().enumerate() {
+        if let Some(actual_index) =
+            find_matching_element(expected_element, &indexes, &matched_actual)
+        {
+            matched_actual[actual_index] = true;
+            let child_path = format!("{path}/{expected_index}");
+            compare_values(
+                expected_element,
+                &act_arr[actual_index],
+                &child_path,
+                rules,
+                Some((expected_index, actual_index)),
+                divergences,
+            );
         } else {
-            let child_path = format!("{path}/{exp_idx}");
+            let child_path = format!("{path}/{expected_index}");
             divergences.push(Divergence {
                 json_path: child_path,
-                expected: exp_elem.clone(),
+                expected_index: Some(expected_index),
+                actual_index: None,
+                expected: expected_element.clone(),
                 actual: Value::Null,
                 classification: DivergenceClass::ForgeFix,
                 description: "Element in expected unordered array not found in actual".to_string(),
@@ -272,14 +349,15 @@ fn compare_unordered_array(
         }
     }
 
-    // Report unmatched actual elements
-    for (act_idx, elem) in act_arr.iter().enumerate() {
-        if !matched_actual[act_idx] {
-            let child_path = format!("{path}/{act_idx}");
+    for (actual_index, element) in act_arr.iter().enumerate() {
+        if !matched_actual[actual_index] {
+            let child_path = format!("{path}/{actual_index}");
             divergences.push(Divergence {
                 json_path: child_path,
+                expected_index: None,
+                actual_index: Some(actual_index),
                 expected: Value::Null,
-                actual: elem.clone(),
+                actual: element.clone(),
                 classification: DivergenceClass::ForgeFix,
                 description: "Extra element in actual unordered array not found in expected"
                     .to_string(),
@@ -289,67 +367,80 @@ fn compare_unordered_array(
     }
 }
 
-/// Find an element in `act_arr` that matches `exp_elem` by identity key.
-///
-/// Priority: uuid → name+ns composite → positional fallback.
+fn canonical_value_key(value: &Value) -> String {
+    fn append_value(key: &mut String, value: &Value) {
+        match value {
+            Value::Null => key.push('n'),
+            Value::Bool(value) => key.push(if *value { 't' } else { 'f' }),
+            Value::Number(value) => {
+                key.push('d');
+                key.push_str(&value.to_string());
+                key.push(';');
+            }
+            Value::String(value) => {
+                key.push('s');
+                key.push_str(&value.len().to_string());
+                key.push(':');
+                key.push_str(value);
+            }
+            Value::Array(values) => {
+                key.push('[');
+                for value in values {
+                    append_value(key, value);
+                }
+                key.push(']');
+            }
+            Value::Object(values) => {
+                let mut entries: Vec<_> = values.iter().collect();
+                entries.sort_unstable_by_key(|(left, _)| *left);
+                key.push('{');
+                for (name, value) in entries {
+                    key.push_str(&name.len().to_string());
+                    key.push(':');
+                    key.push_str(name);
+                    append_value(key, value);
+                }
+                key.push('}');
+            }
+        }
+    }
+
+    let mut key = String::new();
+    append_value(&mut key, value);
+    key
+}
+
+fn first_unmatched(candidates: Option<&[usize]>, already_matched: &[bool]) -> Option<usize> {
+    candidates
+        .and_then(|candidates| candidates.iter().copied().find(|index| !already_matched[*index]))
+}
+
+/// Find an unmatched actual element using exact equality, UUID, name/namespace,
+/// then positional fallback.
 fn find_matching_element(
-    exp_elem: &Value,
-    act_arr: &[Value],
+    expected_element: &Value,
+    indexes: &ArrayIndexes<'_>,
     already_matched: &[bool],
 ) -> Option<usize> {
-    if let Some(i) = find_by_exact_equality(exp_elem, act_arr, already_matched) {
-        return Some(i);
-    }
-
-    if let Some(exp_uuid) = exp_elem.get("uuid").and_then(Value::as_str) {
-        return find_by_uuid(exp_uuid, act_arr, already_matched);
-    }
-
-    if let Some(exp_name) = exp_elem.get("name").and_then(Value::as_str) {
-        let exp_ns = exp_elem.get("ns").and_then(Value::as_str);
-        return find_by_name_ns(exp_name, exp_ns, act_arr, already_matched);
-    }
-
-    find_positional_fallback(already_matched)
-}
-
-fn find_by_exact_equality(
-    exp_elem: &Value,
-    act_arr: &[Value],
-    already_matched: &[bool],
-) -> Option<usize> {
-    act_arr
-        .iter()
-        .enumerate()
-        .find(|(i, act_elem)| !already_matched[*i] && *act_elem == exp_elem)
-        .map(|(i, _)| i)
-}
-
-fn find_by_uuid(exp_uuid: &str, act_arr: &[Value], already_matched: &[bool]) -> Option<usize> {
-    act_arr
-        .iter()
-        .enumerate()
-        .find(|(i, act_elem)| {
-            !already_matched[*i] && act_elem.get("uuid").and_then(Value::as_str) == Some(exp_uuid)
+    first_unmatched(
+        indexes.exact.get(&canonical_value_key(expected_element)).map(Vec::as_slice),
+        already_matched,
+    )
+    .or_else(|| {
+        expected_element.get("uuid").and_then(Value::as_str).and_then(|uuid| {
+            first_unmatched(indexes.uuid.get(uuid).map(Vec::as_slice), already_matched)
         })
-        .map(|(i, _)| i)
-}
-
-fn find_by_name_ns(
-    exp_name: &str,
-    exp_ns: Option<&str>,
-    act_arr: &[Value],
-    already_matched: &[bool],
-) -> Option<usize> {
-    act_arr
-        .iter()
-        .enumerate()
-        .find(|(i, act_elem)| {
-            !already_matched[*i]
-                && act_elem.get("name").and_then(Value::as_str) == Some(exp_name)
-                && act_elem.get("ns").and_then(Value::as_str) == exp_ns
+    })
+    .or_else(|| {
+        expected_element.get("name").and_then(Value::as_str).and_then(|name| {
+            let namespace = expected_element.get("ns").and_then(Value::as_str);
+            first_unmatched(
+                indexes.name_ns.get(&(name, namespace)).map(Vec::as_slice),
+                already_matched,
+            )
         })
-        .map(|(i, _)| i)
+    })
+    .or_else(|| find_positional_fallback(already_matched))
 }
 
 fn find_positional_fallback(already_matched: &[bool]) -> Option<usize> {
@@ -593,5 +684,70 @@ mod tests {
             result.is_empty(),
             "Duplicate props matched by exact equality should produce no divergences"
         );
+    }
+
+    #[test]
+    fn regenerated_uuid_falls_through_to_name_namespace_matching() {
+        let expected = json!({
+            "props": [{"uuid": "expected-uuid", "name": "label", "ns": "https://example.com"}]
+        });
+        let actual = json!({
+            "props": [{"uuid": "actual-uuid", "name": "label", "ns": "https://example.com"}]
+        });
+
+        let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].json_path, "/props/0/uuid");
+        assert_eq!(result[0].expected_index, Some(0));
+        assert_eq!(result[0].actual_index, Some(0));
+    }
+
+    #[test]
+    fn unordered_divergence_reports_both_array_positions() {
+        let expected = json!({
+            "props": [
+                {"uuid": "first", "name": "label", "value": "expected"},
+                {"uuid": "second", "name": "label", "value": "unchanged"}
+            ]
+        });
+        let actual = json!({
+            "props": [
+                {"uuid": "second", "name": "label", "value": "unchanged"},
+                {"uuid": "first", "name": "label", "value": "actual"}
+            ]
+        });
+
+        let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].json_path, "/props/0/value");
+        assert_eq!(result[0].expected_index, Some(0));
+        assert_eq!(result[0].actual_index, Some(1));
+    }
+
+    #[test]
+    fn metadata_timestamp_spellings_are_acceptable() {
+        for key in ["published", "updated"] {
+            let expected = json!({"metadata": {(key): "2026-08-26T12:00:00Z"}});
+            let actual = json!({"metadata": {(key): "2026-08-26T12:00:00+00:00"}});
+
+            let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[0].classification, DivergenceClass::Acceptable);
+        }
+    }
+
+    #[test]
+    fn ignored_path_prefix_skips_nested_comparison() {
+        let expected = json!({"metadata": {"title": "expected"}});
+        let actual = json!({"metadata": {"title": "actual"}});
+        let mut rules = default_rules();
+        rules.ignored_paths.push("/metadata".to_string());
+
+        let result = compare_oscal_json(&expected, &actual, "", &rules);
+
+        assert!(result.is_empty());
     }
 }

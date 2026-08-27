@@ -6,10 +6,25 @@ use crate::mapping::inventory::ResourceEvidence;
 
 pub const REPORT_SCHEMA_VERSION: &str = "forge.framework-impact-report/1";
 
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReportStatus {
+    Complete,
+}
+
+impl ReportStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Complete => "complete",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct ImpactReport {
     pub schema_version: &'static str,
-    pub status: &'static str,
+    pub status: ReportStatus,
     pub old: ResourceEvidence,
     pub new: ResourceEvidence,
     pub summary: ChangeSummary,
@@ -25,8 +40,9 @@ pub struct ImpactReport {
 
 /// Optional exact-match filters for review finding details.
 ///
-/// Summary counts always describe the complete validated analysis. Multiple filters are combined
-/// with AND semantics and never affect gate evaluation.
+/// Change counts describe the complete validated analysis, while disposition counts describe only
+/// emitted findings. Multiple filters are combined with AND semantics and never affect gate
+/// evaluation.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct ImpactFilters {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -134,6 +150,14 @@ impl ChangeClass {
     }
 }
 
+/// A review finding scoped to this report's exact old/new resource-evidence pair.
+///
+/// `finding_id` is stable only within that pair. Disposition loading verifies the prior report's
+/// evidence before applying IDs, so identifiers from a different comparison are never reusable.
+/// A review finding scoped to this report's exact old/new resource-evidence pair.
+///
+/// `finding_id` is stable only within that pair. Disposition loading verifies the prior report's
+/// evidence before applying IDs, so identifiers from a different comparison are never reusable.
 #[derive(Debug, Clone, Serialize)]
 pub struct ImpactFinding {
     pub finding_id: String,
@@ -257,10 +281,10 @@ impl RequiredAction {
 mod tests {
     use serde::Serialize;
 
-    use super::{ChangeClass, FindingPriority, ReasonCode, RequiredAction};
-
+    use super::{ChangeClass, FindingPriority, ReasonCode, ReportStatus, RequiredAction};
     #[test]
     fn enum_as_str_values_match_their_serialized_contracts() {
+        assert_serialized_string(&ReportStatus::Complete, ReportStatus::Complete.as_str());
         for value in [
             ChangeClass::Added,
             ChangeClass::Removed,

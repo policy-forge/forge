@@ -589,18 +589,34 @@ fn validate_reconciliation(
         .collect();
     let actual_old_set: BTreeSet<_> = actual_old.iter().copied().collect();
     let actual_new_set: BTreeSet<_> = actual_new.iter().copied().collect();
-    if actual_old.len() != actual_old_set.len()
-        || actual_new.len() != actual_new_set.len()
+    let duplicated_old = duplicate_id_samples(&actual_old);
+    let duplicated_new = duplicate_id_samples(&actual_new);
+    let missing_old: Vec<_> = expected_old.difference(&actual_old_set).take(3).copied().collect();
+    let missing_new: Vec<_> = expected_new.difference(&actual_new_set).take(3).copied().collect();
+    let old_outcomes = summary.old_requirements.total();
+    let new_outcomes = summary.new_requirements.total();
+    let summary_error = summary.validate();
+
+    if !duplicated_old.is_empty()
+        || !duplicated_new.is_empty()
         || actual_old_set != expected_old
         || actual_new_set != expected_new
-        || summary.old_requirements.total() != summary.total_old
-        || summary.new_requirements.total() != summary.total_new
+        || summary_error.is_err()
     {
-        return Err(ForgeError::MigrationError(
-            "internal reconciliation invariant failed".to_string(),
-        ));
+        return Err(ForgeError::MigrationError(format!(
+            "internal reconciliation invariant failed: duplicated old IDs {duplicated_old:?}; duplicated new IDs {duplicated_new:?}; missing old IDs {missing_old:?}; missing new IDs {missing_new:?}; old outcome count {old_outcomes} vs total_old {}; new outcome count {new_outcomes} vs total_new {}",
+            summary.total_old, summary.total_new
+        )));
     }
     Ok(())
+}
+
+fn duplicate_id_samples<'a>(ids: &[&'a str]) -> Vec<&'a str> {
+    let mut counts = BTreeMap::new();
+    for id in ids {
+        *counts.entry(*id).or_insert(0_usize) += 1;
+    }
+    counts.into_iter().filter_map(|(id, count)| (count > 1).then_some(id)).take(3).collect()
 }
 
 #[cfg(test)]
@@ -826,5 +842,24 @@ mod tests {
             Some(&successor_map),
         );
         assert!(result.unwrap_err().to_string().contains("absent from the inventory"));
+    }
+
+    #[test]
+    fn reconciliation_error_identifies_duplicated_requirement() {
+        let old_requirement = item("duplicated-old", "text", "A", 1, 0);
+        let entries = vec![entry(
+            Classification::Retired,
+            Vec::new(),
+            ConfidenceBasis::Unmatched,
+            ApprovalStatus::NotRequired,
+            vec![old_requirement.clone(), old_requirement.clone()],
+            Vec::new(),
+        )];
+        let summary = summarize(1, 0, &entries);
+
+        let error =
+            validate_reconciliation(&[old_requirement], &[], &entries, &summary).unwrap_err();
+
+        assert!(error.to_string().contains("duplicated-old"));
     }
 }

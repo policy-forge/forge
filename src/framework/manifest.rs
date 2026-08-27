@@ -79,7 +79,7 @@ pub fn parse(bytes: &[u8]) -> Result<ImpactManifest, ForgeError> {
         return Err(impact_error(format!("manifest exceeds the {MAX_MANIFEST_BYTES} byte limit")));
     }
     let value = crate::json_strict::parse_value(bytes, "manifest", STRICT_JSON_LIMITS)
-        .map_err(impact_error)?;
+        .map_err(|error| impact_error(error.to_string()))?;
     let manifest: ImpactManifest = serde_json::from_value(value)
         .map_err(|error| impact_error(format!("invalid manifest contract: {error}")))?;
     validate(&manifest)?;
@@ -104,14 +104,22 @@ fn validate(manifest: &ImpactManifest) -> Result<(), ForgeError> {
         )));
     }
     let mut paths = BTreeSet::new();
+    for path in [&manifest.old.artifact, &manifest.new.artifact] {
+        paths.insert(normalized_path_key(path)?);
+    }
+    for companion in
+        [&manifest.old.resolved_catalog, &manifest.new.resolved_catalog].into_iter().flatten()
+    {
+        paths.insert(normalized_path_key(companion)?);
+    }
     for (index, dependency) in manifest.mapping_collections.iter().enumerate() {
         validate_json_path(
             &format!("$.mapping_collections[{index}].artifact"),
             &dependency.artifact,
         )?;
-        if !paths.insert(dependency.artifact.as_path()) {
+        if !paths.insert(normalized_path_key(&dependency.artifact)?) {
             return Err(impact_error(format!(
-                "$.mapping_collections[{index}].artifact duplicates another Mapping Collection"
+                "$.mapping_collections[{index}].artifact duplicates a framework resource or another Mapping Collection"
             )));
         }
     }
@@ -208,6 +216,12 @@ fn validate_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
     Ok(())
 }
 
+fn normalized_path_key(path: &Path) -> Result<String, ForgeError> {
+    path.to_str().map(str::to_ascii_lowercase).ok_or_else(|| {
+        impact_error(format!("manifest path '{}' is not valid UTF-8", path.display()))
+    })
+}
+
 fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
     crate::json_strict::validate_lowercase_sha256(path, value).map_err(impact_error)
 }
@@ -218,9 +232,13 @@ fn impact_error(message: impl Into<String>) -> ForgeError {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
-    use super::validate_json_path;
+    use super::{
+        FrameworkResource, FrameworkRole, ImpactManifest, MANIFEST_SCHEMA_VERSION,
+        MappingDependency, validate, validate_json_path,
+    };
+    use crate::mapping::manifest::ResourceType;
 
     #[test]
     fn manifest_paths_are_relative_and_cannot_traverse_parent_directories() {
@@ -237,5 +255,107 @@ mod tests {
         }
         assert!(validate_json_path("$.artifact", Path::new("catalog.json")).is_ok());
         assert!(validate_json_path("$.artifact", Path::new("nested/catalog.json")).is_ok());
+    }
+
+    #[test]
+    fn manifest_validation_enforces_stateful_contracts() {
+        let mut unsupported_schema = valid_manifest();
+        unsupported_schema.schema_version = "unsupported".to_string();
+        assert_invalid(&unsupported_schema, "unsupported schema_version");
+
+        let mut mismatched_types = valid_manifest();
+        mismatched_types.new.resource_type = ResourceType::Profile;
+        assert_invalid(&mismatched_types, "must describe the same OSCAL model");
+
+        let mut missing_attestation = valid_manifest();
+        make_profile(&mut missing_attestation.old, None);
+        make_profile(&mut missing_attestation.new, Some(true));
+        assert_invalid(&missing_attestation, "resolved_catalog_attestation must be true");
+
+        let mut false_attestation = valid_manifest();
+        make_profile(&mut false_attestation.old, Some(false));
+        make_profile(&mut false_attestation.new, Some(true));
+        assert_invalid(&false_attestation, "resolved_catalog_attestation must be true");
+
+        let mut catalog_companion = valid_manifest();
+        catalog_companion.old.resolved_catalog = Some(PathBuf::from("resolved.json"));
+        assert_invalid(&catalog_companion, "resolved Catalog fields are only valid for a Profile");
+
+        let mut prior_without_disposition = valid_manifest();
+        prior_without_disposition.prior_report = Some(PathBuf::from("prior.json"));
+        assert_invalid(&prior_without_disposition, "must either both be present");
+
+        let mut too_many_mappings = valid_manifest();
+        too_many_mappings.mapping_collections = (0..=super::MAX_MAPPING_COLLECTIONS)
+            .map(|index| MappingDependency {
+                artifact: PathBuf::from(format!("mapping-{index}.json")),
+                framework_role: FrameworkRole::Source,
+            })
+            .collect();
+        assert_invalid(&too_many_mappings, "exceeds the 1000 entry limit");
+    }
+
+    #[test]
+    fn manifest_rejects_case_folded_and_primary_evidence_mapping_aliases() {
+        let mut case_variant = valid_manifest();
+        case_variant.mapping_collections =
+            vec![dependency("Controls.json"), dependency("controls.json")];
+        assert_invalid(
+            &case_variant,
+            "duplicates a framework resource or another Mapping Collection",
+        );
+
+        let mut primary_collision = valid_manifest();
+        primary_collision.mapping_collections = vec![dependency("old.json")];
+        assert_invalid(
+            &primary_collision,
+            "duplicates a framework resource or another Mapping Collection",
+        );
+    }
+
+    fn valid_manifest() -> ImpactManifest {
+        ImpactManifest {
+            schema_version: MANIFEST_SCHEMA_VERSION.to_string(),
+            old: valid_resource("old.json"),
+            new: valid_resource("new.json"),
+            mapping_collections: Vec::new(),
+            applicability_manifest: None,
+            successor_map: None,
+            prior_report: None,
+            disposition_file: None,
+        }
+    }
+
+    fn valid_resource(artifact: &str) -> FrameworkResource {
+        FrameworkResource {
+            resource_type: ResourceType::Catalog,
+            artifact: PathBuf::from(artifact),
+            resolved_catalog: None,
+            resolved_catalog_attestation: None,
+            expected_sha256: "a".repeat(64),
+            expected_resolved_catalog_sha256: None,
+            root_uuid: "11111111-1111-4111-8111-111111111111".to_string(),
+            document_version: "1.0.0".to_string(),
+            oscal_version: crate::oscal::OSCAL_VERSION.to_string(),
+        }
+    }
+
+    fn make_profile(resource: &mut FrameworkResource, attestation: Option<bool>) {
+        resource.resource_type = ResourceType::Profile;
+        resource.resolved_catalog = Some(PathBuf::from("resolved.json"));
+        resource.resolved_catalog_attestation = attestation;
+        resource.expected_resolved_catalog_sha256 = Some("b".repeat(64));
+    }
+
+    fn dependency(artifact: &str) -> MappingDependency {
+        MappingDependency {
+            artifact: PathBuf::from(artifact),
+            framework_role: FrameworkRole::Source,
+        }
+    }
+
+    fn assert_invalid(manifest: &ImpactManifest, expected: &str) {
+        let error = validate(manifest).expect_err("manifest must be rejected");
+        assert!(error.to_string().contains(expected), "{error}");
     }
 }

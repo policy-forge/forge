@@ -11,16 +11,16 @@
 //! cargo bench --bench export_bench
 //! ```
 
+mod common;
+
 use std::hint::black_box;
 use std::path::Path;
 
+use common::MAX_SIZE_BYTES;
 use criterion::{Criterion, criterion_group, criterion_main};
 
 /// Path to the committed 50-page synthetic policy fixture.
 const FIXTURE_PATH: &str = "tests/fixtures/synthetic-50page-policy.md";
-
-/// Maximum file size for ingest (10 MB).
-const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 
 /// Build a large OSCAL catalog JSON string from the synthetic fixture.
 ///
@@ -73,9 +73,10 @@ fn bench_export_pipeline(c: &mut Criterion) {
         "benchmark fixture missing: {FIXTURE_PATH} (commit it or fix FIXTURE_PATH)"
     );
 
-    // Pre-compute the large catalog JSON and write to a temp file
+    // Pre-compute the large catalog JSON and write to a temp file.
     let catalog_json = build_catalog_json(fixture_path);
     let json_size_kb = catalog_json.len() / 1024;
+    eprintln!("export benchmark input: {json_size_kb} KiB");
 
     let temp_dir = tempfile::TempDir::new().unwrap();
     let json_path = temp_dir.path().join("large-catalog.json");
@@ -83,25 +84,23 @@ fn bench_export_pipeline(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("export_pipeline");
 
-    let xml_output = temp_dir.path().join("out.xml");
-    group.bench_function(format!("json_to_xml_{json_size_kb}kb"), |b| {
+    group.bench_function("catalog_json_to_xml", |b| {
         b.iter(|| {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
                 forge::cli::OutputFormat::Xml,
-                Some(black_box(&xml_output)),
+                None,
             )
             .unwrap();
         });
     });
 
-    let yaml_output = temp_dir.path().join("out.yaml");
-    group.bench_function(format!("json_to_yaml_{json_size_kb}kb"), |b| {
+    group.bench_function("catalog_json_to_yaml", |b| {
         b.iter(|| {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
                 forge::cli::OutputFormat::Yaml,
-                Some(black_box(&yaml_output)),
+                None,
             )
             .unwrap();
         });

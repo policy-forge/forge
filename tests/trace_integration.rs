@@ -21,6 +21,7 @@ fn test_requirement(text: &str, stable_id: &str, line: usize) -> PolicyRequireme
         citations: vec![],
         modality: None,
         parameters: vec![],
+        parameters_extracted: false,
     }
 }
 
@@ -77,9 +78,18 @@ fn catalog_trace_one_link_per_control() {
     let mut trace_links = TraceLinkCollection::new();
     let catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
 
-    // One TraceLink per control
-    let total_controls: usize = catalog.groups.iter().map(|g| g.controls.len()).sum();
-    assert_eq!(trace_links.len(), total_controls);
+    // One TraceLink per control, paired by the catalog control UUID.
+    let mut control_ids: Vec<String> = catalog
+        .groups
+        .iter()
+        .flat_map(|group| group.controls.iter().map(|control| control.uuid.clone()))
+        .collect();
+    let mut trace_element_ids: Vec<String> =
+        trace_links.iter().map(|link| link.oscal_element_id.clone()).collect();
+    control_ids.sort();
+    trace_element_ids.sort();
+
+    assert_eq!(trace_element_ids, control_ids);
     assert_eq!(trace_links.len(), 3);
 }
 
@@ -124,7 +134,7 @@ fn catalog_trace_source_location_fields() {
 
     let link = trace_links.by_oscal_element("uuid-ac-1").unwrap();
     assert_eq!(link.source_location.file_path, PathBuf::from("policies/security.md"));
-    assert_eq!(link.source_location.section_title, "Access Control");
+    assert_eq!(link.source_location.section_title.as_deref(), Some("Access Control"));
     assert_eq!(link.source_location.line_number, 42);
     assert_eq!(link.requirement_stable_id, "uuid-ac-1");
 }
@@ -169,12 +179,12 @@ fn catalog_trace_nested_section_uses_subsection_title() {
     // Parent requirement traces to parent section title
     let parent_links = trace_links.by_requirement("uuid-ac-1");
     assert_eq!(parent_links.len(), 1);
-    assert_eq!(parent_links[0].source_location.section_title, "Access Control");
+    assert_eq!(parent_links[0].source_location.section_title.as_deref(), Some("Access Control"));
 
     // Child requirement traces to child section title, not the parent
     let child_links = trace_links.by_requirement("uuid-pw-1");
     assert_eq!(child_links.len(), 1);
-    assert_eq!(child_links[0].source_location.section_title, "Password Policy");
+    assert_eq!(child_links[0].source_location.section_title.as_deref(), Some("Password Policy"));
 }
 
 // ── T023: Component definition trace capture ───────────────────────────

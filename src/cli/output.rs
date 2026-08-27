@@ -12,20 +12,30 @@ use crate::error::ForgeError;
 ///
 /// # Errors
 /// * `ForgeError::Validation` if parent directory does not exist
-/// * `ForgeError::Io` if file write fails
+/// * `ForgeError::Io` if writing stdout or the named output file fails
 pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), ForgeError> {
     match output_path {
         None => {
             let mut stdout = io::stdout().lock();
             match stdout.write_all(content.as_bytes()) {
                 Ok(()) => {}
-                Err(e) if e.kind() == io::ErrorKind::BrokenPipe => return Ok(()),
-                Err(e) => return Err(ForgeError::Io(e)),
+                Err(error) if error.kind() == io::ErrorKind::BrokenPipe => return Ok(()),
+                Err(error) => {
+                    return Err(ForgeError::Io(io::Error::new(
+                        error.kind(),
+                        format!("failed writing to stdout: {error}"),
+                    )));
+                }
             }
             match stdout.flush() {
                 Ok(()) => {}
-                Err(e) if e.kind() == io::ErrorKind::BrokenPipe => return Ok(()),
-                Err(e) => return Err(ForgeError::Io(e)),
+                Err(error) if error.kind() == io::ErrorKind::BrokenPipe => return Ok(()),
+                Err(error) => {
+                    return Err(ForgeError::Io(io::Error::new(
+                        error.kind(),
+                        format!("failed flushing stdout: {error}"),
+                    )));
+                }
             }
             Ok(())
         }
@@ -39,7 +49,12 @@ pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), For
                     parent.display()
                 )));
             }
-            crate::io::write_atomic(path, content.as_bytes())?;
+            crate::io::write_atomic(path, content.as_bytes()).map_err(|error| {
+                ForgeError::Io(io::Error::other(format!(
+                    "failed writing output to '{}': {error}",
+                    path.display()
+                )))
+            })?;
             Ok(())
         }
     }

@@ -275,8 +275,10 @@ fn ssp_template_has_required_sections() {
         }
     }
 
-    // System-id has TODO markers
-    let sys_id = ssp.system_id.as_ref().expect("Must have system-id");
+    // System identifiers live in system-characteristics per OSCAL 1.2.3;
+    // the legacy top-level field is deliberately not serialized (F0628).
+    let sys_id =
+        ssp.system_characteristics.system_ids.first().expect("Must have a system identifier");
     assert!(sys_id.id.contains("TODO"), "System ID must have TODO marker");
 }
 
