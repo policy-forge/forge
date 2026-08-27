@@ -219,9 +219,6 @@ fn parse_set_param_pairs(set_params: &[String]) -> Result<Vec<(String, String)>,
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::OsStr;
-    use std::path::Path;
-
     use super::{execute, parse_set_param_pairs};
     use crate::error::ForgeError;
     use crate::types::OutputFormat;
@@ -265,7 +262,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn non_utf8_catalog_path_is_rejected_without_lossy_href() {
+        use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
+        use std::path::Path;
 
         let directory = tempfile::tempdir()
             .unwrap_or_else(|error| panic!("failed to create temporary directory: {error}"));

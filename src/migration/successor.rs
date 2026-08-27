@@ -423,6 +423,7 @@ mod tests {
         assert!(load(&path).unwrap_err().to_string().contains("cannot open successor map"));
     }
 
+    #[cfg(unix)]
     fn successor_json(old_id: &str, new_id: &str) -> Vec<u8> {
         serde_json::to_vec(&serde_json::json!({
             "schema_version": SUCCESSOR_MAP_SCHEMA_VERSION,
