@@ -6,7 +6,7 @@
 
 use crate::model::trace::TraceLinkCollection;
 use crate::oscal::back_matter::OscalLink;
-use crate::oscal::catalog::OscalCatalog;
+use crate::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup};
 use crate::oscal::parts::OscalProp;
 
 // ─── Constants (AR-017, SEC-4, SEC-5) ────────────────────────────────────
@@ -109,46 +109,73 @@ pub fn embed_trace_in_catalog(catalog: &mut OscalCatalog, trace_links: &TraceLin
     let mut annotated_controls = 0usize;
     let mut annotated_groups = 0usize;
 
+    // Root-level controls are as traceable as grouped ones (F0631).
+    for control in &mut catalog.controls {
+        if annotate_control(control, trace_links).is_some() {
+            annotated_controls += 1;
+        }
+    }
     for group in &mut catalog.groups {
-        let mut group_section_title: Option<String> = None;
-
-        for control in &mut group.controls {
-            if let Some(trace) = trace_links.by_oscal_element(&control.uuid) {
-                let loc = &trace.source_location;
-                // SEC-1: Use filename-only to prevent absolute path leakage into
-                // OSCAL output (consistent with component pipeline at pipeline.rs:205).
-                let file = loc.file_path.file_name().map_or_else(
-                    || "unknown-file".to_string(),
-                    |f| f.to_string_lossy().into_owned(),
-                );
-
-                let props = build_trace_props(&file, &loc.section_title, loc.line_number);
-                control.props.extend(props);
-
-                let link = build_trace_link(&file, loc.line_number);
-                control.links.push(link);
-
-                annotated_controls += 1;
-
-                if group_section_title.is_none() {
-                    group_section_title = Some(loc.section_title.clone());
-                }
-            } else {
-                tracing::debug!(control_uuid = %control.uuid, "No trace link found for control — skipping");
-            }
-        }
-
-        if let Some(section_title) = group_section_title {
-            group.props.push(OscalProp {
-                name: PROP_SOURCE_SECTION.to_string(),
-                ns: Some(FORGE_TRACE_NS.to_string()),
-                value: section_title,
-            });
-            annotated_groups += 1;
-        }
+        annotate_group(group, trace_links, &mut annotated_controls, &mut annotated_groups);
     }
 
     tracing::debug!(annotated_controls, annotated_groups, "Trace embedding complete for catalog");
+}
+
+/// Annotate one group and recurse into nested sub-groups (F0631).
+fn annotate_group(
+    group: &mut OscalGroup,
+    trace_links: &TraceLinkCollection,
+    annotated_controls: &mut usize,
+    annotated_groups: &mut usize,
+) {
+    let mut group_section_title: Option<String> = None;
+
+    for control in &mut group.controls {
+        if let Some(title) = annotate_control(control, trace_links) {
+            *annotated_controls += 1;
+            if group_section_title.is_none() {
+                group_section_title = Some(title);
+            }
+        }
+    }
+
+    if let Some(section_title) = group_section_title {
+        group.props.push(OscalProp {
+            name: PROP_SOURCE_SECTION.to_string(),
+            ns: Some(FORGE_TRACE_NS.to_string()),
+            value: section_title,
+        });
+        *annotated_groups += 1;
+    }
+
+    for subgroup in &mut group.groups {
+        annotate_group(subgroup, trace_links, annotated_controls, annotated_groups);
+    }
+}
+
+/// Inject trace props/link into a control; returns the source section title
+/// when a trace link was found.
+fn annotate_control(
+    control: &mut OscalControl,
+    trace_links: &TraceLinkCollection,
+) -> Option<String> {
+    let trace = trace_links.by_oscal_element(&control.uuid)?;
+    let loc = &trace.source_location;
+    // SEC-1: Use filename-only to prevent absolute path leakage into
+    // OSCAL output (consistent with component pipeline at pipeline.rs:205).
+    let file = loc
+        .file_path
+        .file_name()
+        .map_or_else(|| "unknown-file".to_string(), |f| f.to_string_lossy().into_owned());
+
+    let props = build_trace_props(&file, &loc.section_title, loc.line_number);
+    control.props.extend(props);
+
+    let link = build_trace_link(&file, loc.line_number);
+    control.links.push(link);
+
+    Some(loc.section_title.clone())
 }
 
 #[cfg(test)]

@@ -421,7 +421,7 @@ fn handle_paragraph_event(
 /// 6. Strip inline formatting by processing only Text/Code/SoftBreak events
 /// 7. Map byte offsets to 1-based line numbers via line-starts lookup table
 pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
-    let options = Options::ENABLE_TABLES;
+    let options = Options::ENABLE_TABLES.union(Options::ENABLE_YAML_STYLE_METADATA_BLOCKS);
     let parser = Parser::new_ext(content, options).into_offset_iter();
     let line_starts = build_line_starts(content);
 
@@ -443,13 +443,19 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
         ParagraphState { in_standalone: false, text: String::new(), source_line: 0 };
 
     for (event, range) in parser {
-        if handle_list_event(&event, &range, &mut list_state, &mut list_items, &line_starts) {
-            continue;
-        }
-        if handle_item_text(&event, &mut list_state) {
-            continue;
-        }
-        if handle_table_event(&event, &range, &mut table_state, &mut tables, &line_starts) {
+        // While inside a table, the table handler owns the stream so a GFM
+        // table nested in a list item reaches the cell accumulator instead of
+        // duplicating cell text into the item buffer (F0663).
+        let handled = if table_state.in_table {
+            handle_table_event(&event, &range, &mut table_state, &mut tables, &line_starts)
+                || handle_list_event(&event, &range, &mut list_state, &mut list_items, &line_starts)
+                || handle_item_text(&event, &mut list_state)
+        } else {
+            handle_list_event(&event, &range, &mut list_state, &mut list_items, &line_starts)
+                || handle_item_text(&event, &mut list_state)
+                || handle_table_event(&event, &range, &mut table_state, &mut tables, &line_starts)
+        };
+        if handled {
             continue;
         }
         handle_paragraph_event(

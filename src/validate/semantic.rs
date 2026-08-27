@@ -22,27 +22,27 @@ impl SemanticValidator {
     /// Does NOT follow external URLs (SEC-5).
     #[must_use]
     pub fn validate(&self, json: &Value, model_type: OscalModelType) -> Vec<ValidationError> {
-        let mut errors = check_orphaned_links(json);
+        let mut errors = check_orphaned_links(json, model_type);
         errors.extend(check_missing_references(json, model_type));
         errors
     }
 }
 
-/// Collect resource UUIDs from back-matter across all model root keys.
-fn collect_resource_uuids(json: &Value) -> HashSet<String> {
+/// Collect resource UUIDs from the model's own back-matter.
+///
+/// Reads only the root key matching `model_type` (F0784): a Profile (or any
+/// other type) whose links target its own back-matter must not be judged
+/// against an empty resource set harvested from unrelated root keys.
+fn collect_resource_uuids(json: &Value, model_type: OscalModelType) -> HashSet<String> {
     let mut uuids = HashSet::new();
 
-    // Try known OSCAL root keys
-    let root_keys = ["catalog", "component-definition", "mapping-collection"];
-    for key in &root_keys {
-        if let Some(root) = json.get(key)
-            && let Some(resources) = root.pointer("/back-matter/resources")
-            && let Some(arr) = resources.as_array()
-        {
-            for resource in arr {
-                if let Some(uuid) = resource.get("uuid").and_then(Value::as_str) {
-                    uuids.insert(uuid.to_string());
-                }
+    if let Some(root) = json.get(model_type.as_str())
+        && let Some(resources) = root.pointer("/back-matter/resources")
+        && let Some(arr) = resources.as_array()
+    {
+        for resource in arr {
+            if let Some(uuid) = resource.get("uuid").and_then(Value::as_str) {
+                uuids.insert(uuid.to_string());
             }
         }
     }
@@ -55,8 +55,8 @@ fn collect_resource_uuids(json: &Value) -> HashSet<String> {
 /// Finds `href` values starting with `#` that reference UUIDs
 /// not present in `back-matter.resources[].uuid`.
 /// Does NOT follow external URLs (SEC-5).
-fn check_orphaned_links(json: &Value) -> Vec<ValidationError> {
-    let resource_uuids = collect_resource_uuids(json);
+fn check_orphaned_links(json: &Value, model_type: OscalModelType) -> Vec<ValidationError> {
+    let resource_uuids = collect_resource_uuids(json, model_type);
     let mut errors = Vec::new();
 
     // Recursively walk JSON tree looking for href fields starting with "#"
@@ -248,7 +248,7 @@ mod tests {
         )
         .unwrap();
 
-        let errors = check_orphaned_links(&json);
+        let errors = check_orphaned_links(&json, OscalModelType::Catalog);
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].category, ValidationErrorCategory::Semantic);
         assert!(errors[0].message.contains("orphaned-uuid"));
@@ -273,7 +273,7 @@ mod tests {
         )
         .unwrap();
 
-        let errors = check_orphaned_links(&json);
+        let errors = check_orphaned_links(&json, OscalModelType::Catalog);
         assert!(errors.is_empty());
     }
 
@@ -294,7 +294,7 @@ mod tests {
         )
         .unwrap();
 
-        let errors = check_orphaned_links(&json);
+        let errors = check_orphaned_links(&json, OscalModelType::Catalog);
         assert_eq!(errors.len(), 2);
     }
 
@@ -313,7 +313,7 @@ mod tests {
         )
         .unwrap();
 
-        let errors = check_orphaned_links(&json);
+        let errors = check_orphaned_links(&json, OscalModelType::Catalog);
         assert_eq!(errors.len(), 3);
     }
 
@@ -329,7 +329,27 @@ mod tests {
             }
         });
 
-        assert!(check_orphaned_links(&json).is_empty());
+        assert!(check_orphaned_links(&json, OscalModelType::Mapping).is_empty());
+    }
+
+    // ── F0784: profile back-matter links must resolve against the profile root ──
+
+    #[test]
+    fn profile_back_matter_resource_satisfies_local_link() {
+        let resource_uuid = "22222222-2222-4222-8222-222222222222";
+        let json = serde_json::json!({
+            "profile": {
+                "links": [{"href": format!("#{resource_uuid}")}],
+                "back-matter": {
+                    "resources": [{"uuid": resource_uuid}]
+                }
+            }
+        });
+
+        assert!(
+            check_orphaned_links(&json, OscalModelType::Profile).is_empty(),
+            "profile-internal links must not be flagged orphaned (F0784)"
+        );
     }
 
     #[test]
@@ -345,7 +365,7 @@ mod tests {
         )
         .unwrap();
 
-        let errors = check_orphaned_links(&json);
+        let errors = check_orphaned_links(&json, OscalModelType::Catalog);
         assert!(errors.is_empty());
     }
 
@@ -367,7 +387,7 @@ mod tests {
         .unwrap();
 
         // External URLs should not produce errors
-        let errors = check_orphaned_links(&json);
+        let errors = check_orphaned_links(&json, OscalModelType::Catalog);
         assert!(errors.is_empty());
     }
 
@@ -381,7 +401,7 @@ mod tests {
         let wrapper =
             serde_json::json!({"catalog": {"back-matter": {"resources": []}, "data": json}});
 
-        let errors = check_orphaned_links(&wrapper);
+        let errors = check_orphaned_links(&wrapper, OscalModelType::Catalog);
         // The deeply nested orphaned link should NOT be found (depth guard stops traversal)
         assert!(
             errors.is_empty(),

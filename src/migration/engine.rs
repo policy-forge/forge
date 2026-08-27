@@ -59,6 +59,13 @@ pub(crate) fn classify(
         &mut new_matched,
         &mut entries,
     );
+    match_unique_normalized_text(
+        &old.requirements,
+        &new.requirements,
+        &mut old_matched,
+        &mut new_matched,
+        &mut entries,
+    );
     group_ambiguities(
         &old.requirements,
         &new.requirements,
@@ -667,6 +674,38 @@ mod tests {
         assert_eq!(report.summary.retired, 1);
         assert_eq!(report.summary.added, 1);
         assert!(report.has_reviewable_changes());
+    }
+
+    #[test]
+    fn residual_unique_text_match_after_locator_match_is_classified() {
+        let old = inventory(vec![
+            item("old-x", "duplicate", "A", 1, 0),
+            item("old-y", "other", "B", 2, 0),
+        ]);
+        let new = inventory(vec![
+            item("new-p", "duplicate", "B", 2, 0),
+            item("new-q", "duplicate", "A", 1, 0),
+        ]);
+
+        let report = classify(old, new, None).unwrap();
+        let matched = report
+            .entries
+            .iter()
+            .find(|entry| entry.old.iter().any(|item| item.stable_id == "old-x"))
+            .unwrap();
+
+        assert_eq!(matched.classification, Classification::ObservedIdChange);
+        assert_eq!(matched.old[0].stable_id, "old-x");
+        assert_eq!(matched.new[0].stable_id, "new-q");
+        assert!(matched.evidence.contains(&EvidenceCode::UniqueNormalizedText));
+    }
+
+    #[test]
+    fn encoded_title_and_nested_section_have_distinct_locator_keys() {
+        let encoded_title = item("encoded", "text", "Parent/Access Control %2F Audit", 1, 0);
+        let nested_section = item("nested", "text", "Parent/Access Control/Audit", 1, 0);
+
+        assert_ne!(locator_key(&encoded_title), locator_key(&nested_section));
     }
 
     #[test]

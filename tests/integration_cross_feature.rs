@@ -296,8 +296,25 @@ fn atomized_normative_advisory_each_gets_correct_prop() {
         "expected >= 5 controls (atomizer should split compound bullet 4 into 2); got: {total_controls}"
     );
 
-    // Each atomized control must carry its own modality prop.
-    // After the split, at least one control must be normative and one advisory.
+    // EACH atomized half of the compound bullet must carry its own correct
+    // modality prop — global presence alone would pass even if both halves
+    // were misattributed (F0844).
+    let mfa = find_control_by_text(&catalog, "must enforce MFA")
+        .expect("atomized 'must enforce MFA' control should exist");
+    let notify = find_control_by_text(&catalog, "should notify administrators")
+        .expect("atomized 'should notify administrators' control should exist");
+    assert_eq!(
+        control_modality(mfa),
+        Some("normative"),
+        "'must enforce MFA' half must be normative; control: {mfa}"
+    );
+    assert_eq!(
+        control_modality(notify),
+        Some("advisory"),
+        "'should notify administrators' half must be advisory; control: {notify}"
+    );
+
+    // Secondary guard: at least one of each across the catalog.
     let modalities = collect_modality_props(&catalog);
     assert!(
         modalities.iter().any(|m| m == "normative"),
@@ -307,6 +324,49 @@ fn atomized_normative_advisory_each_gets_correct_prop() {
         modalities.iter().any(|m| m == "advisory"),
         "expected at least one advisory control from compound sentence; modalities: {modalities:?}"
     );
+}
+
+/// Find the first catalog control whose title or part prose contains `needle`.
+fn find_control_by_text<'a>(catalog: &'a Value, needle: &str) -> Option<&'a Value> {
+    fn scan_controls<'a>(controls: &'a [Value], needle: &str) -> Option<&'a Value> {
+        for control in controls {
+            let title = control["title"].as_str().unwrap_or_default();
+            // Search only statement prose: guidance parts copy the entire
+            // source subsection, so they would match every needle.
+            let prose = control["parts"]
+                .as_array()
+                .map(|parts| {
+                    parts
+                        .iter()
+                        .filter(|p| p["name"].as_str() == Some("statement"))
+                        .filter_map(|p| p["prose"].as_str())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                })
+                .unwrap_or_default();
+            if title.contains(needle) || prose.contains(needle) {
+                return Some(control);
+            }
+            if let Some(nested) = control["controls"].as_array()
+                && let Some(found) = scan_controls(nested, needle)
+            {
+                return Some(found);
+            }
+        }
+        None
+    }
+    catalog["catalog"]["groups"]
+        .as_array()?
+        .iter()
+        .filter_map(|g| g["controls"].as_array())
+        .find_map(|controls| scan_controls(controls, needle))
+}
+
+/// Read a control's `prop[name=modality].value`, if present.
+fn control_modality(control: &Value) -> Option<&str> {
+    control["props"].as_array()?.iter().find_map(|prop| {
+        (prop["name"].as_str() == Some("modality")).then(|| prop["value"].as_str())?
+    })
 }
 
 // ── M-5 / AC-7: param elements present in JSON ──────────────────────────────

@@ -388,6 +388,7 @@ fn load_framework_resource(
         resolved_catalog: resource.resolved_catalog.clone(),
         resolved_catalog_attestation: resource.resolved_catalog_attestation,
         expected_sha256: Some(resource.expected_sha256.clone()),
+        expected_resolved_catalog_sha256: resource.expected_resolved_catalog_sha256.clone(),
         inventory: None,
     };
     let loaded = crate::mapping::inventory::load(manifest_dir, path_label, &descriptor)
@@ -1405,6 +1406,7 @@ mod tests {
                 resolved_catalog: None,
                 resolved_catalog_attestation: None,
                 expected_sha256: None,
+                expected_resolved_catalog_sha256: None,
                 inventory: None,
             },
         )

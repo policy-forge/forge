@@ -51,8 +51,10 @@ pub(crate) fn parse_frontmatter(content: &str) -> Option<FrontmatterData> {
         return None;
     }
 
-    // Frontmatter must start with "---\n" at the beginning of the document
-    let rest = content.strip_prefix("---\n")?;
+    // Frontmatter must start with a `---` line at the beginning of the
+    // document; tolerate both LF and CRLF openers (F0568 — the closer search
+    // below already accepts CRLF, so the opener must too).
+    let rest = content.strip_prefix("---\r\n").or_else(|| content.strip_prefix("---\n"))?;
 
     // Find the closing "---" delimiter (must be on its own line, not mid-line)
     let end = rest
@@ -193,5 +195,17 @@ version: 1.0.0
         let content = "Some text before\n---\ntitle: Policy\n---\n";
         let result = parse_frontmatter(content);
         assert!(result.is_none(), "Expected None when delimiters are not at document start");
+    }
+
+    // ── F0568: CRLF front matter must parse like its LF twin ──
+
+    #[test]
+    fn crlf_frontmatter_parses_like_lf_twin() {
+        let lf = "---\ntitle: CRLF Policy\nversion: 2.0\n---\n\n# Section\n";
+        let crlf = "---\r\ntitle: CRLF Policy\r\nversion: 2.0\r\n---\r\n\r\n# Section\r\n";
+        let a = parse_frontmatter(lf).expect("LF front matter parses");
+        let b = parse_frontmatter(crlf).expect("CRLF front matter must also parse (F0568)");
+        assert_eq!(a.title, b.title);
+        assert_eq!(a.version, b.version);
     }
 }

@@ -9,7 +9,10 @@ use crate::cli::OutputFormat;
 /// 1. Output filename = `{input_stem}.{format_extension}`
 /// 2. If `output_dir` is Some, place in that directory
 /// 3. If `output_dir` is None, place in current directory
-/// 4. For collisions (same stem from different dirs), append `_{n}` suffix (n starts at 2)
+/// 4. For collisions (same stem from different dirs, or a file already on
+///    disk), append `_{n}` suffix (n starts at 2)
+/// 5. An output equal to its own input path (same file, `output_dir` is None)
+///    is always suffixed so conversion never overwrites its source (F0286)
 #[must_use]
 pub fn derive_output_paths(
     input_paths: &[PathBuf],
@@ -31,12 +34,20 @@ pub fn derive_output_paths(
 
         let candidate = base_dir.join(format!("{stem}.{ext}"));
 
-        let output_path = if claimed.contains(&candidate) {
+        // A name is taken if minted in this call, already on disk, or equal
+        // to the input it would overwrite (F0286).
+        let taken = |path: &Path| {
+            claimed.contains(path)
+                || path.exists()
+                || (output_dir.is_none() && same_file(input, path))
+        };
+
+        let output_path = if taken(&candidate) {
             let n = next_suffix.entry(stem.clone()).or_insert(2);
             loop {
                 let suffixed = base_dir.join(format!("{stem}_{n}.{ext}"));
                 *n += 1;
-                if !claimed.contains(&suffixed) {
+                if !taken(&suffixed) {
                     break suffixed;
                 }
             }
@@ -49,6 +60,13 @@ pub fn derive_output_paths(
     }
 
     result
+}
+
+/// Cheap lexical identity probe used only for the self-clobber guard; a
+/// canonicalizing comparison is unnecessary because `output_dir: None`
+/// derives outputs in the current directory from the given input spelling.
+fn same_file(input: &Path, output: &Path) -> bool {
+    input == output
 }
 
 #[cfg(test)]
@@ -120,5 +138,30 @@ mod tests {
         assert_eq!(pairs[0].1, PathBuf::from("/out/policy.json"));
         assert_eq!(pairs[1].1, PathBuf::from("/out/policy_2.json"));
         assert_eq!(pairs[2].1, PathBuf::from("/out/policy_3.json"));
+    }
+
+    #[test]
+    fn existing_output_on_disk_is_never_overwritten() {
+        let dir = tempfile::tempdir().unwrap();
+        let input = dir.path().join("policy.md");
+        let existing = dir.path().join("policy.json");
+        std::fs::write(&input, "policy").unwrap();
+        std::fs::write(&existing, "existing output").unwrap();
+
+        let pairs = derive_output_paths(&[input], OutputFormat::Json, Some(dir.path()));
+
+        assert_eq!(pairs[0].1, dir.path().join("policy_2.json"));
+    }
+
+    #[test]
+    fn json_input_is_never_its_own_json_output() {
+        let dir = tempfile::tempdir().unwrap();
+        let input = dir.path().join("policy.json");
+        std::fs::write(&input, "{}").unwrap();
+        let pairs =
+            derive_output_paths(std::slice::from_ref(&input), OutputFormat::Json, Some(dir.path()));
+
+        assert_eq!(pairs[0].1, dir.path().join("policy_2.json"));
+        assert_ne!(pairs[0].0, pairs[0].1);
     }
 }

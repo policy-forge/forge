@@ -10,12 +10,25 @@ with open("output/component-definition.json") as f:
 
 cd = comp_def["component-definition"]
 
-# Collect control IDs from component definition
+# Collect control IDs from component definition, remembering which component
+# supplied each one so `links[].href` can point at that component's real SSP
+# UUID (fragments must resolve to a component uuid, not a slug).
+def ssp_seed_for_component(comp):
+    title = comp.get("title", "")
+    if "database" in title.lower():
+        return "database"
+    return "web-application"
+
+
 control_ids = []
+owner_seed = {}
 for comp in cd.get("components", []):
+    seed = ssp_seed_for_component(comp)
     for ci in comp.get("control-implementations", []):
         for ir in ci.get("implemented-requirements", []):
-            control_ids.append(ir["control-id"])
+            cid = ir["control-id"]
+            control_ids.append(cid)
+            owner_seed[cid] = seed
 
 # Generate deterministic UUIDs for SSP components
 def stable_uuid(seed):
@@ -29,7 +42,7 @@ for cid in control_ids:
         "control-id": cid,
         "description": f"Implementation statement for {cid} - see component definition for details.",
         "links": [
-            {"href": "#component-web-application", "rel": "implements"}
+            {"href": "#" + stable_uuid(owner_seed[cid]), "rel": "implements"}
         ]
     })
 

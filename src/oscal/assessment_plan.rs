@@ -325,12 +325,14 @@ where
         .enumerate()
         .map(|(i, req_t)| {
             let req = req_t.borrow();
-            // Use stable_id when available; fall back to index so UUIDs stay unique.
+            // Use stable_id when available; the fallback seed is namespaced
+            // with characters a real stable_id (a UUID string) can never
+            // contain, so it cannot collide with a literal "req-{i}" id (F0561).
             let id_seed = req
                 .stable_id
                 .as_deref()
                 .filter(|s| !s.is_empty())
-                .map_or_else(|| format!("req-{i}"), str::to_owned);
+                .map_or_else(|| format!("<unset-stable-id:{i}>"), str::to_owned);
             let task_uuid = generate_stable_id(&format!("assessment-task|{id_seed}"));
 
             let title = assessment_task_title(&req.text);

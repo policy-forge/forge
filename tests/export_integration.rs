@@ -119,6 +119,16 @@ fn cli_export_read_only_output_path() {
     std::fs::create_dir(&readonly_dir).unwrap();
     std::fs::set_permissions(&readonly_dir, std::fs::Permissions::from_mode(0o444)).unwrap();
 
+    // Mode bits do not restrict root (or CAP_DAC_OVERRIDE) — the default user
+    // in many privileged CI containers — so probe whether the sandbox can
+    // actually induce EACCES before asserting on it (F0836).
+    if std::fs::write(readonly_dir.join(".probe"), b"x").is_ok() {
+        std::fs::remove_file(readonly_dir.join(".probe")).ok();
+        std::fs::set_permissions(&readonly_dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+        eprintln!("skipping cli_export_read_only_output_path: running with write bypass (root?)");
+        return;
+    }
+
     let output = readonly_dir.join("out.xml");
     let output_str = output.to_str().unwrap();
 

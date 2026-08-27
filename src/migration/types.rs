@@ -50,7 +50,7 @@ pub struct RequirementLocation {
 }
 
 /// One requirement in a migration inventory.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct InventoryRequirement {
     pub stable_id: String,
     pub normalized_text_sha256: String,
@@ -58,6 +58,16 @@ pub struct InventoryRequirement {
     #[serde(skip)]
     pub(crate) normalized_text: String,
 }
+
+impl PartialEq for InventoryRequirement {
+    fn eq(&self, other: &Self) -> bool {
+        self.stable_id == other.stable_id
+            && self.normalized_text_sha256 == other.normalized_text_sha256
+            && self.location == other.location
+    }
+}
+
+impl Eq for InventoryRequirement {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -304,6 +314,31 @@ mod tests {
         assert_eq!(
             serde_json::to_value(value).unwrap(),
             serde_json::Value::String(name.to_string())
+        );
+    }
+
+    #[test]
+    fn inventory_requirement_equality_matches_serialized_identity() {
+        let requirement = InventoryRequirement {
+            stable_id: "AC-1".to_string(),
+            normalized_text_sha256: "abc123".to_string(),
+            location: RequirementLocation {
+                file_label: "policy.md".to_string(),
+                section_path: "Access Control".to_string(),
+                section_title: "Access Control".to_string(),
+                line: 1,
+                line_basis: LocationBasis::SourceLine,
+                atom_index: 0,
+            },
+            normalized_text: "first normalized form".to_string(),
+        };
+        let mut different_normalized_text = requirement.clone();
+        different_normalized_text.normalized_text = "second normalized form".to_string();
+
+        assert_eq!(requirement, different_normalized_text);
+        assert_eq!(
+            serde_json::to_value(&requirement).unwrap(),
+            serde_json::to_value(&different_normalized_text).unwrap(),
         );
     }
 

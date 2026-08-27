@@ -408,10 +408,7 @@ fn validate_history(record: &LifecycleRecord) -> Result<(), ForgeError> {
                 "{path}.assertions exceeds the {MAX_ASSERTIONS} entry limit"
             )));
         }
-        if record.schema_version == SCHEMA_VERSION
-            && event.legacy_event_id.is_none()
-            && event.assertions.windows(2).any(|items| items[0] >= items[1])
-        {
+        if event.assertions.windows(2).any(|items| items[0] >= items[1]) {
             return Err(error(format!("{path}.assertions must be unique and sorted")));
         }
         validate_impact_findings(&path, event)?;
@@ -593,11 +590,15 @@ fn validate_approval(
             )));
         }
     }
+    // `/1` records and their migrated `/2` legacy-event windows cannot gain
+    // historical author assertions retroactively; preserve their established
+    // read/migrate contract. New `/2` approvals still fail closed (F0490).
+    let require_author_evidence =
+        record.schema_version == SCHEMA_VERSION && record.history[event_index].legacy_event_id.is_none();
     validate_separation(
         &record.approval_policy.separation,
         &evidence,
-        record.schema_version == SCHEMA_VERSION
-            && record.history[event_index].legacy_event_id.is_none(),
+        require_author_evidence,
     )
 }
 
@@ -937,6 +938,157 @@ fn enforce_value_bounds(value: &Value, path: &str, depth: usize) -> Result<(), F
 mod tests {
     use super::*;
 
+    fn fingerprints() -> FingerprintSet {
+        FingerprintSet { source_sha256: "a".repeat(64), generated_artifacts: Vec::new() }
+    }
+
+    fn event(
+        sequence: u32,
+        previous_state: LifecycleState,
+        next_state: LifecycleState,
+        actor_key: &str,
+        declared_role: DeclaredRole,
+        legacy_event_id: bool,
+    ) -> TransitionEvent {
+        TransitionEvent {
+            sequence,
+            event_id: String::new(),
+            legacy_event_id: legacy_event_id.then(String::new),
+            previous_state,
+            next_state,
+            actor_key: actor_key.to_string(),
+            declared_role,
+            timestamp: format!("2026-08-26T12:00:0{sequence}+00:00"),
+            rationale: "reviewed".to_string(),
+            fingerprints: fingerprints(),
+            assertions: Vec::new(),
+            impact_finding_ids: Vec::new(),
+            replacement: None,
+        }
+    }
+
+    fn record(
+        state: LifecycleState,
+        required_roles: Vec<RoleRequirement>,
+        separation: SeparationRules,
+        history: Vec<TransitionEvent>,
+    ) -> LifecycleRecord {
+        LifecycleRecord {
+            schema_version: SCHEMA_VERSION.to_string(),
+            policy: PolicyIdentity {
+                policy_key: "policy".to_string(),
+                version_key: "1.0".to_string(),
+                title: "Policy".to_string(),
+                owner_keys: vec!["owner".to_string()],
+                source: ArtifactFingerprint {
+                    path: "policy.md".to_string(),
+                    sha256: "a".repeat(64),
+                    oscal_type: None,
+                    root_uuid: None,
+                },
+                generated_artifacts: Vec::new(),
+            },
+            parties: vec![
+                Party { key: "owner".to_string(), roles: vec![DeclaredRole::Owner] },
+                Party { key: "author".to_string(), roles: vec![DeclaredRole::Author] },
+                Party { key: "reviewer".to_string(), roles: vec![DeclaredRole::Reviewer] },
+                Party { key: "approver".to_string(), roles: vec![DeclaredRole::Approver] },
+            ],
+            approval_policy: ApprovalPolicy {
+                schema_version: APPROVAL_POLICY_VERSION.to_string(),
+                required_roles,
+                separation,
+            },
+            review: ReviewSchedule {
+                cadence_days: 30,
+                next_review_date: NaiveDate::from_ymd_opt(2026, 9, 25).expect("valid date"),
+                due_soon_days: 7,
+                timezone_policy: TimezonePolicy::DateOnly,
+            },
+            state,
+            replaced_by: None,
+            history,
+        }
+    }
+
+    fn sign_events(record: &mut LifecycleRecord) {
+        for index in 0..record.history.len() {
+            let mut event = record.history[index].clone();
+            if event.legacy_event_id.is_some() {
+                event.legacy_event_id =
+                    Some(legacy_event_id(record, &event).expect("legacy event ID"));
+            }
+            event.event_id = event_id(record, &event).expect("current event ID");
+            record.history[index] = event;
+        }
+    }
+
+    #[test]
+    fn current_record_legacy_event_requires_unique_sorted_assertions() {
+        let mut in_review = event(
+            1,
+            LifecycleState::Draft,
+            LifecycleState::InReview,
+            "reviewer",
+            DeclaredRole::Reviewer,
+            true,
+        );
+        in_review.assertions = vec![
+            ActorAssertion { actor_key: "author".to_string(), declared_role: DeclaredRole::Author },
+            ActorAssertion { actor_key: "author".to_string(), declared_role: DeclaredRole::Author },
+        ];
+        let mut record = record(
+            LifecycleState::InReview,
+            vec![RoleRequirement { role: DeclaredRole::Reviewer, count: 1 }],
+            SeparationRules::default(),
+            vec![in_review],
+        );
+        sign_events(&mut record);
+
+        let error = validate(&record).expect_err("legacy-carried assertions must be canonical");
+        assert!(error.to_string().contains("assertions must be unique and sorted"), "{error}");
+    }
+
+    #[test]
+    fn legacy_carried_window_preserves_historical_author_evidence_contract() {
+        let mut record = record(
+            LifecycleState::Approved,
+            vec![
+                RoleRequirement { role: DeclaredRole::Reviewer, count: 1 },
+                RoleRequirement { role: DeclaredRole::Approver, count: 1 },
+            ],
+            SeparationRules {
+                author_reviewer: false,
+                author_approver: true,
+                reviewer_approver: false,
+            },
+            vec![
+                event(
+                    1,
+                    LifecycleState::Draft,
+                    LifecycleState::InReview,
+                    "reviewer",
+                    DeclaredRole::Reviewer,
+                    true,
+                ),
+                event(
+                    2,
+                    LifecycleState::InReview,
+                    LifecycleState::Approved,
+                    "approver",
+                    DeclaredRole::Approver,
+                    true,
+                ),
+            ],
+        );
+        sign_events(&mut record);
+
+        assert!(
+            validate(&record).is_ok(),
+            "legacy evidence must remain readable/migratable"
+        );
+    }
+
     #[test]
     fn state_machine_matches_prd() {
         let states = [
@@ -978,7 +1130,7 @@ mod tests {
             .expect("nested relative path is valid");
         validate_fingerprint("$.policy.source", &fingerprint("../artifacts/policy.md"))
             .expect("sibling-directory path is valid");
-        for raw in ["/etc/passwd", r"C:\evil\policy.md", "./policy.md", "."] {
+        for raw in ["/etc/passwd", r"C:\\evil\\policy.md", "./policy.md", "."] {
             let error = validate_fingerprint("$.policy.source", &fingerprint(raw)).expect_err(raw);
             assert!(error.to_string().contains("must be a relative path"), "{raw}: {error}");
         }

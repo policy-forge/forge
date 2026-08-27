@@ -71,16 +71,18 @@ fn is_windows_path(s: &str) -> bool {
 /// Maximum file size for ingest in tests (10 MB).
 pub const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 
-/// Log a skip message and return `true` if the fixture file does not exist.
+/// Assert that a required fixture exists, failing the test otherwise.
 ///
-/// Callers should `return` when this returns `true`.
-pub fn skip_if_missing(path: &Path) -> bool {
-    if path.exists() {
-        false
-    } else {
-        eprintln!("Skipping test: fixture not found at {}", path.display());
-        true
-    }
+/// The synthetic fixture generator is deterministic (no randomness or time
+/// dependence), so a missing fixture is always a genuine defect — never a
+/// reason to skip quietly (F0832).
+#[track_caller]
+pub fn require_fixture(path: &Path) {
+    assert!(
+        path.exists(),
+        "required fixture missing (run the fixture generator?): {}",
+        path.display()
+    );
 }
 
 pub fn make_req(text: &str, source_line: usize) -> PolicyRequirement {

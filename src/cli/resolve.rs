@@ -71,6 +71,8 @@ pub fn execute(
         None => derive_default_output_path(&canonical_input),
     };
 
+    ensure_output_differs_from_input(&output_path, &canonical_input)?;
+
     // Detect oscal-cli
     let cli_info = detector.detect();
 
@@ -158,6 +160,23 @@ fn derive_default_output_path(input: &Path) -> PathBuf {
     }
 }
 
+/// Reject an output that aliases the canonical input profile (F0348).
+fn ensure_output_differs_from_input(
+    output_path: &Path,
+    canonical_input: &Path,
+) -> Result<(), ForgeError> {
+    if output_path == canonical_input
+        || output_path.canonicalize().is_ok_and(|path| path == canonical_input)
+    {
+        return Err(ForgeError::InvalidArgument(format!(
+            "output path '{}' must differ from the input profile '{}'",
+            output_path.display(),
+            canonical_input.display()
+        )));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,6 +218,17 @@ mod tests {
         let tmp = tempfile::NamedTempFile::with_suffix(".xml").unwrap();
         let result = execute(Some(tmp.path()), None, false, 60, None);
         assert!(matches!(result, Err(ForgeError::ResolveInputNotJson { .. })));
+    }
+
+    #[test]
+    fn output_aliasing_input_is_rejected() {
+        let input = tempfile::NamedTempFile::with_suffix(".json").unwrap();
+        let canonical_input = input.path().canonicalize().unwrap();
+
+        let error = ensure_output_differs_from_input(input.path(), &canonical_input)
+            .expect_err("output must not overwrite the source profile");
+
+        assert!(error.to_string().contains("must differ from the input profile"), "{error}");
     }
 
     // --- T051: --check with oscal-cli available (mock via PATH search) ---

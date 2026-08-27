@@ -123,6 +123,10 @@ pub fn extract_citations_from_text(
 ) -> Result<(String, Vec<Citation>), ForgeError> {
     let mut citations = Vec::new();
     let mut matched_ranges: Vec<Range<usize>> = Vec::new();
+    // Occurrence ordinal per matched text so repeated identical citations
+    // derive distinct ids instead of colliding on one UUID (F0298).
+    let mut occurrences: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
 
     // US1: URL matches (highest priority)
     for m in URL_REGEX.find_iter(text) {
@@ -130,7 +134,11 @@ pub fn extract_citations_from_text(
         // Trim trailing sentence punctuation (periods are valid inside URLs but not at end)
         let url_text = raw.trim_end_matches('.').to_string();
         let trimmed_len = raw.len() - url_text.len();
-        let citation_id = generate_citation_id(requirement_id, &url_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &url_text,
+            *occurrences.entry(url_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: url_text.clone(),
@@ -149,7 +157,11 @@ pub fn extract_citations_from_text(
         let raw = m.as_str();
         let url_text = raw.trim_end_matches('.').to_string();
         let trimmed_len = raw.len() - url_text.len();
-        let citation_id = generate_citation_id(requirement_id, &url_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &url_text,
+            *occurrences.entry(url_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: url_text.clone(),
@@ -166,7 +178,11 @@ pub fn extract_citations_from_text(
             continue;
         }
         let ref_text = m.as_str().to_string();
-        let citation_id = generate_citation_id(requirement_id, &ref_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &ref_text,
+            *occurrences.entry(ref_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: ref_text,
@@ -183,7 +199,11 @@ pub fn extract_citations_from_text(
             continue;
         }
         let ref_text = m.as_str().to_string();
-        let citation_id = generate_citation_id(requirement_id, &ref_text);
+        let citation_id = generate_citation_id(
+            requirement_id,
+            &ref_text,
+            *occurrences.entry(ref_text.clone()).and_modify(|n| *n += 1).or_insert(0),
+        );
         citations.push(Citation {
             id: citation_id,
             text: ref_text,
@@ -201,10 +221,14 @@ pub fn extract_citations_from_text(
 
 /// Generate a deterministic citation ID using UUID v5.
 ///
-/// Uses `FORGE_NAMESPACE_UUID` namespace with input `"{requirement_id}:{citation_text}"`.
+/// Uses `FORGE_NAMESPACE_UUID` namespace with input `"{requirement_id}:{occurrence}:{citation_text}"`.
 #[must_use]
-pub fn generate_citation_id(requirement_id: &str, citation_text: &str) -> String {
-    let input = format!("{requirement_id}:{citation_text}");
+pub fn generate_citation_id(
+    requirement_id: &str,
+    citation_text: &str,
+    occurrence: usize,
+) -> String {
+    let input = format!("{requirement_id}:{occurrence}:{citation_text}");
     Uuid::new_v5(&FORGE_NAMESPACE_UUID, input.as_bytes()).to_string()
 }
 
@@ -333,6 +357,10 @@ mod tests {
 
         assert_eq!(citations.len(), 2);
         assert_eq!(citations[0].url, citations[1].url);
+        assert_ne!(
+            citations[0].id, citations[1].id,
+            "duplicate occurrences must mint distinct ids (F0298)"
+        );
     }
 
     // EC-1: No citations text unchanged
@@ -407,28 +435,28 @@ mod tests {
     // T011: Citation ID generation tests
     #[test]
     fn citation_id_deterministic() {
-        let id1 = generate_citation_id("req-1", "https://example.com");
-        let id2 = generate_citation_id("req-1", "https://example.com");
+        let id1 = generate_citation_id("req-1", "https://example.com", 0);
+        let id2 = generate_citation_id("req-1", "https://example.com", 0);
         assert_eq!(id1, id2);
     }
 
     #[test]
     fn citation_id_different_for_different_citation_text() {
-        let id1 = generate_citation_id("req-1", "https://a.com");
-        let id2 = generate_citation_id("req-1", "https://b.com");
+        let id1 = generate_citation_id("req-1", "https://a.com", 0);
+        let id2 = generate_citation_id("req-1", "https://b.com", 0);
         assert_ne!(id1, id2);
     }
 
     #[test]
     fn citation_id_different_for_different_requirements() {
-        let id1 = generate_citation_id("req-1", "https://example.com");
-        let id2 = generate_citation_id("req-2", "https://example.com");
+        let id1 = generate_citation_id("req-1", "https://example.com", 0);
+        let id2 = generate_citation_id("req-2", "https://example.com", 0);
         assert_ne!(id1, id2);
     }
 
     #[test]
     fn citation_id_is_valid_uuid() {
-        let id = generate_citation_id("req-1", "https://example.com");
+        let id = generate_citation_id("req-1", "https://example.com", 0);
         assert!(uuid::Uuid::parse_str(&id).is_ok());
     }
 

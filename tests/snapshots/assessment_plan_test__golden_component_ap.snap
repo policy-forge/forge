@@ -27,8 +27,8 @@ expression: "&normalized"
           "uuid": "00000000-0000-0000-0000-000000000000"
         },
         {
-          "description": "Examine evidence that Passwords must be {{ insert: param, id-ref: f3fe7101-906c-5594-86c9-9765991999cc_prm_0 }} is implemented and operating effectively.",
-          "title": "Review: Passwords must be {{ insert: param, id-ref: f3fe7101-906c-55",
+          "description": "Examine evidence that Passwords must be {{ insert: param, id-ref: p45f37be4-2c64-58c2-9986-393ab4e976f1_prm_0 }} is implemented and operating effectively.",
+          "title": "Review: Passwords must be {{ insert: param, id-ref: p45f37be4-2c64-5",
           "uuid": "00000000-0000-0000-0000-000000000000"
         },
         {
@@ -57,8 +57,8 @@ expression: "&normalized"
           "uuid": "00000000-0000-0000-0000-000000000000"
         },
         {
-          "description": "Examine evidence that Encryption keys must be rotated {{ insert: param, id-ref: b0b9910b-9162-5eaa-b49b-40869b0134c2_prm_0 }} is implemented and operating effectively.",
-          "title": "Review: Encryption keys must be rotated {{ insert: param, id-ref: b0",
+          "description": "Examine evidence that Encryption keys must be rotated {{ insert: param, id-ref: aa03dbe4-b111-5dbd-aedd-3951eabf79b0_prm_0 }} is implemented and operating effectively.",
+          "title": "Review: Encryption keys must be rotated {{ insert: param, id-ref: aa",
           "uuid": "00000000-0000-0000-0000-000000000000"
         }
       ]
@@ -144,8 +144,8 @@ expression: "&normalized"
             ]
           }
         ],
-        "description": "Verify that Passwords must be {{ insert: param, id-ref: f3fe7101-906c-5594-86c9-9765991999cc_prm_0 }} is implemented as specified in the policy.",
-        "title": "Assess: Passwords must be {{ insert: param, id-ref: f3fe7101-906c-5594-86c9-976599199...",
+        "description": "Verify that Passwords must be {{ insert: param, id-ref: p45f37be4-2c64-58c2-9986-393ab4e976f1_prm_0 }} is implemented as specified in the policy.",
+        "title": "Assess: Passwords must be {{ insert: param, id-ref: p45f37be4-2c64-58c2-9986-393ab4e9...",
         "type": "action",
         "uuid": "00000000-0000-0000-0000-000000000000"
       },
@@ -282,8 +282,8 @@ expression: "&normalized"
             ]
           }
         ],
-        "description": "Verify that Encryption keys must be rotated {{ insert: param, id-ref: b0b9910b-9162-5eaa-b49b-40869b0134c2_prm_0 }} is implemented as specified in the policy.",
-        "title": "Assess: Encryption keys must be rotated {{ insert: param, id-ref: b0b9910b-9162-5eaa-...",
+        "description": "Verify that Encryption keys must be rotated {{ insert: param, id-ref: aa03dbe4-b111-5dbd-aedd-3951eabf79b0_prm_0 }} is implemented as specified in the policy.",
+        "title": "Assess: Encryption keys must be rotated {{ insert: param, id-ref: aa03dbe4-b111-5dbd-...",
         "type": "action",
         "uuid": "00000000-0000-0000-0000-000000000000"
       }

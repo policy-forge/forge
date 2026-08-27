@@ -55,14 +55,10 @@ fn catalog_xml_validates_against_xsd() {
     }
 
     let fixture_path = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture_path) {
-        return;
-    }
+    common::require_fixture(fixture_path);
 
     let xsd_path = Path::new("tests/fixtures/xsd/oscal_catalog_schema.xsd");
-    if common::skip_if_missing(xsd_path) {
-        return;
-    }
+    common::require_fixture(xsd_path);
 
     let xml = build_catalog_xml(fixture_path);
     let dir = TempDir::new().unwrap();
@@ -94,14 +90,10 @@ fn component_definition_xml_validates_against_xsd() {
     }
 
     let fixture_path = Path::new("tests/fixtures/sample_policy.md");
-    if common::skip_if_missing(fixture_path) {
-        return;
-    }
+    common::require_fixture(fixture_path);
 
     let xsd_path = Path::new("tests/fixtures/xsd/oscal_component_schema.xsd");
-    if common::skip_if_missing(xsd_path) {
-        return;
-    }
+    common::require_fixture(xsd_path);
 
     let xml = build_component_definition_xml(fixture_path);
     let dir = TempDir::new().unwrap();

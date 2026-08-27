@@ -6,10 +6,6 @@ expression: normalized
   "catalog": {
     "groups": [
       {
-        "id": "title-enterprise-security-policy-version-2-0-0-author-information-security-office-date-2026-01-15",
-        "title": "title: \"Enterprise Security Policy\"version: \"2.0.0\"author: \"Information Security Office\"date: \"2026-01-15\""
-      },
-      {
         "controls": [
           {
             "id": "POL-AC-001",
@@ -155,7 +151,7 @@ expression: normalized
                     "description": "exact: quarterly"
                   }
                 ],
-                "id": "p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_0",
+                "id": "ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_0",
                 "label": "quarterly",
                 "values": [
                   "quarterly"
@@ -167,7 +163,7 @@ expression: normalized
                     "description": "minimum: 90 days"
                   }
                 ],
-                "id": "p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_1",
+                "id": "ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_1",
                 "label": "after 90 days",
                 "values": [
                   "90 days"
@@ -178,7 +174,7 @@ expression: normalized
               {
                 "id": "POL-AC-004_smt",
                 "name": "statement",
-                "prose": "User accounts must be reviewed {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_1 }}"
+                "prose": "User accounts must be reviewed {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_1 }}"
               },
               {
                 "id": "POL-AC-004_gdn",
@@ -207,7 +203,7 @@ expression: normalized
                 "value": "15"
               }
             ],
-            "title": "User accounts must be reviewed {{ insert: param, id-ref: p9107ddde-0fa4-5314-9538-b4f77d62aec9_prm_0 }} and inactive acc..."
+            "title": "User accounts must be reviewed {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_1 }}"
           },
           {
             "id": "POL-AC-005",
@@ -224,7 +220,7 @@ expression: normalized
                     "description": "minimum: 12"
                   }
                 ],
-                "id": "e0b32d50-f11b-5869-9d89-c863a0c0b8e0_prm_0",
+                "id": "p280885ea-1c56-5881-b082-81d2dfb0e858_prm_0",
                 "label": "at least 12 characters",
                 "values": [
                   "12"
@@ -235,7 +231,7 @@ expression: normalized
               {
                 "id": "POL-AC-005_smt",
                 "name": "statement",
-                "prose": "Passwords must be {{ insert: param, id-ref: e0b32d50-f11b-5869-9d89-c863a0c0b8e0_prm_0 }} and include uppercase, lowercase, numbers, and symbols"
+                "prose": "Passwords must be {{ insert: param, id-ref: p280885ea-1c56-5881-b082-81d2dfb0e858_prm_0 }} and include uppercase, lowercase, numbers, and symbols"
               },
               {
                 "id": "POL-AC-005_gdn",
@@ -264,7 +260,7 @@ expression: normalized
                 "value": "19"
               }
             ],
-            "title": "Passwords must be {{ insert: param, id-ref: e0b32d50-f11b-5869-9d89-c863a0c0b8e0_prm_0 }} and include uppercase, lowerca..."
+            "title": "Passwords must be {{ insert: param, id-ref: p280885ea-1c56-5881-b082-81d2dfb0e858_prm_0 }} and include uppercase, lowercase, numbers, and symbols"
           }
         ],
         "id": "access-control",
@@ -423,7 +419,7 @@ expression: normalized
                     "description": "exact: annually"
                   }
                 ],
-                "id": "b559ad5b-b2b2-51bb-9c58-fc29f6bef406_prm_0",
+                "id": "cfe09b14-4583-5a0e-857a-aa01ead30462_prm_0",
                 "label": "annually",
                 "values": [
                   "annually"
@@ -434,7 +430,7 @@ expression: normalized
               {
                 "id": "POL-DP-004_smt",
                 "name": "statement",
-                "prose": "Encryption keys must be rotated {{ insert: param, id-ref: b559ad5b-b2b2-51bb-9c58-fc29f6bef406_prm_0 }} and stored in a hardware security module"
+                "prose": "Encryption keys must be rotated {{ insert: param, id-ref: cfe09b14-4583-5a0e-857a-aa01ead30462_prm_0 }} and stored in a hardware security module"
               },
               {
                 "id": "POL-DP-004_gdn",
@@ -463,7 +459,7 @@ expression: normalized
                 "value": "28"
               }
             ],
-            "title": "Encryption keys must be rotated {{ insert: param, id-ref: b559ad5b-b2b2-51bb-9c58-fc29f6bef406_prm_0 }} and stored in a ..."
+            "title": "Encryption keys must be rotated {{ insert: param, id-ref: cfe09b14-4583-5a0e-857a-aa01ead30462_prm_0 }} and stored in a hardware security module"
           },
           {
             "id": "POL-DP-005",
@@ -622,7 +618,7 @@ expression: normalized
                     "description": "minimum: annually"
                   }
                 ],
-                "id": "e3ca22c7-ba6a-5812-bb2a-3143916455a4_prm_0",
+                "id": "p30fcdbce-7419-500d-9a72-bd0ea208c124_prm_0",
                 "label": "at least annually",
                 "values": [
                   "annually"
@@ -633,7 +629,7 @@ expression: normalized
               {
                 "id": "POL-IR-002_smt",
                 "name": "statement",
-                "prose": "An incident response plan must be tested {{ insert: param, id-ref: e3ca22c7-ba6a-5812-bb2a-3143916455a4_prm_0 }} through tabletop exercises"
+                "prose": "An incident response plan must be tested {{ insert: param, id-ref: p30fcdbce-7419-500d-9a72-bd0ea208c124_prm_0 }} through tabletop exercises"
               },
               {
                 "id": "POL-IR-002_gdn",
@@ -662,7 +658,7 @@ expression: normalized
                 "value": "40"
               }
             ],
-            "title": "An incident response plan must be tested {{ insert: param, id-ref: e3ca22c7-ba6a-5812-bb2a-3143916455a4_prm_0 }} through..."
+            "title": "An incident response plan must be tested {{ insert: param, id-ref: p30fcdbce-7419-500d-9a72-bd0ea208c124_prm_0 }} through tabletop exercises"
           }
         ],
         "id": "incident-response",

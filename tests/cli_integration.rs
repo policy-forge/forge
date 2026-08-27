@@ -442,9 +442,11 @@ fn convert_missing_format_flag_defaults_to_json() {
 #[test]
 fn convert_format_xml_produces_valid_xml() {
     let fixture = std::path::Path::new("tests/fixtures/sample_policy.md");
-    if !fixture.exists() {
-        return;
-    }
+    assert!(
+        fixture.exists(),
+        "Required fixture '{}' is missing — XML format coverage disabled",
+        fixture.display()
+    );
 
     let dir = TempDir::new().unwrap();
     let output_path = dir.path().join("catalog.xml");

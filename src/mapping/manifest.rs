@@ -1,7 +1,7 @@
 //! Strict, bounded mapping-manifest v1 parsing.
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -115,6 +115,8 @@ pub struct ResourceManifest {
     pub resolved_catalog_attestation: Option<bool>,
     #[serde(default)]
     pub expected_sha256: Option<String>,
+    #[serde(default)]
+    pub expected_resolved_catalog_sha256: Option<String>,
     #[serde(default)]
     pub inventory: Option<ResourceInventorySnapshot>,
 }
@@ -426,9 +428,7 @@ fn validate_coverage(path: &str, coverage: Option<&CoverageManifest>) -> Result<
 }
 
 fn validate_resource(path: &str, resource: &ResourceManifest) -> Result<(), ForgeError> {
-    if resource.artifact.extension().and_then(|value| value.to_str()) != Some("json") {
-        return Err(mapping_error(format!("{path}.artifact must be a local .json file")));
-    }
+    validate_local_json_path(&format!("{path}.artifact"), &resource.artifact)?;
     non_empty(&format!("{path}.href"), &resource.href)?;
     if resource.resource_type == ResourceType::Profile {
         let Some(companion) = &resource.resolved_catalog else {
@@ -436,30 +436,51 @@ fn validate_resource(path: &str, resource: &ResourceManifest) -> Result<(), Forg
                 "{path}.resolved_catalog is required for a Profile; run 'forge resolve' explicitly"
             )));
         };
-        if companion.extension().and_then(|value| value.to_str()) != Some("json") {
-            return Err(mapping_error(format!("{path}.resolved_catalog must be a .json file")));
-        }
+        validate_local_json_path(&format!("{path}.resolved_catalog"), companion)?;
         if resource.resolved_catalog_attestation != Some(true) {
             return Err(mapping_error(format!(
                 "{path}.resolved_catalog_attestation must be true to record reviewer attestation that the companion represents this Profile"
             )));
         }
-    } else if resource.resolved_catalog.is_some() {
-        return Err(mapping_error(format!(
-            "{path}.resolved_catalog is only valid for Profile resources"
-        )));
-    } else if resource.resolved_catalog_attestation.is_some() {
-        return Err(mapping_error(format!(
-            "{path}.resolved_catalog_attestation is only valid for Profile resources"
-        )));
-    }
-    if let Some(hash) = &resource.expected_sha256
-        && (hash.len() != 64
-            || !hash.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase()))
+        let Some(hash) = &resource.expected_resolved_catalog_sha256 else {
+            return Err(mapping_error(format!(
+                "{path}.expected_resolved_catalog_sha256 is required for a Profile"
+            )));
+        };
+        validate_sha256(&format!("{path}.expected_resolved_catalog_sha256"), hash)?;
+    } else if resource.resolved_catalog.is_some()
+        || resource.resolved_catalog_attestation.is_some()
+        || resource.expected_resolved_catalog_sha256.is_some()
     {
         return Err(mapping_error(format!(
-            "{path}.expected_sha256 must be 64 lowercase hexadecimal characters"
+            "{path} resolved Catalog fields are only valid for Profile resources"
         )));
+    }
+    if let Some(hash) = &resource.expected_sha256 {
+        validate_sha256(&format!("{path}.expected_sha256"), hash)?;
+    }
+    Ok(())
+}
+
+fn validate_local_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
+    if value.is_absolute()
+        || value.components().any(|component| !matches!(component, Component::Normal(_)))
+    {
+        return Err(mapping_error(format!(
+            "{path} must be a relative path without '..', '.' or leading separators"
+        )));
+    }
+    if value.extension().and_then(|extension| extension.to_str()) != Some("json") {
+        return Err(mapping_error(format!("{path} must be a local .json file")));
+    }
+    Ok(())
+}
+
+fn validate_sha256(path: &str, value: &str) -> Result<(), ForgeError> {
+    if value.len() != 64
+        || !value.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    {
+        return Err(mapping_error(format!("{path} must be 64 lowercase hexadecimal characters")));
     }
     Ok(())
 }
@@ -621,24 +642,75 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
 mod tests {
     use super::*;
 
+    fn profile_resource(artifact: &str, resolved_catalog: &str) -> ResourceManifest {
+        ResourceManifest {
+            resource_type: ResourceType::Profile,
+            artifact: PathBuf::from(artifact),
+            href: artifact.to_string(),
+            resolved_catalog: Some(PathBuf::from(resolved_catalog)),
+            resolved_catalog_attestation: Some(true),
+            expected_sha256: None,
+            expected_resolved_catalog_sha256: Some("a".repeat(64)),
+            inventory: None,
+        }
+    }
+
+    #[test]
+    fn resource_paths_must_be_local_relative_json_files() {
+        validate_resource(
+            "$.mapping.target",
+            &profile_resource("resources/profile.json", "resources/catalog.json"),
+        )
+        .expect("nested local relative paths are valid");
+
+        for path in ["../profile.json", "./profile.json", "/tmp/profile.json"] {
+            let error = validate_resource(
+                "$.mapping.target",
+                &profile_resource(path, "resources/catalog.json"),
+            )
+            .expect_err(path);
+            assert!(
+                error.to_string().contains("$.mapping.target.artifact must be a relative path"),
+                "{path}: {error}"
+            );
+        }
+
+        for path in ["../catalog.json", "./catalog.json", "/tmp/catalog.json"] {
+            let error = validate_resource(
+                "$.mapping.target",
+                &profile_resource("resources/profile.json", path),
+            )
+            .expect_err(path);
+            assert!(
+                error
+                    .to_string()
+                    .contains("$.mapping.target.resolved_catalog must be a relative path"),
+                "{path}: {error}"
+            );
+        }
+    }
+
     #[test]
     fn duplicate_decoded_key_is_rejected() {
-        let error = parse(br#"{"schema_version":"a","schema_version":"b"}"#)
-            .expect_err("duplicate key must fail");
+        let error = parse(br#"{"schema_version":"forge.mapping-manifest/1","schema_version":"forge.mapping-manifest/1"}"#)
+            .expect_err("duplicate must fail");
         assert!(error.to_string().contains("duplicate object key 'schema_version'"));
     }
 
     #[test]
     fn oversized_and_invalid_utf8_manifests_are_rejected_without_panic() {
-        let oversized = vec![b' '; usize::try_from(MAX_MANIFEST_BYTES).unwrap() + 1];
+        let oversized =
+            vec![b' '; usize::try_from(MAX_MANIFEST_BYTES).expect("manifest cap fits usize") + 1];
+        let oversized_error = parse(&oversized).expect_err("oversized manifest must fail");
         assert!(
-            parse(&oversized).expect_err("oversized input must fail").to_string().contains("limit")
+            oversized_error.to_string().contains("exceeds")
+                && oversized_error.to_string().contains("byte limit"),
+            "{oversized_error}"
         );
+        let invalid_utf8_error = parse(&[0xff]).expect_err("invalid UTF-8 must fail");
         assert!(
-            parse(b"{\"schema_version\":\"\xff\"}")
-                .expect_err("invalid UTF-8 must fail")
-                .to_string()
-                .contains("invalid manifest JSON")
+            invalid_utf8_error.to_string().contains("invalid manifest JSON"),
+            "{invalid_utf8_error}"
         );
     }
 }

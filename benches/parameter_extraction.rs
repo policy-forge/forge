@@ -9,7 +9,8 @@
 use std::hint::black_box;
 use std::path::PathBuf;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
+
 use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 use forge::parameter::extract_parameters;
 
@@ -94,10 +95,15 @@ fn bench_extract_parameters_500(c: &mut Criterion) {
     let doc = make_synthetic_document(500);
 
     c.bench_function("extract_parameters/500_requirements", |b| {
-        b.iter(|| {
-            let mut d = black_box(doc.clone());
-            extract_parameters(&mut d).expect("extract_parameters must not fail");
-        });
+        // The per-iteration clone is setup, not measurement: `extract_parameters`
+        // mutates in place, so a fresh document is prepared outside the timed region.
+        b.iter_batched(
+            || doc.clone(),
+            |mut d| {
+                black_box(extract_parameters(&mut d)).expect("extract_parameters must not fail");
+            },
+            BatchSize::SmallInput,
+        );
     });
 }
 
@@ -106,10 +112,13 @@ fn bench_extract_parameters_100(c: &mut Criterion) {
     let doc = make_synthetic_document(100);
 
     c.bench_function("extract_parameters/100_requirements", |b| {
-        b.iter(|| {
-            let mut d = black_box(doc.clone());
-            extract_parameters(&mut d).expect("extract_parameters must not fail");
-        });
+        b.iter_batched(
+            || doc.clone(),
+            |mut d| {
+                black_box(extract_parameters(&mut d)).expect("extract_parameters must not fail");
+            },
+            BatchSize::SmallInput,
+        );
     });
 }
 
@@ -118,10 +127,13 @@ fn bench_extract_parameters_single(c: &mut Criterion) {
     let doc = make_synthetic_document(1);
 
     c.bench_function("extract_parameters/1_requirement", |b| {
-        b.iter(|| {
-            let mut d = black_box(doc.clone());
-            extract_parameters(&mut d).expect("extract_parameters must not fail");
-        });
+        b.iter_batched(
+            || doc.clone(),
+            |mut d| {
+                black_box(extract_parameters(&mut d)).expect("extract_parameters must not fail");
+            },
+            BatchSize::SmallInput,
+        );
     });
 }
 

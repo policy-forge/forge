@@ -272,7 +272,7 @@ fn write_control<W: Write>(
 
 /// Write a single OSCAL group element with children in XSD order.
 ///
-/// Writes: `<group id="...">` → title, prop*, link*, control* → `</group>`
+/// Writes: `<group id="...">` → title, prop*, link*, group*, control* → `</group>`
 fn write_group<W: Write>(writer: &mut Writer<W>, group: &OscalGroup) -> Result<(), ForgeError> {
     let mut elem = BytesStart::new("group");
     elem.push_attribute(("id", group.id.as_str()));
@@ -289,6 +289,11 @@ fn write_group<W: Write>(writer: &mut Writer<W>, group: &OscalGroup) -> Result<(
     // Links (position 4)
     for link in &group.links {
         write_link(writer, link)?;
+    }
+
+    // Nested sub-groups (XSD GroupType order: group* before control*)
+    for subgroup in &group.groups {
+        write_group(writer, subgroup)?;
     }
 
     // Controls (position 7)
@@ -549,6 +554,11 @@ pub fn serialize_catalog_to_xml(catalog: &OscalCatalog) -> Result<String, ForgeE
 
     for group in &catalog.groups {
         write_group(&mut writer, group)?;
+    }
+
+    // Root-level controls (CatalogType permits control* after group*)
+    for control in &catalog.controls {
+        write_control(&mut writer, control)?;
     }
 
     if let Some(bm) = &catalog.back_matter {

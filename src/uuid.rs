@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use uuid::Uuid;
 
 use crate::model::{PolicyDocument, PolicySection};
@@ -171,12 +173,10 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 
 /// Populate `stable_id` on all [`crate::model::PolicyRequirement`]s in a [`crate::model::PolicyDocument`].
 ///
-/// Walks the full section tree recursively, generating a UUID v5 for each
-/// requirement using a collision-resistant hash input that combines:
-/// - Normalized requirement text
-/// - Section path (e.g. `"Access Control/MFA Requirements"`)
-/// - Source line number
-/// - Atom index
+/// Walks the full section tree recursively, generating a UUID v5 from each
+/// requirement's normalized text. Exact duplicate text receives an occurrence
+/// ordinal based on prior matching requirements in document order, preserving
+/// uniqueness without coupling IDs to volatile document layout.
 ///
 /// After this function returns, no `PolicyRequirement` in the document will
 /// have `stable_id = None`.
@@ -227,8 +227,9 @@ pub fn generate_stable_id(text: &str) -> Uuid {
 /// ```
 #[tracing::instrument(level = "debug", skip(document))]
 pub fn assign_stable_ids(mut document: PolicyDocument) -> PolicyDocument {
+    let mut occurrences = HashMap::new();
     for section in &mut document.sections {
-        assign_stable_ids_to_section(section, &section.title.clone());
+        assign_stable_ids_to_section(section, &mut occurrences);
     }
     document
 }
@@ -236,13 +237,16 @@ pub fn assign_stable_ids(mut document: PolicyDocument) -> PolicyDocument {
 /// Maximum section nesting depth for recursive traversal (`DoS` protection).
 const MAX_SECTION_DEPTH: usize = 50;
 
-fn assign_stable_ids_to_section(section: &mut PolicySection, section_path: &str) {
-    assign_stable_ids_to_section_inner(section, section_path, 0);
+fn assign_stable_ids_to_section(
+    section: &mut PolicySection,
+    occurrences: &mut HashMap<String, usize>,
+) {
+    assign_stable_ids_to_section_inner(section, occurrences, 0);
 }
 
 fn assign_stable_ids_to_section_inner(
     section: &mut PolicySection,
-    section_path: &str,
+    occurrences: &mut HashMap<String, usize>,
     depth: usize,
 ) {
     // Always assign IDs to requirements at this level (docstring guarantees
@@ -250,22 +254,16 @@ fn assign_stable_ids_to_section_inner(
     // when depth exceeds the safety limit.
     for requirement in &mut section.requirements {
         let normalized = normalize_for_hashing(&requirement.text);
-        // Include section path, source line, and atom index in the hash input
-        // to prevent collisions when identical requirement text appears in
-        // different sections or at different positions.
-        let hash_input = format!(
-            "{normalized}\0{section_path}\0{}\0{}",
-            requirement.source_line, requirement.atom_index
-        );
+        let occurrence = occurrences.entry(normalized.clone()).or_insert(0);
+        let hash_input = format!("{normalized}\0{occurrence}");
         let uuid = Uuid::new_v5(&FORGE_NAMESPACE_UUID, hash_input.as_bytes());
         tracing::debug!(
             normalized_text = %normalized,
-            section_path = %section_path,
-            source_line = requirement.source_line,
-            atom_index = requirement.atom_index,
+            occurrence,
             uuid = %uuid,
             "UUID generated"
         );
+        *occurrence += 1;
         requirement.stable_id = Some(uuid.to_string());
     }
     if depth > MAX_SECTION_DEPTH {
@@ -277,8 +275,7 @@ fn assign_stable_ids_to_section_inner(
         return;
     }
     for child in &mut section.children {
-        let child_path = format!("{section_path}/{}", child.title);
-        assign_stable_ids_to_section_inner(child, &child_path, depth + 1);
+        assign_stable_ids_to_section_inner(child, occurrences, depth + 1);
     }
 }
 
@@ -508,6 +505,69 @@ mod tests {
                 assert_ne!(uuids[i], uuids[j], "Collision between texts[{i}] and texts[{j}]");
             }
         }
+    }
+
+    #[test]
+    fn unrelated_requirement_insertion_preserves_unique_requirement_id() {
+        let original = PolicyDocument {
+            id: "test".to_string(),
+            metadata: test_metadata(),
+            sections: vec![make_section(
+                "Original section",
+                1,
+                10,
+                vec![make_req("Target requirement", 11, 0)],
+                vec![],
+            )],
+        };
+        let mut inserted = PolicyDocument {
+            id: "test".to_string(),
+            metadata: test_metadata(),
+            sections: vec![make_section(
+                "Renamed section",
+                1,
+                100,
+                vec![
+                    make_req("Unrelated inserted requirement", 101, 0),
+                    make_req("Target requirement", 102, 0),
+                ],
+                vec![],
+            )],
+        };
+        inserted.sections[0].requirements[1].atom_index = 1;
+
+        let original = assign_stable_ids(original);
+        let inserted = assign_stable_ids(inserted);
+
+        assert_eq!(
+            original.sections[0].requirements[0].stable_id,
+            inserted.sections[0].requirements[1].stable_id
+        );
+    }
+
+    #[test]
+    fn duplicate_requirements_receive_distinct_occurrence_ids() {
+        let document = PolicyDocument {
+            id: "test".to_string(),
+            metadata: test_metadata(),
+            sections: vec![make_section(
+                "Section",
+                1,
+                1,
+                vec![
+                    make_req("Repeated requirement", 1, 0),
+                    make_req("  Repeated  requirement  ", 2, 0),
+                ],
+                vec![],
+            )],
+        };
+
+        let document = assign_stable_ids(document);
+
+        assert_ne!(
+            document.sections[0].requirements[0].stable_id,
+            document.sections[0].requirements[1].stable_id
+        );
     }
 
     // === Helper ===

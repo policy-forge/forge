@@ -34,7 +34,8 @@ pub(crate) fn build_inventory(
 
     let mut requirements = Vec::new();
     for section in &document.sections {
-        collect_section(section, &section.title, &label, location_basis, &mut requirements)?;
+        let section_path = escape_section_path_component(&section.title);
+        collect_section(section, &section_path, &label, location_basis, &mut requirements)?;
     }
     requirements.sort_by(|left, right| left.stable_id.cmp(&right.stable_id));
     validate_unique_ids(&requirements)?;
@@ -58,6 +59,32 @@ fn input_format(path: &Path) -> Result<InputFormat, ForgeError> {
     }
 }
 
+/// Escape a title for use as one reversible section-path component.
+fn escape_section_path_component(title: &str) -> String {
+    let mut escaped = String::with_capacity(title.len());
+    append_escaped_section_title(&mut escaped, title);
+    escaped
+}
+
+/// Append one escaped section title to an existing serialized path.
+fn append_escaped_section_title(output: &mut String, title: &str) {
+    for character in title.chars() {
+        match character {
+            '%' => output.push_str("%25"),
+            '/' => output.push_str("%2F"),
+            _ => output.push(character),
+        }
+    }
+}
+
+fn append_section_path(section_path: &str, child_title: &str) -> String {
+    let mut child_path = String::with_capacity(section_path.len() + child_title.len() + 1);
+    child_path.push_str(section_path);
+    child_path.push('/');
+    append_escaped_section_title(&mut child_path, child_title);
+    child_path
+}
+
 fn collect_section(
     section: &PolicySection,
     section_path: &str,
@@ -75,7 +102,7 @@ fn collect_section(
         )?);
     }
     for child in &section.children {
-        let child_path = format!("{section_path}/{}", child.title);
+        let child_path = append_section_path(section_path, &child.title);
         collect_section(child, &child_path, file_label, location_basis, output)?;
     }
     Ok(())
@@ -120,4 +147,28 @@ fn validate_unique_ids(requirements: &[InventoryRequirement]) -> Result<(), Forg
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn section_title_separator_is_escaped_in_serialized_path() {
+        let title_with_separator = append_section_path("Parent", "Access Control / Audit");
+        let nested_sections =
+            append_section_path(&append_section_path("Parent", "Access Control"), "Audit");
+
+        assert_eq!(title_with_separator, "Parent/Access Control %2F Audit");
+        assert_ne!(title_with_separator, nested_sections);
+        assert_eq!(title_with_separator.matches('/').count(), 1);
+    }
+
+    #[test]
+    fn percent_escape_prevents_section_path_encoding_collisions() {
+        assert_ne!(
+            escape_section_path_component("Access Control / Audit"),
+            escape_section_path_component("Access Control %2F Audit"),
+        );
+    }
 }

@@ -110,6 +110,11 @@ fn map_sections_recursive(
         return Vec::new();
     }
 
+    debug_assert!(
+        section_nodes.windows(2).all(|siblings| siblings[0].source_line < siblings[1].source_line),
+        "sibling SectionNodes must have strictly ascending source_lines"
+    );
+
     let mut result = Vec::with_capacity(section_nodes.len());
 
     for (i, node) in section_nodes.iter().enumerate() {
@@ -386,6 +391,16 @@ mod tests {
         assert_eq!(result[1].requirements[0].source_line, 12);
         assert_eq!(result[1].requirements[1].text, "Also belongs to Second");
         assert_eq!(result[1].requirements[1].nesting_depth, 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "sibling SectionNodes must have strictly ascending source_lines")]
+    fn out_of_order_siblings_do_not_silently_drop_list_items() {
+        let nodes = vec![section("Later", 1, 10), section("Earlier", 1, 1)];
+        let items = [list_item("Must not be dropped", 12, 0)];
+        let item_refs: Vec<&ExtractedListItem> = items.iter().collect();
+
+        let _ = map_sections(&nodes, &item_refs);
     }
 
     #[test]

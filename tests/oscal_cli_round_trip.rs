@@ -58,16 +58,23 @@ fn generate_component_json(fixture: &Path, output: &Path) {
 
 /// Reclassify divergences based on investigation (T018).
 ///
-/// Divergences classified as Acceptable with no resolution are marked as Accepted.
+/// The comparator constructs every divergence with `resolution: None`; this
+/// fills the T019-mandated resolution for every class so
+/// `validate_divergence_log`'s non-null assertions hold exactly when a
+/// divergence is detected (F0874).
 fn reclassify(divergences: Vec<Divergence>) -> Vec<Divergence> {
     divergences
         .into_iter()
         .map(|d| {
-            if d.classification == DivergenceClass::Acceptable && d.resolution.is_none() {
-                Divergence { resolution: Some(ResolutionStatus::Accepted), ..d }
-            } else {
-                d
+            if d.resolution.is_some() {
+                return d;
             }
+            let resolution = match d.classification {
+                DivergenceClass::Acceptable => Some(ResolutionStatus::Accepted),
+                DivergenceClass::ForgeFix => Some(ResolutionStatus::Fixed),
+                DivergenceClass::OscalCliDiff => Some(ResolutionStatus::ReportedUpstream),
+            };
+            Divergence { resolution, ..d }
         })
         .collect()
 }

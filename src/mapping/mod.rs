@@ -8,6 +8,8 @@ pub mod model;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
+use sha2::{Digest, Sha256};
+
 use crate::cli::{MappingFailOn, MappingReportFormat};
 use crate::{ForgeError, io, validate};
 
@@ -148,6 +150,15 @@ fn scaffold_resource(
             "--{label}-resolved-catalog is required when {label} is a Profile"
         )));
     }
+    let expected_resolved_catalog_sha256 = resolved_catalog
+        .map(|companion| {
+            io::check_file_size(companion, io::MAX_FILE_SIZE)
+                .map_err(|error| mapping_error(format!("{label} resolved Catalog: {error}")))?;
+            let bytes = std::fs::read(companion)
+                .map_err(|error| mapping_error(format!("{label} resolved Catalog: {error}")))?;
+            Ok::<_, ForgeError>(format!("{:x}", Sha256::digest(&bytes)))
+        })
+        .transpose()?;
     let temporary = manifest::ResourceManifest {
         resource_type,
         artifact: path.to_path_buf(),
@@ -155,6 +166,7 @@ fn scaffold_resource(
         resolved_catalog: resolved_catalog.map(Path::to_path_buf),
         resolved_catalog_attestation: resolved_catalog.map(|_| true),
         expected_sha256: None,
+        expected_resolved_catalog_sha256: expected_resolved_catalog_sha256.clone(),
         inventory: None,
     };
     let loaded = inventory::load(Path::new("."), &format!("$.mapping.{label}"), &temporary)?;
@@ -167,6 +179,7 @@ fn scaffold_resource(
             .transpose()?,
         resolved_catalog_attestation: resolved_catalog.map(|_| false),
         expected_sha256: Some(loaded.evidence.raw_sha256.clone()),
+        expected_resolved_catalog_sha256: loaded.evidence.resolved_catalog_sha256.clone(),
         inventory: Some(loaded.snapshot()),
     })
 }

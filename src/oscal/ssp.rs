@@ -303,13 +303,30 @@ pub struct SspComponentInput {
 ///         component_type: "software".to_string(),
 ///     },
 /// ];
-/// let items = generate_inventory_items(&defs);
+/// let items = generate_inventory_items(&defs).unwrap();
 /// assert_eq!(items.len(), 1);
 /// assert_eq!(items[0].title, "Web Application Firewall");
 /// ```
-#[must_use]
-pub fn generate_inventory_items(definitions: &[SspComponentInput]) -> Vec<SspComponent> {
-    definitions
+///
+/// # Errors
+///
+/// Returns [`ForgeError::SspBuild`] when normalized component titles duplicate
+/// and would otherwise derive the same deterministic component UUID (F0624).
+pub fn generate_inventory_items(
+    definitions: &[SspComponentInput],
+) -> Result<Vec<SspComponent>, ForgeError> {
+    // Component UUIDs derive from the title alone, so duplicate titles would
+    // silently mint identical UUIDs and merge distinct components (F0624).
+    let mut seen_titles = std::collections::HashSet::new();
+    for def in definitions {
+        if !seen_titles.insert(def.title.trim().to_lowercase()) {
+            return Err(ForgeError::SspBuild(format!(
+                "duplicate component title {:?}: title-derived UUIDv5 would collide",
+                def.title
+            )));
+        }
+    }
+    Ok(definitions
         .iter()
         .map(|def| {
             let uuid = Uuid::new_v5(&COMPONENT_NAMESPACE, def.title.as_bytes()).to_string();
@@ -322,7 +339,7 @@ pub fn generate_inventory_items(definitions: &[SspComponentInput]) -> Vec<SspCom
                 status: ComponentStatus { state: "operational".to_string() },
             }
         })
-        .collect()
+        .collect())
 }
 
 // ─── Authorized Users ───────────────────────────────────────────────────
@@ -661,7 +678,7 @@ pub fn build_ssp_skeleton(
     let control_ids = collect_catalog_control_ids(catalog);
 
     // Generate inventory items from component definitions
-    let inventory_items = generate_inventory_items(component_defs);
+    let inventory_items = generate_inventory_items(component_defs)?;
 
     // Collect component UUIDs for by-component linking
     let component_uuids: Vec<&str> = inventory_items.iter().map(|c| c.uuid.as_str()).collect();
@@ -1095,7 +1112,7 @@ mod tests {
                 component_type: "software".to_string(),
             },
         ];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         assert_eq!(items.len(), 2);
         assert_eq!(items[0].title, "Web Application Firewall");
         assert_eq!(items[1].title, "Database Server");
@@ -1108,8 +1125,8 @@ mod tests {
             description: "A test".to_string(),
             component_type: "software".to_string(),
         }];
-        let items_a = generate_inventory_items(&defs);
-        let items_b = generate_inventory_items(&defs);
+        let items_a = generate_inventory_items(&defs).unwrap();
+        let items_b = generate_inventory_items(&defs).unwrap();
         assert_eq!(
             items_a[0].uuid, items_b[0].uuid,
             "Same component title must produce identical UUID"
@@ -1130,7 +1147,7 @@ mod tests {
                 component_type: "hardware".to_string(),
             },
         ];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         assert_ne!(items[0].uuid, items[1].uuid, "Different titles must produce different UUIDs");
     }
 
@@ -1141,7 +1158,7 @@ mod tests {
             description: "Network security".to_string(),
             component_type: "network".to_string(),
         }];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         assert!(items[0].responsible_roles.is_empty());
         let json = serde_json::to_value(&items).unwrap();
         assert!(json[0].get("responsible-roles").is_none());
@@ -1159,7 +1176,7 @@ mod tests {
 
     #[test]
     fn generate_inventory_items_empty_input() {
-        let items = generate_inventory_items(&[]);
+        let items = generate_inventory_items(&[]).unwrap();
         assert!(items.is_empty());
     }
 
@@ -1170,7 +1187,7 @@ mod tests {
             description: "Distributes traffic across instances".to_string(),
             component_type: "service".to_string(),
         }];
-        let items = generate_inventory_items(&defs);
+        let items = generate_inventory_items(&defs).unwrap();
         let json = serde_json::to_string_pretty(&items).unwrap();
         let parsed: Vec<serde_json::Value> = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.len(), 1);

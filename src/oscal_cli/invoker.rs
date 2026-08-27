@@ -76,14 +76,13 @@ fn run_oscal_cli(
             Ok(Some(status)) => break status,
             Ok(None) => {
                 if start.elapsed() >= timeout {
-                    let _ = child.kill();
-                    let _ = child.wait(); // Reap the zombie
-                    let _ = stderr_thread.join(); // Prevent thread leak
+                    cleanup_failed_child(&mut child, stderr_thread);
                     return Err(ForgeError::OscalCliTimeout { timeout });
                 }
                 std::thread::sleep(Duration::from_millis(100));
             }
             Err(e) => {
+                cleanup_failed_child(&mut child, stderr_thread);
                 return Err(ForgeError::OscalCliExecution {
                     exit_code: None,
                     message: format!("Failed to wait for oscal-cli {context}: {e}"),
@@ -117,6 +116,19 @@ fn run_oscal_cli(
     let warnings = collect_warnings(&stderr_str);
 
     Ok(SubprocessOutput { warnings })
+}
+
+/// Cleans up a child process before an early error return.
+///
+/// Invariant: every early return after the stderr drain starts calls this helper, ensuring
+/// neither a child process nor its stderr reader thread outlives a failed invocation.
+fn cleanup_failed_child(
+    child: &mut std::process::Child,
+    stderr_thread: std::thread::JoinHandle<String>,
+) {
+    let _ = child.kill();
+    let _ = child.wait();
+    let _ = stderr_thread.join();
 }
 
 /// Collect non-empty stderr lines as warning strings.

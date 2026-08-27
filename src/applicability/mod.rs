@@ -302,7 +302,9 @@ fn mapping_reviewer_evidence(
             "{label}.mapping-collection.provenance must identify at least one mapping-reviewer"
         )));
     }
-    let party_uuids = parties.keys().copied().collect();
+    // The authorization set is restricted to parties actually holding the
+    // mapping-reviewer role — NOT every declared party (F0308).
+    let reviewer_authority: BTreeSet<uuid::Uuid> = reviewer_uuids.iter().copied().collect();
     let reviewers = reviewer_uuids
         .into_iter()
         .map(|uuid| -> Result<model::MappingReviewerEvidence, ForgeError> {
@@ -318,7 +320,7 @@ fn mapping_reviewer_evidence(
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok((reviewers, party_uuids))
+    Ok((reviewers, reviewer_authority))
 }
 
 fn validate_mapping_edges(
@@ -344,7 +346,7 @@ fn validate_mapping_edges(
         let reviewer_uuid = stable_uuid("party", reviewer_key);
         if !party_uuids.contains(&reviewer_uuid) {
             return Err(error(format!(
-                "{edge_label} FORGE 'reviewer-key' references undeclared reviewer '{reviewer_key}'"
+                "{edge_label} FORGE 'reviewer-key' references '{reviewer_key}' which is not a declared mapping-reviewer"
             )));
         }
         let reviewed_at = require_single_prop(&edge_label, &edge.props, "reviewed-at")?;
@@ -1064,6 +1066,15 @@ fn scaffold_framework(
     if resource_type == ResourceType::Profile && resolved_catalog.is_none() {
         return Err(error("--resolved-catalog is required when the framework is a Profile"));
     }
+    let expected_resolved_catalog_sha256 = resolved_catalog
+        .map(|companion| {
+            io::check_file_size(companion, io::MAX_FILE_SIZE)
+                .map_err(|cause| error(format!("resolved Catalog: {cause}")))?;
+            let bytes = std::fs::read(companion)
+                .map_err(|cause| error(format!("resolved Catalog cannot be read: {cause}")))?;
+            Ok::<_, ForgeError>(sha256(&bytes))
+        })
+        .transpose()?;
     let temporary = ResourceManifest {
         resource_type,
         artifact: path.to_path_buf(),
@@ -1071,6 +1082,7 @@ fn scaffold_framework(
         resolved_catalog: resolved_catalog.map(Path::to_path_buf),
         resolved_catalog_attestation: resolved_catalog.map(|_| true),
         expected_sha256: None,
+        expected_resolved_catalog_sha256: expected_resolved_catalog_sha256.clone(),
         inventory: None,
     };
     let loaded = inventory::load(Path::new("."), "$.framework", &temporary)
@@ -1084,6 +1096,7 @@ fn scaffold_framework(
             .transpose()?,
         resolved_catalog_attestation: resolved_catalog.map(|_| false),
         expected_sha256: Some(loaded.evidence.raw_sha256.clone()),
+        expected_resolved_catalog_sha256: loaded.evidence.resolved_catalog_sha256.clone(),
         inventory: Some(loaded.snapshot()),
     };
     Ok((framework, loaded))

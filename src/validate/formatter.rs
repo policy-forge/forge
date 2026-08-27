@@ -3,6 +3,7 @@
 //! Converts raw `jsonschema` crate errors into user-friendly `ValidationError`
 //! structs with JSON Path notation, expected constraints, and truncated actual values.
 
+use jsonschema::error::{TypeKind, ValidationErrorKind};
 use serde_json::Value;
 
 use super::error_types::{ValidationError, ValidationErrorCategory};
@@ -96,140 +97,60 @@ pub fn format_schema_error(
 ) -> ValidationError {
     let instance_path = raw_error.instance_path().to_string();
     let path = pointer_to_json_path(&instance_path);
-    let raw_message = raw_error.to_string();
-
-    let (message, expected) = classify_error(&raw_message);
+    let (message, expected) = classify_error(raw_error);
     let actual = extract_actual_value(json, &instance_path);
 
     ValidationError { category: ValidationErrorCategory::Schema, path, message, expected, actual }
 }
 
-/// Classify a raw jsonschema error message into user-friendly message + expected.
+/// Classify a structured `jsonschema` error into a user-friendly message and expectation.
 ///
-/// SEC-2: Never pass through raw crate messages. This function produces
-/// sanitized, user-friendly descriptions by dispatching to focused classifiers.
-fn classify_error(raw_message: &str) -> (String, String) {
-    None.or_else(|| classify_required_property(raw_message))
-        .or_else(|| classify_type_mismatch(raw_message))
-        .or_else(|| classify_schema_mismatch(raw_message))
-        .or_else(|| classify_length_constraint(raw_message))
-        .or_else(|| classify_pattern_or_format(raw_message))
-        .or_else(|| classify_additional_properties(raw_message))
-        .or_else(|| classify_enum_constraint(raw_message))
-        .unwrap_or_else(|| {
-            // Fallback: generic schema error (SEC-2: sanitized, not raw crate message)
-            ("schema validation failed".to_string(), "valid value per schema".to_string())
-        })
-}
-
-/// `"\"field\" is a required property"`
-fn classify_required_property(msg: &str) -> Option<(String, String)> {
-    if !msg.contains("is a required property") {
-        return None;
-    }
-    let field = extract_quoted_value(msg).unwrap_or_else(|| "unknown".to_string());
-    Some((format!("required field missing: {field}"), "required field".to_string()))
-}
-
-/// `"value is not of type \"string\""`
-fn classify_type_mismatch(msg: &str) -> Option<(String, String)> {
-    if !msg.contains("is not of type") {
-        return None;
-    }
-    let type_name = extract_trailing_quoted(msg).unwrap_or_else(|| "unknown".to_string());
-    Some((format!("wrong type: expected {type_name}"), format!("type: {type_name}")))
-}
-
-/// `"value is not valid under any of the given schemas"`
-fn classify_schema_mismatch(msg: &str) -> Option<(String, String)> {
-    msg.contains("is not valid under any of the given schemas").then(|| {
-        ("value does not match any allowed schema".to_string(), "valid schema match".to_string())
-    })
-}
-
-/// `"string is longer/shorter than N characters"`
-fn classify_length_constraint(msg: &str) -> Option<(String, String)> {
-    if msg.contains("is longer than") {
-        let c = extract_length_constraint(msg, "longer");
-        return Some((format!("string too long: {c}"), format!("max length: {c}")));
-    }
-    if msg.contains("is shorter than") {
-        let c = extract_length_constraint(msg, "shorter");
-        return Some((format!("string too short: {c}"), format!("min length: {c}")));
-    }
-    None
-}
-
-/// `"value does not match pattern"` / `"is not a \"uri\" format"`
-fn classify_pattern_or_format(msg: &str) -> Option<(String, String)> {
-    if msg.contains("does not match") && msg.contains("pattern") {
-        return Some((
-            "value does not match required pattern".to_string(),
-            "pattern match".to_string(),
-        ));
-    }
-    if msg.contains("is not a") && msg.contains("format") {
-        let name = extract_trailing_quoted(msg).unwrap_or_else(|| "unknown".to_string());
-        return Some((format!("invalid format: expected {name}"), format!("format: {name}")));
-    }
-    None
-}
-
-/// `"Additional properties are not allowed (foo, bar)"`
-fn classify_additional_properties(msg: &str) -> Option<(String, String)> {
-    if !msg.contains("Additional properties are not allowed") {
-        return None;
-    }
-    let props = extract_parenthesized(msg);
-    Some((
-        format!("unexpected additional properties: {props}"),
-        "no additional properties".to_string(),
-    ))
-}
-
-/// `"value is not one of [...]"`
-fn classify_enum_constraint(msg: &str) -> Option<(String, String)> {
-    msg.contains("is not one of")
-        .then(|| ("value not in allowed set".to_string(), "one of the allowed values".to_string()))
-}
-
-/// Extract the first quoted value from a string (e.g., `"metadata"` from `"\"metadata\" is a..."`).
-fn extract_quoted_value(s: &str) -> Option<String> {
-    let start = s.find('"')?;
-    let rest = &s[start + 1..];
-    let end = rest.find('"')?;
-    Some(rest[..end].to_string())
-}
-
-/// Extract the last quoted value from a string.
-fn extract_trailing_quoted(s: &str) -> Option<String> {
-    let last_quote_end = s.rfind('"')?;
-    let before = &s[..last_quote_end];
-    let last_quote_start = before.rfind('"')?;
-    Some(before[last_quote_start + 1..].to_string())
-}
-
-/// Extract a length constraint number from a message containing "longer" or "shorter".
-fn extract_length_constraint(s: &str, keyword: &str) -> String {
-    if let Some(pos) = s.find(keyword) {
-        let after = &s[pos + keyword.len()..];
-        let trimmed = after.trim_start_matches(" than ");
-        let num: String = trimmed.chars().take_while(char::is_ascii_digit).collect();
-        if !num.is_empty() {
-            return format!("{num} characters");
+/// SEC-2: Never pass through raw crate messages. Classification uses the
+/// validator's structured error kind so wording changes cannot alter output.
+fn classify_error(error: &jsonschema::ValidationError) -> (String, String) {
+    match error.kind() {
+        ValidationErrorKind::Required { property } => {
+            let field = property.as_str().unwrap_or("unknown");
+            (format!("required field missing: {field}"), "required field".to_string())
         }
+        ValidationErrorKind::Type { kind } => {
+            let type_name = match kind {
+                TypeKind::Single(type_name) => type_name.to_string(),
+                TypeKind::Multiple(type_names) => type_names
+                    .into_iter()
+                    .map(|type_name| type_name.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            };
+            (format!("wrong type: expected {type_name}"), format!("type: {type_name}"))
+        }
+        ValidationErrorKind::AnyOf { .. } | ValidationErrorKind::OneOfNotValid { .. } => (
+            "value does not match any allowed schema".to_string(),
+            "valid schema match".to_string(),
+        ),
+        ValidationErrorKind::MaxLength { limit } => (
+            format!("string too long: {limit} characters"),
+            format!("max length: {limit} characters"),
+        ),
+        ValidationErrorKind::MinLength { limit } => (
+            format!("string too short: {limit} characters"),
+            format!("min length: {limit} characters"),
+        ),
+        ValidationErrorKind::Pattern { .. } => {
+            ("value does not match required pattern".to_string(), "pattern match".to_string())
+        }
+        ValidationErrorKind::Format { format } => {
+            (format!("invalid format: expected {format}"), format!("format: {format}"))
+        }
+        ValidationErrorKind::AdditionalProperties { unexpected } => (
+            format!("unexpected additional properties: {}", unexpected.join(", ")),
+            "no additional properties".to_string(),
+        ),
+        ValidationErrorKind::Enum { .. } => {
+            ("value not in allowed set".to_string(), "one of the allowed values".to_string())
+        }
+        _ => ("schema validation failed".to_string(), "valid value per schema".to_string()),
     }
-    "limit exceeded".to_string()
-}
-
-/// Extract content within parentheses.
-fn extract_parenthesized(s: &str) -> String {
-    if let Some(start) = s.find('(')
-        && let Some(end) = s.find(')')
-    {
-        return s[start + 1..end].to_string();
-    }
-    "unknown".to_string()
 }
 
 #[cfg(test)]
@@ -371,6 +292,36 @@ mod tests {
         assert_eq!(formatted.category, ValidationErrorCategory::Schema);
         assert!(formatted.path.contains("age"));
         assert!(!formatted.message.contains("::"));
+    }
+
+    #[test]
+    fn format_pattern_error_uses_structured_kind() {
+        let schema = serde_json::json!({"pattern": "^[apples]+C"});
+        let instance = serde_json::json!("banana");
+        let validator = jsonschema::validator_for(&schema).unwrap();
+        let errors: Vec<_> = validator.iter_errors(&instance).collect();
+
+        assert_eq!(errors[0].to_string(), r#""banana" does not match "^[apples]+C""#);
+
+        let formatted = format_schema_error(&errors[0], &instance);
+        assert_eq!(formatted.message, "value does not match required pattern");
+        assert_eq!(formatted.expected, "pattern match");
+        assert_eq!(formatted.actual, "\"banana\"");
+    }
+
+    #[test]
+    fn format_format_error_uses_structured_kind() {
+        let schema = serde_json::json!({"format": "email"});
+        let instance = serde_json::json!("not-an-email");
+        let validator = jsonschema::options().should_validate_formats(true).build(&schema).unwrap();
+        let errors: Vec<_> = validator.iter_errors(&instance).collect();
+
+        assert_eq!(errors[0].to_string(), r#""not-an-email" is not a "email""#);
+
+        let formatted = format_schema_error(&errors[0], &instance);
+        assert_eq!(formatted.message, "invalid format: expected email");
+        assert_eq!(formatted.expected, "format: email");
+        assert_eq!(formatted.actual, "\"not-an-email\"");
     }
 
     #[test]

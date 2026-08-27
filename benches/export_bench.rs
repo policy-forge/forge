@@ -41,7 +41,7 @@ fn build_catalog_json(fixture_path: &Path) -> String {
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
 
     let metadata = forge::oscal::assemble_metadata(&doc.metadata, None).unwrap();
-    let citations = doc.collect_citations();
+    let citations = forge::oscal::component_definition::collect_all_citations(&doc.sections);
     let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations).unwrap();
     let back_matter = if back_matter_resources.is_empty() {
         None
@@ -68,10 +68,10 @@ fn build_catalog_json(fixture_path: &Path) -> String {
 
 fn bench_export_pipeline(c: &mut Criterion) {
     let fixture_path = Path::new(FIXTURE_PATH);
-    if !fixture_path.exists() {
-        tracing::warn!(fixture = %FIXTURE_PATH, "Skipping export benchmark: fixture not found");
-        return;
-    }
+    assert!(
+        fixture_path.exists(),
+        "benchmark fixture missing: {FIXTURE_PATH} (commit it or fix FIXTURE_PATH)"
+    );
 
     // Pre-compute the large catalog JSON and write to a temp file
     let catalog_json = build_catalog_json(fixture_path);

@@ -3,12 +3,18 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use sha2::{Digest, Sha256};
+
 use serde_json::{Value, json};
 use tempfile::TempDir;
 
 fn write_json(path: &Path, value: &Value) {
     std::fs::write(path, serde_json::to_vec_pretty(value).expect("serialize fixture"))
         .expect("write fixture");
+}
+
+fn sha256_file(path: &Path) -> String {
+    format!("{:x}", Sha256::digest(std::fs::read(path).expect("read fixture")))
 }
 
 fn catalog(uuid: &str, ids: &[&str]) -> Value {
@@ -504,6 +510,7 @@ fn profile_requires_and_records_resolved_catalog_companion() {
         "type": "profile",
         "artifact": "target-profile.json",
         "resolved_catalog": "target.json",
+        "expected_resolved_catalog_sha256": sha256_file(&dir.path().join("target.json")),
         "resolved_catalog_attestation": true,
         "href": "target-profile.json"
     });
@@ -528,7 +535,7 @@ fn profile_requires_and_records_resolved_catalog_companion() {
 }
 
 #[test]
-fn baseline_check_reports_resolved_catalog_companion_changes() {
+fn baseline_check_rejects_resolved_catalog_companion_hash_changes() {
     let (dir, manifest_path) = setup();
     let profile_path = dir.path().join("target-profile.json");
     write_json(
@@ -552,6 +559,7 @@ fn baseline_check_reports_resolved_catalog_companion_changes() {
         "artifact": "target-profile.json",
         "resolved_catalog": "target.json",
         "resolved_catalog_attestation": true,
+        "expected_resolved_catalog_sha256": sha256_file(&dir.path().join("target.json")),
         "href": "target-profile.json"
     });
     write_json(&manifest_path, &profile_manifest);
@@ -580,15 +588,12 @@ fn baseline_check_reports_resolved_catalog_companion_changes() {
         "--report-format",
         "json",
     ]);
-    assert_eq!(check.status.code(), Some(1));
-    let report: Value = serde_json::from_slice(&check.stdout).expect("JSON impact report");
-    assert!(report["findings"].as_array().unwrap().iter().any(|finding| {
-        finding["code"] == "resource_changed"
-            && finding["path"] == "$.mapping.target"
-            && finding["message"]
-                .as_str()
-                .is_some_and(|message| message.contains("resolved Catalog"))
-    }));
+    assert_eq!(check.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&check.stderr).contains("expected_resolved_catalog_sha256 mismatch"),
+        "{}",
+        String::from_utf8_lossy(&check.stderr)
+    );
 }
 
 #[test]

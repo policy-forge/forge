@@ -44,11 +44,22 @@ fn run_full_catalog_pipeline(fixture_path: &Path) -> Result<String, forge::Forge
     let sections = forge::parse::extract_sections(&content)?;
     let clauses = forge::parse::extract_clauses(&content)?;
 
+    // EC-6: mirror the production no-structure guard (src/pipeline.rs).
+    let has_clause_structure = !clauses.list_items.is_empty() || !clauses.tables.is_empty();
+    if sections.is_empty() && !has_clause_structure {
+        return Err(forge::ForgeError::NoStructureDetected { path: fixture_path.to_path_buf() });
+    }
+
     // Step 3: Assemble + Atomize + IDs + Citations
     let document = forge::model::assemble_document(&ingested, &sections, &clauses)?;
     let atomized = forge::parse::atomize_document(&document)?;
     let doc = forge::uuid::assign_stable_ids(atomized);
     let doc = forge::citation::extract_citations(doc)?;
+    // Steps 7c/7d: modality annotation and parameter extraction, same order as
+    // the production pipeline so the timed stages match a real run.
+    let doc = forge::parse::annotate_modalities(doc)?;
+    let mut doc = doc;
+    forge::parameter::extract_parameters(&mut doc)?;
 
     // Step 4: Catalog Assembly (delegates to shared helper)
     let envelope = build_catalog_envelope(&doc)?;
@@ -104,7 +115,7 @@ fn build_catalog_envelope(
     let mut catalog = forge::oscal::build_catalog(doc, Some(&mut trace_links))?;
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
     let metadata = forge::oscal::assemble_metadata(&doc.metadata, None)?;
-    let citations = doc.collect_citations();
+    let citations = forge::oscal::component_definition::collect_all_citations(&doc.sections);
     let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations)?;
     let back_matter = if back_matter_resources.is_empty() {
         None

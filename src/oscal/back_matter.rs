@@ -237,6 +237,8 @@ pub fn generate_back_matter(
     let mut resources = Vec::with_capacity(citations.len());
     let mut resource_map = HashMap::with_capacity(citations.len());
 
+    let mut seen_uuids: std::collections::HashSet<Uuid> = std::collections::HashSet::new();
+
     for citation in citations {
         if citation.id.is_empty() {
             return Err(ForgeError::BackMatter("citation has empty id".to_string()));
@@ -257,8 +259,22 @@ pub fn generate_back_matter(
         };
         let uuid = Uuid::new_v5(&BACK_MATTER_NAMESPACE, hash_input.as_bytes());
 
+        // Identical normalized content derives the same UUID: reuse the
+        // existing resource instead of emitting duplicates (F0618). Links via
+        // resource_map keep resolving for every citation id.
+        if !seen_uuids.insert(uuid) {
+            resource_map.insert(citation.id.clone(), uuid);
+            continue;
+        }
+
+        // Classify before deriving the title so a dangerous scheme can never
+        // fall back into a display string (F0620).
+        let classification = classify_url(citation.url.as_ref());
         let title = if citation.text.is_empty() {
-            citation.url.clone().unwrap_or_default()
+            match classification {
+                UrlClassification::Dangerous(_) => "[unsafe URL scheme removed]".to_string(),
+                _ => citation.url.clone().unwrap_or_default(),
+            }
         } else {
             citation.text.clone()
         };
@@ -268,7 +284,6 @@ pub fn generate_back_matter(
             .as_ref()
             .map(|req_id| format!("Referenced by requirement {req_id}"));
 
-        let classification = classify_url(citation.url.as_ref());
         let (rlinks, citation_field, props) = build_resource_parts(classification, citation);
 
         resources.push(BackMatterResource {
@@ -543,13 +558,28 @@ mod tests {
     }
 
     #[test]
-    fn two_identical_citations_produce_same_uuid() {
+    fn two_identical_citations_share_one_resource() {
         let citations = vec![
             url_citation("c1", "Same", "https://example.com"),
             url_citation("c2", "Same", "https://example.com"),
         ];
+        let (resources, map) = generate_back_matter(&citations).unwrap();
+        // Identical content yields ONE resource; both citation ids resolve to it (F0618).
+        assert_eq!(resources.len(), 1);
+        assert_eq!(map.get("c1"), map.get("c2"));
+        assert_eq!(*map.get("c1").unwrap(), resources[0].uuid);
+    }
+
+    #[test]
+    fn dangerous_url_with_empty_text_is_redacted_in_title() {
+        let citations = vec![url_citation("c1", "", "javascript:alert(1)")];
         let (resources, _) = generate_back_matter(&citations).unwrap();
-        assert_eq!(resources[0].uuid, resources[1].uuid);
+        assert_eq!(resources.len(), 1);
+        assert_eq!(resources[0].title, "[unsafe URL scheme removed]");
+        assert!(
+            !resources[0].title.contains("javascript"),
+            "payload must not reach the title (F0620)"
+        );
     }
 
     #[test]

@@ -34,13 +34,16 @@ fn build_catalog_from_fixture(fixture_path: &Path) -> forge::oscal::catalog::Osc
     let atomized = forge::parse::atomize_document(&document).unwrap();
     let doc = forge::uuid::assign_stable_ids(atomized);
     let doc = forge::citation::extract_citations(doc).unwrap();
+    let doc = forge::parse::annotate_modalities(doc).unwrap();
+    let mut doc = doc;
+    forge::parameter::extract_parameters(&mut doc).unwrap();
 
     let mut trace_links = forge::TraceLinkCollection::new();
     let mut catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
 
     let metadata = forge::oscal::assemble_metadata(&doc.metadata, None).unwrap();
-    let citations = doc.collect_citations();
+    let citations = forge::oscal::component_definition::collect_all_citations(&doc.sections);
     let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations).unwrap();
     let back_matter = if back_matter_resources.is_empty() {
         None
@@ -74,6 +77,9 @@ fn build_component_def_from_fixture(
     let atomized = forge::parse::atomize_document(&document).unwrap();
     let doc = forge::uuid::assign_stable_ids(atomized);
     let doc = forge::citation::extract_citations(doc).unwrap();
+    let doc = forge::parse::annotate_modalities(doc).unwrap();
+    let mut doc = doc;
+    forge::parameter::extract_parameters(&mut doc).unwrap();
 
     let envelope =
         forge::oscal::build_component_definition(&doc, None, None, Some("test.md")).unwrap();

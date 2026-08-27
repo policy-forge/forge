@@ -164,7 +164,19 @@ pub fn load(
         })?;
         let companion_path = manifest_dir.join(companion);
         let companion_bytes = read_bounded_json(&companion_path, path_label)?;
-        evidence.resolved_catalog_sha256 = Some(sha256(&companion_bytes));
+        let resolved_catalog_sha256 = sha256(&companion_bytes);
+        let expected_resolved_catalog_sha256 =
+            resource.expected_resolved_catalog_sha256.as_ref().ok_or_else(|| {
+                mapping_error(format!(
+                    "{path_label}.expected_resolved_catalog_sha256 is required for a Profile"
+                ))
+            })?;
+        if expected_resolved_catalog_sha256 != &resolved_catalog_sha256 {
+            return Err(mapping_error(format!(
+                "{path_label}.expected_resolved_catalog_sha256 mismatch: expected {expected_resolved_catalog_sha256}, got {resolved_catalog_sha256}"
+            )));
+        }
+        evidence.resolved_catalog_sha256 = Some(resolved_catalog_sha256);
         let companion_json: Value = serde_json::from_slice(&companion_bytes).map_err(|error| {
             mapping_error(format!("{path_label}.resolved_catalog is not valid JSON: {error}"))
         })?;
@@ -461,4 +473,47 @@ fn bounded(value: &str) -> String {
 
 fn mapping_error(message: impl Into<String>) -> ForgeError {
     ForgeError::MappingBuild(message.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PROFILE: &str = r#"{"profile":{"uuid":"55555555-5555-4555-8555-555555555555","metadata":{"title":"Synthetic profile","last-modified":"2026-08-22T17:00:00Z","version":"1.0.0","oscal-version":"1.2.3"},"imports":[{"href":"catalog.json","include-all":{}}]}}"#;
+
+    fn profile_resource(expected_resolved_catalog_sha256: String) -> ResourceManifest {
+        ResourceManifest {
+            resource_type: ResourceType::Profile,
+            artifact: PathBuf::from("profile.json"),
+            href: "profile.json".to_string(),
+            resolved_catalog: Some(PathBuf::from("catalog.json")),
+            resolved_catalog_attestation: Some(true),
+            expected_sha256: None,
+            expected_resolved_catalog_sha256: Some(expected_resolved_catalog_sha256),
+            inventory: None,
+        }
+    }
+
+    #[test]
+    fn profile_companion_hash_mismatch_is_rejected() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        std::fs::write(directory.path().join("profile.json"), PROFILE).expect("profile fixture");
+        let companion = include_bytes!("../../tests/fixtures/export/catalog.json");
+        std::fs::write(directory.path().join("catalog.json"), companion).expect("catalog fixture");
+
+        let error = load(directory.path(), "$.mapping.target", &profile_resource("0".repeat(64)))
+            .expect_err("substituted resolved Catalog must fail its hash pin");
+        assert!(
+            error
+                .to_string()
+                .contains("$.mapping.target.expected_resolved_catalog_sha256 mismatch"),
+            "{error}"
+        );
+
+        let expected = sha256(companion);
+        let loaded =
+            load(directory.path(), "$.mapping.target", &profile_resource(expected.clone()))
+                .expect("matching resolved Catalog hash is accepted");
+        assert_eq!(loaded.evidence.resolved_catalog_sha256.as_deref(), Some(expected.as_str()));
+    }
 }

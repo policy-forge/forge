@@ -7,7 +7,7 @@ pub mod atomize;
 pub mod clauses;
 pub mod modality;
 
-use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
+use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use serde::Serialize;
 
 use crate::ForgeError;
@@ -112,7 +112,12 @@ pub fn extract_sections(content: &str) -> Result<Vec<SectionNode>, ForgeError> {
     let mut current_level: u8 = 0;
     let mut current_line: usize = 0;
 
-    for (event, range) in Parser::new(content).into_offset_iter() {
+    // ENABLE_YAML_STYLE_METADATA_BLOCKS keeps leading `---` front matter out
+    // of the heading tree: without it, the closing `---` parses as a setext
+    // heading and a phantom section duplicates the document title (F0006).
+    // Offsets remain absolute to the full content, so source_line is exact.
+    let options = Options::ENABLE_YAML_STYLE_METADATA_BLOCKS;
+    for (event, range) in Parser::new_ext(content, options).into_offset_iter() {
         match event {
             Event::Start(Tag::Heading { level, .. }) => {
                 in_heading = true;
@@ -450,6 +455,17 @@ mod tests {
         let md = "Just some text.\n\nMore text.\n";
         let sections = extract_sections(md).unwrap();
         assert!(sections.is_empty());
+    }
+
+    // ── F0006: YAML front matter must not become a phantom section ──
+
+    #[test]
+    fn frontmatter_does_not_produce_phantom_section() {
+        let md = "---\ntitle: Policy\nversion: 1.0\n---\n\n# Real Section\n\nBody text.\n";
+        let sections = extract_sections(md).unwrap();
+        assert_eq!(sections.len(), 1, "front matter must not yield a section");
+        assert_eq!(sections[0].title, "Real Section");
+        assert_eq!(sections[0].source_line, 6);
     }
 
     // ── T019: empty heading text (EC-3) ─────────────────────────────

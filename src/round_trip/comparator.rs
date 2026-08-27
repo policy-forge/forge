@@ -170,7 +170,12 @@ fn is_markdown_block_start(line: &str) -> bool {
     }
 
     let trimmed = line.trim_start();
-    if ["- ", "* ", "+ ", "> ", "# "].iter().any(|marker| trimmed.starts_with(marker)) {
+    if trimmed.starts_with('=')
+        || trimmed.starts_with('|')
+        || (trimmed.len() >= 3
+            && trimmed.chars().all(|character| matches!(character, '-' | '*' | '_')))
+        || ["- ", "* ", "+ ", "> ", "# "].iter().any(|marker| trimmed.starts_with(marker))
+    {
         return true;
     }
 
@@ -437,6 +442,23 @@ mod tests {
             ("line one  \nline two", "line one line two"),
             ("first paragraph\n\nsecond paragraph", "first paragraph second paragraph"),
             ("- parent\n  - child", "- parent - child"),
+        ];
+
+        for (expected_prose, actual_prose) in cases {
+            let expected = json!({"prose": expected_prose});
+            let actual = json!({"prose": actual_prose});
+            let result = compare_oscal_json(&expected, &actual, "", &default_rules());
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[0].classification, DivergenceClass::ForgeFix);
+        }
+    }
+
+    #[test]
+    fn markdown_block_continuations_are_not_soft_line_breaks() {
+        let cases = [
+            ("Overview\n-----", "Overview -----"),
+            ("Intro\n***", "Intro ***"),
+            ("| Heading |\n| --- |", "| Heading | | --- |"),
         ];
 
         for (expected_prose, actual_prose) in cases {

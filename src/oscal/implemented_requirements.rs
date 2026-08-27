@@ -93,6 +93,10 @@ pub fn build_control_implementations(
     let mut abbrev_counts: HashMap<String, Vec<String>> = HashMap::new();
     let mut implemented_requirements = Vec::new();
     let mut global_index: usize = 0;
+    // Occurrence counter per (stable_id, text) so UUIDs derive from content
+    // and stay stable when unrelated requirements are inserted or deleted
+    // (F0585); the counter only disambiguates genuinely identical pairs.
+    let mut occurrences: HashMap<(String, String), usize> = HashMap::new();
 
     for section in &document.sections {
         let abbreviation = resolve_abbreviation(&section.title, &mut abbrev_counts);
@@ -102,10 +106,14 @@ pub fn build_control_implementations(
             let has_stable_id = req.stable_id.is_some();
             let control_id =
                 derive_control_id_or_fallback(&abbreviation, req_idx, global_index, has_stable_id);
+            let occurrence = occurrences
+                .entry((req.stable_id.clone().unwrap_or_default(), req.text.clone()))
+                .and_modify(|n| *n += 1)
+                .or_insert(0);
             let entry = map_requirement_to_implemented(
                 req,
                 &control_id,
-                global_index,
+                *occurrence,
                 source_file,
                 &req_section.title,
             );
@@ -142,19 +150,19 @@ pub fn build_control_implementations(
 /// # Arguments
 /// * `requirement` - A single `PolicyRequirement` from the domain model
 /// * `control_id` - The pre-computed control-id for this requirement
-/// * `global_index` - The requirement's global index (for UUID seed uniqueness)
+/// * `occurrence` - Ordinal of this (`stable_id`, `text`) pair within the document
 /// * `source_file` - Path to the source policy file (for trace props)
-/// * `section_title` - Section title containing this requirement (for trace props)
+/// * `section_title` - Section title containing the requirement (for trace props)
 fn map_requirement_to_implemented(
     requirement: &PolicyRequirement,
     control_id: &str,
-    global_index: usize,
+    occurrence: usize,
     source_file: &str,
     section_title: &str,
 ) -> ImplementedRequirement {
     let stable_id = requirement.stable_id.as_deref().unwrap_or("no-stable-id");
 
-    let uuid = generate_impl_req_uuid(stable_id, &requirement.text, global_index);
+    let uuid = generate_impl_req_uuid(stable_id, &requirement.text, occurrence);
 
     let description = if requirement.text.is_empty() {
         "No implementation narrative available.".to_string()
@@ -199,16 +207,19 @@ fn generate_control_impl_uuid(source_profile: &str, policy_title: &str) -> Uuid 
 
 /// Generate a deterministic UUID v5 for an implemented-requirement entry.
 ///
-/// Seed format: `"{stable_id}\0{text}\0{index}"`
+/// Seed format: `"{stable_id}\0{text}\0{occurrence}"`
 ///
-/// The index ensures uniqueness when two requirements have identical text (EC-5).
+/// `occurrence` is the per-document ordinal of this exact (`stable_id`, `text`)
+/// pair: 0 for unique content (the normal case), incremented only for genuine
+/// duplicates — so inserting or deleting an unrelated requirement does not
+/// re-roll the UUIDs of everything after it (F0585).
 ///
 /// # Arguments
 /// * `stable_id` - The requirement's stable ID (UUID string)
 /// * `text` - The requirement text
-/// * `index` - Global atom index for uniqueness
-fn generate_impl_req_uuid(stable_id: &str, text: &str, index: usize) -> Uuid {
-    let seed = format!("{stable_id}\0{text}\0{index}");
+/// * `occurrence` - Ordinal of this (`stable_id`, `text`) pair within the document
+fn generate_impl_req_uuid(stable_id: &str, text: &str, occurrence: usize) -> Uuid {
+    let seed = format!("{stable_id}\0{text}\0{occurrence}");
     Uuid::new_v5(&IMPL_REQ_NAMESPACE, seed.as_bytes())
 }
 

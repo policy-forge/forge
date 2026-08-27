@@ -85,19 +85,38 @@ fn search_path_with(path_var: &std::ffi::OsStr, extensions: &[String]) -> Option
         if cfg!(windows) {
             for ext in extensions {
                 let candidate = dir_path.join(format!("oscal-cli{ext}"));
-                if candidate.exists() {
+                if let Ok(metadata) = std::fs::metadata(&candidate)
+                    && metadata.is_file()
+                    && is_executable(&metadata)
+                {
                     return candidate.canonicalize().ok().or(Some(candidate));
                 }
             }
         } else {
             let candidate = dir_path.join("oscal-cli");
-            if candidate.exists() {
+            if let Ok(metadata) = std::fs::metadata(&candidate)
+                && metadata.is_file()
+                && is_executable(&metadata)
+            {
                 return candidate.canonicalize().ok().or(Some(candidate));
             }
         }
     }
 
     None
+}
+
+#[cfg(unix)]
+fn is_executable(metadata: &std::fs::Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    metadata.permissions().mode() & 0o111 != 0
+}
+
+#[cfg(not(unix))]
+fn is_executable(_metadata: &std::fs::Metadata) -> bool {
+    // Windows candidates have an executable PATHEXT extension; other targets preserve prior behavior.
+    true
 }
 
 /// Parse PATHEXT into a list of lowercased extensions.
@@ -274,6 +293,36 @@ mod tests {
         assert!(found.ends_with("oscal-cli"));
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn search_path_skips_directories_and_non_executable_files_on_unix() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let directory_entry = tmp.path().join("directory-entry");
+        let non_executable_entry = tmp.path().join("non-executable-entry");
+        let executable_entry = tmp.path().join("executable-entry");
+        std::fs::create_dir_all(directory_entry.join("oscal-cli")).unwrap();
+        std::fs::create_dir_all(&non_executable_entry).unwrap();
+        std::fs::create_dir_all(&executable_entry).unwrap();
+
+        let non_executable = non_executable_entry.join("oscal-cli");
+        std::fs::write(&non_executable, "#!/bin/sh\necho blocked").unwrap();
+        std::fs::set_permissions(&non_executable, std::fs::Permissions::from_mode(0o644)).unwrap();
+
+        let executable = executable_entry.join("oscal-cli");
+        std::fs::write(&executable, "#!/bin/sh\necho found").unwrap();
+        std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        let path_var =
+            std::env::join_paths([&directory_entry, &non_executable_entry, &executable_entry])
+                .unwrap();
+        let expected = executable.canonicalize().unwrap();
+        let result = search_path_with(path_var.as_os_str(), &[]);
+
+        assert_eq!(result.as_deref(), Some(expected.as_path()));
+    }
+
     #[cfg(windows)]
     #[test]
     fn search_path_finds_exe_on_windows() {
@@ -294,10 +343,11 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn search_path_finds_bat_wrapper_on_windows() {
+    fn search_path_skips_directory_before_bat_wrapper_on_windows() {
         use std::ffi::OsStr;
 
         let tmp = tempfile::tempdir().unwrap();
+        std::fs::create_dir(tmp.path().join("oscal-cli.exe")).unwrap();
         let bin_path = tmp.path().join("oscal-cli.bat");
         std::fs::write(&bin_path, "@echo off\necho oscal-cli").unwrap();
 

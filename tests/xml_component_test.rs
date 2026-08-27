@@ -38,9 +38,7 @@ fn run_component_json(fixture: &Path, source_profile: Option<&str>) -> String {
 #[test]
 fn component_xml_contains_required_elements() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let xml = run_component_xml(fixture, Some("./baselines/nist-800-53.json"));
 
@@ -78,9 +76,7 @@ fn component_xml_contains_required_elements() {
 #[test]
 fn component_xml_has_uuid_attribute() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let xml = run_component_xml(fixture, Some("./baselines/nist-800-53.json"));
 
@@ -99,9 +95,7 @@ fn component_xml_has_uuid_attribute() {
 #[test]
 fn component_json_and_xml_have_equivalent_metadata() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let json_str = run_component_json(fixture, Some("./baselines/nist-800-53.json"));
     let xml_str = run_component_xml(fixture, Some("./baselines/nist-800-53.json"));
@@ -123,9 +117,7 @@ fn component_json_and_xml_have_equivalent_metadata() {
 #[test]
 fn component_json_and_xml_have_same_component_count() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     let json_str = run_component_json(fixture, Some("./baselines/nist-800-53.json"));
     let xml_str = run_component_xml(fixture, Some("./baselines/nist-800-53.json"));
@@ -151,9 +143,7 @@ fn component_json_and_xml_have_same_component_count() {
 #[test]
 fn component_json_fixture_round_trips_to_xml() {
     let fixture = Path::new("tests/fixtures/full_policy.md");
-    if common::skip_if_missing(fixture) {
-        return;
-    }
+    common::require_fixture(fixture);
 
     // Generate JSON from pipeline
     let json_str = run_component_json(fixture, Some("./baselines/nist-800-53.json"));

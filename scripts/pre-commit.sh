@@ -19,6 +19,17 @@ run_step() {
 
 cd "${REPO_ROOT}"
 
+# Gates run against the working tree; with unstaged changes present they would
+# validate a tree that differs from the committed snapshot (F0903).
+if ! git diff --quiet; then
+    echo "[pre-commit] unstaged changes present — stage or stash them first so the gates validate the commit contents" >&2
+    exit 1
+fi
+if git diff --cached --quiet; then
+    echo "[pre-commit] nothing staged — skipping checks"
+    exit 0
+fi
+
 run_step "cargo fmt --check" cargo fmt --check
 run_step "cargo clippy -- -D warnings" cargo clippy -- -D warnings
 run_step "cargo test" cargo test

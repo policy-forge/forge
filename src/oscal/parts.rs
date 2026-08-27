@@ -170,18 +170,6 @@ pub fn build_control_parts(
     parts
 }
 
-/// Generate props for a control from a `PolicyRequirement`.
-///
-/// Returns an empty vec — trace props (source-file, source-section, source-line)
-/// are now added by [`crate::oscal::trace_embedding::embed_trace_in_catalog`]
-/// post-processing instead of inline during catalog construction.
-///
-/// Retained for API compatibility with existing callers.
-#[must_use]
-pub fn build_control_props(_requirement: &PolicyRequirement) -> Vec<OscalProp> {
-    vec![]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -246,25 +234,6 @@ mod tests {
 
         assert_eq!(parts[0].prose, original);
         assert_eq!(parts[0].prose.as_bytes(), original.as_bytes());
-    }
-
-    // ── build_control_props tests (returns empty — trace props handled by embed_trace_in_catalog) ──
-
-    #[test]
-    fn test_build_props_returns_empty_for_positive_line() {
-        let req = test_req("text", 42);
-        let props = build_control_props(&req);
-        assert!(
-            props.is_empty(),
-            "build_control_props now returns empty — trace props added by post-processing"
-        );
-    }
-
-    #[test]
-    fn test_build_props_returns_empty_for_zero_line() {
-        let req = test_req("text", 0);
-        let props = build_control_props(&req);
-        assert!(props.is_empty());
     }
 
     // ── T016: build_control_parts with guidance ───────────────────────

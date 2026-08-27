@@ -1,9 +1,9 @@
 {
   "catalog": {
-    "uuid": "046f6368-21d8-42ae-8856-7f986d4a42b2",
+    "uuid": "921c66ac-655b-41fa-b5ef-902750d06cfc",
     "metadata": {
       "title": "References",
-      "last-modified": "2026-02-21T21:03:43.214729+00:00",
+      "last-modified": "2026-08-27T03:19:36.661006+00:00",
       "version": "0.0.0",
       "oscal-version": "1.2.3"
     },
@@ -70,7 +70,7 @@
         {
           "uuid": "a22cca0e-3066-5aae-baf0-8eb9827b2231",
           "title": "https://example.com/retention",
-          "description": "Referenced by requirement 2fb2ab6d-3049-5a64-85b2-a4f45e6109d5",
+          "description": "Referenced by requirement ea282a22-33ef-5c41-8d71-ea1d80784753",
           "citation": {
             "text": "https://example.com/retention"
           },

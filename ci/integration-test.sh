@@ -151,12 +151,12 @@ check "Generate catalog (XML)" \
 
 # --- 1c: Profile (JSON) — must be generated before component (used as --source-profile) ---
 # forge profile requires --include or --exclude. Extract control IDs from the catalog.
-CONTROL_IDS=$(grep -o '"id" *: *"[A-Za-z0-9_-]*"' "${CATALOG_JSON}" \
+CONTROL_IDS=$( { grep -o '"id" *: *"[A-Za-z0-9_-]*"' "${CATALOG_JSON}" \
     | sed 's/"id" *: *"//;s/"//' \
-    | grep -v '_smt$\|_gdn$\|_obj$\|title-' \
-    | head -20 \
+    | { grep -v '_smt$\|_gdn$\|_obj$\|title-' || true; } \
+    | sed -n '1,20p' \
     | tr '\n' ',' \
-    | sed 's/,$//')
+    | sed 's/,$//'; } || true )
 
 if [[ -z "${CONTROL_IDS}" ]]; then
     TOTAL=$((TOTAL + 1))
@@ -212,9 +212,16 @@ if ${FORGE} convert --help 2>&1 | grep -q '\-\-import-ssp'; then
 fi
 
 if ${HAS_IMPORT_SSP}; then
+    # --import-ssp currently embeds a sanitized href without opening the file;
+    # provision a minimal SSP so the check is meaningful and survives a future
+    # switch to actually parsing the reference.
+    SYSTEM_SSP="${TMPDIR}/system-ssp.json"
+    cat > "${SYSTEM_SSP}" <<'SSP_EOF'
+{"system-security-plan": {"uuid": "11111111-1111-4111-8111-111111111111", "metadata": {"title": "CI SSP fixture", "last-modified": "2026-08-26T00:00:00Z", "version": "1", "oscal-version": "1.1.3"}}}
+SSP_EOF
     check "Generate assessment-plan (JSON)" \
         ${FORGE} convert "${FIXTURE}" --strategy catalog --format json \
-            --output "${TMPDIR}/catalog-ap.json" --import-ssp "./system-ssp.json"
+            --output "${TMPDIR}/catalog-ap.json" --import-ssp "${SYSTEM_SSP}"
 
     # The assessment plan is written as a secondary output alongside the catalog.
     # Its filename is derived from the input stem: {input_stem}-assessment-plan.json
@@ -305,7 +312,7 @@ else
 fi
 
 # --- 2f: Structural validation — assessment-plan JSON has expected root key ---
-if [[ -f "${AP_JSON}" && -s "${AP_JSON}" ]]; then
+if [[ -f "${AP_JSON:-}" && -s "${AP_JSON}" ]]; then
     check "Assessment-plan JSON has 'assessment-plan' root key" \
         python3 -c "
 import json
@@ -318,11 +325,13 @@ else
 fi
 
 # --- 2g: forge validate — profile JSON (if supported in future) ---
-if ${FORGE} validate --help 2>&1 | grep -q "profile"; then
+if [[ -f "${PROFILE_JSON:-}" ]] && ${FORGE} validate --help 2>&1 | grep -q "profile"; then
     check "Validate profile JSON (forge validate)" \
         ${FORGE} validate "${PROFILE_JSON}" --schema-type profile --quiet
 else
-    check_skip "Validate profile JSON (forge validate — schema-type 'profile' not yet supported)" false
+    TOTAL=$((TOTAL + 1))
+    SKIPPED=$((SKIPPED + 1))
+    skip "Validate profile JSON (forge validate) — profile not generated or unsupported"
 fi
 
 echo ""

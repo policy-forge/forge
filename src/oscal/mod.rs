@@ -46,7 +46,7 @@ pub use component_definition::{
 /// Metadata types and assembly function.
 pub use metadata::{MetadataOptions, OSCAL_VERSION, OscalMetadata, assemble_metadata};
 /// Part and Prop types with builder functions.
-pub use parts::{OscalPart, OscalProp, build_control_parts, build_control_props, generate_part_id};
+pub use parts::{OscalPart, OscalProp, build_control_parts, generate_part_id};
 /// Profile types and builder with control selection.
 pub use profile::{
     ControlSelection, IncludeAll, OscalProfile, ProfileImport, ProfileRoot, SelectionMode,

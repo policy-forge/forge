@@ -154,9 +154,17 @@ jobs:
 
       - name: Generate SHA-256 hashes
         id: hash
+        shell: bash
         run: |
+          set -euo pipefail
           cd artifacts
-          echo "hashes=$(sha256sum ./* | base64 -w0)" >> "$GITHUB_OUTPUT"
+          shopt -s nullglob
+          files=(./*)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "no artifacts found to hash for provenance" >&2
+            exit 1
+          fi
+          echo "hashes=$(sha256sum "${files[@]}" | base64 -w0)" >> "$GITHUB_OUTPUT"
 
   provenance:
     name: Generate SLSA provenance
@@ -195,9 +203,17 @@ jobs:
           path: artifacts
 
       - name: Generate SHA-256 checksums file
+        shell: bash
         run: |
+          set -euo pipefail
           cd artifacts
-          sha256sum -- *.tar.gz *.zip *.cdx.json 2>/dev/null | sort > SHA256SUMS
+          shopt -s nullglob
+          files=(*.tar.gz *.zip *.cdx.json)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "no release artifacts found to checksum" >&2
+            exit 1
+          fi
+          sha256sum -- "${files[@]}" | sort > SHA256SUMS
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2

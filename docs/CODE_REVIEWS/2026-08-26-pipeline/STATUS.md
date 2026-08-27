@@ -16,16 +16,16 @@ recovered the same day (compact-verdict protocol + scouts persisting full report
 **Consolidated index: `VALIDATED_FINDINGS.md`** — 634 valid · 53 partial ·
 19 invalid · 9 duplicate → **687 actionable** (2 critical [remediated], 53 high,
 310 medium, 322 low). Per-finding evidence in `validated/slice01..12.md`
-(full reports for slices 01–04, 07, 09, 11; compact directive lists for 05, 06,
-08, 10, 12 — slice08 carries the scout's full JSON rationale).
+(full reports for slices 01–04, 07, 09, 11–12; compact directive lists for 05,
+06, 08, 10 — slice08 carries the scout's full JSON rationale).
 
 ## Tranches
 
 | Tranch | Scope | Status |
 |---|---|---|
 | 1 — criticals | F0480, F1054 fixed; F0383 invalid | **done, commit `c3d68d1`** — fmt/clippy/test green (1,784 passed) |
-| 2 — high (53) | per `VALIDATED_FINDINGS.md` | pending |
-| 3 — medium (310) | pending | pending |
+| 2 — high (53) | 52 remediated; F0617 reclassified low by validator | **done, commit pending** — fmt/clippy/test green (full suite passed); intentional fixtures + snapshots regenerated |
+| 3 — medium (310) | pending | active next |
 | 4 — low (322) | pending | pending |
 
 ## Remediation grouping (for tranch 2+)
