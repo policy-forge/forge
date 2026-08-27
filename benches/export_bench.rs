@@ -20,57 +20,19 @@ use forge::DEFAULT_MAX_SIZE_BYTES;
 /// Path to the committed 50-page synthetic policy fixture.
 const FIXTURE_PATH: &str = "tests/fixtures/synthetic-50page-policy.md";
 
-/// Build a large OSCAL catalog JSON string from the synthetic fixture.
+/// Build production catalog JSON from the synthetic fixture.
 ///
-/// Runs the full forge pipeline (ingest → parse → atomize → catalog) and
-/// serializes to JSON, producing a 500KB+ artifact for realistic benchmarks.
+/// Setup is intentionally outside the timed export loop, but it uses the
+/// production pipeline rather than a hand-maintained envelope mirror (F0031).
 fn build_catalog_json(fixture_path: &Path) -> String {
-    let ingested = forge::ingest::ingest_file(fixture_path, DEFAULT_MAX_SIZE_BYTES)
-        .expect("bench setup: ingest_file failed");
-    let content = ingested.reconstruct_content();
-    let sections =
-        forge::parse::extract_sections(&content).expect("bench setup: extract_sections failed");
-    let clauses =
-        forge::parse::extract_clauses(&content).expect("bench setup: extract_clauses failed");
-    let document = forge::model::assemble_document(&ingested, &sections, &clauses)
-        .expect("bench setup: assemble_document failed");
-    let atomized =
-        forge::parse::atomize_document(&document).expect("bench setup: atomize_document failed");
-    let doc = forge::uuid::assign_stable_ids(atomized);
-    let doc =
-        forge::citation::extract_citations(doc).expect("bench setup: extract_citations failed");
-
-    let mut trace_links = forge::TraceLinkCollection::new();
-    let mut catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links))
-        .expect("bench setup: build_catalog failed");
-    forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
-
-    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None)
-        .expect("bench setup: assemble_metadata failed");
-    let citations = forge::oscal::component_definition::collect_all_citations(&doc.sections);
-    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations)
-        .expect("bench setup: generate_back_matter failed");
-    let back_matter = if back_matter_resources.is_empty() {
-        None
-    } else {
-        Some(forge::BackMatter { resources: back_matter_resources })
-    };
-
-    let oscal_catalog = forge::oscal::OscalCatalog {
-        uuid: metadata.uuid.to_string(),
-        metadata: forge::oscal::catalog::OscalMetadata {
-            title: metadata.title,
-            last_modified: metadata.last_modified.to_rfc3339(),
-            version: metadata.version,
-            oscal_version: metadata.oscal_version,
-        },
-        controls: vec![],
-        groups: catalog.groups,
-        back_matter,
-    };
-
-    let envelope = forge::oscal::catalog::CatalogEnvelope { catalog: oscal_catalog };
-    serde_json::to_string_pretty(&envelope).expect("bench setup: serialize catalog JSON failed")
+    forge::pipeline::run_catalog_pipeline(
+        fixture_path,
+        DEFAULT_MAX_SIZE_BYTES,
+        &forge::cli::OutputFormat::Json,
+        None,
+    )
+    .expect("bench setup: production catalog pipeline failed")
+    .content
 }
 
 fn bench_export_pipeline(c: &mut Criterion) {
