@@ -10,16 +10,11 @@ url = "https://raw.githubusercontent.com/EmbarkStudios/rust-ecosystem/main/audit
 [imports.mozilla]
 url = "https://raw.githubusercontent.com/mozilla/cargo-vet/main/supply-chain/audits.toml"
 
-# Apply explicit criteria to the first-party crate; imports above supply
-# third-party audit evidence and exemptions remain a temporary review backlog.
 [policy.forge]
 criteria = "safe-to-deploy"
 dev-criteria = "safe-to-run"
 notes = "First-party FORGE code is reviewed in this repository."
 
-
-# After every dependency update, refresh imported audits and run `cargo vet prune`
-# so resolved-version changes cannot leave stale exemptions behind.
 [[exemptions.adler2]]
 version = "2.0.1"
 criteria = "safe-to-deploy"
@@ -940,8 +935,6 @@ criteria = "safe-to-run"
 version = "1.0.2+wasi-0.2.9"
 criteria = "safe-to-deploy"
 
-# WASI preview 3 release candidate is required by the dependency wasm toolchain;
-# cargo-vet regenerates this lockfile-exact exemption when upstream stabilizes.
 [[exemptions.wasip3]]
 version = "0.4.0+wasi-0.3.0-rc-2026-01-06"
 criteria = "safe-to-deploy"

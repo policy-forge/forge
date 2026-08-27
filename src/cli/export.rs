@@ -347,6 +347,19 @@ pub fn export_artifact(
 fn read_export_input(input_path: &Path) -> Result<Vec<u8>, ForgeError> {
     use std::io::Read;
 
+    let initial_metadata = std::fs::metadata(input_path).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            ForgeError::FileNotFound { path: input_path.to_path_buf() }
+        } else {
+            ForgeError::Io(error)
+        }
+    })?;
+    if !initial_metadata.is_file() {
+        return Err(ForgeError::ExportInvalidOscal {
+            detail: format!("'{}' is not a regular file", input_path.display()),
+        });
+    }
+
     let file = std::fs::File::open(input_path).map_err(|error| {
         if error.kind() == std::io::ErrorKind::NotFound {
             ForgeError::FileNotFound { path: input_path.to_path_buf() }

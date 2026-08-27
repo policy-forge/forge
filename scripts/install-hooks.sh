@@ -9,6 +9,7 @@ HOOKS_DIR="$(git -C "${REPO_ROOT}" rev-parse --path-format=absolute --git-path h
     exit 1
 }
 PRE_COMMIT_SCRIPT="${REPO_ROOT}/scripts/pre-commit.sh"
+PRE_COMMIT_HOOK="${HOOKS_DIR}/pre-commit"
 
 if [[ ! -d "${HOOKS_DIR}" ]]; then
     echo "[install-hooks] hooks directory not found: ${HOOKS_DIR}" >&2

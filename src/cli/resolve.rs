@@ -68,7 +68,7 @@ pub fn execute(
     if !std::fs::metadata(&canonical_input).map_err(ForgeError::Io)?.is_file() {
         return Err(ForgeError::InvalidArgument(format!(
             "input '{}' is not a regular file",
-            canonical_input.display()
+            input.display()
         )));
     }
 

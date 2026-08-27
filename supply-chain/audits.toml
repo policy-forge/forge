@@ -1,5 +1,4 @@
 
-# Local audits are recorded here; upstream audits are imported in config.toml.
-# Each release cycle, run `cargo vet suggest`, import available audits, and
-# prune exemptions after dependency updates before extending this file.
+# cargo-vet audits file
+
 [audits]
