@@ -1,0 +1,67 @@
+{
+  "component-definition": {
+    "uuid": "87422c1c-2164-4431-8e53-63ad41b8a647",
+    "metadata": {
+      "title": "Purpose",
+      "last-modified": "2026-08-27T04:08:00.723921+00:00",
+      "version": "0.0.0",
+      "oscal-version": "1.2.3"
+    },
+    "components": [
+      {
+        "uuid": "218e8e55-bf01-544e-9958-6a8bb764e8af",
+        "type": "policy",
+        "title": "Purpose",
+        "description": "Documentary component representing the Purpose policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "dd228290-6933-56b2-ac79-bf60b6b0f83f",
+            "source": "source-profile.json",
+            "description": "Implementation narratives derived from Purpose.",
+            "implemented-requirements": [
+              {
+                "uuid": "db17d02f-d595-5900-a819-72f939cb34bb",
+                "control-id": "POL-C-001",
+                "description": "Teams must review privileged access every quarter.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Controls"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "11"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "input.md#line=11",
+                    "rel": "source"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

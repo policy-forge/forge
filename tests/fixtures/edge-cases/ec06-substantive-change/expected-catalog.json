@@ -1,0 +1,126 @@
+{
+  "catalog": {
+    "uuid": "0b9ad60f-a7a9-4dc5-94e2-ab7c4a1c5d1f",
+    "metadata": {
+      "title": "Substantive Change Baseline",
+      "last-modified": "2026-08-27T04:08:00.915988+00:00",
+      "version": "1.0.0",
+      "oscal-version": "1.2.3"
+    },
+    "groups": [
+      {
+        "id": "network-controls",
+        "title": "Network Controls",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Network Controls"
+          }
+        ],
+        "controls": [
+          {
+            "id": "POL-NC-001",
+            "title": "Systems must log privileged operations.",
+            "links": [
+              {
+                "href": "input-original.md#line=9",
+                "rel": "source"
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-NC-001_smt",
+                "name": "statement",
+                "prose": "Systems must log privileged operations."
+              },
+              {
+                "id": "POL-NC-001_gdn",
+                "name": "guidance",
+                "prose": "Systems must log privileged operations.\nSystems must rotate cryptographic keys annually."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input-original.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Network Controls"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "9"
+              }
+            ]
+          },
+          {
+            "id": "POL-NC-002",
+            "title": "Systems must rotate cryptographic keys {{ insert: param, id-ref: p3558910f-60c1-58f4-92d3-6d56daa829a2_prm_0 }}.",
+            "links": [
+              {
+                "href": "input-original.md#line=10",
+                "rel": "source"
+              }
+            ],
+            "params": [
+              {
+                "id": "p3558910f-60c1-58f4-92d3-6d56daa829a2_prm_0",
+                "label": "annually",
+                "values": [
+                  "annually"
+                ],
+                "constraints": [
+                  {
+                    "description": "exact: annually"
+                  }
+                ]
+              }
+            ],
+            "parts": [
+              {
+                "id": "POL-NC-002_smt",
+                "name": "statement",
+                "prose": "Systems must rotate cryptographic keys {{ insert: param, id-ref: p3558910f-60c1-58f4-92d3-6d56daa829a2_prm_0 }}."
+              },
+              {
+                "id": "POL-NC-002_gdn",
+                "name": "guidance",
+                "prose": "Systems must log privileged operations.\nSystems must rotate cryptographic keys annually."
+              }
+            ],
+            "props": [
+              {
+                "name": "modality",
+                "value": "normative"
+              },
+              {
+                "name": "source-file",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "input-original.md"
+              },
+              {
+                "name": "source-section",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "Network Controls"
+              },
+              {
+                "name": "source-line",
+                "ns": "https://forge.policy-forge.github.io/ns/trace",
+                "value": "10"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

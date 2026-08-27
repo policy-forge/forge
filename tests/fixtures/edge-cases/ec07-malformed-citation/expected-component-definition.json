@@ -1,0 +1,84 @@
+{
+  "component-definition": {
+    "uuid": "ac6178b8-5ea0-4f43-904f-0191280df8ee",
+    "metadata": {
+      "title": "References",
+      "last-modified": "2026-08-27T04:08:01.002801+00:00",
+      "version": "0.0.0",
+      "oscal-version": "1.2.3"
+    },
+    "components": [
+      {
+        "uuid": "5c903a6b-aeaf-5707-982a-ea742f4de28e",
+        "type": "policy",
+        "title": "References",
+        "description": "Documentary component representing the References policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "76af4e47-6a8c-586d-b959-9ee037caa626",
+            "source": "source-profile.json",
+            "description": "Implementation narratives derived from References.",
+            "implemented-requirements": [
+              {
+                "uuid": "265a8a71-b691-5740-9bb5-90c77d92317c",
+                "control-id": "POL-R-001",
+                "description": "Systems must document retention controls at.",
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "References"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "3"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "input.md#line=3",
+                    "rel": "source"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "a22cca0e-3066-5aae-baf0-8eb9827b2231",
+          "title": "https://example.com/retention",
+          "description": "Referenced by requirement ea282a22-33ef-5c41-8d71-ea1d80784753",
+          "citation": {
+            "text": "https://example.com/retention"
+          },
+          "rlinks": [
+            {
+              "href": "https://example.com/retention"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
