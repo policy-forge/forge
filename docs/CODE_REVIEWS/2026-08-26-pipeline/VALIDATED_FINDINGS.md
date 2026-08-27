@@ -1,0 +1,742 @@
+# VALIDATED FINDINGS — consolidated, remediation-ready (all 715 in-scope findings)
+
+Pipeline: ocr_review_2026-08-16.md (1,074 findings) → 715 in-scope → 12 validation slices
+→ validated against HEAD b22e2d5 → all verdicts recovered 2026-08-26.
+
+**Totals: 634 valid · 53 partial · 19 invalid · 9 duplicate → 687 actionable.**
+
+Per-finding format: `- `F####` | status | locus | fix directive → evidence in validated/sliceNN.md`.
+Fix directives are the validator's prescription (12-word compact form where noted); full
+root-cause analysis and repro evidence live in the slice file. PARTIAL = premise corrected by
+the validator — read the slice entry before fixing. Invalid/duplicate findings are listed at
+the end for audit completeness. Remediated in c3d68d1: F0480, F1054 (F0383 invalid).
+
+## CRITICAL — 2 actionable (2 valid, 0 partial)
+
+- `F1054` | valid | .github/workflows/release.yml:163-172 → slice01
+- `F0480` | valid | src/lifecycle/mod.rs:596-612 → slice01
+
+## HIGH — 53 actionable (53 valid, 0 partial)
+
+- `F1062` | valid | .github/workflows/ci.yml:41-82 → slice01
+- `F1056` | valid | .github/workflows/release.yml:194-199 → slice01
+- `F0029` | valid | benches/export_bench.rs:74-78 → slice01
+- `F0025` | valid | benches/parameter_extraction.rs:107-113 → slice01
+- `F0024` | valid | benches/parameter_extraction.rs:95-101 → slice01
+- `F0051` | valid | benches/pipeline_benchmark.rs:107-108 → slice01
+- `F0050` | valid | benches/pipeline_benchmark.rs:38-58 → slice01
+- `F0099` | valid | benches/xml_benchmark.rs:29-45 → slice01
+- `F0909` | valid | ci/integration-test.sh:154-160 → slice01
+- `F0911` | valid | ci/integration-test.sh:215-217 → slice01
+- `F0017` | valid | examples/component-based/generate_ssp.py:30-34 → slice01
+- `F0903` | valid | scripts/pre-commit.sh:22-24 → slice01
+- `F0308` | valid | src/applicability/mod.rs:284-313 → slice01
+- `F0286` | valid | src/batch/output_naming.rs:14-51 → slice01
+- `F0298` | valid | src/citation.rs:206-215 → slice01
+- `F0348` | valid | src/cli/resolve.rs:69-73 → slice01
+- `F0384` | valid | src/config.rs:300-335 → slice01
+- `F0448` | valid | src/export/xml_serializer.rs:276-305 → slice01
+- `F0449` | valid | src/export/xml_serializer.rs:535-565 → slice01
+- `F0402` | valid | src/framework/disposition.rs:101-108 → slice01
+- `F0433` | valid | src/ingest/mod.rs:182-191 → slice01
+- `F0490` | valid | src/lifecycle/record.rs:410-414 → slice01
+- `F0536` | valid | src/mapping/inventory.rs:163-169 → slice01
+- `F0476` | valid | src/mapping/manifest.rs:428-441 → slice01
+- `F0518` | valid | src/migration/engine.rs:249-251 → slice01
+- `F0568` | valid | src/model/frontmatter.rs:55 → slice01
+- `F0561` | valid | src/oscal/assessment_plan.rs:329-333 → slice01
+- `F0618` | valid | src/oscal/back_matter.rs:253-287 → slice01
+- `F0620` | valid | src/oscal/back_matter.rs:262-266 → slice01
+- `F0007` | valid | src/oscal/catalog.rs:283-297 → slice01
+- `F0609` | valid | src/oscal/catalog.rs:447-469 → slice01
+- `F0608` | valid | src/oscal/catalog.rs:511-513 → slice01
+- `F0585` | valid | src/oscal/implemented_requirements.rs:210-213 → slice01
+- `F0616` | valid | src/oscal/parts.rs:176-184 → slice01
+- `F0617` | valid | src/oscal/parts.rs:31-33 → slice01
+- `F0624` | valid | src/oscal/ssp.rs:314-315 → slice01
+- `F0631` | valid | src/oscal/trace_embedding.rs:108-156 → slice01
+- `F0638` | valid | src/oscal_cli/detector.rs:84-98 → slice01
+- `F0643` | valid | src/oscal_cli/invoker.rs:91-97 → slice01
+- `F0663` | valid | src/parse/clauses.rs:446-455 → slice01
+- `F0006` | valid | src/parse/mod.rs:106-164 → slice01
+- `F0692` | valid | src/round_trip/comparator.rs:149-178 → slice01
+- `F0774` | valid | src/uuid.rs:252-262 → slice01
+- `F0790` | valid | src/validate/formatter.rs:110-124 → slice01
+- `F0791` | valid | src/validate/formatter.rs:165-177 → slice01
+- `F0784` | valid | src/validate/semantic.rs:25,32-51 → slice02
+- `F1017` | valid | supply-chain/audits.toml:1-3 → slice02
+- `F1049` | valid | supply-chain/config.toml (12 exemption rows) → slice02
+- `F0815` | valid | tests/cli_integration.rs:444-447 → slice02
+- `F0832` | valid | tests/common/mod.rs:75-84 → slice02
+- `F0836` | valid | tests/export_integration.rs:114-136 → slice02
+- `F0844` | valid | tests/integration_cross_feature.rs:283-310 → slice02
+- `F0874` | valid | tests/oscal_cli_round_trip.rs:64-75,131-173 → slice02
+
+## MEDIUM — 310 actionable (279 valid, 31 partial)
+
+- `F0947` | valid | .cargo/config.toml:1-2 → slice02
+- `F1073` | valid | .gitattributes:16-25 → slice02
+- `F1072` | valid | .gitattributes:18-25 → slice02
+- `F1052` | valid | .github/dependabot.yml:6-11 → slice02
+- `F1063` | valid | .github/workflows/ci.yml:24-27 → slice02
+- `F1065` | valid | .github/workflows/ci.yml:31-39,62-80 → slice02
+- `F1057` | valid | .github/workflows/release.yml + ci.yml (all jobs) → slice02
+- `F1058` | valid | .github/workflows/release.yml:1-13, ci.yml:1-13 → slice02
+- `F1055` | valid | .github/workflows/release.yml:161-173 → slice02
+- `F1059` | valid | .github/workflows/release.yml:51-88 → slice02
+- `F0995` | valid | .rustfmt.toml:1 → slice02
+- `F0041` | valid | benches/atomize.rs:10-23 → slice02
+- `F0042` | valid | benches/atomize.rs:40-48 → slice02
+- `F0032` | valid | benches/export_bench.rs:87,94 → slice02
+- `F0030` | valid | benches/export_bench.rs:87-112 → slice02
+- `F0026` | valid | benches/parameter_extraction.rs:104-126 → slice02
+- `F0052` | valid | benches/pipeline_benchmark.rs:37-59 → slice02
+- `F0053` | valid | benches/pipeline_benchmark.rs:70-74,150-175 → slice02
+- `F0021` | valid | benches/uuid_benchmark.rs:4-24 → slice02
+- `F0101` | valid | benches/xml_benchmark.rs:27-83 → slice02
+- `F0103` | valid | benches/xml_benchmark.rs:85-90 → slice02
+- `F0914` | valid | ci/integration-test.sh (manual counter blocks) → slice02
+- `F0912` | valid | ci/integration-test.sh:294-303,308-320 → slice02
+- `F0913` | valid | ci/integration-test.sh:39-60 → slice02
+- `F0915` | valid | ci/integration-test.sh:404-411 → slice02
+- `F1034` | valid | deny.toml:20-22 → slice02
+- `F1035` | valid | deny.toml:24-28 → slice02
+- `F1032` | valid | deny.toml:3-7 → slice02
+- `F0016` | valid | examples/component-based/generate_ssp.py:14-18 → slice02
+- `F0018` | valid | examples/component-based/generate_ssp.py:59-62,69-72 → slice02
+- `F0008` | valid | output/catalog-new.json:428 (root cause src/oscal/catalog.rs:283-297) → slice02
+- `F0004` | valid | output/ssp.json:114-119 (root cause generate_ssp.py:31-35) → slice02
+- `F0002` | valid | output/ssp.json:75-77 (root cause generate_ssp.py:38-49) → slice02
+- `F0893` | valid | scripts/ci-local.sh:20-21 → slice02
+- `F0894` | valid | scripts/ci-local.sh:22-24 → slice02
+- `F0890` | valid | scripts/ci-local.sh:5-6, scripts/pre-commit.sh:5-6 → slice02
+- `F0895` | valid | scripts/install-hooks.sh:7-13 → slice02
+- `F0905` | valid | scripts/pre-commit.sh:22-24 → slice02
+- `F0904` | valid | scripts/pre-commit.sh:8-11 → slice02
+- `F0014` | partial | sonar-project.properties:17 → slice01
+- `F0290` | valid | src/applicability/model.rs:108-117,239-253 → slice02
+- `F0289` | valid | src/applicability/model.rs:145-216 (caller mod.rs:129-131) → slice02
+- `F0277` | valid | src/batch/formatter.rs:46-52 → slice02
+- `F0294` | valid | src/batch/orchestrator.rs:115-119 → slice02
+- `F0295` | valid | src/batch/orchestrator.rs:84-91 → slice02
+- `F0287` | valid | src/batch/output_naming.rs:21-46 → slice02
+- `F0282` | valid | src/batch/summary.rs:52-65 → slice02
+- `F0299` | valid | src/citation.rs:196-199 → slice03
+- `F0300` | valid | src/citation.rs:83-87 → slice03
+- `F0316` | valid | src/cli/convert.rs:129-130 → slice03
+- `F0313` | valid | src/cli/convert.rs:196-198 → slice03
+- `F0314` | valid | src/cli/convert.rs:217 → slice03
+- `F0315` | valid | src/cli/convert.rs:397-404 → slice03
+- `F0312` | valid | src/cli/convert.rs:88-91 → slice03
+- `F0330` | valid | src/cli/export.rs:282-286 → slice03
+- `F0333` | valid | src/cli/export.rs:64-96 → slice03
+- `F0343` | valid | src/cli/migrate.rs:67-84 → slice03
+- `F0340` | valid | src/cli/mod.rs:88-89 → slice03
+- `F0326` | valid | src/cli/output.rs:22-24 → slice03
+- `F0327` | valid | src/cli/output.rs:43 → slice03
+- `F0321` | valid | src/cli/profile.rs:110 → slice03
+- `F0322` | partial | src/cli/profile.rs:51-57 → slice03
+- `F0320` | valid | src/cli/profile.rs:91-94 → slice03
+- `F0347` | valid | src/cli/resolve.rs:59-67 → slice03
+- `F0346` | valid | src/cli/trace.rs:15 → slice03
+- `F0359` | valid | src/cli/validate.rs:133-140 → slice03
+- `F0357` | valid | src/cli/validate.rs:249-252 → slice03
+- `F0358` | valid | src/cli/validate.rs:43-56 → slice03
+- `F0360` | valid | src/cli/validate.rs:44-53, 79-84 → slice03
+- `F0388` | partial | src/config.rs:459-473 → slice03
+- `F0372` | valid | src/diff/canonical.rs:113-128 → slice03
+- `F0373` | valid | src/diff/canonical.rs:170-183 → slice03
+- `F0365` | valid | src/diff/engine.rs:99-110 → slice03
+- `F0351` | valid | src/diff/extractor.rs:126-141 → slice03
+- `F0352` | valid | src/diff/extractor.rs:28-34 → slice03
+- `F0377` | valid | src/diff/formatter.rs:33-36 → slice03
+- `F0381` | valid | src/diff/formatter.rs:84-91 → slice03
+- `F0397` | valid | src/diff/mod.rs:107-110 → slice03
+- `F0396` | valid | src/diff/mod.rs:32-45 → slice03
+- `F0395` | valid | src/diff/mod.rs:80-93 → slice03
+- `F0369` | valid | src/diff/types.rs:46-60 → slice03
+- `F0370` | valid | src/diff/types.rs:87-91 → slice03
+- `F0408` | valid | src/error.rs → slice03
+- `F0406` | valid | src/error.rs:343-357 → slice03
+- `F0405` | valid | src/error.rs:383-388 → slice03
+- `F0444` | valid | src/export/xml_deserializer.rs:126-136 → slice03
+- `F0442` | valid | src/export/xml_deserializer.rs:280-286 → slice03
+- `F0443` | valid | src/export/xml_deserializer.rs:288-297 → slice03
+- `F0441` | valid | src/export/xml_deserializer.rs:368-375 → slice03
+- `F0439` | valid | src/export/xml_deserializer.rs:415-431 → slice03
+- `F0440` | valid | src/export/xml_deserializer.rs:434-447 → slice03
+- `F0445` | valid | src/export/xml_deserializer.rs:567-595 → slice03
+- `F0451` | valid | src/export/xml_serializer.rs:141-164 → slice03
+- `F0450` | valid | src/export/xml_serializer.rs:205-209 → slice03
+- `F0394` | valid | src/export/yaml.rs:29-38 → slice03
+- `F0418` | valid | src/framework/analysis.rs:1128-1141 → slice03
+- `F0417` | valid | src/framework/analysis.rs:162-163 → slice03
+- `F0420` | valid | src/framework/analysis.rs:304-321 → slice03
+- `F0422` | valid | src/framework/analysis.rs:612-616 → slice03
+- `F0401` | valid | src/framework/disposition.rs:62-72 → slice03
+- `F0412` | valid | src/framework/manifest.rs:106-116 → slice03
+- `F0414` | valid | src/framework/manifest.rs:219-241 → slice03
+- `F0424` | valid | src/framework/mod.rs:134-136 → slice03
+- `F0425` | valid | src/framework/mod.rs:268-281 → slice03
+- `F0426` | valid | src/framework/mod.rs:324-326 → slice03
+- `F0427` | valid | src/framework/mod.rs:440-444 → slice03
+- `F0464` | valid | src/framework/model.rs:11-12 → slice04
+- `F0463` | valid | src/framework/model.rs:173-179 → slice01
+- `F0432` | valid | src/ingest/mod.rs:119-125 → slice04
+- `F0434` | valid | src/ingest/mod.rs:198-199 → slice04
+- `F0435` | valid | src/ingest/mod.rs:279 → slice04
+- `F0453` | valid | src/io.rs:116-117 → slice04
+- `F0455` | valid | src/io.rs:24-29 → slice04
+- `F0454` | valid | src/io.rs:42-44 → slice04
+- `F0458` | partial | src/io.rs:74-76 → slice04
+- `F0459` | partial | src/io.rs:87 → slice04
+- `F0468` | valid | src/json_strict.rs:148-150 → slice04
+- `F0471` | partial | src/json_strict.rs:15 → slice04
+- `F0472` | partial | src/json_strict.rs:17-18 → slice04
+- `F0469` | valid | src/json_strict.rs:39 → slice04
+- `F0467` | valid | src/json_strict.rs:53-58 → slice04
+- `F0470` | valid | src/json_strict.rs:9-12 → slice04
+- `F0481` | valid | src/lifecycle/mod.rs:463-469 → slice04
+- `F0491` | partial | src/lifecycle/record.rs:697-700 → slice04
+- `F0492` | valid | src/lifecycle/record.rs:881-883 → slice04
+- `F0493` | partial | src/lifecycle/record.rs:911-913 → slice04
+- `F0473` | valid | src/main.rs:22-30 → slice04
+- `F0474` | partial | src/main.rs:31-34 → slice04
+- `F0507` | partial | src/mapping/baseline.rs:112-116 → slice04
+- `F0505` | partial | src/mapping/baseline.rs:19 → slice04
+- `F0509` | valid | src/mapping/baseline.rs:301-308 → slice04
+- `F0537` | valid | src/mapping/inventory.rs:185-191 → slice04
+- `F0539` | valid | src/mapping/inventory.rs:219-220 → slice04
+- `F0538` | valid | src/mapping/inventory.rs:408-414 → slice04
+- `F0540` | valid | src/mapping/inventory.rs:448-452 → slice04
+- `F0477` | valid | src/mapping/manifest.rs:510-521 → slice04
+- `F0485` | valid | src/mapping/mod.rs:128-131 → slice04
+- `F0483` | valid | src/mapping/mod.rs:168 → slice04
+- `F0484` | partial | src/mapping/mod.rs:188-191 → slice04
+- `F0487` | valid | src/mapping/mod.rs:361-369 → slice04
+- `F0495` | valid | src/mapping/model.rs:413-419 → slice04
+- `F0496` | valid | src/mapping/model.rs:478-481 → slice04
+- `F0497` | valid | src/mapping/model.rs:482-487 → slice04
+- `F0520` | valid | src/migration/engine.rs:591-595 → slice04
+- `F0524` | valid | src/migration/formatter.rs:130-141 → slice04
+- `F0515` | valid | src/migration/inventory.rs:116-119 → slice04
+- `F0501` | valid | src/migration/inventory.rs:16-17 → slice04
+- `F0503` | valid | src/migration/inventory.rs:19-21 → slice04
+- `F0516` | valid | src/migration/inventory.rs:91-95 → slice04
+- `F0527` | valid | src/migration/mod.rs:37-39 → slice04
+- `F0555` | valid | src/migration/successor.rs:153-154 → slice04
+- `F0556` | valid | src/migration/successor.rs:160 → slice04
+- `F0534` | partial | src/migration/types.rs:187-191 → slice04
+- `F0532` | valid | src/migration/types.rs:221-224 → slice04
+- `F0535` | valid | src/migration/types.rs:279-285 → slice04
+- `F0530` | valid | src/migration/types.rs:54-61 → slice01
+- `F0531` | valid | src/migration/types.rs:62-65 → slice04
+- `F0533` | valid | src/migration/types.rs:8-13 → slice04
+- `F0573` | valid | src/model/assemble.rs:113-121 → slice01
+- `F0574` | valid | src/model/assemble.rs:211 → slice04
+- `F0576` | partial | src/model/assemble.rs:241-242 → slice04
+- `F0575` | valid | src/model/assemble.rs:78-90 → slice04
+- `F0571` | valid | src/model/frontmatter.rs:19-20 → slice04
+- `F0569` | partial | src/model/frontmatter.rs:58-59 → slice04
+- `F0581` | valid | src/model/frontmatter.rs:61-62 → slice04
+- `F0549` | valid | src/model/mod.rs:172-173 → slice04
+- `F0551` | valid | src/model/mod.rs:267-269 → slice04
+- `F0552` | valid | src/model/mod.rs:282-284 → slice04
+- `F0550` | valid | src/model/mod.rs:64-75 → slice04
+- `F0545` | valid | src/model/trace.rs:18-19 — Change section_title to Option<String>; update EC-4 tests → slice05
+- `F0544` | valid | src/model/trace.rs:81-85 — Store link indices in by_requirement; resolve via links → slice05
+- `F0562` | valid | src/oscal/assessment_plan.rs:222-224 — Return ForgeError::Validation on empty controls; update ec1_zero_controls test → slice05
+- `F0560` | valid | src/oscal/assessment_plan.rs:235-237 — Seed with sanitized href plus length-prefixed control IDs → slice05
+- `F0564` | valid | src/oscal/assessment_plan.rs:454-457 — Share subjects instead of cloning per activity → slice05
+- `F0622` | partial | src/oscal/back_matter.rs:173 — Reject control-char pseudo-schemes; url crate strips tab/newline already → slice05
+- `F0619` | valid | src/oscal/back_matter.rs:283 — Error on duplicate citation id, not silent overwrite → slice05
+- `F0612` | valid | src/oscal/catalog.rs:253-254 — Document four-segment collision-suffix control ID form → slice05
+- `F0611` | partial | src/oscal/catalog.rs:358-364 — Buffer trace links; commit only on full success → slice05
+- `F0610` | valid | src/oscal/catalog.rs:473-476 — Reword docs: deterministic only for fixed section order → slice05
+- `F0601` | valid | src/oscal/component_definition.rs:124-135 — Fix doc: _trace_links ignored; wire or correct → slice05
+- `F0605` | partial | src/oscal/component_definition.rs:148-157 — Keep source_file Option end-to-end; omit empty prop → slice05
+- `F0602` | valid | src/oscal/component_definition.rs:187-189 — Preserve back-matter error variant; add boundary context → slice05
+- `F0606` | valid | src/oscal/component_definition.rs:244-283 — Dedup back-matter resources by UUID, not citation id → slice05
+- `F0589` | valid | src/oscal/implemented_requirements.rs:128-129 — Seed control-impl UUID from original source_profile path → slice05
+- `F0591` | partial | src/oscal/implemented_requirements.rs:155-157 — Replace no-stable-id sentinel with content fingerprint → slice05
+- `F0586` | partial | src/oscal/implemented_requirements.rs:233-238 — Fail on missing stable_id like catalog builder → slice05
+- `F0588` | valid | src/oscal/implemented_requirements.rs:92 — Return Vec directly or propagate real errors → slice05
+- `F0594` | valid | src/oscal/metadata.rs:56-58 — Correct docs: profile.rs uses timestamp_override in production → slice05
+- `F0593` | valid | src/oscal/metadata.rs:70 — Fix field count; describe override contract accurately → slice05
+- `F0592` | partial | src/oscal/metadata.rs:95-97 — Typed error for empty title/version; update T017 → slice05
+- `F0583` | valid | src/oscal/mod.rs:14-15 — Add flat re-exports for implemented_requirements, trace_embedding → slice05
+- `F0582` | valid | src/oscal/mod.rs:3-4 — Replace hardcoded v1.2.0 doc with OSCAL_VERSION 1.2.3 → slice05
+- `F0615` | valid | src/oscal/parts.rs:140-143 → slice01
+- `F0613` | partial | src/oscal/parts.rs:87-90 → slice01
+- `F0595` | valid | src/oscal/profile.rs:253-254 — Length-prefix seed parts to prevent UUID collisions → slice05
+- `F0625` | valid | src/oscal/ssp.rs:370-373 — Build emitted entry list first; compute length → slice05
+- `F0628` | partial | src/oscal/ssp.rs:712-717 — Drop dead serde(skip) system_id assignment at build_ssp → slice05
+- `F0623` | valid | src/oscal/test_utils.rs:13-18 — Panic on non-string remarks; fail loud → slice05
+- `F0634` | valid | src/oscal/trace_embedding.rs:120-123 — Emit warn on unknown-file fallback path → slice05
+- `F0635` | valid | src/oscal/trace_embedding.rs:133-135 — Debug-log when group children span sections → slice05
+- `F0632` | valid | src/oscal/trace_embedding.rs:55 — Percent-encode all RFC 3986 reserved path characters → slice05
+- `F0637` | valid | src/oscal_cli/detector.rs:119-122 — Bound version check with timeout; kill child → slice05
+- `F0642` | valid | src/oscal_cli/detector.rs:136-145 — Require semver-shaped token; empty output means failed → slice05
+- `F0641` | valid | src/oscal_cli/detector.rs:37-40 — Surface configured path and canonicalize error detail → slice05
+- `F0640` | valid | src/oscal_cli/detector.rs:56-61 — Preserve version-check failure detail for users → slice05
+- `F0639` | valid | src/oscal_cli/detector.rs:86-91 — Gate candidates on is_file; restrict extensions → slice05
+- `F0648` | valid | src/oscal_cli/invoker.rs:159-160 — Stream-sniff root key instead of full parse → slice05
+- `F0649` | valid | src/oscal_cli/invoker.rs:163-172 — Surface parse errors instead of collapsing via ok() → slice05
+- `F0644` | valid | src/oscal_cli/invoker.rs:77-83 — Capture and warn partial stderr on timeout → slice05
+- `F0652` | valid | src/oscal_cli/mod.rs:17-20 — Model detection outcome as enum, validated constructor → slice05
+- `F0658` | valid | src/parameter/matchers.rs:102-105 — Prepend \b to qualifier alternatives both thresholds → slice05
+- `F0660` | valid | src/parameter/matchers.rs:169 — Guard left edge against semi-/bi- compound matches → slice05
+- `F0659` | valid | src/parameter/matchers.rs:95-97 — Constrain value suffix; reject hyphenated token absorption → slice05
+- `F0655` | valid | src/parameter/mod.rs:201-203 — Track processed state explicitly; add placeholder tripwire → slice05
+- `F0656` | valid | src/parameter/mod.rs:205-209 — Extract oscal_base_id helper; reject duplicate param ids → slice05
+- `F0709` | partial | src/parse/atomize.rs:138-152 — Clone input requirement; preserve citations/modality/parameters → slice05
+- `F0710` | valid | src/parse/atomize.rs:203-205 — Derive subject from first split boundary position → slice05
+- `F0664` | valid | src/parse/clauses.rs:211-214 — Allow-list paragraph scope instead of deny-list → slice05
+- `F0665` | valid | src/parse/clauses.rs:376-379 — Handle HardBreak alongside SoftBreak in paragraph/table → slice05
+- `F0705` | valid | src/parse/mod.rs:143-149 — Push space on SoftBreak/HardBreak inside headings → slice05
+- `F0684` | valid | src/parse/modality.rs:143-146 — Drop requirement text from WARN records; SEC-1 → slice05
+- `F0728` | valid | src/pipeline.rs:142-151 — Extract shared finalize/serialize/AP helpers both pipelines → slice05
+- `F0731` | valid | src/pipeline.rs:238-244 — Validate assessment plan or fail until supported → slice05
+- `F0732` | partial | src/pipeline.rs:328-330 — Fall back to unknown-file, never full path → slice05
+- `F0726` | valid | src/pipeline.rs:55-60 — Include bounded validation error details in message → slice05
+- `F0668` | valid | src/round_trip/chain.rs:23-25 — low; unique per-run intermediate names or document exclusive temp_dir precondition → slice06
+- `F0671` | valid | src/round_trip/chain.rs:23-52 — low; pre-clean targets and remove intermediates on step failure → slice06
+- `F0669` | valid | src/round_trip/chain.rs:49 — add RoundTripStep{step,from,to,#[source]} error variant wrapping convert legs → slice06
+- `F0672` | valid | src/round_trip/chain.rs:82-92 — record per-call format/input/output/timeout tuples; assert exact sequence → slice06
+- `F0696` | valid | src/round_trip/comparator.rs:116-124 — move timestamp suffixes into rules incl published/updated; thread rules → slice06
+- `F0695` | valid | src/round_trip/comparator.rs:250-256 — precompute uuid/name-ns indexes; avoid quadratic deep-equality rescans → slice06
+- `F0694` | valid | src/round_trip/comparator.rs:253-256 — carry expected_index/actual_index on Divergence; skip_serializing_if None → slice06
+- `F0693` | valid | src/round_trip/comparator.rs:303-305 — fall through to name/ns/positional when uuid lookup misses → slice06
+- `F0676` | valid | src/round_trip/divergence.rs:104-105 — low; replace passed field with computed passed() keeping serialized key → slice06
+- `F0673` | valid | src/round_trip/divergence.rs:83 — introduce UnverifiedBaseline variant for unknown versions; update tests → slice06
+- `F0680` | valid | src/round_trip/log.rs:20-26 — serialize to memory then write, or temp-file plus rename → slice06
+- `F0701` | valid | src/round_trip/rules.rs:7-8 — rename unordered_array_keys; document last-segment any-depth matching contract → slice06
+- `F0700` | valid | src/round_trip/rules.rs:9-10 — delete dead ignored_paths field or wire into compare_values → slice06
+- `F0716` | valid | src/sanitize.rs:6-10 — filter via char::is_control keeping tab/newline; optionally strip bidi → slice06
+- `F0757` | valid | src/summary/format.rs:51-64 — bucket at rounded>=59.95; assert 59.994s renders 1m 0s → slice06
+- `F0719` | valid | src/summary/mod.rs:97-106 — low; explicit-stack iterative control count replacing depth-64 recursion → slice06
+- `F0734` | valid | src/testing/semantic_eq.rs:132-134 — compare Number pairs numerically via as_f64 before type-mismatch branch → slice06
+- `F0723` | valid | src/trace/extractor.rs:27-28 — skip props with missing or non-string name/value → slice06
+- `F0722` | valid | src/trace/extractor.rs:33 — first-valid-wins assignment so malformed dupes cannot clobber → slice06
+- `F0770` | valid | src/trace/formatter.rs:26-27 — replace newline/cr/tab with spaces per cell after stripping → slice06
+- `F0751` | valid | src/trace/mod.rs:47-82 — snapshot mtime beside content read; pass to staleness check → slice06
+- `F0750` | valid | src/trace/mod.rs:98-108 — normalize pre-check PermissionDenied; use take(MAX+1) bounded read → slice06
+- `F0744` | valid | src/trace/report.rs:104-108 — low; replace stored summary with summary() computed from entries → slice06
+- `F0746` | valid | src/trace/report.rs:110-111 — low; fix doc contract; usize::MAX sentinel claim is fabricated → slice06
+- `F0745` | valid | src/trace/report.rs:207 — use assert_eq! or fixed 1e-9 tolerance not EPSILON → slice06
+- `F0743` | valid | src/trace/report.rs:40-42 — change source_line to Option<usize>; migrate extractor/formatter/resolver → slice06
+- `F0739` | valid | src/trace/resolver.rs:11-27 — return Staleness enum Fresh/Stale/Unknown instead of bool fallback → slice06
+- `F0742` | valid | src/trace/resolver.rs:42-50 — add fresh/stale/non-UTC tests against known file timestamps → slice06
+- `F0765` | valid | src/trace/walker.rs:167-171 — index-unique fallback ids plus warn for missing control-id → slice06
+- `F0767` | valid | src/trace/walker.rs:173-177 — prefix element_id with container uuid or source → slice06
+- `F0764` | valid | src/trace/walker.rs:19-24 — include ValidateError Display in TraceUnsupportedArtifact detail → slice06
+- `F0762` | valid | src/types.rs:23-34 — add ALL const and FromStr; dedupe lifecycle/config string tables → slice06
+- `F0761` | partial | src/types.rs:48-53 — co-locate Strategy::output_type(); misstated exhaustiveness mechanism; keep both enums mapped → slice06
+- `F0775` | valid | src/uuid.rs:271-278 — low; use >=, warn, report skipped requirements count to caller → slice06
+- `F0780` | valid | src/validate/error_types.rs:41-44 — private actual plus constructor enforcing truncate_value SEC-1 cap → slice06
+- `F0779` | valid | src/validate/error_types.rs:83-95 — default supported_input false or recompute from declared version → slice06
+- `F0792` | valid | src/validate/formatter.rs:44-53 — bracket-quote non-identifier segments; numeric keys are not indexes → slice06
+- `F0793` | valid | src/validate/formatter.rs:63-81 — redact secret-named keys; never echo whole document first chars → slice06
+- `F0802` | valid | src/validate/mod.rs:138-148 — require Some(Value::Object) single pass; reject null roots → slice06
+- `F0803` | valid | src/validate/mod.rs:188-212 — cache structured failure or retry compilation preserving source chain → slice06
+- `F0804` | valid | src/validate/mod.rs:269-281 — bound actual read via take(MAX+1); document symlink following → slice06
+- `F0805` | valid | src/validate/mod.rs:300-337 — extract shared collect_schema_and_version_errors; one path notation → slice06
+- `F0797` | valid | src/validate/report.rs:104-112 — serialize synthesized ValidationReport instead of hand-written JSON literal → slice06
+- `F0787` | valid | src/validate/semantic.rs:88-91 — explicit-stack walk or emit validation-incomplete semantic warning → slice06
+- `F0786` | valid | src/validate/semantic.rs:97-99 — lowercase both uuid sides; special-case empty bare-# fragment → slice06
+- `F0812` | valid | src/validate/version.rs:125-127 — escape first then truncate_value to honor SEC-1 bound → slice06
+- `F0811` | valid | src/validate/version.rs:84-86 — store exact declared; reserve escaped rendering for error fields → slice06
+- `F1018` | valid | supply-chain/audits.toml:1-3 — import upstream audits per AR-051 or document cadence → slice06
+- `F1047` | partial | supply-chain/config.toml:175-181 — low; no stale pairs resolved in Cargo.lock; run vet prune after bumps → slice06
+- `F1050` | partial | supply-chain/config.toml:4-5 — add [[policy]] and imports; CI cargo vet gate already exists → slice06
+- `F0810` | valid | tests/atomize_integration.rs:113-115 — assert requirements.len()==1 before indexing preserved text → slice06
+- `F0808` | valid | tests/atomize_integration.rs:131-142 — insert stable_ids into HashSet; fail on duplicates → slice06
+- `F0809` | valid | tests/atomize_integration.rs:53-61 — assert fragment texts non-empty distinct and parent_text exact → slice06
+- `F0816` | valid | tests/cli_integration.rs:937-943 — comment validate-vs-convert exit taxonomy; add invalid-document exit test → slice06
+- `F0824` | partial | tests/common/fixture_generator.rs:1294 — extend fixture_determinism_test with size-range and structural counts → slice06
+- `F0820` | valid | tests/common/fixture_generator.rs:212 — emit numbered table captions or interpolate table references programmatically → slice06
+- `F0821` | valid | tests/common/fixture_generator.rs:289 — emit Appendix A section or remove dangling pointer → slice06
+- `F0828` | valid | tests/common/mod.rs:50-54 — normalize only repo-local paths; preserve slash-prefixed OSCAL hrefs → slice06
+- `F0829` | valid | tests/common/mod.rs:63-69 — match UNC and extended-length verbatim Windows path prefixes → slice06
+- `F0833` | valid | tests/export_format_pairs.rs:28-141 (all 18 pair tests); tests/integration_profile_e2e.rs:367-413 (S-2 test profile_xml_yaml_formats) → slice07
+- `F0840` | valid | tests/export_integration.rs:16-27; tests/integration_cross_feature.rs:55-56; tests/integration_round_trip.rs:17-18; tests/integration_regression.rs:19-20 and 135-138 → slice07
+- `F0837` | valid | tests/export_integration.rs:83-86; tests/integration_regression.rs:142-145; tests/integration_profile_e2e.rs:219-222 and 359-362; tests/profile_validation_tests.rs:227-231 → slice07
+- `F0839` | valid | tests/export_integration.rs:9-13 (constants) and all tests; tests/integration_regression.rs:79-82 vs lines 46, 89, 126 → slice07
+- `F0854` | valid | tests/golden_edge_case_tests.rs:143-165 (normalize_value), esp. 145-149 and 155-157 → slice07
+- `F0855` | valid | tests/golden_edge_case_tests.rs:368-372 (ec06_substantive_change_rotates_stable_ids) → slice07
+- `F0856` | valid | tests/golden_edge_case_tests.rs:451-497 (strategy_matrix_dual_strategy_and_agnostic_coverage, dual matrix arms) → slice07
+- `F0867` | partial | tests/golden_file_tests.rs:101-114 (normalize_string_value href arm; Path::new(path_part).is_absolute() at line 110); run_catalog at line 477 uses the relative tests/fixtures/golden input path → slice07
+- `F0866` | valid | tests/golden_file_tests.rs:155-166 (extract_catalog_control_ids) → slice07
+- `F0865` | valid | tests/golden_file_tests.rs:189-194 (extract_control_ids); tests/oscal_cli_round_trip.rs:123-128 (artifact_type_root) → slice07
+- `F0863` | valid | tests/golden_file_tests.rs:205-215 (measure_accuracy) → slice07
+- `F0864` | valid | tests/golden_file_tests.rs:217-240 (measure_accuracy scoring loop) → slice07
+- `F0862` | valid | tests/golden_file_tests.rs:31 (module doc) — no implementation anywhere in the file → slice07
+- `F0869` | valid | tests/golden_file_tests.rs:629-696 (schema_validation_tests); absent from run_catalog (~476) and run_component (~555) → slice07
+- `F0843` | valid | tests/integration_cross_feature.rs:167-171 (count_controls) vs 116-132 and 150-165 (recursive collectors); gate at 293-297 → slice07
+- `F0845` | valid | tests/integration_cross_feature.rs:99-112 (collect_modality_props), 134-148 (collect_params) → slice07
+- `F0852` | valid | tests/integration_profile_e2e.rs:390-395 (profile_xml_yaml_formats XML branch) → slice07
+- `F0853` | valid | tests/integration_profile_e2e.rs:52-68 (extract_control_ids) → slice07
+- `F0848` | valid | tests/integration_round_trip.rs:35-47 (clear_control_implementations) → slice07
+- `F0875` | valid | tests/oscal_cli_round_trip.rs:24-36 (invoker_if_available / skip_if_no_oscal_cli), 178, 213 (early returns in SC-001/SC-002) → slice07
+- `F0860` | valid | tests/profile_golden_file_tests.rs:25-40 (golden_include_only), 50-66 (golden_exclude_only) → slice07
+- `F0878` | valid | tests/profile_validation_tests.rs:239-241 (edge_invalid_catalog_path) → slice07
+- `F0880` | valid | tests/property_tests.rs:16 ("[ -~]{0,500}"), 34 and 52 (".{0,300}" / ".{0,500}"); SUT slicing at src/parse/atomize.rs:218,228 and src/citation.rs:224-231 → slice07
+- `F0882` | valid | tests/property_tests.rs:181-188 (P-9), 192-208 (P-10, paired-Err arm at 205), 211-222 (P-11), 226-235 (P-12), 255-264 (P-14) → slice07
+- `F0881` | valid | tests/property_tests.rs:45-46 (atomize_produces_at_least_one), 63 (atomize_bounded_output), 79 (atomize_all_have_stable_id), ~247 (P-13 url_citations_contain_scheme) → slice07
+- `F0870` | valid | tests/trace_integration.rs:80-84 (catalog_trace_one_link_per_control) → slice07
+
+## LOW — 322 actionable (300 valid, 22 partial)
+
+- `F0948` | valid | .cargo/config.toml:1-2 → slice07
+- `F1074` | valid | .gitattributes:2 and 28-29 → slice07
+- `F1066` | valid | .github/workflows/ci.yml:38-39 (same pattern in .github/workflows/release.yml:37-40) → slice07
+- `F1064` | valid | .github/workflows/ci.yml:44-45 → slice07
+- `F1067` | valid | .github/workflows/ci.yml:58-60 → slice07
+- `F1060` | valid | .github/workflows/release.yml:131-132 → slice07
+- `F1069` | valid | .gitignore:3-4 (debug/, release/); same latent issue for coverage/ (~line 20) → slice07
+- `F1071` | valid | .gitignore:54-55 (OS section) vs ~line 27 (IDEs and Editors section) → slice07
+- `F1070` | valid | .gitignore:7 (finding cited 27-29 — stale line numbers; the pattern lives in the Rust/Cargo section) → slice07
+- `F1068` | partial | .gitignore:8 → slice01
+- `F0996` | valid | .rustfmt.toml:3 → slice07
+- `F1025` | valid | Cargo.toml:1-5 ([package]) → slice07
+- `F1021` | valid | Cargo.toml:22 → slice07
+- `F1020` | partial | Cargo.toml:27 → slice02
+- `F1024` | partial | Cargo.toml:37-38 → slice02
+- `F1022` | valid | Cargo.toml:4 → slice07
+- `F1023` | valid | Cargo.toml:8-28 (dependencies) → slice07
+- `F0043` | valid | benches/atomize.rs:28, 34 and the document-bench body (~64-80) → slice07
+- `F0034` | valid | benches/export_bench.rs:22-23 → slice07
+- `F0033` | valid | benches/export_bench.rs:29-46 (build_catalog_json) → slice07
+- `F0031` | partial | benches/export_bench.rs:52-63 → slice02
+- `F0035` | valid | benches/export_bench.rs:77-80 → slice07
+- `F0027` | valid | benches/parameter_extraction.rs:3-7 → slice07
+- `F0028` | valid | benches/parameter_extraction.rs:89-131 → slice07
+- `F0055` | valid | benches/pipeline_benchmark.rs:140-160 (bench_per_stage docs and pre-computation) → slice07
+- `F0054` | valid | benches/pipeline_benchmark.rs:152-183 (prep unwraps) vs labeled expect at line 83 (bench_full_pipeline) → slice07
+- `F0023` | valid | benches/uuid_benchmark.rs:19 (and whole file) → slice07
+- `F0022` | valid | benches/uuid_benchmark.rs:5, 12, 19 → slice07
+- `F0104` | valid | benches/xml_benchmark.rs:22-25 → slice07
+- `F0100` | valid | benches/xml_benchmark.rs:44 (identical chain in benches/export_bench.rs:45) vs src/pipeline.rs:172-175 → slice07
+- `F0102` | valid | benches/xml_benchmark.rs:53-65 → slice07
+- `F0910` | partial | ci/integration-test.sh:297 → slice01
+- `F1036` | valid | deny.toml:11-18 ([licenses].allow) → slice07
+- `F1033` | valid | deny.toml:19 → slice07
+- `F0003` | valid | examples/component-based/generate_ssp.py:97-104 (generator of examples/component-based/output/ssp.json:85-95) — Redirected to generator: OSCAL 1.1 SystemUser has no status/authorized-date members; generate_ssp.py:102-103 emits them directly while src/oscal/ssp.rs:356-380 already remaps these to props. Fix generator to use remarks/props, regenerate output/ssp.json. → slice08
+- `F0009` | valid | examples/component-based/output/catalog-new.json:42-44 (and ~22 sibling occurrences); root cause in src/oscal/catalog.rs:388 and src/parse/mod.rs:165-186 (accumulate_body_text) → slice07
+- `F0005` | partial | examples/simple-access-control/output/profile.json:12 → slice01
+- `F0019` | valid | generate_ssp.py → slice07
+- `F0892` | valid | scripts/ci-local.sh:18; scripts/pre-commit.sh:24; .github/workflows/ci.yml (Lint step) — All three call sites run cargo clippy without --all-targets, so benches/examples/integration tests are not lint-gated despite CI running benches. Add --all-targets to all three. → slice08
+- `F0891` | valid | scripts/ci-local.sh:3; scripts/pre-commit.sh:3 — Both scripts use set -euo pipefail with no ERR trap; a failing step aborts right after its label echo with no FAILED banner. Install an ERR trap or capture status in run_step in both. → slice08
+- `F0896` | valid | scripts/install-hooks.sh:15-24 — Installer writes a hook delegating to scripts/pre-commit.sh without verifying the delegate exists/is executable, and write/chmod failures abort via set -e without diagnostics. Verify delegate upfront; wrap write steps with explicit errors. → slice08
+- `F0015` | valid | sonar-project.properties:14 — Confirmed: exclusions list lacks target/**, so the scanner can crawl Cargo build output. Append target/** and optionally declare explicit sonar.sources/sonar.tests. → slice08
+- `F0311` | valid | src/applicability/mod.rs:390-400 (edge-validation relationship_key loop) — Confirmed: every (source, target) pair clones raw_sha256/source_id/id_ref Strings even on pure lookups; cost is O(sources×targets) allocations per edge. Intern shared components or probe with borrowed keys. → slice08
+- `F0309` | valid | src/applicability/mod.rs:816-823, 813-814, 852-861, 871-878, 985-990 — Confirmed: root_uuid, raw_sha256, schema_version, manifest_sha256, mapping.uuid, reviewer.uuid, reason_code bypass escape_html while neighboring fields are escaped. Currently provably constrained inputs, so defense-in-depth fix: escape everything. → slice08
+- `F0310` | valid | src/applicability/mod.rs:963-972 (review_required OverdueDeferred arm) — Confirmed: is_ok_and treats a malformed date as not-overdue. Unreachable today (manifest::parse enforces YYYY-MM-DD) but the precondition is unencoded; fail closed or carry a typed NaiveDate. → slice08
+- `F0292` | valid | src/applicability/model.rs:120-145 — Confirmed: kebab-case derive and hand-written as_str duplicate the wire form with no test linking them. Add a unit test asserting serialize == as_str for all six variants. → slice08
+- `F0291` | valid | src/applicability/model.rs:213-226 (classify) — Confirmed: positive-mappings-beat-no-relationship precedence and absent-decision→UnderReview default are only discoverable from the guards. Add a doc comment capturing both. → slice08
+- `F0279` | valid | src/batch/formatter.rs tests (55-156) — Confirmed: no empty-result, componentless-path, or multi-line-error tests; all assertions are substrings. Add the drafted tests and pin exact output in at least one. → slice08
+- `F0276` | valid | src/batch/formatter.rs:20-49 — Confirmed: every writeln! discarded via let _; safe only because sink is String. Document the invariant inline (preferred over .expect under clippy pedantic). → slice08
+- `F0278` | valid | src/batch/formatter.rs:28-31 — Confirmed: into_owned() allocates per success row although Cow would borrow for valid UTF-8; batches can run thousands of files. Keep the Cow. → slice08
+- `F0293` | partial | src/batch/orchestrator.rs:104-108 → slice02
+- `F0303` | valid | src/batch/orchestrator.rs:119-126 — Confirmed: Err(_) maps every unwind to a fixed string with no tracing::error!, leaving only 'Internal error (panic during conversion)' for triage. Downcast payload and log message/location while keeping the user-facing line generic. → slice08
+- `F0297` | valid | src/batch/orchestrator.rs:155-192 — Confirmed: neither catch_unwind panic isolation nor jobs>=1 custom-pool/sequential fallback is exercised. Add panic-isolation and jobs=1 batch tests. → slice08
+- `F0296` | valid | src/batch/orchestrator.rs:56-64; invariant owner docs at 12-18; sole caller src/cli/convert.rs:248-249 — Confirmed: public entry point performs no validation despite validate_inputs' 'single owner' doc claim; empty pairs yield a successful-looking no-op summary. Call validate_inputs inside run_batch_conversion or relax the doc. → slice08
+- `F0288` | valid | src/batch/output_naming.rs:26-31 — Confirmed: file_stem()==None falls back to the full lossy path as stem ('/.json'); to_string_lossy collapses distinct non-UTF-8 stems into one key causing spurious _2 suffixes. Handle None explicitly and key collision maps on OsStr/bytes. → slice08
+- `F0285` | valid | src/batch/output_naming.rs:6-12 — Confirmed: order-dependent bare-name assignment and no filesystem consultation are both real behaviors (tests at 79-85 encode first-wins) but unstated. Document both. → slice08
+- `F0284` | valid | src/batch/summary.rs tests (~150-172) — Confirmed: existing test uses distinct filenames only; tie-breaker (same name, different dirs) and componentless paths untested. Add both cases. → slice08
+- `F0283` | valid | src/batch/summary.rs:13-18 — Confirmed: error_message: String erases the typed error/source chain at the batch boundary. Keep Arc<dyn Error + Send + Sync> (or Arc<ForgeError>) and render at display time. → slice08
+- `F0280` | valid | src/batch/summary.rs:72-73 — Confirmed: file_name().unwrap_or_default() collapses all componentless paths into one tie group sorting ahead of real filenames. Fall back to full path as key. → slice08
+- `F0281` | valid | src/batch/summary.rs:74; field doc at 64 — Confirmed: OsStr::cmp is case-sensitive byte order (platform-dependent) while docs promise 'sorted by input filename' without semantics. Normalize keys or document byte-order semantics. → slice08
+- `F0301` | valid | src/citation.rs:217-237; disjointness preserved remotely by overlaps_any at 144-194 — Confirmed: overlapping ranges would make last_end move backwards and re-emit text; the invariant lives in the caller's overlap checks. Merge intervals locally and add a unit test feeding overlapping ranges. → slice08
+- `F0302` | valid | src/citation.rs:32-53 (URL_REGEX, BIBLIO_REGEX, SCHEMELESS_URL_REGEX, CROSSREF_REGEX) — Confirmed: all four patterns are case-sensitive with no (?i) and no module doc stating the deliberate exclusion; mixed-case citations are silently neither matched nor stripped. Widen with (?i) or document; note golden snapshot impact if matching changes. → slice08
+- `F0307` | valid | src/cli/config_check.rs:156-159 — Confirmed: fallback prints the absolute path (leaking home-dir names into CI logs) and hides the outside-root signal. Prefix '<outside-project-root>' or canonicalize first. → slice08
+- `F0304` | valid | src/cli/config_check.rs:16-26; write_output at 38 and 125 — Confirmed: write_output also propagates ForgeError::Io (stdout write/flush) and can return Validation; BrokenPipe swallowed as Ok. Doc claiming Io only from unreadable cwd is inaccurate. Update wording. → slice08
+- `F0305` | valid | src/cli/config_check.rs:33; first probe at src/config.rs:216-217 — Confirmed: load_selected/select_path already probed cwd (mapping failure to Config/exit 3); the second probe maps the same failure to Io/exit 1 and is unreachable except in a mid-race cwd removal. Plumb the anchor once from the config layer. → slice08
+- `F0306` | valid | src/cli/config_check.rs:41-45; src/config.rs:803-810 — Confirmed: validate_cross_field rejects component-without-config-source-profile even though the error message itself says --source-profile resolves it; config check exits 3 for runnable configs. Soften the comment or downgrade to a warning. → slice08
+- `F0318` | valid | src/cli/convert.rs:24-46; counterpart src/uuid.rs:237, 271-277 — Confirmed: HashMap::insert silently overwrites on locator collisions, skewing count_substantive_stable_id_changes, and the traversal lacks the MAX_SECTION_DEPTH=50 cap the ID generator enforces. Detect duplicates, mirror the depth cap. → slice08
+- `F0317` | valid | src/cli/convert.rs:91-104; downstream 217, 381-384 — Confirmed: guard rejects trim-empty but the valid branch stats/returns the padded string; padded values flow into the pipeline and OSCAL profile href. Trim once and carry the trimmed value. → slice08
+- `F0319` | valid | src/cli/diff.rs:6-8; write_output at line 17 — Confirmed: write_output propagates ForgeError::Io and Validation, contradicting the blanket DiffError promise; misleads exit-code triage (DiffError→2 vs Io→1). List all variants. → slice08
+- `F0337` | valid | src/cli/drift.rs:20-24; write_output at line 35 — Confirmed: same class as F0319; the rendered-status write can propagate ForgeError::Io (BrokenPipe swallowed). Extend the doc. → slice08
+- `F0338` | valid | src/cli/drift.rs:39-44; src/diff/types.rs:20-24 (Display); src/diff/canonical.rs:163-164 (root keys) — Confirmed: kebab literals authored in drift.rs duplicate canonicalize's root-key strings; these are machine-readable wire format. Promote a single ArtifactType::as_str and consume it here. → slice08
+- `F0336` | valid | src/cli/drift.rs:64-66 — Confirmed: map_err(|_| ...) discards the error; JsonOutput holds only 'static literals and a const u8 so the cause is safe to include. Preserve it. → slice08
+- `F0332` | valid | src/cli/export.rs:131-152 (detect_xml_root_element) — Confirmed: only local_name() is checked; foreign-namespace <catalog> roots pass and fail later with generic errors. Use read_resolved_event/event_namespace and fail fast with an explicit namespace diagnostic. → slice08
+- `F0334` | valid | src/cli/export.rs:228-249 — Confirmed: second full serialization to Value per export; acceptance depends on an assumed-lossless envelope→Value round-trip. Document the invariant (ideally with a round-trip test) and share the Value when target is Json. → slice08
+- `F0331` | valid | src/cli/export.rs:277-301 (export_artifact steps) — Confirmed: zero-I/O extension detection is Step 5 after read+UTF-8 conversion; unsupported-extension inputs pay the full read. Move detect_format right after the existence check. → slice08
+- `F0335` | valid | src/cli/export.rs:51-57; src/export/yaml.rs:35-38; src/export/xml_deserializer.rs:483-504 — Confirmed with refinement: JSON maps all failures to ExportInvalidOscal; YAML syntax errors DO surface Serialization via yaml.rs while Value→envelope casts map to ExportInvalidOscal; XML delegates return Serialization. Align the doc or normalize YAML syntax errors to ExportInvalidOscal. → slice08
+- `F0345` | valid | src/cli/migrate.rs tests 84-110; branches at 55-62 — Confirmed: no test for the successor-map aliasing branch and no positive acceptance test. Add both drafted tests. → slice08
+- `F0344` | valid | src/cli/migrate.rs:33-34; exit_code mapping src/error.rs:409-467 — Confirmed: error.to_string() into MigrationError discards the typed error and re-classifies the failure — Io exits 1 (Validation exits 3, correcting the finding's 'exit 1' claim) while MigrationError exits 2, so disk-full/bad-dir failures report as migration analysis errors. Propagate the original error. → slice08
+- `F0339` | valid | src/cli/mod.rs:1-2 — Confirmed: 'Convert subcommand: policy document → OSCAL artifact.' is attached to pub mod config_check. Replace with an accurate config-check description. → slice08
+- `F0342` | valid | src/cli/mod.rs:324-326; validation deferred to src/cli/profile.rs:97-103 — Confirmed: ISO 8601 contract enforced only deep in profile::execute; clap accepts any string including empty. Parse to chrono::DateTime<Utc> at the clap boundary. → slice08
+- `F0341` | valid | src/cli/mod.rs:498-500; validation only at src/lifecycle/record.rs:431-433 — Confirmed: RFC 3339 spec enforced only during record load/append; malformed timestamps travel through execute_transition (src/lifecycle/mod.rs:403+, 442-443) first. Parse at the clap boundary. → slice08
+- `F0329` | valid | src/cli/output.rs:32-40 — Confirmed: racy pre-check; write_atomic still fails safely on a vanished parent with a bare io::Error. Comment it as an advisory fast-path. → slice08
+- `F0328` | valid | src/cli/output.rs:8-15; BrokenPipe arms at 21 and 27 — Confirmed: BrokenPipe returns Ok(()) (exit 0 on truncated payload) and Io can originate from the stdout branch; both unstated. Extend the doc as drafted. → slice08
+- `F0324` | valid | src/cli/profile.rs:121-133; write at 136 — Confirmed: full String materialization doubles peak memory for file targets. Stream into a BufWriter when output is Some, but MUST preserve write_atomic's rename-based atomicity (stream to temp then rename); keep buffered path for stdout. → slice08
+- `F0325` | valid | src/cli/profile.rs:13-21 — Confirmed: timestamp affects observable behavior (last-modified override, RFC 3339 validation at 97-103) yet is undocumented in # Arguments. Add the bullet. → slice08
+- `F0323` | valid | src/cli/profile.rs:75-80 — Confirmed: same warning emitted twice; eprintln bypasses log-level filtering. Delete the eprintln, keep tracing::warn!. → slice08
+- `F0349` | valid | src/cli/resolve.rs:151-158 — Confirmed: and_then(to_str).unwrap_or("profile") renames the output silently and risks collisions. Use to_string_lossy, reserving 'profile' for absent/empty stems. → slice08
+- `F0350` | valid | src/cli/resolve.rs:78-86; preflight at src/oscal_cli/detector.rs:48-51 — Confirmed: detect() always runs oscal-cli --version (a full JVM start) and the next step spawns oscal-cli again for the real resolve; the resolve attempt surfaces the same failures. Skip/cache the preflight when a concrete invocation follows; keep it for --check. → slice08
+- `F0361` | valid | src/cli/validate.rs:126-176 vs 37-116; duplicate 'Step 3' labels at 162 and 177 — Confirmed: execute_round_trip duplicates execute()'s size/read/empty/parse preamble and the step comments have drifted (two 'Step 3's). Extract a shared read_and_parse_artifact helper and renumber. → slice08
+- `F0362` | valid | src/cli/validate.rs:276-291; write_divergence_log at src/round_trip/log.rs:16-28 — Confirmed: every file output goes through write_divergence_log which always writes pretty JSON regardless of ValidateOutputFormat; --format text callers get machine JSON. Honor the format or reject the combination explicitly. → slice08
+- `F0363` | valid | src/cli/validate.rs:28-31; actual success rendering at 92-100 — Confirmed: success path renders the full WI-20 report, not a bare 'Valid' line. Update the doc. → slice08
+- `F0391` | valid | src/config.rs:38-55 (KNOWN_*_KEYS) vs 59-95 (RawFile/RawConvert/RawValidate with deny_unknown_fields) — Confirmed: hand-maintained key lists mirror the serde structs independently; one-sided additions degrade UX and risk drift. Derive one from the other or add a key-set parity unit test. → slice08
+- `F0392` | valid | src/config.rs:383-427 (check_unknown_keys) — Confirmed: as_table() on a scalar section yields None → sub_keys=None → section silently skipped; failure surfaces later as a generic serde type mismatch with no 'did you mean'. Reject non-table sections explicitly. → slice08
+- `F0390` | partial | src/config.rs:593-608 (optional_input_file); display_relative 720-724; ensure_symlink_containment 671-702 — Normalization-mismatch half confirmed: display_relative renders the normalize_lexical'd resolved path, so './nested/../link.json' shows as 'link.json' and users can't grep the message in their .forge.toml. Symlink-traversal half overstated: ensure_symlink_containment rejects escapes with its own explicit message before the metadata probe runs. Fix: format errors with the raw configured string. → slice08
+- `F0386` | valid | src/config.rs:611-633 (resolve_inside_root); normalize_lexical 705-718 — Confirmed: Windows drive-relative operands slip past is_absolute(); backslash separators are one component on Unix but two on Windows, so configs authored with native separators behave differently per platform. The file already special-cases Win32 (reserved devices); add explicit drive/backslash rejection and per-platform tests. → slice08
+- `F0375` | valid | src/diff/canonical.rs:110-138 — Confirmed: all three error formats name only the role label; paths are CLI inputs, not artifact content, so including them violates no content-free guarantee. Include path.display() and update message-matching tests. → slice08
+- `F0374` | valid | src/diff/canonical.rs:143-155 — Confirmed: Err(_) collapses malformed-shape and detection-layer defects into one generic message. Preserve the cause via Display in the DiffError text. → slice08
+- `F0376` | valid | src/diff/canonical.rs:89 (committed == generated) — Confirmed: serde_json Value equality treats 1 (u64) and 1.0 (f64) as distinct, so lexical numeral changes surface as Drift; array-order significance is documented but this is not. Document or normalize number forms (preserving array-order semantics). → slice08
+- `F0367` | valid | src/diff/engine.rs:137-138 → slice09
+- `F0368` | valid | src/diff/engine.rs:15-20 → slice09
+- `F0356` | valid | src/diff/extractor.rs → slice09
+- `F0353` | valid | src/diff/extractor.rs:41-43, → slice09
+- `F0354` | valid | src/diff/extractor.rs:44, → slice09
+- `F0355` | valid | src/diff/extractor.rs:72-84 → slice09
+- `F0378` | valid | src/diff/formatter.rs:14-15 → slice09
+- `F0382` | valid | src/diff/formatter.rs:48 → slice09
+- `F0380` | valid | src/diff/formatter.rs:51-133 → slice09
+- `F0379` | valid | src/diff/formatter.rs:52-53, → slice09
+- `F0399` | valid | src/diff/mod.rs → slice09
+- `F0398` | valid | src/diff/mod.rs:99-106 → slice09
+- `F0371` | valid | src/diff/types.rs:135-151 → slice09
+- `F0409` | valid | src/error.rs:134-136 → slice09
+- `F0410` | valid | src/error.rs:20-26 → slice09
+- `F0407` | valid | src/error.rs:291-296 → slice09
+- `F0364` | valid | src/export/mod.rs:5-6 → slice09
+- `F0447` | valid | src/export/xml_deserializer.rs:345-346, → slice09
+- `F0446` | valid | src/export/xml_deserializer.rs:482, → slice09
+- `F0462` | valid | src/export/xml_serializer.rs:609 → slice09
+- `F0452` | valid | src/export/xml_serializer.rs:630 → slice09
+- `F0393` | valid | src/export/yaml.rs:21-22, → slice09
+- `F0421` | valid | src/framework/analysis.rs:441-476 → slice09
+- `F0419` | valid | src/framework/analysis.rs:478-479 → slice09
+- `F0423` | valid | src/framework/analysis.rs:87-90, → slice09
+- `F0403` | valid | src/framework/disposition.rs:111-112 → slice09
+- `F0404` | valid | src/framework/disposition.rs:114 → slice09
+- `F0400` | valid | src/framework/disposition.rs:20-26 → slice09
+- `F0415` | valid | src/framework/manifest.rs:172-173 → slice09
+- `F0411` | valid | src/framework/manifest.rs:19-22 → slice09
+- `F0413` | valid | src/framework/manifest.rs:191-210 → slice09
+- `F0416` | valid | src/framework/manifest.rs:81-84 → slice09
+- `F0430` | valid | src/framework/mod.rs:225-245 → slice09
+- `F0429` | valid | src/framework/mod.rs:446-448 → slice09
+- `F0428` | valid | src/framework/mod.rs:64-67 → slice09
+- `F0431` | partial | src/framework/mod.rs:70-72 → slice09
+- `F0465` | valid | src/framework/model.rs:9, → slice09
+- `F0438` | valid | src/ingest/mod.rs:101-107, → slice09
+- `F0437` | valid | src/ingest/mod.rs:308-340 → slice09
+- `F0436` | valid | src/ingest/mod.rs:48-50 → slice09
+- `F0461` | valid | src/io.rs → slice09
+- `F0457` | valid | src/io.rs:21-23 → slice09
+- `F0456` | valid | src/io.rs:30-32 → slice09
+- `F0460` | valid | src/io.rs:81-83 → slice09
+- `F0466` | valid | src/lib.rs:32 → slice09
+- `F0482` | valid | src/lifecycle/mod.rs:968-971 → slice09
+- `F0494` | valid | src/lifecycle/record.rs:335-338 → slice09
+- `F0475` | valid | src/main.rs:11-18 → slice09
+- `F0512` | valid | src/mapping/baseline.rs:137-142 → slice09
+- `F0508` | valid | src/mapping/baseline.rs:278-286 → slice09
+- `F0511` | valid | src/mapping/baseline.rs:44-48 → slice09
+- `F0506` | valid | src/mapping/baseline.rs:54-61 → slice09
+- `F0542` | valid | src/mapping/inventory.rs:103-112, → slice09
+- `F0541` | valid | src/mapping/inventory.rs:388-393 → slice09
+- `F0543` | valid | src/mapping/inventory.rs:396-399 → slice09
+- `F0478` | valid | src/mapping/manifest.rs:346-352 → slice09
+- `F0479` | valid | src/mapping/manifest.rs:611-614 → slice09
+- `F0486` | valid | src/mapping/mod.rs:122-131 → slice09
+- `F0489` | valid | src/mapping/mod.rs:465-469 → slice09
+- `F0488` | valid | src/mapping/mod.rs:489-499 → slice09
+- `F0500` | valid | src/mapping/model.rs:330-333 — Aggregate unmapped statement ids into GapSummary or document controls-only → slice10
+- `F0499` | valid | src/mapping/model.rs:610 — Hoist gap-summary kind literals into shared consts both sites → slice10
+- `F0519` | valid | src/migration/engine.rs:18-24 — Assert or reject duplicate stable_ids when building new_by_id → slice10
+- `F0521` | valid | src/migration/engine.rs:427-437 — Key grouping maps by borrowed str slices, not clones → slice10
+- `F0522` | valid | src/migration/engine.rs:434 — Replace or_insert_with(Vec::new) with or_default() → slice10
+- `F0526` | valid | src/migration/formatter.rs:20-22 — Comment that writeln discards are safe on String sink → slice10
+- `F0525` | valid | src/migration/formatter.rs:67-69 — Stream evidence join into buffer without intermediate Vec → slice10
+- `F0502` | valid | src/migration/inventory.rs:16-18 — Check input_format before running prepare_document → slice10
+- `F0514` | valid | src/migration/inventory.rs:39-40 — Add sorted debug_assert or HashSet-based uniqueness check → slice10
+- `F0523` | valid | src/migration/inventory.rs:55-57 — Return UnsupportedFormat variant; align exit code and help text → slice10
+- `F0513` | valid | src/migration/inventory.rs:78 → slice01
+- `F0517` | valid | src/migration/inventory.rs:78 — Escape slashes in titles or record structured section paths → slice10
+- `F0528` | valid | src/migration/mod.rs:39 — Wrap successor::load errors with map path context → slice10
+- `F0529` | valid | src/migration/mod.rs:6 — Privatize successor; re-export only used public items → slice10
+- `F0559` | valid | src/migration/successor.rs:182-183 — Deserialize approved_at as DateTime, stop parse-then-discard → slice10
+- `F0557` | valid | src/migration/successor.rs:222-227 — Reject ids with surrounding whitespace or control characters → slice10
+- `F0558` | valid | src/migration/successor.rs:92-97 — Add path.display() to symlink and regular-file rejections → slice10
+- `F0580` | valid | src/model/assemble.rs:117,169 — Document usize::MAX sentinel or model optional end explicitly → slice10
+- `F0578` | valid | src/model/assemble.rs:120-124 — Use partition_point on source_line-sorted list_items → slice10
+- `F0579` | valid | src/model/assemble.rs:181-183,220,244 — Derive fallback id from content hash, warn on fallback → slice10
+- `F0577` | valid | src/model/assemble.rs:34-75 — Document Preamble rule; optionally unify via one helper → slice10
+- `F0572` | valid | src/model/frontmatter.rs:48 — Return Absent/Malformed/Data enum instead of Option → slice10
+- `F0570` | partial | src/model/frontmatter.rs:55-64 — Strip trailing CR from CRLF-matched YAML slice → slice10
+- `F0554` | valid | src/model/mod.rs:121-124 — Add debug-checked enrichment postconditions or typestate wrappers → slice10
+- `F0553` | partial | src/model/mod.rs:99-100 — Validate heading_level while accommodating Preamble's level 0 → slice10
+- `F0547` | valid | src/model/trace.rs:107-109 — Document append-only invariant; consider checked index access → slice10
+- `F0546` | valid | src/model/trace.rs:25-26 — Derive PartialEq and Eq on TraceLink → slice10
+- `F0548` | valid | src/model/trace.rs:75-76 — Document element-id-only uniqueness in record() docs → slice10
+- `F0566` | valid | src/oscal/assessment_plan.rs:112-113 — Fix doc: Assess prefix, 77 chars, ellipsis → slice10
+- `F0567` | valid | src/oscal/assessment_plan.rs:168-173 — Model include-all/include-subjects as exclusive enum → slice10
+- `F0563` | valid | src/oscal/assessment_plan.rs:232-233 — Preserve assemble_metadata error source in AssessmentPlanBuild → slice10
+- `F0565` | valid | src/oscal/assessment_plan.rs:349-353 — Apply empty-text trim guard to activity title/description → slice10
+- `F0621` | valid | src/oscal/back_matter.rs:161-163 — Use parsed_url canonical form for href, check snapshots → slice10
+- `F0607` | partial | src/oscal/component_definition.rs:137-160,228-231 — Add content hash to component UUID seed inputs → slice10
+- `F0603` | valid | src/oscal/component_definition.rs:263-283 — Signal cap truncation; break loops without skipping children → slice10
+- `F0604` | valid | src/oscal/component_definition.rs:275-277 — Check seen membership before cloning citation id → slice10
+- `F0587` | valid | src/oscal/implemented_requirements.rs:220 — Fix doc: REQ fallback is 1-based global position → slice10
+- `F0590` | valid | src/oscal/implemented_requirements.rs:227-239 — Take Option<&str> stable_id instead of has_stable_id bool → slice10
+- `F0584` | valid | src/oscal/mod.rs:46-47 — Document or rename duplicate catalog OscalMetadata placeholder → slice10
+- `F0614` | valid | src/oscal/parts.rs:156-158 → slice01
+- `F0596` | valid | src/oscal/profile.rs:237-247 — Fold mode into UUID seed only when ids present → slice10
+- `F0600` | valid | src/oscal/profile.rs:242-243 — Sort/dedup control_ids once; reuse, drop clone → slice10
+- `F0597` | valid | src/oscal/profile.rs:242-259 — Emit sorted with_ids matching UUID seed order → slice10
+- `F0599` | partial | src/oscal/profile.rs:308-311 — Validate tokens cautiously to avoid rejecting legitimate ids → slice10
+- `F0598` | valid | src/oscal/profile.rs:65-66,199 — Update doc: href is sanitized filename, not as-is → slice10
+- `F0630` | valid | src/oscal/ssp.rs:222,243,275,421,494 — Model enumerated OSCAL states as typed enums → slice10
+- `F0626` | valid | src/oscal/ssp.rs:588-589 — Preserve assemble_metadata error source in SspBuild → slice10
+- `F0633` | valid | src/oscal/trace_embedding.rs:40-57 — Cap and warn on post-encoding href length → slice10
+- `F0636` | valid | src/oscal/trace_embedding.rs:62-96 — Document filename-only precondition or centralize normalization → slice10
+- `F0650` | valid | src/oscal_cli/invoker.rs:25-29,49-54 — Log found vs absent allowlisted env vars → slice10
+- `F0645` | valid | src/oscal_cli/invoker.rs:65-70 — Read stderr lossy byte-wise instead of read_to_string → slice10
+- `F0651` | valid | src/oscal_cli/invoker.rs:78-103 — Document synchronous blocking contract on OscalCliInvoke → slice10
+- `F0653` | valid | src/oscal_cli/mod.rs:37-44 — Enforce canonical paths; document positional argument contract → slice10
+- `F0654` | valid | src/oscal_cli/mod.rs:89-90 — Drop false default wording or add timeout constant → slice10
+- `F0661` | valid | src/parameter/matchers.rs:208-210 — Restrict QUANTITY units to count nouns, update tests → slice10
+- `F0662` | valid | src/parameter/matchers.rs:63-66 — Replace expect() with graceful skip on missing groups → slice10
+- `F0657` | valid | src/parameter/mod.rs:211-216 — Preserve error source or simplify to non-Result contract → slice10
+- `F0711` | valid | src/parse/atomize.rs:317-322,360-396 — Share MAX_SECTION_DEPTH; align counting with atomize cap semantics → slice10
+- `F0713` | partial | src/parse/atomize.rs:68-72 — Salt preliminary_id with section context; pipeline overwrites ids → slice10
+- `F0712` | valid | src/parse/atomize.rs:77-80,218,228 — Defend char-boundary slicing with get() or debug_assert → slice10
+- `F0666` | valid | src/parse/clauses.rs:211-218 — Assert exclude_depth pairing before saturating_sub → slice10
+- `F0667` | valid | src/parse/clauses.rs:402-423 — Drop dead Result or add real failure path → slice10
+- `F0703` | valid | src/parse/mod.rs:125-136 → slice11
+- `F0707` | valid | src/parse/mod.rs:168-195 (arm cited as 182-187) → slice11
+- `F0704` | valid | src/parse/mod.rs:221-231 → slice11
+- `F0706` | valid | src/parse/mod.rs:262-267 → slice11
+- `F0708` | valid | src/parse/mod.rs:573-594 → slice11
+- `F0685` | valid | src/parse/modality.rs:40-57 → slice11
+- `F0686` | valid | src/parse/modality.rs:45-57 → slice11
+- `F0687` | valid | src/parse/modality.rs:75-79 → slice11
+- `F0729` | valid | src/pipeline.rs:172-175 → slice11
+- `F0730` | valid | src/pipeline.rs:184-195 → slice11
+- `F0725` | valid | src/pipeline.rs:44-62 → slice11
+- `F0727` | valid | src/pipeline.rs:97-99 → slice11
+- `F0670` | valid | src/round_trip/chain.rs:49 → slice11
+- `F0697` | valid | src/round_trip/comparator.rs:39, 58 (array-index paths elsewhere are numeric and fine) → slice11
+- `F0675` | valid | src/round_trip/divergence.rs:26-70 → slice11
+- `F0674` | valid | src/round_trip/divergence.rs:76-84 → slice11
+- `F0677` | valid | src/round_trip/divergence.rs:88-89 → slice11
+- `F0679` | valid | src/round_trip/divergence.rs:88-89 → slice11
+- `F0678` | valid | src/round_trip/divergence.rs:90-91 → slice11
+- `F0681` | valid | src/round_trip/log.rs:20 → slice11
+- `F0682` | valid | src/round_trip/log.rs:25 → slice11
+- `F0683` | valid | src/round_trip/log.rs:30-148 (tests) → slice11
+- `F0699` | valid | src/round_trip/mod.rs:18 → slice11
+- `F0698` | valid | src/round_trip/mod.rs:9 → slice11
+- `F0702` | valid | src/round_trip/rules.rs:5-24 → slice11
+- `F0717` | valid | src/sanitize.rs:1-12 → slice11
+- `F0718` | valid | src/sanitize.rs:15-52 (tests) → slice11
+- `F0760` | valid | src/summary/format.rs:110-126 → slice11
+- `F0758` | valid | src/summary/format.rs:155-157 (title math :164-170) → slice11
+- `F0759` | valid | src/summary/format.rs:22-38 → slice11
+- `F0720` | valid | src/summary/mod.rs:63-79 → slice11
+- `F0721` | valid | src/summary/mod.rs:96-103 → slice11
+- `F0714` | valid | src/testing/mod.rs:6 (and src/lib.rs:64-65) → slice11
+- `F0715` | valid | src/testing/mod.rs:6-8 → slice11
+- `F0738` | valid | src/testing/semantic_eq.rs:102-124 → slice11
+- `F0735` | valid | src/testing/semantic_eq.rs:166-181 → slice11
+- `F0737` | valid | src/testing/semantic_eq.rs:47-54 → slice11
+- `F0736` | valid | src/testing/semantic_eq.rs:56-67 → slice11
+- `F0724` | valid | src/trace/extractor.rs:38-46 → slice11
+- `F0773` | valid | src/trace/formatter.rs:109-121 → slice11
+- `F0772` | valid | src/trace/formatter.rs:124-142 → slice11
+- `F0771` | valid | src/trace/formatter.rs:21-55 → slice11
+- `F0769` | valid | src/trace/formatter.rs:44-55 → slice11
+- `F0753` | valid | src/trace/mod.rs:31-36 → slice11
+- `F0754` | valid | src/trace/mod.rs:41 → slice11
+- `F0752` | valid | src/trace/mod.rs:46-48 → slice11
+- `F0755` | valid | src/trace/mod.rs:53-56 → slice11
+- `F0756` | valid | src/trace/mod.rs:57-60 → slice11
+- `F0747` | valid | src/trace/report.rs:3-6 → slice11
+- `F0749` | valid | src/trace/report.rs:78-91 (tests section :119-231) → slice11
+- `F0748` | valid | src/trace/report.rs:83 → slice11
+- `F0740` | valid | src/trace/resolver.rs:24-25 → slice11
+- `F0741` | valid | src/trace/resolver.rs:28-34 → slice11
+- `F0768` | valid | src/trace/walker.rs:133-147 → slice11
+- `F0766` | partial | src/trace/walker.rs:78-130 → slice01
+- `F0763` | valid | src/types.rs:47-53 → slice11
+- `F0777` | valid | src/uuid.rs:229-232 → slice11
+- `F0776` | valid | src/uuid.rs:253-260 → slice11
+- `F0778` | valid | src/uuid.rs:269 → slice11
+- `F0781` | valid | src/validate/error_types.rs:140-143 — derive semantic count as errors.len() - schema count → slice12
+- `F0795` | valid | src/validate/formatter.rs:218-233 — replace fabricated sentinels with honest unavailable marker → slice12
+- `F0796` | valid | src/validate/formatter.rs:66-78 — emit structural summaries for arrays/objects before truncation → slice12
+- `F0807` | valid | src/validate/mod.rs:112-118 — document profile, mapping-collection roots and AmbiguousArtifact error → slice12
+- `F0806` | valid | src/validate/mod.rs:310-312 — move version.error instead of cloning it → slice12
+- `F0798` | valid | src/validate/report.rs:24-32 — add support warning and trailing newline to valid branch → slice12
+- `F0801` | valid | src/validate/report.rs:253 — add supported_input=false tests for both renderers → slice12
+- `F0799` | valid | src/validate/report.rs:36-95 — filter once; share vectors between summary and sections → slice12
+- `F0788` | valid | src/validate/semantic.rs:113-133 — reuse segment stack; render path only on error → slice12
+- `F0789` | valid | src/validate/semantic.rs:143-148 — document Profile/Mapping no-op or implement M-4 check → slice12
+- `F0814` | partial | src/validate/version.rs:163-173 — gap real; verbatim-declared expectation contradicts current escaping → slice12
+- `F0813` | valid | src/validate/version.rs:32-37 — add debug_assert/test guarding canonical baseline constants → slice12
+- `F1051` | partial | supply-chain/config.toml:935-937 — document wasip3 RC; dead-weight claim misreads cargo-vet → slice12
+- `F0819` | valid | tests/cli_integration.rs:1108-1146 — assert app-owned log markers, not level tokens → slice12
+- `F0818` | valid | tests/cli_integration.rs:895 — unique traceability IDs per test; prefix with WI → slice12
+- `F0817` | valid | tests/cli_integration.rs:897-948 — consolidate three missing-file tests into one → slice12
+- `F0825` | valid | tests/common/fixture_generator.rs:1281-1287 — fix stats: 40 plain-text references, not 30 bracketed → slice12
+- `F0827` | valid | tests/common/fixture_generator.rs:1316 — document infallible-String invariant or propagate fmt::Result → slice12
+- `F0823` | valid | tests/common/fixture_generator.rs:384 — derive section numbers programmatically or pin them in tests → slice12
+- `F0826` | partial | tests/common/fixture_generator.rs:8 — removing allow breaks per-binary clippy; gate module instead → slice12
+- `F0831` | valid | tests/common/mod.rs:35-37 — use shape-based timestamp normalization, not key name → slice12
+- `F0830` | partial | tests/common/mod.rs:50-52 — latent only; no current output embeds UUID substrings → slice12
+- `F0835` | valid | tests/export_format_pairs.rs:21-22 — attach fixture/format context to unwrap failures → slice12
+- `F0834` | valid | tests/export_format_pairs.rs:27-32 — table-drive the 18 format-pair tests → slice12
+- `F0842` | valid | tests/export_integration.rs:16 — accept IntoIterator AsRef OsStr args ergonomically → slice12
+- `F0841` | valid | tests/export_integration.rs:99-107 — reuse run_export; assert stderr names --format → slice12
+- `F0858` | valid | tests/golden_edge_case_tests.rs:103-110 — capture stdout; treat signaled exit as failure → slice12
+- `F0857` | valid | tests/golden_edge_case_tests.rs:236-245 — hoist fixture lists to shared constants; check files → slice12
+- `F0859` | valid | tests/golden_edge_case_tests.rs:394-399 — use fixture-derived citations, not synthetic Citation → slice12
+- `F0868` | partial | tests/golden_file_tests.rs:62-65 — latent only; current UUID fields are whole-string → slice12
+- `F0847` | valid | tests/integration_cross_feature.rs:148-150 — replace unwrap_or and vec![] with map unwrap_or_default → slice12
+- `F0846` | partial | tests/integration_cross_feature.rs:193-196 — dedupe real; cited drift is intentional XML normalization → slice12
+- `F0851` | valid | tests/integration_regression.rs:57-59 — parse uuid with uuid::Uuid::parse_str → slice12
+- `F0850` | valid | tests/integration_regression.rs:63 — reference forge::oscal::metadata::OSCAL_VERSION instead of literal → slice12
+- `F0849` | valid | tests/integration_round_trip.rs:62 — anchor fixture and baseline paths to CARGO_MANIFEST_DIR → slice12
+- `F0877` | valid | tests/oscal_cli_round_trip.rs:19 — source timeout from env var with fallback → slice12
+- `F0876` | valid | tests/oscal_cli_round_trip.rs:28 — expect stating detector invariant instead of unwrap → slice12
+- `F0861` | partial | tests/profile_golden_file_tests.rs:65-66 — gap real; empty imports violates schema minItems:1 → slice12
+- `F0879` | valid | tests/profile_validation_tests.rs:119-125 — give ignored test compile-checked skeleton body → slice12
+- `F0883` | valid | tests/property_tests.rs:258 — drop +1; pipeline stages are provably non-growing → slice12
+- `F0871` | valid | tests/trace_integration.rs:107-111 — derive paths from catalog positions via by_oscal_element → slice12
+- `F0873` | valid | tests/trace_integration.rs:13-15 — add Option stable_id variant covering CatalogBuild error → slice12
+- `F0872` | valid | tests/trace_integration.rs:194-196 — restate invariant as inputs; WI-15 is merged → slice12
+
+## NON-ACTIONABLE (audit)
+
+- `F0383` | invalid | src/config.rs:671-705 → slice01
+- `F0785` | duplicate | src/validate/semantic.rs:25 → slice02
+- `F0001` | duplicate | output/ssp.json:23-24 (root cause generate_ssp.py:59-62,69-72) → slice02
+- `F0387` | invalid | src/config.rs:241-254 → slice03
+- `F0385` | invalid | src/config.rs:612-627 → slice03
+- `F0366` | duplicate | src/diff/engine.rs:82-89 → slice03
+- `F0510` | invalid | src/mapping/baseline.rs:288-290 → slice04
+- `F0498` | invalid | src/mapping/model.rs:577-582 → slice04
+- `F0504` | invalid | src/migration/inventory.rs:77-80 → slice04
+- `F0629` | invalid | src/oscal/ssp.rs:591-593 → slice05
+- `F0627` | invalid | src/oscal/ssp.rs:674-678 → slice05
+- `F0646` | invalid | src/oscal_cli/invoker.rs:106 → slice05
+- `F0647` | invalid | src/oscal_cli/invoker.rs:114 → slice05
+- `F0688` | duplicate | src/parse/modality.rs:143-146 → slice05
+- `F0733` | duplicate | src/pipeline.rs:397-403 → slice05
+- `F0800` | invalid | src/validate/report.rs:52 → slice06
+- `F0822` | duplicate | tests/common/fixture_generator.rs:525 → slice06
+- `F0838` | invalid | tests/export_integration.rs:93-96 → slice07
+- `F1053` | invalid | .github/dependabot.yml:10-11 → slice07
+- `F1061` | invalid | .github/workflows/release.yml:113-117 → slice07
+- `F0389` | invalid | src/config.rs:438-461 → slice08
+- `F0689` | duplicate | src/parse/modality.rs:43-45 → slice11
+- `F0690` | duplicate | src/parse/modality.rs:52-56 → slice11
+- `F0691` | duplicate | src/parse/modality.rs:75-79 → slice11
+- `F0783` | invalid | src/validate/error_types.rs:75-76 → slice12
+- `F0782` | invalid | src/validate/error_types.rs:79-80 → slice12
+- `F0794` | invalid | src/validate/formatter.rs:139-140 → slice12
+- `F1048` | invalid | supply-chain/config.toml:563-565 → slice12
