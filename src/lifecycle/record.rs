@@ -325,18 +325,17 @@ fn validate_parties(record: &LifecycleRecord) -> Result<(), ForgeError> {
             return Err(error(format!("$.parties[{index}].key duplicates '{}'", party.key)));
         }
     }
+    let mut owner_keys = BTreeSet::new();
     for owner in &record.policy.owner_keys {
+        if !owner_keys.insert(owner.as_str()) {
+            return Err(error("$.policy.owner_keys contains duplicates"));
+        }
         let roles = parties.get(owner.as_str()).ok_or_else(|| {
             error(format!("owner key '{}' references an unknown party", bounded(owner)))
         })?;
         if !roles.contains(&DeclaredRole::Owner) {
             return Err(error(format!("owner party '{}' lacks the owner role", bounded(owner))));
         }
-    }
-    if record.policy.owner_keys.iter().collect::<BTreeSet<_>>().len()
-        != record.policy.owner_keys.len()
-    {
-        return Err(error("$.policy.owner_keys contains duplicates"));
     }
     for requirement in &record.approval_policy.required_roles {
         let available = parties.values().filter(|roles| roles.contains(&requirement.role)).count();

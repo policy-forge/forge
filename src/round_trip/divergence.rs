@@ -87,17 +87,40 @@ pub fn classify_oscal_cli_compatibility(
     match oscal_cli_version {
         None => (CompatibilityClassification::Unavailable, None),
         // NIST oscal-cli v1.0.3 documents OSCAL v1.1.2 model support.
-        Some("1.0.3") => (CompatibilityClassification::AdvisoryOlderModelBaseline, Some("1.1.2")),
+        Some(version) if version.split(['+', '-']).next() == Some("1.0.3") => {
+            (CompatibilityClassification::AdvisoryOlderModelBaseline, Some("1.1.2"))
+        }
         // Unknown tool versions are not evidence of a documented model baseline.
         Some(_) => (CompatibilityClassification::UnverifiedBaseline, None),
     }
 }
 
+/// OSCAL artifact type represented by a round-trip validation result.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ArtifactType {
+    /// OSCAL catalog artifact.
+    Catalog,
+    /// OSCAL component definition artifact.
+    ComponentDefinition,
+    /// Artifact detection did not identify a supported OSCAL model.
+    Unknown,
+}
+
+impl std::fmt::Display for ArtifactType {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::Catalog => "Catalog",
+            Self::ComponentDefinition => "ComponentDefinition",
+            Self::Unknown => "Unknown",
+        })
+    }
+}
+
 /// Aggregate result of a single round-trip validation run.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct RoundTripResult {
-    /// OSCAL artifact type: `"Catalog"` or `"ComponentDefinition"`.
-    pub artifact_type: String,
+    /// OSCAL artifact type identified for the round-trip validation.
+    pub artifact_type: ArtifactType,
     /// Path to the original FORGE-generated JSON artifact.
     pub source_path: PathBuf,
     /// OSCAL version declared by the source artifact.
@@ -175,7 +198,7 @@ mod compatibility_tests {
     #[test]
     fn pass_status_is_derived_from_divergence_classifications() {
         let mut result = RoundTripResult {
-            artifact_type: "Catalog".to_string(),
+            artifact_type: ArtifactType::Catalog,
             source_path: PathBuf::from("catalog.json"),
             declared_oscal_version: Some("1.2.3".to_string()),
             schema_version_used: "1.2.3".to_string(),
@@ -199,5 +222,60 @@ mod compatibility_tests {
         });
         assert!(!result.passed());
         assert_eq!(serde_json::to_value(&result).unwrap()["passed"], false);
+    }
+
+    #[test]
+    fn version_suffixes_keep_the_documented_older_model_baseline() {
+        for version in ["1.0.3+build.7", "1.0.3-rc.1"] {
+            assert_eq!(
+                classify_oscal_cli_compatibility(Some(version)),
+                (CompatibilityClassification::AdvisoryOlderModelBaseline, Some("1.1.2"))
+            );
+        }
+    }
+
+    #[test]
+    fn compatibility_display_matches_its_serialized_value() {
+        for classification in [
+            CompatibilityClassification::VerifiedConversion,
+            CompatibilityClassification::AdvisoryOlderModelBaseline,
+            CompatibilityClassification::UnverifiedBaseline,
+            CompatibilityClassification::Unavailable,
+        ] {
+            assert_eq!(
+                serde_json::to_value(classification).unwrap(),
+                serde_json::Value::String(classification.to_string())
+            );
+        }
+    }
+
+    #[test]
+    fn artifact_type_display_matches_its_serialized_value() {
+        for artifact_type in
+            [ArtifactType::Catalog, ArtifactType::ComponentDefinition, ArtifactType::Unknown]
+        {
+            assert_eq!(
+                serde_json::to_value(artifact_type).unwrap(),
+                serde_json::Value::String(artifact_type.to_string())
+            );
+        }
+    }
+
+    #[test]
+    fn round_trip_result_can_be_reloaded_from_its_divergence_log_json() {
+        let result = RoundTripResult {
+            artifact_type: ArtifactType::Catalog,
+            source_path: PathBuf::from("catalog.json"),
+            declared_oscal_version: Some("1.2.3".to_string()),
+            schema_version_used: "1.2.3".to_string(),
+            oscal_cli_version: None,
+            oscal_cli_model_version: None,
+            compatibility_classification: CompatibilityClassification::Unavailable,
+            divergences: Vec::new(),
+        };
+
+        let serialized = serde_json::to_string(&result).unwrap();
+        let reloaded: RoundTripResult = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(reloaded, result);
     }
 }

@@ -150,7 +150,7 @@ pub struct ConvertArgs {
     pub output_path: PathBuf,
     /// Target serialization format.
     pub output_format: OscalFormat,
-    /// Per-invocation timeout (default: 30 seconds).
+    /// Per-invocation timeout, selected explicitly by the caller.
     pub timeout: Duration,
 }
 
@@ -170,6 +170,13 @@ pub trait OscalCliDetect {
 }
 
 /// Invoke oscal-cli operations.
+///
+/// Input and output paths must be canonical absolute paths. Implementations
+/// must pass them only as positional arguments after `--`, never as options.
+///
+/// Implementations are synchronous and may block the calling thread while the
+/// subprocess runs and stderr is collected. Async callers must dispatch these
+/// operations to a blocking executor.
 pub trait OscalCliInvoke {
     /// Resolve an OSCAL Profile into a flat Catalog.
     ///

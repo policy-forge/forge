@@ -94,8 +94,18 @@ ssp = {
                     "short-name": "sysadmin",
                     "description": "Full system administration access with privileged role assignment capabilities",
                     "role-ids": ["system-admin", "security-officer"],
-                    "authorized-date": "2026-01-01T00:00:00Z",
-                    "status": {"state": "active"}
+                    "props": [
+                        {
+                            "name": "authorized-date",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "2026-01-01T00:00:00Z"
+                        },
+                        {
+                            "name": "account-status",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "active"
+                        }
+                    ]
                 },
                 {
                     "uuid": stable_uuid("user-analyst"),
@@ -103,8 +113,18 @@ ssp = {
                     "short-name": "analyst-01",
                     "description": "Read-only access to security logs and audit reports",
                     "role-ids": ["analyst"],
-                    "authorized-date": "2026-01-01T00:00:00Z",
-                    "status": {"state": "active"}
+                    "props": [
+                        {
+                            "name": "authorized-date",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "2026-01-01T00:00:00Z"
+                        },
+                        {
+                            "name": "account-status",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "active"
+                        }
+                    ]
                 },
                 {
                     "uuid": stable_uuid("user-svc-ingest"),
@@ -112,8 +132,23 @@ ssp = {
                     "short-name": "svc-ingest",
                     "description": "Automated service account for data ingestion pipeline",
                     "role-ids": ["service-account"],
-                    "authorized-date": "2026-01-01T00:00:00Z",
-                    "status": {"state": "active", "reason": "automated system process, no interactive login"}
+                    "props": [
+                        {
+                            "name": "authorized-date",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "2026-01-01T00:00:00Z"
+                        },
+                        {
+                            "name": "account-status",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "active"
+                        },
+                        {
+                            "name": "account-status-reason",
+                            "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+                            "value": "automated system process, no interactive login"
+                        }
+                    ]
                 }
             ],
             "leveraged-authorizations": [

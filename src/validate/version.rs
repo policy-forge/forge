@@ -135,6 +135,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn schema_baseline_constants_are_canonical_and_ordered() {
+        let minimum = parse_version(MIN_SUPPORTED_OSCAL_VERSION)
+            .expect("minimum supported OSCAL version must be canonical");
+        let schema =
+            parse_version(SCHEMA_VERSION_USED).expect("schema OSCAL version must be canonical");
+        assert!(minimum <= schema, "minimum baseline must not exceed the schema baseline");
+    }
+
+    #[test]
     fn supported_range_is_parsed_numerically() {
         for version in ["1.2.0", "1.2.1", "1.2.2", "1.2.3"] {
             assert!(is_supported_oscal_version(version), "{version} should be supported");
@@ -189,6 +198,19 @@ mod tests {
     }
 
     #[test]
+    fn unsupported_declaration_preserves_safe_report_fidelity() {
+        let json = serde_json::json!({
+            "catalog": {"metadata": {"oscal-version": "1.3.0"}}
+        });
+        let inspection = inspect_oscal_version(&json, OscalModelType::Catalog);
+        assert_eq!(inspection.declared.as_deref(), Some("1.3.0"));
+        assert!(!inspection.supported);
+        let error = inspection.error.expect("unsupported declaration must produce an error");
+        assert_eq!(error.actual(), "1.3.0");
+        assert!(error.message.contains("1.3.0"));
+    }
+
+    #[test]
     fn invalid_declaration_is_bounded_in_report_context() {
         let declaration = format!("{}\n{}", "x".repeat(99), "y".repeat(500));
         let json = serde_json::json!({
@@ -200,5 +222,6 @@ mod tests {
         let error = inspection.error.expect("invalid declaration must produce an error");
         assert!(error.actual().chars().count() <= 103);
         assert!(!error.actual().contains('\n'));
+        assert!(!error.message.contains('\n'));
     }
 }

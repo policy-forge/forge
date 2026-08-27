@@ -11,13 +11,11 @@
 //! cargo bench --bench export_bench
 //! ```
 
-mod common;
-
 use std::hint::black_box;
 use std::path::Path;
 
-use common::MAX_SIZE_BYTES;
 use criterion::{Criterion, criterion_group, criterion_main};
+use forge::DEFAULT_MAX_SIZE_BYTES;
 
 /// Path to the committed 50-page synthetic policy fixture.
 const FIXTURE_PATH: &str = "tests/fixtures/synthetic-50page-policy.md";
@@ -27,22 +25,31 @@ const FIXTURE_PATH: &str = "tests/fixtures/synthetic-50page-policy.md";
 /// Runs the full forge pipeline (ingest → parse → atomize → catalog) and
 /// serializes to JSON, producing a 500KB+ artifact for realistic benchmarks.
 fn build_catalog_json(fixture_path: &Path) -> String {
-    let ingested = forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES).unwrap();
+    let ingested = forge::ingest::ingest_file(fixture_path, DEFAULT_MAX_SIZE_BYTES)
+        .expect("bench setup: ingest_file failed");
     let content = ingested.reconstruct_content();
-    let sections = forge::parse::extract_sections(&content).unwrap();
-    let clauses = forge::parse::extract_clauses(&content).unwrap();
-    let document = forge::model::assemble_document(&ingested, &sections, &clauses).unwrap();
-    let atomized = forge::parse::atomize_document(&document).unwrap();
+    let sections =
+        forge::parse::extract_sections(&content).expect("bench setup: extract_sections failed");
+    let clauses =
+        forge::parse::extract_clauses(&content).expect("bench setup: extract_clauses failed");
+    let document = forge::model::assemble_document(&ingested, &sections, &clauses)
+        .expect("bench setup: assemble_document failed");
+    let atomized =
+        forge::parse::atomize_document(&document).expect("bench setup: atomize_document failed");
     let doc = forge::uuid::assign_stable_ids(atomized);
-    let doc = forge::citation::extract_citations(doc).unwrap();
+    let doc =
+        forge::citation::extract_citations(doc).expect("bench setup: extract_citations failed");
 
     let mut trace_links = forge::TraceLinkCollection::new();
-    let mut catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links)).unwrap();
+    let mut catalog = forge::oscal::build_catalog(&doc, Some(&mut trace_links))
+        .expect("bench setup: build_catalog failed");
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
 
-    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None).unwrap();
+    let metadata = forge::oscal::assemble_metadata(&doc.metadata, None)
+        .expect("bench setup: assemble_metadata failed");
     let citations = forge::oscal::component_definition::collect_all_citations(&doc.sections);
-    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations).unwrap();
+    let (back_matter_resources, _) = forge::oscal::generate_back_matter(&citations)
+        .expect("bench setup: generate_back_matter failed");
     let back_matter = if back_matter_resources.is_empty() {
         None
     } else {
@@ -63,7 +70,7 @@ fn build_catalog_json(fixture_path: &Path) -> String {
     };
 
     let envelope = forge::oscal::catalog::CatalogEnvelope { catalog: oscal_catalog };
-    serde_json::to_string_pretty(&envelope).unwrap()
+    serde_json::to_string_pretty(&envelope).expect("bench setup: serialize catalog JSON failed")
 }
 
 fn bench_export_pipeline(c: &mut Criterion) {
@@ -76,11 +83,16 @@ fn bench_export_pipeline(c: &mut Criterion) {
     // Pre-compute the large catalog JSON and write to a temp file.
     let catalog_json = build_catalog_json(fixture_path);
     let json_size_kb = catalog_json.len() / 1024;
+    assert!(
+        json_size_kb >= 500,
+        "export benchmark fixture regressed below 500 KiB: {json_size_kb} KiB"
+    );
     eprintln!("export benchmark input: {json_size_kb} KiB");
 
-    let temp_dir = tempfile::TempDir::new().unwrap();
+    let temp_dir =
+        tempfile::TempDir::new().expect("bench setup: create temporary directory failed");
     let json_path = temp_dir.path().join("large-catalog.json");
-    std::fs::write(&json_path, &catalog_json).unwrap();
+    std::fs::write(&json_path, &catalog_json).expect("bench setup: write catalog fixture failed");
 
     let mut group = c.benchmark_group("export_pipeline");
 
@@ -91,7 +103,7 @@ fn bench_export_pipeline(c: &mut Criterion) {
                 forge::cli::OutputFormat::Xml,
                 None,
             )
-            .unwrap();
+            .expect("catalog JSON export benchmark must succeed");
         });
     });
 
@@ -102,7 +114,7 @@ fn bench_export_pipeline(c: &mut Criterion) {
                 forge::cli::OutputFormat::Yaml,
                 None,
             )
-            .unwrap();
+            .expect("catalog JSON export benchmark must succeed");
         });
     });
 

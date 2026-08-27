@@ -11,8 +11,10 @@ use std::path::Path;
 use std::sync::LazyLock;
 
 use forge::oscal::catalog::OscalMetadata;
-use forge::oscal::{OscalCatalog, OscalControl, OscalGroup, SspComponentInput, build_ssp_skeleton};
+use forge::oscal::ssp::{ComponentType, ControlImplementationState};
 use regex::Regex;
+
+use forge::oscal::{OscalCatalog, OscalControl, OscalGroup, SspComponentInput, build_ssp_skeleton};
 use serde_json::Value;
 
 /// Path to the SSP golden fixture used by this regression test.
@@ -112,12 +114,12 @@ fn build_minimal_components() -> Vec<SspComponentInput> {
         SspComponentInput {
             title: "Web Application Firewall".to_string(),
             description: "Filters incoming HTTP traffic".to_string(),
-            component_type: "software".to_string(),
+            component_type: ComponentType::Software,
         },
         SspComponentInput {
             title: "Database Server".to_string(),
             description: "Primary PostgreSQL instance".to_string(),
-            component_type: "software".to_string(),
+            component_type: ComponentType::Software,
         },
     ]
 }
@@ -265,7 +267,8 @@ fn ssp_template_has_required_sections() {
         );
         for bc in &req.by_components {
             assert_eq!(
-                bc.implementation_status.state, "planned",
+                bc.implementation_status.state,
+                ControlImplementationState::Planned,
                 "Implementation status should be 'planned'"
             );
             assert!(

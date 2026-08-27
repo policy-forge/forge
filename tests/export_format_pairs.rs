@@ -9,6 +9,12 @@ use forge::cli::OutputFormat;
 use forge::cli::export::export_artifact;
 use serde_json::Value;
 
+#[derive(Clone, Copy, Debug)]
+enum Model {
+    Catalog,
+    ComponentDefinition,
+}
+
 /// Run `export_artifact` and return the output file contents.
 fn export_and_read(relative_path: &str, format: OutputFormat) -> String {
     let input = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative_path);
@@ -19,8 +25,11 @@ fn export_and_read(relative_path: &str, format: OutputFormat) -> String {
         OutputFormat::Yaml => "yaml",
     };
     let output = dir.path().join(format!("out.{ext}"));
-    export_artifact(&input, format, Some(&output)).unwrap();
-    std::fs::read_to_string(&output).unwrap()
+    export_artifact(&input, format, Some(&output)).unwrap_or_else(|e| {
+        panic!("export_artifact failed for {relative_path:?} -> {format:?}: {e}")
+    });
+    std::fs::read_to_string(&output)
+        .unwrap_or_else(|e| panic!("reading exported file {}: {e}", output.display()))
 }
 
 fn assert_catalog_structure(value: &Value) {
@@ -75,137 +84,58 @@ fn assert_xml_structure(content: &str, root: &[u8], nested: &[u8]) {
     );
 }
 
-fn assert_catalog_xml(content: &str) {
-    assert_xml_structure(content, b"catalog", b"control");
-}
-fn assert_component_xml(content: &str) {
-    assert_xml_structure(content, b"component-definition", b"component");
-}
-
-fn assert_catalog_yaml(content: &str) {
-    let value: Value = serde_yaml::from_str(content).expect("exported catalog YAML must parse");
-    assert_catalog_structure(&value);
-}
-
-fn assert_component_yaml(content: &str) {
-    let value: Value = serde_yaml::from_str(content).expect("exported component YAML must parse");
-    assert_component_structure(&value);
-}
-
-// ── Catalog: all 9 format pairs ──────────────────────────────────────────
-
-#[test]
-fn format_pair_catalog_json_to_json() {
-    let c = export_and_read("tests/fixtures/export/catalog.json", OutputFormat::Json);
-    let value: Value = serde_json::from_str(&c).expect("exported catalog JSON must parse");
-    assert_catalog_structure(&value);
-}
-
-#[test]
-fn format_pair_catalog_json_to_xml() {
-    let c = export_and_read("tests/fixtures/export/catalog.json", OutputFormat::Xml);
-    assert_catalog_xml(&c);
-}
-
-#[test]
-fn format_pair_catalog_json_to_yaml() {
-    let c = export_and_read("tests/fixtures/export/catalog.json", OutputFormat::Yaml);
-    assert_catalog_yaml(&c);
+fn assert_exported_structure(model: Model, format: OutputFormat, content: &str) {
+    match (model, format) {
+        (Model::Catalog, OutputFormat::Json) => {
+            let value: Value =
+                serde_json::from_str(content).expect("exported catalog JSON must parse");
+            assert_catalog_structure(&value);
+        }
+        (Model::Catalog, OutputFormat::Xml) => {
+            assert_xml_structure(content, b"catalog", b"control");
+        }
+        (Model::Catalog, OutputFormat::Yaml) => {
+            let value: Value =
+                serde_yaml::from_str(content).expect("exported catalog YAML must parse");
+            assert_catalog_structure(&value);
+        }
+        (Model::ComponentDefinition, OutputFormat::Json) => {
+            let value: Value =
+                serde_json::from_str(content).expect("exported component JSON must parse");
+            assert_component_structure(&value);
+        }
+        (Model::ComponentDefinition, OutputFormat::Xml) => {
+            assert_xml_structure(content, b"component-definition", b"component");
+        }
+        (Model::ComponentDefinition, OutputFormat::Yaml) => {
+            let value: Value =
+                serde_yaml::from_str(content).expect("exported component YAML must parse");
+            assert_component_structure(&value);
+        }
+    }
 }
 
 #[test]
-fn format_pair_catalog_xml_to_json() {
-    let c = export_and_read("tests/fixtures/export/catalog.xml", OutputFormat::Json);
-    let value: Value = serde_json::from_str(&c).expect("exported catalog JSON must parse");
-    assert_catalog_structure(&value);
-}
+fn all_format_pairs_preserve_model_structure() {
+    const CATALOG_INPUTS: [&str; 3] = [
+        "tests/fixtures/export/catalog.json",
+        "tests/fixtures/export/catalog.xml",
+        "tests/fixtures/export/catalog.yaml",
+    ];
+    const COMPONENT_INPUTS: [&str; 3] = [
+        "tests/fixtures/export/component.json",
+        "tests/fixtures/export/component.xml",
+        "tests/fixtures/export/component.yaml",
+    ];
 
-#[test]
-fn format_pair_catalog_xml_to_xml() {
-    let c = export_and_read("tests/fixtures/export/catalog.xml", OutputFormat::Xml);
-    assert_catalog_xml(&c);
-}
-
-#[test]
-fn format_pair_catalog_xml_to_yaml() {
-    let c = export_and_read("tests/fixtures/export/catalog.xml", OutputFormat::Yaml);
-    assert_catalog_yaml(&c);
-}
-
-#[test]
-fn format_pair_catalog_yaml_to_json() {
-    let c = export_and_read("tests/fixtures/export/catalog.yaml", OutputFormat::Json);
-    let value: Value = serde_json::from_str(&c).expect("exported catalog JSON must parse");
-    assert_catalog_structure(&value);
-}
-
-#[test]
-fn format_pair_catalog_yaml_to_xml() {
-    let c = export_and_read("tests/fixtures/export/catalog.yaml", OutputFormat::Xml);
-    assert_catalog_xml(&c);
-}
-
-#[test]
-fn format_pair_catalog_yaml_to_yaml() {
-    let c = export_and_read("tests/fixtures/export/catalog.yaml", OutputFormat::Yaml);
-    assert_catalog_yaml(&c);
-}
-
-// ── Component: all 9 format pairs ────────────────────────────────────────
-
-#[test]
-fn format_pair_component_json_to_json() {
-    let c = export_and_read("tests/fixtures/export/component.json", OutputFormat::Json);
-    let value: Value = serde_json::from_str(&c).expect("exported component JSON must parse");
-    assert_component_structure(&value);
-}
-
-#[test]
-fn format_pair_component_json_to_xml() {
-    let c = export_and_read("tests/fixtures/export/component.json", OutputFormat::Xml);
-    assert_component_xml(&c);
-}
-
-#[test]
-fn format_pair_component_json_to_yaml() {
-    let c = export_and_read("tests/fixtures/export/component.json", OutputFormat::Yaml);
-    assert_component_yaml(&c);
-}
-
-#[test]
-fn format_pair_component_xml_to_json() {
-    let c = export_and_read("tests/fixtures/export/component.xml", OutputFormat::Json);
-    let value: Value = serde_json::from_str(&c).expect("exported component JSON must parse");
-    assert_component_structure(&value);
-}
-
-#[test]
-fn format_pair_component_xml_to_xml() {
-    let c = export_and_read("tests/fixtures/export/component.xml", OutputFormat::Xml);
-    assert_component_xml(&c);
-}
-
-#[test]
-fn format_pair_component_xml_to_yaml() {
-    let c = export_and_read("tests/fixtures/export/component.xml", OutputFormat::Yaml);
-    assert_component_yaml(&c);
-}
-
-#[test]
-fn format_pair_component_yaml_to_json() {
-    let c = export_and_read("tests/fixtures/export/component.yaml", OutputFormat::Json);
-    let value: Value = serde_json::from_str(&c).expect("exported component JSON must parse");
-    assert_component_structure(&value);
-}
-
-#[test]
-fn format_pair_component_yaml_to_xml() {
-    let c = export_and_read("tests/fixtures/export/component.yaml", OutputFormat::Xml);
-    assert_component_xml(&c);
-}
-
-#[test]
-fn format_pair_component_yaml_to_yaml() {
-    let c = export_and_read("tests/fixtures/export/component.yaml", OutputFormat::Yaml);
-    assert_component_yaml(&c);
+    for (model, inputs) in
+        [(Model::Catalog, CATALOG_INPUTS), (Model::ComponentDefinition, COMPONENT_INPUTS)]
+    {
+        for input in inputs {
+            for output in [OutputFormat::Json, OutputFormat::Xml, OutputFormat::Yaml] {
+                let content = export_and_read(input, output);
+                assert_exported_structure(model, output, &content);
+            }
+        }
+    }
 }

@@ -20,11 +20,6 @@ expression: normalize_for_comparison(&catalog_output)
                 "id": "POL-CS-001_smt",
                 "name": "statement",
                 "prose": "Systems must encrypt data at rest"
-              },
-              {
-                "id": "POL-CS-001_gdn",
-                "name": "guidance",
-                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
               }
             ],
             "props": [
@@ -63,11 +58,6 @@ expression: normalize_for_comparison(&catalog_output)
                 "id": "POL-CS-002_smt",
                 "name": "statement",
                 "prose": "Systems must encrypt data in transit."
-              },
-              {
-                "id": "POL-CS-002_gdn",
-                "name": "guidance",
-                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
               }
             ],
             "props": [
@@ -106,11 +96,6 @@ expression: normalize_for_comparison(&catalog_output)
                 "id": "POL-CS-003_smt",
                 "name": "statement",
                 "prose": "Systems must retain audit logs for at least one year."
-              },
-              {
-                "id": "POL-CS-003_gdn",
-                "name": "guidance",
-                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
               }
             ],
             "props": [

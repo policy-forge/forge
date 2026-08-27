@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::model::{PolicyDocument, PolicySection};
+use crate::parse::atomize::MAX_SECTION_DEPTH;
 
 /// Fixed namespace UUID for all FORGE content-addressed identifier generation.
 ///
@@ -136,6 +137,12 @@ pub fn normalize_for_hashing(text: &str) -> String {
 /// The text is normalized before hashing to ensure whitespace-insensitivity.
 /// Uses [`FORGE_NAMESPACE_UUID`] as the namespace parameter.
 ///
+/// # Trust model
+///
+/// UUID v5 uses SHA-1 and some stable-ID seeds are NUL-delimited. Treat these
+/// values only as best-effort content tags for deduplication and change
+/// detection; never use them as integrity or authorization anchors.
+///
 /// This function accepts any string input, not just `PolicyRequirement` text,
 /// enabling reuse for other content-addressed identifiers (PRD S-2).
 ///
@@ -234,9 +241,6 @@ pub fn assign_stable_ids(mut document: PolicyDocument) -> PolicyDocument {
     }
     document
 }
-
-/// Maximum section nesting depth for recursive traversal (`DoS` protection).
-const MAX_SECTION_DEPTH: usize = 50;
 
 fn assign_stable_ids_to_section(
     section: &mut PolicySection,

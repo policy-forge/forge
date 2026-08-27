@@ -520,6 +520,18 @@ pub fn extract_clauses(content: &str) -> Result<ExtractedContent, ForgeError> {
         handle_extraction_event(&event, &range, &mut state, &line_starts);
     }
 
+    if !state.list_state.list_type_stack.is_empty()
+        || !state.list_state.item_stack.is_empty()
+        || state.list_state.exclude_depth != 0
+        || state.list_state.paragraph_depth != 0
+        || state.table_state.in_table
+        || state.para_state.in_standalone
+    {
+        return Err(ForgeError::Parse(
+            "Markdown extraction ended with unbalanced structural state".to_string(),
+        ));
+    }
+
     // Sort items by source_line to maintain document order.
     // Necessary because nested items complete (and are pushed) before their parent items.
     // When End(Item) events fire, deeply nested children are finalized first, which can

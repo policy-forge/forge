@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -Eeuo pipefail
+trap 'status=$?; echo "[ci-local] FAILED (exit ${status}) at line ${LINENO}: ${BASH_COMMAND}" >&2; exit "${status}"' ERR
 
 SOURCE="${BASH_SOURCE[0]}"
 while [[ -h "${SOURCE}" ]]; do
@@ -32,7 +33,7 @@ require_cargo_subcommands() {
 require_cargo_subcommands audit deny vet
 
 run_step "cargo fmt --check" cargo fmt --check
-run_step "cargo clippy -- -D warnings" cargo clippy -- -D warnings
+run_step "cargo clippy --all-targets -- -D warnings" cargo clippy --all-targets -- -D warnings
 run_step "cargo test" cargo test
 
 if [[ "${CI_LOCAL_BENCH:-0}" == "1" ]]; then

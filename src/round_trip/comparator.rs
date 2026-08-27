@@ -28,6 +28,11 @@ pub fn compare_oscal_json(
     divergences
 }
 
+/// Escape one JSON Pointer token according to RFC 6901.
+fn escape_json_pointer_token(token: &str) -> String {
+    token.replace('~', "~0").replace('/', "~1")
+}
+
 fn compare_values(
     expected: &Value,
     actual: &Value,
@@ -45,7 +50,7 @@ fn compare_values(
     match (expected, actual) {
         (Value::Object(exp_map), Value::Object(act_map)) => {
             for key in exp_map.keys() {
-                let child_path = format!("{path}/{key}");
+                let child_path = format!("{path}/{}", escape_json_pointer_token(key));
                 match act_map.get(key) {
                     Some(act_val) => {
                         compare_values(
@@ -72,7 +77,7 @@ fn compare_values(
             }
             for key in act_map.keys() {
                 if !exp_map.contains_key(key) {
-                    let child_path = format!("{path}/{key}");
+                    let child_path = format!("{path}/{}", escape_json_pointer_token(key));
                     divergences.push(missing_key_divergence(
                         child_path,
                         Value::Null,
@@ -749,5 +754,16 @@ mod tests {
         let result = compare_oscal_json(&expected, &actual, "", &rules);
 
         assert!(result.is_empty());
+    }
+
+    #[test]
+    fn object_key_paths_use_rfc_6901_escaping() {
+        let expected = json!({ "a/b~c": "expected" });
+        let actual = json!({ "a/b~c": "actual" });
+
+        let divergences = compare_oscal_json(&expected, &actual, "", &default_rules());
+
+        assert_eq!(divergences.len(), 1);
+        assert_eq!(divergences[0].json_path, "/a~1b~0c");
     }
 }

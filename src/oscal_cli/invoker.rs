@@ -49,8 +49,26 @@ fn run_oscal_cli(
 ) -> Result<SubprocessOutput, ForgeError> {
     cmd.env_clear();
     for key in ENV_ALLOWLIST {
-        if let Ok(value) = std::env::var(key) {
-            cmd.env(key, value);
+        match std::env::var(key) {
+            Ok(value) => {
+                tracing::debug!(
+                    environment_variable = *key,
+                    "Passing allowlisted environment variable to oscal-cli"
+                );
+                cmd.env(key, value);
+            }
+            Err(std::env::VarError::NotPresent) => {
+                tracing::debug!(
+                    environment_variable = *key,
+                    "Allowlisted environment variable is absent"
+                );
+            }
+            Err(std::env::VarError::NotUnicode(_)) => {
+                tracing::warn!(
+                    environment_variable = *key,
+                    "Allowlisted environment variable is not valid Unicode and was omitted"
+                );
+            }
         }
     }
 
@@ -157,7 +175,7 @@ fn collect_warnings(stderr: &str) -> Vec<String> {
 impl OscalCliInvoke for ProcessInvoker {
     fn resolve_profile(&self, args: &ResolveArgs) -> Result<ResolveResult, ForgeError> {
         let mut cmd = Command::new(&self.executable_path);
-        cmd.args(["profile", "resolve", "-to=json"]);
+        cmd.args(["profile", "resolve", "-to=json", "--"]);
         cmd.arg(&args.profile_path);
         cmd.arg(&args.output_path);
 
@@ -171,7 +189,7 @@ impl OscalCliInvoke for ProcessInvoker {
         let model_command = detect_model_command(&args.input_path)?;
 
         let mut cmd = Command::new(&self.executable_path);
-        cmd.args([model_command, "convert", &to_flag]);
+        cmd.args([model_command, "convert", &to_flag, "--"]);
         cmd.arg(&args.input_path);
         cmd.arg(&args.output_path);
 

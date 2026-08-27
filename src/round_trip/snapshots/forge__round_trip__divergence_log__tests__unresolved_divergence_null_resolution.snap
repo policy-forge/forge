@@ -1,5 +1,5 @@
 ---
-source: src/round_trip/log.rs
+source: src/round_trip/divergence_log.rs
 expression: content
 ---
 {

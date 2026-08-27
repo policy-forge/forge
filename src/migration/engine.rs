@@ -15,6 +15,8 @@ pub(crate) fn classify(
     new: RequirementInventory,
     successor_map: Option<&SuccessorMap>,
 ) -> Result<MigrationReport, ForgeError> {
+    validate_unique_stable_ids("old", &old.requirements)?;
+    validate_unique_stable_ids("new", &new.requirements)?;
     let new_by_id: BTreeMap<&str, usize> = new
         .requirements
         .iter()
@@ -90,6 +92,22 @@ pub(crate) fn classify(
     })
 }
 
+fn validate_unique_stable_ids(
+    side: &str,
+    requirements: &[InventoryRequirement],
+) -> Result<(), ForgeError> {
+    let mut stable_ids = BTreeSet::new();
+    for requirement in requirements {
+        if !stable_ids.insert(requirement.stable_id.as_str()) {
+            return Err(ForgeError::MigrationError(format!(
+                "{side} inventory contains duplicate stable identifier '{}'",
+                requirement.stable_id
+            )));
+        }
+    }
+    Ok(())
+}
+
 fn match_declared_relationships(
     old: &[InventoryRequirement],
     new: &[InventoryRequirement],
@@ -122,7 +140,9 @@ fn match_declared_relationships(
             new_indexes.into_iter().map(|index| new[index].clone()).collect(),
             DeclarationEvidence {
                 approved_by: relationship.approved_by.clone(),
-                approved_at: relationship.approved_at.clone(),
+                approved_at: relationship
+                    .approved_at
+                    .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true),
                 rationale: relationship.rationale.clone(),
             },
         ));
@@ -207,8 +227,8 @@ fn match_unique_normalized_text(
     new_matched: &mut [bool],
     entries: &mut Vec<MigrationEntry>,
 ) {
-    let old_groups = group_unmatched_by(old, old_matched, |item| item.normalized_text.clone());
-    let new_groups = group_unmatched_by(new, new_matched, |item| item.normalized_text.clone());
+    let old_groups = group_unmatched_by(old, old_matched, |item| item.normalized_text.as_str());
+    let new_groups = group_unmatched_by(new, new_matched, |item| item.normalized_text.as_str());
     for (normalized, old_indexes) in old_groups {
         let Some(new_indexes) = new_groups.get(&normalized) else {
             continue;
@@ -279,8 +299,8 @@ fn group_ambiguities(
     let mut groups: Vec<CandidateGroup> = Vec::new();
     append_candidate_groups(
         &mut groups,
-        group_unmatched_by(old, old_matched, |item| item.normalized_text.clone()),
-        &group_unmatched_by(new, new_matched, |item| item.normalized_text.clone()),
+        group_unmatched_by(old, old_matched, |item| item.normalized_text.as_str()),
+        &group_unmatched_by(new, new_matched, |item| item.normalized_text.as_str()),
         EvidenceCode::DuplicateNormalizedText,
     );
     append_candidate_groups(
@@ -431,20 +451,20 @@ fn add_unmatched(
     }
 }
 
-fn group_unmatched_by<K: Ord>(
-    items: &[InventoryRequirement],
+fn group_unmatched_by<'a, K: Ord>(
+    items: &'a [InventoryRequirement],
     matched: &[bool],
-    key: impl Fn(&InventoryRequirement) -> K,
+    key: impl Fn(&'a InventoryRequirement) -> K,
 ) -> BTreeMap<K, Vec<usize>> {
-    let mut groups = BTreeMap::new();
+    let mut groups: BTreeMap<K, Vec<usize>> = BTreeMap::new();
     for (index, item) in items.iter().enumerate().filter(|(index, _)| !matched[*index]) {
-        groups.entry(key(item)).or_insert_with(Vec::new).push(index);
+        groups.entry(key(item)).or_default().push(index);
     }
     groups
 }
 
-fn locator_key(item: &InventoryRequirement) -> (String, usize, usize) {
-    (item.location.section_path.clone(), item.location.line, item.location.atom_index)
+fn locator_key(item: &InventoryRequirement) -> (&str, usize, usize) {
+    (item.location.section_path.as_str(), item.location.line, item.location.atom_index)
 }
 
 fn location_changes(old: &RequirementLocation, new: &RequirementLocation) -> Vec<EvidenceCode> {
@@ -663,9 +683,28 @@ mod tests {
             old_ids: old_ids.iter().map(|id| (*id).to_string()).collect(),
             new_ids: new_ids.iter().map(|id| (*id).to_string()).collect(),
             approved_by: "reviewer".to_string(),
-            approved_at: "2026-08-25T12:00:00Z".to_string(),
+            approved_at: chrono::DateTime::parse_from_rfc3339("2026-08-25T12:00:00Z")
+                .expect("fixed test timestamp is RFC 3339"),
             rationale: "Reviewed relationship.".to_string(),
         }
+    }
+
+    #[test]
+    fn duplicate_inventory_stable_ids_are_rejected() {
+        let error = classify(
+            inventory(vec![
+                item("duplicate", "first", "Section", 1, 0),
+                item("duplicate", "second", "Section", 2, 0),
+            ]),
+            inventory(Vec::new()),
+            None,
+        )
+        .expect_err("duplicate stable identifiers must not be collapsed");
+        assert!(
+            error
+                .to_string()
+                .contains("old inventory contains duplicate stable identifier 'duplicate'")
+        );
     }
 
     #[test]

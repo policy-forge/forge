@@ -3,12 +3,15 @@
 mod engine;
 mod formatter;
 mod inventory;
-pub mod successor;
+mod successor;
 mod types;
 
 use std::path::Path;
 
 pub use formatter::{format_json, format_text};
+pub use successor::{
+    RelationshipType, SUCCESSOR_MAP_SCHEMA_VERSION, SuccessorMap, SuccessorRelationship, load,
+};
 pub use types::{
     ApprovalStatus, Classification, ConfidenceBasis, DeclarationEvidence, EvidenceCode,
     InputFormat, InventoryRequirement, LocationBasis, MIGRATION_REPORT_SCHEMA_VERSION,
@@ -34,8 +37,16 @@ pub fn analyze_paths(
         inventory::build_inventory(old_path, max_size_bytes).map_err(normalize_to_migration)?;
     let new =
         inventory::build_inventory(new_path, max_size_bytes).map_err(normalize_to_migration)?;
-    let successor_map =
-        successor_map_path.map(successor::load).transpose().map_err(normalize_to_migration)?;
+    let successor_map = successor_map_path
+        .map(|path| {
+            successor::load(path).map_err(|error| {
+                ForgeError::MigrationError(format!(
+                    "unable to load successor map '{}': {error}",
+                    path.display()
+                ))
+            })
+        })
+        .transpose()?;
     engine::classify(old, new, successor_map.as_ref()).map_err(normalize_to_migration)
 }
 

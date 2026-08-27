@@ -8,6 +8,7 @@ ignore = [
 
 [licenses]
 version = 2
+# Add licenses only after reviewing `cargo deny check licenses` output in a PR that cites each crate.
 allow = [
     "MIT",
     "MIT-0",
@@ -16,7 +17,6 @@ allow = [
     "Zlib",
     "Unicode-3.0",
 ]
-confidence-threshold = 0.8
 
 [bans]
 multiple-versions = "warn"

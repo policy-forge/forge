@@ -1,27 +1,10 @@
 {
   "catalog": {
-    "uuid": "949cfa3c-821a-4eab-85aa-f9fb43b11da9",
-    "metadata": {
-      "title": "Control Statements",
-      "last-modified": "2026-02-21T21:03:41.569895+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "groups": [
       {
-        "id": "control-statements",
-        "title": "Control Statements",
-        "props": [
-          {
-            "name": "source-section",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "Control Statements"
-          }
-        ],
         "controls": [
           {
             "id": "POL-CS-001",
-            "title": "Systems must encrypt data at rest",
             "links": [
               {
                 "href": "input.md#line=3",
@@ -33,11 +16,6 @@
                 "id": "POL-CS-001_smt",
                 "name": "statement",
                 "prose": "Systems must encrypt data at rest"
-              },
-              {
-                "id": "POL-CS-001_gdn",
-                "name": "guidance",
-                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
               }
             ],
             "props": [
@@ -60,11 +38,11 @@
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "3"
               }
-            ]
+            ],
+            "title": "Systems must encrypt data at rest"
           },
           {
             "id": "POL-CS-002",
-            "title": "Systems must encrypt data in transit.",
             "links": [
               {
                 "href": "input.md#line=3",
@@ -76,11 +54,6 @@
                 "id": "POL-CS-002_smt",
                 "name": "statement",
                 "prose": "Systems must encrypt data in transit."
-              },
-              {
-                "id": "POL-CS-002_gdn",
-                "name": "guidance",
-                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
               }
             ],
             "props": [
@@ -103,11 +76,11 @@
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "3"
               }
-            ]
+            ],
+            "title": "Systems must encrypt data in transit."
           },
           {
             "id": "POL-CS-003",
-            "title": "Systems must retain audit logs for at least one year.",
             "links": [
               {
                 "href": "input.md#line=4",
@@ -119,11 +92,6 @@
                 "id": "POL-CS-003_smt",
                 "name": "statement",
                 "prose": "Systems must retain audit logs for at least one year."
-              },
-              {
-                "id": "POL-CS-003_gdn",
-                "name": "guidance",
-                "prose": "Systems must encrypt data at rest and must encrypt data in transit.\nSystems must retain audit logs for at least one year."
               }
             ],
             "props": [
@@ -146,10 +114,27 @@
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "4"
               }
-            ]
+            ],
+            "title": "Systems must retain audit logs for at least one year."
           }
-        ]
+        ],
+        "id": "control-statements",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Control Statements"
+          }
+        ],
+        "title": "Control Statements"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:01.268410+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Control Statements",
+      "version": "0.0.0"
+    },
+    "uuid": "661aa6d8-bd6e-4656-9e5c-e7e3372de1d7"
   }
 }

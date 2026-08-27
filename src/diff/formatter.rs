@@ -59,10 +59,23 @@ pub fn format_diff_report(report: &DiffReport) -> String {
         return out;
     }
 
-    format_added_section(&mut out, report);
-    format_changed_section(&mut out, report);
-    format_removed_section(&mut out, report);
-    format_uuid_section(&mut out, report);
+    let mut added = Vec::new();
+    let mut changed = Vec::new();
+    let mut removed = Vec::new();
+    let mut uuid_changed = Vec::new();
+    for entry in &report.entries {
+        match entry {
+            DiffEntry::Added { .. } => added.push(entry),
+            DiffEntry::Changed { .. } => changed.push(entry),
+            DiffEntry::Removed { .. } => removed.push(entry),
+            DiffEntry::UuidChanged { .. } => uuid_changed.push(entry),
+        }
+    }
+
+    format_added_section(&mut out, &added);
+    format_changed_section(&mut out, &changed);
+    format_removed_section(&mut out, &removed);
+    format_uuid_section(&mut out, &uuid_changed);
 
     out
 }
@@ -70,6 +83,25 @@ pub fn format_diff_report(report: &DiffReport) -> String {
 fn write_section_heading(out: &mut String, title: &str) {
     writeln!(out, "{title}").unwrap();
     writeln!(out, "{}", "─".repeat(title.chars().count())).unwrap();
+}
+
+fn write_rows<F>(out: &mut String, title: &str, entries: &[&DiffEntry], mut write_row: F)
+where
+    F: FnMut(&mut String, &DiffEntry),
+{
+    write_section_heading(out, &format!("{title} ({})", entries.len()));
+    if entries.is_empty() {
+        writeln!(out, "  (none)").unwrap();
+    } else {
+        for entry in entries {
+            write_row(out, entry);
+        }
+    }
+    writeln!(out).unwrap();
+}
+
+fn display_uuid(uuid: Option<&String>) -> &str {
+    uuid.map_or("(absent)", String::as_str)
 }
 
 fn one_line(value: &str, max_chars: usize) -> String {
@@ -90,87 +122,67 @@ fn one_line(value: &str, max_chars: usize) -> String {
     rendered
 }
 
-fn format_added_section(out: &mut String, report: &DiffReport) {
-    let added: Vec<_> =
-        report.entries.iter().filter(|e| matches!(e, DiffEntry::Added { .. })).collect();
-    write_section_heading(out, &format!("Added ({})", added.len()));
-    if added.is_empty() {
-        writeln!(out, "  (none)").unwrap();
-    } else {
-        for entry in &added {
-            if let DiffEntry::Added { control_id, new_uuid } = entry {
-                writeln!(out, "  + {control_id}  [uuid: {new_uuid}]").unwrap();
-            }
+fn format_added_section(out: &mut String, added: &[&DiffEntry]) {
+    write_rows(out, "Added", added, |out, entry| {
+        if let DiffEntry::Added { control_id, new_uuid } = entry {
+            writeln!(out, "  + {control_id}  [uuid: {}]", display_uuid(new_uuid.as_ref())).unwrap();
         }
-    }
-    writeln!(out).unwrap();
+    });
 }
 
-fn format_changed_section(out: &mut String, report: &DiffReport) {
-    let changed: Vec<_> =
-        report.entries.iter().filter(|entry| matches!(entry, DiffEntry::Changed { .. })).collect();
-    write_section_heading(out, &format!("Changed ({})", changed.len()));
-    if changed.is_empty() {
-        writeln!(out, "  (none)").unwrap();
-    } else {
-        for entry in &changed {
-            if let DiffEntry::Changed { control_id, old_uuid, new_uuid, field_changes } = entry {
-                writeln!(out, "  ~ {control_id}").unwrap();
-                for field_change in field_changes {
-                    let old_value = field_change
-                        .old_value
-                        .as_deref()
-                        .map_or_else(|| "(absent)".to_string(), |value| one_line(value, 200));
-                    let new_value = field_change
-                        .new_value
-                        .as_deref()
-                        .map_or_else(|| "(absent)".to_string(), |value| one_line(value, 200));
-                    writeln!(
-                        out,
-                        "      {}: \"{}\"  →  \"{}\"",
-                        field_change.field_name, old_value, new_value
-                    )
-                    .unwrap();
-                }
-                if entry.uuid_changed() {
-                    writeln!(out, "      [UUID: {old_uuid} → {new_uuid}]").unwrap();
-                }
+fn format_changed_section(out: &mut String, changed: &[&DiffEntry]) {
+    write_rows(out, "Changed", changed, |out, entry| {
+        if let DiffEntry::Changed { control_id, old_uuid, new_uuid, field_changes } = entry {
+            writeln!(out, "  ~ {control_id}").unwrap();
+            for field_change in field_changes {
+                let old_value = field_change
+                    .old_value
+                    .as_deref()
+                    .map_or_else(|| "(absent)".to_string(), |value| one_line(value, 200));
+                let new_value = field_change
+                    .new_value
+                    .as_deref()
+                    .map_or_else(|| "(absent)".to_string(), |value| one_line(value, 200));
+                writeln!(
+                    out,
+                    "      {}: \"{}\"  →  \"{}\"",
+                    field_change.field_name, old_value, new_value
+                )
+                .unwrap();
+            }
+            if entry.uuid_changed() {
+                writeln!(
+                    out,
+                    "      [UUID: {} → {}]",
+                    display_uuid(old_uuid.as_ref()),
+                    display_uuid(new_uuid.as_ref())
+                )
+                .unwrap();
             }
         }
-    }
-    writeln!(out).unwrap();
+    });
 }
 
-fn format_removed_section(out: &mut String, report: &DiffReport) {
-    let removed: Vec<_> =
-        report.entries.iter().filter(|e| matches!(e, DiffEntry::Removed { .. })).collect();
-    write_section_heading(out, &format!("Removed ({})", removed.len()));
-    if removed.is_empty() {
-        writeln!(out, "  (none)").unwrap();
-    } else {
-        for entry in &removed {
-            if let DiffEntry::Removed { control_id, old_uuid } = entry {
-                writeln!(out, "  - {control_id}  [uuid: {old_uuid}]").unwrap();
-            }
+fn format_removed_section(out: &mut String, removed: &[&DiffEntry]) {
+    write_rows(out, "Removed", removed, |out, entry| {
+        if let DiffEntry::Removed { control_id, old_uuid } = entry {
+            writeln!(out, "  - {control_id}  [uuid: {}]", display_uuid(old_uuid.as_ref())).unwrap();
         }
-    }
-    writeln!(out).unwrap();
+    });
 }
 
-fn format_uuid_section(out: &mut String, report: &DiffReport) {
-    let uuid_changed: Vec<_> =
-        report.entries.iter().filter(|e| matches!(e, DiffEntry::UuidChanged { .. })).collect();
-    write_section_heading(out, &format!("UUID Stability Changes ({})", uuid_changed.len()));
-    if uuid_changed.is_empty() {
-        writeln!(out, "  (none)").unwrap();
-    } else {
-        for entry in &uuid_changed {
-            if let DiffEntry::UuidChanged { control_id, old_uuid, new_uuid } = entry {
-                writeln!(out, "  ! {control_id}  {old_uuid}  \u{2192}  {new_uuid}").unwrap();
-            }
+fn format_uuid_section(out: &mut String, uuid_changed: &[&DiffEntry]) {
+    write_rows(out, "UUID Stability Changes", uuid_changed, |out, entry| {
+        if let DiffEntry::UuidChanged { control_id, old_uuid, new_uuid } = entry {
+            writeln!(
+                out,
+                "  ! {control_id}  {}  →  {}",
+                display_uuid(old_uuid.as_ref()),
+                display_uuid(new_uuid.as_ref())
+            )
+            .unwrap();
         }
-    }
-    writeln!(out).unwrap();
+    });
 }
 
 #[cfg(test)]
@@ -234,8 +246,14 @@ mod tests {
             new_file: "new.json".into(),
             artifact_type: ArtifactType::Catalog,
             entries: vec![
-                DiffEntry::Added { control_id: "POL-AC-002".into(), new_uuid: "uuid-new".into() },
-                DiffEntry::Removed { control_id: "POL-AC-003".into(), old_uuid: "uuid-old".into() },
+                DiffEntry::Added {
+                    control_id: "POL-AC-002".into(),
+                    new_uuid: Some("uuid-new".into()),
+                },
+                DiffEntry::Removed {
+                    control_id: "POL-AC-003".into(),
+                    old_uuid: Some("uuid-old".into()),
+                },
             ],
             summary: DiffSummary {
                 total_old: 2,
@@ -262,8 +280,8 @@ mod tests {
             artifact_type: ArtifactType::Catalog,
             entries: vec![DiffEntry::Changed {
                 control_id: "POL-IA-002".into(),
-                old_uuid: String::new(),
-                new_uuid: String::new(),
+                old_uuid: None,
+                new_uuid: None,
                 field_changes: vec![FieldChange {
                     field_name: "title".into(),
                     old_value: Some("Old title".into()),
@@ -296,8 +314,8 @@ mod tests {
             artifact_type: ArtifactType::Catalog,
             entries: vec![DiffEntry::Changed {
                 control_id: "AC-1".into(),
-                old_uuid: "same".into(),
-                new_uuid: "same".into(),
+                old_uuid: Some("same".into()),
+                new_uuid: Some("same".into()),
                 field_changes: vec![FieldChange {
                     field_name: "description".into(),
                     old_value: None,
@@ -337,7 +355,10 @@ mod tests {
             old_file: "old.json".into(),
             new_file: "new.json".into(),
             artifact_type: ArtifactType::Catalog,
-            entries: vec![DiffEntry::Added { control_id: "AC-1".into(), new_uuid: "uuid".into() }],
+            entries: vec![DiffEntry::Added {
+                control_id: "AC-1".into(),
+                new_uuid: Some("uuid".into()),
+            }],
             summary: DiffSummary {
                 total_old: 0,
                 total_new: 1,
@@ -361,8 +382,8 @@ mod tests {
             artifact_type: ArtifactType::Catalog,
             entries: vec![DiffEntry::UuidChanged {
                 control_id: "POL-AC-001".into(),
-                old_uuid: "old-uuid-123".into(),
-                new_uuid: "new-uuid-456".into(),
+                old_uuid: Some("old-uuid-123".into()),
+                new_uuid: Some("new-uuid-456".into()),
             }],
             summary: DiffSummary {
                 total_old: 1,
@@ -387,10 +408,7 @@ mod tests {
             old_file: "old.json".into(),
             new_file: "new.json".into(),
             artifact_type: ArtifactType::Catalog,
-            entries: vec![DiffEntry::Added {
-                control_id: "POL-AC-001".into(),
-                new_uuid: String::new(),
-            }],
+            entries: vec![DiffEntry::Added { control_id: "POL-AC-001".into(), new_uuid: None }],
             summary: DiffSummary {
                 total_old: 0,
                 total_new: 1,
@@ -414,10 +432,7 @@ mod tests {
             old_file: "old.json".into(),
             new_file: "new.json".into(),
             artifact_type: ArtifactType::Catalog,
-            entries: vec![DiffEntry::Added {
-                control_id: "POL-AC-001".into(),
-                new_uuid: String::new(),
-            }],
+            entries: vec![DiffEntry::Added { control_id: "POL-AC-001".into(), new_uuid: None }],
             summary: DiffSummary {
                 total_old: 0,
                 total_new: 1,

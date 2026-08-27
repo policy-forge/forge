@@ -39,51 +39,71 @@ const MAX_HREF_PATH_LENGTH: usize = 4096;
 
 /// Percent-encode RFC 3986 reserved characters in a file name used as an href path.
 fn encode_href_path(path: &str) -> String {
-    // Guard against excessively long paths (DoS / allocation risk). Use a
-    // char-boundary-safe truncation to avoid panic on non-ASCII UTF-8 paths.
-    let safe_path = if path.len() > MAX_HREF_PATH_LENGTH {
-        let mut end = MAX_HREF_PATH_LENGTH;
-        while end > 0 && !path.is_char_boundary(end) {
-            end -= 1;
-        }
-        &path[..end]
-    } else {
-        path
-    };
+    let mut encoded = String::with_capacity(path.len().min(MAX_HREF_PATH_LENGTH));
 
-    let mut encoded = String::with_capacity(safe_path.len());
-    for character in safe_path.chars() {
-        match character {
-            ':' => encoded.push_str("%3A"),
-            '/' => encoded.push_str("%2F"),
-            '?' => encoded.push_str("%3F"),
-            '#' => encoded.push_str("%23"),
-            '[' => encoded.push_str("%5B"),
-            ']' => encoded.push_str("%5D"),
-            '@' => encoded.push_str("%40"),
-            '!' => encoded.push_str("%21"),
-            '$' => encoded.push_str("%24"),
-            '&' => encoded.push_str("%26"),
-            character if character == char::from(39_u8) => encoded.push_str("%27"),
-            '(' => encoded.push_str("%28"),
-            ')' => encoded.push_str("%29"),
-            '*' => encoded.push_str("%2A"),
-            '+' => encoded.push_str("%2B"),
-            ',' => encoded.push_str("%2C"),
-            ';' => encoded.push_str("%3B"),
-            '=' => encoded.push_str("%3D"),
-            '%' => encoded.push_str("%25"),
-            ' ' => encoded.push_str("%20"),
-            _ => encoded.push(character),
+    for character in path.chars() {
+        let escaped = match character {
+            ':' => Some("%3A"),
+            '/' => Some("%2F"),
+            '?' => Some("%3F"),
+            '#' => Some("%23"),
+            '[' => Some("%5B"),
+            ']' => Some("%5D"),
+            '@' => Some("%40"),
+            '!' => Some("%21"),
+            '$' => Some("%24"),
+            '&' => Some("%26"),
+            character if character == char::from(39_u8) => Some("%27"),
+            '(' => Some("%28"),
+            ')' => Some("%29"),
+            '*' => Some("%2A"),
+            '+' => Some("%2B"),
+            ',' => Some("%2C"),
+            ';' => Some("%3B"),
+            '=' => Some("%3D"),
+            '%' => Some("%25"),
+            ' ' => Some("%20"),
+            _ => None,
+        };
+        let encoded_length = escaped.map_or_else(|| character.len_utf8(), str::len);
+
+        if encoded.len() + encoded_length > MAX_HREF_PATH_LENGTH {
+            tracing::warn!(
+                original_length = path.len(),
+                encoded_length = encoded.len(),
+                max_length = MAX_HREF_PATH_LENGTH,
+                "Trace href path exceeded length limit and was truncated"
+            );
+            break;
+        }
+
+        if let Some(escaped) = escaped {
+            encoded.push_str(escaped);
+        } else {
+            encoded.push(character);
         }
     }
+
     encoded
+}
+
+/// Return a filename-only trace value without exposing source directories.
+///
+/// Both slash conventions are recognized so artifacts generated on one platform
+/// cannot publish an absolute path received from another.
+fn source_file_name(source_path: &str) -> &str {
+    source_path
+        .rsplit(['/', '\\'])
+        .find(|component| !component.is_empty() && *component != "." && *component != "..")
+        .unwrap_or("unknown-file")
 }
 
 /// Build 3 namespaced trace props for a source location.
 ///
-/// Returns props in order: source-file, source-section, source-line.
-/// All props have `ns: Some(FORGE_TRACE_NS)`.
+/// Source paths are normalized to their filename component to prevent directory
+/// information from leaking into published artifacts. Returns props in order:
+/// source-file, source-section, source-line. All props have
+/// `ns: Some(FORGE_TRACE_NS)`.
 #[must_use]
 pub fn build_trace_props(
     source_file: &str,
@@ -94,7 +114,7 @@ pub fn build_trace_props(
         OscalProp {
             name: PROP_SOURCE_FILE.to_string(),
             ns: Some(FORGE_TRACE_NS.to_string()),
-            value: source_file.to_string(),
+            value: source_file_name(source_file).to_string(),
         },
         OscalProp {
             name: PROP_SOURCE_SECTION.to_string(),
@@ -110,9 +130,12 @@ pub fn build_trace_props(
 }
 
 /// Build 1 source link with href `"<encoded_file>#line=<n>"` (relative URI reference per RFC 3986).
+///
+/// The path is normalized to its filename component before encoding so the link
+/// cannot expose source directories.
 #[must_use]
 pub fn build_trace_link(source_file: &str, line_number: usize) -> OscalLink {
-    let encoded = encode_href_path(source_file);
+    let encoded = encode_href_path(source_file_name(source_file));
     OscalLink {
         href: format!("{encoded}#line={line_number}"),
         rel: LINK_REL_SOURCE.to_string(),
@@ -281,6 +304,14 @@ mod tests {
         assert_eq!(encode_href_path("a% b"), "a%25%20b");
     }
 
+    #[test]
+    fn encode_href_path_caps_encoded_length() {
+        let encoded = encode_href_path(&"%".repeat(MAX_HREF_PATH_LENGTH));
+
+        assert!(encoded.len() <= MAX_HREF_PATH_LENGTH);
+        assert_eq!(encoded.len() % 3, 0);
+    }
+
     // ── T007: build_trace_props tests ────────────────────────────────
 
     #[test]
@@ -311,6 +342,15 @@ mod tests {
         assert_eq!(props[0].value, "policy.md");
         assert_eq!(props[1].value, "Access Control");
         assert_eq!(props[2].value, "42");
+    }
+
+    #[test]
+    fn trace_builders_strip_untrusted_source_directories() {
+        let props = build_trace_props("C:\\policies\\security.md", "Access Control", 42);
+        let link = build_trace_link("/srv/policies/security.md", 42);
+
+        assert_eq!(props[0].value, "security.md");
+        assert_eq!(link.href, "security.md#line=42");
     }
 
     #[test]

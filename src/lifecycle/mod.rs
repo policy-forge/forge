@@ -984,8 +984,11 @@ fn hard_link_count(path: &Path) -> Result<u64, ForgeError> {
 }
 
 #[cfg(not(any(unix, windows)))]
-fn hard_link_count(_path: &Path) -> Result<u64, ForgeError> {
-    Ok(1)
+fn hard_link_count(path: &Path) -> Result<u64, ForgeError> {
+    Err(error(format!(
+        "hard-link verification is not supported for '{}' on this platform",
+        path.display()
+    )))
 }
 
 fn validate_write_target(path: &Path) -> Result<(), ForgeError> {

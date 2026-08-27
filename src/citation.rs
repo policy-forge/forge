@@ -30,25 +30,25 @@ use crate::uuid::FORGE_NAMESPACE_UUID;
 // T010: URL pattern — matches http:// or https:// followed by non-whitespace, non-delimiter chars.
 // SAFETY: static regex — panics only if regex literal is invalid
 static URL_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"https?://[^\s\)\]>,;]+").expect("URL regex must compile"));
+    LazyLock::new(|| Regex::new(r"(?i)https?://[^\s\)\]>,;]+").expect("URL regex must compile"));
 
 // T016: Bibliographic pattern — NIST SP, ISO, RFC, FIPS with optional Rev and Section suffixes.
 // SAFETY: static regex — panics only if regex literal is invalid
 static BIBLIO_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?")
+    Regex::new(r"(?i)\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?")
         .expect("Bibliographic regex must compile")
 });
 
 // T026: Scheme-less URL pattern — matches www. prefix (R-7).
 // SAFETY: static regex — panics only if regex literal is invalid
 static SCHEMELESS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\bwww\.[^\s\)\]>,;]+").expect("Scheme-less URL regex must compile")
+    Regex::new(r"(?i)\bwww\.[^\s\)\]>,;]+").expect("Scheme-less URL regex must compile")
 });
 
 // T030: Cross-reference pattern — Section X.Y, Appendix A, Table N (SEC-4).
 // SAFETY: static regex — panics only if regex literal is invalid
 static CROSSREF_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b(?:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b")
+    Regex::new(r"\b(?i:Section|Appendix|Table)\s+[\dA-Z]+(?:\.\d+)*\b")
         .expect("Cross-reference regex must compile")
 });
 
@@ -240,21 +240,28 @@ fn strip_matches(text: &str, ranges: &[Range<usize>]) -> String {
     }
 
     let mut sorted = ranges.to_vec();
-    sorted.sort_by_key(|r| r.start);
+    sorted.sort_by_key(|range| range.start);
+
+    let mut merged: Vec<Range<usize>> = Vec::with_capacity(sorted.len());
+    for range in sorted {
+        if let Some(previous) = merged.last_mut()
+            && range.start <= previous.end
+        {
+            previous.end = previous.end.max(range.end);
+        } else {
+            merged.push(range);
+        }
+    }
 
     let mut result = String::with_capacity(text.len());
     let mut last_end = 0;
 
-    for range in &sorted {
-        if range.start > last_end {
-            result.push_str(&text[last_end..range.start]);
-        }
+    for range in merged {
+        result.push_str(&text[last_end..range.start]);
         result.push(' ');
         last_end = range.end;
     }
-    if last_end < text.len() {
-        result.push_str(&text[last_end..]);
-    }
+    result.push_str(&text[last_end..]);
 
     result
 }
@@ -947,5 +954,23 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(elapsed.as_secs() < 1, "Regex took {elapsed:?} on deeply nested parens");
+    }
+
+    #[test]
+    fn mixed_case_citations_are_extracted() {
+        let (text, citations) = extract_citations_from_text(
+            "req-1",
+            "See HTTPS://EXAMPLE.COM and nist sp 800-53 Section AC-2.",
+        )
+        .unwrap();
+
+        assert_eq!(citations.len(), 2);
+        assert!(!text.contains("HTTPS://EXAMPLE.COM"));
+        assert!(!text.contains("nist sp 800-53 Section AC-2"));
+    }
+
+    #[test]
+    fn strip_matches_merges_overlapping_ranges() {
+        assert_eq!(strip_matches("abcdefgh", &[1..5, 3..7]), "a h");
     }
 }

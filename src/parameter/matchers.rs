@@ -62,27 +62,31 @@ impl ParameterMatcher for TimeWindowMatcher {
     fn find_parameters(&self, text: &str) -> Vec<ParameterMatch> {
         TIME_WINDOW
             .captures_iter(text)
-            .map(|cap| {
-                let m = cap.get(0).expect("full match always present");
-                let qualifier = cap.name("qualifier").expect("qualifier group").as_str();
-                let value_str = cap.name("value").expect("value group").as_str();
-                let unit = cap.name("unit").expect("unit group").as_str();
-                let value = format!("{value_str} {unit}");
-                let label = format!("{} {}", qualifier.to_lowercase(), value);
-                let constraint_type = if qualifier.eq_ignore_ascii_case("every") {
+            .filter_map(|captures| {
+                let (Some(full_match), Some(qualifier), Some(value), Some(unit)) = (
+                    captures.get(0),
+                    captures.name("qualifier"),
+                    captures.name("value"),
+                    captures.name("unit"),
+                ) else {
+                    return None;
+                };
+                let value = format!("{} {}", value.as_str(), unit.as_str());
+                let label = format!("{} {}", qualifier.as_str().to_lowercase(), value);
+                let constraint_type = if qualifier.as_str().eq_ignore_ascii_case("every") {
                     ConstraintType::Exact
                 } else {
                     ConstraintType::Minimum
                 };
-                ParameterMatch {
-                    start: m.start(),
-                    end: m.end(),
-                    matched_text: m.as_str().to_string(),
+                Some(ParameterMatch {
+                    start: full_match.start(),
+                    end: full_match.end(),
+                    matched_text: full_match.as_str().to_string(),
                     value: value.clone(),
                     parameter_type: ParameterType::TimeWindow,
                     label,
                     constraint: Some(ParameterConstraint { constraint_type, value }),
-                }
+                })
             })
             .collect()
     }
@@ -236,7 +240,7 @@ impl ParameterMatcher for FrequencyMatcher {
 /// Pattern: qualifier + digit + countable unit noun.
 static QUANTITY: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"(?i)(?P<qualifier>at\s+least|no\s+fewer\s+than|minimum)\s+(?P<value>\d+)\s+(?P<unit>\w+)",
+        r"(?i)(?P<qualifier>at\s+least|no\s+fewer\s+than|minimum)\s+(?P<value>\d+)\s+(?P<unit>(?:[a-z]+\s+)?(?:accounts?|attempts?|characters?|connections?|copies|devices?|factors?|generations?|instances?|keys?|nodes?|records?|requests?|roles?|servers?|systems?|tokens?|users?))",
     )
     .expect("QUANTITY regex is valid")
 });
@@ -248,19 +252,28 @@ impl ParameterMatcher for QuantityMatcher {
     fn find_parameters(&self, text: &str) -> Vec<ParameterMatch> {
         QUANTITY
             .captures_iter(text)
-            .map(|cap| {
-                let m = cap.get(0).expect("full match always present");
-                let qualifier = cap.name("qualifier").expect("qualifier group").as_str();
-                let value = cap.name("value").expect("value group").as_str().to_string();
-                let unit = cap.name("unit").expect("unit group").as_str().to_string();
-                let qualifier_norm: String =
-                    qualifier.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
+            .filter_map(|captures| {
+                let (Some(full_match), Some(qualifier), Some(value), Some(unit)) = (
+                    captures.get(0),
+                    captures.name("qualifier"),
+                    captures.name("value"),
+                    captures.name("unit"),
+                ) else {
+                    return None;
+                };
+                let value = value.as_str().to_string();
+                let unit = unit.as_str().to_string();
+                let qualifier_norm: String = qualifier
+                    .as_str()
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .to_lowercase();
                 let label = format!("{qualifier_norm} {value} {unit}");
-                ParameterMatch {
-                    start: m.start(),
-                    end: m.end(),
-                    matched_text: m.as_str().to_string(),
-                    // value is just the digit (e.g., "3"); unit stays in label
+                Some(ParameterMatch {
+                    start: full_match.start(),
+                    end: full_match.end(),
+                    matched_text: full_match.as_str().to_string(),
                     value: value.clone(),
                     parameter_type: ParameterType::Quantity,
                     label,
@@ -268,7 +281,7 @@ impl ParameterMatcher for QuantityMatcher {
                         constraint_type: ConstraintType::Minimum,
                         value,
                     }),
-                }
+                })
             })
             .collect()
     }
@@ -566,6 +579,14 @@ mod tests {
         let m = QuantityMatcher;
         let results = m.find_parameters("at least 3 factors");
         assert_eq!(results[0].label, "at least 3 factors");
+    }
+
+    #[test]
+    fn quantity_does_not_claim_duration_units() {
+        let m = QuantityMatcher;
+        let results = m.find_parameters("Records retained for at least 90 days");
+
+        assert!(results.is_empty());
     }
 
     // ── Overlap: QuantityMatcher vs ThresholdMatcher (T023 reference) ────

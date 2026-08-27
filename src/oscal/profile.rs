@@ -196,7 +196,8 @@ pub fn build_modify_section(param_overrides: &[(String, String)]) -> Option<Modi
 ///
 /// # Arguments
 ///
-/// * `catalog_path` — Path to the source Catalog, stored as-is in `imports[0].href`.
+/// * `catalog_path` — Path to the source Catalog, stored as a sanitized filename in
+///   `imports[0].href`.
 /// * `control_ids` — Trimmed, deduplicated control IDs from `--include` or `--exclude`.
 ///   An empty `Vec` produces a Profile with no imports (C-2 modify-only case).
 /// * `mode` — Whether the IDs represent included or excluded controls.
@@ -215,7 +216,7 @@ pub fn build_modify_section(param_overrides: &[(String, String)]) -> Option<Modi
 #[tracing::instrument(skip_all)]
 pub fn build_profile(
     catalog_path: &str,
-    control_ids: Vec<String>,
+    mut control_ids: Vec<String>,
     mode: SelectionMode,
     param_overrides: &[(String, String)],
     timestamp_override: Option<chrono::DateTime<chrono::Utc>>,
@@ -231,30 +232,35 @@ pub fn build_profile(
     });
     let metadata = assemble_metadata(&doc_meta, meta_opts)?;
 
-    // Compute deterministic UUID v5 from normalized inputs so that
-    // different input orderings of the same logical profile produce
-    // the same UUID.
-    let mode_str = match mode {
-        SelectionMode::Include => "include",
-        SelectionMode::Exclude => "exclude",
-    };
+    // Canonicalize once for both identity and serialized control selection.
+    control_ids.sort_unstable();
+    control_ids.dedup();
+
     let sanitized_href = crate::io::sanitize_artifact_path(std::path::Path::new(catalog_path));
-    let mut sorted_ids = control_ids.clone();
-    sorted_ids.sort_unstable();
     let mut sorted_params: Vec<(&str, &str)> =
-        param_overrides.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+        param_overrides.iter().map(|(key, value)| (key.as_str(), value.as_str())).collect();
     sorted_params.sort_unstable();
-    let mut seed_parts: Vec<&str> = vec![&sanitized_href, mode_str];
-    seed_parts.extend(sorted_ids.iter().map(String::as_str));
-    for (param_id, value) in &sorted_params {
-        seed_parts.push(param_id);
-        seed_parts.push(value);
-    }
+
     let mut seed = String::new();
-    for part in seed_parts {
+    let mut add_seed_part = |part: &str| {
         seed.push_str(&part.len().to_string());
         seed.push(':');
         seed.push_str(part);
+    };
+    add_seed_part(&sanitized_href);
+    // Mode only affects the artifact when controls are selected (F0596).
+    if !control_ids.is_empty() {
+        add_seed_part(match mode {
+            SelectionMode::Include => "include",
+            SelectionMode::Exclude => "exclude",
+        });
+        for control_id in &control_ids {
+            add_seed_part(control_id);
+        }
+    }
+    for (param_id, value) in sorted_params {
+        add_seed_part(param_id);
+        add_seed_part(value);
     }
     let uuid = Uuid::new_v5(&crate::uuid::PROFILE_NAMESPACE, seed.as_bytes());
 
@@ -304,16 +310,24 @@ pub fn build_profile(
 ///
 /// # Errors
 ///
-/// * `ForgeError::InvalidArgument` — if the resulting Vec is empty.
+/// * `ForgeError::InvalidArgument` — if the resulting Vec is empty or a token
+///   contains a control character. Other OSCAL-valid identifier forms are
+///   preserved rather than constrained to a local format.
 #[tracing::instrument(skip_all)]
 pub fn parse_control_ids(raw: &str) -> Result<Vec<String>, ForgeError> {
     let mut seen = std::collections::HashSet::new();
-    let ids: Vec<String> = raw
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .filter(|s| seen.insert(s.clone()))
-        .collect();
+    let mut ids = Vec::new();
+
+    for token in raw.split(',').map(str::trim).filter(|token| !token.is_empty()) {
+        if token.chars().any(char::is_control) {
+            return Err(ForgeError::InvalidArgument(format!(
+                "Control ID contains a control character: {token:?}"
+            )));
+        }
+        if seen.insert(token.to_string()) {
+            ids.push(token.to_string());
+        }
+    }
 
     if ids.is_empty() {
         return Err(ForgeError::InvalidArgument(
@@ -509,6 +523,15 @@ mod tests {
     }
 
     #[test]
+    fn parse_rejects_control_characters_without_restricting_other_ids() {
+        let error = parse_control_ids("AC-1\u{0007}").unwrap_err();
+        assert!(
+            matches!(error, ForgeError::InvalidArgument(message) if message.contains("control character"))
+        );
+        assert_eq!(parse_control_ids("AC.1_β").unwrap(), vec!["AC.1_β"]);
+    }
+
+    #[test]
     fn parse_single_id_no_comma() {
         let ids = parse_control_ids("POL-AC-001").unwrap();
         assert_eq!(ids, vec!["POL-AC-001"]);
@@ -700,6 +723,42 @@ mod tests {
         )
         .unwrap();
         assert_ne!(p1.uuid, p2.uuid, "Different control IDs should produce different UUID");
+    }
+
+    #[test]
+    fn profile_canonicalizes_control_order_for_output_and_identity() {
+        let ordered = build_profile(
+            "catalog.json",
+            vec!["AC-2".to_string(), "AC-1".to_string(), "AC-2".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+        let canonical = build_profile(
+            "catalog.json",
+            vec!["AC-1".to_string(), "AC-2".to_string()],
+            SelectionMode::Include,
+            &[],
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(ordered.uuid, canonical.uuid);
+        assert_eq!(
+            ordered.imports[0].include_controls.as_ref().unwrap()[0].with_ids,
+            vec!["AC-1", "AC-2"]
+        );
+    }
+
+    #[test]
+    fn modify_only_profile_uuid_ignores_selection_mode() {
+        let include =
+            build_profile("catalog.json", vec![], SelectionMode::Include, &[], None).unwrap();
+        let exclude =
+            build_profile("catalog.json", vec![], SelectionMode::Exclude, &[], None).unwrap();
+
+        assert_eq!(include.uuid, exclude.uuid);
     }
 
     #[test]

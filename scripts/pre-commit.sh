@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -Eeuo pipefail
+trap 'status=$?; echo "[pre-commit] FAILED (exit ${status}) at line ${LINENO}: ${BASH_COMMAND}" >&2; exit "${status}"' ERR
 
 SOURCE="${BASH_SOURCE[0]}"
 while [[ -h "${SOURCE}" ]]; do
@@ -41,7 +42,7 @@ if git diff --cached --quiet; then
 fi
 
 run_step "cargo fmt --check" cargo fmt --check
-run_step "cargo clippy --locked -- -D warnings" cargo clippy --locked -- -D warnings
+run_step "cargo clippy --locked --all-targets -- -D warnings" cargo clippy --locked --all-targets -- -D warnings
 run_step "cargo test --locked" cargo test --locked
 
 require_cargo_subcommands() {

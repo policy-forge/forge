@@ -19,15 +19,17 @@ pub struct OscalComparisonRules {
 impl Default for OscalComparisonRules {
     fn default() -> Self {
         Self {
-            unordered_array_keys: ["props", "links", "parts"]
-                .iter()
-                .map(|key| (*key).to_string())
-                .collect(),
+            unordered_array_keys: HashSet::from([
+                "props".to_string(),
+                "links".to_string(),
+                "parts".to_string(),
+            ]),
             ignored_paths: Vec::new(),
-            acceptable_timestamp_path_suffixes: ["/last-modified", "/published", "/updated"]
-                .iter()
-                .map(|suffix| (*suffix).to_string())
-                .collect(),
+            acceptable_timestamp_path_suffixes: vec![
+                "/last-modified".to_string(),
+                "/published".to_string(),
+                "/updated".to_string(),
+            ],
         }
     }
 }

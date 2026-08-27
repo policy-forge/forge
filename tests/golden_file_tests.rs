@@ -98,6 +98,10 @@ fn normalizes_timestamp(s: &str, parent_key: Option<&str>) -> bool {
         || chrono::DateTime::parse_from_rfc3339(s).is_ok()
 }
 
+/// Normalize only standalone dynamic UUID fields.
+///
+/// Current serializers emit run-dynamic UUIDs as whole-string values; UUIDs embedded in href
+/// fragments are deterministic v5 identifiers and must remain visible to golden comparisons.
 fn is_normalizable_uuid(s: &str) -> bool {
     UUID_RE.is_match(s) && Uuid::parse_str(s).is_ok_and(|uuid| !uuid.is_nil())
 }

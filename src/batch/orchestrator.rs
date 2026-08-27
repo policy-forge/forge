@@ -10,9 +10,8 @@ use super::summary::{BatchSummary, FileResult};
 
 /// Validate input paths before conversion.
 ///
-/// This is the **single owner** of the "no input files" invariant: callers must
-/// route through this function rather than duplicating the empty-input check.
-/// It is called by `execute_dispatch` at the top of every convert invocation.
+/// The CLI calls this before dispatching batch work. `run_batch_conversion` accepts
+/// prevalidated pairs so programmatic callers can choose their own validation boundary.
 ///
 /// Returns `Ok(())` if all paths are valid, or `Err` listing all invalid paths
 /// with reasons.
@@ -101,6 +100,10 @@ pub fn run_batch_conversion(
 }
 
 /// Convert a single file with panic isolation.
+///
+/// `run_pipeline` must remain free of shared mutable state: catching a panic is
+/// sound only when a failed conversion cannot leave state shared with sibling
+/// batch tasks inconsistent. With `panic = "abort"`, this isolation cannot return.
 fn convert_single_file(
     input: &Path,
     output: &Path,
@@ -109,12 +112,18 @@ fn convert_single_file(
     max_size_bytes: u64,
     source_profile: Option<&str>,
 ) -> FileResult {
-    let start = Instant::now();
-
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    convert_single_file_with(input, output, || {
         run_pipeline(input, output, strategy, format, max_size_bytes, source_profile)
-    }));
+    })
+}
 
+fn convert_single_file_with(
+    input: &Path,
+    output: &Path,
+    convert: impl FnOnce() -> Result<(), ForgeError>,
+) -> FileResult {
+    let start = Instant::now();
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(convert));
     let duration = start.elapsed();
 
     match result {
@@ -202,5 +211,46 @@ mod tests {
         let result = validate_inputs(&[]);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("No input files"));
+    }
+
+    #[test]
+    fn panic_isolated_conversion_returns_generic_file_failure() {
+        let result = convert_single_file_with(
+            Path::new("input.md"),
+            Path::new("output.json"),
+            || -> Result<(), ForgeError> { panic!("injected panic") },
+        );
+
+        assert!(!result.is_success());
+        assert!(matches!(
+            result.outcome,
+            crate::batch::summary::FileOutcome::Failure { ref error }
+                if error.to_string().contains("Internal error (panic during conversion)")
+        ));
+    }
+
+    #[test]
+    fn single_worker_pool_converts_batch_without_fallback() {
+        let dir = TempDir::new().unwrap();
+        let input = dir.path().join("policy.md");
+        let output = dir.path().join("policy.json");
+        std::fs::write(
+            &input,
+            "# Policy\n\n## Access Control\n\n- The organization shall protect systems.\n",
+        )
+        .unwrap();
+
+        let summary = run_batch_conversion(
+            &[(input, output)],
+            Strategy::Catalog,
+            OutputFormat::Json,
+            1024 * 1024,
+            None,
+            1,
+        );
+
+        assert_eq!(summary.total_files(), 1);
+        assert_eq!(summary.succeeded(), 1);
+        assert!(!summary.degraded_to_sequential());
     }
 }

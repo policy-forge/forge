@@ -17,7 +17,7 @@ const STRICT_JSON_LIMITS: crate::json_strict::Limits =
     crate::json_strict::Limits { max_depth: MAX_JSON_DEPTH, max_string_bytes: MAX_STRING_BYTES };
 
 /// A closed portfolio manifest for one exact framework revision comparison.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ImpactManifest {
     pub schema_version: String,
@@ -36,7 +36,7 @@ pub struct ImpactManifest {
 }
 
 /// Exact evidence expected for one local Catalog or Profile companion pair.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct FrameworkResource {
     #[serde(rename = "type")]
@@ -55,7 +55,7 @@ pub struct FrameworkResource {
 }
 
 /// One PRD 055 Mapping Collection and the side occupied by the old framework.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct MappingDependency {
     pub artifact: PathBuf,
@@ -71,6 +71,9 @@ pub enum FrameworkRole {
 
 /// Parse a duplicate-key-safe, bounded framework-impact manifest.
 ///
+/// Referenced paths are validated lexically only. File-open sites MUST canonicalize resolved paths
+/// and prefix-check them against the trusted manifest root before reading.
+///
 /// # Errors
 ///
 /// Returns [`ForgeError::FrameworkImpact`] for invalid JSON, contract fields, or bounds.
@@ -79,10 +82,15 @@ pub fn parse(bytes: &[u8]) -> Result<ImpactManifest, ForgeError> {
         return Err(impact_error(format!("manifest exceeds the {MAX_MANIFEST_BYTES} byte limit")));
     }
     let value = crate::json_strict::parse_value(bytes, "manifest", STRICT_JSON_LIMITS)
-        .map_err(|error| impact_error(error.to_string()))?;
-    let manifest: ImpactManifest = serde_json::from_value(value)
-        .map_err(|error| impact_error(format!("invalid manifest contract: {error}")))?;
+        .map_err(|source| impact_error_with_source("manifest", source))?;
+    let mut manifest: ImpactManifest = serde_json::from_value(value)
+        .map_err(|source| impact_error_with_source("invalid manifest contract", source))?;
     validate(&manifest)?;
+    for (path, resource) in [("$.old", &mut manifest.old), ("$.new", &mut manifest.new)] {
+        resource.root_uuid = uuid::Uuid::parse_str(&resource.root_uuid)
+            .map_err(|_| impact_error(format!("{path}.root_uuid must be a UUID")))?
+            .to_string();
+    }
     Ok(manifest)
 }
 
@@ -196,6 +204,9 @@ fn validate_resource(path: &str, resource: &FrameworkResource) -> Result<(), For
     Ok(())
 }
 
+/// Validate only a path's local JSON spelling; this cannot constrain a symlink-resolved target.
+///
+/// File-open sites MUST canonicalize and prefix-check the resolved path against the trusted root.
 fn validate_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
     if value.as_os_str().is_empty()
         || value.extension().and_then(|extension| extension.to_str()) != Some("json")
@@ -230,13 +241,20 @@ fn impact_error(message: impl Into<String>) -> ForgeError {
     ForgeError::FrameworkImpact(message.into())
 }
 
+fn impact_error_with_source(
+    context: impl Into<String>,
+    source: impl std::error::Error + Send + Sync + 'static,
+) -> ForgeError {
+    ForgeError::FrameworkImpactWithSource { context: context.into(), source: Box::new(source) }
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::{Path, PathBuf};
 
     use super::{
         FrameworkResource, FrameworkRole, ImpactManifest, MANIFEST_SCHEMA_VERSION,
-        MappingDependency, validate, validate_json_path,
+        MappingDependency, parse, validate, validate_json_path,
     };
     use crate::mapping::manifest::ResourceType;
 
@@ -255,6 +273,25 @@ mod tests {
         }
         assert!(validate_json_path("$.artifact", Path::new("catalog.json")).is_ok());
         assert!(validate_json_path("$.artifact", Path::new("nested/catalog.json")).is_ok());
+    }
+
+    #[test]
+    fn parser_preserves_strict_json_error_source() {
+        let error = parse(br"{").expect_err("malformed manifest must fail");
+        assert!(std::error::Error::source(&error).is_some());
+    }
+
+    #[test]
+    fn parser_normalizes_resource_uuids() {
+        let mut manifest = valid_manifest();
+        manifest.old.root_uuid = "{11111111-1111-4111-8111-111111111111}".to_string();
+        manifest.new.root_uuid = "22222222-2222-4222-8222-222222222222".to_uppercase();
+
+        let parsed = parse(&serde_json::to_vec(&manifest).expect("serialize manifest fixture"))
+            .expect("valid manifest");
+
+        assert_eq!(parsed.old.root_uuid, "11111111-1111-4111-8111-111111111111");
+        assert_eq!(parsed.new.root_uuid, "22222222-2222-4222-8222-222222222222");
     }
 
     #[test]

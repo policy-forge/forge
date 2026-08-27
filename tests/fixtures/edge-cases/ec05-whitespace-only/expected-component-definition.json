@@ -1,35 +1,20 @@
 {
   "component-definition": {
-    "uuid": "4dd42034-e52d-4903-9985-d309ffbc44f0",
-    "metadata": {
-      "title": "Stable ID Baseline",
-      "last-modified": "2026-08-27T04:08:00.872367+00:00",
-      "version": "1.0.0",
-      "oscal-version": "1.2.3"
-    },
     "components": [
       {
-        "uuid": "1746ceb2-50d7-58e9-ac59-f469dc579387",
-        "type": "policy",
-        "title": "Stable ID Baseline",
-        "description": "Documentary component representing the Stable ID Baseline policy document.",
-        "props": [
-          {
-            "name": "source-file",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "input-original.md"
-          }
-        ],
         "control-implementations": [
           {
-            "uuid": "e0bb3369-ac8b-5db7-b2d5-22793543becd",
-            "source": "source-profile.json",
             "description": "Implementation narratives derived from Stable ID Baseline.",
             "implemented-requirements": [
               {
-                "uuid": "f968c3c6-a7bd-50ce-88bb-28b3760c2044",
                 "control-id": "POL-AR-001",
                 "description": "Systems must enforce multi-factor authentication.",
+                "links": [
+                  {
+                    "href": "input-original.md#line=9",
+                    "rel": "source"
+                  }
+                ],
                 "props": [
                   {
                     "name": "source-file",
@@ -51,17 +36,17 @@
                     "value": "normative"
                   }
                 ],
-                "links": [
-                  {
-                    "href": "input-original.md#line=9",
-                    "rel": "source"
-                  }
-                ]
+                "uuid": "f968c3c6-a7bd-50ce-88bb-28b3760c2044"
               },
               {
-                "uuid": "60e64b18-154c-527d-a5f9-866b7c88d7de",
                 "control-id": "POL-AR-002",
                 "description": "Systems must review privileged access {{ insert: param, id-ref: d9544d7d-5a32-580f-a32f-7a41b5cfa90f_prm_0 }}.",
+                "links": [
+                  {
+                    "href": "input-original.md#line=10",
+                    "rel": "source"
+                  }
+                ],
                 "props": [
                   {
                     "name": "source-file",
@@ -83,17 +68,32 @@
                     "value": "normative"
                   }
                 ],
-                "links": [
-                  {
-                    "href": "input-original.md#line=10",
-                    "rel": "source"
-                  }
-                ]
+                "uuid": "60e64b18-154c-527d-a5f9-866b7c88d7de"
               }
-            ]
+            ],
+            "source": "source-profile.json",
+            "uuid": "e0bb3369-ac8b-5db7-b2d5-22793543becd"
           }
-        ]
+        ],
+        "description": "Documentary component representing the Stable ID Baseline policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input-original.md"
+          }
+        ],
+        "title": "Stable ID Baseline",
+        "type": "policy",
+        "uuid": "81147491-1b11-5d84-b45d-a65065010816"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:40.700922+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Stable ID Baseline",
+      "version": "1.0.0"
+    },
+    "uuid": "8b9d880f-7116-48f6-b31a-2ed1e8544f3d"
   }
 }

@@ -16,6 +16,8 @@ use crate::{ForgeError, uuid::FORGE_NAMESPACE_UUID};
 
 pub const REPORT_SCHEMA_VERSION: &str = "forge.mapping-report/1";
 const UUID_SEED_VERSION: &str = "forge.mapping/1";
+const SOURCE_GAP_SUMMARY_KIND: &str = "source-gap-summary";
+const TARGET_GAP_SUMMARY_KIND: &str = "target-gap-summary";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MappingCollectionEnvelope {
@@ -183,6 +185,7 @@ pub struct OscalProp {
 #[serde(rename_all = "kebab-case")]
 pub struct GapSummary {
     pub uuid: Uuid,
+    /// OSCAL gap summaries carry controls only; unmapped statements remain in the review report.
     pub unmapped_controls: Vec<ControlSelection>,
 }
 
@@ -356,9 +359,9 @@ pub fn build(
         };
 
     let source_gap_summary =
-        gap_summary("source-gap-summary", &manifest.mapping.key, &source_controls.unmapped_ids);
+        gap_summary(SOURCE_GAP_SUMMARY_KIND, &manifest.mapping.key, &source_controls.unmapped_ids);
     let target_gap_summary =
-        gap_summary("target-gap-summary", &manifest.mapping.key, &target_controls.unmapped_ids);
+        gap_summary(TARGET_GAP_SUMMARY_KIND, &manifest.mapping.key, &target_controls.unmapped_ids);
 
     let parties = manifest
         .reviewers
@@ -689,8 +692,8 @@ fn ensure_unique_uuids(
     let candidates = [
         stable_uuid("collection", &manifest.collection.key),
         stable_uuid("mapping", &manifest.mapping.key),
-        stable_uuid("source-gap-summary", &manifest.mapping.key),
-        stable_uuid("target-gap-summary", &manifest.mapping.key),
+        stable_uuid(SOURCE_GAP_SUMMARY_KIND, &manifest.mapping.key),
+        stable_uuid(TARGET_GAP_SUMMARY_KIND, &manifest.mapping.key),
     ];
     for uuid in candidates
         .into_iter()

@@ -49,6 +49,9 @@ pub enum Strategy {
     /// Produce an OSCAL Catalog (groups → controls → statements).
     Catalog,
     /// Produce an OSCAL Component Definition (implemented requirements).
+    ///
+    /// The CLI value is deliberately the concise `component`; `--to` uses the
+    /// full `component-definition` artifact name.
     Component,
 }
 

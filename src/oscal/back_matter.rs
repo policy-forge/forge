@@ -166,7 +166,7 @@ fn build_resource_parts(
     match classification {
         UrlClassification::Valid(parsed_url) => {
             let media_type = infer_media_type(&parsed_url);
-            let href = citation.url.as_deref().unwrap_or_default().to_string();
+            let href = parsed_url.to_string();
             let rlinks = vec![Rlink { href, media_type }];
             (rlinks, citation_field(&citation.text), vec![])
         }
@@ -231,7 +231,8 @@ fn infer_media_type(url: &url::Url) -> Option<String> {
 ///
 /// UUID generation uses [`crate::uuid::normalize_for_hashing`] to normalize
 /// citation text (trim + collapse whitespace) before hashing, ensuring that
-/// whitespace-only differences produce identical UUIDs.
+/// whitespace-only differences produce identical UUIDs. Valid URLs are hashed
+/// and emitted in their canonical parsed form.
 ///
 /// # Errors
 ///
@@ -261,11 +262,19 @@ pub fn generate_back_matter(
             continue;
         }
 
-        let normalized = crate::uuid::normalize_for_hashing(&citation.text);
-        let hash_input = match &citation.url {
-            Some(url) => format!("{normalized}\n{url}"),
-            None => normalized.clone(),
+        // Classify before deriving identity or display fields so parsed http(s)
+        // URLs use their canonical spelling throughout (F0621).
+        let classification = classify_url(citation.url.as_ref());
+        let canonical_url = match &classification {
+            UrlClassification::Valid(parsed_url) => Some(parsed_url.as_str()),
+            UrlClassification::Malformed(raw_url) | UrlClassification::Dangerous(raw_url) => {
+                Some(raw_url.as_str())
+            }
+            UrlClassification::None => None,
         };
+        let normalized = crate::uuid::normalize_for_hashing(&citation.text);
+        let hash_input =
+            canonical_url.map_or_else(|| normalized.clone(), |url| format!("{normalized}\n{url}"));
         let uuid = Uuid::new_v5(&BACK_MATTER_NAMESPACE, hash_input.as_bytes());
 
         // Identical normalized content derives the same UUID: reuse the
@@ -276,13 +285,12 @@ pub fn generate_back_matter(
             continue;
         }
 
-        // Classify before deriving the title so a dangerous scheme can never
-        // fall back into a display string (F0620).
-        let classification = classify_url(citation.url.as_ref());
         let title = if citation.text.is_empty() {
-            match classification {
+            match &classification {
+                UrlClassification::Valid(parsed_url) => parsed_url.to_string(),
                 UrlClassification::Dangerous(_) => "[unsafe URL scheme removed]".to_string(),
-                _ => citation.url.clone().unwrap_or_default(),
+                UrlClassification::Malformed(raw_url) => raw_url.clone(),
+                UrlClassification::None => String::new(),
             }
         } else {
             citation.text.clone()
@@ -384,6 +392,17 @@ mod tests {
         assert_eq!(resources.len(), 1);
         assert_eq!(resources[0].rlinks.len(), 1);
         assert_eq!(resources[0].rlinks[0].href, "https://nvd.nist.gov/800-53");
+    }
+
+    #[test]
+    fn valid_url_uses_canonical_href_and_identity() {
+        let canonical = url_citation("canonical", "NIST", "https://nist.gov/");
+        let padded = url_citation("padded", "NIST", "  https://nist.gov/  ");
+        let (resources, resource_map) = generate_back_matter(&[canonical, padded]).unwrap();
+
+        assert_eq!(resources.len(), 1);
+        assert_eq!(resources[0].rlinks[0].href, "https://nist.gov/");
+        assert_eq!(resource_map["canonical"], resource_map["padded"]);
     }
 
     #[test]

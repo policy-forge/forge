@@ -1,5 +1,6 @@
 //! CLI handler for `forge profile` — OSCAL Profile generation subcommand (WI-30/WI-31).
 
+use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use tracing::info;
@@ -7,6 +8,62 @@ use tracing::info;
 use super::OutputFormat;
 use crate::error::ForgeError;
 use crate::oscal::profile::{ProfileRoot, SelectionMode, build_profile, parse_control_ids};
+
+/// Serialize a profile directly to an atomically replaced output file.
+fn write_profile_file(
+    root: &ProfileRoot,
+    format: OutputFormat,
+    output: &Path,
+) -> Result<(), ForgeError> {
+    let parent = output
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let temp = tempfile::NamedTempFile::new_in(parent).map_err(|error| {
+        ForgeError::Io(std::io::Error::other(format!(
+            "failed creating output for '{}': {error}",
+            output.display()
+        )))
+    })?;
+    let mut writer = BufWriter::new(temp);
+
+    match format {
+        OutputFormat::Json => serde_json::to_writer_pretty(&mut writer, root).map_err(|error| {
+            ForgeError::Serialization(format!("Profile JSON serialization failed: {error}"))
+        })?,
+        OutputFormat::Xml => writer
+            .write_all(
+                crate::export::xml_serializer::serialize_profile_to_xml(&root.profile)?.as_bytes(),
+            )
+            .map_err(ForgeError::Io)?,
+        OutputFormat::Yaml => serde_yaml::to_writer(&mut writer, root).map_err(|error| {
+            ForgeError::Serialization(format!("Profile YAML serialization failed: {error}"))
+        })?,
+    }
+    writer.flush().map_err(ForgeError::Io)?;
+    let temp = writer.into_inner().map_err(|error| ForgeError::Io(error.into_error()))?;
+    temp.as_file().sync_all().map_err(ForgeError::Io)?;
+    #[cfg(unix)]
+    if let Ok(existing) = std::fs::metadata(output) {
+        use std::os::unix::fs::PermissionsExt;
+        let permissions = std::fs::Permissions::from_mode(existing.permissions().mode());
+        // Best effort: a concurrent removal must not prevent an otherwise-safe write.
+        let _ = std::fs::set_permissions(temp.path(), permissions);
+    }
+    let persisted = temp.persist(output).map_err(|error| {
+        ForgeError::Io(std::io::Error::other(format!(
+            "failed persisting output '{}': {}",
+            output.display(),
+            error.error
+        )))
+    })?;
+    persisted.sync_all().map_err(ForgeError::Io)?;
+    #[cfg(unix)]
+    std::fs::File::open(parent)
+        .and_then(|directory| directory.sync_all())
+        .map_err(ForgeError::Io)?;
+    Ok(())
+}
 
 /// Execute the `forge profile` subcommand.
 ///
@@ -19,6 +76,7 @@ use crate::oscal::profile::{ProfileRoot, SelectionMode, build_profile, parse_con
 /// * `output` — Optional output file path; if `None`, writes to stdout.
 /// * `set_params` — Flat `[id, value, id, value, ...]` slice from `--set-param` flags (WI-31).
 ///   Pass `&[]` when no `--set-param` flags are provided.
+/// * `timestamp` — Optional RFC 3339 `last-modified` override for reproducible output.
 ///
 /// # Errors
 ///
@@ -61,9 +119,6 @@ pub fn execute(
                     "Either --include or --exclude must be provided".to_string(),
                 ));
             }
-            eprintln!(
-                "warning: --set-param specified without --include or --exclude; the Profile will have no control imports"
-            );
             tracing::warn!(
                 "--set-param specified without --include or --exclude; Profile will have no control imports"
             );
@@ -118,19 +173,20 @@ pub fn execute(
     );
 
     let root = ProfileRoot { profile: oscal_profile };
-    let serialized = match format {
-        OutputFormat::Json => serde_json::to_string_pretty(&root).map_err(|e| {
-            ForgeError::Serialization(format!("Profile JSON serialization failed: {e}"))
-        })?,
-        OutputFormat::Xml => {
-            crate::export::xml_serializer::serialize_profile_to_xml(&root.profile)?
-        }
-        OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(&root)?,
-    };
-
-    crate::cli::output::write_output(&serialized, output)?;
-
-    Ok(())
+    if let Some(output) = output {
+        write_profile_file(&root, *format, output)
+    } else {
+        let serialized = match format {
+            OutputFormat::Json => serde_json::to_string_pretty(&root).map_err(|error| {
+                ForgeError::Serialization(format!("Profile JSON serialization failed: {error}"))
+            })?,
+            OutputFormat::Xml => {
+                crate::export::xml_serializer::serialize_profile_to_xml(&root.profile)?
+            }
+            OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(&root)?,
+        };
+        crate::cli::output::write_output(&serialized, None)
+    }
 }
 
 /// Parse a flat `[id, value, id, value, ...]` slice into normalized `(id, value)` pairs.
@@ -169,6 +225,21 @@ mod tests {
     use super::{execute, parse_set_param_pairs};
     use crate::error::ForgeError;
     use crate::types::OutputFormat;
+
+    #[test]
+    fn profile_file_output_is_serialized_atomically() {
+        let directory = tempfile::tempdir().unwrap();
+        let catalog = directory.path().join("catalog.json");
+        let output = directory.path().join("profile.json");
+        std::fs::write(&catalog, "{}").unwrap();
+
+        execute(&catalog, Some("ac-1"), None, &OutputFormat::Json, Some(&output), &[], None)
+            .unwrap();
+
+        let rendered: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&output).unwrap()).unwrap();
+        assert!(rendered.get("profile").is_some());
+    }
 
     #[test]
     fn parameter_identifier_is_trimmed_before_profile_generation() {

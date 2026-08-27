@@ -10,7 +10,7 @@ use crate::ForgeError;
 use crate::ingest::IngestedDocument;
 use crate::parse::{ExtractedContent, ExtractedListItem, SectionNode};
 
-use super::frontmatter::parse_frontmatter;
+use super::frontmatter::{FrontmatterOutcome, parse_frontmatter};
 use super::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 
 /// Build a requirement in its pre-enrichment state from one extracted item.
@@ -41,6 +41,12 @@ fn validate_section_tree(section_nodes: &[SectionNode]) -> Result<(), ForgeError
     }
 
     for section in section_nodes {
+        if !(1..=6).contains(&section.heading_level) {
+            return Err(ForgeError::Parse(format!(
+                "section heading level must be in 1..=6; found {} at source line {}",
+                section.heading_level, section.source_line
+            )));
+        }
         validate_section_tree(&section.children)?;
     }
     Ok(())
@@ -109,15 +115,16 @@ fn map_sections_recursive(
     let mut result = Vec::with_capacity(section_nodes.len());
     for (index, node) in section_nodes.iter().enumerate() {
         let range_start = node.source_line;
-        let range_end = section_nodes.get(index + 1).map_or(usize::MAX, |next| next.source_line);
+        let range_end = section_nodes.get(index + 1).map(|next| next.source_line);
+        // `extract_clauses` sorts items by source line, so each range can
+        // borrow its contiguous partition instead of rescanning every item.
+        let start = list_items.partition_point(|item| item.source_line < range_start);
+        let end = range_end.map_or(list_items.len(), |end| {
+            start + list_items[start..].partition_point(|item| item.source_line < end)
+        });
+        let items_in_range = &list_items[start..end];
 
-        let items_in_range: Vec<&ExtractedListItem> = list_items
-            .iter()
-            .copied()
-            .filter(|item| item.source_line >= range_start && item.source_line < range_end)
-            .collect();
-
-        let children = map_sections_recursive(&node.children, &items_in_range);
+        let children = map_sections_recursive(&node.children, items_in_range);
         let child_owned = build_child_ranges(&node.children);
         let requirements = items_in_range
             .iter()
@@ -139,26 +146,26 @@ fn map_sections_recursive(
 }
 
 /// Build line ranges `[start, end)` for each child section.
-fn build_child_ranges(children: &[SectionNode]) -> Vec<(usize, usize)> {
+///
+/// The final child's `None` end is intentionally unbounded.
+fn build_child_ranges(children: &[SectionNode]) -> Vec<(usize, Option<usize>)> {
     children
         .iter()
         .enumerate()
-        .map(|(i, child)| {
-            let start = child.source_line;
-            let end = children.get(i + 1).map_or(usize::MAX, |next| next.source_line);
-            (start, end)
+        .map(|(index, child)| {
+            (child.source_line, children.get(index + 1).map(|next| next.source_line))
         })
         .collect()
 }
 
 /// Check whether a line falls within any of the given child ranges.
-fn is_in_child_range(line: usize, ranges: &[(usize, usize)]) -> bool {
-    ranges.iter().any(|&(start, end)| line >= start && line < end)
+fn is_in_child_range(line: usize, ranges: &[(usize, Option<usize>)]) -> bool {
+    ranges.iter().any(|&(start, end)| line >= start && end.is_none_or(|end| line < end))
 }
 
-/// Extract filename stem from a path, used as fallback document ID and title.
-fn filename_stem(path: &Path) -> String {
-    path.file_stem().and_then(|s| s.to_str()).unwrap_or("untitled").to_string()
+/// Extract a UTF-8 filename stem for document identity and title fallbacks.
+fn filename_stem(path: &Path) -> Option<String> {
+    path.file_stem().and_then(|stem| stem.to_str()).map(ToOwned::to_owned)
 }
 
 /// Assemble a `PolicyDocument` from ingestion and extraction outputs.
@@ -184,7 +191,27 @@ pub fn assemble_document(
     }
 
     let content = ingested.reconstruct_content();
-    let frontmatter = parse_frontmatter(&content);
+    let frontmatter = match parse_frontmatter(&content) {
+        FrontmatterOutcome::Data(data) => Some(data),
+        FrontmatterOutcome::Absent => None,
+        FrontmatterOutcome::Malformed => {
+            tracing::warn!(
+                "Malformed YAML frontmatter ignored; falling back to derived document metadata"
+            );
+            None
+        }
+    };
+
+    let path_stem = filename_stem(&ingested.source_path);
+    let fallback_identity = if path_stem.is_none() {
+        tracing::warn!(
+            path = %ingested.source_path.display(),
+            "Document path has no UTF-8 filename stem; using content-hash identity fallback"
+        );
+        format!("untitled-{}", ingested.fingerprint)
+    } else {
+        String::new()
+    };
 
     let title = frontmatter
         .as_ref()
@@ -195,7 +222,8 @@ pub fn assemble_document(
                 .find(|section| section.heading_level == 1)
                 .map(|section| section.title.clone())
         })
-        .unwrap_or_else(|| filename_stem(&ingested.source_path));
+        .or_else(|| path_stem.clone())
+        .unwrap_or_else(|| fallback_identity.clone());
     let version = frontmatter
         .as_ref()
         .and_then(|frontmatter| frontmatter.version.clone())
@@ -212,7 +240,7 @@ pub fn assemble_document(
 
     let item_refs: Vec<&ExtractedListItem> = clauses.list_items.iter().collect();
     let mapped_sections = map_sections(sections, &item_refs);
-    let id = filename_stem(&ingested.source_path);
+    let id = path_stem.unwrap_or(fallback_identity);
 
     Ok(PolicyDocument { id, metadata, sections: mapped_sections })
 }
@@ -918,6 +946,25 @@ mod tests {
         assert!(matches!(
             assemble_document(&ingested, &sections, &clauses),
             Err(ForgeError::Parse(message)) if message.contains("strictly ascending")
+        ));
+    }
+
+    #[test]
+    fn assemble_rejects_out_of_range_parsed_heading_level() {
+        let ingested = make_ingested("invalid.md", "# First\n");
+        let sections = vec![SectionNode {
+            title: "First".to_string(),
+            heading_level: 7,
+            source_line: 1,
+            body_text: None,
+            children: Vec::new(),
+        }];
+        let clauses =
+            ExtractedContent { list_items: Vec::new(), tables: Vec::new(), paragraphs: Vec::new() };
+
+        assert!(matches!(
+            assemble_document(&ingested, &sections, &clauses),
+            Err(ForgeError::Parse(message)) if message.contains("heading level must be in 1..=6")
         ));
     }
 }

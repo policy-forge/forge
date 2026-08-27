@@ -1,55 +1,99 @@
 {
   "component-definition": {
-    "uuid": "bb171fa9-a099-479d-89d7-c9900a10adcb",
-    "metadata": {
-      "title": "Timelines",
-      "last-modified": "2026-08-27T03:20:52.687560+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "components": [
       {
-        "uuid": "64fe51df-9520-5897-bef8-cfcae3473e93",
-        "type": "policy",
-        "title": "Timelines",
-        "description": "Documentary component representing the Timelines policy document.",
-        "props": [
-          {"name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "input.md"}
-        ],
         "control-implementations": [
           {
-            "uuid": "28ab810f-3d33-51c8-8030-45dfb2d1cb01",
-            "source": "source-profile.json",
             "description": "Implementation narratives derived from Timelines.",
             "implemented-requirements": [
               {
-                "uuid": "12ad4f86-1a43-5241-a813-1e564b759bec",
                 "control-id": "POL-T-001",
                 "description": "Teams must review access requests {{ insert: param, id-ref: a84fa2db-65a8-52ac-8eba-2acaaa579e56_prm_0 }}.",
-                "props": [
-                  {"name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "input.md"},
-                  {"name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Timelines"},
-                  {"name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "3"},
-                  {"name": "modality", "value": "normative"}
+                "links": [
+                  {
+                    "href": "input.md#line=3",
+                    "rel": "source"
+                  }
                 ],
-                "links": [{"href": "input.md#line=3", "rel": "source"}]
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Timelines"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "3"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "uuid": "12ad4f86-1a43-5241-a813-1e564b759bec"
               },
               {
-                "uuid": "60bcbcb0-a7a9-56bd-9114-1292fa1466b9",
                 "control-id": "POL-T-002",
                 "description": "Systems must use {{ insert: param, id-ref: e36a0a97-4cb5-5d12-a4b6-e3db3fb65fd7_prm_0 }} keys for encrypted channels.",
-                "props": [
-                  {"name": "source-file", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "input.md"},
-                  {"name": "source-section", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "Timelines"},
-                  {"name": "source-line", "ns": "https://forge.policy-forge.github.io/ns/trace", "value": "4"},
-                  {"name": "modality", "value": "normative"}
+                "links": [
+                  {
+                    "href": "input.md#line=4",
+                    "rel": "source"
+                  }
                 ],
-                "links": [{"href": "input.md#line=4", "rel": "source"}]
+                "props": [
+                  {
+                    "name": "source-file",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "input.md"
+                  },
+                  {
+                    "name": "source-section",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "Timelines"
+                  },
+                  {
+                    "name": "source-line",
+                    "ns": "https://forge.policy-forge.github.io/ns/trace",
+                    "value": "4"
+                  },
+                  {
+                    "name": "modality",
+                    "value": "normative"
+                  }
+                ],
+                "uuid": "60bcbcb0-a7a9-56bd-9114-1292fa1466b9"
               }
-            ]
+            ],
+            "source": "source-profile.json",
+            "uuid": "a1bb8684-34a9-531a-8c51-75a073a6acc7"
           }
-        ]
+        ],
+        "description": "Documentary component representing the Timelines policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "title": "Timelines",
+        "type": "policy",
+        "uuid": "9c4e9af9-6b56-5345-b583-1a587da472a7"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:01.490938+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Timelines",
+      "version": "0.0.0"
+    },
+    "uuid": "f01252a4-d292-4091-82cb-2b5e5a288534"
   }
 }

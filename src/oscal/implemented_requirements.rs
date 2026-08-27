@@ -634,7 +634,7 @@ mod tests {
             result.props[0].ns.as_deref(),
             Some("https://forge.policy-forge.github.io/ns/trace")
         );
-        assert_eq!(result.props[0].value, "policies/security.md");
+        assert_eq!(result.props[0].value, "security.md");
 
         assert_eq!(result.props[1].name, "source-section");
         assert_eq!(
@@ -676,7 +676,7 @@ mod tests {
 
         assert_eq!(result.links.len(), 1, "Must have exactly 1 source link");
         assert_eq!(result.links[0].rel, "source");
-        assert_eq!(result.links[0].href, "policies%2Fsecurity.md#line=99");
+        assert_eq!(result.links[0].href, "security.md#line=99");
     }
 
     // ─── T023: No remarks in output (SEC-1, SEC-2) ──────────────────────

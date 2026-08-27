@@ -72,35 +72,25 @@ pub fn analyze(
     let baseline: MappingCollectionEnvelope = serde_json::from_value(value)
         .map_err(|error| mapping_error(format!("baseline structure is unsupported: {error}")))?;
     verify_integrity(&baseline)?;
+    ensure_unique_map_uuids(&baseline)?;
     ensure_single_mapping(&baseline, "baseline")?;
+    ensure_unique_map_uuids(current)?;
     ensure_single_mapping(current, "current Mapping")?;
 
     let mut findings = Vec::new();
     compare_resources(&baseline, current, &mut findings)?;
     compare_maps(&baseline, current, source_inventory, target_inventory, &mut findings)?;
-    compare_gaps(&baseline, current, &mut findings);
+    compare_gaps(&baseline, current, &mut findings)?;
     findings.sort();
-    if findings.len() > MAX_BASELINE_FINDINGS {
-        return Err(mapping_error(format!(
-            "baseline impact exceeds the {MAX_BASELINE_FINDINGS} finding limit"
-        )));
-    }
     report.findings.extend(findings);
     Ok(())
 }
 
 fn verify_integrity(baseline: &MappingCollectionEnvelope) -> Result<(), ForgeError> {
     require_prop(&baseline.mapping_collection.metadata.props, "collection-key", "metadata")?;
-    let mut map_uuids = BTreeSet::new();
     for (mapping_index, mapping) in baseline.mapping_collection.mappings.iter().enumerate() {
         require_prop(&mapping.props, "mapping-key", &format!("mappings[{mapping_index}]"))?;
         for (map_index, map) in mapping.maps.iter().enumerate() {
-            if !map_uuids.insert(map.uuid) {
-                return Err(mapping_error(format!(
-                    "baseline contains duplicate map UUID '{}'",
-                    map.uuid
-                )));
-            }
             require_prop(
                 &map.props,
                 "map-key",
@@ -117,6 +107,19 @@ fn verify_integrity(baseline: &MappingCollectionEnvelope) -> Result<(), ForgeErr
                     )?;
                 }
             }
+        }
+    }
+    Ok(())
+}
+
+fn ensure_unique_map_uuids(document: &MappingCollectionEnvelope) -> Result<(), ForgeError> {
+    let mut map_uuids = BTreeSet::new();
+    for map in document.mapping_collection.mappings.iter().flat_map(|mapping| &mapping.maps) {
+        if !map_uuids.insert(map.uuid) {
+            return Err(mapping_error(format!(
+                "document contains duplicate map UUID '{}'",
+                map.uuid
+            )));
         }
     }
     Ok(())
@@ -169,11 +172,14 @@ fn compare_resources(
         || old.confidence_score != new.confidence_score
         || old.coverage != new.coverage
     {
-        findings.push(finding(
-            CODE_MAPPING_PROVENANCE_CHANGED,
-            "$.mapping".to_string(),
-            "mapping-level provenance or reviewer estimate changed".to_string(),
-        ));
+        push_finding(
+            findings,
+            finding(
+                CODE_MAPPING_PROVENANCE_CHANGED,
+                "$.mapping".to_string(),
+                "mapping-level provenance or reviewer estimate changed".to_string(),
+            ),
+        )?;
     }
     for (side, old_resource, new_resource) in [
         ("source", &old.source_resource, &new.source_resource),
@@ -184,23 +190,32 @@ fn compare_resources(
         let companion_changed = unique_prop(&old_resource.props, "resolved-catalog-sha256", side)?
             != unique_prop(&new_resource.props, "resolved-catalog-sha256", side)?;
         if raw_changed && companion_changed {
-            findings.push(finding(
-                CODE_RESOURCE_CHANGED,
-                format!("$.mapping.{side}"),
-                format!("{side} resource and resolved Catalog bytes changed"),
-            ));
+            push_finding(
+                findings,
+                finding(
+                    CODE_RESOURCE_CHANGED,
+                    format!("$.mapping.{side}"),
+                    format!("{side} resource and resolved Catalog bytes changed"),
+                ),
+            )?;
         } else if raw_changed {
-            findings.push(finding(
-                CODE_RESOURCE_CHANGED,
-                format!("$.mapping.{side}"),
-                format!("{side} resource bytes changed"),
-            ));
+            push_finding(
+                findings,
+                finding(
+                    CODE_RESOURCE_CHANGED,
+                    format!("$.mapping.{side}"),
+                    format!("{side} resource bytes changed"),
+                ),
+            )?;
         } else if companion_changed {
-            findings.push(finding(
-                CODE_RESOURCE_CHANGED,
-                format!("$.mapping.{side}"),
-                format!("{side} resolved Catalog bytes changed"),
-            ));
+            push_finding(
+                findings,
+                finding(
+                    CODE_RESOURCE_CHANGED,
+                    format!("$.mapping.{side}"),
+                    format!("{side} resolved Catalog bytes changed"),
+                ),
+            )?;
         }
     }
     Ok(())
@@ -218,7 +233,10 @@ fn compare_maps(
     for (uuid, old) in &old_maps {
         let path = format!("$.mapping.maps[uuid={uuid}]");
         let Some(new) = new_maps.get(uuid) else {
-            findings.push(finding(CODE_MAP_REMOVED, path, "reviewed map was removed".to_string()));
+            push_finding(
+                findings,
+                finding(CODE_MAP_REMOVED, path, "reviewed map was removed".to_string()),
+            )?;
             inspect_items(&old.sources, source_inventory, "source", findings)?;
             inspect_items(&old.targets, target_inventory, "target", findings)?;
             continue;
@@ -226,11 +244,14 @@ fn compare_maps(
         inspect_items(&old.sources, source_inventory, "source", findings)?;
         inspect_items(&old.targets, target_inventory, "target", findings)?;
         if review_evidence(old)? != review_evidence(new)? {
-            findings.push(finding(
-                CODE_MAP_REVIEW_EVIDENCE_CHANGED,
-                path.clone(),
-                "map reviewer key or review timestamp changed".to_string(),
-            ));
+            push_finding(
+                findings,
+                finding(
+                    CODE_MAP_REVIEW_EVIDENCE_CHANGED,
+                    path.clone(),
+                    "map reviewer key or review timestamp changed".to_string(),
+                ),
+            )?;
         }
         if old.relationship != new.relationship
             || old.matching_rationale != new.matching_rationale
@@ -241,19 +262,25 @@ fn compare_maps(
             || subject_keys(&old.sources) != subject_keys(&new.sources)
             || subject_keys(&old.targets) != subject_keys(&new.targets)
         {
-            findings.push(finding(
-                CODE_RELATIONSHIP_CHANGED,
-                path,
-                "relationship, rationale, or subject set changed".to_string(),
-            ));
+            push_finding(
+                findings,
+                finding(
+                    CODE_RELATIONSHIP_CHANGED,
+                    path,
+                    "relationship, rationale, or subject set changed".to_string(),
+                ),
+            )?;
         }
     }
     for uuid in new_maps.keys().filter(|uuid| !old_maps.contains_key(uuid.as_str())) {
-        findings.push(finding(
-            CODE_MAP_ADDED,
-            format!("$.mapping.maps[uuid={uuid}]"),
-            "new reviewed map was added".to_string(),
-        ));
+        push_finding(
+            findings,
+            finding(
+                CODE_MAP_ADDED,
+                format!("$.mapping.maps[uuid={uuid}]"),
+                "new reviewed map was added".to_string(),
+            ),
+        )?;
     }
     Ok(())
 }
@@ -272,30 +299,36 @@ fn inspect_items(
             } else {
                 CODE_STALE_REFERENCE
             };
-            findings.push(finding(
-                code,
-                path,
-                format!(
-                    "baseline {} '{}' no longer resolves",
-                    item.subject_type.as_str(),
-                    item.id_ref
+            push_finding(
+                findings,
+                finding(
+                    code,
+                    path,
+                    format!(
+                        "baseline {} '{}' no longer resolves",
+                        item.subject_type.as_str(),
+                        item.id_ref
+                    ),
                 ),
-            ));
+            )?;
             continue;
         };
         let old_hash = require_unique_prop(&item.props, "subject-sha256", &path)?;
         if old_hash != current_hash {
-            findings.push(finding_with_fingerprints(
-                CODE_SUBJECT_CHANGED,
-                path,
-                format!(
-                    "{} '{}' content fingerprint changed",
-                    item.subject_type.as_str(),
-                    item.id_ref
+            push_finding(
+                findings,
+                finding_with_fingerprints(
+                    CODE_SUBJECT_CHANGED,
+                    path,
+                    format!(
+                        "{} '{}' content fingerprint changed",
+                        item.subject_type.as_str(),
+                        item.id_ref
+                    ),
+                    old_hash,
+                    current_hash,
                 ),
-                old_hash,
-                current_hash,
-            ));
+            )?;
         }
     }
     Ok(())
@@ -305,9 +338,9 @@ fn compare_gaps(
     baseline: &MappingCollectionEnvelope,
     current: &MappingCollectionEnvelope,
     findings: &mut Vec<ImpactFinding>,
-) {
-    let Some(old) = baseline.mapping_collection.mappings.first() else { return };
-    let Some(new) = current.mapping_collection.mappings.first() else { return };
+) -> Result<(), ForgeError> {
+    let Some(old) = baseline.mapping_collection.mappings.first() else { return Ok(()) };
+    let Some(new) = current.mapping_collection.mappings.first() else { return Ok(()) };
     for (side, old_gap, new_gap) in [
         ("source", &old.source_gap_summary, &new.source_gap_summary),
         ("target", &old.target_gap_summary, &new.target_gap_summary),
@@ -315,20 +348,40 @@ fn compare_gaps(
         let old_ids = gap_ids(old_gap.as_ref());
         let new_ids = gap_ids(new_gap.as_ref());
         for id in new_ids.difference(&old_ids) {
-            findings.push(finding(
-                CODE_NEW_GAP,
-                format!("$.mapping.{side}-gap-summary[{id}]"),
-                format!("{side} control '{id}' is newly unmapped"),
-            ));
+            push_finding(
+                findings,
+                finding(
+                    CODE_NEW_GAP,
+                    format!("$.mapping.{side}-gap-summary[{id}]"),
+                    format!("{side} control '{id}' is newly unmapped"),
+                ),
+            )?;
         }
         if old_ids.len() != new_ids.len() {
-            findings.push(finding(
-                CODE_GAP_CHANGED,
-                format!("$.mapping.{side}-gap-summary"),
-                format!("{side} gap count changed from {} to {}", old_ids.len(), new_ids.len()),
-            ));
+            push_finding(
+                findings,
+                finding(
+                    CODE_GAP_CHANGED,
+                    format!("$.mapping.{side}-gap-summary"),
+                    format!("{side} gap count changed from {} to {}", old_ids.len(), new_ids.len()),
+                ),
+            )?;
         }
     }
+    Ok(())
+}
+
+fn push_finding(
+    findings: &mut Vec<ImpactFinding>,
+    finding: ImpactFinding,
+) -> Result<(), ForgeError> {
+    if findings.len() >= MAX_BASELINE_FINDINGS {
+        return Err(mapping_error(format!(
+            "baseline impact exceeds the {MAX_BASELINE_FINDINGS} finding limit"
+        )));
+    }
+    findings.push(finding);
+    Ok(())
 }
 
 fn maps_by_uuid(document: &MappingCollectionEnvelope) -> BTreeMap<String, &OscalMap> {
@@ -428,5 +481,50 @@ mod tests {
         let error = require_unique_prop(&props, "subject-sha256", "item")
             .expect_err("ambiguous integrity evidence must fail");
         assert!(error.to_string().contains("duplicate FORGE property 'subject-sha256'"));
+    }
+
+    #[test]
+    fn duplicate_map_uuids_are_rejected_before_comparison() {
+        let document: MappingCollectionEnvelope = serde_json::from_value(serde_json::json!({
+            "mapping-collection": {
+                "uuid": "00000000-0000-4000-8000-000000000000",
+                "metadata": {
+                    "title": "Collection",
+                    "last-modified": "2026-08-26T00:00:00Z",
+                    "version": "1",
+                    "oscal-version": crate::oscal::OSCAL_VERSION
+                },
+                "provenance": {
+                    "method": "human",
+                    "matching-rationale": "semantic",
+                    "status": "complete",
+                    "mapping-description": "Reviewed mapping."
+                },
+                "mappings": [{
+                    "uuid": "10000000-0000-4000-8000-000000000000",
+                    "source-resource": { "type": "catalog", "href": "source.json" },
+                    "target-resource": { "type": "catalog", "href": "target.json" },
+                    "maps": [
+                        {
+                            "uuid": "20000000-0000-4000-8000-000000000000",
+                            "relationship": "equivalent-to",
+                            "sources": [],
+                            "targets": []
+                        },
+                        {
+                            "uuid": "20000000-0000-4000-8000-000000000000",
+                            "relationship": "equivalent-to",
+                            "sources": [],
+                            "targets": []
+                        }
+                    ]
+                }]
+            }
+        }))
+        .expect("test mapping artifact deserializes");
+
+        let error = ensure_unique_map_uuids(&document)
+            .expect_err("duplicate map UUIDs must not be silently collapsed");
+        assert!(error.to_string().contains("document contains duplicate map UUID"));
     }
 }

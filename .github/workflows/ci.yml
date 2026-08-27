@@ -41,17 +41,15 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Run tests
         run: cargo test --verbose
 
-      - name: Verify OSCAL schema provenance
-        run: cargo test --test schema_provenance_test --verbose
 
       - name: Lint
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Build release
         run: cargo build --release --verbose
@@ -63,7 +61,7 @@ jobs:
 
       - name: Run benchmarks
         if: matrix.os == 'ubuntu-latest'
-        run: cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3
+        run: cargo bench --bench pipeline_benchmark
 
 
   # Audits run in a dedicated job so a test/lint/build failure in `test`

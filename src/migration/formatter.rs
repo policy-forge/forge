@@ -19,6 +19,7 @@ pub fn format_json(report: &MigrationReport) -> Result<String, ForgeError> {
 #[must_use]
 pub fn format_text(report: &MigrationReport) -> String {
     let mut output = String::new();
+    // Writing into a `String` is infallible; discarded `fmt::Result`s cannot represent failures.
     let _ = writeln!(output, "FORGE policy migration report");
     let _ = writeln!(
         output,
@@ -64,9 +65,12 @@ pub fn format_text(report: &MigrationReport) -> String {
 
     for entry in &report.entries {
         let _ = writeln!(output, "\n{}", entry.classification.as_str());
-        let evidence =
-            entry.evidence.iter().map(|evidence| evidence.as_str()).collect::<Vec<_>>().join(",");
-        let _ = writeln!(output, "  evidence: {evidence}");
+        let _ = write!(output, "  evidence: ");
+        for (index, evidence) in entry.evidence.iter().enumerate() {
+            let separator = if index == 0 { "" } else { "," };
+            let _ = write!(output, "{separator}{}", evidence.as_str());
+        }
+        output.push('\n');
         let _ = writeln!(
             output,
             "  confidence: {}; approval: {}",

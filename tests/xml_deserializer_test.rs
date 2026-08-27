@@ -20,7 +20,7 @@ use forge::oscal::catalog::{OscalCatalog, OscalControl, OscalGroup, OscalMetadat
 use forge::oscal::component_definition::{
     ComponentDefinition, ComponentDefinitionMetadata, DocumentaryComponent,
 };
-use forge::oscal::parts::{OscalPart, OscalProp};
+use forge::oscal::parts::{OscalPart, OscalPartName, OscalProp};
 
 // ── Test Helpers ─────────────────────────────────────────
 
@@ -42,7 +42,7 @@ fn test_control(id: &str, title: &str) -> OscalControl {
         params: vec![],
         parts: vec![OscalPart {
             id: format!("{id}_smt"),
-            name: "statement".to_string(),
+            name: OscalPartName::Statement,
             prose: title.to_string(),
             parts: vec![],
             props: vec![],
@@ -89,11 +89,11 @@ fn test_catalog() -> OscalCatalog {
                 params: vec![],
                 parts: vec![OscalPart {
                     id: "POL-AC-001_smt".to_string(),
-                    name: "statement".to_string(),
+                    name: OscalPartName::Statement,
                     prose: "All users must use MFA.".to_string(),
                     parts: vec![OscalPart {
                         id: "POL-AC-001_smt.a".to_string(),
-                        name: "item".to_string(),
+                        name: OscalPartName::Item,
                         prose: "Sub-item A.".to_string(),
                         parts: vec![],
                         props: vec![],
@@ -256,7 +256,7 @@ fn test_catalog_preserves_group_and_control_structure() {
     assert_eq!(ctrl.parts.len(), 1);
     let part = &ctrl.parts[0];
     assert_eq!(part.id, "POL-AC-001_smt");
-    assert_eq!(part.name, "statement");
+    assert_eq!(part.name, OscalPartName::Statement);
     assert_eq!(part.prose, "All users must use MFA.");
 
     // Part props
@@ -267,7 +267,7 @@ fn test_catalog_preserves_group_and_control_structure() {
     // Nested sub-parts
     assert_eq!(part.parts.len(), 1);
     assert_eq!(part.parts[0].id, "POL-AC-001_smt.a");
-    assert_eq!(part.parts[0].name, "item");
+    assert_eq!(part.parts[0].name, OscalPartName::Item);
     assert_eq!(part.parts[0].prose, "Sub-item A.");
 
     // Back-matter resource details
@@ -533,7 +533,7 @@ fn test_xml_escaped_content_round_trips() {
                 params: vec![],
                 parts: vec![OscalPart {
                     id: "POL-T-001_smt".to_string(),
-                    name: "statement".to_string(),
+                    name: OscalPartName::Statement,
                     prose: "Prose with <html> & special ]]> chars".to_string(),
                     parts: vec![],
                     props: vec![],
@@ -573,17 +573,17 @@ fn test_deeply_nested_parts_round_trip() {
                 params: vec![],
                 parts: vec![OscalPart {
                     id: "smt".to_string(),
-                    name: "statement".to_string(),
+                    name: OscalPartName::Statement,
                     prose: "Level 1".to_string(),
                     props: vec![],
                     parts: vec![OscalPart {
                         id: "smt.a".to_string(),
-                        name: "item".to_string(),
+                        name: OscalPartName::Item,
                         prose: "Level 2".to_string(),
                         props: vec![],
                         parts: vec![OscalPart {
                             id: "smt.a.1".to_string(),
-                            name: "item".to_string(),
+                            name: OscalPartName::Item,
                             prose: "Level 3".to_string(),
                             props: vec![],
                             parts: vec![],

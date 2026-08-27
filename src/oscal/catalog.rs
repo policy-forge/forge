@@ -392,7 +392,15 @@ pub fn build_catalog(
                 title: derive_control_title(&req.text),
                 links: vec![],
                 params,
-                parts: build_control_parts(&control_id, req, req_section.body_text.as_deref()),
+                // Section prose is guidance only when one direct requirement owns it;
+                // list-derived sibling requirements must not each receive the same body text.
+                parts: build_control_parts(
+                    &control_id,
+                    req,
+                    (req_section.requirements.len() == 1)
+                        .then_some(req_section.body_text.as_deref())
+                        .flatten(),
+                ),
                 props: control_props,
             });
 
@@ -574,6 +582,7 @@ mod tests {
 
     use super::*;
     use crate::model::DocumentMetadata;
+    use crate::oscal::parts::OscalPartName;
 
     // ── Test helpers ────────────────────────────────────
 
@@ -1169,7 +1178,7 @@ mod tests {
         for group in &cat.groups {
             for ctrl in &group.controls {
                 assert!(!ctrl.parts.is_empty(), "Control {} has no parts", ctrl.id);
-                assert_eq!(ctrl.parts[0].name, "statement");
+                assert_eq!(ctrl.parts[0].name, OscalPartName::Statement);
                 assert!(
                     ctrl.parts[0].id.ends_with("_smt"),
                     "Statement part id '{}' does not end with _smt",
@@ -1201,7 +1210,6 @@ mod tests {
 
     #[test]
     fn test_props_omitted_when_empty() {
-        // source_line: 0 means build_control_props returns empty vec
         let r = PolicyRequirement {
             stable_id: Some("u1".to_string()),
             text: "Test requirement.".to_string(),
@@ -1242,12 +1250,12 @@ mod tests {
         assert_eq!(ctrl.parts.len(), 2, "Expected statement + guidance parts");
 
         // First part: statement
-        assert_eq!(ctrl.parts[0].name, "statement");
+        assert_eq!(ctrl.parts[0].name, OscalPartName::Statement);
         assert!(ctrl.parts[0].id.ends_with("_smt"));
         assert_eq!(ctrl.parts[0].prose, "Users shall authenticate.");
 
         // Second part: guidance
-        assert_eq!(ctrl.parts[1].name, "guidance");
+        assert_eq!(ctrl.parts[1].name, OscalPartName::Guidance);
         assert!(
             ctrl.parts[1].id.ends_with("_gdn"),
             "Guidance part id '{}' does not end with _gdn",
@@ -1257,13 +1265,28 @@ mod tests {
     }
 
     #[test]
+    fn sibling_controls_do_not_duplicate_section_guidance() {
+        let d = doc(vec![sec_with_body(
+            "Access Control",
+            "Shared section context.",
+            vec![
+                req("Users shall authenticate.", "u1"),
+                req("Administrators shall review access.", "u2"),
+            ],
+        )]);
+        let catalog = build_catalog(&d, None).unwrap();
+
+        assert!(catalog.groups[0].controls.iter().all(|control| control.parts.len() == 1));
+    }
+
+    #[test]
     fn test_catalog_no_guidance_without_body_text() {
         let d = doc(vec![sec("Access Control", vec![req("Auth required.", "u1")])]);
         let cat = build_catalog(&d, None).unwrap();
         let ctrl = &cat.groups[0].controls[0];
 
         assert_eq!(ctrl.parts.len(), 1, "Expected only statement part when no body_text");
-        assert_eq!(ctrl.parts[0].name, "statement");
+        assert_eq!(ctrl.parts[0].name, OscalPartName::Statement);
     }
 
     // ── T024: JSON serialization OSCAL v1.2.0 shape ─────
@@ -1307,8 +1330,7 @@ mod tests {
 
     #[test]
     fn test_json_props_omitted_without_trace_embedding() {
-        // After WI-17, build_control_props returns vec![] — trace props are
-        // added by embed_trace_in_catalog post-processing, not inline.
+        // Trace props are added by embed_trace_in_catalog post-processing, not inline.
         let d = doc(vec![sec("Access Control", vec![req_with_line("Auth required.", "u1", 42)])]);
         let cat = build_catalog(&d, None).unwrap();
         let envelope = CatalogEnvelope { catalog: cat };

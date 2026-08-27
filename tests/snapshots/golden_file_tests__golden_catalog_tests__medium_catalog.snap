@@ -20,11 +20,6 @@ expression: normalized
                 "id": "POL-AC-001_smt",
                 "name": "statement",
                 "prose": "All users must authenticate using approved credentials before accessing any system"
-              },
-              {
-                "id": "POL-AC-001_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
               }
             ],
             "props": [
@@ -63,11 +58,6 @@ expression: normalized
                 "id": "POL-AC-002_smt",
                 "name": "statement",
                 "prose": "Multi-factor authentication must be enabled for all privileged accounts"
-              },
-              {
-                "id": "POL-AC-002_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
               }
             ],
             "props": [
@@ -106,11 +96,6 @@ expression: normalized
                 "id": "POL-AC-003_smt",
                 "name": "statement",
                 "prose": "Access permissions must follow the principle of least privilege"
-              },
-              {
-                "id": "POL-AC-003_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
               }
             ],
             "props": [
@@ -175,11 +160,6 @@ expression: normalized
                 "id": "POL-AC-004_smt",
                 "name": "statement",
                 "prose": "User accounts must be reviewed {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_1 }}"
-              },
-              {
-                "id": "POL-AC-004_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for all organizational systems.\nAll users must authenticate using approved credentials before accessing any system\nMulti-factor authentication must be enabled for all privileged accounts\nAccess permissions must follow the principle of least privilege\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days"
               }
             ],
             "props": [
@@ -288,11 +268,6 @@ expression: normalized
                 "id": "POL-DP-001_smt",
                 "name": "statement",
                 "prose": "All sensitive data must be classified according to the organizational data classification scheme"
-              },
-              {
-                "id": "POL-DP-001_gdn",
-                "name": "guidance",
-                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
               }
             ],
             "props": [
@@ -331,11 +306,6 @@ expression: normalized
                 "id": "POL-DP-002_smt",
                 "name": "statement",
                 "prose": "Data at rest must be encrypted using AES-256 or equivalent"
-              },
-              {
-                "id": "POL-DP-002_gdn",
-                "name": "guidance",
-                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
               }
             ],
             "props": [
@@ -374,11 +344,6 @@ expression: normalized
                 "id": "POL-DP-003_smt",
                 "name": "statement",
                 "prose": "Data in transit must be protected using TLS 1.2 or higher"
-              },
-              {
-                "id": "POL-DP-003_gdn",
-                "name": "guidance",
-                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
               }
             ],
             "props": [
@@ -431,11 +396,6 @@ expression: normalized
                 "id": "POL-DP-004_smt",
                 "name": "statement",
                 "prose": "Encryption keys must be rotated {{ insert: param, id-ref: cfe09b14-4583-5a0e-857a-aa01ead30462_prm_0 }} and stored in a hardware security module"
-              },
-              {
-                "id": "POL-DP-004_gdn",
-                "name": "guidance",
-                "prose": "This section covers data protection and encryption requirements per NIST SP 800-53.\nAll sensitive data must be classified according to the organizational data classification scheme\nData at rest must be encrypted using AES-256 or equivalent\nData in transit must be protected using TLS 1.2 or higher\nEncryption keys must be rotated annually and stored in a hardware security module"
               }
             ],
             "props": [
@@ -474,11 +434,6 @@ expression: normalized
                 "id": "POL-DP-005_smt",
                 "name": "statement",
                 "prose": "Audit logs must be retained for a minimum of one year"
-              },
-              {
-                "id": "POL-DP-005_gdn",
-                "name": "guidance",
-                "prose": "Audit logs must be retained for a minimum of one year\nBackup copies must be encrypted and stored in a geographically separate location"
               }
             ],
             "props": [
@@ -517,11 +472,6 @@ expression: normalized
                 "id": "POL-DP-006_smt",
                 "name": "statement",
                 "prose": "Backup copies must be encrypted and stored in a geographically separate location"
-              },
-              {
-                "id": "POL-DP-006_gdn",
-                "name": "guidance",
-                "prose": "Audit logs must be retained for a minimum of one year\nBackup copies must be encrypted and stored in a geographically separate location"
               }
             ],
             "props": [
@@ -573,11 +523,6 @@ expression: normalized
                 "id": "POL-IR-001_smt",
                 "name": "statement",
                 "prose": "All security incidents must be reported within 24 hours of detection"
-              },
-              {
-                "id": "POL-IR-001_gdn",
-                "name": "guidance",
-                "prose": "This section establishes incident response procedures and requirements per NIST SP 800-61.\nAll security incidents must be reported within 24 hours of detection\nAn incident response plan must be tested at least annually through tabletop exercises"
               }
             ],
             "props": [
@@ -630,11 +575,6 @@ expression: normalized
                 "id": "POL-IR-002_smt",
                 "name": "statement",
                 "prose": "An incident response plan must be tested {{ insert: param, id-ref: p30fcdbce-7419-500d-9a72-bd0ea208c124_prm_0 }} through tabletop exercises"
-              },
-              {
-                "id": "POL-IR-002_gdn",
-                "name": "guidance",
-                "prose": "This section establishes incident response procedures and requirements per NIST SP 800-61.\nAll security incidents must be reported within 24 hours of detection\nAn incident response plan must be tested at least annually through tabletop exercises"
               }
             ],
             "props": [

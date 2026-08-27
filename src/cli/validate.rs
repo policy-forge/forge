@@ -10,7 +10,7 @@ use crate::oscal_cli::OscalCliDetect;
 use crate::oscal_cli::detector::PathDetector;
 use crate::oscal_cli::invoker::ProcessInvoker;
 use crate::round_trip::{
-    Divergence, DivergenceClass, OscalComparisonRules, RoundTripResult,
+    ArtifactType, Divergence, DivergenceClass, OscalComparisonRules, RoundTripResult,
     classify_oscal_cli_compatibility, compare_oscal_json, run_round_trip_chain,
     write_divergence_log,
 };
@@ -54,20 +54,30 @@ fn map_validate_error(error: ValidateError) -> ForgeError {
     }
 }
 
-fn read_json_input(input: &Path) -> Result<String, ForgeError> {
+/// Read, reject empty, and parse one bounded JSON artifact.
+fn read_and_parse_artifact(input: &Path) -> Result<serde_json::Value, ForgeError> {
     let bytes = validate::read_bounded_file(input).map_err(map_validate_error)?;
-    String::from_utf8(bytes).map_err(|error| {
+    let content = String::from_utf8(bytes).map_err(|error| {
         ForgeError::Validation(format!(
             "Failed to read artifact file '{}': {error}",
             input.display()
         ))
+    })?;
+    if content.trim().is_empty() {
+        return Err(ForgeError::Validation(format!(
+            "Artifact file '{}' is empty",
+            input.display()
+        )));
+    }
+    serde_json::from_str(&content).map_err(|error| {
+        ForgeError::Validation(format!("Failed to parse '{}' as JSON: {error}", input.display()))
     })
 }
 
 /// Execute the validate subcommand.
 ///
 /// Uses `run_full_validation()` for enhanced error reporting (WI-20).
-/// On valid: prints "Valid" to stdout + exit 0.
+/// On valid: renders the complete WI-20 validation report to stdout + exit 0.
 /// On invalid: renders report to stderr + returns error (exit non-zero).
 ///
 /// # Errors
@@ -79,34 +89,21 @@ pub fn execute(
     format: &ValidateOutputFormat,
     output: Option<&Path>,
 ) -> Result<(), ForgeError> {
-    // Step 1: Read through the bounded validation reader (SEC-3).
-    let content = read_json_input(input)?;
+    // Step 1: Read, reject empty input, and parse through the bounded reader (SEC-3/4/5).
+    let json = read_and_parse_artifact(input)?;
 
-    // Step 3: Check empty file (SEC-5)
-    if content.trim().is_empty() {
-        return Err(ForgeError::Validation(format!(
-            "Artifact file '{}' is empty",
-            input.display()
-        )));
-    }
-
-    // Step 4: Parse JSON (SEC-4)
-    let json: serde_json::Value = serde_json::from_str(&content).map_err(|e| {
-        ForgeError::Validation(format!("Failed to parse '{}' as JSON: {e}", input.display()))
-    })?;
-
-    // Step 5: Determine model type (auto-detect or override)
+    // Step 2: Determine model type (auto-detect or override)
     let model_type = match schema_type {
         Some(st) => schema_type_to_model_type(st),
         None => validate::detect_model_type(&json).map_err(map_validate_error)?,
     };
 
-    // Step 6: Run full validation (schema + semantic) via WI-20 orchestrator
+    // Step 3: Run full validation (schema + semantic) via WI-20 orchestrator
     let artifact_path = input.display().to_string();
     let report = validate::run_full_validation(&artifact_path, &json, model_type)
         .map_err(map_validate_error)?;
 
-    // Step 7: Render report and exit
+    // Step 4: Render report and exit
     if report.is_valid() {
         let rendered = match format {
             ValidateOutputFormat::Text => {
@@ -152,6 +149,13 @@ pub fn execute_round_trip(
     timeout_secs: u64,
     oscal_cli_path: Option<&Path>,
 ) -> Result<(), ForgeError> {
+    if output.is_some() && matches!(format, ValidateOutputFormat::Text) {
+        return Err(ForgeError::InvalidArgument(
+            "--round-trip --format text cannot be combined with --output; divergence logs are JSON"
+                .to_string(),
+        ));
+    }
+
     // Step 1: Validate input is JSON and canonicalize (validates existence)
     match input.extension().and_then(|e| e.to_str()) {
         Some(extension) if extension.eq_ignore_ascii_case("json") => {}
@@ -169,21 +173,9 @@ pub fn execute_round_trip(
         _ => ForgeError::Io(e),
     })?;
 
-    // Step 2: Read through the bounded validation reader (SEC-3).
-    //
-    // The canonical path holds the resolved input target for the duration of this command.
-    let content = read_json_input(&canonical_input)?;
-
-    // Step 3: Parse original JSON
-    if content.trim().is_empty() {
-        return Err(ForgeError::Validation(format!(
-            "Artifact file '{}' is empty",
-            input.display()
-        )));
-    }
-    let original_json: serde_json::Value = serde_json::from_str(&content).map_err(|e| {
-        ForgeError::Validation(format!("Failed to parse '{}' as JSON: {e}", input.display()))
-    })?;
+    // Step 2: Read, reject empty input, and parse the resolved target through
+    // the same bounded reader used by ordinary validation.
+    let original_json = read_and_parse_artifact(&canonical_input)?;
     let model_type = validate::detect_model_type(&original_json).map_err(|error| {
         ForgeError::Validation(format!(
             "round-trip input '{}' is not a recognized OSCAL model: {error}",
@@ -266,7 +258,11 @@ fn build_round_trip_result(
     oscal_cli_version: Option<String>,
     divergences: Vec<Divergence>,
 ) -> RoundTripResult {
-    let artifact_type = model_type.to_string();
+    let artifact_type = match model_type {
+        OscalModelType::Catalog => ArtifactType::Catalog,
+        OscalModelType::ComponentDefinition => ArtifactType::ComponentDefinition,
+        OscalModelType::Profile | OscalModelType::Mapping => ArtifactType::Unknown,
+    };
     let declared_oscal_version =
         validate::version::inspect_oscal_version(original_json, model_type).declared;
     let (compatibility_classification, oscal_cli_model_version) =
@@ -293,6 +289,12 @@ fn output_round_trip_results(
 ) -> Result<(), ForgeError> {
     match output {
         Some(output_path) => {
+            if matches!(format, ValidateOutputFormat::Text) {
+                return Err(ForgeError::InvalidArgument(
+                    "--round-trip --format text cannot be combined with --output; divergence logs are JSON"
+                        .to_string(),
+                ));
+            }
             write_divergence_log(result, output_path)?;
             if result.passed() {
                 tracing::info!("round-trip validation passed");
@@ -366,6 +368,21 @@ mod tests {
     use super::*;
 
     #[test]
+    fn round_trip_rejects_text_file_output_before_processing_input() {
+        let output = tempfile::NamedTempFile::new().unwrap();
+        let error = execute_round_trip(
+            Path::new("not-read.json"),
+            &ValidateOutputFormat::Text,
+            Some(output.path()),
+            1,
+            None,
+        )
+        .expect_err("text output files must not receive JSON divergence logs");
+
+        assert!(matches!(error, ForgeError::InvalidArgument(_)));
+    }
+
+    #[test]
     fn round_trip_rejects_unrecognized_oscal_json_before_cli_detection() {
         let directory = tempfile::tempdir().unwrap();
         let input = directory.path().join("not-oscal.json");
@@ -414,8 +431,8 @@ mod tests {
             ];
         std::fs::write(&input, oversized).unwrap();
 
-        let error =
-            read_json_input(&input).expect_err("bounded reader must reject oversized input");
+        let error = read_and_parse_artifact(&input)
+            .expect_err("bounded reader must reject oversized input");
 
         assert!(error.to_string().contains("Artifact file is too large"), "{error}");
     }

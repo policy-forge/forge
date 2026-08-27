@@ -324,8 +324,8 @@ proptest! {
     fn cleaned_text_not_longer(text in "[ -~]{0,300}") {
         if let Ok((cleaned, _)) = forge::citation::extract_citations_from_text("req-prop", &text) {
             prop_assert!(
-                cleaned.len() <= text.len() + 1, // +1 for potential space from strip_matches
-                "Cleaned text ({}) should not be substantially longer than original ({})",
+                cleaned.len() <= text.len(),
+                "Every pipeline stage is non-growing: strip_matches replaces N >= 1 bytes with one space; collapse, trim, and artifact removal never grow text (cleaned {}, original {})",
                 cleaned.len(),
                 text.len()
             );

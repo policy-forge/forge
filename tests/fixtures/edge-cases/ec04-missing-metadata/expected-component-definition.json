@@ -1,35 +1,20 @@
 {
   "component-definition": {
-    "uuid": "2a9ce32c-650a-47de-a696-550e364a612e",
-    "metadata": {
-      "title": "input",
-      "last-modified": "2026-08-27T04:08:00.782048+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "components": [
       {
-        "uuid": "862b1b0d-3b4e-5b64-9ee2-9d1fbc24af64",
-        "type": "policy",
-        "title": "input",
-        "description": "Documentary component representing the input policy document.",
-        "props": [
-          {
-            "name": "source-file",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "input.md"
-          }
-        ],
         "control-implementations": [
           {
-            "uuid": "9299ca7c-81bd-5b5a-8b87-3358044660fe",
-            "source": "source-profile.json",
             "description": "Implementation narratives derived from input.",
             "implemented-requirements": [
               {
-                "uuid": "8e3ff519-b04d-56a9-a602-0f01a695fb2d",
                 "control-id": "POL-I-001",
                 "description": "Systems must restrict privileged access to approved administrators.",
+                "links": [
+                  {
+                    "href": "input.md#line=3",
+                    "rel": "source"
+                  }
+                ],
                 "props": [
                   {
                     "name": "source-file",
@@ -51,17 +36,32 @@
                     "value": "normative"
                   }
                 ],
-                "links": [
-                  {
-                    "href": "input.md#line=3",
-                    "rel": "source"
-                  }
-                ]
+                "uuid": "8e3ff519-b04d-56a9-a602-0f01a695fb2d"
               }
-            ]
+            ],
+            "source": "source-profile.json",
+            "uuid": "9299ca7c-81bd-5b5a-8b87-3358044660fe"
           }
-        ]
+        ],
+        "description": "Documentary component representing the input policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "title": "input",
+        "type": "policy",
+        "uuid": "7b23a2aa-d15d-5e46-8b58-3817ce490569"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:40.615364+00:00",
+      "oscal-version": "1.2.3",
+      "title": "input",
+      "version": "0.0.0"
+    },
+    "uuid": "3546a09c-a57d-43af-b574-929537b076c2"
   }
 }

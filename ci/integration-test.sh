@@ -303,7 +303,7 @@ else
 fi
 
 # --- 2e: Structural validation — profile JSON has expected root key ---
-if [[ -f "${PROFILE_JSON:-}" && -s "${PROFILE_JSON}" ]]; then
+if [[ -f "${PROFILE_JSON:-}" && -s "${PROFILE_JSON:-}" ]]; then
     if ${HAS_PYTHON3}; then
         check "Profile JSON has 'profile' root key" \
             python3 -c '
@@ -321,7 +321,7 @@ else
 fi
 
 # --- 2f: Structural validation — assessment-plan JSON has expected root key ---
-if [[ -f "${AP_JSON:-}" && -s "${AP_JSON}" ]]; then
+if [[ -f "${AP_JSON:-}" && -s "${AP_JSON:-}" ]]; then
     if ${HAS_PYTHON3}; then
         check "Assessment-plan JSON has 'assessment-plan' root key" \
             python3 -c '
@@ -339,7 +339,10 @@ else
 fi
 
 # --- 2g: forge validate — profile JSON (if supported in future) ---
-if [[ -f "${PROFILE_JSON:-}" ]] && "${FORGE}" validate --help 2>&1 | grep -q "profile"; then
+if [[ -f "${PROFILE_JSON:-}" ]] \
+    && validate_help=$("${FORGE}" validate --help 2>&1) \
+    && grep -q -- '--schema-type' <<<"${validate_help}" \
+    && grep -Eq -- '(^|[^[:alnum:]_-])profile([^[:alnum:]_-]|$)' <<<"${validate_help}"; then
     check "Validate profile JSON (forge validate)" \
         "${FORGE}" validate "${PROFILE_JSON}" --schema-type profile --quiet
 else

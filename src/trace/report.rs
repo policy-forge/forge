@@ -1,7 +1,7 @@
 use crate::types::OscalModelType;
 
 /// Type of OSCAL element in a traceability report entry.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum ElementType {
     /// An OSCAL group element (groups controls together).
@@ -33,9 +33,9 @@ impl std::fmt::Display for ElementType {
 /// Trace metadata extracted from an OSCAL element's WI-17 trace props.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TraceMetadata {
-    /// Source file name (from `source-file` prop).
+    /// Source file name (from `source-file` prop), or an empty string when absent.
     pub source_file: String,
-    /// Source section title (from `source-section` prop).
+    /// Non-empty source section title (from `source-section` prop).
     pub source_section: String,
     /// Optional 1-based source line number parsed from the `source-line` prop.
     ///
@@ -81,7 +81,10 @@ impl TraceSummary {
         self.total_elements.saturating_sub(self.mapped_elements)
     }
 
-    /// Coverage percentage (0.0–100.0). Returns 0.0 if `total_elements` is 0.
+    /// Coverage percentage in `[0.0, 100.0]` for summaries built with `from_entries`.
+    ///
+    /// Returns 0.0 if `total_elements` is 0. Hand-built summaries whose mapped
+    /// count exceeds their total may exceed 100.0.
     #[allow(clippy::cast_precision_loss)]
     #[must_use]
     pub fn coverage_percent(&self) -> f64 {
@@ -259,5 +262,13 @@ mod tests {
         assert_eq!(summary.total_elements, 1);
         assert_eq!(summary.mapped_elements, 0);
         assert_eq!(summary.unmapped_elements(), 1);
+    }
+
+    #[test]
+    fn inconsistent_summary_fields_saturate_unmapped_count() {
+        let summary = TraceSummary { total_elements: 2, mapped_elements: 5 };
+
+        assert_eq!(summary.unmapped_elements(), 0);
+        assert!((summary.coverage_percent() - 250.0).abs() < 1e-9);
     }
 }

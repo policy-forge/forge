@@ -1,25 +1,7 @@
 {
   "component-definition": {
-    "uuid": "6f17887e-211d-41d5-a2c8-8a578e71595a",
-    "metadata": {
-      "title": "Citation Positions",
-      "last-modified": "2026-02-21T21:03:44.276876+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "components": [
       {
-        "uuid": "1466a82d-7c6e-5bff-b0a7-a704584c36fe",
-        "type": "policy",
-        "title": "Citation Positions",
-        "description": "Documentary component representing the Citation Positions policy document.",
-        "props": [
-          {
-            "name": "source-file",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "input.md"
-          }
-        ],
         "control-implementations": [
           {
             "description": "Implementation narratives derived from Citation Positions.",
@@ -54,7 +36,7 @@
                     "value": "normative"
                   }
                 ],
-                "uuid": "542eed55-dec0-505f-b382-0b7728872c18"
+                "uuid": "b8dc70af-0f8d-5b87-a617-5190879322a1"
               },
               {
                 "control-id": "POL-CP-002",
@@ -86,14 +68,32 @@
                     "value": "normative"
                   }
                 ],
-                "uuid": "b764b115-0cc6-56d0-8191-3d7cf2c78ba1"
+                "uuid": "6dd03322-0b6f-57b7-93d9-d4e3179ac885"
               }
             ],
             "source": "source-profile.json",
             "uuid": "3ce5ec87-d926-5231-b6f2-5b6a57db7145"
           }
-        ]
+        ],
+        "description": "Documentary component representing the Citation Positions policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input.md"
+          }
+        ],
+        "title": "Citation Positions",
+        "type": "policy",
+        "uuid": "bbe4d96c-b229-5088-aa41-d6b2d8768000"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:01.405338+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Citation Positions",
+      "version": "0.0.0"
+    },
+    "uuid": "80822b25-b32f-4451-9db3-a52edf0e5a83"
   }
 }

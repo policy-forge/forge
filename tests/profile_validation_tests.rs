@@ -116,12 +116,28 @@ fn schema_exclude_only() {
 // `jsonschema` crate — `ValidationError` carries `instance_path`. This is already
 // verified by existing unit tests in `src/validate/mod.rs` (`validate_errors_have_instance_path`).
 
-// TODO(WI-31): remove #[ignore] when --set-param is implemented
 /// Profile with parameter overrides passes OSCAL v1.2.3 schema validation.
+///
+/// Kept ignored until the `--set-param` CLI surface is available.
 #[test]
 #[ignore = "WI-31 (--set-param) not yet implemented"]
 fn schema_with_set_param() {
-    todo!("Enable when WI-31 (--set-param) is implemented")
+    let catalog = make_catalog_file();
+    let catalog_path = catalog.path().to_string_lossy().to_string();
+    let overrides = [("prm-ac-1".to_string(), "60 days".to_string())];
+
+    let profile =
+        build_profile(&catalog_path, vec!["AC-1".into()], SelectionMode::Include, &overrides, None)
+            .expect("build_profile should support parameter overrides");
+    let value = serde_json::to_value(ProfileRoot { profile })
+        .expect("Profile with parameter overrides must serialize");
+    let result = validate_artifact(&value, OscalModelType::Profile)
+        .expect("validate_artifact should not return a validation framework error");
+    assert!(
+        result.is_valid,
+        "Profile with parameter overrides must be schema-valid. Errors: {:?}",
+        result.errors
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -283,12 +299,33 @@ fn edge_nonexistent_control_id() {
     assert_eq!(with_ids, &["FAKE-999"], "The unknown ID must be stored as-is in with-ids");
 }
 
-// TODO(WI-31): remove #[ignore] when --set-param is implemented
 /// Conflicting set-param overrides produce a well-defined outcome.
+///
+/// Kept ignored until the `--set-param` CLI surface is available.
 #[test]
 #[ignore = "WI-31 (--set-param) not yet implemented"]
 fn edge_conflicting_set_param() {
-    todo!("Enable when WI-31 (--set-param) is implemented")
+    let catalog = make_catalog_file();
+    let catalog_path = catalog.path().to_string_lossy().to_string();
+    let overrides = [
+        ("prm-ac-1".to_string(), "30 days".to_string()),
+        ("prm-ac-1".to_string(), "60 days".to_string()),
+    ];
+
+    let profile =
+        build_profile(&catalog_path, vec!["AC-1".into()], SelectionMode::Include, &overrides, None)
+            .expect(
+                "build_profile should define a conflict policy for duplicate parameter overrides",
+            );
+    let value = serde_json::to_value(ProfileRoot { profile })
+        .expect("Profile with conflicting parameter overrides must serialize");
+    let result = validate_artifact(&value, OscalModelType::Profile)
+        .expect("validate_artifact should not return a validation framework error");
+    assert!(
+        result.is_valid,
+        "Profile with conflicting parameter overrides must be schema-valid. Errors: {:?}",
+        result.errors
+    );
 }
 
 // ---------------------------------------------------------------------------

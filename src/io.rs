@@ -9,6 +9,9 @@ pub const MAX_FILE_SIZE: u64 = 50 * 1024 * 1024;
 
 /// Write content durably and atomically using flush + temp-file rename.
 ///
+/// Once the rename succeeds, `path` contains the new content even if a subsequent
+/// file or directory sync returns an error.
+///
 /// # Errors
 ///
 /// Returns `ForgeError::Io` if the temporary file cannot be created, written, flushed, persisted,
@@ -18,9 +21,16 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
 
     let parent =
         path.parent().filter(|value| !value.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    let mut tmp = tempfile::NamedTempFile::new_in(parent)?;
-    tmp.write_all(content)?;
-    tmp.as_file().sync_all()?;
+    let temp_error = |operation: &str, error: std::io::Error| {
+        ForgeError::Io(std::io::Error::other(format!(
+            "Failed to {operation} temporary file for '{}': {error}",
+            path.display()
+        )))
+    };
+    let mut tmp =
+        tempfile::NamedTempFile::new_in(parent).map_err(|error| temp_error("create", error))?;
+    tmp.write_all(content).map_err(|error| temp_error("write", error))?;
+    tmp.as_file().sync_all().map_err(|error| temp_error("sync", error))?;
     #[cfg(unix)]
     if let Ok(existing) = std::fs::metadata(path) {
         use std::os::unix::fs::PermissionsExt;
@@ -28,9 +38,9 @@ pub fn write_atomic(path: &Path, content: &[u8]) -> Result<(), ForgeError> {
         // Best effort: a concurrent removal must not prevent an otherwise-safe write.
         let _ = std::fs::set_permissions(tmp.path(), permissions);
     }
-    let persisted = tmp.persist(path).map_err(|e| {
+    let persisted = tmp.persist(path).map_err(|error| {
         ForgeError::Io(std::io::Error::other(format!(
-            "Failed to persist temp file to '{}': {e}",
+            "Failed to persist temp file to '{}': {error}",
             path.display()
         )))
     })?;

@@ -1,11 +1,11 @@
 //! Strict, bounded mapping-manifest v1 parsing.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
 
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::{Map, Number, Value};
+use serde_json::{Map, Number, Value, map::Entry};
 
 use crate::ForgeError;
 
@@ -348,7 +348,14 @@ fn validate_contract(manifest: &MappingManifest) -> Result<(), ForgeError> {
     if manifest.provenance.reviewer_keys.is_empty() {
         return Err(mapping_error("$.provenance.reviewer_keys must not be empty"));
     }
+    let mut provenance_reviewers = BTreeSet::new();
     for key in &manifest.provenance.reviewer_keys {
+        if !provenance_reviewers.insert(key.as_str()) {
+            return Err(mapping_error(format!(
+                "$.provenance.reviewer_keys duplicates reviewer '{}'",
+                bounded(key)
+            )));
+        }
         if !reviewers.contains_key(key.as_str()) {
             return Err(mapping_error(format!(
                 "$.provenance.reviewer_keys references unknown reviewer '{}'",
@@ -671,8 +678,16 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
     {
         let mut values = Map::new();
         while let Some((key, value)) = object.next_entry::<String, StrictValue>()? {
-            if values.insert(key.clone(), value.0).is_some() {
-                return Err(de::Error::custom(format!("duplicate object key '{key}'")));
+            match values.entry(key) {
+                Entry::Occupied(entry) => {
+                    return Err(de::Error::custom(format!(
+                        "duplicate object key '{}'",
+                        entry.key()
+                    )));
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(value.0);
+                }
             }
         }
         Ok(StrictValue(Value::Object(values)))
@@ -694,6 +709,39 @@ mod tests {
             expected_resolved_catalog_sha256: Some("a".repeat(64)),
             inventory: None,
         }
+    }
+
+    #[test]
+    fn duplicate_provenance_reviewer_is_rejected() {
+        let manifest = serde_json::json!({
+            "schema_version": MANIFEST_SCHEMA_VERSION,
+            "collection": {
+                "key": "collection",
+                "title": "Collection",
+                "version": "1",
+                "last_modified": "2026-08-26T00:00:00Z"
+            },
+            "reviewers": [{ "key": "reviewer", "type": "person", "name": "Reviewer" }],
+            "provenance": {
+                "method": "human",
+                "matching_rationale": "semantic",
+                "status": "complete",
+                "mapping_description": "Reviewed mapping.",
+                "reviewer_keys": ["reviewer", "reviewer"],
+                "reviewed_at": "2026-08-26T00:00:00Z"
+            },
+            "mapping": {
+                "key": "mapping",
+                "source": { "type": "catalog", "artifact": "source.json", "href": "source.json" },
+                "target": { "type": "catalog", "artifact": "target.json", "href": "target.json" },
+                "maps": []
+            }
+        });
+        let bytes = serde_json::to_vec(&manifest).expect("test manifest serializes");
+        let error = parse(&bytes).expect_err("duplicate reviewer must fail");
+        assert!(
+            error.to_string().contains("$.provenance.reviewer_keys duplicates reviewer 'reviewer'")
+        );
     }
 
     #[test]

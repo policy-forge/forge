@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use super::report::{ElementType, TraceReport};
+use super::report::{ElementType, TraceEntry, TraceReport};
 use super::resolver::validate_line_reference;
 use crate::sanitize::strip_control_chars;
 
@@ -17,39 +17,28 @@ use crate::sanitize::strip_control_chars;
 pub fn format_trace_table(report: &TraceReport) -> String {
     let source_line_count = report.source_line_count;
     let headers = ["OSCAL Element ID", "Element Type", "Source Section", "Source Line"];
+    let display_cells = |entry: &TraceEntry| {
+        let (section, line) = match &entry.trace {
+            Some(meta) => (
+                format_table_cell(&meta.source_section),
+                format_source_line(meta.source_line, entry.element_type, source_line_count),
+            ),
+            None => ("[unmapped]".to_string(), "[unmapped]".to_string()),
+        };
+        [
+            format_table_cell(&entry.element_id),
+            entry.element_type.as_str().to_string(),
+            section,
+            line,
+        ]
+    };
 
-    // Compute display values for each entry.
-    let rows: Vec<[String; 4]> = report
-        .entries
-        .iter()
-        .map(|entry| {
-            let (section, line) = match &entry.trace {
-                Some(meta) => (
-                    format_table_cell(&meta.source_section),
-                    format_source_line(meta.source_line, entry.element_type, source_line_count),
-                ),
-                None => ("[unmapped]".to_string(), "[unmapped]".to_string()),
-            };
-            [
-                format_table_cell(&entry.element_id),
-                entry.element_type.as_str().to_string(),
-                section,
-                line,
-            ]
-        })
-        .collect();
-
-    // First pass: compute max column widths.
-    let mut widths = [0usize; 4];
-    for (i, header) in headers.iter().enumerate() {
-        widths[i] = header.len();
-    }
-    for row in &rows {
-        for (i, cell) in row.iter().enumerate() {
-            let display_len = cell.chars().count();
-            if display_len > widths[i] {
-                widths[i] = display_len;
-            }
+    // First pass: compute max column widths without retaining rendered rows.
+    let mut widths = headers.map(|header| header.chars().count());
+    for entry in &report.entries {
+        let cells = display_cells(entry);
+        for (index, cell) in cells.iter().enumerate() {
+            widths[index] = widths[index].max(cell.chars().count());
         }
     }
 
@@ -87,7 +76,8 @@ pub fn format_trace_table(report: &TraceReport) -> String {
         w3 = widths[3],
     );
 
-    for row in &rows {
+    for entry in &report.entries {
+        let row = display_cells(entry);
         let _ = writeln!(
             output,
             "{:<w0$}  {:<w1$}  {:<w2$}  {:<w3$}",
@@ -299,5 +289,14 @@ mod tests {
         assert!(output.contains("Access Control Done Now"));
         assert!(!output.contains("control\nwith"));
         assert!(!output.contains("Access\nControl"));
+    }
+
+    #[test]
+    fn format_source_line_marks_missing_and_out_of_range_concrete_lines() {
+        assert_eq!(format_source_line(None, ElementType::Control, 100), "[missing] ⚠");
+        assert_eq!(
+            format_source_line(Some(101), ElementType::ImplementedRequirement, 100),
+            "101 ⚠"
+        );
     }
 }

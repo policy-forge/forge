@@ -357,7 +357,10 @@ fn c2_set_param_without_include_exits_zero_with_warning() {
         run_profile(&["--catalog", catalog_path, "--set-param", "POL-AC-001_prm", "60 days"]);
 
     assert_eq!(exit_code, 0, "C-2: expected exit 0\nstdout: {stdout}\nstderr: {stderr}");
-    assert!(stderr.contains("warning:"), "C-2: expected warning on stderr, got: {stderr}");
+    assert!(
+        stderr.contains("--set-param specified without --include or --exclude"),
+        "C-2: expected warning on stderr, got: {stderr}"
+    );
 
     let json: serde_json::Value =
         serde_json::from_str(&stdout).expect("C-2: output must be valid JSON");

@@ -5,6 +5,8 @@
 //!
 //! # Determinism
 //! No randomness, no system time, no RNG. Two calls produce byte-identical output.
+// This module is compiled into every integration-test binary through `common`; only
+// fixture_determinism_test uses every helper, so per-binary dead-code diagnostics are expected.
 #![allow(dead_code)]
 
 use std::fmt::Write;
@@ -1059,7 +1061,7 @@ organization shall implement integrity verification mechanisms to detect any una
 modification of stored log data.",
                 requirements: &[
                     "Audit logs shall be transmitted to the centralized log management system within five minutes of generation and must use encrypted transport to protect log data in transit.",
-                    "Access to the log management system shall be restricted to authorized security personnel and must require multi-factor authentication for all access. See Section 1.2 for authentication requirements.",
+                    "Access to the log management system shall be restricted to authorized security personnel and must require multi-factor authentication for all access. See Section 1.3 for authentication requirements.",
                     "Log data integrity shall be protected through cryptographic hash verification and must generate alerts if any modification to stored log records is detected.",
                     "Log retention periods shall comply with the data retention schedule and must retain security event logs for a minimum of twelve months online and thirty-six months in archive storage.",
                     "The log management system shall provide indexed search capabilities and must support queries that return results within sixty seconds for searches spanning up to twelve months of data.",
@@ -1284,7 +1286,7 @@ const NIST_REFERENCES: &[&str] = &[
 /// - ~40 H3 subsections (3-5 per H2)
 /// - ~200 numbered policy requirements (normative language)
 /// - ~20 compound statements ("must X and must Y")
-/// - ~30 citations/references ("[NIST SP 800-53 AC-2]")
+/// - 40 plain-text standard references (one per subsection, cycling `NIST_REFERENCES`)
 /// - ~10 tables (role-responsibility matrices)
 ///
 /// # Determinism
@@ -1313,7 +1315,8 @@ pub fn generate_synthetic_policy() -> String {
     for (domain_idx, domain) in DOMAINS.iter().enumerate() {
         let domain_num = domain_idx + 1;
 
-        // H2 heading
+        // H2 heading. Writes target `String`, whose `fmt::Write` implementation is infallible;
+        // retargeting this generator to a fallible writer must propagate `fmt::Result`.
         let _ = write!(doc, "## {}. {}\n\n", domain_num, domain.title);
 
         // Domain intro

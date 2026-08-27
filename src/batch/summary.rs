@@ -248,4 +248,40 @@ mod tests {
         let summary = BatchSummary::from_results(results, Duration::from_millis(100));
         assert!(!summary.has_failures());
     }
+
+    #[test]
+    fn same_filename_uses_full_path_as_tie_breaker() {
+        let summary = BatchSummary::from_results(
+            vec![
+                FileResult::success(
+                    PathBuf::from("/z/policy.md"),
+                    PathBuf::from("z.json"),
+                    Duration::ZERO,
+                ),
+                FileResult::success(
+                    PathBuf::from("/a/policy.md"),
+                    PathBuf::from("a.json"),
+                    Duration::ZERO,
+                ),
+            ],
+            Duration::ZERO,
+        );
+
+        assert_eq!(summary.results()[0].input_path, PathBuf::from("/a/policy.md"));
+        assert_eq!(summary.results()[1].input_path, PathBuf::from("/z/policy.md"));
+    }
+
+    #[test]
+    fn componentless_paths_use_their_full_path_as_sort_key() {
+        let summary = BatchSummary::from_results(
+            vec![
+                FileResult::success(PathBuf::from("b.md"), PathBuf::from("b.json"), Duration::ZERO),
+                FileResult::success(PathBuf::from(""), PathBuf::from("empty.json"), Duration::ZERO),
+            ],
+            Duration::ZERO,
+        );
+
+        assert_eq!(summary.results()[0].input_path, PathBuf::from(""));
+        assert_eq!(summary.results()[1].input_path, PathBuf::from("b.md"));
+    }
 }

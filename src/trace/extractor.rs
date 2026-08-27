@@ -43,7 +43,7 @@ pub fn extract_trace_metadata(element: &serde_json::Value) -> Option<TraceMetada
     }
 
     // Must have at least source-section to be considered mapped.
-    let source_section = source_section?;
+    let source_section = source_section.filter(|section| !section.is_empty())?;
 
     Some(TraceMetadata {
         source_file: source_file.unwrap_or_default(),
@@ -128,5 +128,14 @@ mod tests {
         let meta = extract_trace_metadata(&element).unwrap();
         assert_eq!(meta.source_section, "Access Control");
         assert_eq!(meta.source_line, Some(42));
+    }
+
+    #[test]
+    fn empty_source_section_is_not_mapped() {
+        let element = json!({
+            "props": [{ "name": "source-section", "ns": FORGE_TRACE_NS, "value": "" }]
+        });
+
+        assert_eq!(extract_trace_metadata(&element), None);
     }
 }

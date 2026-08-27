@@ -105,6 +105,8 @@ impl TraceLinkCollection {
 
     /// Record a trace link, updating both indexes.
     ///
+    /// Only `oscal_element_id` must be unique; multiple OSCAL elements may
+    /// trace back to the same requirement.
     /// The canonical store is append-only, so every recorded index remains
     /// valid for the lifetime of this collection.
     ///

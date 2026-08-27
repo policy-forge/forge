@@ -129,6 +129,16 @@ pub fn build_summary(entries: &[DiffEntry], total_old: usize, total_new: usize) 
 
     // unchanged = controls in old that were neither removed nor changed nor uuid-changed
     let unchanged = total_old.saturating_sub(removed + changed + uuid_changes);
+    debug_assert_eq!(
+        total_old,
+        removed + changed + uuid_changes + unchanged,
+        "old control total must match diff entry partition"
+    );
+    debug_assert_eq!(
+        total_new,
+        added + changed + uuid_changes + unchanged,
+        "new control total must match diff entry partition"
+    );
 
     DiffSummary { total_old, total_new, added, removed, changed, unchanged, uuid_changes }
 }
@@ -140,7 +150,7 @@ mod tests {
     fn snap(id: &str, uuid: &str, title: &str, prose: &[&str]) -> ControlSnapshot {
         ControlSnapshot {
             control_id: id.to_string(),
-            uuid: uuid.to_string(),
+            uuid: Some(uuid.to_string()),
             title: Some(title.to_string()),
             description: None,
             parts_prose: prose.iter().map(std::string::ToString::to_string).collect(),
@@ -318,13 +328,13 @@ mod tests {
     #[test]
     fn test_build_summary_counts() {
         let entries = vec![
-            DiffEntry::Added { control_id: "A".into(), new_uuid: String::new() },
-            DiffEntry::Added { control_id: "B".into(), new_uuid: String::new() },
-            DiffEntry::Removed { control_id: "C".into(), old_uuid: String::new() },
+            DiffEntry::Added { control_id: "A".into(), new_uuid: None },
+            DiffEntry::Added { control_id: "B".into(), new_uuid: None },
+            DiffEntry::Removed { control_id: "C".into(), old_uuid: None },
             DiffEntry::Changed {
                 control_id: "D".into(),
-                old_uuid: String::new(),
-                new_uuid: String::new(),
+                old_uuid: None,
+                new_uuid: None,
                 field_changes: vec![FieldChange {
                     field_name: "title".into(),
                     old_value: Some("old".into()),
@@ -354,7 +364,9 @@ mod tests {
         assert!(matches!(
             &entries[0],
             DiffEntry::UuidChanged { control_id, old_uuid, new_uuid }
-            if control_id == "POL-AC-001" && old_uuid == "old-uuid" && new_uuid == "new-uuid"
+            if control_id == "POL-AC-001"
+                && old_uuid.as_deref() == Some("old-uuid")
+                && new_uuid.as_deref() == Some("new-uuid")
         ));
     }
 
@@ -393,13 +405,13 @@ mod tests {
         let entries = vec![
             DiffEntry::UuidChanged {
                 control_id: "A".into(),
-                old_uuid: "old".into(),
-                new_uuid: "new".into(),
+                old_uuid: Some("old".into()),
+                new_uuid: Some("new".into()),
             },
             DiffEntry::Changed {
                 control_id: "B".into(),
-                old_uuid: "old2".into(),
-                new_uuid: "new2".into(),
+                old_uuid: Some("old2".into()),
+                new_uuid: Some("new2".into()),
                 field_changes: vec![FieldChange {
                     field_name: "title".into(),
                     old_value: Some("x".into()),
@@ -416,14 +428,14 @@ mod tests {
     fn test_description_field_change_label() {
         let old = to_map(vec![ControlSnapshot {
             control_id: "IR-001".into(),
-            uuid: String::new(),
+            uuid: None,
             title: None,
             description: Some("Old desc".into()),
             parts_prose: vec![],
         }]);
         let new = to_map(vec![ControlSnapshot {
             control_id: "IR-001".into(),
-            uuid: String::new(),
+            uuid: None,
             title: None,
             description: Some("New desc".into()),
             parts_prose: vec![],
@@ -442,14 +454,14 @@ mod tests {
     fn aggregated_component_descriptions_remain_visible_in_diff() {
         let old = to_map(vec![ControlSnapshot {
             control_id: "AC-1".into(),
-            uuid: String::new(),
+            uuid: None,
             title: None,
             description: Some("First implementation\nSecond implementation".into()),
             parts_prose: vec![],
         }]);
         let new = to_map(vec![ControlSnapshot {
             control_id: "AC-1".into(),
-            uuid: String::new(),
+            uuid: None,
             title: None,
             description: Some("First implementation\nUpdated implementation".into()),
             parts_prose: vec![],

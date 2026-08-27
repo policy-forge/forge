@@ -46,12 +46,9 @@ pub fn run_round_trip_chain(
             "Running oscal-cli convert step"
         );
 
-        let args = ConvertArgs {
-            input_path: input.to_path_buf(),
-            output_path: output.to_path_buf(),
-            output_format: *format,
-            timeout,
-        };
+        let input_path = input.canonicalize().map_err(ForgeError::Io)?;
+        let output_path = canonical_output_path(output)?;
+        let args = ConvertArgs { input_path, output_path, output_format: *format, timeout };
 
         match invoker.convert(&args) {
             Ok(result) => {
@@ -65,8 +62,8 @@ pub fn run_round_trip_chain(
                 }
                 return Err(ForgeError::RoundTripStep {
                     step: step_num + 1,
-                    from: input.to_path_buf(),
-                    to: output.to_path_buf(),
+                    from: args.input_path.clone(),
+                    to: args.output_path.clone(),
                     source: Box::new(source),
                 });
             }
@@ -74,6 +71,24 @@ pub fn run_round_trip_chain(
     }
 
     Ok(rt_json_path)
+}
+
+/// Canonicalize an existing output or its existing parent for a new output.
+fn canonical_output_path(path: &Path) -> Result<PathBuf, ForgeError> {
+    if path.exists() {
+        return path.canonicalize().map_err(ForgeError::Io);
+    }
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let filename = path.file_name().ok_or_else(|| {
+        ForgeError::InvalidArgument("round-trip output must have a file name".to_string())
+    })?;
+    parent
+        .canonicalize()
+        .map(|canonical_parent| canonical_parent.join(filename))
+        .map_err(ForgeError::Io)
 }
 
 #[cfg(test)]
@@ -93,6 +108,7 @@ mod tests {
     /// Mock invoker that records every conversion request and returns canned results.
     struct MockInvoker {
         calls: Mutex<Vec<RecordedCall>>,
+
         fail_on_call: Option<usize>,
     }
 
@@ -148,16 +164,22 @@ mod tests {
             .and_then(|stem| stem.to_str())
             .and_then(|stem| stem.strip_suffix("-rt"))
             .expect("round-trip output has the expected file name");
-        let temp_dir = final_output.parent().expect("round-trip output has a parent directory");
+        let temp_dir = final_output
+            .parent()
+            .expect("round-trip output has a parent directory")
+            .canonicalize()
+            .expect("round-trip output parent is canonicalizable");
         let xml_path = temp_dir.join(format!("{prefix}.xml"));
         let yaml_path = temp_dir.join(format!("{prefix}.yaml"));
+        let final_output = temp_dir.join(format!("{prefix}-rt.json"));
+        let input = input.canonicalize().expect("round-trip input is canonicalizable");
 
         assert_eq!(
             calls,
             &[
                 RecordedCall {
                     format: "xml".to_string(),
-                    input: input.to_path_buf(),
+                    input: input.clone(),
                     output: xml_path.clone(),
                     timeout,
                 },
@@ -170,7 +192,7 @@ mod tests {
                 RecordedCall {
                     format: "json".to_string(),
                     input: yaml_path,
-                    output: final_output.to_path_buf(),
+                    output: final_output,
                     timeout,
                 },
             ]

@@ -164,7 +164,8 @@ pub struct PolicySection {
     /// Section title (heading text).
     pub title: String,
 
-    /// Heading level: 1 for H1, 2 for H2, ..., 6 for H6.
+    /// Heading level: 1 for H1, 2 for H2, ..., 6 for H6; the synthetic
+    /// `Preamble` section alone uses 0.
     pub heading_level: u8,
 
     /// Source line number in the original document (1-based).
@@ -334,6 +335,47 @@ impl PolicyDocument {
     #[must_use]
     pub fn total_sections(&self) -> usize {
         self.sections.iter().map(PolicySection::total_sections).sum()
+    }
+
+    /// Debug-check postconditions required after stable-ID, modality, and
+    /// parameter enrichment have all completed.
+    ///
+    /// Pipeline stages call this at their final boundary in debug builds to
+    /// catch a reordered or omitted enrichment pass without affecting release
+    /// behavior.
+    pub(crate) fn debug_assert_fully_enriched(&self) {
+        fn visit(section: &PolicySection) {
+            for requirement in &section.requirements {
+                debug_assert!(
+                    requirement.stable_id.as_deref().is_some_and(|id| !id.is_empty()),
+                    "fully enriched requirement must have a stable ID"
+                );
+                debug_assert!(
+                    requirement.modality.is_some(),
+                    "fully enriched requirement needs modality"
+                );
+                debug_assert!(
+                    requirement.parameters_extracted,
+                    "fully enriched requirement must complete parameter extraction"
+                );
+                let oscal_requirement_id =
+                    crate::parameter::oscal_base_id(requirement.stable_id.as_deref().unwrap_or(""));
+                for parameter in &requirement.parameters {
+                    debug_assert_eq!(
+                        parameter.requirement_id.as_str(),
+                        oscal_requirement_id,
+                        "parameter must reference its owning requirement"
+                    );
+                }
+            }
+            for child in &section.children {
+                visit(child);
+            }
+        }
+
+        for section in &self.sections {
+            visit(section);
+        }
     }
 
     /// Recursively collect unique citations from every requirement in this document.

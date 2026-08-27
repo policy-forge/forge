@@ -244,6 +244,10 @@ fn sort_mapping_collections(mapping_collections: &mut [MappingEvidence]) {
     mapping_collections.sort_unstable_by(|left, right| left.uuid.cmp(&right.uuid));
 }
 
+/// Classify each control by its explicit decision and reviewed mapping evidence.
+///
+/// Positive mappings take precedence over reviewed no-relationship mappings, and a missing
+/// decision is treated as [`DecisionState::UnderReview`].
 fn classify(
     decision: Option<&ControlDecision>,
     positive_mapping_count: usize,
@@ -332,6 +336,23 @@ mod tests {
             assert_eq!(
                 serde_json::to_value(reason).expect("serialize review reason"),
                 reason.as_str()
+            );
+        }
+    }
+
+    #[test]
+    fn gap_classification_serialization_matches_display_contract() {
+        for classification in [
+            GapClassification::ApplicableMapped,
+            GapClassification::ApplicableReviewedNoRelationship,
+            GapClassification::ApplicableUnmapped,
+            GapClassification::NotApplicable,
+            GapClassification::Deferred,
+            GapClassification::UnderReview,
+        ] {
+            assert_eq!(
+                serde_json::to_value(classification).expect("serialize gap classification"),
+                classification.as_str()
             );
         }
     }

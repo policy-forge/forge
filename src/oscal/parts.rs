@@ -4,12 +4,53 @@
 //! functions that generate statement parts, guidance parts, and structured
 //! metadata props from the domain model.
 
+use std::{fmt, str::FromStr};
+
 use serde::{Deserialize, Serialize};
 use tracing::{debug, warn};
 
 use crate::model::PolicyRequirement;
 
 // ─── OSCAL Structs ──────────────────────────────────────────────────────
+
+/// A schema-defined OSCAL part name.
+///
+/// Unknown values are rejected while deserializing so invalid part names cannot
+/// silently round-trip into generated artifacts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum OscalPartName {
+    Statement,
+    Guidance,
+    Objective,
+    Item,
+}
+
+impl fmt::Display for OscalPartName {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = match self {
+            Self::Statement => "statement",
+            Self::Guidance => "guidance",
+            Self::Objective => "objective",
+            Self::Item => "item",
+        };
+        formatter.write_str(value)
+    }
+}
+
+impl FromStr for OscalPartName {
+    type Err = &'static str;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "statement" => Ok(Self::Statement),
+            "guidance" => Ok(Self::Guidance),
+            "objective" => Ok(Self::Objective),
+            "item" => Ok(Self::Item),
+            _ => Err("unknown OSCAL part name"),
+        }
+    }
+}
 
 /// An OSCAL control part (statement, guidance, objective).
 ///
@@ -28,8 +69,8 @@ pub struct OscalPart {
     /// Example: `"POL-AC-001_smt"`, `"POL-AC-001_gdn"`.
     pub id: String,
 
-    /// OSCAL part name: `"statement"`, `"guidance"`, `"objective"`, or `"item"`.
-    pub name: String,
+    /// OSCAL part name.
+    pub name: OscalPartName,
 
     /// Human-readable text content. Direct copy from source (SEC-1).
     pub prose: String,
@@ -128,7 +169,7 @@ fn sanitize_oscal_id(raw: &str) -> String {
 /// # Examples
 ///
 /// ```
-/// use forge::oscal::parts::build_control_parts;
+/// use forge::oscal::parts::{OscalPartName, build_control_parts};
 /// use forge::model::PolicyRequirement;
 ///
 /// let req = PolicyRequirement {
@@ -146,7 +187,7 @@ fn sanitize_oscal_id(raw: &str) -> String {
 ///
 /// let parts = build_control_parts("POL-AC-001", &req, None);
 /// assert_eq!(parts.len(), 1);
-/// assert_eq!(parts[0].name, "statement");
+/// assert_eq!(parts[0].name, OscalPartName::Statement);
 /// assert_eq!(parts[0].prose, "All users must use MFA.");
 /// assert_eq!(parts[0].id, "POL-AC-001_smt");
 /// ```
@@ -167,7 +208,7 @@ pub fn build_control_parts(
     // Prose is a direct copy of requirement.text (SEC-1) — no transformation.
     parts.push(OscalPart {
         id: generate_part_id(control_id, "smt"),
-        name: "statement".to_string(),
+        name: OscalPartName::Statement,
         prose: requirement.text.clone(),
         parts: vec![],
         props: if empty_text {
@@ -179,11 +220,11 @@ pub fn build_control_parts(
 
     // Guidance part — only when guidance_text is Some and non-empty.
     if let Some(text) = guidance_text
-        && !text.is_empty()
+        && !text.trim().is_empty()
     {
         parts.push(OscalPart {
             id: generate_part_id(control_id, "gdn"),
-            name: "guidance".to_string(),
+            name: OscalPartName::Guidance,
             prose: text.to_string(),
             parts: vec![],
             props: vec![],
@@ -246,7 +287,7 @@ mod tests {
         let parts = build_control_parts("POL-AC-001", &req, None);
 
         assert_eq!(parts.len(), 1);
-        assert_eq!(parts[0].name, "statement");
+        assert_eq!(parts[0].name, OscalPartName::Statement);
         assert_eq!(parts[0].id, "POL-AC-001_smt");
         assert_eq!(parts[0].prose, "All users must use MFA.");
         assert!(parts[0].parts.is_empty());
@@ -271,9 +312,9 @@ mod tests {
         let parts = build_control_parts("POL-AC-001", &req, Some("Guidance text."));
 
         assert_eq!(parts.len(), 2);
-        assert_eq!(parts[0].name, "statement");
+        assert_eq!(parts[0].name, OscalPartName::Statement);
         assert_eq!(parts[0].id, "POL-AC-001_smt");
-        assert_eq!(parts[1].name, "guidance");
+        assert_eq!(parts[1].name, OscalPartName::Guidance);
         assert_eq!(parts[1].id, "POL-AC-001_gdn");
         assert_eq!(parts[1].prose, "Guidance text.");
     }
@@ -283,8 +324,8 @@ mod tests {
         let req = test_req("Statement.", 10);
         let parts = build_control_parts("POL-AC-001", &req, Some("Guidance."));
 
-        assert_eq!(parts[0].name, "statement");
-        assert_eq!(parts[1].name, "guidance");
+        assert_eq!(parts[0].name, OscalPartName::Statement);
+        assert_eq!(parts[1].name, OscalPartName::Guidance);
     }
 
     // ── T017: build_control_parts with empty guidance ─────────────────
@@ -295,7 +336,16 @@ mod tests {
         let parts = build_control_parts("POL-AC-001", &req, Some(""));
 
         assert_eq!(parts.len(), 1);
-        assert_eq!(parts[0].name, "statement");
+        assert_eq!(parts[0].name, OscalPartName::Statement);
+    }
+
+    #[test]
+    fn test_build_parts_whitespace_only_guidance_is_omitted() {
+        let req = test_req("Statement.", 10);
+        let parts = build_control_parts("POL-AC-001", &req, Some(" \t\n "));
+
+        assert_eq!(parts.len(), 1);
+        assert_eq!(parts[0].name, OscalPartName::Statement);
     }
 
     // ── T021: multi-paragraph prose preservation ──────────────────────
@@ -318,7 +368,7 @@ mod tests {
         let parts = build_control_parts("POL-AC-001", &req, None);
 
         assert_eq!(parts.len(), 1);
-        assert_eq!(parts[0].name, "statement");
+        assert_eq!(parts[0].name, OscalPartName::Statement);
         assert_eq!(parts[0].prose, "");
         assert_eq!(parts[0].props.len(), 1);
         assert_eq!(parts[0].props[0].name, "empty-text");
@@ -345,5 +395,12 @@ mod tests {
         assert!(parts[0].prose.contains("**bold**"));
         assert!(parts[0].prose.contains("[link](url)"));
         assert!(parts[0].prose.contains("`code`"));
+    }
+
+    #[test]
+    fn test_part_name_rejects_unknown_deserialization_value() {
+        let error = serde_json::from_str::<OscalPartName>("\"extension\"").unwrap_err();
+
+        assert!(error.to_string().contains("unknown variant"));
     }
 }

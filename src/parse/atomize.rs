@@ -19,8 +19,10 @@ use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 const MAX_SPLITS_PER_REQUIREMENT: usize = 50;
 
 /// Maximum section nesting depth for recursive traversal (`DoS` protection).
-/// Consistent with `MAX_SECTION_DEPTH` in `component_definition.rs`.
-const MAX_SECTION_DEPTH: usize = 50;
+///
+/// Shared by stable-ID assignment and component/atomization traversals; each
+/// caller retains its explicit boundary semantics (F0711).
+pub(crate) const MAX_SECTION_DEPTH: usize = 50;
 
 /// Compiled regex pattern for detecting conjunction + normative verb boundaries.
 /// Pattern: `\b(and|or)\s+(must|shall|should|will)\b` (case-sensitive).
@@ -71,11 +73,28 @@ pub fn preliminary_id(text: &str, source_line: usize, atom_index: usize) -> Stri
     format!("{hash:x}")
 }
 
+/// Generate a preliminary ID scoped to a section's structural path.
+///
+/// `atomize_document` uses this internal helper so identical requirements on
+/// the same source line in separate sections do not collide before the
+/// pipeline replaces preliminary IDs with UUID v5 values.
+fn preliminary_id_with_section(
+    text: &str,
+    source_line: usize,
+    atom_index: usize,
+    section_context: &str,
+) -> String {
+    let input = format!("{section_context}|{text}|{source_line}|{atom_index}");
+    let hash = Sha256::digest(input.as_bytes());
+    format!("{hash:x}")
+}
+
 /// Extract the shared subject from a compound statement.
 ///
-/// Returns the text before `first_verb_pos`, trimmed. Returns `None` if empty.
+/// Returns the text before `first_verb_pos`, trimmed. Returns `None` for an
+/// empty subject or a non-character-boundary offset.
 fn extract_subject(text: &str, first_verb_pos: usize) -> Option<String> {
-    let subject = text[..first_verb_pos].trim();
+    let subject = text.get(..first_verb_pos)?.trim();
     if subject.is_empty() { None } else { Some(subject.to_string()) }
 }
 
@@ -100,9 +119,13 @@ fn atomized_requirement(
     text: String,
     atom_index: usize,
     parent_text: Option<String>,
+    section_context: Option<&str>,
 ) -> PolicyRequirement {
     let mut atom = requirement.clone();
-    atom.stable_id = Some(preliminary_id(&text, requirement.source_line, atom_index));
+    atom.stable_id = Some(section_context.map_or_else(
+        || preliminary_id(&text, requirement.source_line, atom_index),
+        |context| preliminary_id_with_section(&text, requirement.source_line, atom_index, context),
+    ));
     atom.text = text;
     atom.atom_index = atom_index;
     atom.parent_text = parent_text;
@@ -139,29 +162,42 @@ fn starts_with_normative_verb(text: &str) -> bool {
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Parse` if regex matching yields an incomplete split capture.
+/// Returns `ForgeError::Parse` if regex matching yields an incomplete split capture
+/// or a non-character-boundary split range.
 pub fn atomize_requirement(
     requirement: &PolicyRequirement,
 ) -> Result<AtomizationResult, ForgeError> {
+    atomize_requirement_with_context(requirement, None)
+}
+
+fn preserved_atomization(
+    requirement: &PolicyRequirement,
+    section_context: Option<&str>,
+) -> AtomizationResult {
+    AtomizationResult {
+        requirements: vec![atomized_requirement(
+            requirement,
+            requirement.text.clone(),
+            0,
+            None,
+            section_context,
+        )],
+        was_split: false,
+        original_text: None,
+    }
+}
+
+fn atomize_requirement_with_context(
+    requirement: &PolicyRequirement,
+    section_context: Option<&str>,
+) -> Result<AtomizationResult, ForgeError> {
     let text = &requirement.text;
 
-    // Empty or whitespace-only text: preserve as-is (EC-7).
-    if text.trim().is_empty() {
-        return Ok(AtomizationResult {
-            requirements: vec![atomized_requirement(requirement, text.clone(), 0, None)],
-            was_split: false,
-            original_text: None,
-        });
+    if text.trim().is_empty() || SPLIT_PATTERN.find_iter(text).next().is_none() {
+        return Ok(preserved_atomization(requirement, section_context));
     }
 
     let match_count = SPLIT_PATTERN.find_iter(text).count();
-    if match_count == 0 {
-        return Ok(AtomizationResult {
-            requirements: vec![atomized_requirement(requirement, text.clone(), 0, None)],
-            was_split: false,
-            original_text: None,
-        });
-    }
 
     let split_count = match_count + 1;
     if split_count > MAX_SPLITS_PER_REQUIREMENT {
@@ -171,11 +207,7 @@ pub fn atomize_requirement(
             max = MAX_SPLITS_PER_REQUIREMENT,
             "Requirement would produce too many splits; preserved as-is"
         );
-        return Ok(AtomizationResult {
-            requirements: vec![atomized_requirement(requirement, text.clone(), 0, None)],
-            was_split: false,
-            original_text: None,
-        });
+        return Ok(preserved_atomization(requirement, section_context));
     }
 
     let shared_subject = SPLIT_PATTERN
@@ -191,17 +223,24 @@ pub fn atomize_requirement(
         let verb = captures.get(2).ok_or_else(|| {
             ForgeError::Parse("split pattern did not produce its normative verb".to_string())
         })?;
-
-        let clause = text[last_end..full_match.start()].trim();
-        if !clause.is_empty() {
-            clauses.push(clause.to_string());
+        let clause = text.get(last_end..full_match.start()).ok_or_else(|| {
+            ForgeError::Parse(
+                "split pattern produced a non-character-boundary clause range".to_string(),
+            )
+        })?;
+        if !clause.trim().is_empty() {
+            clauses.push(clause.trim().to_string());
         }
         last_end = verb.start();
     }
 
-    let final_clause = text[last_end..].trim();
-    if !final_clause.is_empty() {
-        clauses.push(final_clause.to_string());
+    let final_clause = text.get(last_end..).ok_or_else(|| {
+        ForgeError::Parse(
+            "split pattern produced a non-character-boundary final clause range".to_string(),
+        )
+    })?;
+    if !final_clause.trim().is_empty() {
+        clauses.push(final_clause.trim().to_string());
     }
 
     let mut requirements = Vec::with_capacity(clauses.len());
@@ -213,15 +252,25 @@ pub fn atomize_requirement(
                     source_line = requirement.source_line,
                     clause, "Skipping atomization subject inference for non-normative clause"
                 );
-                (*clause).clone()
+                clause.clone()
             }
-            (None, _) => (*clause).clone(),
+            (None, _) => clause.clone(),
         };
 
-        requirements.push(atomized_requirement(requirement, full_text, index, Some(text.clone())));
+        requirements.push(atomized_requirement(
+            requirement,
+            full_text,
+            index,
+            Some(text.clone()),
+            section_context,
+        ));
     }
 
-    Ok(AtomizationResult { requirements, was_split: true, original_text: Some(text.clone()) })
+    Ok(AtomizationResult {
+        requirements,
+        was_split: true,
+        original_text: Some(requirement.text.clone()),
+    })
 }
 
 /// Atomize all requirements in a `PolicyDocument`.
@@ -280,7 +329,10 @@ pub fn atomize_document(document: &PolicyDocument) -> Result<PolicyDocument, For
     let new_sections = document
         .sections
         .iter()
-        .map(|s| atomize_section(s, &mut split_count, &mut preserved_count))
+        .enumerate()
+        .map(|(index, section)| {
+            atomize_section(section, &mut split_count, &mut preserved_count, &index.to_string())
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     let total_after: usize = count_requirements_recursive(&new_sections);
@@ -303,8 +355,9 @@ fn atomize_section(
     section: &PolicySection,
     split_count: &mut usize,
     preserved_count: &mut usize,
+    section_path: &str,
 ) -> Result<PolicySection, ForgeError> {
-    atomize_section_inner(section, split_count, preserved_count, 0)
+    atomize_section_inner(section, split_count, preserved_count, 0, section_path)
 }
 
 fn atomize_section_inner(
@@ -312,13 +365,12 @@ fn atomize_section_inner(
     split_count: &mut usize,
     preserved_count: &mut usize,
     depth: usize,
+    section_path: &str,
 ) -> Result<PolicySection, ForgeError> {
-    // Always atomize requirements at this level, only skip child recursion
-    // when depth exceeds the safety limit.
     let mut new_requirements = Vec::new();
 
     for requirement in &section.requirements {
-        let result = atomize_requirement(requirement)?;
+        let result = atomize_requirement_with_context(requirement, Some(section_path))?;
         if result.was_split {
             *split_count += 1;
         } else {
@@ -327,18 +379,27 @@ fn atomize_section_inner(
         new_requirements.extend(result.requirements);
     }
 
-    let new_children = if depth > MAX_SECTION_DEPTH {
+    let new_children = if depth >= MAX_SECTION_DEPTH {
         tracing::trace!(
             depth,
             max = MAX_SECTION_DEPTH,
-            "max section depth exceeded; skipping child traversal"
+            "max section depth reached; skipping child traversal"
         );
         section.children.clone()
     } else {
         section
             .children
             .iter()
-            .map(|child| atomize_section_inner(child, split_count, preserved_count, depth + 1))
+            .enumerate()
+            .map(|(index, child)| {
+                atomize_section_inner(
+                    child,
+                    split_count,
+                    preserved_count,
+                    depth + 1,
+                    &format!("{section_path}/{index}"),
+                )
+            })
             .collect::<Result<Vec<_>, _>>()?
     };
 
@@ -358,12 +419,16 @@ fn count_requirements_recursive(sections: &[PolicySection]) -> usize {
 }
 
 fn count_requirements_recursive_inner(sections: &[PolicySection], depth: usize) -> usize {
-    if depth > MAX_SECTION_DEPTH {
-        return 0;
-    }
     sections
         .iter()
-        .map(|s| s.requirements.len() + count_requirements_recursive_inner(&s.children, depth + 1))
+        .map(|section| {
+            section.requirements.len()
+                + if depth < MAX_SECTION_DEPTH {
+                    count_requirements_recursive_inner(&section.children, depth + 1)
+                } else {
+                    0
+                }
+        })
         .sum()
 }
 
@@ -794,6 +859,20 @@ mod tests {
         assert_eq!(result.sections[1].title, "S2");
         assert_eq!(result.sections[0].requirements.len(), 1);
         assert_eq!(result.sections[1].requirements.len(), 2);
+    }
+
+    #[test]
+    fn document_atomization_scopes_preliminary_ids_to_sections() {
+        let doc = make_doc(vec![
+            make_section("S1", vec![make_req("Systems must enforce MFA", 1)]),
+            make_section("S2", vec![make_req("Systems must enforce MFA", 1)]),
+        ]);
+
+        let atomized = atomize_document(&doc).unwrap();
+        assert_ne!(
+            atomized.sections[0].requirements[0].stable_id,
+            atomized.sections[1].requirements[0].stable_id
+        );
     }
 
     #[test]

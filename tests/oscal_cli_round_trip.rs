@@ -9,14 +9,20 @@ use forge::oscal_cli::OscalCliDetect;
 use forge::oscal_cli::detector::PathDetector;
 use forge::oscal_cli::invoker::ProcessInvoker;
 use forge::round_trip::{
-    Divergence, DivergenceClass, OscalComparisonRules, ResolutionStatus, RoundTripResult,
-    classify_oscal_cli_compatibility, compare_oscal_json, run_round_trip_chain,
+    ArtifactType, Divergence, DivergenceClass, OscalComparisonRules, ResolutionStatus,
+    RoundTripResult, classify_oscal_cli_compatibility, compare_oscal_json, run_round_trip_chain,
     write_divergence_log,
 };
 use forge::types::OutputFormat;
 
 const MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
-const TIMEOUT: Duration = Duration::from_secs(30);
+
+fn round_trip_timeout() -> Duration {
+    std::env::var("FORGE_ROUND_TRIP_TIMEOUT_SECS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .map_or(Duration::from_secs(30), Duration::from_secs)
+}
 
 /// Build a `ProcessInvoker` from a detector, or None if oscal-cli is unavailable.
 fn invoker_if_available(detector: &dyn OscalCliDetect) -> Option<(ProcessInvoker, String)> {
@@ -88,13 +94,14 @@ fn run_round_trip_and_compare(
     original_json_path: &Path,
     invoker: &ProcessInvoker,
     oscal_cli_version: &str,
-    artifact_type: &str,
+    artifact_type: ArtifactType,
     log_output_path: &Path,
 ) -> RoundTripResult {
     let temp_dir = tempfile::tempdir().unwrap();
 
-    let rt_json_path = run_round_trip_chain(original_json_path, invoker, temp_dir.path(), TIMEOUT)
-        .expect("Round-trip chain should succeed");
+    let rt_json_path =
+        run_round_trip_chain(original_json_path, invoker, temp_dir.path(), round_trip_timeout())
+            .expect("Round-trip chain should succeed");
 
     let original: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(original_json_path).unwrap()).unwrap();
@@ -113,7 +120,7 @@ fn run_round_trip_and_compare(
         classify_oscal_cli_compatibility(Some(oscal_cli_version));
 
     let result = RoundTripResult {
-        artifact_type: artifact_type.to_string(),
+        artifact_type,
         source_path: original_json_path.to_path_buf(),
         declared_oscal_version,
         schema_version_used: forge::validate::version::SCHEMA_VERSION_USED.to_string(),
@@ -129,11 +136,11 @@ fn run_round_trip_and_compare(
     result
 }
 
-fn artifact_type_root(artifact_type: &str) -> &'static str {
+fn artifact_type_root(artifact_type: ArtifactType) -> &'static str {
     match artifact_type {
-        "Catalog" => "catalog",
-        "ComponentDefinition" => "component-definition",
-        _ => "unknown",
+        ArtifactType::Catalog => "catalog",
+        ArtifactType::ComponentDefinition => "component-definition",
+        ArtifactType::Unknown => "unknown",
     }
 }
 
@@ -194,7 +201,7 @@ fn catalog_json_xml_yaml_json_round_trip() {
         &catalog_json,
         &invoker,
         &oscal_cli_version,
-        "Catalog",
+        ArtifactType::Catalog,
         &log_path,
     );
 
@@ -228,7 +235,7 @@ fn component_json_xml_yaml_json_round_trip() {
         &component_json,
         &invoker,
         &oscal_cli_version,
-        "ComponentDefinition",
+        ArtifactType::ComponentDefinition,
         &log_path,
     );
 

@@ -14,27 +14,36 @@ use super::divergence::RoundTripResult;
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Io` on I/O failure, `ForgeError::Serialization` on serialization failure.
+/// Returns `ForgeError::Io` with the destination path on write failure and
+/// `ForgeError::Serialization` with divergence-log context on serialization failure.
 pub fn write_divergence_log(
     result: &RoundTripResult,
     output_path: &Path,
 ) -> Result<(), ForgeError> {
-    let content = serde_json::to_vec_pretty(result)
-        .map_err(|error| ForgeError::Serialization(error.to_string()))?;
-    std::fs::write(output_path, content).map_err(ForgeError::Io)
+    let content = serde_json::to_vec_pretty(result).map_err(|error| {
+        ForgeError::Serialization(format!("failed to serialize divergence log: {error}"))
+    })?;
+    std::fs::write(output_path, content).map_err(|error| {
+        ForgeError::Io(std::io::Error::new(
+            error.kind(),
+            format!("failed to write divergence log '{}': {error}", output_path.display()),
+        ))
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::round_trip::divergence::{Divergence, DivergenceClass, ResolutionStatus};
+    use crate::round_trip::divergence::{
+        ArtifactType, Divergence, DivergenceClass, ResolutionStatus,
+    };
     use std::path::PathBuf;
 
     // T016(a): Clean pass result → snapshot of written JSON
     #[test]
     fn clean_pass_result_snapshot() {
         let result = RoundTripResult {
-            artifact_type: "Catalog".to_string(),
+            artifact_type: ArtifactType::Catalog,
             source_path: PathBuf::from("/tmp/test/catalog.json"),
             declared_oscal_version: Some("1.2.3".to_string()),
             schema_version_used: "1.2.3".to_string(),
@@ -54,11 +63,54 @@ mod tests {
         insta::assert_json_snapshot!("clean_pass", content);
     }
 
+    #[test]
+    fn divergence_log_is_pretty_printed() {
+        let result = RoundTripResult {
+            artifact_type: ArtifactType::Catalog,
+            source_path: PathBuf::from("catalog.json"),
+            declared_oscal_version: None,
+            schema_version_used: "1.2.3".to_string(),
+            oscal_cli_version: None,
+            oscal_cli_model_version: None,
+            compatibility_classification:
+                crate::round_trip::CompatibilityClassification::Unavailable,
+            divergences: vec![],
+        };
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output = temp_dir.path().join("divergences.json");
+
+        write_divergence_log(&result, &output).unwrap();
+
+        let raw = std::fs::read_to_string(output).unwrap();
+        assert!(raw.starts_with("{\n  \"artifact_type\""));
+        assert!(raw.contains("\n  \"divergences\": []\n"));
+    }
+
+    #[test]
+    fn write_failure_includes_divergence_log_path() {
+        let result = RoundTripResult {
+            artifact_type: ArtifactType::Catalog,
+            source_path: PathBuf::from("catalog.json"),
+            declared_oscal_version: None,
+            schema_version_used: "1.2.3".to_string(),
+            oscal_cli_version: None,
+            oscal_cli_model_version: None,
+            compatibility_classification:
+                crate::round_trip::CompatibilityClassification::Unavailable,
+            divergences: vec![],
+        };
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output = temp_dir.path().join("missing-parent/divergences.json");
+
+        let error = write_divergence_log(&result, &output).unwrap_err();
+        assert!(error.to_string().contains(&output.display().to_string()));
+    }
+
     // T016(b): Result with ForgeFix (Fixed) and Acceptable (Accepted) divergences → snapshot
     #[test]
     fn divergences_with_resolutions_snapshot() {
         let result = RoundTripResult {
-            artifact_type: "Catalog".to_string(),
+            artifact_type: ArtifactType::Catalog,
             source_path: PathBuf::from("/tmp/test/catalog.json"),
             declared_oscal_version: Some("1.2.3".to_string()),
             schema_version_used: "1.2.3".to_string(),
@@ -103,7 +155,7 @@ mod tests {
     #[test]
     fn unresolved_divergence_shows_null_resolution_snapshot() {
         let result = RoundTripResult {
-            artifact_type: "ComponentDefinition".to_string(),
+            artifact_type: ArtifactType::ComponentDefinition,
             source_path: PathBuf::from("/tmp/test/component.json"),
             declared_oscal_version: Some("1.2.3".to_string()),
             schema_version_used: "1.2.3".to_string(),

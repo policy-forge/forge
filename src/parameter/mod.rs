@@ -186,7 +186,7 @@ fn extract_section_parameters(
 const PARAMETER_PLACEHOLDER_PREFIX: &str = "{{ insert: param, id-ref:";
 
 /// Return the OSCAL-safe stable identifier shared by parameter IDs and references.
-fn oscal_base_id(stable_id: &str) -> String {
+pub(crate) fn oscal_base_id(stable_id: &str) -> String {
     if stable_id.starts_with(|character: char| character.is_alphabetic() || character == '_') {
         stable_id.to_string()
     } else {
@@ -216,12 +216,7 @@ fn extract_requirement_parameters(
     }
 
     let requirement_id = oscal_base_id(&stable_id);
-    let (updated_text, params) =
-        extract_parameters_from_text(&requirement_id, &req.text).map_err(|error| {
-            ForgeError::ParameterExtraction(format!(
-                "Failed to extract parameters from requirement '{stable_id}': {error}"
-            ))
-        })?;
+    let (updated_text, params) = extract_parameters_from_text(&requirement_id, &req.text)?;
 
     for parameter in &params {
         if !parameter_ids.insert(parameter.id.clone()) {
@@ -318,6 +313,17 @@ mod tests {
         assert_eq!(params[1].parameter_type, ParameterType::Frequency);
         assert!(updated.contains("{{ insert: param, id-ref: POL-AC-001_prm_0 }}"));
         assert!(updated.contains("{{ insert: param, id-ref: POL-AC-001_prm_1 }}"));
+    }
+
+    #[test]
+    fn extract_duration_is_not_classified_as_quantity() {
+        let (_, parameters) =
+            extract_parameters_from_text("POL-RET-001", "Records retained for at least 90 days")
+                .unwrap();
+
+        assert_eq!(parameters.len(), 1);
+        assert_eq!(parameters[0].parameter_type, ParameterType::Threshold);
+        assert_eq!(parameters[0].value, "90");
     }
 
     #[test]

@@ -21,7 +21,7 @@ use crate::oscal::component_definition::{
     DocumentaryComponent,
 };
 use crate::oscal::implemented_requirements::{ControlImplementation, ImplementedRequirement};
-use crate::oscal::parts::{OscalPart, OscalProp};
+use crate::oscal::parts::{OscalPart, OscalPartName, OscalProp};
 
 // ─── XML Deserialization Structs ─────────────────────────────────────────
 //
@@ -328,10 +328,14 @@ fn convert_part(xml: XmlPart) -> Result<OscalPart, ForgeError> {
     let id = xml.id.ok_or_else(|| ForgeError::ExportInvalidOscal {
         detail: format!("missing required @id on <part name=\"{}\"/>", xml.name),
     })?;
+    let name =
+        xml.name.parse::<OscalPartName>().map_err(|error| ForgeError::ExportInvalidOscal {
+            detail: format!("invalid @name '{}' on <part>: {error}", xml.name),
+        })?;
     let prose = if xml.paragraphs.is_empty() { String::new() } else { xml.paragraphs.join("\n") };
     Ok(OscalPart {
         id,
-        name: xml.name,
+        name,
         prose,
         props: xml.props.into_iter().map(convert_prop).collect(),
         parts: xml.parts.into_iter().map(convert_part).collect::<Result<Vec<_>, _>>()?,
@@ -384,8 +388,8 @@ fn convert_back_matter(xml: XmlBackMatter) -> Result<BackMatter, ForgeError> {
 }
 
 fn convert_resource(xml: XmlResource) -> Result<BackMatterResource, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| ForgeError::ExportInvalidOscal {
-        detail: format!("invalid UUID '{}' in resource element", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| {
+        ForgeError::Serialization(format!("invalid UUID '{}' in resource element", xml.uuid))
     })?;
     let description = xml.description.map(|d| d.paragraphs.join("\n"));
     Ok(BackMatterResource {
@@ -407,8 +411,8 @@ fn convert_resource(xml: XmlResource) -> Result<BackMatterResource, ForgeError> 
 }
 
 fn convert_catalog(xml: XmlCatalog) -> Result<OscalCatalog, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| ForgeError::ExportInvalidOscal {
-        detail: format!("invalid UUID in catalog: '{}' — {error}", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!("invalid UUID in catalog: '{}' — {error}", xml.uuid))
     })?;
     let back_matter = xml.back_matter.map(convert_back_matter).transpose()?;
     Ok(OscalCatalog {
@@ -421,8 +425,8 @@ fn convert_catalog(xml: XmlCatalog) -> Result<OscalCatalog, ForgeError> {
 }
 
 fn convert_component(xml: XmlComponent) -> Result<DocumentaryComponent, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| ForgeError::ExportInvalidOscal {
-        detail: format!("invalid UUID in component: '{}' — {error}", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!("invalid UUID in component: '{}' — {error}", xml.uuid))
     })?;
     let description =
         xml.description.map(|description| description.paragraphs.join("\n")).unwrap_or_default();
@@ -444,8 +448,8 @@ fn convert_component(xml: XmlComponent) -> Result<DocumentaryComponent, ForgeErr
 fn convert_capability(
     xml: XmlCapability,
 ) -> Result<crate::oscal::component_definition::Capability, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| ForgeError::ExportInvalidOscal {
-        detail: format!("invalid UUID '{}' in capability element", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|_| {
+        ForgeError::Serialization(format!("invalid UUID '{}' in capability element", xml.uuid))
     })?;
     let control_implementations = xml
         .control_implementations
@@ -463,8 +467,11 @@ fn convert_capability(
 fn convert_control_implementation(
     xml: XmlControlImplementation,
 ) -> Result<ControlImplementation, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| ForgeError::ExportInvalidOscal {
-        detail: format!("Invalid UUID in control-implementation: '{}' — {error}", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!(
+            "Invalid UUID in control-implementation: '{}' — {error}",
+            xml.uuid
+        ))
     })?;
     let description =
         xml.description.map(|description| description.paragraphs.join("\n")).unwrap_or_default();
@@ -484,8 +491,11 @@ fn convert_control_implementation(
 fn convert_implemented_requirement(
     xml: XmlImplementedRequirement,
 ) -> Result<ImplementedRequirement, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| ForgeError::ExportInvalidOscal {
-        detail: format!("Invalid UUID in implemented-requirement: '{}' — {error}", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!(
+            "Invalid UUID in implemented-requirement: '{}' — {error}",
+            xml.uuid
+        ))
     })?;
     let description =
         xml.description.map(|description| description.paragraphs.join("\n")).unwrap_or_default();
@@ -501,8 +511,11 @@ fn convert_implemented_requirement(
 fn convert_component_definition(
     xml: XmlComponentDefinition,
 ) -> Result<ComponentDefinition, ForgeError> {
-    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| ForgeError::ExportInvalidOscal {
-        detail: format!("invalid UUID in component-definition: '{}' — {error}", xml.uuid),
+    let uuid = Uuid::try_parse(&xml.uuid).map_err(|error| {
+        ForgeError::Serialization(format!(
+            "invalid UUID in component-definition: '{}' — {error}",
+            xml.uuid
+        ))
     })?;
     let components =
         xml.components.into_iter().map(convert_component).collect::<Result<Vec<_>, _>>()?;
@@ -534,8 +547,8 @@ fn convert_component_definition(
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::ExportInvalidOscal` for missing part IDs or invalid UUIDs,
-/// and `ForgeError::Serialization` for malformed or unsupported XML content.
+/// Returns `ForgeError::ExportInvalidOscal` for missing part IDs and
+/// `ForgeError::Serialization` for malformed, unsupported, or invalid-UUID XML content.
 pub fn deserialize_catalog_from_xml(xml: &str) -> Result<CatalogEnvelope, ForgeError> {
     reject_rich_prose(xml)?;
     let xml_catalog: XmlCatalog = quick_xml::de::from_str(xml).map_err(|e| {
@@ -550,8 +563,9 @@ pub fn deserialize_catalog_from_xml(xml: &str) -> Result<CatalogEnvelope, ForgeE
 /// deserialization structs, then converts to the shared `ComponentDefinitionEnvelope` model.
 ///
 /// # Errors
-/// Returns `ForgeError::Serialization` if XML parsing fails or prose uses unsupported markup.
-/// Returns `ForgeError::ExportInvalidOscal` for missing part IDs or invalid UUIDs.
+/// Returns `ForgeError::Serialization` if XML parsing fails, prose uses unsupported markup,
+/// or an XML UUID is invalid.
+/// Returns `ForgeError::ExportInvalidOscal` for missing part IDs.
 pub fn deserialize_component_from_xml(
     xml: &str,
 ) -> Result<ComponentDefinitionEnvelope, ForgeError> {
@@ -605,7 +619,7 @@ mod tests {
         let envelope = deserialize_catalog_from_xml(xml).unwrap();
         let control = &envelope.catalog.groups[0].controls[0];
         assert_eq!(control.parts.len(), 1);
-        assert_eq!(control.parts[0].name, "statement");
+        assert_eq!(control.parts[0].name, OscalPartName::Statement);
         assert_eq!(control.parts[0].prose, "All users must authenticate using MFA.");
     }
 
@@ -898,6 +912,17 @@ mod tests {
 
         let error = deserialize_catalog_from_xml(xml).unwrap_err();
         assert!(error.to_string().contains("missing required @id"));
+    }
+
+    #[test]
+    fn xml_deserialization_rejects_unknown_part_name() {
+        let xml = r"<catalog uuid='660e8400-e29b-41d4-a716-446655440000'>
+            <metadata><title>Test</title><last-modified>2026-01-01T00:00:00Z</last-modified><version>1</version><oscal-version>1.2.0</oscal-version></metadata>
+            <control id='AC-1'><title>Control</title><part id='s1' name='unknown'><p>Text</p></part></control>
+        </catalog>";
+
+        let error = deserialize_catalog_from_xml(xml).unwrap_err();
+        assert!(error.to_string().contains("invalid @name 'unknown'"));
     }
 
     #[test]

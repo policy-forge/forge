@@ -1,12 +1,5 @@
 {
   "catalog": {
-    "uuid": "25b386a1-5eca-4bdb-8cdb-ec124d367000",
-    "metadata": {
-      "title": "Purpose",
-      "last-modified": "2026-02-21T21:03:42.682370+00:00",
-      "version": "0.0.0",
-      "oscal-version": "1.2.3"
-    },
     "groups": [
       {
         "id": "purpose",
@@ -17,19 +10,9 @@
         "title": "Scope"
       },
       {
-        "id": "controls",
-        "title": "Controls",
-        "props": [
-          {
-            "name": "source-section",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "Controls"
-          }
-        ],
         "controls": [
           {
             "id": "POL-C-001",
-            "title": "Teams must review privileged access every quarter.",
             "links": [
               {
                 "href": "input.md#line=11",
@@ -68,10 +51,27 @@
                 "ns": "https://forge.policy-forge.github.io/ns/trace",
                 "value": "11"
               }
-            ]
+            ],
+            "title": "Teams must review privileged access every quarter."
           }
-        ]
+        ],
+        "id": "controls",
+        "props": [
+          {
+            "name": "source-section",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "Controls"
+          }
+        ],
+        "title": "Controls"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:40.479639+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Purpose",
+      "version": "0.0.0"
+    },
+    "uuid": "16882962-8b21-489a-89c5-2ac9c6a9154b"
   }
 }

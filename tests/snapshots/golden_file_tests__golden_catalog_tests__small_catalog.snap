@@ -20,11 +20,6 @@ expression: normalized
                 "id": "POL-AC-001_smt",
                 "name": "statement",
                 "prose": "All users must authenticate using approved multi-factor credentials before accessing any system"
-              },
-              {
-                "id": "POL-AC-001_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
               }
             ],
             "props": [
@@ -63,11 +58,6 @@ expression: normalized
                 "id": "POL-AC-002_smt",
                 "name": "statement",
                 "prose": "Access permissions must follow the principle of least privilege for all user roles"
-              },
-              {
-                "id": "POL-AC-002_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
               }
             ],
             "props": [
@@ -132,11 +122,6 @@ expression: normalized
                 "id": "POL-AC-003_smt",
                 "name": "statement",
                 "prose": "User accounts must be reviewed {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_0 }} and inactive accounts disabled {{ insert: param, id-ref: ffede3db-bbd0-5728-9219-8bba7bb8fb79_prm_1 }}"
-              },
-              {
-                "id": "POL-AC-003_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
               }
             ],
             "props": [
@@ -175,11 +160,6 @@ expression: normalized
                 "id": "POL-AC-004_smt",
                 "name": "statement",
                 "prose": "All authentication events must be logged and retained for a minimum of one year"
-              },
-              {
-                "id": "POL-AC-004_gdn",
-                "name": "guidance",
-                "prose": "This section defines access control requirements for organizational systems.\nAll users must authenticate using approved multi-factor credentials before accessing any system\nAccess permissions must follow the principle of least privilege for all user roles\nUser accounts must be reviewed quarterly and inactive accounts disabled after 90 days\nAll authentication events must be logged and retained for a minimum of one year"
               }
             ],
             "props": [

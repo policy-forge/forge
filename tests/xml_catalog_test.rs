@@ -4,21 +4,26 @@ mod common;
 
 use std::path::Path;
 
-use common::MAX_SIZE_BYTES;
+use common::DEFAULT_MAX_SIZE_BYTES;
 use forge::cli::OutputFormat;
 
 /// Helper: run catalog pipeline with XML format, return XML string.
 fn run_catalog_xml(fixture: &Path) -> String {
-    forge::pipeline::run_catalog_pipeline(fixture, MAX_SIZE_BYTES, &OutputFormat::Xml, None)
+    forge::pipeline::run_catalog_pipeline(fixture, DEFAULT_MAX_SIZE_BYTES, &OutputFormat::Xml, None)
         .unwrap_or_else(|e| panic!("Catalog XML pipeline failed: {e}"))
         .content
 }
 
 /// Helper: run catalog pipeline with JSON format, return JSON string.
 fn run_catalog_json(fixture: &Path) -> String {
-    forge::pipeline::run_catalog_pipeline(fixture, MAX_SIZE_BYTES, &OutputFormat::Json, None)
-        .unwrap_or_else(|e| panic!("Catalog JSON pipeline failed: {e}"))
-        .content
+    forge::pipeline::run_catalog_pipeline(
+        fixture,
+        DEFAULT_MAX_SIZE_BYTES,
+        &OutputFormat::Json,
+        None,
+    )
+    .unwrap_or_else(|e| panic!("Catalog JSON pipeline failed: {e}"))
+    .content
 }
 
 // ─── T030: Catalog XML Integration Test ───────────────────────────────────

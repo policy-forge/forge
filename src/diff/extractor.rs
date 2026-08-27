@@ -53,9 +53,10 @@ fn collect_controls_from_groups(groups: &[Value], map: &mut HashMap<String, Cont
 fn collect_controls(controls: &[Value], map: &mut HashMap<String, ControlSnapshot>) {
     for control in controls {
         let Some(id) = control.get("id").and_then(Value::as_str) else {
+            tracing::warn!(control_uuid = ?control.get("uuid"), "Skipping catalog control without a string id");
             continue;
         };
-        let uuid = control.get("uuid").and_then(Value::as_str).unwrap_or("").to_string();
+        let uuid = control.get("uuid").and_then(Value::as_str).map(String::from);
         let title = control.get("title").and_then(Value::as_str).map(String::from);
         let parts_prose = collect_statement_prose(control);
         if map.contains_key(id) {
@@ -81,12 +82,22 @@ fn collect_statement_prose(control: &Value) -> Vec<String> {
     let Some(parts) = control.get("parts").and_then(Value::as_array) else {
         return vec![];
     };
-    parts
-        .iter()
-        .filter(|p| p.get("name").and_then(Value::as_str) == Some("statement"))
-        .filter_map(|p| p.get("prose").and_then(Value::as_str))
-        .map(String::from)
-        .collect()
+    let mut prose = Vec::new();
+    collect_prose_from_parts(parts, &mut prose);
+    prose
+}
+
+fn collect_prose_from_parts(parts: &[Value], out: &mut Vec<String>) {
+    for part in parts {
+        if part.get("name").and_then(Value::as_str) == Some("statement") {
+            if let Some(prose) = part.get("prose").and_then(Value::as_str) {
+                out.push(prose.to_string());
+            }
+        }
+        if let Some(nested_parts) = part.get("parts").and_then(Value::as_array) {
+            collect_prose_from_parts(nested_parts, out);
+        }
+    }
 }
 
 fn extract_component_def_controls(json: &Value) -> HashMap<String, ControlSnapshot> {
@@ -127,9 +138,13 @@ fn collect_impl_requirements_from_container(
             .map_or(EMPTY_ARRAY, Vec::as_slice);
         for ir in irs {
             let Some(control_id) = ir.get("control-id").and_then(Value::as_str) else {
+                tracing::warn!(
+                    requirement_uuid = ?ir.get("uuid"),
+                    "Skipping implemented-requirement without a string control-id"
+                );
                 continue;
             };
-            let uuid = ir.get("uuid").and_then(Value::as_str).unwrap_or("").to_string();
+            let uuid = ir.get("uuid").and_then(Value::as_str).map(String::from);
             let description = ir.get("description").and_then(Value::as_str).map(String::from);
 
             if let Some(snapshot) = map.get_mut(control_id) {
@@ -293,7 +308,7 @@ mod tests {
         let result = extract_controls(&json, &ArtifactType::ComponentDefinition);
         assert_eq!(result.len(), 2);
         let snap = &result["POL-AC-001"];
-        assert_eq!(snap.uuid, "uuid-1");
+        assert_eq!(snap.uuid.as_deref(), Some("uuid-1"));
         assert_eq!(snap.description.as_deref(), Some("Impl desc 1"));
         assert!(snap.title.is_none());
         assert!(snap.parts_prose.is_empty());
@@ -507,5 +522,52 @@ mod tests {
             result["AC-1"].description.as_deref(),
             Some("First implementation\nSecond implementation")
         );
+    }
+
+    #[test]
+    fn extract_catalog_duplicate_control_id_last_wins() {
+        let json = serde_json::json!({
+            "catalog": {
+                "controls": [
+                    {"id": "AC-1", "uuid": "first", "title": "First"},
+                    {"id": "AC-1", "uuid": "second", "title": "Second"}
+                ]
+            }
+        });
+
+        let result = extract_controls(&json, &ArtifactType::Catalog);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result["AC-1"].uuid.as_deref(), Some("second"));
+        assert_eq!(result["AC-1"].title.as_deref(), Some("Second"));
+    }
+
+    #[test]
+    fn extract_catalog_collects_nested_statement_prose() {
+        let json = serde_json::json!({
+            "catalog": {
+                "controls": [{
+                    "id": "AC-1",
+                    "parts": [{
+                        "name": "guidance",
+                        "parts": [{"name": "statement", "prose": "Nested statement"}]
+                    }]
+                }]
+            }
+        });
+
+        let result = extract_controls(&json, &ArtifactType::Catalog);
+        assert_eq!(result["AC-1"].parts_prose, ["Nested statement"]);
+    }
+
+    #[test]
+    fn extract_catalog_preserves_absent_uuid() {
+        let json = serde_json::json!({
+            "catalog": {
+                "controls": [{"id": "AC-1"}]
+            }
+        });
+
+        let result = extract_controls(&json, &ArtifactType::Catalog);
+        assert_eq!(result["AC-1"].uuid, None);
     }
 }

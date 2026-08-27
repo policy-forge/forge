@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 use std::sync::LazyLock;
 
 use regex::Regex;
@@ -15,6 +15,64 @@ const SOURCE_PROFILE: &str = "tests/fixtures/edge-cases/source-profile.json";
 
 const NORMALIZED_UUID: &str = "00000000-0000-0000-0000-000000000000";
 const NORMALIZED_TIMESTAMP: &str = "2026-01-01T00:00:00Z";
+
+#[derive(Clone, Copy)]
+enum ConvertExpectation {
+    Output,
+    Error,
+}
+
+#[derive(Clone, Copy)]
+struct ConvertFixture {
+    slug: &'static str,
+    input_name: &'static str,
+    expectation: ConvertExpectation,
+}
+
+const CONVERT_FIXTURES: &[ConvertFixture] = &[
+    ConvertFixture {
+        slug: "ec01-no-headings",
+        input_name: "input.md",
+        expectation: ConvertExpectation::Error,
+    },
+    ConvertFixture {
+        slug: "ec02-compound-atomic",
+        input_name: "input.md",
+        expectation: ConvertExpectation::Output,
+    },
+    ConvertFixture {
+        slug: "ec03-empty-sections",
+        input_name: "input.md",
+        expectation: ConvertExpectation::Output,
+    },
+    ConvertFixture {
+        slug: "ec04-missing-metadata",
+        input_name: "input.md",
+        expectation: ConvertExpectation::Output,
+    },
+    ConvertFixture {
+        slug: "ec05-whitespace-only",
+        input_name: "input-original.md",
+        expectation: ConvertExpectation::Output,
+    },
+    ConvertFixture {
+        slug: "ec06-substantive-change",
+        input_name: "input-original.md",
+        expectation: ConvertExpectation::Output,
+    },
+    ConvertFixture {
+        slug: "ec07-malformed-citation",
+        input_name: "input.md",
+        expectation: ConvertExpectation::Output,
+    },
+];
+
+const SUPPLEMENTAL_FIXTURES: &[&str] =
+    &["ec-citation-unusual-positions", "ec-parameter-like-content"];
+const VALIDATION_ONLY_FIXTURES: &[(&str, &str, &str)] =
+    &[("ec10-multiple-errors", "input.json", "expected-errors.txt")];
+const STRATEGY_AGNOSTIC_ERROR_FIXTURES: &[(&str, &str)] =
+    &[("ec09-file-not-found", "expected-error.txt")];
 
 static UUID_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
@@ -37,8 +95,9 @@ impl Strategy {
 }
 
 struct ConvertRun {
+    status: ExitStatus,
+    stdout: String,
     stderr: String,
-    code: i32,
     output_json: Option<Value>,
 }
 
@@ -48,6 +107,11 @@ fn fixture_dir(slug: &str) -> PathBuf {
 
 fn fixture_input(slug: &str, file: &str) -> PathBuf {
     fixture_dir(slug).join(file)
+}
+
+fn assert_fixture_file(slug: &str, file: &str) {
+    let path = fixture_input(slug, file);
+    assert!(path.is_file(), "missing fixture file: {}", path.display());
 }
 
 fn load_expected_substrings(path: &Path) -> Vec<String> {
@@ -99,18 +163,23 @@ fn run_convert_with_baseline(
     }
 
     let output = cmd.output().expect("run forge convert command");
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-    let code = output.status.code().unwrap_or(-1);
+    let status = output.status;
 
     let output_json = if output_path.exists() {
         let text = std::fs::read_to_string(&output_path)
             .unwrap_or_else(|e| panic!("failed reading {}: {e}", output_path.display()));
-        Some(serde_json::from_str(&text).expect("convert output must be JSON"))
+        Some(serde_json::from_str(&text).unwrap_or_else(|e| {
+            panic!(
+                "convert output must be JSON ({e}); status={status:?}\n--- stderr ---\n{stderr}\n--- stdout ---\n{stdout}"
+            )
+        }))
     } else {
         None
     };
 
-    ConvertRun { stderr, code, output_json }
+    ConvertRun { status, stdout, stderr, output_json }
 }
 
 fn assert_required_substrings(haystack: &str, expected: &[String], context: &str) {
@@ -125,8 +194,31 @@ fn assert_required_substrings(haystack: &str, expected: &[String], context: &str
 }
 
 fn assert_edge_case_error(run: &ConvertRun, expected_substrings: &[String], context: &str) {
-    assert_ne!(run.code, 0, "{context}: expected non-zero exit");
+    assert!(
+        run.status.code().is_some(),
+        "{context}: convert terminated by signal: {:?}\n--- stderr ---\n{}\n--- stdout ---\n{}",
+        run.status,
+        run.stderr,
+        run.stdout
+    );
+    assert!(
+        !run.status.success(),
+        "{context}: expected non-zero exit, got {}\n--- stderr ---\n{}\n--- stdout ---\n{}",
+        run.status,
+        run.stderr,
+        run.stdout
+    );
     assert_required_substrings(&run.stderr, expected_substrings, context);
+}
+
+fn assert_convert_success(run: &ConvertRun, context: &str) {
+    assert!(
+        run.status.success(),
+        "{context}: convert failed with {}\n--- stderr ---\n{}\n--- stdout ---\n{}",
+        run.status,
+        run.stderr,
+        run.stdout
+    );
 }
 
 fn assert_expected_warnings(stderr: &str, expected_substrings: &[String], context: &str) {
@@ -183,7 +275,7 @@ fn assert_fixture_output(slug: &str, input_name: &str, strategy: Strategy) -> Va
     let input = fixture_input(slug, input_name);
     let run = run_convert(&input, strategy);
     let strategy_name = strategy.as_str();
-    assert_eq!(run.code, 0, "{slug} {strategy_name} failed: {}", run.stderr);
+    assert_convert_success(&run, &format!("{slug} {strategy_name}"));
     let output =
         run.output_json.unwrap_or_else(|| panic!("{slug} {strategy_name} output should exist"));
     let expected_name = match strategy {
@@ -272,8 +364,8 @@ fn assert_component_stable_id_contract(
     } else {
         run_convert(&changed, Strategy::Component)
     };
-    assert_eq!(run_a.code, 0, "{slug} baseline failed: {}", run_a.stderr);
-    assert_eq!(run_b.code, 0, "{slug} changed input failed: {}", run_b.stderr);
+    assert_convert_success(&run_a, &format!("{slug} baseline"));
+    assert_convert_success(&run_b, &format!("{slug} changed input"));
 
     let ids_a = extract_stable_ids(
         &run_a
@@ -328,24 +420,41 @@ fn run_validation_fixture(path: &Path) -> forge::validate::ValidationReport {
 
 #[test]
 fn fixture_contract_completeness_smoke_test() {
-    let required_dirs = [
-        "ec01-no-headings",
-        "ec02-compound-atomic",
-        "ec03-empty-sections",
-        "ec04-missing-metadata",
-        "ec05-whitespace-only",
-        "ec06-substantive-change",
-        "ec07-malformed-citation",
-        "ec09-file-not-found",
-        "ec10-multiple-errors",
-    ];
-
-    for dir in required_dirs {
-        let path = fixture_dir(dir);
-        assert!(path.exists(), "missing fixture directory: {}", path.display());
+    for fixture in CONVERT_FIXTURES {
+        let path = fixture_dir(fixture.slug);
+        assert!(path.is_dir(), "missing fixture directory: {}", path.display());
+        assert_fixture_file(fixture.slug, fixture.input_name);
+        match fixture.expectation {
+            ConvertExpectation::Output => {
+                assert_fixture_file(fixture.slug, "expected-catalog.json");
+                assert_fixture_file(fixture.slug, "expected-component-definition.json");
+            }
+            ConvertExpectation::Error => assert_fixture_file(fixture.slug, "expected-error.txt"),
+        }
     }
 
-    assert!(Path::new(SOURCE_PROFILE).exists(), "missing source-profile fixture");
+    for slug in SUPPLEMENTAL_FIXTURES {
+        let path = fixture_dir(slug);
+        assert!(path.is_dir(), "missing fixture directory: {}", path.display());
+        assert_fixture_file(slug, "input.md");
+        assert_fixture_file(slug, "expected-catalog.json");
+        assert_fixture_file(slug, "expected-component-definition.json");
+    }
+
+    for (slug, input_name, expected_errors_name) in VALIDATION_ONLY_FIXTURES {
+        let path = fixture_dir(slug);
+        assert!(path.is_dir(), "missing fixture directory: {}", path.display());
+        assert_fixture_file(slug, input_name);
+        assert_fixture_file(slug, expected_errors_name);
+    }
+
+    for (slug, expected_error_name) in STRATEGY_AGNOSTIC_ERROR_FIXTURES {
+        let path = fixture_dir(slug);
+        assert!(path.is_dir(), "missing fixture directory: {}", path.display());
+        assert_fixture_file(slug, expected_error_name);
+    }
+
+    assert!(Path::new(SOURCE_PROFILE).is_file(), "missing source-profile fixture");
 }
 
 // FR Traceability:
@@ -438,21 +547,26 @@ fn ec06_substantive_change_rotates_stable_ids() {
 }
 
 #[test]
-fn ec07_malformed_citation_is_retained_with_unvalidated_marker() {
-    let _ = assert_fixture_output("ec07-malformed-citation", "input.md", Strategy::Catalog);
+fn ec07_fixture_citation_is_retained() {
+    let output = assert_fixture_output("ec07-malformed-citation", "input.md", Strategy::Catalog);
+    let resources = output["catalog"]["back-matter"]["resources"]
+        .as_array()
+        .expect("EC-7 catalog output must contain back-matter resources");
+    let citation = resources
+        .iter()
+        .find(|resource| {
+            resource["rlinks"].as_array().is_some_and(|rlinks| {
+                rlinks.iter().any(|rlink| rlink["href"] == "https://example.com/retention")
+            })
+        })
+        .expect("EC-7 fixture citation must be retained in back-matter");
 
-    let malformed = forge::model::Citation {
-        id: "ec07-malformed-citation".to_string(),
-        text: "Malformed citation".to_string(),
-        url: Some("htp://not-a-url".to_string()),
-        source_requirement_id: Some("req-1".into()),
-    };
-    let (resources, _) = forge::oscal::generate_back_matter(&[malformed])
-        .expect("malformed citations should still produce back-matter resources");
-    let has_unvalidated = resources.iter().any(|resource| {
-        resource.props.iter().any(|prop| prop.name == "url-status" && prop.value == "unvalidated")
-    });
-    assert!(has_unvalidated, "EC-7 malformed citation must include url-status=unvalidated");
+    assert!(
+        citation["props"].as_array().is_none_or(|props| {
+            props.iter().all(|prop| prop["name"] != "url-status" || prop["value"] != "unvalidated")
+        }),
+        "EC-7 fixture citation uses a valid HTTPS URL and must not be marked unvalidated"
+    );
 }
 
 #[test]
@@ -485,57 +599,65 @@ fn strategy_matrix_dual_strategy_and_agnostic_coverage() {
     let mut catalog_status = BTreeMap::new();
     let mut component_status = BTreeMap::new();
 
-    let ec01_input = fixture_input("ec01-no-headings", "input.md");
-    let ec01_expected =
-        load_expected_substrings(&fixture_input("ec01-no-headings", "expected-error.txt"));
-    let ec01_catalog = run_convert(&ec01_input, Strategy::Catalog);
-    let ec01_component = run_convert(&ec01_input, Strategy::Component);
-    assert_edge_case_error(&ec01_catalog, &ec01_expected, "matrix EC-1 catalog");
-    assert_edge_case_error(&ec01_component, &ec01_expected, "matrix EC-1 component");
-    catalog_status.insert("ec01-no-headings".to_string(), "error-match".to_string());
-    component_status.insert("ec01-no-headings".to_string(), "error-match".to_string());
-
-    for (slug, input_name) in [
-        ("ec02-compound-atomic", "input.md"),
-        ("ec03-empty-sections", "input.md"),
-        ("ec04-missing-metadata", "input.md"),
-        ("ec05-whitespace-only", "input-original.md"),
-        ("ec06-substantive-change", "input-original.md"),
-        ("ec07-malformed-citation", "input.md"),
-    ] {
-        assert_dual_strategy_output(slug, input_name);
-        match slug {
-            "ec05-whitespace-only" => assert_component_stable_id_contract(
-                slug,
-                "input-original.md",
-                "input-whitespace-variant.md",
-                false,
-                false,
-            ),
-            "ec06-substantive-change" => assert_component_stable_id_contract(
-                slug,
-                "input-original.md",
-                "input-changed.md",
-                true,
-                true,
-            ),
-            _ => {}
+    for fixture in CONVERT_FIXTURES {
+        match fixture.expectation {
+            ConvertExpectation::Error => {
+                let input = fixture_input(fixture.slug, fixture.input_name);
+                let expected =
+                    load_expected_substrings(&fixture_input(fixture.slug, "expected-error.txt"));
+                let catalog = run_convert(&input, Strategy::Catalog);
+                let component = run_convert(&input, Strategy::Component);
+                assert_edge_case_error(
+                    &catalog,
+                    &expected,
+                    &format!("matrix {} catalog", fixture.slug),
+                );
+                assert_edge_case_error(
+                    &component,
+                    &expected,
+                    &format!("matrix {} component", fixture.slug),
+                );
+                catalog_status.insert(fixture.slug.to_string(), "error-match".to_string());
+                component_status.insert(fixture.slug.to_string(), "error-match".to_string());
+            }
+            ConvertExpectation::Output => {
+                assert_dual_strategy_output(fixture.slug, fixture.input_name);
+                match fixture.slug {
+                    "ec05-whitespace-only" => assert_component_stable_id_contract(
+                        fixture.slug,
+                        fixture.input_name,
+                        "input-whitespace-variant.md",
+                        false,
+                        false,
+                    ),
+                    "ec06-substantive-change" => assert_component_stable_id_contract(
+                        fixture.slug,
+                        fixture.input_name,
+                        "input-changed.md",
+                        true,
+                        true,
+                    ),
+                    _ => {}
+                }
+                catalog_status.insert(fixture.slug.to_string(), "golden-match".to_string());
+                component_status.insert(fixture.slug.to_string(), "golden-match".to_string());
+            }
         }
-        catalog_status.insert(slug.to_string(), "golden-match".to_string());
-        component_status.insert(slug.to_string(), "golden-match".to_string());
     }
 
-    let report = run_validation_fixture(&fixture_input("ec10-multiple-errors", "input.json"));
-    assert!(report.schema_error_count() > 0);
-    assert!(report.semantic_error_count() > 0);
-    catalog_status.insert("ec10-multiple-errors".to_string(), "validation-aggregate".to_string());
-    component_status.insert("ec10-multiple-errors".to_string(), "validation-aggregate".to_string());
+    for (slug, input_name, _) in VALIDATION_ONLY_FIXTURES {
+        let report = run_validation_fixture(&fixture_input(slug, input_name));
+        assert!(report.schema_error_count() > 0);
+        assert!(report.semantic_error_count() > 0);
+        catalog_status.insert((*slug).to_string(), "validation-aggregate".to_string());
+        component_status.insert((*slug).to_string(), "validation-aggregate".to_string());
+    }
 
-    let agnostic = fixture_input("ec09-file-not-found", "nonexistent.md");
-    let agnostic_expected =
-        load_expected_substrings(&fixture_input("ec09-file-not-found", "expected-error.txt"));
-    let agnostic_run = run_convert(&agnostic, Strategy::Catalog);
-    assert_edge_case_error(&agnostic_run, &agnostic_expected, "matrix EC-9");
+    for (slug, expected_error_name) in STRATEGY_AGNOSTIC_ERROR_FIXTURES {
+        let expected = load_expected_substrings(&fixture_input(slug, expected_error_name));
+        let run = run_convert(&fixture_input(slug, "nonexistent.md"), Strategy::Catalog);
+        assert_edge_case_error(&run, &expected, &format!("matrix {slug}"));
+    }
 
     insta::assert_json_snapshot!("strategy_matrix_catalog", json!(catalog_status));
     insta::assert_json_snapshot!("strategy_matrix_component", json!(component_status));
@@ -543,12 +665,11 @@ fn strategy_matrix_dual_strategy_and_agnostic_coverage() {
 
 #[test]
 fn supplemental_citation_positions_and_parameter_like_content() {
-    let supplemental = ["ec-citation-unusual-positions", "ec-parameter-like-content"];
-    for slug in supplemental {
+    for slug in SUPPLEMENTAL_FIXTURES {
         let input = fixture_input(slug, "input.md");
 
         let cat = run_convert(&input, Strategy::Catalog);
-        assert_eq!(cat.code, 0, "supplemental {slug} catalog failed: {}", cat.stderr);
+        assert_convert_success(&cat, &format!("supplemental {slug} catalog"));
         let cat_output = cat.output_json.expect("catalog output should exist");
         assert_expected_output(
             &cat_output,
@@ -557,7 +678,7 @@ fn supplemental_citation_positions_and_parameter_like_content() {
         );
 
         let comp = run_convert(&input, Strategy::Component);
-        assert_eq!(comp.code, 0, "supplemental {slug} component failed: {}", comp.stderr);
+        assert_convert_success(&comp, &format!("supplemental {slug} component"));
         let comp_output = comp.output_json.expect("component output should exist");
         assert_expected_output(
             &comp_output,
@@ -569,31 +690,29 @@ fn supplemental_citation_positions_and_parameter_like_content() {
 
 #[test]
 fn strategy_constants_match_expected_scope() {
-    let dual_convert_cases: BTreeSet<&str> = [
-        "ec01-no-headings",
-        "ec02-compound-atomic",
-        "ec03-empty-sections",
-        "ec04-missing-metadata",
-        "ec05-whitespace-only",
-        "ec06-substantive-change",
-        "ec07-malformed-citation",
-    ]
-    .into_iter()
-    .collect();
-
-    let validation_only_cases: BTreeSet<&str> = ["ec10-multiple-errors"].into_iter().collect();
+    let dual_convert_cases: BTreeSet<&str> =
+        CONVERT_FIXTURES.iter().map(|fixture| fixture.slug).collect();
+    let validation_only_cases: BTreeSet<&str> =
+        VALIDATION_ONLY_FIXTURES.iter().map(|(slug, _, _)| *slug).collect();
     let strategy_applicable_cases: BTreeSet<&str> =
         dual_convert_cases.union(&validation_only_cases).copied().collect();
 
-    assert_eq!(dual_convert_cases.len(), 7, "dual convert set should contain 7 scenarios");
-    assert_eq!(validation_only_cases.len(), 1, "validation-only set should contain EC-10");
+    assert_eq!(
+        dual_convert_cases.len(),
+        CONVERT_FIXTURES.len(),
+        "convert fixture slugs must be unique"
+    );
+    assert_eq!(
+        validation_only_cases.len(),
+        VALIDATION_ONLY_FIXTURES.len(),
+        "validation-only fixture slugs must be unique"
+    );
     assert_eq!(
         strategy_applicable_cases.len(),
-        8,
-        "strategy-applicable set should contain 8 scenarios"
+        CONVERT_FIXTURES.len() + VALIDATION_ONLY_FIXTURES.len(),
+        "convert and validation-only fixture slugs must not overlap"
     );
-    assert!(
-        !strategy_applicable_cases.contains("ec09-file-not-found"),
-        "EC-9 must remain strategy-agnostic"
-    );
+    for (slug, _) in STRATEGY_AGNOSTIC_ERROR_FIXTURES {
+        assert!(!strategy_applicable_cases.contains(slug), "{slug} must remain strategy-agnostic");
+    }
 }

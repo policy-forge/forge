@@ -64,8 +64,9 @@ impl DriftComparison {
 /// excluding only the two documented FORGE-generated volatile fields.
 ///
 /// Object key order and insignificant JSON whitespace do not affect the
-/// result. Array order and every field outside the v1 exclusion list remain
-/// significant. The returned value contains no artifact content.
+/// result. Array order, numeric representations (for example, `1` versus `1.0`),
+/// and every field outside the v1 exclusion list remain significant. The returned
+/// value contains no artifact content.
 ///
 /// # Errors
 ///
@@ -111,50 +112,60 @@ impl ArtifactRole {
 
 fn parse_artifact(path: &Path, role: ArtifactRole) -> Result<Value, ForgeError> {
     let role_name = role.as_str();
+    let label = path
+        .file_name()
+        .map_or_else(|| "<unnamed>".to_string(), |name| name.to_string_lossy().into_owned());
     let file = std::fs::File::open(path).map_err(|error| {
         ForgeError::DiffError(format!(
-            "unable to inspect {role_name} artifact ({:?})",
+            "unable to inspect {role_name} artifact '{label}' ({:?})",
             error.kind()
         ))
     })?;
     let metadata = file.metadata().map_err(|error| {
         ForgeError::DiffError(format!(
-            "unable to inspect {role_name} artifact ({:?})",
+            "unable to inspect {role_name} artifact '{label}' ({:?})",
             error.kind()
         ))
     })?;
     if !metadata.is_file() {
-        return Err(ForgeError::DiffError(format!("{role_name} artifact is not a regular file")));
+        return Err(ForgeError::DiffError(format!(
+            "{role_name} artifact '{label}' is not a regular file"
+        )));
     }
     if metadata.len() > crate::io::MAX_FILE_SIZE {
         return Err(ForgeError::DiffError(format!(
-            "{role_name} artifact exceeds the {} byte comparison limit",
+            "{role_name} artifact '{label}' exceeds the {} byte comparison limit",
             crate::io::MAX_FILE_SIZE
         )));
     }
 
     let capacity = usize::try_from(metadata.len()).map_err(|_| {
-        ForgeError::DiffError(format!("{role_name} artifact size cannot be represented in memory"))
+        ForgeError::DiffError(format!(
+            "{role_name} artifact '{label}' size cannot be represented in memory"
+        ))
     })?;
     let mut bytes = Vec::with_capacity(capacity);
     file.take(crate::io::MAX_FILE_SIZE + 1).read_to_end(&mut bytes).map_err(|error| {
-        ForgeError::DiffError(format!("unable to read {role_name} artifact ({:?})", error.kind()))
+        ForgeError::DiffError(format!(
+            "unable to read {role_name} artifact '{label}' ({:?})",
+            error.kind()
+        ))
     })?;
     if bytes.len() as u64 > crate::io::MAX_FILE_SIZE {
         return Err(ForgeError::DiffError(format!(
-            "{role_name} artifact exceeds the {} byte comparison limit",
+            "{role_name} artifact '{label}' exceeds the {} byte comparison limit",
             crate::io::MAX_FILE_SIZE
         )));
     }
     let text = String::from_utf8(bytes).map_err(|error| {
         ForgeError::DiffError(format!(
-            "unable to read {role_name} artifact ({:?})",
+            "unable to read {role_name} artifact '{label}' ({:?})",
             error.utf8_error()
         ))
     })?;
     serde_json::from_str(&text).map_err(|error| {
         ForgeError::DiffError(format!(
-            "invalid JSON in {role_name} artifact at line {}, column {}",
+            "invalid JSON in {role_name} artifact '{label}' at line {}, column {}",
             error.line(),
             error.column()
         ))
@@ -173,8 +184,8 @@ fn detect_artifact_type(value: &Value, role: ArtifactRole) -> Result<ArtifactTyp
             "{} artifact uses unsupported Control Mapping model; expected Catalog or Component Definition",
             role.as_str()
         ))),
-        Err(_) => Err(ForgeError::DiffError(format!(
-            "{} artifact is not a recognized Catalog or Component Definition",
+        Err(error) => Err(ForgeError::DiffError(format!(
+            "{} artifact is not a recognized Catalog or Component Definition: {error}",
             role.as_str()
         ))),
     }

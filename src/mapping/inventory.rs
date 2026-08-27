@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
@@ -23,7 +23,7 @@ pub const MAX_INVENTORY_DEPTH: usize = 64;
 /// Maximum schema/version errors collected for one mapping input.
 pub const MAX_SCHEMA_ERRORS: usize = 100;
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ResourceEvidence {
     pub resource_type: ResourceType,
     pub href: String,
@@ -62,7 +62,11 @@ impl Inventory {
         self.ineligible_parts.get(id).map(String::as_str)
     }
 
-    #[must_use]
+    /// Return the canonical subject fingerprint.
+    ///
+    /// Canonicalization is formatting-insensitive (object key order and
+    /// numeric spelling) but structure-sensitive; callers must not treat
+    /// equal display prose as equal evidence (F0419).
     pub fn fingerprint(&self, subject_type: SubjectType, id: &str) -> Option<&str> {
         self.subjects.get(&subject_type).and_then(|subjects| subjects.get(id)).map(String::as_str)
     }
@@ -415,14 +419,15 @@ fn insert_subject<'a>(
                 ))
             },
         )?;
-    if let Some(existing) = inventory.ids.insert(id.to_string(), subject_type) {
-        let kind = if existing == subject_type { "duplicate" } else { "type-ambiguous" };
+    if let Some(existing) = inventory.ids.get(id) {
+        let kind = if *existing == subject_type { "duplicate" } else { "type-ambiguous" };
         return Err(mapping_error(format!(
             "{path_label} contains {kind} eligible id '{}'",
             bounded(id)
         )));
     }
     let fingerprint = canonical_subject_sha256(value)?;
+    inventory.ids.insert(id.to_string(), subject_type);
     let excerpt = value
         .get(if subject_type == SubjectType::Control { "title" } else { "prose" })
         .and_then(Value::as_str)
@@ -672,6 +677,31 @@ mod tests {
         insert_subject("fixture", &value, SubjectType::Control, &mut inventory)
             .expect("subject without title remains eligible");
         assert_eq!(inventory.excerpt(SubjectType::Control, "ac-1"), None);
+    }
+
+    #[test]
+    fn duplicate_subject_rejection_does_not_mutate_id_registry() {
+        let mut inventory = Inventory {
+            subjects: BTreeMap::new(),
+            ids: BTreeMap::new(),
+            ineligible_parts: BTreeMap::new(),
+            excerpts: BTreeMap::new(),
+            control_groups: BTreeMap::new(),
+            group_ids: BTreeSet::new(),
+            ambiguous_group_ids: BTreeSet::new(),
+        };
+        let existing = serde_json::json!({"id": "ac-1", "title": "Existing"});
+        let duplicate = serde_json::json!({"id": "ac-1", "title": "Duplicate"});
+        insert_subject("fixture", &existing, SubjectType::Control, &mut inventory)
+            .expect("initial subject inserts");
+
+        insert_subject("fixture", &duplicate, SubjectType::Control, &mut inventory)
+            .expect_err("duplicate must fail");
+        assert_eq!(inventory.type_for_id("ac-1"), Some(SubjectType::Control));
+        assert_eq!(
+            inventory.fingerprint(SubjectType::Control, "ac-1"),
+            canonical_subject_sha256(&existing).ok().as_deref()
+        );
     }
 
     #[test]

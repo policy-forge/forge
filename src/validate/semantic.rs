@@ -168,7 +168,9 @@ fn walk_for_orphaned_links_inner(
 ///
 /// For Component Definitions: walk `implemented-requirements` and check
 /// `control-id` fields are non-empty strings with at least one alphanumeric character.
-/// For Catalog: no-op (return empty vec).
+/// For Catalog, Profile, and Mapping: no-op. PRD M-4 reference checks apply
+/// only to Component Definitions; Profile import targets are external hrefs that
+/// FORGE does not follow (SEC-5).
 fn check_missing_references(json: &Value, model_type: OscalModelType) -> Vec<ValidationError> {
     match model_type {
         OscalModelType::ComponentDefinition => check_component_control_ids(json),

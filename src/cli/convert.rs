@@ -6,6 +6,9 @@ use crate::batch;
 use crate::cli::{OutputFormat, OutputType, Strategy};
 use crate::model::{PolicyDocument, PolicySection};
 
+/// Maximum section nesting depth, kept consistent with stable-ID assignment.
+const MAX_SECTION_DEPTH: usize = 50;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct RequirementLocator {
     section_path: String,
@@ -13,50 +16,68 @@ struct RequirementLocator {
     atom_index: usize,
 }
 
-fn collect_stable_ids(document: &PolicyDocument) -> HashMap<RequirementLocator, String> {
+fn collect_stable_ids(
+    document: &PolicyDocument,
+) -> Result<HashMap<RequirementLocator, String>, ForgeError> {
     let mut map = HashMap::new();
     for section in &document.sections {
-        collect_stable_ids_from_section(section, &section.title, &mut map);
+        collect_stable_ids_from_section(section, &section.title, 0, &mut map)?;
     }
-    map
+    Ok(map)
 }
 
 fn collect_stable_ids_from_section(
     section: &PolicySection,
     section_path: &str,
+    depth: usize,
     map: &mut HashMap<RequirementLocator, String>,
-) {
+) -> Result<(), ForgeError> {
     for requirement in &section.requirements {
         if let Some(stable_id) = &requirement.stable_id {
-            map.insert(
-                RequirementLocator {
-                    section_path: section_path.to_string(),
-                    source_line: requirement.source_line,
-                    atom_index: requirement.atom_index,
-                },
-                stable_id.clone(),
-            );
+            let locator = RequirementLocator {
+                section_path: section_path.to_string(),
+                source_line: requirement.source_line,
+                atom_index: requirement.atom_index,
+            };
+            if map.insert(locator.clone(), stable_id.clone()).is_some() {
+                return Err(ForgeError::Validation(format!(
+                    "stable ID comparison found duplicate requirement locator '{}', line {}, atom {}",
+                    locator.section_path, locator.source_line, locator.atom_index
+                )));
+            }
         }
+    }
+
+    // Match stable-ID assignment: requirements at this level remain visible, but
+    // recursion stops beyond the shared DoS safety limit.
+    if depth > MAX_SECTION_DEPTH {
+        tracing::trace!(
+            depth,
+            max = MAX_SECTION_DEPTH,
+            "max section depth exceeded; skipping stable-ID comparison traversal"
+        );
+        return Ok(());
     }
 
     for child in &section.children {
         let child_path = format!("{section_path}/{}", child.title);
-        collect_stable_ids_from_section(child, &child_path, map);
+        collect_stable_ids_from_section(child, &child_path, depth + 1, map)?;
     }
+    Ok(())
 }
 
 fn count_substantive_stable_id_changes(
     current: &PolicyDocument,
     baseline: &PolicyDocument,
-) -> usize {
-    let current_ids = collect_stable_ids(current);
-    let baseline_ids = collect_stable_ids(baseline);
+) -> Result<usize, ForgeError> {
+    let current_ids = collect_stable_ids(current)?;
+    let baseline_ids = collect_stable_ids(baseline)?;
 
     // Both branches count the same set: locators present in both maps whose
     // IDs differ. Iterating over the smaller map reduces HashMap lookups while
     // preserving identical semantics (locators only in one map are skipped by
     // both branches via `is_some_and`).
-    if current_ids.len() <= baseline_ids.len() {
+    let changed_count = if current_ids.len() <= baseline_ids.len() {
         current_ids
             .iter()
             .filter(|(locator, current_id)| {
@@ -70,7 +91,8 @@ fn count_substantive_stable_id_changes(
                 current_ids.get(*locator).is_some_and(|current_id| current_id != *baseline_id)
             })
             .count()
-    }
+    };
+    Ok(changed_count)
 }
 
 /// Convert a max-size value in MB to bytes, with overflow check.
@@ -84,25 +106,27 @@ fn add_max_size_guidance(error: ForgeError) -> ForgeError {
     error.with_max_size_guidance()
 }
 
-/// Validate and resolve `--source-profile` for component strategy.
+/// Validate and normalize `--source-profile` for component strategy.
 ///
 /// Returns `Err(ForgeError::InvalidArgument)` if no profile was provided (mandatory for
 /// schema-valid component definitions), `Err(ForgeError::Validation)` if empty or
 /// whitespace-only, `Err` if the path is missing or not a regular file, and otherwise
-/// `Ok(Some(path))`.
+/// `Ok(Some(trimmed_path))`.
 fn resolve_source_profile(source_profile: Option<&str>) -> Result<Option<&str>, ForgeError> {
     match source_profile {
         None => Err(ForgeError::InvalidArgument(
             "--source-profile is required for component definitions to produce schema-valid output"
                 .to_string(),
         )),
-        Some(p) if p.trim().is_empty() => {
-            Err(ForgeError::Validation("--source-profile must not be empty".to_string()))
-        }
-        Some(p) => {
-            let profile_path = Path::new(p);
-            validate_regular_file(profile_path, "--source-profile")?;
-            Ok(Some(p))
+        Some(profile) => {
+            let profile = profile.trim();
+            if profile.is_empty() {
+                return Err(ForgeError::Validation(
+                    "--source-profile must not be empty".to_string(),
+                ));
+            }
+            validate_regular_file(Path::new(profile), "--source-profile")?;
+            Ok(Some(profile))
         }
     }
 }
@@ -130,7 +154,7 @@ fn emit_stable_id_change_warning_if_needed(
     max_size_bytes: u64,
 ) -> Result<(), ForgeError> {
     let baseline_doc = crate::pipeline::prepare_document(baseline, max_size_bytes)?;
-    let changed_count = count_substantive_stable_id_changes(current_doc, &baseline_doc);
+    let changed_count = count_substantive_stable_id_changes(current_doc, &baseline_doc)?;
 
     if changed_count > 0 {
         tracing::warn!(
@@ -608,6 +632,13 @@ version: "1.0.0"
     }
 
     #[test]
+    fn component_source_profile_is_trimmed_before_pipeline_use() {
+        let padded = format!("  {SAMPLE_PROFILE}  ");
+        let resolved = resolve_source_profile(Some(&padded)).unwrap();
+        assert_eq!(resolved, Some(SAMPLE_PROFILE));
+    }
+
+    #[test]
     fn component_strategy_whitespace_only_source_profile_errors() {
         let opts =
             make_opts(Path::new("test.md"), &Strategy::Component, &OutputFormat::Json, Some("   "));
@@ -863,7 +894,7 @@ version: "1.0.0"
         let baseline = single_requirement_doc("Access", "11111111-1111-1111-1111-111111111111");
         let current = single_requirement_doc("Access", "22222222-2222-2222-2222-222222222222");
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 1);
     }
 
@@ -872,7 +903,7 @@ version: "1.0.0"
         let baseline = single_requirement_doc("Access", "11111111-1111-1111-1111-111111111111");
         let current = single_requirement_doc("Monitoring", "22222222-2222-2222-2222-222222222222");
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 0);
     }
 
@@ -891,8 +922,21 @@ version: "1.0.0"
             ],
         );
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 1);
+    }
+
+    #[test]
+    fn stable_id_comparison_rejects_duplicate_requirement_locators() {
+        let duplicate = multi_requirement_doc(
+            "Access",
+            &[
+                (10, 0, "11111111-1111-1111-1111-111111111111"),
+                (10, 0, "22222222-2222-2222-2222-222222222222"),
+            ],
+        );
+        let error = count_substantive_stable_id_changes(&duplicate, &duplicate).unwrap_err();
+        assert!(error.to_string().contains("duplicate requirement locator"));
     }
 
     #[test]
@@ -909,7 +953,7 @@ version: "1.0.0"
             ],
         );
 
-        let changed_count = count_substantive_stable_id_changes(&current, &baseline);
+        let changed_count = count_substantive_stable_id_changes(&current, &baseline).unwrap();
         assert_eq!(changed_count, 0);
     }
 }

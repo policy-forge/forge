@@ -35,27 +35,39 @@ use resolver::Staleness;
 ///
 /// # Errors
 ///
-/// - `ForgeError::FileNotFound` if artifact or source file doesn't exist
-/// - `ForgeError::Parse` if artifact is invalid JSON
-/// - `ForgeError::TraceUnsupportedArtifact` if artifact type is unrecognized
+/// - `ForgeError::FileNotFound` if artifact or source file doesn't exist.
+/// - `ForgeError::FileTooLarge` if artifact or source exceeds `MAX_FILE_SIZE`.
+/// - `ForgeError::PermissionDenied` if either file cannot be read.
+/// - `ForgeError::Parse` if artifact is invalid JSON.
+/// - `ForgeError::TraceUnsupportedArtifact` if the artifact is unrecognized, unsupported
+///   (Profile or Mapping), ambiguous, or does not have an object root.
 pub fn generate_trace_report(
     artifact_path: &Path,
     source_path: &Path,
 ) -> Result<TraceReport, ForgeError> {
-    // Read and parse artifact JSON (handles FileNotFound via I/O mapping).
+    // Missing files surface as ForgeError::FileNotFound from the actual read below.
     let artifact_content = read_file(artifact_path)?;
     let json: serde_json::Value = serde_json::from_str(&artifact_content)
         .map_err(|error| ForgeError::Parse(format!("Invalid JSON in artifact: {error}")))?;
 
-    // Read the source content and mtime from the same opened-file snapshot.
-    let (source_content, source_modified) = read_source_file(source_path)?;
-    let source_line_count = source_content.lines().count();
+    // Read the source line count and mtime from the same opened-file snapshot.
+    let (source_line_count, source_modified) = read_source_file(source_path)?;
 
     let art_type = walker::detect_artifact_type(&json)?;
     let entries = match art_type {
-        OscalModelType::Catalog => walker::walk_catalog_elements(&json["catalog"]),
+        OscalModelType::Catalog => {
+            let catalog = json.get("catalog").ok_or_else(|| {
+                ForgeError::TraceUnsupportedArtifact { detail: "missing 'catalog' key".to_string() }
+            })?;
+            walker::walk_catalog_elements(catalog)
+        }
         OscalModelType::ComponentDefinition => {
-            walker::walk_compdef_elements(&json["component-definition"])
+            let compdef = json.get("component-definition").ok_or_else(|| {
+                ForgeError::TraceUnsupportedArtifact {
+                    detail: "missing 'component-definition' key".to_string(),
+                }
+            })?;
+            walker::walk_compdef_elements(compdef)
         }
         OscalModelType::Profile => {
             return Err(ForgeError::TraceUnsupportedArtifact {
@@ -95,12 +107,35 @@ fn read_file(path: &Path) -> Result<String, ForgeError> {
     read_open_file(path, file)
 }
 
-/// Read source content with the mtime observed from the same open file handle.
-fn read_source_file(path: &Path) -> Result<(String, Option<SystemTime>), ForgeError> {
+/// Count source lines with the mtime observed from the same open file handle.
+fn read_source_file(path: &Path) -> Result<(usize, Option<SystemTime>), ForgeError> {
     let (file, metadata) = open_file(path)?;
     let source_modified = metadata.modified().ok();
-    let content = read_open_file(path, file)?;
-    Ok((content, source_modified))
+    let mut reader = std::io::BufReader::new(file.take(crate::io::MAX_FILE_SIZE + 1));
+    let mut line = String::new();
+    let mut source_line_count = 0;
+    let mut bytes_read = 0_u64;
+
+    loop {
+        line.clear();
+        let read = std::io::BufRead::read_line(&mut reader, &mut line)
+            .map_err(|error| map_io_error(path, error))?;
+        if read == 0 {
+            break;
+        }
+        bytes_read += u64::try_from(read)
+            .map_err(|_| ForgeError::Io(std::io::Error::other("line read count exceeds u64")))?;
+        if bytes_read > crate::io::MAX_FILE_SIZE {
+            return Err(ForgeError::FileTooLarge {
+                path: path.to_path_buf(),
+                size_bytes: bytes_read,
+                limit_bytes: crate::io::MAX_FILE_SIZE,
+            });
+        }
+        source_line_count += 1;
+    }
+
+    Ok((source_line_count, source_modified))
 }
 
 /// Open a regular trace input and reject known oversized files before reading.
@@ -181,12 +216,12 @@ mod tests {
     }
 
     #[test]
-    fn source_read_returns_content_and_same_handle_mtime_snapshot() {
+    fn source_read_returns_line_count_and_same_handle_mtime_snapshot() {
         let mut temp = tempfile::NamedTempFile::new().unwrap();
         temp.write_all(b"one\ntwo\n").unwrap();
 
-        let (content, modified) = read_source_file(temp.path()).unwrap();
-        assert_eq!(content.lines().count(), 2);
+        let (line_count, modified) = read_source_file(temp.path()).unwrap();
+        assert_eq!(line_count, 2);
         assert!(modified.is_some());
     }
 }

@@ -78,9 +78,9 @@ pub fn execute(
         None => derive_default_output_path(&canonical_input),
     };
 
-    ensure_output_differs_from_input(&output_path, &canonical_input)?;
+    let canonical_output = canonicalize_output_path(&output_path)?;
+    ensure_output_differs_from_input(&canonical_output, &canonical_input)?;
 
-    // Detect oscal-cli. The outcome carries only data valid for its state.
     let cli_info = detector.detect();
     if !cli_info.is_available() {
         return Err(ForgeError::OscalCliNotFound);
@@ -95,27 +95,12 @@ pub fn execute(
     }
     let executable_path =
         cli_info.executable_path().map(Path::to_path_buf).ok_or(ForgeError::OscalCliNotFound)?;
-    let version = cli_info
-        .version()
-        .ok_or_else(|| ForgeError::OscalCliNotFunctional {
-            path: executable_path.clone(),
-            detail: "oscal-cli version check produced no version".to_string(),
-        })?
-        .to_string();
-
-    // SEC-6: Log detected binary path
-    info!(
-        oscal_cli_path = %executable_path.display(),
-        oscal_cli_version = %version,
-        "Detected oscal-cli"
-    );
-
-    // Build invoker and resolve
+    info!(oscal_cli_path = %executable_path.display(), "Resolving with oscal-cli");
     let invoker = ProcessInvoker::new(executable_path);
 
     let resolve_args = ResolveArgs {
         profile_path: canonical_input,
-        output_path,
+        output_path: canonical_output,
         timeout: Duration::from_secs(timeout_secs),
     };
 
@@ -159,9 +144,32 @@ fn execute_check(detector: &dyn OscalCliDetect) -> Result<(), ForgeError> {
     Ok(())
 }
 
+/// Canonicalize an output path, including a not-yet-created leaf below an
+/// existing canonical parent, before it enters an oscal-cli argument struct.
+fn canonicalize_output_path(output: &Path) -> Result<PathBuf, ForgeError> {
+    match output.canonicalize() {
+        Ok(path) => Ok(path),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            let parent = output
+                .parent()
+                .filter(|parent| !parent.as_os_str().is_empty())
+                .unwrap_or_else(|| Path::new("."));
+            let parent = parent.canonicalize().map_err(ForgeError::Io)?;
+            let filename = output.file_name().ok_or_else(|| {
+                ForgeError::InvalidArgument("output path must name a file".to_string())
+            })?;
+            Ok(parent.join(filename))
+        }
+        Err(error) => Err(ForgeError::Io(error)),
+    }
+}
+
 /// Derive the default output path: `<stem>-resolved.json` in the same directory.
 fn derive_default_output_path(input: &Path) -> PathBuf {
-    let stem = input.file_stem().and_then(|s| s.to_str()).unwrap_or("profile");
+    let stem = input
+        .file_stem()
+        .filter(|stem| !stem.is_empty())
+        .map_or_else(|| "profile".to_string(), |stem| stem.to_string_lossy().into_owned());
     let filename = format!("{stem}-resolved.json");
     match input.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent.join(filename),
@@ -193,10 +201,32 @@ mod tests {
     // --- T025: Default output path derivation ---
 
     #[test]
+    fn canonicalizes_resolve_output_before_invocation() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("resolved.json");
+
+        let canonical = canonicalize_output_path(&output).unwrap();
+
+        assert_eq!(canonical, directory.path().canonicalize().unwrap().join("resolved.json"));
+    }
+
+    #[test]
     fn derive_default_output_path_standard() {
         let input = PathBuf::from("/tmp/my-profile.json");
         let output = derive_default_output_path(&input);
         assert_eq!(output, PathBuf::from("/tmp/my-profile-resolved.json"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn derive_default_output_path_preserves_non_utf8_stem_lossily() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let input = PathBuf::from(std::ffi::OsStr::from_bytes(b"profile-\xff.json"));
+        let output = derive_default_output_path(&input);
+
+        assert_ne!(output, PathBuf::from("profile-resolved.json"));
+        assert!(output.to_string_lossy().ends_with("-resolved.json"));
     }
 
     #[test]
@@ -307,7 +337,7 @@ mod tests {
         // Use an oscal-cli-path that doesn't exist to force "not found"
         let result =
             execute(Some(tmp.path()), None, false, 60, Some(Path::new("/nonexistent/oscal-cli")));
-        assert!(matches!(result, Err(ForgeError::OscalCliNotFound)));
+        assert!(matches!(result, Err(ForgeError::OscalCliNotFound)), "{result:?}");
     }
 
     // --- T038: Other commands don't check oscal-cli ---

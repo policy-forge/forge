@@ -59,7 +59,7 @@ pub fn execute_impact(
     filters: model::ImpactFilters,
 ) -> Result<bool, ForgeError> {
     let bytes = io::read_bounded(manifest_path, manifest::MAX_MANIFEST_BYTES)
-        .map_err(|error| impact_error(format!("manifest: {error}")))?;
+        .map_err(|source| impact_error_with_source("manifest", source))?;
     let manifest = manifest::parse(&bytes)?;
     let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
     let (report, mut inputs) = analysis::analyze(manifest_dir, &manifest, filters)?;
@@ -91,7 +91,7 @@ fn render_report(
 fn render_markdown(report: &model::ImpactReport) -> String {
     let mut output = String::new();
     output.push_str("# FORGE framework change impact report\n\n");
-    let _ = writeln!(output, "- Schema: {}", markdown_escape(report.schema_version));
+    let _ = writeln!(output, "- Schema: {}", markdown_escape(&report.schema_version));
     let _ = writeln!(output, "- Status: {}", markdown_escape(report.status.as_str()));
     output.push_str("\n## Resources\n\n");
     output.push_str(
@@ -167,7 +167,7 @@ fn render_html(report: &model::ImpactReport) -> String {
     let _ = writeln!(
         output,
         "<dl><dt>Schema</dt><dd><code>{}</code></dd><dt>Status</dt><dd><code>{}</code></dd></dl>",
-        html_escape(report.schema_version),
+        html_escape(&report.schema_version),
         html_escape(report.status.as_str())
     );
     output.push_str("<h2>Resources</h2>\n<table>\n<thead><tr><th>Revision</th><th>Type</th><th>SHA-256</th><th>Root UUID</th><th>Document version</th><th>OSCAL version</th><th>Resolved catalog SHA-256</th></tr></thead>\n<tbody>\n");
@@ -219,27 +219,14 @@ fn render_html(report: &model::ImpactReport) -> String {
     output
 }
 
-fn summary_counts(report: &model::ImpactReport) -> [(&'static str, usize); 18] {
-    [
-        ("Old controls", report.summary.old_controls),
-        ("New controls", report.summary.new_controls),
-        ("Added", report.summary.added),
-        ("Removed", report.summary.removed),
-        ("Content changed", report.summary.content_changed),
-        ("Identity migrated", report.summary.identity_migrated),
-        ("Unchanged", report.summary.unchanged),
-        ("Findings", report.summary.findings),
-        ("Blocking", report.summary.blocking),
-        ("Review required", report.summary.review_required),
-        ("Informational", report.summary.informational),
-        ("Resolved", report.summary.dispositioned_resolved),
-        ("Accepted risk", report.summary.dispositioned_accepted_risk),
-        ("Still open", report.summary.dispositioned_still_open),
-        ("Undispositioned", report.summary.undispositioned),
+fn summary_counts(report: &model::ImpactReport) -> Vec<(&'static str, usize)> {
+    let mut counts = report.summary.rows().to_vec();
+    counts.extend([
         ("Prior-only dispositions", report.prior_only_dispositions.len()),
         ("Control changes", report.changes.len()),
         ("Review findings", report.findings.len()),
-    ]
+    ]);
+    counts
 }
 
 fn markdown_escape(value: &str) -> String {
@@ -423,6 +410,8 @@ fn gate_fires(report: &model::ImpactReport, fail_on: &FrameworkFailOn) -> bool {
     })
 }
 
+/// Nothing below this validation may precede it; reports must never be written before every
+/// input and destination check succeeds.
 fn validate_destination(inputs: &[PathBuf], output: Option<&Path>) -> Result<(), ForgeError> {
     let Some(output) = output else { return Ok(()) };
     for input in inputs {
@@ -444,11 +433,26 @@ fn paths_alias(left: &Path, right: &Path) -> Result<bool, ForgeError> {
 }
 
 fn escape(value: &str) -> String {
-    value.chars().flat_map(char::escape_default).collect()
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        if character.is_control() {
+            escaped.extend(character.escape_default());
+        } else {
+            escaped.push(character);
+        }
+    }
+    escaped
 }
 
 fn impact_error(message: impl Into<String>) -> ForgeError {
     ForgeError::FrameworkImpact(message.into())
+}
+
+fn impact_error_with_source(
+    context: impl Into<String>,
+    source: impl std::error::Error + Send + Sync + 'static,
+) -> ForgeError {
+    ForgeError::FrameworkImpactWithSource { context: context.into(), source: Box::new(source) }
 }
 
 #[cfg(test)]
@@ -466,7 +470,7 @@ mod tests {
     use crate::mapping::manifest::ResourceType;
 
     use super::{
-        decision_state_filter, gate_fires, github_data, github_property, html_escape,
+        decision_state_filter, escape, gate_fires, github_data, github_property, html_escape,
         markdown_escape, priority_filter, render_github_annotations, render_html, render_markdown,
     };
 
@@ -544,6 +548,11 @@ mod tests {
     }
 
     #[test]
+    fn text_escape_preserves_printable_unicode() {
+        assert_eq!(escape("Version 1–Sécurité\n"), "Version 1–Sécurité\\n");
+    }
+
+    #[test]
     fn report_escaping_covers_markdown_and_html_control_characters() {
         assert_eq!(
             markdown_escape("a|b_*<tag>&\nnext\\"),
@@ -615,7 +624,7 @@ mod tests {
             resolved_catalog_sha256: None,
         };
         ImpactReport {
-            schema_version: crate::framework::model::REPORT_SCHEMA_VERSION,
+            schema_version: crate::framework::model::REPORT_SCHEMA_VERSION.to_string(),
             status: ReportStatus::Complete,
             old: resource.clone(),
             new: resource,

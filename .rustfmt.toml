@@ -1,4 +1,5 @@
 # Rust 1.85+ is required for the 2024 edition formatter setting.
 edition = "2024"
 max_width = 100
+# Dense short constructs are deliberate; changing this requires a one-time reformat.
 use_small_heuristics = "Max"

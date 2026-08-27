@@ -1,15 +1,15 @@
 {
   "profile": {
-    "uuid": "ebc61db4-e66a-4a6c-a6c8-9bf014ca425d",
+    "uuid": "ad752730-1136-5caf-8d1f-bd99ce72f176",
     "metadata": {
       "title": "Policy Baseline Profile",
-      "last-modified": "2026-05-19T01:25:34.058422Z",
+      "last-modified": "2026-08-27T05:13:52.161225Z",
       "version": "1.0.0",
-      "oscal-version": "1.2.0"
+      "oscal-version": "1.2.3"
     },
     "imports": [
       {
-        "href": "/Users/bluby/.hermes/kanban/boards/forge/workspaces/t_86841893/examples/simple-access-control/output/catalog.json",
+        "href": "catalog.json",
         "include-controls": [
           {
             "with-ids": [

@@ -50,9 +50,7 @@ fn input_format(path: &Path) -> Result<InputFormat, ForgeError> {
         "md" | "markdown" => Ok(InputFormat::Markdown),
         "pdf" => Ok(InputFormat::Pdf),
         "docx" => Ok(InputFormat::Docx),
-        extension => {
-            Err(ForgeError::MigrationError(format!("unsupported policy format '.{extension}'")))
-        }
+        extension => Err(ForgeError::UnsupportedFormat { extension: extension.to_string() }),
     }
 }
 

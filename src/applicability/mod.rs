@@ -6,6 +6,7 @@ pub mod model;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -19,7 +20,7 @@ use crate::mapping::model::{
 use crate::{ForgeError, OscalModelType, io, validate};
 
 type SourceSubjectKey = (String, SubjectType, String);
-type RelationshipKey = (String, SubjectType, String, SubjectType, String);
+type RelationshipKey = (Arc<str>, SubjectType, Arc<str>, SubjectType, Arc<str>);
 
 #[derive(Default)]
 struct MappingValidationState {
@@ -29,6 +30,18 @@ struct MappingValidationState {
     source_resources_by_href: BTreeMap<String, ResourceEvidence>,
     source_subject_fingerprints: BTreeMap<SourceSubjectKey, String>,
     relationship_polarities: BTreeMap<RelationshipKey, bool>,
+    relationship_components: BTreeSet<Arc<str>>,
+}
+
+impl MappingValidationState {
+    fn intern_relationship_component(&mut self, value: &str) -> Arc<str> {
+        if let Some(existing) = self.relationship_components.get(value) {
+            return Arc::clone(existing);
+        }
+        let interned = Arc::<str>::from(value);
+        self.relationship_components.insert(Arc::clone(&interned));
+        interned
+    }
 }
 
 /// Fully validated applicability inputs and their deterministic complete report.
@@ -503,11 +516,11 @@ fn validate_mapping_edges(
             }
             for (source_type, source_id) in &source_subjects {
                 let relationship_key = (
-                    source_resource.raw_sha256.clone(),
+                    validation_state.intern_relationship_component(&source_resource.raw_sha256),
                     *source_type,
-                    source_id.clone(),
+                    validation_state.intern_relationship_component(source_id),
                     target.subject_type,
-                    target.id_ref.clone(),
+                    validation_state.intern_relationship_component(&target.id_ref),
                 );
                 if validation_state
                     .relationship_polarities
@@ -923,17 +936,18 @@ fn render_html_report(report: &model::ApplicabilityReport) -> String {
     let _ = writeln!(
         output,
         "<p>Schema <code>{}</code>; manifest SHA-256 <code>{}</code>.</p>",
-        report.schema_version, report.manifest_sha256
+        escape_html(report.schema_version),
+        escape_html(&report.manifest_sha256)
     );
     let _ = writeln!(
         output,
         "<p>Framework: {} <code>{}</code>, root UUID <code>{}</code>, version <code>{}</code>, OSCAL <code>{}</code>, SHA-256 <code>{}</code>.</p>",
-        report.framework.resource_type.as_str(),
+        escape_html(report.framework.resource_type.as_str()),
         escape_html(&report.framework.href),
-        report.framework.root_uuid,
+        escape_html(&report.framework.root_uuid),
         escape_html(&report.framework.document_version),
         escape_html(&report.framework.oscal_version),
-        report.framework.raw_sha256
+        escape_html(&report.framework.raw_sha256)
     );
     append_html_provenance(&mut output, report);
     append_html_counts(&mut output, report);
@@ -950,7 +964,7 @@ fn append_html_provenance(output: &mut String, report: &model::ApplicabilityRepo
             output,
             "<li>Applicability reviewer <code>{}</code> ({}, {})</li>",
             escape_html(&reviewer.key),
-            reviewer_type(reviewer.party_type),
+            escape_html(reviewer_type(reviewer.party_type)),
             escape_html(&reviewer.name)
         );
     }
@@ -958,27 +972,28 @@ fn append_html_provenance(output: &mut String, report: &model::ApplicabilityRepo
         let _ = writeln!(
             output,
             "<li>Mapping Collection <code>{}</code>, version <code>{}</code>, OSCAL <code>{}</code>, SHA-256 <code>{}</code>, reviewed <code>{}</code></li>",
-            mapping.uuid,
+            escape_html(&mapping.uuid.clone()),
             escape_html(&mapping.version),
             escape_html(&mapping.oscal_version),
-            mapping.raw_sha256,
+            escape_html(&mapping.raw_sha256),
             escape_html(&mapping.reviewed_at)
         );
         for source in &mapping.source_resources {
             let _ = writeln!(
                 output,
                 "<li>Policy source {} <code>{}</code>, root UUID <code>{}</code>, version <code>{}</code>, OSCAL <code>{}</code>, SHA-256 <code>{}</code></li>",
-                source.resource_type.as_str(),
+                escape_html(source.resource_type.as_str()),
                 escape_html(&source.href),
-                source.root_uuid,
+                escape_html(&source.root_uuid),
                 escape_html(&source.document_version),
                 escape_html(&source.oscal_version),
-                source.raw_sha256
+                escape_html(&source.raw_sha256)
             );
             if let Some(hash) = &source.resolved_catalog_sha256 {
                 let _ = writeln!(
                     output,
-                    "<li>Policy source resolved Catalog SHA-256 <code>{hash}</code></li>"
+                    "<li>Policy source resolved Catalog SHA-256 <code>{}</code></li>",
+                    escape_html(hash)
                 );
             }
         }
@@ -986,8 +1001,8 @@ fn append_html_provenance(output: &mut String, report: &model::ApplicabilityRepo
             let _ = writeln!(
                 output,
                 "<li>Mapping reviewer <code>{}</code> ({}, {})</li>",
-                reviewer.uuid,
-                reviewer_type(reviewer.reviewer_type),
+                escape_html(&reviewer.uuid.clone()),
+                escape_html(reviewer_type(reviewer.reviewer_type)),
                 escape_html(&reviewer.name)
             );
         }
@@ -1030,7 +1045,7 @@ fn append_html_controls(output: &mut String, report: &model::ApplicabilityReport
             "<tr><td><code>{}</code></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
             escape_html(&control.control_id),
             escape_html(&control.groups.join(", ")),
-            control.classification.as_str(),
+            escape_html(control.classification.as_str()),
             control.reviewer_key.as_deref().map(escape_html).unwrap_or_default(),
             control.reviewed_at.as_deref().map(escape_html).unwrap_or_default(),
             control.rationale.as_deref().map(escape_html).unwrap_or_default(),
@@ -1051,7 +1066,7 @@ fn append_html_queue(output: &mut String, report: &model::ApplicabilityReport) {
             output,
             "<tr><td><code>{}</code></td><td><code>{}</code></td><td>{}</td><td>{}</td></tr>",
             escape_html(&item.control_id),
-            item.reason_code,
+            escape_html(item.reason_code.as_str()),
             item.owner.as_deref().map(escape_html).unwrap_or_default(),
             item.revisit_date.as_deref().map(escape_html).unwrap_or_default()
         );
@@ -1078,13 +1093,16 @@ fn review_required(
             let Some(as_of) = as_of else { return false };
             manifest.decisions.iter().any(|decision| {
                 decision.state == manifest::DecisionState::Deferred
-                    && decision.revisit_date.as_deref().is_some_and(|date| {
-                        chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
-                            .is_ok_and(|revisit| revisit < as_of)
-                    })
+                    && deferred_revisit_is_overdue(decision.revisit_date.as_deref(), as_of)
             })
         }
     }
+}
+
+fn deferred_revisit_is_overdue(revisit_date: Option<&str>, as_of: chrono::NaiveDate) -> bool {
+    revisit_date.is_some_and(|date| {
+        chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").map_or(true, |revisit| revisit < as_of)
+    })
 }
 
 fn parse_gate_date(
@@ -1313,6 +1331,14 @@ mod tests {
     #[test]
     fn text_escape_preserves_printable_unicode_and_escapes_controls() {
         assert_eq!(escape("Sécurité\n"), "Sécurité\\n");
+    }
+
+    #[test]
+    fn malformed_deferred_revisit_date_requires_review() {
+        let as_of =
+            chrono::NaiveDate::from_ymd_opt(2026, 8, 26).expect("fixture date must be valid");
+        assert!(deferred_revisit_is_overdue(Some("not-a-date"), as_of));
+        assert!(!deferred_revisit_is_overdue(Some("2026-08-26"), as_of));
     }
 
     #[test]

@@ -34,8 +34,8 @@ impl fmt::Display for ArtifactType {
 pub struct ControlSnapshot {
     /// The control identifier (e.g., `"ac-1"`).
     pub control_id: String,
-    /// The UUID of the control.
-    pub uuid: String,
+    /// The UUID of the control, if present in the source artifact.
+    pub uuid: Option<String>,
     /// The control title, if present in the source document.
     pub title: Option<String>,
     /// The control description, if present in the source document.
@@ -68,24 +68,24 @@ pub enum DiffEntry {
     Added {
         /// The control identifier.
         control_id: String,
-        /// The UUID assigned in the new artifact.
-        new_uuid: String,
+        /// The UUID assigned in the new artifact, if present.
+        new_uuid: Option<String>,
     },
     /// The control is present only in the old artifact.
     Removed {
         /// The control identifier.
         control_id: String,
-        /// The UUID from the old artifact.
-        old_uuid: String,
+        /// The UUID from the old artifact, if present.
+        old_uuid: Option<String>,
     },
     /// The control exists in both artifacts but its field values differ.
     Changed {
         /// The control identifier.
         control_id: String,
-        /// The UUID from the old artifact.
-        old_uuid: String,
-        /// The UUID from the new artifact.
-        new_uuid: String,
+        /// The UUID from the old artifact, if present.
+        old_uuid: Option<String>,
+        /// The UUID from the new artifact, if present.
+        new_uuid: Option<String>,
         /// The list of field-level changes detected.
         field_changes: Vec<FieldChange>,
     },
@@ -93,10 +93,10 @@ pub enum DiffEntry {
     UuidChanged {
         /// The control identifier.
         control_id: String,
-        /// The UUID from the old artifact.
-        old_uuid: String,
-        /// The UUID from the new artifact.
-        new_uuid: String,
+        /// The UUID from the old artifact, if present.
+        old_uuid: Option<String>,
+        /// The UUID from the new artifact, if present.
+        new_uuid: Option<String>,
     },
 }
 
@@ -110,7 +110,7 @@ impl DiffEntry {
     ///
     /// let entry = DiffEntry::Added {
     ///     control_id: "ac-1".into(),
-    ///     new_uuid: "abc-123".into(),
+    ///     new_uuid: Some("abc-123".into()),
     /// };
     /// assert_eq!(entry.control_id(), "ac-1");
     /// ```

@@ -124,6 +124,8 @@ pub fn execute_init(
     crate::cli::output::write_output(&rendered, output)
 }
 
+// NOTE: This helper follows symlinks and performs no traversal containment checks; callers must
+// pass only trusted CLI arguments, never manifest-controlled paths.
 fn scaffold_resource(
     path: &Path,
     resolved_catalog: Option<&Path>,
@@ -431,6 +433,8 @@ fn same_file_identity(left: &Path, right: &Path) -> Result<bool, ForgeError> {
 }
 
 #[cfg(windows)]
+// Identity checks require read access to both paths. An error deliberately aborts the write
+// because an unreadable destination cannot be verified safe.
 fn same_file_identity(left: &Path, right: &Path) -> Result<bool, ForgeError> {
     windows_file_identity::same_file(left, right)
         .map_err(|error| mapping_error(format!("cannot compare file identities: {error}")))
@@ -513,7 +517,13 @@ fn path_identity(path: &Path) -> Result<PathBuf, ForgeError> {
     let canonical_parent = parent.canonicalize().map_err(|error| {
         mapping_error(format!("cannot resolve parent of '{}': {error}", path.display()))
     })?;
-    Ok(canonical_parent.join(path.file_name().unwrap_or_default()))
+    let Some(file_name) = path.file_name() else {
+        return Err(mapping_error(format!(
+            "cannot determine file component of '{}'",
+            path.display()
+        )));
+    };
+    Ok(canonical_parent.join(file_name))
 }
 
 fn escape(value: &str) -> String {
@@ -588,5 +598,12 @@ mod tests {
             &MappingFailOn::SubjectChange
         ));
         assert!(review_required(&report_with(baseline::CODE_NEW_GAP), &MappingFailOn::GapIncrease));
+    }
+
+    #[test]
+    fn componentless_destination_path_is_rejected() {
+        let error = path_identity(Path::new(""))
+            .expect_err("componentless destination must not receive a shared identity");
+        assert!(error.to_string().contains("cannot determine file component"));
     }
 }

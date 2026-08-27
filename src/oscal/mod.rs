@@ -49,6 +49,10 @@ pub use implemented_requirements::{
     ControlImplementation, ImplementedRequirement, build_control_implementations,
 };
 /// Metadata types and assembly function.
+///
+/// [`OscalMetadata`] is the canonical shared metadata type used by Profile and
+/// Component Definition artifacts. Catalogs retain their separately shaped
+/// placeholder metadata type at [`catalog::OscalMetadata`] until catalog assembly.
 pub use metadata::{MetadataOptions, OSCAL_VERSION, OscalMetadata, assemble_metadata};
 /// Part and Prop types with builder functions.
 pub use parts::{OscalPart, OscalProp, build_control_parts, generate_part_id};

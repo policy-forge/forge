@@ -84,9 +84,10 @@ pub fn analyze(
     validate_filters(&filters)?;
     let old = load_framework_resource(manifest_dir, "$.old", &manifest.old)?;
     let new = load_framework_resource(manifest_dir, "$.new", &manifest.new)?;
-    if filters.group.is_some() {
+    if let Some(group_id) = filters.group.as_deref() {
         validate_group_ids("$.old", &old.inventory)?;
         validate_group_ids("$.new", &new.inventory)?;
+        validate_requested_group(group_id, &old.inventory, &new.inventory)?;
     }
     let mut input_paths = vec![old.path.clone(), new.path.clone()];
     for resource in [&manifest.old, &manifest.new] {
@@ -116,6 +117,9 @@ pub fn analyze(
     let mut findings =
         build_findings(&changes, &portfolio.references, applicability.as_ref(), &old, &new)?;
     add_metadata_finding(&mut findings, &changes, &old, &new)?;
+    if manifest.successor_map.is_none() {
+        add_missing_migration_evidence_finding(&mut findings, &changes, &old, &new)?;
+    }
     attach_framework_groups(&mut findings, &old.inventory, &new.inventory);
     findings.sort_by(|left, right| {
         (
@@ -137,7 +141,7 @@ pub fn analyze(
     summary.old_controls = old.inventory.count(SubjectType::Control);
     summary.new_controls = new.inventory.count(SubjectType::Control);
     let mut report = ImpactReport {
-        schema_version: REPORT_SCHEMA_VERSION,
+        schema_version: REPORT_SCHEMA_VERSION.to_string(),
         status: ReportStatus::Complete,
         old: old.evidence,
         new: new.evidence,
@@ -200,6 +204,26 @@ fn validate_group_ids(label: &str, inventory: &Inventory) -> Result<(), ForgeErr
     Ok(())
 }
 
+fn validate_requested_group(
+    group_id: &str,
+    old: &Inventory,
+    new: &Inventory,
+) -> Result<(), ForgeError> {
+    if inventory_has_group_id(old, group_id) || inventory_has_group_id(new, group_id) {
+        return Ok(());
+    }
+    Err(impact_error(format!(
+        "--group '{}' does not exist in the old or new framework",
+        bounded(group_id)
+    )))
+}
+
+fn inventory_has_group_id(inventory: &Inventory, group_id: &str) -> bool {
+    inventory.ids_of_type(SubjectType::Control).iter().any(|control_id| {
+        inventory.groups_for_control(control_id).iter().any(|candidate| candidate == group_id)
+    })
+}
+
 fn attach_framework_groups(findings: &mut [ImpactFinding], old: &Inventory, new: &Inventory) {
     for finding in findings {
         let mut groups = BTreeSet::new();
@@ -257,6 +281,52 @@ fn add_metadata_finding(
             FindingContext {
                 identity: "catalog-metadata".to_string(),
                 dependency_path: vec!["catalog-metadata".to_string()],
+                affected_artifact_id: None,
+                dependency_id: None,
+                policy_resource_identity: None,
+                prior_gap_classification: None,
+                prior_decision_state: None,
+                owner: None,
+                policy_sources: Vec::new(),
+            },
+        ),
+    )
+}
+
+fn add_missing_migration_evidence_finding(
+    findings: &mut Vec<ImpactFinding>,
+    changes: &[super::model::ControlChange],
+    old: &LoadedResource,
+    new: &LoadedResource,
+) -> Result<(), ForgeError> {
+    if !changes
+        .iter()
+        .any(|change| matches!(change.change_class, ChangeClass::Added | ChangeClass::Removed))
+    {
+        return Ok(());
+    }
+    let evidence_change = super::model::ControlChange {
+        subject_id: "$migration-evidence".to_string(),
+        change_class: ChangeClass::Unchanged,
+        old_sha256: None,
+        new_sha256: None,
+        old_subjects: Vec::new(),
+        new_subjects: Vec::new(),
+        migration: None,
+    };
+    push_finding(
+        findings,
+        finding(
+            old,
+            new,
+            &evidence_change,
+            "$migration-evidence",
+            FindingPriority::Informational,
+            ReasonCode::MigrationEvidenceMissing,
+            RequiredAction::ReviewIdentityMigration,
+            FindingContext {
+                identity: "migration-evidence-missing".to_string(),
+                dependency_path: vec!["successor-map approval trail".to_string()],
                 affected_artifact_id: None,
                 dependency_id: None,
                 policy_resource_identity: None,
@@ -430,8 +500,8 @@ fn load_framework_resource(
 fn load_successor_map(
     path: &Path,
     input_paths: &mut Vec<PathBuf>,
-) -> Result<crate::migration::successor::SuccessorMap, ForgeError> {
-    let successor_map = crate::migration::successor::load(path).map_err(map_migration_error)?;
+) -> Result<crate::migration::SuccessorMap, ForgeError> {
+    let successor_map = crate::migration::load(path).map_err(map_migration_error)?;
     input_paths.push(path.to_path_buf());
     Ok(successor_map)
 }
@@ -439,7 +509,7 @@ fn load_successor_map(
 fn classify(
     old: &Inventory,
     new: &Inventory,
-    successor_map: Option<&crate::migration::successor::SuccessorMap>,
+    successor_map: Option<&crate::migration::SuccessorMap>,
 ) -> Result<Vec<super::model::ControlChange>, ForgeError> {
     let old_ids = old.ids_of_type(SubjectType::Control);
     let new_ids = new.ids_of_type(SubjectType::Control);
@@ -473,7 +543,9 @@ fn classify(
                 migration: Some(IdentityMigrationEvidence {
                     relationship: relationship.relationship,
                     approved_by: relationship.approved_by.clone(),
-                    approved_at: relationship.approved_at.clone(),
+                    approved_at: relationship
+                        .approved_at
+                        .to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true),
                     rationale: relationship.rationale.clone(),
                 }),
             });
@@ -513,7 +585,7 @@ fn classify(
 }
 
 fn validate_migration_ids(
-    relationship: &crate::migration::successor::SuccessorRelationship,
+    relationship: &crate::migration::SuccessorRelationship,
     old_ids: &BTreeSet<String>,
     new_ids: &BTreeSet<String>,
     stable_ids: &BTreeSet<String>,
@@ -1245,24 +1317,55 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        MAX_FINDINGS, apply_filters, classify, current_finding_indexes, ensure_finding_slot,
-        parse_mapping_value, update_disposition_summary, validate_prior_report,
+        MAX_FINDINGS, add_missing_migration_evidence_finding, apply_filters, classify,
+        current_finding_indexes, ensure_finding_slot, parse_mapping_value,
+        update_disposition_summary, validate_prior_report, validate_requested_group,
     };
     use crate::framework::disposition::{DispositionRecord, DispositionStatus};
     use crate::framework::model::{
         ChangeClass, ChangeSummary, FindingPriority, ImpactFilters, ImpactFinding, ImpactReport,
         ReasonCode, ReportStatus, RequiredAction,
     };
-    use crate::mapping::inventory::Inventory;
-    use crate::mapping::inventory::ResourceEvidence;
+    use crate::mapping::inventory::{Inventory, LoadedResource, ResourceEvidence};
     use crate::mapping::manifest::{ResourceManifest, ResourceType, SubjectType};
-    use crate::migration::successor::{RelationshipType, SuccessorMap, SuccessorRelationship};
+    use crate::migration::{RelationshipType, SuccessorMap, SuccessorRelationship};
 
     #[test]
     fn finding_limit_is_checked_before_the_next_allocation() {
         assert!(ensure_finding_slot(MAX_FINDINGS - 1).is_ok());
         let error = ensure_finding_slot(MAX_FINDINGS).unwrap_err();
         assert!(error.to_string().contains("100000 finding limit"));
+    }
+
+    #[test]
+    fn unknown_framework_group_is_rejected() {
+        let old = inventory(&[("old", "old")]);
+        let new = inventory(&[("new", "new")]);
+
+        let error = validate_requested_group("missing-group", &old, &new)
+            .expect_err("unknown group must fail");
+        assert!(
+            error
+                .to_string()
+                .contains("--group 'missing-group' does not exist in the old or new framework")
+        );
+        assert!(validate_requested_group("fixture-group", &old, &new).is_ok());
+    }
+
+    #[test]
+    fn missing_successor_map_emits_migration_evidence_finding() {
+        let old = loaded_resource(&[("old-control", "old")]);
+        let new = loaded_resource(&[("new-control", "new")]);
+        let changes = classify(&old.inventory, &new.inventory, None).expect("classify controls");
+        let mut findings = Vec::new();
+
+        add_missing_migration_evidence_finding(&mut findings, &changes, &old, &new)
+            .expect("add migration evidence finding");
+
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].priority, FindingPriority::Informational);
+        assert_eq!(findings[0].reason_code, ReasonCode::MigrationEvidenceMissing);
+        assert_eq!(findings[0].required_action, RequiredAction::ReviewIdentityMigration);
     }
 
     #[test]
@@ -1482,9 +1585,25 @@ mod tests {
         .inventory
     }
 
+    fn loaded_resource(controls: &[(&str, &str)]) -> LoadedResource {
+        LoadedResource {
+            path: "catalog.json".into(),
+            evidence: ResourceEvidence {
+                resource_type: ResourceType::Catalog,
+                href: "catalog.json".to_string(),
+                raw_sha256: "a".repeat(64),
+                root_uuid: "11111111-1111-4111-8111-111111111111".to_string(),
+                document_version: "1.0.0".to_string(),
+                oscal_version: crate::oscal::OSCAL_VERSION.to_string(),
+                resolved_catalog_sha256: None,
+            },
+            inventory: inventory(controls),
+        }
+    }
+
     fn successor_map(relationships: Vec<SuccessorRelationship>) -> SuccessorMap {
         SuccessorMap {
-            schema_version: crate::migration::successor::SUCCESSOR_MAP_SCHEMA_VERSION.to_string(),
+            schema_version: crate::migration::SUCCESSOR_MAP_SCHEMA_VERSION.to_string(),
             relationships,
         }
     }
@@ -1499,7 +1618,8 @@ mod tests {
             old_ids: old_ids.iter().map(|id| (*id).to_string()).collect(),
             new_ids: new_ids.iter().map(|id| (*id).to_string()).collect(),
             approved_by: "reviewer".to_string(),
-            approved_at: "2026-08-26T12:00:00Z".to_string(),
+            approved_at: chrono::DateTime::parse_from_rfc3339("2026-08-26T12:00:00Z")
+                .expect("fixture timestamp must be valid RFC 3339"),
             rationale: "Reviewed migration.".to_string(),
         }
     }
@@ -1515,7 +1635,7 @@ mod tests {
             resolved_catalog_sha256: None,
         };
         ImpactReport {
-            schema_version: crate::framework::model::REPORT_SCHEMA_VERSION,
+            schema_version: crate::framework::model::REPORT_SCHEMA_VERSION.to_string(),
             status: ReportStatus::Complete,
             old: resource.clone(),
             new: resource,

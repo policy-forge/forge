@@ -7,12 +7,14 @@ use crate::error::ForgeError;
 
 /// Write content to a file (atomically) or stdout.
 ///
-/// Handles `BrokenPipe` gracefully (e.g., when piped into `head`) instead of
-/// panicking like `print!` would.
+/// `BrokenPipe` from stdout writing or flushing is treated as successful so pipelines
+/// such as `forge … | head` exit cleanly. File writes use [`crate::io::write_atomic`].
 ///
 /// # Errors
-/// * `ForgeError::Validation` if parent directory does not exist
-/// * `ForgeError::Io` if writing stdout or the named output file fails
+/// * `ForgeError::Validation` if the output parent is absent at the advisory
+///   preflight check. The parent can still disappear before the atomic write.
+/// * `ForgeError::Io` if writing or flushing stdout, or creating/writing the
+///   atomic file output, fails.
 pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), ForgeError> {
     match output_path {
         None => {
@@ -40,6 +42,8 @@ pub fn write_output(content: &str, output_path: Option<&Path>) -> Result<(), For
             Ok(())
         }
         Some(path) => {
+            // This only improves the missing-parent diagnostic; `write_atomic` remains
+            // authoritative because the filesystem can change after this check.
             if let Some(parent) = path.parent()
                 && !parent.as_os_str().is_empty()
                 && !parent.exists()

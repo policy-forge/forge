@@ -11,21 +11,19 @@
 //! cargo bench --bench xml_benchmark
 //! ```
 
-mod common;
-
 use std::hint::black_box;
 use std::path::Path;
 
-use common::MAX_SIZE_BYTES;
 use criterion::{Criterion, criterion_group, criterion_main};
+use forge::DEFAULT_MAX_SIZE_BYTES;
 
 /// Path to the committed 50-page synthetic policy fixture.
 const FIXTURE_PATH: &str = "tests/fixtures/synthetic-50page-policy.md";
 
 /// Prepare the shared document input for XML serialization benchmarks.
 fn prepared_document(fixture_path: &Path) -> forge::model::PolicyDocument {
-    let ingested =
-        forge::ingest::ingest_file(fixture_path, MAX_SIZE_BYTES).expect("fixture ingestion failed");
+    let ingested = forge::ingest::ingest_file(fixture_path, DEFAULT_MAX_SIZE_BYTES)
+        .expect("fixture ingestion failed");
     let content = ingested.reconstruct_content();
     let sections = forge::parse::extract_sections(&content).expect("section extraction failed");
     let clauses = forge::parse::extract_clauses(&content).expect("clause extraction failed");
@@ -47,6 +45,10 @@ fn build_catalog_from_fixture(fixture_path: &Path) -> forge::oscal::catalog::Osc
     let mut trace_links = forge::TraceLinkCollection::new();
     let mut catalog =
         forge::oscal::build_catalog(&doc, Some(&mut trace_links)).expect("catalog assembly failed");
+    debug_assert!(
+        !catalog.groups.is_empty(),
+        "catalog assembly produced no groups for the XML benchmark"
+    );
     forge::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
 
     let metadata =
@@ -97,7 +99,7 @@ fn bench_xml_serialization(c: &mut Criterion) {
     group.bench_function("serialize_catalog_to_xml", |b| {
         b.iter(|| {
             let xml = forge::export::xml_serializer::serialize_catalog_to_xml(black_box(&catalog))
-                .unwrap();
+                .expect("catalog XML serialization benchmark must succeed");
             black_box(xml)
         });
     });
@@ -107,7 +109,7 @@ fn bench_xml_serialization(c: &mut Criterion) {
             let xml = forge::export::xml_serializer::serialize_component_definition_to_xml(
                 black_box(&component_def),
             )
-            .unwrap();
+            .expect("component definition XML serialization benchmark must succeed");
             black_box(xml)
         });
     });

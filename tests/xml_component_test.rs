@@ -4,14 +4,14 @@ mod common;
 
 use std::path::Path;
 
-use common::MAX_SIZE_BYTES;
+use common::DEFAULT_MAX_SIZE_BYTES;
 use forge::cli::OutputFormat;
 
 /// Helper: run component pipeline with XML format, return XML string.
 fn run_component_xml(fixture: &Path, source_profile: Option<&str>) -> String {
     forge::pipeline::run_component_pipeline(
         fixture,
-        MAX_SIZE_BYTES,
+        DEFAULT_MAX_SIZE_BYTES,
         source_profile,
         &OutputFormat::Xml,
         None,
@@ -24,7 +24,7 @@ fn run_component_xml(fixture: &Path, source_profile: Option<&str>) -> String {
 fn run_component_json(fixture: &Path, source_profile: Option<&str>) -> String {
     forge::pipeline::run_component_pipeline(
         fixture,
-        MAX_SIZE_BYTES,
+        DEFAULT_MAX_SIZE_BYTES,
         source_profile,
         &OutputFormat::Json,
         None,

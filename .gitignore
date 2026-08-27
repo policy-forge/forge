@@ -1,11 +1,14 @@
 # === Rust / Cargo ===
 /target/
-debug/
-release/
+/debug/
+/release/
 **/*.rs.bk
 *.rlib
-*.prof*
-Cargo.lock
+*.profdata
+*.profraw
+perf.data*
+*.pprof
+# Cargo.lock must stay committed (SEC-9); do not ignore it.
 *.log
 
 # === Build artifacts ===
@@ -17,7 +20,7 @@ Cargo.lock
 # === Testing ===
 **/mutants.out*/
 tarpaulin-report.html
-coverage/
+/coverage/
 
 # === IDEs & Editors ===
 .idea/
@@ -25,7 +28,6 @@ coverage/
 *.swp
 *.swo
 *~
-.DS_Store
 *.tmp
 
 # === Environment & Secrets ===

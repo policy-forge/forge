@@ -37,23 +37,24 @@ static ADVISORY_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
-/// Result of modality detection for a single policy requirement.
-///
-/// Carries the classification plus diagnostic metadata for logging.
-/// Not part of the public API — used internally by [`annotate_modalities`].
+/// The mutually exclusive result of modality classification.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ModalityOutcome {
+    ExplicitNormative,
+    ExplicitAdvisory,
+    Default,
+    Conflict,
+}
+
+/// Internal classification output and diagnostic metadata.
 #[derive(Debug)]
-pub struct ModalityResult {
+pub(crate) struct ModalityResult<'a> {
     /// The detected modality classification.
-    pub modality: Modality,
-    /// Verb strings matched in the requirement text.
-    /// Empty when `is_default` is `true` (no verbs found).
-    /// Contains verbs from both categories when `has_conflict` is `true`.
-    pub matched_verbs: Vec<String>,
-    /// `true` when no modality verb was detected; default (Normative) applied.
-    pub is_default: bool,
-    /// `true` when both normative and advisory verbs were detected.
-    /// Normative classification applied (strongest wins).
-    pub has_conflict: bool,
+    pub(crate) modality: Modality,
+    /// Borrowed verb strings matched in the requirement text.
+    pub(crate) matched_verbs: Vec<&'a str>,
+    /// The mutually exclusive classification outcome.
+    pub(crate) outcome: ModalityOutcome,
 }
 
 // ─── Public Functions ────────────────────────────────────────────────────
@@ -61,54 +62,49 @@ pub struct ModalityResult {
 /// Detect modality for a single policy requirement.
 ///
 /// Scans `requirement.text` against `NORMATIVE_PATTERN` and `ADVISORY_PATTERN`.
-/// Returns a [`ModalityResult`] with the classification and diagnostic metadata.
+/// Returns internal classification and borrowed diagnostic matches.
 ///
 /// Classification rules:
 /// 1. Normative verbs only → `Modality::Normative`
 /// 2. Advisory verbs only → `Modality::Advisory`
-/// 3. Both found (conflict) → `Modality::Normative`, `has_conflict = true`
-/// 4. Neither found (default) → `Modality::Normative`, `is_default = true`
+/// 3. Both found (conflict) → `Modality::Normative`
+/// 4. Neither found (default) → `Modality::Normative`
 #[must_use]
-pub fn detect_modality(requirement: &PolicyRequirement) -> ModalityResult {
+pub(crate) fn detect_modality(requirement: &PolicyRequirement) -> ModalityResult<'_> {
     let text = &requirement.text;
+    let normative_hits: Vec<&str> = NORMATIVE_PATTERN
+        .captures_iter(text)
+        .filter_map(|captures| captures.get(1).map(|verb| verb.as_str()))
+        .collect();
+    let advisory_hits: Vec<&str> = ADVISORY_PATTERN
+        .captures_iter(text)
+        .filter_map(|captures| captures.get(1).map(|verb| verb.as_str()))
+        .collect();
 
-    let normative_hits: Vec<String> =
-        NORMATIVE_PATTERN.captures_iter(text).map(|c| c[1].to_lowercase()).collect();
-
-    let advisory_hits: Vec<String> =
-        ADVISORY_PATTERN.captures_iter(text).map(|c| c[1].to_lowercase()).collect();
-
-    let has_normative = !normative_hits.is_empty();
-    let has_advisory = !advisory_hits.is_empty();
-
-    match (has_normative, has_advisory) {
-        (true, false) => ModalityResult {
+    match (normative_hits.is_empty(), advisory_hits.is_empty()) {
+        (false, true) => ModalityResult {
             modality: Modality::Normative,
             matched_verbs: normative_hits,
-            is_default: false,
-            has_conflict: false,
+            outcome: ModalityOutcome::ExplicitNormative,
         },
-        (false, true) => ModalityResult {
+        (true, false) => ModalityResult {
             modality: Modality::Advisory,
             matched_verbs: advisory_hits,
-            is_default: false,
-            has_conflict: false,
+            outcome: ModalityOutcome::ExplicitAdvisory,
         },
-        (true, true) => {
-            let mut combined = normative_hits;
-            combined.extend(advisory_hits);
+        (false, false) => {
+            let mut matched_verbs = normative_hits;
+            matched_verbs.extend(advisory_hits);
             ModalityResult {
                 modality: Modality::Normative,
-                matched_verbs: combined,
-                is_default: false,
-                has_conflict: true,
+                matched_verbs,
+                outcome: ModalityOutcome::Conflict,
             }
         }
-        (false, false) => ModalityResult {
+        (true, true) => ModalityResult {
             modality: Modality::Normative,
-            matched_verbs: vec![],
-            is_default: true,
-            has_conflict: false,
+            matched_verbs: Vec::new(),
+            outcome: ModalityOutcome::Default,
         },
     }
 }
@@ -119,8 +115,8 @@ pub fn detect_modality(requirement: &PolicyRequirement) -> ModalityResult {
 /// children), calls [`detect_modality`] on each, and sets `requirement.modality`.
 ///
 /// Emits `tracing::warn!` for:
-/// - Requirements with no modality verb detected (`is_default = true`)
-/// - Requirements with conflicting normative/advisory verbs (`has_conflict = true`)
+/// - Requirements with no modality verb detected (`ModalityOutcome::Default`)
+/// - Requirements with conflicting normative/advisory verbs (`ModalityOutcome::Conflict`)
 ///
 /// Emits `tracing::debug!` for matched verbs on every requirement.
 ///
@@ -140,19 +136,29 @@ fn annotate_section(section: &mut PolicySection) {
     for req in &mut section.requirements {
         let result = detect_modality(req);
 
-        if result.is_default || result.has_conflict {
-            if result.is_default {
+        match result.outcome {
+            ModalityOutcome::Default => {
                 warn!("No modality verb detected — defaulting to Normative");
-            } else {
+            }
+            ModalityOutcome::Conflict => {
                 warn!(
-                    verbs = ?result.matched_verbs,
+                    verbs = ?result
+                        .matched_verbs
+                        .iter()
+                        .map(|verb| verb.to_ascii_lowercase())
+                        .collect::<Vec<_>>(),
                     "Conflicting normative/advisory verbs — Normative wins"
                 );
             }
+            ModalityOutcome::ExplicitNormative | ModalityOutcome::ExplicitAdvisory => {}
         }
 
         debug!(
-            verbs = ?result.matched_verbs,
+            verbs = ?result
+                .matched_verbs
+                .iter()
+                .map(|verb| verb.to_ascii_lowercase())
+                .collect::<Vec<_>>(),
             modality = ?result.modality,
             "Modality detected"
         );
@@ -203,8 +209,14 @@ mod tests {
                 !result.matched_verbs.is_empty(),
                 "Expected non-empty matched_verbs for '{verb}'"
             );
-            assert!(!result.is_default, "is_default should be false for '{verb}'");
-            assert!(!result.has_conflict, "has_conflict should be false for '{verb}'");
+            assert!(
+                result.outcome != ModalityOutcome::Default,
+                "is_default should be false for '{verb}'"
+            );
+            assert!(
+                result.outcome != ModalityOutcome::Conflict,
+                "has_conflict should be false for '{verb}'"
+            );
         }
     }
 
@@ -220,8 +232,14 @@ mod tests {
                 !result.matched_verbs.is_empty(),
                 "Expected non-empty matched_verbs for '{verb}'"
             );
-            assert!(!result.is_default, "is_default should be false for '{verb}'");
-            assert!(!result.has_conflict, "has_conflict should be false for '{verb}'");
+            assert!(
+                result.outcome != ModalityOutcome::Default,
+                "is_default should be false for '{verb}'"
+            );
+            assert!(
+                result.outcome != ModalityOutcome::Conflict,
+                "has_conflict should be false for '{verb}'"
+            );
         }
     }
 
@@ -307,9 +325,12 @@ mod tests {
         let r = req("Encrypt all data at rest using approved algorithms.");
         let result = detect_modality(&r);
         assert_eq!(result.modality, Modality::Normative);
-        assert!(result.is_default, "is_default should be true when no verb found");
+        assert!(
+            result.outcome == ModalityOutcome::Default,
+            "is_default should be true when no verb found"
+        );
         assert!(result.matched_verbs.is_empty(), "matched_verbs should be empty for default case");
-        assert!(!result.has_conflict);
+        assert_ne!(result.outcome, ModalityOutcome::Conflict);
     }
 
     // ── T025: conflict → Normative wins, has_conflict=true ───────────
@@ -319,39 +340,30 @@ mod tests {
         let r = req("Systems must implement and should log all events.");
         let result = detect_modality(&r);
         assert_eq!(result.modality, Modality::Normative);
-        assert!(result.has_conflict, "has_conflict should be true when both verb types found");
-        assert!(!result.is_default);
         assert!(
-            result.matched_verbs.contains(&"must".to_string()),
-            "matched_verbs should contain 'must'"
+            result.outcome == ModalityOutcome::Conflict,
+            "has_conflict should be true when both verb types found"
         );
-        assert!(
-            result.matched_verbs.contains(&"should".to_string()),
-            "matched_verbs should contain 'should'"
-        );
+        assert_ne!(result.outcome, ModalityOutcome::Default);
+        assert!(result.matched_verbs.contains(&"must"), "matched_verbs should contain 'must'");
+        assert!(result.matched_verbs.contains(&"should"), "matched_verbs should contain 'should'");
     }
 
     // ── T026: is_default and has_conflict are mutually exclusive ─────
 
     #[test]
-    fn invariant_is_default_and_has_conflict_mutually_exclusive() {
-        let inputs = [
-            "Organizations must implement MFA.",
-            "Systems should log attempts.",
-            "Encrypt all data at rest.",
-            "Systems must implement and should log.",
-            "MUST enable TLS.",
-            "MAY conduct reviews.",
-            "customize the configuration",
+    fn modality_outcome_covers_each_classification() {
+        let cases = [
+            ("Organizations must implement MFA.", ModalityOutcome::ExplicitNormative),
+            ("Systems should log attempts.", ModalityOutcome::ExplicitAdvisory),
+            ("Encrypt all data at rest.", ModalityOutcome::Default),
+            ("Systems must implement and should log.", ModalityOutcome::Conflict),
         ];
-        for text in &inputs {
-            let r = req(text);
-            let result = detect_modality(&r);
-            assert!(
-                !(result.is_default && result.has_conflict),
-                "Invariant violated for '{text}': is_default={} and has_conflict={} are both true",
-                result.is_default,
-                result.has_conflict
+        for (text, expected) in cases {
+            assert_eq!(
+                detect_modality(&req(text)).outcome,
+                expected,
+                "unexpected outcome for {text}"
             );
         }
     }
@@ -363,12 +375,9 @@ mod tests {
         let r = req("Organizations must not share passwords.");
         let result = detect_modality(&r);
         assert_eq!(result.modality, Modality::Normative);
-        assert!(
-            result.matched_verbs.contains(&"must".to_string()),
-            "Expected 'must' in matched_verbs"
-        );
-        assert!(!result.is_default);
-        assert!(!result.has_conflict);
+        assert!(result.matched_verbs.contains(&"must"), "Expected 'must' in matched_verbs");
+        assert_ne!(result.outcome, ModalityOutcome::Default);
+        assert_ne!(result.outcome, ModalityOutcome::Conflict);
     }
 
     // ── T037: "required" as adjective still classifies normative ─────
@@ -379,7 +388,7 @@ mod tests {
         let result = detect_modality(&r);
         assert_eq!(result.modality, Modality::Normative);
         assert!(!result.matched_verbs.is_empty());
-        assert!(!result.is_default);
+        assert_ne!(result.outcome, ModalityOutcome::Default);
     }
 
     // ── nested children sections are annotated recursively ────────────

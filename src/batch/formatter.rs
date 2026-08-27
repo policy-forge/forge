@@ -14,6 +14,7 @@ use super::summary::{BatchSummary, FileOutcome};
 #[must_use]
 pub fn format_batch_summary(summary: &BatchSummary) -> String {
     let mut buf = String::new();
+    // Writing to a String cannot fail; discard fmt::Result to keep the formatter infallible.
 
     let total_secs = summary.total_duration().as_secs_f64();
     let files_label = if summary.total_files() == 1 { "file" } else { "files" };
@@ -173,6 +174,42 @@ mod tests {
         let output = format_batch_summary(&summary);
         assert!(!output.contains('\u{1b}'));
         assert!(output.contains("Parse error: bad  [2J"));
+        assert_eq!(output.lines().filter(|line| line.contains("bad.md")).count(), 1);
+    }
+
+    #[test]
+    fn empty_summary_has_exact_header() {
+        let summary = BatchSummary::from_results(Vec::new(), Duration::ZERO);
+
+        assert_eq!(
+            format_batch_summary(&summary),
+            "Batch conversion complete: 0 files (0 succeeded, 0 failed) in 0.00s\n\n"
+        );
+    }
+
+    #[test]
+    fn componentless_input_uses_full_path() {
+        let summary = BatchSummary::from_results(
+            vec![FileResult::success(PathBuf::from(""), PathBuf::from("out.json"), Duration::ZERO)],
+            Duration::ZERO,
+        );
+
+        assert!(format_batch_summary(&summary).contains("✓  → out.json (0.00s)"));
+    }
+
+    #[test]
+    fn multi_line_failure_is_rendered_as_one_row() {
+        let summary = BatchSummary::from_results(
+            vec![FileResult::failure(
+                PathBuf::from("bad.md"),
+                crate::error::ForgeError::Parse("first\nsecond".to_string()),
+                Duration::ZERO,
+            )],
+            Duration::ZERO,
+        );
+
+        let output = format_batch_summary(&summary);
+        assert!(output.contains("Parse error: first second"));
         assert_eq!(output.lines().filter(|line| line.contains("bad.md")).count(), 1);
     }
 }

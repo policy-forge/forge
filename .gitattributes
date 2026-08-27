@@ -12,6 +12,11 @@
 *.snap text eol=lf
 *.txt text eol=lf
 *.sh text eol=lf
+# Keep cross-platform metadata and PowerShell tooling byte-stable.
+Cargo.lock text eol=lf
+LICENSE text eol=lf
+*.ps1 text eol=crlf
+
 
 # Official NIST OSCAL release assets are byte-pinned by the provenance manifest.
 # This block must remain after *.json text eol=lf: gitattributes is last-match-wins.

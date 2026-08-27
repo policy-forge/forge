@@ -14,6 +14,7 @@ use crate::model::trace::TraceLinkCollection;
 use crate::model::{Citation, DocumentMetadata, PolicyDocument, PolicySection};
 use crate::oscal::back_matter::BackMatter;
 use crate::oscal::metadata::assemble_metadata;
+use crate::parse::atomize::MAX_SECTION_DEPTH;
 use crate::uuid::{BACK_MATTER_NAMESPACE, COMPONENT_NAMESPACE};
 
 // ─── Constants ──────────────────────────────────────────────────────────
@@ -156,7 +157,12 @@ pub fn build_component_definition(
     };
 
     // Step 4: Build documentary component
-    let component_uuid = generate_component_uuid(&title, &version, &document.id);
+    let component_uuid = generate_component_uuid(
+        &title,
+        &version,
+        &document.id,
+        document.metadata.content_hash.as_deref(),
+    );
     let description = format!("Documentary component representing the {title} policy document.");
 
     let component_props =
@@ -227,15 +233,18 @@ fn resolve_version(version: &str) -> String {
 
 /// Generate a deterministic UUID v5 for the documentary component.
 ///
-/// Uses title, version, and document ID as inputs to ensure uniqueness
-/// across different source documents that may share the same title/version.
-fn generate_component_uuid(title: &str, version: &str, document_id: &str) -> Uuid {
-    let input = format!("{title}\0{version}\0{document_id}");
+/// Uses title, version, document ID, and source-content hash as inputs to
+/// distinguish source documents that otherwise resolve to the same defaults.
+fn generate_component_uuid(
+    title: &str,
+    version: &str,
+    document_id: &str,
+    content_hash: Option<&str>,
+) -> Uuid {
+    let content_hash = content_hash.unwrap_or("<no-content-hash>");
+    let input = format!("{title}\0{version}\0{document_id}\0{content_hash}");
     Uuid::new_v5(&COMPONENT_NAMESPACE, input.as_bytes())
 }
-
-/// Maximum recursion depth for section tree traversal (`DoS` protection).
-const MAX_SECTION_DEPTH: usize = 50;
 
 /// Maximum number of unique citations to collect (`DoS` protection).
 const MAX_CITATIONS: usize = 10_000;
@@ -249,8 +258,15 @@ const MAX_CITATIONS: usize = 10_000;
 pub fn collect_all_citations(sections: &[PolicySection]) -> Vec<Citation> {
     let mut citations = Vec::new();
     let mut seen_resource_uuids = HashSet::new();
+    let mut cap_warned = false;
     for section in sections {
-        collect_citations_from_section(section, &mut citations, &mut seen_resource_uuids, 0);
+        collect_citations_from_section(
+            section,
+            &mut citations,
+            &mut seen_resource_uuids,
+            &mut cap_warned,
+            0,
+        );
     }
     citations
 }
@@ -268,6 +284,7 @@ fn collect_citations_from_section(
     section: &PolicySection,
     citations: &mut Vec<Citation>,
     seen_resource_uuids: &mut HashSet<Uuid>,
+    cap_warned: &mut bool,
     depth: usize,
 ) {
     if depth > MAX_SECTION_DEPTH {
@@ -275,27 +292,49 @@ fn collect_citations_from_section(
         return;
     }
     if citations.len() >= MAX_CITATIONS {
-        tracing::warn!(
-            count = citations.len(),
-            "Citation count exceeds safety limit, stopping collection"
-        );
+        if !*cap_warned {
+            tracing::warn!(
+                count = citations.len(),
+                "Citation count exceeds safety limit, truncating back matter"
+            );
+            *cap_warned = true;
+        }
         return;
     }
+
     for req in &section.requirements {
         for citation in &req.citations {
             if citations.len() >= MAX_CITATIONS {
-                return;
+                if !*cap_warned {
+                    tracing::warn!(
+                        count = citations.len(),
+                        "Citation count exceeds safety limit, truncating back matter"
+                    );
+                    *cap_warned = true;
+                }
+                break;
             }
             // Invalid IDs must reach the generator so it can return its typed error.
-            if citation.id.is_empty()
-                || seen_resource_uuids.insert(citation_resource_uuid(citation))
-            {
+            if citation.id.is_empty() {
+                citations.push(citation.clone());
+                continue;
+            }
+
+            let resource_uuid = citation_resource_uuid(citation);
+            if !seen_resource_uuids.contains(&resource_uuid) {
+                seen_resource_uuids.insert(resource_uuid);
                 citations.push(citation.clone());
             }
         }
     }
     for child in &section.children {
-        collect_citations_from_section(child, citations, seen_resource_uuids, depth + 1);
+        collect_citations_from_section(
+            child,
+            citations,
+            seen_resource_uuids,
+            cap_warned,
+            depth + 1,
+        );
     }
 }
 
@@ -503,6 +542,22 @@ mod tests {
     }
 
     // ─── T009: Edge Cases ───────────────────────────────────────────────
+
+    #[test]
+    fn component_uuid_includes_source_content_hash() {
+        let mut first = test_document("", "");
+        let mut second = test_document("", "");
+        first.metadata.content_hash = Some("a".repeat(64));
+        second.metadata.content_hash = Some("b".repeat(64));
+
+        let first = build_component_definition(&first, None, None, None).unwrap();
+        let second = build_component_definition(&second, None, None, None).unwrap();
+
+        assert_ne!(
+            first.component_definition.components[0].uuid,
+            second.component_definition.components[0].uuid
+        );
+    }
 
     #[test]
     fn test_empty_title_defaults() {

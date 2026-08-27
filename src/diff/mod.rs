@@ -112,14 +112,13 @@ fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactTyp
     match detect_model_type(json) {
         Ok(OscalModelType::Catalog) => Ok(ArtifactType::Catalog),
         Ok(OscalModelType::ComponentDefinition) => Ok(ArtifactType::ComponentDefinition),
-        Ok(OscalModelType::Profile) => Err(ForgeError::DiffError(format!(
-            "'{}': Profile artifacts are not supported by diff; expected Catalog or ComponentDefinition",
-            path.display()
-        ))),
-        Ok(OscalModelType::Mapping) => Err(ForgeError::DiffError(format!(
-            "'{}': Control Mapping artifacts are not supported by diff; expected Catalog or ComponentDefinition",
-            path.display()
-        ))),
+        Ok(unsupported @ (OscalModelType::Profile | OscalModelType::Mapping)) => {
+            Err(ForgeError::DiffError(format!(
+                "'{}': {} artifacts are not supported by diff; expected Catalog or ComponentDefinition",
+                path.display(),
+                unsupported.as_str()
+            )))
+        }
         Err(error) => Err(ForgeError::DiffError(format!(
             "'{}': expected a single supported OSCAL root key ('catalog' or 'component-definition'): {error}",
             path.display()
@@ -301,5 +300,32 @@ mod tests {
         let message = error.to_string();
         assert!(message.contains("catalog"));
         assert!(message.contains("component-definition"));
+    }
+
+    #[test]
+    fn test_profile_rejected() {
+        let error =
+            to_artifact_type(&serde_json::json!({"profile": {}}), Path::new("profile.json"))
+                .unwrap_err();
+        assert!(error.to_string().contains("profile artifacts are not supported"));
+    }
+
+    #[test]
+    fn test_mapping_rejected() {
+        let error = to_artifact_type(
+            &serde_json::json!({"mapping-collection": {}}),
+            Path::new("mapping.json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("mapping-collection artifacts are not supported"));
+    }
+
+    #[test]
+    fn test_oversize_diff_file_rejected() {
+        let file = NamedTempFile::new().unwrap();
+        file.as_file().set_len(crate::io::MAX_FILE_SIZE + 1).unwrap();
+
+        let error = read_diff_file(file.path()).unwrap_err();
+        assert!(error.to_string().contains("size limit"));
     }
 }

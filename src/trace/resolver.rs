@@ -29,7 +29,8 @@ pub fn check_source_staleness(
     };
 
     let source_time: chrono::DateTime<chrono::Utc> = source_modified.into();
-    if source_time > parsed.to_utc() { Staleness::Stale } else { Staleness::Fresh }
+    // Treat ties as stale: coarse mtime granularity can hide a post-generation edit.
+    if source_time >= parsed.to_utc() { Staleness::Stale } else { Staleness::Fresh }
 }
 
 /// Validate an optional source line reference against the file's line count.
@@ -68,6 +69,13 @@ mod tests {
                 artifact_time
             ),
             Staleness::Fresh
+        );
+        assert_eq!(
+            check_source_staleness(
+                Some(SystemTime::UNIX_EPOCH + Duration::from_secs(10)),
+                artifact_time
+            ),
+            Staleness::Stale
         );
         assert_eq!(
             check_source_staleness(

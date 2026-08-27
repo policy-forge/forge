@@ -10,7 +10,7 @@ mod common;
 use std::path::Path;
 use std::process::Command;
 
-use common::MAX_SIZE_BYTES;
+use common::DEFAULT_MAX_SIZE_BYTES;
 use tempfile::TempDir;
 
 /// Check if xmllint is available on the system.
@@ -25,7 +25,7 @@ fn xmllint_available() -> bool {
 fn build_catalog_xml(fixture_path: &Path) -> String {
     forge::pipeline::run_catalog_pipeline(
         fixture_path,
-        MAX_SIZE_BYTES,
+        DEFAULT_MAX_SIZE_BYTES,
         &forge::cli::OutputFormat::Xml,
         None,
     )
@@ -37,7 +37,7 @@ fn build_catalog_xml(fixture_path: &Path) -> String {
 fn build_component_definition_xml(fixture_path: &Path) -> String {
     forge::pipeline::run_component_pipeline(
         fixture_path,
-        MAX_SIZE_BYTES,
+        DEFAULT_MAX_SIZE_BYTES,
         Some("./baselines/nist-800-53.json"),
         &forge::cli::OutputFormat::Xml,
         None,

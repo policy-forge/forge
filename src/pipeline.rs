@@ -34,24 +34,22 @@ pub struct SecondaryOutput {
 
 /// Validate a serializable OSCAL envelope against the appropriate JSON schema.
 ///
-/// Serializes the envelope to JSON, validates against the specified OSCAL schema,
-/// and returns the serialized JSON string on success. On validation failure,
-/// returns `ForgeError::SchemaValidation`.
+/// Serializes the envelope to a JSON value for validation, then returns the
+/// pretty-serialized JSON string on success. On validation failure, returns
+/// `ForgeError::SchemaValidation`.
 fn validate_and_serialize<T: serde::Serialize>(
     envelope: &T,
     label: &str,
     model_type: crate::validate::OscalModelType,
 ) -> Result<String, ForgeError> {
-    let json = serde_json::to_string_pretty(envelope)
-        .map_err(|e| ForgeError::Serialization(e.to_string()))?;
-    let json_value: serde_json::Value =
-        serde_json::from_str(&json).map_err(|e| ForgeError::Serialization(e.to_string()))?;
+    let json_value = serde_json::to_value(envelope)
+        .map_err(|error| ForgeError::Serialization(error.to_string()))?;
     let report = crate::validate::run_full_validation(
         &format!("generated {label}"),
         &json_value,
         model_type,
     )
-    .map_err(|e| ForgeError::SchemaValidation(e.to_string()))?;
+    .map_err(|error| ForgeError::SchemaValidation(error.to_string()))?;
     if !report.is_valid() {
         const MAX_REPORTED_ERRORS: usize = 5;
         let errors = report.errors();
@@ -72,7 +70,9 @@ fn validate_and_serialize<T: serde::Serialize>(
             errors.len()
         )));
     }
-    Ok(json)
+
+    serde_json::to_string_pretty(&json_value)
+        .map_err(|error| ForgeError::Serialization(error.to_string()))
 }
 
 /// Compile and cache the embedded OSCAL 1.2.3 Assessment Plan schema.
@@ -236,7 +236,9 @@ pub(crate) fn prepare_document(
         return Err(ForgeError::NoStructureDetected { path: input_path.to_path_buf() });
     }
     if sections.is_empty() {
-        tracing::warn!("No identifiable sections found in input — output will have empty groups");
+        tracing::warn!(
+            "No identifiable sections found in input — list-item content will be grouped under a synthetic 'Preamble' group when present"
+        );
     }
 
     // Step 5: Assemble document
@@ -257,6 +259,7 @@ pub(crate) fn prepare_document(
     // Step 7d: Extract parameters (WI-34, after modality detection)
     let mut doc_with_params = doc_with_modality;
     crate::parameter::extract_parameters(&mut doc_with_params)?;
+    doc_with_params.debug_assert_fully_enriched();
 
     Ok(doc_with_params)
 }
@@ -318,6 +321,9 @@ pub(crate) fn run_catalog_pipeline_prepared(
     // Step 10: Generate back matter from extracted citations
     let all_citations =
         crate::oscal::component_definition::collect_all_citations(&doc_with_ids.sections);
+    // Catalog controls currently retain their requirement citations only as back-matter
+    // resources. Emitting per-control reference links is intentionally deferred so this
+    // pipeline's established catalog serialization remains unchanged.
     let (back_matter_resources, _resource_map) =
         crate::oscal::generate_back_matter(&all_citations)?;
 

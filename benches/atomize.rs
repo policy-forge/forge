@@ -14,14 +14,20 @@ use forge::parse::{atomize_document, atomize_requirement, preliminary_id};
 fn bench_atomize_compound(c: &mut Criterion) {
     let req = make_req("Systems must enforce MFA and must require complex passwords", 1);
     c.bench_function("atomize_requirement/compound_2part", |b| {
-        b.iter(|| atomize_requirement(black_box(&req)).unwrap());
+        b.iter(|| {
+            atomize_requirement(black_box(&req))
+                .expect("atomize_requirement/compound_2part: fixture must atomize")
+        });
     });
 }
 
 fn bench_atomize_atomic(c: &mut Criterion) {
     let req = make_req("All systems must enforce MFA", 1);
     c.bench_function("atomize_requirement/atomic_passthrough", |b| {
-        b.iter(|| atomize_requirement(black_box(&req)).unwrap());
+        b.iter(|| {
+            atomize_requirement(black_box(&req))
+                .expect("atomize_requirement/atomic_passthrough: fixture must atomize")
+        });
     });
 }
 
@@ -78,7 +84,10 @@ fn bench_atomize_document_100(c: &mut Criterion) {
         }],
     };
     c.bench_function("atomize_document/100_mixed_requirements", |b| {
-        b.iter(|| atomize_document(black_box(&doc)).unwrap());
+        b.iter(|| {
+            atomize_document(black_box(&doc))
+                .expect("atomize_document/100_mixed_requirements: fixture must atomize")
+        });
     });
 }
 

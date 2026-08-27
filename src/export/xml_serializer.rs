@@ -159,9 +159,10 @@ fn write_part_bounded<W: Write>(
         )));
     }
 
+    let name = part.name.to_string();
     let mut elem = BytesStart::new("part");
     elem.push_attribute(("id", part.id.as_str()));
-    elem.push_attribute(("name", part.name.as_str()));
+    elem.push_attribute(("name", name.as_str()));
     writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
 
     for prop in &part.props {
@@ -628,7 +629,7 @@ pub fn serialize_component_definition_to_xml(
     Ok(xml)
 }
 
-/// Serialize an OSCAL Profile to a valid OSCAL v1.2.3 XML string.
+/// Serialize an OSCAL Profile to a valid OSCAL v1.2.0 XML string.
 ///
 /// Produces a complete XML document with:
 /// - XML declaration (`<?xml version="1.0" encoding="UTF-8"?>`)
@@ -649,7 +650,8 @@ pub fn serialize_profile_to_xml(
     let mut writer = create_xml_writer(&mut buf)?;
 
     write_root_start(&mut writer, "profile", &profile.uuid.to_string())?;
-    let last_modified_str = profile.metadata.last_modified.to_rfc3339();
+    let last_modified_str =
+        profile.metadata.last_modified.to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true);
     write_metadata(
         &mut writer,
         &profile.metadata.title,
@@ -683,6 +685,7 @@ mod tests {
     };
     use crate::oscal::catalog::OscalMetadata;
     use crate::oscal::component_definition::ComponentDefinitionMetadata;
+    use crate::oscal::parts::OscalPartName;
 
     // ── Test helpers ──────────────────────────────────────
 
@@ -704,7 +707,7 @@ mod tests {
             params: vec![],
             parts: vec![OscalPart {
                 id: format!("{id}_smt"),
-                name: "statement".to_string(),
+                name: OscalPartName::Statement,
                 prose: title.to_string(),
                 parts: vec![],
                 props: vec![],
@@ -880,7 +883,7 @@ mod tests {
         let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
         let part = OscalPart {
             id: "POL-AC-001_smt".to_string(),
-            name: "statement".to_string(),
+            name: OscalPartName::Statement,
             prose: "All users must use MFA.".to_string(),
             parts: vec![],
             props: vec![],
@@ -898,11 +901,11 @@ mod tests {
         let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
         let part = OscalPart {
             id: "POL-AC-001_smt".to_string(),
-            name: "statement".to_string(),
+            name: OscalPartName::Statement,
             prose: "Parent statement.".to_string(),
             parts: vec![OscalPart {
                 id: "POL-AC-001_smt.a".to_string(),
-                name: "item".to_string(),
+                name: OscalPartName::Item,
                 prose: "Sub-item A.".to_string(),
                 parts: vec![],
                 props: vec![],
@@ -926,7 +929,7 @@ mod tests {
         let mut writer = Writer::new_with_indent(&mut buf, b' ', INDENT_SIZE);
         let part = OscalPart {
             id: "POL-AC-001_smt".to_string(),
-            name: "statement".to_string(),
+            name: OscalPartName::Statement,
             prose: String::new(),
             parts: vec![],
             props: vec![],
@@ -1088,7 +1091,7 @@ mod tests {
             params: vec![],
             parts: vec![OscalPart {
                 id: "POL-AC-001_smt".to_string(),
-                name: "statement".to_string(),
+                name: OscalPartName::Statement,
                 prose: "All users must use MFA.".to_string(),
                 parts: vec![],
                 props: vec![],
@@ -1438,7 +1441,7 @@ mod tests {
                     params: vec![],
                     parts: vec![OscalPart {
                         id: "test_smt".to_string(),
-                        name: "statement".to_string(),
+                        name: OscalPartName::Statement,
                         prose: "]]> CDATA escape & <!-- comment -->".to_string(),
                         parts: vec![],
                         props: vec![],
@@ -1566,15 +1569,15 @@ mod tests {
                     params: vec![],
                     parts: vec![OscalPart {
                         id: "deep_smt".to_string(),
-                        name: "statement".to_string(),
+                        name: OscalPartName::Statement,
                         prose: "Level 1".to_string(),
                         parts: vec![OscalPart {
                             id: "deep_smt.a".to_string(),
-                            name: "item".to_string(),
+                            name: OscalPartName::Item,
                             prose: "Level 2".to_string(),
                             parts: vec![OscalPart {
                                 id: "deep_smt.a.1".to_string(),
-                                name: "item".to_string(),
+                                name: OscalPartName::Item,
                                 prose: "Level 3".to_string(),
                                 parts: vec![],
                                 props: vec![],
@@ -1599,7 +1602,7 @@ mod tests {
     fn part_nesting_over_limit_returns_serialization_error() {
         let mut part = OscalPart {
             id: "leaf".to_string(),
-            name: "item".to_string(),
+            name: OscalPartName::Item,
             prose: String::new(),
             props: vec![],
             parts: vec![],
@@ -1607,7 +1610,7 @@ mod tests {
         for depth in 0..MAX_PART_DEPTH {
             part = OscalPart {
                 id: format!("part-{depth}"),
-                name: "item".to_string(),
+                name: OscalPartName::Item,
                 prose: String::new(),
                 props: vec![],
                 parts: vec![part],

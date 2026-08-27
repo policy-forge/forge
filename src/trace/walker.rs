@@ -49,6 +49,21 @@ pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, 
     Ok(model_type)
 }
 
+/// Return an OSCAL array field, warning when a present field has the wrong type.
+fn array_field<'a>(object: &'a serde_json::Value, field: &str) -> Option<&'a [serde_json::Value]> {
+    match object.get(field) {
+        Some(serde_json::Value::Array(values)) => Some(values),
+        Some(_) => {
+            tracing::warn!(field, "OSCAL trace field is present but not an array; skipping");
+            None
+        }
+        None => None,
+    }
+}
+
+/// Maximum nesting depth walked from programmatically constructed OSCAL values.
+const MAX_TRACE_WALK_DEPTH: usize = 100;
+
 /// Walk a Catalog's groups and controls, extracting trace entries.
 ///
 /// Recursively traverses nested groups and controls per the OSCAL catalog model.
@@ -57,16 +72,16 @@ pub fn detect_artifact_type(json: &serde_json::Value) -> Result<OscalModelType, 
 pub fn walk_catalog_elements(catalog: &serde_json::Value) -> Vec<TraceEntry> {
     let mut entries = Vec::new();
 
-    if let Some(groups) = catalog.get("groups").and_then(|g| g.as_array()) {
+    if let Some(groups) = array_field(catalog, "groups") {
         for group in groups {
-            walk_group(group, &mut entries);
+            walk_group(group, &mut entries, 0);
         }
     }
 
-    // OSCAL allows controls directly under catalog (no group parent)
-    if let Some(controls) = catalog.get("controls").and_then(|c| c.as_array()) {
+    // OSCAL allows controls directly under catalog (no group parent).
+    if let Some(controls) = array_field(catalog, "controls") {
         for control in controls {
-            walk_control(control, &mut entries);
+            walk_control(control, &mut entries, 0);
         }
     }
 
@@ -74,7 +89,7 @@ pub fn walk_catalog_elements(catalog: &serde_json::Value) -> Vec<TraceEntry> {
 }
 
 /// Recursively walk a group: emit its entry, then recurse into child groups and controls.
-fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
+fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>, depth: usize) {
     let entry_index = entries.len();
     let group_id = if let Some(id) = group.get("id").and_then(serde_json::Value::as_str) {
         id.to_string()
@@ -88,21 +103,26 @@ fn walk_group(group: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
         trace: extract_trace_metadata(group),
     });
 
-    if let Some(child_groups) = group.get("groups").and_then(serde_json::Value::as_array) {
+    if depth >= MAX_TRACE_WALK_DEPTH {
+        tracing::warn!(depth, "OSCAL group nesting exceeds trace walk limit; skipping descendants");
+        return;
+    }
+
+    if let Some(child_groups) = array_field(group, "groups") {
         for child in child_groups {
-            walk_group(child, entries);
+            walk_group(child, entries, depth + 1);
         }
     }
 
-    if let Some(controls) = group.get("controls").and_then(serde_json::Value::as_array) {
+    if let Some(controls) = array_field(group, "controls") {
         for control in controls {
-            walk_control(control, entries);
+            walk_control(control, entries, depth + 1);
         }
     }
 }
 
 /// Recursively walk a control: emit its entry, then recurse into child controls.
-fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
+fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>, depth: usize) {
     let entry_index = entries.len();
     let control_id = if let Some(id) = control.get("id").and_then(serde_json::Value::as_str) {
         id.to_string()
@@ -116,10 +136,18 @@ fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
         trace: extract_trace_metadata(control),
     });
 
-    // OSCAL allows nested controls (e.g. control enhancements)
-    if let Some(children) = control.get("controls").and_then(|c| c.as_array()) {
+    if depth >= MAX_TRACE_WALK_DEPTH {
+        tracing::warn!(
+            depth,
+            "OSCAL control nesting exceeds trace walk limit; skipping descendants"
+        );
+        return;
+    }
+
+    // OSCAL allows nested controls (e.g. control enhancements).
+    if let Some(children) = array_field(control, "controls") {
         for child in children {
-            walk_control(child, entries);
+            walk_control(child, entries, depth + 1);
         }
     }
 }
@@ -130,14 +158,14 @@ fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
 pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
     let mut entries = Vec::new();
 
-    if let Some(components) = compdef.get("components").and_then(|c| c.as_array()) {
+    if let Some(components) = array_field(compdef, "components") {
         for component in components {
             collect_impl_requirements(component, &mut entries);
         }
     }
 
-    // OSCAL component-definitions may also group implementations under capabilities
-    if let Some(capabilities) = compdef.get("capabilities").and_then(|c| c.as_array()) {
+    // OSCAL component-definitions may also group implementations under capabilities.
+    if let Some(capabilities) = array_field(compdef, "capabilities") {
         for capability in capabilities {
             collect_impl_requirements(capability, &mut entries);
         }
@@ -148,9 +176,7 @@ pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
 
 /// Collect implemented-requirements from a component or capability's control-implementations.
 fn collect_impl_requirements(container: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
-    let Some(control_impls) =
-        container.get("control-implementations").and_then(serde_json::Value::as_array)
-    else {
+    let Some(control_impls) = array_field(container, "control-implementations") else {
         return;
     };
 
@@ -158,9 +184,7 @@ fn collect_impl_requirements(container: &serde_json::Value, entries: &mut Vec<Tr
         container.get("uuid").and_then(serde_json::Value::as_str).unwrap_or("unknown-container");
 
     for (implementation_index, impl_block) in control_impls.iter().enumerate() {
-        let Some(impl_reqs) =
-            impl_block.get("implemented-requirements").and_then(serde_json::Value::as_array)
-        else {
+        let Some(impl_reqs) = array_field(impl_block, "implemented-requirements") else {
             continue;
         };
 
@@ -458,5 +482,26 @@ mod tests {
         assert_eq!(ids[1], "component-two/NIST-800-53/implementation-two/AC-1");
         assert_eq!(ids[2], "component-two/NIST-800-53/implementation-two/unknown-requirement-2");
         assert_ne!(ids[0], ids[1]);
+    }
+
+    #[test]
+    fn wrong_typed_collection_fields_are_skipped() {
+        let catalog = json!({ "groups": {}, "controls": "not-an-array" });
+        let compdef = json!({ "components": {}, "capabilities": 42 });
+
+        assert!(walk_catalog_elements(&catalog).is_empty());
+        assert!(walk_compdef_elements(&compdef).is_empty());
+    }
+
+    #[test]
+    fn deeply_nested_programmatic_controls_stop_at_walk_limit() {
+        let mut control = json!({ "id": "control-leaf" });
+        for index in (0..=MAX_TRACE_WALK_DEPTH).rev() {
+            control = json!({ "id": format!("control-{index}"), "controls": [control] });
+        }
+        let catalog = json!({ "controls": [control] });
+
+        let entries = walk_catalog_elements(&catalog);
+        assert_eq!(entries.len(), MAX_TRACE_WALK_DEPTH + 1);
     }
 }

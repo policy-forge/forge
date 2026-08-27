@@ -3,7 +3,7 @@
     "uuid": "c2e60556-14b5-5ee8-be9f-0a4422e76e21",
     "metadata": {
       "title": "System Security Plan for Component-Based Security Policy",
-      "last-modified": "2026-08-27T00:40:58.590+00:00",
+      "last-modified": "2026-08-27T05:13:28.835+00:00",
       "version": "1.0.0",
       "oscal-version": "1.1.3"
     },
@@ -62,10 +62,18 @@
             "system-admin",
             "security-officer"
           ],
-          "authorized-date": "2026-01-01T00:00:00Z",
-          "status": {
-            "state": "active"
-          }
+          "props": [
+            {
+              "name": "authorized-date",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "2026-01-01T00:00:00Z"
+            },
+            {
+              "name": "account-status",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "active"
+            }
+          ]
         },
         {
           "uuid": "1481988d-2e2b-59be-bb5b-687fb78d0e11",
@@ -75,10 +83,18 @@
           "role-ids": [
             "analyst"
           ],
-          "authorized-date": "2026-01-01T00:00:00Z",
-          "status": {
-            "state": "active"
-          }
+          "props": [
+            {
+              "name": "authorized-date",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "2026-01-01T00:00:00Z"
+            },
+            {
+              "name": "account-status",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "active"
+            }
+          ]
         },
         {
           "uuid": "35b9b87c-702e-51c4-a2ce-03d4711eadf6",
@@ -88,11 +104,23 @@
           "role-ids": [
             "service-account"
           ],
-          "authorized-date": "2026-01-01T00:00:00Z",
-          "status": {
-            "state": "active",
-            "reason": "automated system process, no interactive login"
-          }
+          "props": [
+            {
+              "name": "authorized-date",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "2026-01-01T00:00:00Z"
+            },
+            {
+              "name": "account-status",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "active"
+            },
+            {
+              "name": "account-status-reason",
+              "ns": "https://forge.policy-forge.github.io/ns/ssp-template",
+              "value": "automated system process, no interactive login"
+            }
+          ]
         }
       ],
       "leveraged-authorizations": [

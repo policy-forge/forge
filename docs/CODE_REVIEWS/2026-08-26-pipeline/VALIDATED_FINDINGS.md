@@ -665,7 +665,7 @@ the end for audit completeness. Remediated in c3d68d1: F0480, F1054 (F0383 inval
 - `F0763` | valid | src/types.rs:47-53 → slice11
 - `F0777` | valid | src/uuid.rs:229-232 → slice11
 - `F0776` | valid | src/uuid.rs:253-260 → slice11
-- `F0778` | valid | src/uuid.rs:269 → slice11
+- `F0778` | reclassified invalid | src/uuid.rs:269 — `Option<Uuid>` is incompatible with required SHA-256 preliminary IDs before assignment; a typed replacement requires a distinct multi-variant domain model, not a lossy UUID conversion → slice11
 - `F0781` | valid | src/validate/error_types.rs:140-143 — derive semantic count as errors.len() - schema count → slice12
 - `F0795` | valid | src/validate/formatter.rs:218-233 — replace fabricated sentinels with honest unavailable marker → slice12
 - `F0796` | valid | src/validate/formatter.rs:66-78 — emit structural summaries for arrays/objects before truncation → slice12

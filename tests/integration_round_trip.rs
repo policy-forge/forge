@@ -84,60 +84,91 @@ fn clear_control_implementations(value: &mut Value) -> usize {
         .sum()
 }
 
+fn fixture_path(relative_path: &str) -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative_path)
+}
+
+fn assert_round_trip_preserves(
+    artifact_name: &str,
+    input_path: &std::path::Path,
+    strategy: &str,
+    source_profile: Option<&std::path::Path>,
+    intermediate_format: &str,
+    normalize_control_implementations: bool,
+) {
+    let dir = TempDir::new().unwrap();
+    let json_path = dir.path().join(format!("{artifact_name}.json"));
+    let intermediate_path = dir.path().join(format!("{artifact_name}.{intermediate_format}"));
+    let round_tripped_path = dir.path().join(format!("{artifact_name}_rt.json"));
+
+    let input = input_path.to_str().expect("fixture path must be UTF-8");
+    let mut convert_args = vec!["convert", input, "--strategy", strategy];
+    if let Some(source_profile) = source_profile {
+        convert_args.extend([
+            "--source-profile",
+            source_profile.to_str().expect("source profile path must be UTF-8"),
+        ]);
+    }
+    convert_args.extend([
+        "--format",
+        "json",
+        "--output",
+        json_path.to_str().expect("output path must be UTF-8"),
+    ]);
+    run_forge(&convert_args);
+
+    run_forge(&[
+        "export",
+        json_path.to_str().expect("output path must be UTF-8"),
+        "--format",
+        intermediate_format,
+        "--output",
+        intermediate_path.to_str().expect("output path must be UTF-8"),
+    ]);
+    run_forge(&[
+        "export",
+        intermediate_path.to_str().expect("output path must be UTF-8"),
+        "--format",
+        "json",
+        "--output",
+        round_tripped_path.to_str().expect("output path must be UTF-8"),
+    ]);
+
+    let mut original = read_json(&json_path);
+    let mut round_tripped = read_json(&round_tripped_path);
+    if normalize_control_implementations {
+        let original_removals = clear_control_implementations(&mut original);
+        clear_control_implementations(&mut round_tripped);
+        assert!(
+            original_removals > 0,
+            "component normalization must remove at least one control-implementations field"
+        );
+    }
+
+    let result = assert_semantic_equivalence(&original, &round_tripped);
+    assert!(
+        result.is_equivalent,
+        "{artifact_name} JSON→{intermediate_format}→JSON round-trip failed.\nDifferences:\n{}",
+        result
+            .differences
+            .iter()
+            .map(|difference| format!("  {}: {}", difference.path, difference.description))
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+}
+
 // ── M-1 / AC-1: Catalog JSON → XML → JSON ────────────────────────────────────
 
 #[test]
 fn catalog_json_xml_json_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let json_path = dir.path().join("catalog.json");
-    let xml_path = dir.path().join("catalog.xml");
-    let rt_path = dir.path().join("catalog_rt.json");
-
-    // Step 1: convert Markdown → Catalog JSON
-    run_forge(&[
-        "convert",
-        "tests/fixtures/golden/small/input.md",
-        "--strategy",
+    assert_round_trip_preserves(
         "catalog",
-        "--format",
-        "json",
-        "--output",
-        json_path.to_str().unwrap(),
-    ]);
-
-    // Step 2: JSON → XML
-    run_forge(&[
-        "export",
-        json_path.to_str().unwrap(),
-        "--format",
+        &fixture_path("tests/fixtures/golden/small/input.md"),
+        "catalog",
+        None,
         "xml",
-        "--output",
-        xml_path.to_str().unwrap(),
-    ]);
-
-    // Step 3: XML → JSON (round-tripped)
-    run_forge(&[
-        "export",
-        xml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        rt_path.to_str().unwrap(),
-    ]);
-
-    // Step 4: semantic equivalence
-    let original = read_json(&json_path);
-    let round_tripped = read_json(&rt_path);
-    let result = assert_semantic_equivalence(&original, &round_tripped);
-    assert!(
-        result.is_equivalent,
-        "Catalog JSON→XML→JSON round-trip failed.\nDifferences:\n{}",
-        result
-            .differences
-            .iter()
-            .map(|d| format!("  {}: {}", d.path, d.description))
-            .collect::<Vec<_>>()
-            .join("\n")
+        false,
     );
 }
 
@@ -145,50 +176,13 @@ fn catalog_json_xml_json_round_trip() {
 
 #[test]
 fn catalog_json_yaml_json_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let json_path = dir.path().join("catalog.json");
-    let yaml_path = dir.path().join("catalog.yaml");
-    let rt_path = dir.path().join("catalog_rt.json");
-
-    run_forge(&[
-        "convert",
-        "tests/fixtures/golden/small/input.md",
-        "--strategy",
+    assert_round_trip_preserves(
         "catalog",
-        "--format",
-        "json",
-        "--output",
-        json_path.to_str().unwrap(),
-    ]);
-    run_forge(&[
-        "export",
-        json_path.to_str().unwrap(),
-        "--format",
+        &fixture_path("tests/fixtures/golden/small/input.md"),
+        "catalog",
+        None,
         "yaml",
-        "--output",
-        yaml_path.to_str().unwrap(),
-    ]);
-    run_forge(&[
-        "export",
-        yaml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        rt_path.to_str().unwrap(),
-    ]);
-
-    let original = read_json(&json_path);
-    let round_tripped = read_json(&rt_path);
-    let result = assert_semantic_equivalence(&original, &round_tripped);
-    assert!(
-        result.is_equivalent,
-        "Catalog JSON→YAML→JSON round-trip failed.\nDifferences:\n{}",
-        result
-            .differences
-            .iter()
-            .map(|d| format!("  {}: {}", d.path, d.description))
-            .collect::<Vec<_>>()
-            .join("\n")
+        false,
     );
 }
 
@@ -196,61 +190,16 @@ fn catalog_json_yaml_json_round_trip() {
 
 #[test]
 fn component_definition_json_xml_json_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let json_path = dir.path().join("component.json");
-    let xml_path = dir.path().join("component.xml");
-    let rt_path = dir.path().join("component_rt.json");
-
-    run_forge(&[
-        "convert",
-        "tests/fixtures/full_policy.md",
-        "--strategy",
+    let input = fixture_path("tests/fixtures/full_policy.md");
+    let source_profile = fixture_path("tests/fixtures/sample_profile.json");
+    assert_round_trip_preserves(
         "component",
-        "--source-profile",
-        "tests/fixtures/sample_profile.json",
-        "--format",
-        "json",
-        "--output",
-        json_path.to_str().unwrap(),
-    ]);
-    run_forge(&[
-        "export",
-        json_path.to_str().unwrap(),
-        "--format",
+        &input,
+        "component",
+        Some(&source_profile),
         "xml",
-        "--output",
-        xml_path.to_str().unwrap(),
-    ]);
-    run_forge(&[
-        "export",
-        xml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        rt_path.to_str().unwrap(),
-    ]);
-
-    let mut original = read_json(&json_path);
-    let mut round_tripped = read_json(&rt_path);
-
-    // Normalize: XML intentionally omits control-implementations (WI-28/EC-5)
-    let original_removals = clear_control_implementations(&mut original);
-    clear_control_implementations(&mut round_tripped);
-    assert!(
-        original_removals > 0,
-        "component normalization must remove at least one control-implementations field"
-    );
-
-    let result = assert_semantic_equivalence(&original, &round_tripped);
-    assert!(
-        result.is_equivalent,
-        "Component Definition JSON→XML→JSON round-trip failed (after normalization).\nDifferences:\n{}",
-        result
-            .differences
-            .iter()
-            .map(|d| format!("  {}: {}", d.path, d.description))
-            .collect::<Vec<_>>()
-            .join("\n")
+        // XML intentionally omits control-implementations (WI-28/EC-5).
+        true,
     );
 }
 
@@ -258,53 +207,15 @@ fn component_definition_json_xml_json_round_trip() {
 
 #[test]
 fn component_definition_json_yaml_json_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let json_path = dir.path().join("component.json");
-    let yaml_path = dir.path().join("component.yaml");
-    let rt_path = dir.path().join("component_rt.json");
-
-    run_forge(&[
-        "convert",
-        "tests/fixtures/full_policy.md",
-        "--strategy",
+    let input = fixture_path("tests/fixtures/full_policy.md");
+    let source_profile = fixture_path("tests/fixtures/sample_profile.json");
+    assert_round_trip_preserves(
         "component",
-        "--source-profile",
-        "tests/fixtures/sample_profile.json",
-        "--format",
-        "json",
-        "--output",
-        json_path.to_str().unwrap(),
-    ]);
-    run_forge(&[
-        "export",
-        json_path.to_str().unwrap(),
-        "--format",
+        &input,
+        "component",
+        Some(&source_profile),
         "yaml",
-        "--output",
-        yaml_path.to_str().unwrap(),
-    ]);
-    run_forge(&[
-        "export",
-        yaml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        rt_path.to_str().unwrap(),
-    ]);
-
-    // YAML preserves all fields including control-implementations (no normalization)
-    let original = read_json(&json_path);
-    let round_tripped = read_json(&rt_path);
-    let result = assert_semantic_equivalence(&original, &round_tripped);
-    assert!(
-        result.is_equivalent,
-        "Component Definition JSON→YAML→JSON round-trip failed.\nDifferences:\n{}",
-        result
-            .differences
-            .iter()
-            .map(|d| format!("  {}: {}", d.path, d.description))
-            .collect::<Vec<_>>()
-            .join("\n")
+        false,
     );
 }
 

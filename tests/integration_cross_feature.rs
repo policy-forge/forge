@@ -222,6 +222,50 @@ fn count_controls(catalog: &Value) -> usize {
     })
 }
 
+fn assert_catalog_round_trip_preserves<T>(
+    intermediate_format: &str,
+    value_name: &str,
+    collect: impl Fn(&Value) -> T,
+    is_present: impl Fn(&T) -> bool,
+) where
+    T: std::fmt::Debug + PartialEq,
+{
+    let dir = TempDir::new().unwrap();
+    let catalog_path = catalog_from_mixed_policy(&dir);
+    let original = collect(&read_json(&catalog_path));
+    assert!(
+        is_present(&original),
+        "original catalog must have at least one {value_name} for this test to be meaningful"
+    );
+
+    let intermediate_path = dir.path().join(format!("catalog.{intermediate_format}"));
+    run_forge(&[
+        "export",
+        catalog_path.to_str().unwrap(),
+        "--format",
+        intermediate_format,
+        "--output",
+        intermediate_path.to_str().unwrap(),
+    ]);
+    let roundtripped_path = dir.path().join("catalog_rt.json");
+    run_forge(&[
+        "export",
+        intermediate_path.to_str().unwrap(),
+        "--format",
+        "json",
+        "--output",
+        roundtripped_path.to_str().unwrap(),
+    ]);
+
+    let roundtripped = collect(&read_json(&roundtripped_path));
+    assert_eq!(
+        original, roundtripped,
+        "{value_name} must be identical after JSON→{intermediate_format}→JSON\n\
+         original:     {original:?}\n\
+         round-tripped: {roundtripped:?}"
+    );
+}
+
 // ── M-5 / AC-6: normative and advisory props in JSON ────────────────────────
 
 #[test]
@@ -246,87 +290,20 @@ fn normative_props_present_in_json() {
 
 #[test]
 fn normative_props_survive_xml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_modalities = collect_modality_props(&original);
-    assert!(
-        !original_modalities.is_empty(),
-        "original catalog must have at least one modality prop"
-    );
-
-    // JSON → XML → JSON
-    let xml_path = dir.path().join("catalog.xml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
-        "xml",
-        "--output",
-        xml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        xml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_modalities = collect_modality_props(&roundtripped);
-
-    assert_eq!(
-        original_modalities, roundtripped_modalities,
-        "modality props must be identical after JSON→XML→JSON round-trip\
-        \n  original:     {original_modalities:?}\
-        \n  round-tripped: {roundtripped_modalities:?}"
-    );
+    assert_catalog_round_trip_preserves("xml", "modality prop", collect_modality_props, |values| {
+        !values.is_empty()
+    });
 }
 
 // ── M-5 / AC-8: normative/advisory props survive JSON→YAML→JSON round-trip ──
 
 #[test]
 fn normative_props_survive_yaml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_modalities = collect_modality_props(&original);
-    assert!(
-        !original_modalities.is_empty(),
-        "original catalog must have at least one modality prop"
-    );
-
-    // JSON → YAML → JSON
-    let yaml_path = dir.path().join("catalog.yaml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
+    assert_catalog_round_trip_preserves(
         "yaml",
-        "--output",
-        yaml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        yaml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_modalities = collect_modality_props(&roundtripped);
-
-    assert_eq!(
-        original_modalities, roundtripped_modalities,
-        "modality props must be identical after JSON→YAML→JSON round-trip\
-        \n  original:     {original_modalities:?}\
-        \n  round-tripped: {roundtripped_modalities:?}"
+        "modality prop",
+        collect_modality_props,
+        |values| !values.is_empty(),
     );
 }
 
@@ -447,86 +424,16 @@ fn param_elements_present_in_json() {
 
 #[test]
 fn param_elements_survive_xml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_params = collect_params(&original);
-    assert!(
-        !original_params.is_empty(),
-        "original catalog must have at least one param for this test to be meaningful"
-    );
-
-    // JSON → XML → JSON
-    let xml_path = dir.path().join("catalog.xml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
-        "xml",
-        "--output",
-        xml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        xml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_params = collect_params(&roundtripped);
-
-    assert_eq!(
-        original_params, roundtripped_params,
-        "params must be identical after JSON→XML→JSON round-trip\
-        \n  original:     {original_params:?}\
-        \n  round-tripped: {roundtripped_params:?}"
-    );
+    assert_catalog_round_trip_preserves("xml", "parameter", collect_params, |values| {
+        !values.is_empty()
+    });
 }
 
 // ── M-5 / AC-8: param elements survive JSON→YAML→JSON round-trip ────────────
 
 #[test]
 fn param_elements_survive_yaml_round_trip() {
-    let dir = TempDir::new().unwrap();
-    let catalog_path = catalog_from_mixed_policy(&dir);
-    let original = read_json(&catalog_path);
-    let original_params = collect_params(&original);
-    assert!(
-        !original_params.is_empty(),
-        "original catalog must have at least one param for this test to be meaningful"
-    );
-
-    // JSON → YAML → JSON
-    let yaml_path = dir.path().join("catalog.yaml");
-    run_forge(&[
-        "export",
-        catalog_path.to_str().unwrap(),
-        "--format",
-        "yaml",
-        "--output",
-        yaml_path.to_str().unwrap(),
-    ]);
-    let roundtripped_path = dir.path().join("catalog_rt.json");
-    run_forge(&[
-        "export",
-        yaml_path.to_str().unwrap(),
-        "--format",
-        "json",
-        "--output",
-        roundtripped_path.to_str().unwrap(),
-    ]);
-
-    let roundtripped = read_json(&roundtripped_path);
-    let roundtripped_params = collect_params(&roundtripped);
-
-    assert_eq!(
-        original_params, roundtripped_params,
-        "params must be identical after JSON→YAML→JSON round-trip\
-        \n  original:     {original_params:?}\
-        \n  round-tripped: {roundtripped_params:?}"
-    );
+    assert_catalog_round_trip_preserves("yaml", "parameter", collect_params, |values| {
+        !values.is_empty()
+    });
 }

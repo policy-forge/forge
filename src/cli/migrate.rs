@@ -10,8 +10,12 @@ use crate::error::ForgeError;
 ///
 /// # Errors
 ///
-/// Returns [`ForgeError::MigrationError`] when an input cannot be analyzed,
-/// the size is invalid, the output aliases an input, or the report cannot be written.
+/// Returns [`ForgeError::UnsupportedFormat`] (exit 1) when either policy
+/// extension is outside the shared migration set: `.md`, `.markdown`, `.pdf`,
+/// or `.docx`. Returns [`ForgeError::MigrationError`] when supported inputs
+/// cannot be analyzed, the size is invalid, or the output aliases an input.
+/// Output failures retain their original [`ForgeError`] variant for accurate
+/// diagnostics and exit codes.
 pub fn execute(
     old_policy: &Path,
     new_policy: &Path,
@@ -32,8 +36,7 @@ pub fn execute(
     };
     // Analysis can be slow enough for an output path to be swapped after the first check.
     reject_output_alias(output, old_policy, new_policy, successor_map)?;
-    crate::cli::output::write_output(&rendered, output)
-        .map_err(|error| ForgeError::MigrationError(error.to_string()))?;
+    crate::cli::output::write_output(&rendered, output)?;
     Ok(report.has_reviewable_changes())
 }
 
@@ -163,6 +166,37 @@ mod tests {
         assert!(
             matches!(result, Err(ForgeError::MigrationError(message)) if message.contains("old policy path"))
         );
+    }
+
+    #[test]
+    fn rejects_output_that_aliases_successor_map() {
+        let directory = tempfile::tempdir().unwrap();
+        let old = directory.path().join("old.md");
+        let new = directory.path().join("new.md");
+        let successor_map = directory.path().join("successors.json");
+        std::fs::write(&old, "# Old\n").unwrap();
+        std::fs::write(&new, "# New\n").unwrap();
+        std::fs::write(&successor_map, "{}").unwrap();
+
+        let result = reject_output_alias(Some(&successor_map), &old, &new, Some(&successor_map));
+
+        assert!(
+            matches!(result, Err(ForgeError::MigrationError(message)) if message.contains("successor map"))
+        );
+    }
+
+    #[test]
+    fn accepts_distinct_successor_map_output() {
+        let directory = tempfile::tempdir().unwrap();
+        let old = directory.path().join("old.md");
+        let new = directory.path().join("new.md");
+        let successor_map = directory.path().join("successors.json");
+        let output = directory.path().join("report.json");
+        std::fs::write(&old, "# Old\n").unwrap();
+        std::fs::write(&new, "# New\n").unwrap();
+        std::fs::write(&successor_map, "{}").unwrap();
+
+        assert!(reject_output_alias(Some(&output), &old, &new, Some(&successor_map)).is_ok());
     }
 
     #[test]

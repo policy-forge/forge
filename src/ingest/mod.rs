@@ -44,6 +44,9 @@ enum InputFormat {
 
 impl IngestedDocument {
     /// Reconstruct the full document content by joining all source lines.
+    ///
+    /// This normalizes line endings to LF and does not restore a trailing newline;
+    /// [`Self::fingerprint`] instead covers the original input bytes.
     #[must_use]
     pub fn reconstruct_content(&self) -> String {
         self.lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n")
@@ -98,13 +101,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
     let format = detect_format(ext)?;
 
     // Metadata checks: regular file + size limit
-    let metadata = std::fs::metadata(path).map_err(|e| match e.kind() {
-        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
-        std::io::ErrorKind::PermissionDenied => {
-            ForgeError::PermissionDenied { path: path.to_path_buf() }
-        }
-        _ => ForgeError::Io(e),
-    })?;
+    let metadata = std::fs::metadata(path).map_err(map_io_error(path))?;
     if !metadata.is_file() {
         return Err(ForgeError::NotAFile { path: path.to_path_buf() });
     }
@@ -116,13 +113,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         });
     }
 
-    let bytes = std::fs::read(path).map_err(|e| match e.kind() {
-        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
-        std::io::ErrorKind::PermissionDenied => {
-            ForgeError::PermissionDenied { path: path.to_path_buf() }
-        }
-        _ => ForgeError::Io(e),
-    })?;
+    let bytes = std::fs::read(path).map_err(map_io_error(path))?;
 
     if bytes.is_empty() {
         return Err(ForgeError::EmptyInput { path: path.to_path_buf() });
@@ -147,13 +138,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         .map(|(i, text)| SourceLine { number: i + 1, text: text.to_string() })
         .collect();
 
-    let source_path = path.canonicalize().map_err(|e| match e.kind() {
-        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
-        std::io::ErrorKind::PermissionDenied => {
-            ForgeError::PermissionDenied { path: path.to_path_buf() }
-        }
-        _ => ForgeError::Io(e),
-    })?;
+    let source_path = path.canonicalize().map_err(map_io_error(path))?;
 
     Ok(IngestedDocument { source_path, fingerprint, lines })
 }
@@ -164,6 +149,16 @@ fn detect_format(extension: &str) -> Result<InputFormat, ForgeError> {
         "pdf" => Ok(InputFormat::Pdf),
         "docx" => Ok(InputFormat::Docx),
         _ => Err(ForgeError::UnsupportedFormat { extension: extension.to_string() }),
+    }
+}
+
+fn map_io_error(path: &Path) -> impl Fn(std::io::Error) -> ForgeError + '_ {
+    move |error| match error.kind() {
+        std::io::ErrorKind::NotFound => ForgeError::FileNotFound { path: path.to_path_buf() },
+        std::io::ErrorKind::PermissionDenied => {
+            ForgeError::PermissionDenied { path: path.to_path_buf() }
+        }
+        _ => ForgeError::Io(error),
     }
 }
 
@@ -319,14 +314,20 @@ fn heading_level_from_docx_style(style: &str) -> Option<usize> {
         .filter(|level| (1..=6).contains(level))
 }
 
+/// Convert extracted document text to the limited Markdown consumed by the parser.
+///
+/// This heuristic is irreversible: it promotes the first non-empty line and
+/// heading-like lines, and logs each rewrite at debug level for auditability.
 fn markdownize_extracted_text(text: &str) -> String {
     let mut output = Vec::new();
     let mut emitted_title = false;
     for line in text.lines().map(str::trim).filter(|line| !line.is_empty()) {
         if !emitted_title {
+            tracing::debug!(rewritten_line = line, "promoting extracted line to Markdown title");
             output.push(format!("# {line}"));
             emitted_title = true;
         } else if looks_like_heading(line) {
+            tracing::debug!(rewritten_line = line, "promoting extracted line to Markdown heading");
             output.push(format!("## {line}"));
         } else {
             output.push(line.to_string());

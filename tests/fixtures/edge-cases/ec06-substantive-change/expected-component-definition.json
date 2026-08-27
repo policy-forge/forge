@@ -1,35 +1,20 @@
 {
   "component-definition": {
-    "uuid": "417cb2b7-282f-4f0e-9fa4-ea4e66de73af",
-    "metadata": {
-      "title": "Substantive Change Baseline",
-      "last-modified": "2026-08-27T04:08:00.959118+00:00",
-      "version": "1.0.0",
-      "oscal-version": "1.2.3"
-    },
     "components": [
       {
-        "uuid": "06e11258-0177-5f2f-ad35-48401b8b6edd",
-        "type": "policy",
-        "title": "Substantive Change Baseline",
-        "description": "Documentary component representing the Substantive Change Baseline policy document.",
-        "props": [
-          {
-            "name": "source-file",
-            "ns": "https://forge.policy-forge.github.io/ns/trace",
-            "value": "input-original.md"
-          }
-        ],
         "control-implementations": [
           {
-            "uuid": "a9226235-14a8-5dbd-ad2b-bbe49109c2e1",
-            "source": "source-profile.json",
             "description": "Implementation narratives derived from Substantive Change Baseline.",
             "implemented-requirements": [
               {
-                "uuid": "e0cc29f6-e361-55df-a701-604209c2147e",
                 "control-id": "POL-NC-001",
                 "description": "Systems must log privileged operations.",
+                "links": [
+                  {
+                    "href": "input-original.md#line=9",
+                    "rel": "source"
+                  }
+                ],
                 "props": [
                   {
                     "name": "source-file",
@@ -51,17 +36,17 @@
                     "value": "normative"
                   }
                 ],
-                "links": [
-                  {
-                    "href": "input-original.md#line=9",
-                    "rel": "source"
-                  }
-                ]
+                "uuid": "e0cc29f6-e361-55df-a701-604209c2147e"
               },
               {
-                "uuid": "a42dd50d-eead-5568-bb5e-98dc952ff7b5",
                 "control-id": "POL-NC-002",
                 "description": "Systems must rotate cryptographic keys {{ insert: param, id-ref: p3558910f-60c1-58f4-92d3-6d56daa829a2_prm_0 }}.",
+                "links": [
+                  {
+                    "href": "input-original.md#line=10",
+                    "rel": "source"
+                  }
+                ],
                 "props": [
                   {
                     "name": "source-file",
@@ -83,17 +68,32 @@
                     "value": "normative"
                   }
                 ],
-                "links": [
-                  {
-                    "href": "input-original.md#line=10",
-                    "rel": "source"
-                  }
-                ]
+                "uuid": "a42dd50d-eead-5568-bb5e-98dc952ff7b5"
               }
-            ]
+            ],
+            "source": "source-profile.json",
+            "uuid": "a9226235-14a8-5dbd-ad2b-bbe49109c2e1"
           }
-        ]
+        ],
+        "description": "Documentary component representing the Substantive Change Baseline policy document.",
+        "props": [
+          {
+            "name": "source-file",
+            "ns": "https://forge.policy-forge.github.io/ns/trace",
+            "value": "input-original.md"
+          }
+        ],
+        "title": "Substantive Change Baseline",
+        "type": "policy",
+        "uuid": "3d26d87c-f7b8-522f-9109-e71e7770e405"
       }
-    ]
+    ],
+    "metadata": {
+      "last-modified": "2026-08-27T06:02:40.782384+00:00",
+      "oscal-version": "1.2.3",
+      "title": "Substantive Change Baseline",
+      "version": "1.0.0"
+    },
+    "uuid": "14a0018a-2683-483b-ac45-9a5b75e0df5a"
   }
 }
