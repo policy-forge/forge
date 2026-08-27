@@ -645,23 +645,18 @@ fn validate_fingerprint(path: &str, value: &ArtifactFingerprint) -> Result<(), F
     Ok(())
 }
 
-/// Stored artifact paths must be relative: joining them onto the record
-/// directory must keep the record directory as the anchor, so absolute paths
-/// and Windows drive prefixes (which discard the anchor entirely when joined)
-/// and `.` components (never produced by relative-path storage) are rejected.
-/// Parent-directory components remain permitted because records may
-/// legitimately reference artifacts in sibling directories.
+/// Stored artifact paths must be plain descendants of the lifecycle record
+/// directory. Absolute paths, Windows drive prefixes, and `.` or `..`
+/// components are rejected so a record cannot redirect later artifact reads
+/// outside its trust boundary.
 fn validate_artifact_path_shape(path: &str, value: &str) -> Result<(), ForgeError> {
     let drive_prefixed = value.as_bytes().get(1) == Some(&b':')
         && value.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
     let relative = !drive_prefixed
-        && Path::new(value)
-            .components()
-            .all(|component| matches!(component, Component::Normal(_) | Component::ParentDir));
+        && Path::new(value).components().all(|component| matches!(component, Component::Normal(_)));
     if !relative {
         return Err(error(format!(
-            "{path} must be a relative path without '.', absolute, or drive-prefix components \
-             ('{}')",
+            "{path} must be a relative path without '.', '..', absolute, or drive-prefix components ('{}')",
             bounded(value)
         )));
     }
@@ -1109,7 +1104,7 @@ mod tests {
     }
 
     #[test]
-    fn artifact_paths_must_be_relative() {
+    fn artifact_paths_must_be_descendants() {
         let fingerprint = |path: &str| ArtifactFingerprint {
             path: path.to_string(),
             sha256: "a".repeat(64),
@@ -1120,9 +1115,14 @@ mod tests {
             .expect("plain relative path is valid");
         validate_fingerprint("$.policy.source", &fingerprint("output/catalog.json"))
             .expect("nested relative path is valid");
-        validate_fingerprint("$.policy.source", &fingerprint("../artifacts/policy.md"))
-            .expect("sibling-directory path is valid");
-        for raw in ["/etc/passwd", r"C:\\evil\\policy.md", "./policy.md", "."] {
+        for raw in [
+            "../artifacts/policy.md",
+            "output/../catalog.json",
+            "/etc/passwd",
+            r"C:\\evil\\policy.md",
+            "./policy.md",
+            ".",
+        ] {
             let error = validate_fingerprint("$.policy.source", &fingerprint(raw)).expect_err(raw);
             assert!(error.to_string().contains("must be a relative path"), "{raw}: {error}");
         }
