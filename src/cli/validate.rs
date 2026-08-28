@@ -21,6 +21,7 @@ fn schema_type_to_model_type(schema_type: &SchemaType) -> OscalModelType {
     match schema_type {
         SchemaType::Catalog => OscalModelType::Catalog,
         SchemaType::ComponentDefinition => OscalModelType::ComponentDefinition,
+        SchemaType::SystemSecurityPlan => OscalModelType::SystemSecurityPlan,
         SchemaType::Mapping => OscalModelType::Mapping,
     }
 }
@@ -261,7 +262,9 @@ fn build_round_trip_result(
     let artifact_type = match model_type {
         OscalModelType::Catalog => ArtifactType::Catalog,
         OscalModelType::ComponentDefinition => ArtifactType::ComponentDefinition,
-        OscalModelType::Profile | OscalModelType::Mapping => ArtifactType::Unknown,
+        OscalModelType::Profile | OscalModelType::SystemSecurityPlan | OscalModelType::Mapping => {
+            ArtifactType::Unknown
+        }
     };
     let declared_oscal_version =
         validate::version::inspect_oscal_version(original_json, model_type).declared;

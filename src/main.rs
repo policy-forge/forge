@@ -28,6 +28,7 @@ fn main() -> ExitCode {
             | ForgeError::DriftDetected
             | ForgeError::MigrationHasChanges
             | ForgeError::MappingReviewRequired
+            | ForgeError::LinkageActionRequired
             | ForgeError::LifecycleActionRequired
             | ForgeError::ApplicabilityReviewRequired
             | ForgeError::FrameworkReviewRequired

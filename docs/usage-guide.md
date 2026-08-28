@@ -903,6 +903,7 @@ Install the pre-commit hook:
 ## Further Reading
 
 - [README.md](../README.md) — project overview and quick start
+- [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
 - [Contributing Guide](CONTRIBUTING.md) — development setup and PR process
 - [Architecture Guide](architecture.md) — pipeline details and crate structure
 - `example_data/` — 25 sample policies

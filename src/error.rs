@@ -205,6 +205,14 @@ pub enum ForgeError {
     #[error("Control Mapping changes require human review")]
     MappingReviewRequired,
 
+    /// A trustworthy evidence/implementation linkage index could not be produced.
+    #[error("Evidence linkage error: {0}")]
+    Linkage(String),
+
+    /// A valid linkage analysis contains findings selected by the requested gate.
+    #[error("Evidence linkage action required")]
+    LinkageActionRequired,
+
     /// A lifecycle record, transition, portfolio, or artifact binding is invalid.
     #[error("Policy lifecycle error: {0}")]
     Lifecycle(String),
@@ -502,6 +510,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::DriftDetected
         | ForgeError::MigrationHasChanges
         | ForgeError::MappingReviewRequired
+        | ForgeError::LinkageActionRequired
         | ForgeError::LifecycleActionRequired
         | ForgeError::ApplicabilityReviewRequired
         | ForgeError::FrameworkReviewRequired
@@ -515,6 +524,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::SspBuild(_)
         | ForgeError::SspBuildWithSource { .. }
         | ForgeError::MappingBuild(_)
+        | ForgeError::Linkage(_)
         | ForgeError::Lifecycle(_)
         | ForgeError::ApplicabilityAnalysis(_)
         | ForgeError::FrameworkImpact(_)

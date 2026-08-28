@@ -147,7 +147,8 @@ pub enum Commands {
         /// Path to the OSCAL JSON artifact to validate
         input: PathBuf,
 
-        /// Override auto-detected OSCAL model type (catalog, component-definition, or mapping)
+        /// Override auto-detected OSCAL model type (catalog, component-definition,
+        /// system-security-plan, or mapping)
         #[arg(long, value_enum, conflicts_with = "round_trip")]
         schema_type: Option<SchemaType>,
 
@@ -276,6 +277,12 @@ pub enum Commands {
     Assessment {
         #[command(subcommand)]
         command: AssessmentCommand,
+    },
+
+    /// Link exact requirement and implementation subjects to evidence metadata
+    Linkage {
+        #[command(subcommand)]
+        command: LinkageCommand,
     },
 
     /// Manage deterministic local policy lifecycle records
@@ -484,6 +491,89 @@ pub enum MappingCommand {
         /// Include bounded subject titles/prose in the sensitive review report
         #[arg(long)]
         include_excerpts: bool,
+    },
+}
+
+/// Evidence and implementation linkage workflow commands.
+#[derive(Subcommand)]
+pub enum LinkageCommand {
+    /// Create a deterministic manifest scaffold from exact OSCAL artifacts
+    Init {
+        /// Local requirement Catalog or Profile JSON
+        #[arg(long)]
+        requirement: PathBuf,
+        /// Explicit resolved Catalog companion when the requirement is a Profile
+        #[arg(long)]
+        resolved_catalog: Option<PathBuf>,
+        /// Local Component Definition or System Security Plan JSON
+        #[arg(long)]
+        implementation: PathBuf,
+        /// Write the scaffold atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Build a deterministic linkage index and optional maintenance report
+    Build {
+        /// Versioned `forge.linkage/1` JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Explicit date used for all freshness decisions
+        #[arg(long)]
+        as_of: chrono::NaiveDate,
+        /// Write the linkage index atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Write a separate maintenance report
+        #[arg(long)]
+        report: Option<PathBuf>,
+        /// Maintenance report format
+        #[arg(long, value_enum, default_value = "text")]
+        format: LinkageReportFormat,
+        /// Prior `forge.linkage-index/1` used for deterministic comparison
+        #[arg(long)]
+        baseline: Option<PathBuf>,
+        /// Finding policy that produces exit status 1
+        #[arg(long, value_enum, default_value = "required")]
+        fail_on: LinkageFailOn,
+    },
+    /// Validate current links and emit a maintenance report without writing an index
+    Check {
+        /// Versioned `forge.linkage/1` JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Explicit date used for all freshness decisions
+        #[arg(long)]
+        as_of: chrono::NaiveDate,
+        /// Prior `forge.linkage-index/1` used for deterministic comparison
+        #[arg(long)]
+        baseline: Option<PathBuf>,
+        /// Report format
+        #[arg(long, value_enum, default_value = "text")]
+        format: LinkageReportFormat,
+        /// Write the report atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Finding policy that produces exit status 1
+        #[arg(long, value_enum, default_value = "required")]
+        fail_on: LinkageFailOn,
+    },
+    /// Aggregate explicitly supplied projects into an owner maintenance queue
+    Queue {
+        /// Linkage manifest; repeat for each explicit project
+        #[arg(long = "manifest", required = true)]
+        manifests: Vec<PathBuf>,
+        /// Explicit date used for all freshness decisions
+        #[arg(long)]
+        as_of: chrono::NaiveDate,
+        /// Queue report format
+        #[arg(long, value_enum, default_value = "json")]
+        format: LinkageReportFormat,
+        /// Write the queue atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Finding policy that produces exit status 1
+        #[arg(long, value_enum, default_value = "required")]
+        fail_on: LinkageFailOn,
     },
 }
 
@@ -833,6 +923,29 @@ pub enum MappingFailOn {
     Never,
 }
 
+/// Output formats for linkage maintenance and trace reports.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum LinkageReportFormat {
+    Text,
+    Json,
+    Html,
+}
+
+/// Linkage findings that may require maintenance action.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum LinkageFailOn {
+    /// Findings marked by an `evidence_required` link plus baseline changes.
+    Required,
+    /// Changed or removed evidence and subject content.
+    Changed,
+    /// Expired evidence only.
+    Expired,
+    /// Any maintenance finding.
+    Any,
+    /// Never return action-required status for a valid analysis.
+    Never,
+}
+
 /// Output format for `forge validate` results (WI-20).
 #[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
 pub enum ValidateOutputFormat {
@@ -871,6 +984,9 @@ pub enum SchemaType {
     /// Validate against the OSCAL Component Definition schema.
     #[value(name = "component-definition")]
     ComponentDefinition,
+    /// Validate against the OSCAL System Security Plan schema.
+    #[value(name = "system-security-plan")]
+    SystemSecurityPlan,
     /// Validate against the OSCAL Control Mapping schema.
     Mapping,
 }
@@ -1224,6 +1340,56 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 }
             },
         },
+        Commands::Linkage { command } => {
+            let action_required = match command {
+                LinkageCommand::Init { requirement, resolved_catalog, implementation, output } => {
+                    crate::linkage::execute_init(
+                        requirement,
+                        resolved_catalog.as_deref(),
+                        implementation,
+                        output.as_deref(),
+                    )?;
+                    false
+                }
+                LinkageCommand::Build {
+                    manifest,
+                    as_of,
+                    output,
+                    report,
+                    format,
+                    baseline,
+                    fail_on,
+                } => crate::linkage::execute_build(
+                    manifest,
+                    *as_of,
+                    output.as_deref(),
+                    report.as_deref(),
+                    format,
+                    baseline.as_deref(),
+                    fail_on,
+                )?,
+                LinkageCommand::Check { manifest, as_of, baseline, format, output, fail_on } => {
+                    crate::linkage::execute_check(
+                        manifest,
+                        *as_of,
+                        baseline.as_deref(),
+                        format,
+                        output.as_deref(),
+                        fail_on,
+                    )?
+                }
+                LinkageCommand::Queue { manifests, as_of, format, output, fail_on } => {
+                    crate::linkage::execute_queue(
+                        manifests,
+                        *as_of,
+                        format,
+                        output.as_deref(),
+                        fail_on,
+                    )?
+                }
+            };
+            if action_required { Err(ForgeError::LinkageActionRequired) } else { Ok(()) }
+        }
         Commands::Lifecycle { command } => match command {
             LifecycleCommand::Init {
                 source,

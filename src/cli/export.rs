@@ -106,6 +106,12 @@ fn oscal_model_from_value(
         crate::validate::OscalModelType::Profile => Err(ForgeError::ExportInvalidOscal {
             detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
         }),
+        crate::validate::OscalModelType::SystemSecurityPlan => {
+            Err(ForgeError::ExportInvalidOscal {
+                detail: "Export of OSCAL System Security Plan documents is not yet supported"
+                    .to_string(),
+            })
+        }
         crate::validate::OscalModelType::Mapping => Err(ForgeError::ExportInvalidOscal {
             detail: "Export of OSCAL Control Mapping documents is not yet supported".to_string(),
         }),
