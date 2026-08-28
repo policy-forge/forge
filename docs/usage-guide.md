@@ -719,6 +719,33 @@ Every declaration requires non-empty `approved_by`, RFC 3339 `approved_at`, and
 unsafe declarations fail with exit `2` before output. Valid declarations remain
 read-only and appear as declared—not authenticated—migration outcomes.
 
+### 3.13 `assessment results` — Package Human Assessment Judgments
+
+Create a context-bound draft, then add explicit assessor-authored observations,
+findings, risks, provenance, and relationships:
+
+```bash
+forge assessment results init --assessment-plan assessment-plan.json \
+  --ssp ssp.json --profile profile.json --catalog catalog.json \
+  --output assessment-results-manifest.json
+
+forge assessment results build --manifest assessment-results-manifest.json \
+  --output assessment-results.json \
+  --report assessment-results-review.json --report-format json
+```
+
+The optional `--evidence-index` input is an identity-only PRD 060
+`forge.linkage-index/1` artifact. FORGE copies evidence keys and hashes, not
+content, and does not treat a link as sufficient evidence. Use `--baseline` to
+report stable-identity revision impacts; the default `--fail-on any` exits `1`
+when review actions exist. Static HTML is available with `--report-format html`.
+The build remains local, JSON-only, deterministic, and validated against the
+pinned official OSCAL 1.2.3 Assessment Results schema. It records declared
+judgments without authenticating assessors or inferring compliance,
+effectiveness, certification, or remediation ownership. See
+[OSCAL Assessment Results](assessment-results.md) for the complete contract and
+trust boundaries.
+
 ## 4. Global Options
 
 ```bash

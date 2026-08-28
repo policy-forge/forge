@@ -30,7 +30,8 @@ fn main() -> ExitCode {
             | ForgeError::MappingReviewRequired
             | ForgeError::LifecycleActionRequired
             | ForgeError::ApplicabilityReviewRequired
-            | ForgeError::FrameworkReviewRequired,
+            | ForgeError::FrameworkReviewRequired
+            | ForgeError::AssessmentResultsReviewRequired,
         ) => ExitCode::from(1u8),
         Err(e) => {
             eprintln!("Error: {e}");

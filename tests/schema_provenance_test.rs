@@ -51,7 +51,7 @@ fn manifest_pins_the_approved_release_and_complete_allowlist() {
     assert_eq!(manifest.release_commit, "e061961");
     assert_eq!(manifest.published_at, "2026-08-07");
     assert_eq!(manifest.schema_version, "1.2.3");
-    assert_eq!(manifest.assets.len(), 10);
+    assert_eq!(manifest.assets.len(), 11);
 
     let names: HashSet<_> = manifest.assets.iter().map(|asset| asset.name.as_str()).collect();
     assert_eq!(names.len(), manifest.assets.len(), "asset names must be unique");
@@ -62,6 +62,7 @@ fn manifest_pins_the_approved_release_and_complete_allowlist() {
             "oscal_component_schema.json",
             "oscal_profile_schema.json",
             "oscal_mapping_schema.json",
+            "oscal_assessment-results_schema.json",
             "oscal_assessment-plan_schema.json",
             "oscal_ssp_schema.json",
             "oscal_catalog_schema.xsd",
@@ -97,6 +98,13 @@ fn vendored_assets_match_release_sizes_and_sha256_digests() {
         );
         assert!(matches!(asset.format.as_str(), "json-schema" | "xsd"));
         assert!(matches!(asset.role.as_str(), "runtime" | "test"));
+        if asset.role == "runtime" {
+            assert!(
+                asset.local_path.starts_with("schemas/"),
+                "runtime asset {} must be loaded from schemas/",
+                asset.name
+            );
+        }
         assert!(!asset.model.trim().is_empty());
 
         let bytes = std::fs::read(root.join(relative)).expect("manifest asset must exist");
