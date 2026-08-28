@@ -211,6 +211,10 @@ pub enum Commands {
         /// Write output to a file instead of stdout
         #[arg(long)]
         output: Option<PathBuf>,
+
+        /// Composition provenance map used to resolve assembled lines to component instances
+        #[arg(long)]
+        composition_provenance: Option<PathBuf>,
     },
 
     /// Compare two OSCAL artifacts and show differences
@@ -301,6 +305,12 @@ pub enum Commands {
     Framework {
         #[command(subcommand)]
         command: FrameworkCommand,
+    },
+
+    /// Compose deterministic policies from local, hash-pinned Markdown components
+    Policy {
+        #[command(subcommand)]
+        command: PolicyCommand,
     },
 
     /// Inspect and validate project configuration (.forge.toml)
@@ -865,6 +875,83 @@ pub enum FrameworkCommand {
         /// Show findings assigned to this exact reviewer or migration approver key
         #[arg(long)]
         owner: Option<String>,
+    },
+}
+
+/// Reusable policy component and composition commands.
+#[derive(Subcommand)]
+pub enum PolicyCommand {
+    /// Compose a policy or validate a composition without writing outputs
+    Compose {
+        /// Versioned `forge.policy-composition/1` JSON manifest
+        #[arg(long)]
+        manifest: Option<PathBuf>,
+        /// Exercise the existing Markdown-to-OSCAL conversion validation chain
+        #[arg(long)]
+        validate: bool,
+        #[command(subcommand)]
+        command: Option<PolicyComposeCommand>,
+    },
+    /// Validate or scaffold reusable component sidecars
+    Component {
+        #[command(subcommand)]
+        command: PolicyComponentCommand,
+    },
+}
+
+/// Composition validation commands.
+#[derive(Subcommand)]
+pub enum PolicyComposeCommand {
+    /// Validate a composition, pins, rendering, and outputs without writing files
+    Check {
+        /// Versioned `forge.policy-composition/1` JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Exercise the existing Markdown-to-OSCAL conversion validation chain
+        #[arg(long)]
+        validate: bool,
+    },
+}
+
+/// Component sidecar commands.
+#[derive(Subcommand)]
+pub enum PolicyComponentCommand {
+    /// Validate one `forge.policy-component/1` sidecar and its Markdown source
+    Check {
+        /// Component sidecar manifest
+        file: PathBuf,
+    },
+    /// Build a deterministic reverse-dependency and component-update impact report
+    Impact {
+        /// Stable component key to locate
+        #[arg(long)]
+        component_key: String,
+        /// Explicit composition manifest; repeat to scan a portfolio
+        #[arg(long = "manifest", required = true)]
+        manifests: Vec<PathBuf>,
+        /// Write the JSON report atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Scaffold an unapproved draft sidecar for an existing Markdown section
+    Scaffold {
+        /// Existing Markdown component beginning with a level-two heading
+        source: PathBuf,
+        /// Stable component key
+        #[arg(long)]
+        component_key: String,
+        /// Author-supplied semantic version string
+        #[arg(long)]
+        version: String,
+        /// Human-readable component title
+        #[arg(long)]
+        title: String,
+        /// Stable owner key
+        #[arg(long)]
+        owner: String,
+        /// Adjacent sidecar output path
+        #[arg(long)]
+        output: PathBuf,
     },
 }
 
@@ -1570,11 +1657,58 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 }
             }
         },
+        Commands::Policy { command } => match command {
+            PolicyCommand::Compose { manifest, validate, command: None } => {
+                let manifest = manifest.as_deref().ok_or_else(|| {
+                    crate::policy::composition_error(
+                        "forge policy compose requires --manifest <FILE>",
+                    )
+                })?;
+                crate::policy::compose(manifest, *validate)
+            }
+            PolicyCommand::Compose { manifest, validate, command: Some(_) }
+                if manifest.is_some() || *validate =>
+            {
+                Err(crate::policy::composition_error(
+                    "place --manifest and --validate after the policy compose subcommand",
+                ))
+            }
+            PolicyCommand::Compose {
+                command: Some(PolicyComposeCommand::Check { manifest, validate }),
+                ..
+            } => crate::policy::check_composition(manifest, *validate),
+            PolicyCommand::Component { command } => match command {
+                PolicyComponentCommand::Check { file } => crate::policy::check_component(file),
+                PolicyComponentCommand::Impact { component_key, manifests, output } => {
+                    crate::policy::component_impact(component_key, manifests, output.as_deref())
+                }
+                PolicyComponentCommand::Scaffold {
+                    source,
+                    component_key,
+                    version,
+                    title,
+                    owner,
+                    output,
+                } => crate::policy::scaffold_component(
+                    source,
+                    output,
+                    component_key,
+                    version,
+                    title,
+                    owner,
+                ),
+            },
+        },
         Commands::Drift { committed_artifact, generated_artifact, format } => {
             run_drift(committed_artifact, generated_artifact, format)
         }
-        Commands::Trace { artifact, source, output } => {
-            trace::execute(artifact, source, output.as_deref())
+        Commands::Trace { artifact, source, output, composition_provenance } => {
+            trace::execute_with_composition_provenance(
+                artifact,
+                source,
+                output.as_deref(),
+                composition_provenance.as_deref(),
+            )
         }
         Commands::Profile { catalog, include, exclude, format, output, set_params, timestamp } => {
             let timestamp = timestamp.as_ref().map(chrono::DateTime::to_rfc3339);
@@ -1823,7 +1957,7 @@ mod tests {
     fn parse_trace_subcommand() {
         let cli = Cli::try_parse_from(["forge", "trace", "artifact.json", "--source", "policy.md"])
             .unwrap();
-        if let Commands::Trace { artifact, source, output } = cli.command {
+        if let Commands::Trace { artifact, source, output, .. } = cli.command {
             assert_eq!(artifact, PathBuf::from("artifact.json"));
             assert_eq!(source, PathBuf::from("policy.md"));
             assert!(output.is_none());

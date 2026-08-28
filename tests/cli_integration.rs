@@ -1041,6 +1041,7 @@ fn test_verbose_flag_shows_pipeline_stages() {
     let path = create_temp_md(&dir, "policy.md", content);
 
     let output = forge_bin()
+        .env_remove("RUST_LOG")
         .arg("--verbose")
         .arg("convert")
         .arg(&path)
@@ -1076,6 +1077,7 @@ fn test_quiet_flag_suppresses_output() {
     let path = create_temp_md(&dir, "policy.md", content);
 
     let output = forge_bin()
+        .env_remove("RUST_LOG")
         .arg("--quiet")
         .arg("convert")
         .arg(&path)
@@ -1100,6 +1102,34 @@ fn test_quiet_flag_suppresses_output() {
     assert!(
         stdout.contains("catalog"),
         "stdout should contain OSCAL JSON even in quiet mode: {stdout}"
+    );
+}
+
+/// An explicit tracing filter overrides the flag-derived default for operator control.
+#[test]
+fn test_rust_log_overrides_verbose_default() {
+    let dir = TempDir::new().unwrap();
+    let content =
+        "---\ntitle: \"Test\"\nversion: \"1.0\"\n---\n\n# Section\n\n- Users must authenticate.\n";
+    let path = create_temp_md(&dir, "policy.md", content);
+
+    let output = forge_bin()
+        .env("RUST_LOG", "warn")
+        .arg("--verbose")
+        .arg("convert")
+        .arg(&path)
+        .arg("--strategy")
+        .arg("catalog")
+        .arg("--format")
+        .arg("json")
+        .output()
+        .expect("Failed to execute process");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(output.status.success(), "Expected success with RUST_LOG override: {stderr}");
+    assert!(
+        !stderr.contains("Serializing to JSON"),
+        "RUST_LOG=warn should suppress the INFO serialization stage: {stderr}"
     );
 }
 
