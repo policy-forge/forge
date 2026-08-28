@@ -693,8 +693,8 @@ fn commit_outputs(paths: &[PathBuf; 3], contents: [&[u8]; 3]) -> Result<(), Forg
             }
         }
     }
+    #[cfg(unix)]
     for parent in paths.iter().filter_map(|path| path.parent()).collect::<BTreeSet<_>>() {
-        #[cfg(unix)]
         std::fs::File::open(parent)?.sync_all()?;
     }
     Ok(())
