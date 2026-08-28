@@ -118,27 +118,27 @@ Assessors need to publish findings in a machine-readable form that preserves sco
 
 ### Must Have (M) — MVP launch blockers :red_circle: `@human-required`
 
-- [ ] **M-1 — Command:** Provide `forge assessment results build --manifest <FILE>` with output/report/baseline options.
-- [ ] **M-2 — Standards baseline:** Vendor the official release-matched Assessment Results JSON schema with recorded URL, release, and checksum.
-- [ ] **M-3 — Closed manifest:** Parse bounded `forge.assessment-results/1` JSON; reject unknown/duplicate keys, unsupported versions, and exceeded limits.
-- [ ] **M-4 — Context validation:** Validate Assessment Plan and required companion artifacts, their types, root UUIDs, versions, OSCAL versions, and hashes.
-- [ ] **M-5 — Subject inventory:** Validate every control, objective, subject, implementation, task, and evidence reference supported by the MVP.
-- [ ] **M-6 — Human provenance:** Require assessor party, role, assessment time/range, method, and non-empty rationale for each conclusion-bearing object.
-- [ ] **M-7 — Explicit relationships:** Preserve observation-to-finding-to-risk relationships exactly; reject missing, duplicate, circular, wrong-side, or wrong-type references.
-- [ ] **M-8 — Evidence boundary:** Reference PRD 060 evidence keys/hashes without copying content or treating link presence as sufficiency.
-- [ ] **M-9 — Typed model:** Construct Assessment Results through typed Rust structures and validate the completed JSON against the pinned schema.
-- [ ] **M-10 — Stable IDs:** Derive UUID v5 IDs from immutable reviewer keys and versioned seed schemas, never array order, prose, or wall-clock time.
-- [ ] **M-11 — Determinism:** Canonically order parties, results, observations, findings, risks, links, and report findings.
-- [ ] **M-12 — Baseline:** Report additions, removals, content/rationale changes, status changes, stale subjects, and upstream fingerprint changes by stable identity.
-- [ ] **M-13 — No inferred verdicts:** Emit only assessor-declared status/severity and no generated pass/fail, compliance, effectiveness, or certification conclusion.
-- [ ] **M-14 — Safety/privacy:** Operate offline, bound all resources, use safe writes, escape terminal text, and omit excerpts/absolute paths by default.
-- [ ] **M-15 — Exit contract:** Exit `0` for valid build/check, `1` for valid baseline review actions, and `2` for invalid input/analysis.
-- [ ] **M-16 — Tests:** Cover every supported object/reference, stale context, provenance, invalid graph, determinism, privacy, and official-schema fixture.
+- [x] **M-1 — Command:** Provide `forge assessment results build --manifest <FILE>` with output/report/baseline options.
+- [x] **M-2 — Standards baseline:** Vendor the official release-matched Assessment Results JSON schema with recorded URL, release, and checksum.
+- [x] **M-3 — Closed manifest:** Parse bounded `forge.assessment-results/1` JSON; reject unknown/duplicate keys, unsupported versions, and exceeded limits.
+- [x] **M-4 — Context validation:** Validate Assessment Plan and required companion artifacts, their types, root UUIDs, versions, OSCAL versions, and hashes.
+- [x] **M-5 — Subject inventory:** Validate every control, objective, subject, implementation, task, and evidence reference supported by the MVP.
+- [x] **M-6 — Human provenance:** Require assessor party, role, assessment time/range, method, and non-empty rationale for each conclusion-bearing object.
+- [x] **M-7 — Explicit relationships:** Preserve observation-to-finding-to-risk relationships exactly; reject missing, duplicate, circular, wrong-side, or wrong-type references.
+- [x] **M-8 — Evidence boundary:** Reference PRD 060 evidence keys/hashes without copying content or treating link presence as sufficiency.
+- [x] **M-9 — Typed model:** Construct Assessment Results through typed Rust structures and validate the completed JSON against the pinned schema.
+- [x] **M-10 — Stable IDs:** Derive UUID v5 IDs from immutable reviewer keys and versioned seed schemas, never array order, prose, or wall-clock time.
+- [x] **M-11 — Determinism:** Canonically order parties, results, observations, findings, risks, links, and report findings.
+- [x] **M-12 — Baseline:** Report additions, removals, content/rationale changes, status changes, stale subjects, and upstream fingerprint changes by stable identity.
+- [x] **M-13 — No inferred verdicts:** Emit only assessor-declared status/severity and no generated pass/fail, compliance, effectiveness, or certification conclusion.
+- [x] **M-14 — Safety/privacy:** Operate offline, bound all resources, use safe writes, escape terminal text, and omit excerpts/absolute paths by default.
+- [x] **M-15 — Exit contract:** Exit `0` for valid build/check, `1` for valid baseline review actions, and `2` for invalid input/analysis.
+- [x] **M-16 — Tests:** Cover every supported object/reference, stale context, provenance, invalid graph, determinism, privacy, and official-schema fixture.
 
 ### Should Have (S) — High-value fast follows :yellow_circle: `@human-review`
 
-- [ ] **S-1:** Scaffold a result manifest from an Assessment Plan without creating observations or findings.
-- [ ] **S-2:** Static HTML assessor/reviewer report from the same versioned model.
+- [x] **S-1:** Scaffold a result manifest from an Assessment Plan without creating observations or findings.
+- [x] **S-2:** Static HTML assessor/reviewer report from the same versioned model.
 - [ ] **S-3:** Export selected reviewed risks into a PRD 064 POA&M scaffold without assigning owners or dates automatically.
 - [ ] **S-4:** Support multiple result epochs when the schema and user workflow are validated.
 
@@ -179,6 +179,34 @@ Assessors need to publish findings in a machine-readable form that preserves sco
 - **Phase 2:** SSP/implementation/evidence references, baseline comparison, static report.
 - **Phase 3:** Independent-tool interoperability and assessor pilots.
 
+### Engineering Implementation Status :white_circle: `@auto`
+
+The bounded JSON MVP is implemented on `forge.assessment-results/1`. It accepts
+one Assessment Plan result epoch and exact local SSP, Profile, and Catalog
+companions; the Profile subset is one explicit Catalog import using `with-ids`
+or `include-all`/`exclude-controls` (wildcard matching is rejected). Supported
+subjects are component, inventory item, location, party, user, and resource.
+Optional PRD 060 input remains an identity-only `forge.linkage-index/1`
+adapter. The output is built through dedicated typed structures, validated
+against the pristine OSCAL 1.2.3 Assessment Results schema, and accompanied by
+deterministic text, JSON, or static HTML review reports.
+
+Executable coverage maps M-1/M-4/M-5/M-6/M-8/M-9/M-10/M-11/M-13/M-14/M-15
+and AC-1 through AC-5 to `tests/assessment_results_test.rs`; M-2 to
+`tests/schema_provenance_test.rs` and
+`tests/oscal_1_2_3_compatibility_test.rs`; M-3/M-7 to manifest unit tests plus
+the CLI adversarial cases; and M-12 to the baseline revision tests. The fixture
+covers both target types, every supported subject type, SSP implementation and
+Assessment Plan task references, optional evidence identity, explicit graph
+edges, all three conclusion object types, deterministic bytes, privacy, stale
+context, and independent validation against the official schema.
+
+This is engineering completion, not release approval. Compliance/Legal
+terminology approval, Engineering product approval of the subset, three
+sanitized assessor workflows, independent downstream interoperability, the
+success-metric pilots, and human release approval remain open. S-3 stays with
+PRD 064 and S-4 remains deferred until multi-epoch workflows are validated.
+
 ## Risks and Mitigations :yellow_circle: `@human-review`
 
 | Risk | Impact | Mitigation |
@@ -197,11 +225,11 @@ Assessors need to publish findings in a machine-readable form that preserves sco
 
 ## Definition of Ready :red_circle: `@human-required`
 
-- [ ] Official schema provenance and typed-model spike are complete.
+- [x] Official schema provenance and typed-model spike are complete.
 - [ ] Compliance and Legal approve judgment boundaries and terminology.
 - [ ] Engineering approves the supported model subset and manifest.
 - [ ] Three assessors provide sanitized workflows and fixtures.
-- [ ] Every Must Have maps to an executable acceptance test.
+- [x] Every Must Have maps to an executable acceptance test.
 
 ## Decision Log :yellow_circle: `@human-review`
 
@@ -215,4 +243,5 @@ Assessors need to publish findings in a machine-readable form that preserves sco
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.2 | 2026-08-27 | Codex | Implemented the bounded JSON MVP, schema provenance, exact context/reference validation, deterministic typed output, baseline/reporting, scaffold, tests, and engineering-status audit; human release gates remain open |
 | 0.1 | 2026-08-24 | Codex | Initial draft for human-authored OSCAL Assessment Results |

@@ -191,6 +191,28 @@ check triggers `--fail-on`, and `2` when trustworthy analysis is impossible.
 Reports default to identifiers, counts, and hashes; `--include-excerpts` is an
 explicit sensitive-output opt-in.
 
+### Assessment Results
+
+Package explicit assessor-authored observations, findings, and risks into
+schema-valid OSCAL 1.2.3 Assessment Results without inferring compliance or
+evidence sufficiency:
+
+```bash
+forge assessment results init --assessment-plan assessment-plan.json \
+  --ssp ssp.json --profile profile.json --catalog catalog.json \
+  --output assessment-results-manifest.json
+
+forge assessment results build --manifest assessment-results-manifest.json \
+  --output assessment-results.json \
+  --report assessment-results-review.json --report-format json
+```
+
+The workflow is offline, deterministic, exact-context-bound, and
+content-minimizing. Optional PRD 060 linkage input supplies evidence identity
+only. Baseline reports flag stable-object, status, rationale, stale-reference,
+and upstream-fingerprint changes with exit `1`; invalid analysis exits `2`
+before writes. See [OSCAL Assessment Results](docs/assessment-results.md).
+
 ### Policy Lifecycle
 
 Bind a policy version's declared review state to exact local source and generated

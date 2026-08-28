@@ -46,6 +46,16 @@
       "role": "runtime"
     },
     {
+      "name": "oscal_assessment-results_schema.json",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_assessment-results_schema.json",
+      "local_path": "schemas/oscal_assessment-results_schema.json",
+      "size": 152214,
+      "sha256": "4034e2032332dbf597e59e0646ec16c2c31df992962490371e91f47b219ff42c",
+      "format": "json-schema",
+      "model": "assessment-results",
+      "role": "runtime"
+    },
+    {
       "name": "oscal_assessment-plan_schema.json",
       "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_assessment-plan_schema.json",
       "local_path": "tests/fixtures/schemas/oscal_assessment-plan_schema.json",

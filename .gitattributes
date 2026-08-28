@@ -21,7 +21,7 @@ LICENSE text eol=lf
 # Official NIST OSCAL release assets are byte-pinned by the provenance manifest.
 # This block must remain after *.json text eol=lf: gitattributes is last-match-wins.
 # Do not normalize their upstream formatting.
-schemas/oscal_*.json -text
+schemas/oscal_*.json -text -whitespace
 tests/fixtures/schemas/** -text
 tests/fixtures/xsd/*.xsd -text
 

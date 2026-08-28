@@ -175,6 +175,14 @@ pub enum ForgeError {
     #[error("Assessment plan build error: {0}")]
     AssessmentPlanBuild(String),
 
+    /// A trustworthy OSCAL Assessment Results artifact could not be produced.
+    #[error("Assessment Results build error: {0}")]
+    AssessmentResultsBuild(String),
+
+    /// A valid Assessment Results baseline comparison requires human review.
+    #[error("Assessment Results revision requires human review")]
+    AssessmentResultsReviewRequired,
+
     /// An error occurred while building an SSP (System Security Plan).
     #[error("SSP build error: {0}")]
     SspBuild(String),
@@ -497,6 +505,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::LifecycleActionRequired
         | ForgeError::ApplicabilityReviewRequired
         | ForgeError::FrameworkReviewRequired
+        | ForgeError::AssessmentResultsReviewRequired
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors
@@ -516,6 +525,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::BackMatter(_)
         | ForgeError::ComponentDefinitionBuild(_)
         | ForgeError::AssessmentPlanBuild(_)
+        | ForgeError::AssessmentResultsBuild(_)
         | ForgeError::ParameterExtraction(_)
         | ForgeError::TraceUnsupportedArtifact { .. }
         | ForgeError::AmbiguousArtifact { .. }

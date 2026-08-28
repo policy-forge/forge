@@ -272,6 +272,12 @@ pub enum Commands {
         command: MappingCommand,
     },
 
+    /// Build human-authored OSCAL assessment artifacts
+    Assessment {
+        #[command(subcommand)]
+        command: AssessmentCommand,
+    },
+
     /// Manage deterministic local policy lifecycle records
     Lifecycle {
         #[command(subcommand)]
@@ -328,6 +334,78 @@ pub enum Commands {
         #[arg(long)]
         timestamp: Option<chrono::DateTime<chrono::Utc>>,
     },
+}
+
+/// OSCAL assessment workflow commands.
+#[derive(Subcommand)]
+pub enum AssessmentCommand {
+    /// Build or scaffold OSCAL Assessment Results
+    Results {
+        #[command(subcommand)]
+        command: AssessmentResultsCommand,
+    },
+}
+
+/// Human-authored OSCAL Assessment Results commands.
+#[derive(Subcommand)]
+pub enum AssessmentResultsCommand {
+    /// Scaffold a context-bound manifest without observations, findings, or risks
+    Init {
+        /// Local OSCAL Assessment Plan JSON
+        #[arg(long)]
+        assessment_plan: PathBuf,
+        /// Local OSCAL System Security Plan JSON referenced by the Assessment Plan
+        #[arg(long)]
+        ssp: PathBuf,
+        /// Local OSCAL Profile JSON referenced by the SSP
+        #[arg(long)]
+        profile: PathBuf,
+        /// Local OSCAL Catalog JSON imported by the Profile
+        #[arg(long)]
+        catalog: PathBuf,
+        /// Optional PRD 060 `forge.linkage-index/1` JSON for evidence identity only
+        #[arg(long)]
+        evidence_index: Option<PathBuf>,
+        /// Write the manifest scaffold atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Build schema-valid Assessment Results from explicit reviewer assertions
+    Build {
+        /// Versioned `forge.assessment-results/1` JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Write Assessment Results JSON atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Write a content-minimizing review report atomically
+        #[arg(long)]
+        report: Option<PathBuf>,
+        /// Review report format
+        #[arg(long, value_enum, default_value = "text")]
+        report_format: AssessmentResultsReportFormat,
+        /// Prior FORGE Assessment Results JSON used for revision impact analysis
+        #[arg(long)]
+        baseline: Option<PathBuf>,
+        /// Whether valid baseline review actions produce exit status 1
+        #[arg(long, value_enum, default_value = "any", requires = "baseline")]
+        fail_on: AssessmentResultsFailOn,
+    },
+}
+
+/// Deterministic Assessment Results report serialization.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum AssessmentResultsReportFormat {
+    Text,
+    Json,
+    Html,
+}
+
+/// Baseline review gate for Assessment Results revisions.
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+pub enum AssessmentResultsFailOn {
+    Any,
+    Never,
 }
 
 /// Subcommands for `forge config`.
@@ -1105,6 +1183,46 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     Ok(())
                 }
             }
+        },
+        Commands::Assessment { command } => match command {
+            AssessmentCommand::Results { command } => match command {
+                AssessmentResultsCommand::Init {
+                    assessment_plan,
+                    ssp,
+                    profile,
+                    catalog,
+                    evidence_index,
+                    output,
+                } => crate::assessment_results::execute_init(
+                    assessment_plan,
+                    ssp,
+                    profile,
+                    catalog,
+                    evidence_index.as_deref(),
+                    output.as_deref(),
+                ),
+                AssessmentResultsCommand::Build {
+                    manifest,
+                    output,
+                    report,
+                    report_format,
+                    baseline,
+                    fail_on,
+                } => {
+                    if crate::assessment_results::execute_build(
+                        manifest,
+                        output.as_deref(),
+                        report.as_deref(),
+                        report_format,
+                        baseline.as_deref(),
+                        fail_on,
+                    )? {
+                        Err(ForgeError::AssessmentResultsReviewRequired)
+                    } else {
+                        Ok(())
+                    }
+                }
+            },
         },
         Commands::Lifecycle { command } => match command {
             LifecycleCommand::Init {
