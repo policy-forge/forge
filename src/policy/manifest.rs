@@ -513,8 +513,8 @@ fn validate_project_root(path: &Path) -> Result<(), ForgeError> {
 ///
 /// # Errors
 ///
-/// Returns [`ForgeError::PolicyComposition`] for empty, absolute, traversal, drive, alternate
-/// stream, invalid UTF-8, or wrong-extension spellings.
+/// Returns [`ForgeError::PolicyComposition`] for empty, absolute, traversal, drive, backslash,
+/// alternate stream, invalid UTF-8, or wrong-extension spellings.
 pub fn validate_local_path(
     path: &str,
     value: &Path,
@@ -535,10 +535,11 @@ pub fn validate_local_path(
         || windows_drive
         || spelling.starts_with(['/', '\\'])
         || unsafe_component
+        || spelling.contains('\\')
         || spelling.contains(':')
     {
         return Err(error(format!(
-            "{path} must be a contained relative local path without parent, root, drive, or alternate-stream components"
+            "{path} must be a contained relative local path without parent, root, drive, backslash, or alternate-stream components"
         )));
     }
     if let Some(extension) = extension
@@ -629,9 +630,14 @@ mod tests {
 
     #[test]
     fn path_spelling_rejects_cross_platform_escape_forms() {
-        for value in
-            ["../outside.md", r"..\\outside.md", "/tmp/x.md", r"C:\\x.md", r"\\server\\x.md"]
-        {
+        for value in [
+            "../outside.md",
+            r"..\\outside.md",
+            r"components\clause.md",
+            "/tmp/x.md",
+            r"C:\\x.md",
+            r"\\server\\x.md",
+        ] {
             assert!(
                 validate_local_path("$.source", Path::new(value), Some("md")).is_err(),
                 "accepted {value}"
