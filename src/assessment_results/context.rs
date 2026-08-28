@@ -46,6 +46,7 @@ pub struct LoadedContext {
     pub implementation_statements: BTreeSet<String>,
     pub implementation_statement_controls: BTreeMap<String, String>,
     pub scoped_subjects: BTreeMap<SubjectType, BTreeSet<String>>,
+    excluded_subjects: BTreeMap<SubjectType, BTreeSet<String>>,
     pub subjects: BTreeMap<SubjectType, BTreeSet<String>>,
     pub include_all_subject_types: BTreeSet<SubjectType>,
     pub evidence: BTreeMap<String, String>,
@@ -61,11 +62,15 @@ impl LoadedContext {
     #[must_use]
     pub fn subject_is_in_scope(&self, subject_type: SubjectType, uuid: &str) -> bool {
         self.subjects.get(&subject_type).is_some_and(|subjects| subjects.contains(uuid))
-            && (self.include_all_subject_types.contains(&subject_type)
-                || self
-                    .scoped_subjects
-                    .get(&subject_type)
-                    .is_some_and(|subjects| subjects.contains(uuid)))
+            && (self
+                .scoped_subjects
+                .get(&subject_type)
+                .is_some_and(|subjects| subjects.contains(uuid))
+                || (self.include_all_subject_types.contains(&subject_type)
+                    && !self
+                        .excluded_subjects
+                        .get(&subject_type)
+                        .is_some_and(|subjects| subjects.contains(uuid))))
     }
 }
 
@@ -145,8 +150,15 @@ pub(crate) fn load_from_root(
     )?;
     let profile_controls =
         resolve_profile_controls(&profile.value, &context.catalog.href, &controls)?;
-    let (reviewed_controls, reviewed_objectives, tasks, explicit_subjects, include_all_types) =
-        inventory_assessment_plan(&assessment_plan.value)?;
+    let profile_objectives: BTreeSet<_> = objective_controls
+        .iter()
+        .filter(|(_, control_id)| profile_controls.contains(*control_id))
+        .map(|(objective_id, _)| objective_id.clone())
+        .collect();
+    let assessment_scope =
+        inventory_assessment_plan(&assessment_plan.value, &profile_controls, &profile_objectives)?;
+    let reviewed_controls = assessment_scope.reviewed_controls;
+    let reviewed_objectives = assessment_scope.reviewed_objectives;
     for id in &reviewed_controls {
         if !controls.contains(id) || !profile_controls.contains(id) {
             return Err(error(format!(
@@ -165,9 +177,9 @@ pub(crate) fn load_from_root(
     }
 
     let (mut subjects, implementation_statement_controls) = inventory_ssp(&ssp.value)?;
-    for (subject_type, scoped) in &explicit_subjects {
+    for (subject_type, referenced) in &assessment_scope.referenced_subjects {
         let available = subjects.entry(*subject_type).or_default();
-        for subject_uuid in scoped {
+        for subject_uuid in referenced {
             if !available.contains(subject_uuid) {
                 return Err(error(format!(
                     "Assessment Plan subject {} '{}' is absent from the exact SSP companion",
@@ -214,12 +226,13 @@ pub(crate) fn load_from_root(
         objective_controls,
         reviewed_controls,
         reviewed_objectives,
-        tasks,
+        tasks: assessment_scope.tasks,
         implementation_statements,
         implementation_statement_controls,
-        scoped_subjects: explicit_subjects,
+        scoped_subjects: assessment_scope.explicit_subjects,
+        excluded_subjects: assessment_scope.include_all_exclusions,
         subjects,
-        include_all_subject_types: include_all_types,
+        include_all_subject_types: assessment_scope.include_all_subject_types,
         evidence,
         input_paths,
     })
@@ -613,15 +626,21 @@ fn insert_owned_id(
     Ok(())
 }
 
-type AssessmentPlanInventory = (
-    BTreeSet<String>,
-    BTreeSet<String>,
-    BTreeSet<String>,
-    BTreeMap<SubjectType, BTreeSet<String>>,
-    BTreeSet<SubjectType>,
-);
+struct AssessmentPlanInventory {
+    reviewed_controls: BTreeSet<String>,
+    reviewed_objectives: BTreeSet<String>,
+    tasks: BTreeSet<String>,
+    explicit_subjects: BTreeMap<SubjectType, BTreeSet<String>>,
+    include_all_subject_types: BTreeSet<SubjectType>,
+    include_all_exclusions: BTreeMap<SubjectType, BTreeSet<String>>,
+    referenced_subjects: BTreeMap<SubjectType, BTreeSet<String>>,
+}
 
-fn inventory_assessment_plan(value: &Value) -> Result<AssessmentPlanInventory, ForgeError> {
+fn inventory_assessment_plan(
+    value: &Value,
+    eligible_controls: &BTreeSet<String>,
+    eligible_objectives: &BTreeSet<String>,
+) -> Result<AssessmentPlanInventory, ForgeError> {
     let root = value
         .get("assessment-plan")
         .ok_or_else(|| error("Assessment Plan root is required for inventory"))?;
@@ -634,39 +653,42 @@ fn inventory_assessment_plan(value: &Value) -> Result<AssessmentPlanInventory, F
         .and_then(Value::as_array)
         .ok_or_else(|| error("Assessment Plan control-selections are required"))?;
     for selection in selections {
-        let included =
-            selection.get("include-controls").and_then(Value::as_array).ok_or_else(|| {
-                error("Assessment Results MVP requires explicit Assessment Plan include-controls")
-            })?;
-        for item in included {
-            insert_id(item, "control-id", "Assessment Plan reviewed control", &mut controls)?;
-        }
+        resolve_selection(
+            selection,
+            "include-controls",
+            "exclude-controls",
+            "control-id",
+            "Assessment Plan reviewed control",
+            eligible_controls,
+            &mut controls,
+        )?;
+    }
+    if controls.is_empty() {
+        return Err(error("Assessment Plan effective reviewed control scope must not be empty"));
     }
     let mut objectives = BTreeSet::new();
     if let Some(selections) = reviewed.get("control-objective-selections").and_then(Value::as_array)
     {
         for selection in selections {
-            let included = selection
-                .get("include-objectives")
-                .and_then(Value::as_array)
-                .ok_or_else(|| {
-                    error(
-                        "Assessment Results MVP requires explicit Assessment Plan include-objectives",
-                    )
-                })?;
-            for item in included {
-                insert_id(item, "objective-id", "Assessment Plan objective", &mut objectives)?;
-            }
+            resolve_selection(
+                selection,
+                "include-objectives",
+                "exclude-objectives",
+                "objective-id",
+                "Assessment Plan objective",
+                eligible_objectives,
+                &mut objectives,
+            )?;
         }
     }
     let mut tasks = BTreeSet::new();
     if let Some(items) = root.get("tasks").and_then(Value::as_array) {
-        for task in items {
-            insert_id(task, "uuid", "Assessment Plan task", &mut tasks)?;
-        }
+        inventory_tasks(items, 0, &mut tasks)?;
     }
-    let mut subjects = BTreeMap::new();
+    let mut explicit_subjects = BTreeMap::new();
     let mut include_all = BTreeSet::new();
+    let mut include_all_exclusions: BTreeMap<SubjectType, BTreeSet<String>> = BTreeMap::new();
+    let mut referenced_subjects: BTreeMap<SubjectType, BTreeSet<String>> = BTreeMap::new();
     let subject_groups = root
         .get("assessment-subjects")
         .and_then(Value::as_array)
@@ -676,32 +698,122 @@ fn inventory_assessment_plan(value: &Value) -> Result<AssessmentPlanInventory, F
             parse_subject_type(group.get("type").and_then(Value::as_str).ok_or_else(|| {
                 error("Assessment Plan assessment-subject type must be a string")
             })?)?;
+        let included = subject_references(group.get("include-subjects"), subject_type)?;
+        let excluded = subject_references(group.get("exclude-subjects"), subject_type)?;
+        referenced_subjects
+            .entry(subject_type)
+            .or_default()
+            .extend(included.iter().chain(&excluded).cloned());
         if group.get("include-all").is_some() {
-            include_all.insert(subject_type);
-        }
-        if let Some(items) = group.get("include-subjects").and_then(Value::as_array) {
-            for item in items {
-                let item_type =
-                    parse_subject_type(item.get("type").and_then(Value::as_str).ok_or_else(
-                        || error("Assessment Plan subject reference type is required"),
-                    )?)?;
-                if item_type != subject_type {
-                    return Err(error(
-                        "Assessment Plan subject reference type does not match its selection group",
-                    ));
-                }
-                let subject_uuid =
-                    required_string(item.get("subject-uuid"), "Assessment Plan subject-uuid")?;
-                Uuid::parse_str(&subject_uuid)
-                    .map_err(|_| error("Assessment Plan subject-uuid must be a UUID"))?;
-                if !subjects.entry(subject_type).or_insert_with(BTreeSet::new).insert(subject_uuid)
-                {
-                    return Err(error("Assessment Plan contains a duplicate subject reference"));
-                }
+            if include_all.insert(subject_type) {
+                include_all_exclusions.insert(subject_type, excluded);
+            } else if let Some(existing) = include_all_exclusions.get_mut(&subject_type) {
+                existing.retain(|uuid| excluded.contains(uuid));
             }
+        } else {
+            let selected = included.difference(&excluded).cloned();
+            let effective = explicit_subjects.entry(subject_type).or_insert_with(BTreeSet::new);
+            effective.extend(selected);
         }
     }
-    Ok((controls, objectives, tasks, subjects, include_all))
+    Ok(AssessmentPlanInventory {
+        reviewed_controls: controls,
+        reviewed_objectives: objectives,
+        tasks,
+        explicit_subjects,
+        include_all_subject_types: include_all,
+        include_all_exclusions,
+        referenced_subjects,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn resolve_selection(
+    selection: &Value,
+    include_field: &str,
+    exclude_field: &str,
+    id_field: &str,
+    label: &str,
+    eligible: &BTreeSet<String>,
+    inventory: &mut BTreeSet<String>,
+) -> Result<(), ForgeError> {
+    let mut selected = if selection.get("include-all").is_some() {
+        eligible.clone()
+    } else {
+        let included = selection.get(include_field).and_then(Value::as_array).ok_or_else(|| {
+            error(format!("{label} selection requires include-all or {include_field}"))
+        })?;
+        let mut selected = BTreeSet::new();
+        for item in included {
+            let id = required_string(item.get(id_field), label)?;
+            if !eligible.contains(&id) {
+                return Err(error(format!(
+                    "{label} '{}' is absent from the exact resolved Profile/Catalog scope",
+                    bounded(&id)
+                )));
+            }
+            if !selected.insert(id.clone()) {
+                return Err(error(format!("{label} '{}' is duplicated", bounded(&id))));
+            }
+        }
+        selected
+    };
+    if let Some(excluded) = selection.get(exclude_field).and_then(Value::as_array) {
+        for item in excluded {
+            let id = required_string(item.get(id_field), label)?;
+            if !eligible.contains(&id) {
+                return Err(error(format!(
+                    "{label} exclusion '{}' is absent from the exact resolved Profile/Catalog scope",
+                    bounded(&id)
+                )));
+            }
+            selected.remove(&id);
+        }
+    }
+    inventory.extend(selected);
+    Ok(())
+}
+
+fn inventory_tasks(
+    items: &[Value],
+    depth: usize,
+    tasks: &mut BTreeSet<String>,
+) -> Result<(), ForgeError> {
+    enforce_depth(depth)?;
+    for task in items {
+        insert_id(task, "uuid", "Assessment Plan task", tasks)?;
+        if let Some(children) = task.get("tasks").and_then(Value::as_array) {
+            inventory_tasks(children, depth + 1, tasks)?;
+        }
+    }
+    Ok(())
+}
+
+fn subject_references(
+    value: Option<&Value>,
+    expected_type: SubjectType,
+) -> Result<BTreeSet<String>, ForgeError> {
+    let mut subjects = BTreeSet::new();
+    for item in value.and_then(Value::as_array).into_iter().flatten() {
+        let item_type = parse_subject_type(
+            item.get("type")
+                .and_then(Value::as_str)
+                .ok_or_else(|| error("Assessment Plan subject reference type is required"))?,
+        )?;
+        if item_type != expected_type {
+            return Err(error(
+                "Assessment Plan subject reference type does not match its selection group",
+            ));
+        }
+        let subject_uuid =
+            required_string(item.get("subject-uuid"), "Assessment Plan subject-uuid")?;
+        Uuid::parse_str(&subject_uuid)
+            .map_err(|_| error("Assessment Plan subject-uuid must be a UUID"))?;
+        if !subjects.insert(subject_uuid) {
+            return Err(error("Assessment Plan contains a duplicate subject reference"));
+        }
+    }
+    Ok(subjects)
 }
 
 type SspInventory = (BTreeMap<SubjectType, BTreeSet<String>>, BTreeMap<String, String>);

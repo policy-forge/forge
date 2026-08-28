@@ -58,6 +58,20 @@ fn artifact(path: &str, href: &str, bytes: &[u8], value: &Value, root: &str) -> 
     })
 }
 
+fn mutate_assessment_plan(fixture: &Fixture, mutate: impl FnOnce(&mut Value)) {
+    let root = fixture.manifest.parent().unwrap();
+    let assessment_plan_path = root.join("assessment-plan.json");
+    let mut assessment_plan: Value =
+        serde_json::from_slice(&std::fs::read(&assessment_plan_path).unwrap()).unwrap();
+    mutate(&mut assessment_plan);
+    let assessment_plan_bytes = write_json(&assessment_plan_path, &assessment_plan);
+    let mut manifest: Value =
+        serde_json::from_slice(&std::fs::read(&fixture.manifest).unwrap()).unwrap();
+    manifest["context"]["assessment_plan"]["expected_sha256"] =
+        json!(sha256(&assessment_plan_bytes));
+    write_json(&fixture.manifest, &manifest);
+}
+
 #[allow(
     clippy::too_many_lines,
     reason = "one self-contained fixture exposes the complete supported OSCAL reference surface"
@@ -510,6 +524,82 @@ fn assessment_plan_scope_excluded_by_profile_is_rejected() {
     assert_eq!(result.status.code(), Some(2));
     assert!(!fixture.output.exists());
     assert!(String::from_utf8_lossy(&result.stderr).contains("resolved Profile/Catalog scope"));
+}
+
+#[test]
+fn assessment_plan_exclusions_remove_controls_objectives_and_subjects_from_scope() {
+    let cases: [fn(&mut Value); 3] = [
+        |assessment_plan| {
+            assessment_plan["assessment-plan"]["reviewed-controls"]["control-selections"][0] = json!({
+                "include-all": {},
+                "exclude-controls": [{"control-id": CONTROL_ID}]
+            });
+        },
+        |assessment_plan| {
+            assessment_plan["assessment-plan"]["reviewed-controls"]["control-objective-selections"]
+                [0]["exclude-objectives"] = json!([{"objective-id": OBJECTIVE_ID}]);
+        },
+        |assessment_plan| {
+            let component_uuid =
+                assessment_plan["assessment-plan"]["assessment-subjects"][0]["include-subjects"][0]
+                    ["subject-uuid"]
+                    .clone();
+            assessment_plan["assessment-plan"]["assessment-subjects"][0] = json!({
+                "type": "component",
+                "include-all": {},
+                "exclude-subjects": [
+                    {"subject-uuid": component_uuid, "type": "component"}
+                ]
+            });
+        },
+    ];
+
+    for edit in cases {
+        let fixture = fixture();
+        mutate_assessment_plan(&fixture, edit);
+        let result = run(&[
+            "assessment",
+            "results",
+            "build",
+            "--manifest",
+            fixture.manifest.to_str().unwrap(),
+            "--output",
+            fixture.output.to_str().unwrap(),
+        ]);
+        assert_eq!(result.status.code(), Some(2), "{}", String::from_utf8_lossy(&result.stderr));
+        assert!(!fixture.output.exists());
+    }
+}
+
+#[test]
+fn nested_assessment_plan_task_is_available_to_observation_provenance() {
+    let fixture = fixture();
+    mutate_assessment_plan(&fixture, |assessment_plan| {
+        let nested_task = assessment_plan["assessment-plan"]["tasks"][0].take();
+        assessment_plan["assessment-plan"]["tasks"] = json!([{
+            "uuid": "88888888-8888-4888-8888-888888888888",
+            "type": "action",
+            "title": "Parent review task",
+            "tasks": [nested_task]
+        }]);
+    });
+
+    let result = run(&[
+        "assessment",
+        "results",
+        "build",
+        "--manifest",
+        fixture.manifest.to_str().unwrap(),
+        "--output",
+        fixture.output.to_str().unwrap(),
+    ]);
+    assert_eq!(result.status.code(), Some(0), "{}", String::from_utf8_lossy(&result.stderr));
+    let artifact: Value = serde_json::from_slice(&std::fs::read(&fixture.output).unwrap()).unwrap();
+    assert_eq!(
+        artifact["assessment-results"]["results"][0]["observations"][0]["origins"][0]["related-tasks"]
+            [0]["task-uuid"],
+        TASK_UUID
+    );
 }
 
 #[test]
