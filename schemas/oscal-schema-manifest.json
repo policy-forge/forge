@@ -58,22 +58,22 @@
     {
       "name": "oscal_assessment-plan_schema.json",
       "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_assessment-plan_schema.json",
-      "local_path": "tests/fixtures/schemas/oscal_assessment-plan_schema.json",
+      "local_path": "schemas/oscal_assessment-plan_schema.json",
       "size": 144952,
       "sha256": "ea687b9d0ab1d84c9cb11ee0a5e22b17956fe892ee93f5acca937bef81d23ea2",
       "format": "json-schema",
       "model": "assessment-plan",
-      "role": "test"
+      "role": "runtime"
     },
     {
       "name": "oscal_ssp_schema.json",
       "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_ssp_schema.json",
-      "local_path": "tests/fixtures/schemas/oscal_ssp_schema.json",
+      "local_path": "schemas/oscal_ssp_schema.json",
       "size": 105538,
       "sha256": "99b1bee2df5604a7d4f1faeab43148e0bd4c4a1f513cd0d2d0c7896aa216a1e7",
       "format": "json-schema",
       "model": "ssp",
-      "role": "test"
+      "role": "runtime"
     },
     {
       "name": "oscal_catalog_schema.xsd",

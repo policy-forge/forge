@@ -98,6 +98,13 @@ fn vendored_assets_match_release_sizes_and_sha256_digests() {
         );
         assert!(matches!(asset.format.as_str(), "json-schema" | "xsd"));
         assert!(matches!(asset.role.as_str(), "runtime" | "test"));
+        if asset.role == "runtime" {
+            assert!(
+                asset.local_path.starts_with("schemas/"),
+                "runtime asset {} must be loaded from schemas/",
+                asset.name
+            );
+        }
         assert!(!asset.model.trim().is_empty());
 
         let bytes = std::fs::read(root.join(relative)).expect("manifest asset must exist");

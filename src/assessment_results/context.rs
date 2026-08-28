@@ -335,14 +335,12 @@ fn validate_schema(kind: &str, value: &Value, schema: OscalSchema) -> Result<(),
         OscalSchema::Profile => validate::compiled_validator(OscalModelType::Profile)
             .map_err(|cause| error(format!("Profile schema compilation failed: {cause}")))?,
         OscalSchema::AssessmentPlan => {
-            owned_validator = compile_schema(include_str!(
-                "../../tests/fixtures/schemas/oscal_assessment-plan_schema.json"
-            ))?;
+            owned_validator =
+                compile_schema(include_str!("../../schemas/oscal_assessment-plan_schema.json"))?;
             &owned_validator
         }
         OscalSchema::Ssp => {
-            owned_validator =
-                compile_schema(include_str!("../../tests/fixtures/schemas/oscal_ssp_schema.json"))?;
+            owned_validator = compile_schema(include_str!("../../schemas/oscal_ssp_schema.json"))?;
             &owned_validator
         }
     };

@@ -70,6 +70,11 @@ content/rationale/status changes, stale references, and changed upstream
 fingerprints. Text, JSON, and static HTML reports share the same deterministic,
 content-minimizing model.
 
+`--report-format` controls an explicitly requested `--report` file. When a
+baseline is supplied without `--report`, FORGE writes the review summary to
+stderr in terminal-safe text regardless of that option; builds without a
+baseline or report do not render a review report.
+
 Exit `0` means a trustworthy artifact was built and the selected baseline gate
 did not fire. Exit `1` means a valid baseline comparison has review actions.
 Exit `2` means no trustworthy build could be produced. `--fail-on never` keeps

@@ -528,33 +528,42 @@ fn assessment_plan_scope_excluded_by_profile_is_rejected() {
 
 #[test]
 fn assessment_plan_exclusions_remove_controls_objectives_and_subjects_from_scope() {
-    let cases: [fn(&mut Value); 3] = [
-        |assessment_plan| {
-            assessment_plan["assessment-plan"]["reviewed-controls"]["control-selections"][0] = json!({
-                "include-all": {},
-                "exclude-controls": [{"control-id": CONTROL_ID}]
-            });
-        },
-        |assessment_plan| {
-            assessment_plan["assessment-plan"]["reviewed-controls"]["control-objective-selections"]
-                [0]["exclude-objectives"] = json!([{"objective-id": OBJECTIVE_ID}]);
-        },
-        |assessment_plan| {
-            let component_uuid =
-                assessment_plan["assessment-plan"]["assessment-subjects"][0]["include-subjects"][0]
-                    ["subject-uuid"]
+    type AssessmentPlanEdit = fn(&mut Value);
+    let cases: [(AssessmentPlanEdit, &str); 3] = [
+        (
+            |assessment_plan| {
+                assessment_plan["assessment-plan"]["reviewed-controls"]["control-selections"][0] = json!({
+                    "include-all": {},
+                    "exclude-controls": [{"control-id": CONTROL_ID}]
+                });
+            },
+            "effective reviewed control scope must not be empty",
+        ),
+        (
+            |assessment_plan| {
+                assessment_plan["assessment-plan"]["reviewed-controls"]["control-objective-selections"]
+                    [0]["exclude-objectives"] = json!([{"objective-id": OBJECTIVE_ID}]);
+            },
+            "objective 'AC-1_obj' is not present in both the exact Catalog and Assessment Plan scope",
+        ),
+        (
+            |assessment_plan| {
+                let component_uuid = assessment_plan["assessment-plan"]["assessment-subjects"][0]
+                    ["include-subjects"][0]["subject-uuid"]
                     .clone();
-            assessment_plan["assessment-plan"]["assessment-subjects"][0] = json!({
-                "type": "component",
-                "include-all": {},
-                "exclude-subjects": [
-                    {"subject-uuid": component_uuid, "type": "component"}
-                ]
-            });
-        },
+                assessment_plan["assessment-plan"]["assessment-subjects"][0] = json!({
+                    "type": "component",
+                    "include-all": {},
+                    "exclude-subjects": [
+                        {"subject-uuid": component_uuid, "type": "component"}
+                    ]
+                });
+            },
+            "references out-of-scope component subject",
+        ),
     ];
 
-    for edit in cases {
+    for (edit, expected_error) in cases {
         let fixture = fixture();
         mutate_assessment_plan(&fixture, edit);
         let result = run(&[
@@ -567,6 +576,11 @@ fn assessment_plan_exclusions_remove_controls_objectives_and_subjects_from_scope
             fixture.output.to_str().unwrap(),
         ]);
         assert_eq!(result.status.code(), Some(2), "{}", String::from_utf8_lossy(&result.stderr));
+        assert!(
+            String::from_utf8_lossy(&result.stderr).contains(expected_error),
+            "expected '{expected_error}' in: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
         assert!(!fixture.output.exists());
     }
 }
@@ -669,6 +683,31 @@ fn baseline_status_change_is_a_stable_review_action() {
     let html = std::fs::read_to_string(html_path).unwrap();
     assert!(html.starts_with("<!doctype html>"));
     assert!(!html.contains("<script"));
+
+    let stderr_result = run(&[
+        "assessment",
+        "results",
+        "build",
+        "--manifest",
+        fixture.manifest.to_str().unwrap(),
+        "--output",
+        fixture.output.to_str().unwrap(),
+        "--baseline",
+        baseline.to_str().unwrap(),
+        "--report-format",
+        "html",
+        "--fail-on",
+        "never",
+    ]);
+    assert_eq!(
+        stderr_result.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&stderr_result.stderr)
+    );
+    let stderr = String::from_utf8_lossy(&stderr_result.stderr);
+    assert!(stderr.starts_with("FORGE OSCAL Assessment Results review report\n"));
+    assert!(!stderr.contains("<!doctype html>"));
 }
 
 #[test]

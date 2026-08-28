@@ -41,13 +41,21 @@ pub fn execute_build(
 ) -> Result<bool, ForgeError> {
     let prepared = prepare(manifest_path, baseline_path)?;
     validate_destinations(&prepared.input_paths, output, report_path)?;
-    let rendered_report = report::render(&prepared.report, report_format)?;
-    if baseline_path.is_some() && report_path.is_none() {
-        write_stderr(&rendered_report)?;
+    let rendered_report = match (report_path, baseline_path) {
+        (Some(_), _) => Some(report::render(&prepared.report, report_format)?),
+        (None, Some(_)) => {
+            Some(report::render(&prepared.report, &AssessmentResultsReportFormat::Text)?)
+        }
+        (None, None) => None,
+    };
+    if report_path.is_none()
+        && let Some(rendered) = &rendered_report
+    {
+        write_stderr(rendered)?;
     }
     crate::cli::output::write_output(&prepared.artifact_json, output)?;
-    if let Some(path) = report_path {
-        crate::cli::output::write_output(&rendered_report, Some(path))?;
+    if let (Some(path), Some(rendered)) = (report_path, rendered_report.as_deref()) {
+        crate::cli::output::write_output(rendered, Some(path))?;
     }
     Ok(baseline_path.is_some()
         && !prepared.report.findings.is_empty()
