@@ -54,6 +54,7 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 - **Deterministic IDs** — UUID v5 generation ensures stable identifiers across re-conversions
 - **Citation extraction** — URLs and references extracted into OSCAL back-matter resources
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
+- **Evidence linkage** — Deterministic requirement-to-implementation indexes with metadata-only evidence freshness and baseline checks
 - **Zero network dependencies** — Reads and writes local files only
 
 ## 🚦 Quick Start
@@ -114,8 +115,8 @@ forge export catalog.yaml --format json --output catalog.json
 
 ### Validate
 
-Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, or Control Mapping from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
-The explicit `--schema-type` override supports Catalog, Component Definition, and Control Mapping; Profile documents currently require auto-detection.
+Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, System Security Plan, or Control Mapping from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
+The explicit `--schema-type` override supports Catalog, Component Definition, System Security Plan, and Control Mapping; Profile documents currently require auto-detection.
 
 ```bash
 # Validate with human-readable output
@@ -129,6 +130,9 @@ forge validate artifact.json --schema-type catalog
 
 # Validate an OSCAL Control Mapping artifact
 forge validate mapping.json --schema-type mapping
+
+# Validate an OSCAL System Security Plan artifact
+forge validate ssp.json --schema-type system-security-plan
 ```
 
 Newly generated Catalog, Component Definition, Profile, Assessment Plan, and

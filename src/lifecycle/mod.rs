@@ -573,6 +573,7 @@ fn model_root(model: crate::OscalModelType) -> &'static str {
         crate::OscalModelType::Catalog => "catalog",
         crate::OscalModelType::ComponentDefinition => "component-definition",
         crate::OscalModelType::Profile => "profile",
+        crate::OscalModelType::SystemSecurityPlan => "system-security-plan",
         crate::OscalModelType::Mapping => "mapping-collection",
     }
 }

@@ -116,7 +116,8 @@ pub enum ValidateError {
 ///
 /// Inspects top-level object roots: `catalog` → `Catalog`,
 /// `component-definition` → `ComponentDefinition`, `profile` → `Profile`,
-/// and `mapping-collection` → `Mapping`. Roots mapped to `null` or another
+/// `system-security-plan` → `SystemSecurityPlan`, and `mapping-collection` → `Mapping`.
+/// Roots mapped to `null` or another
 /// non-object value are ignored. Exactly one recognized root must be present.
 ///
 /// # Errors
@@ -128,6 +129,7 @@ pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> 
         ("catalog", OscalModelType::Catalog),
         ("component-definition", OscalModelType::ComponentDefinition),
         ("profile", OscalModelType::Profile),
+        ("system-security-plan", OscalModelType::SystemSecurityPlan),
         ("mapping-collection", OscalModelType::Mapping),
     ];
     let found: Vec<_> = roots
@@ -163,6 +165,9 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
         OscalModelType::Profile => {
             include_str!("../../schemas/oscal_profile_schema.json")
         }
+        OscalModelType::SystemSecurityPlan => {
+            include_str!("../../schemas/oscal_ssp_schema.json")
+        }
         OscalModelType::Mapping => {
             include_str!("../../schemas/oscal_mapping_schema.json")
         }
@@ -181,6 +186,7 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
 static CATALOG_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static COMPONENT_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static PROFILE_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+static SSP_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static MAPPING_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 
 /// Return the process-wide compiled validator for an OSCAL model.
@@ -194,6 +200,7 @@ pub(crate) fn compiled_validator(
         OscalModelType::Catalog => &CATALOG_VALIDATOR,
         OscalModelType::ComponentDefinition => &COMPONENT_VALIDATOR,
         OscalModelType::Profile => &PROFILE_VALIDATOR,
+        OscalModelType::SystemSecurityPlan => &SSP_VALIDATOR,
         OscalModelType::Mapping => &MAPPING_VALIDATOR,
     };
     if let Some(validator) = cell.get() {

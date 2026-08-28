@@ -7,7 +7,8 @@ use clap::ValueEnum;
 /// Distinguishes between the OSCAL document types that FORGE can
 /// detect and process: [Catalog][crate::oscal::catalog::OscalCatalog],
 /// [`ComponentDefinition`][crate::oscal::component_definition::ComponentDefinition], and
-/// [Profile][crate::oscal::profile::OscalProfile], plus Control Mapping collections.
+/// [Profile][crate::oscal::profile::OscalProfile], System Security Plans, plus Control Mapping
+/// collections.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OscalModelType {
     /// An OSCAL Catalog containing groups and controls.
@@ -16,6 +17,8 @@ pub enum OscalModelType {
     ComponentDefinition,
     /// An OSCAL Profile that selects/overrides controls from a Catalog.
     Profile,
+    /// An OSCAL System Security Plan describing a system implementation.
+    SystemSecurityPlan,
     /// An OSCAL Control Mapping collection.
     Mapping,
 }
@@ -28,6 +31,7 @@ impl OscalModelType {
             Self::Catalog => "catalog",
             Self::ComponentDefinition => "component-definition",
             Self::Profile => "profile",
+            Self::SystemSecurityPlan => "system-security-plan",
             Self::Mapping => "mapping-collection",
         }
     }
@@ -141,6 +145,7 @@ mod tests {
         assert_eq!(OscalModelType::Catalog.to_string(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.to_string(), "component-definition");
         assert_eq!(OscalModelType::Profile.to_string(), "profile");
+        assert_eq!(OscalModelType::SystemSecurityPlan.to_string(), "system-security-plan");
         assert_eq!(OscalModelType::Mapping.to_string(), "mapping-collection");
     }
 
@@ -149,6 +154,7 @@ mod tests {
         assert_eq!(OscalModelType::Catalog.as_str(), "catalog");
         assert_eq!(OscalModelType::ComponentDefinition.as_str(), "component-definition");
         assert_eq!(OscalModelType::Profile.as_str(), "profile");
+        assert_eq!(OscalModelType::SystemSecurityPlan.as_str(), "system-security-plan");
         assert_eq!(OscalModelType::Mapping.as_str(), "mapping-collection");
     }
 

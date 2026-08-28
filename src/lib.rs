@@ -55,6 +55,8 @@ pub mod io;
 mod json_strict;
 /// Deterministic local policy lifecycle records and review queues.
 pub mod lifecycle;
+/// Deterministic evidence and implementation linkage indexes and maintenance reports.
+pub mod linkage;
 /// Human-reviewed OSCAL Control Mapping workflows.
 pub mod mapping;
 /// Read-only policy revision migration analysis.

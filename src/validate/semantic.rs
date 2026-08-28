@@ -174,7 +174,10 @@ fn walk_for_orphaned_links_inner(
 fn check_missing_references(json: &Value, model_type: OscalModelType) -> Vec<ValidationError> {
     match model_type {
         OscalModelType::ComponentDefinition => check_component_control_ids(json),
-        OscalModelType::Catalog | OscalModelType::Profile | OscalModelType::Mapping => vec![],
+        OscalModelType::Catalog
+        | OscalModelType::Profile
+        | OscalModelType::SystemSecurityPlan
+        | OscalModelType::Mapping => vec![],
     }
 }
 

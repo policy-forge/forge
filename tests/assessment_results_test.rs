@@ -58,6 +58,34 @@ fn artifact(path: &str, href: &str, bytes: &[u8], value: &Value, root: &str) -> 
     })
 }
 
+fn linkage_index(evidence: &Value) -> Value {
+    json!({
+        "schema_version": "forge.linkage-index/1",
+        "project_key": "assessment-fixture",
+        "project_title": "Assessment fixture linkage",
+        "as_of": "2026-01-02",
+        "provenance": {
+            "manifest_sha256": EVIDENCE_HASH,
+            "requirement_resources": [],
+            "implementation_resource": {
+                "key": "fixture-ssp",
+                "type": "system-security-plan",
+                "href": "ssp.json",
+                "raw_sha256": EVIDENCE_HASH,
+                "root_uuid": "22222222-2222-4222-8222-222222222222",
+                "document_version": "1.0.0",
+                "oscal_version": "1.2.3"
+            }
+        },
+        "requirement_inventory": [],
+        "implementation_inventory": [],
+        "evidence": evidence,
+        "links": [],
+        "findings": [],
+        "trust_boundary": "Association and byte-change metadata only."
+    })
+}
+
 fn mutate_assessment_plan(fixture: &Fixture, mutate: impl FnOnce(&mut Value)) {
     let root = fixture.manifest.parent().unwrap();
     let assessment_plan_path = root.join("assessment-plan.json");
@@ -204,14 +232,25 @@ fn fixture() -> Fixture {
     }]);
     let assessment_plan_bytes = write_json(&root.join("assessment-plan.json"), &assessment_plan);
 
-    let evidence_value = json!({
-        "schema_version": "forge.linkage-index/1",
-        "records": [{
-            "key": "evidence-1",
-            "sha256": EVIDENCE_HASH,
-            "content": "HIGHLY SENSITIVE EVIDENCE EXCERPT"
-        }]
-    });
+    let evidence_value = linkage_index(&json!([{
+        "key": "evidence-1",
+        "title": "Reviewed evidence",
+        "evidence_type": "artifact",
+        "owner": "assessor",
+        "collected_at": "2026-01-02T00:00:00Z",
+        "sensitivity_label": "restricted",
+        "source_label": "HIGHLY SENSITIVE EVIDENCE EXCERPT",
+        "freshness": "current",
+        "reference": {
+            "kind": "local",
+            "root_key": "local",
+            "relative_label": "record.bin",
+            "approved_sha256": EVIDENCE_HASH,
+            "approved_size": 42,
+            "observed_sha256": EVIDENCE_HASH,
+            "observed_size": 42
+        }
+    }]));
     let evidence_bytes = write_json(&root.join("evidence-index.json"), &evidence_value);
 
     let manifest_value = json!({
@@ -784,7 +823,7 @@ fn baseline_reports_object_content_rationale_stale_and_upstream_changes() {
     manifest["context"]["catalog"]["expected_sha256"] = json!(sha256(&catalog_bytes));
 
     let evidence_path = root.join("evidence-index.json");
-    let evidence = json!({"schema_version": "forge.linkage-index/1", "records": []});
+    let evidence = linkage_index(&json!([]));
     let evidence_bytes = write_json(&evidence_path, &evidence);
     manifest["context"]["evidence_index"]["expected_sha256"] = json!(sha256(&evidence_bytes));
     write_json(&fixture.manifest, &manifest);

@@ -112,13 +112,15 @@ fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactTyp
     match detect_model_type(json) {
         Ok(OscalModelType::Catalog) => Ok(ArtifactType::Catalog),
         Ok(OscalModelType::ComponentDefinition) => Ok(ArtifactType::ComponentDefinition),
-        Ok(unsupported @ (OscalModelType::Profile | OscalModelType::Mapping)) => {
-            Err(ForgeError::DiffError(format!(
-                "'{}': {} artifacts are not supported by diff; expected Catalog or ComponentDefinition",
-                path.display(),
-                unsupported.as_str()
-            )))
-        }
+        Ok(
+            unsupported @ (OscalModelType::Profile
+            | OscalModelType::SystemSecurityPlan
+            | OscalModelType::Mapping),
+        ) => Err(ForgeError::DiffError(format!(
+            "'{}': {} artifacts are not supported by diff; expected Catalog or ComponentDefinition",
+            path.display(),
+            unsupported.as_str()
+        ))),
         Err(error) => Err(ForgeError::DiffError(format!(
             "'{}': expected a single supported OSCAL root key ('catalog' or 'component-definition'): {error}",
             path.display()

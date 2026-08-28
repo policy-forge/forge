@@ -573,6 +573,7 @@ fn validate_validate(project_root: &Path, raw: &RawValidate) -> Result<ValidateS
         &[
             ("catalog", SchemaType::Catalog),
             ("component-definition", SchemaType::ComponentDefinition),
+            ("system-security-plan", SchemaType::SystemSecurityPlan),
             ("mapping", SchemaType::Mapping),
         ],
     )?;

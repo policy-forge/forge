@@ -180,6 +180,10 @@ fn detect_artifact_type(value: &Value, role: ArtifactRole) -> Result<ArtifactTyp
             "{} artifact uses unsupported Profile model; expected Catalog or Component Definition",
             role.as_str()
         ))),
+        Ok(OscalModelType::SystemSecurityPlan) => Err(ForgeError::DiffError(format!(
+            "{} artifact uses unsupported System Security Plan model; expected Catalog or Component Definition",
+            role.as_str()
+        ))),
         Ok(OscalModelType::Mapping) => Err(ForgeError::DiffError(format!(
             "{} artifact uses unsupported Control Mapping model; expected Catalog or Component Definition",
             role.as_str()
