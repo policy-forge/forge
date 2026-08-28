@@ -92,6 +92,20 @@ pub enum EvidenceFreshness {
     UnverifiedUri,
 }
 
+impl EvidenceFreshness {
+    #[must_use]
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::Current => "current",
+            Self::Expiring => "expiring",
+            Self::Expired => "expired",
+            Self::Changed => "changed",
+            Self::Unavailable => "unavailable",
+            Self::UnverifiedUri => "unverified-uri",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case", tag = "kind", deny_unknown_fields)]
 pub enum EvidenceReference {
@@ -1783,10 +1797,10 @@ fn render_text(report: &LinkageReport<'_>) -> String {
     for evidence in report.evidence {
         let _ = write!(
             output,
-            "- key={} owner={} freshness={:?}",
+            "- key={} owner={} freshness={}",
             escape(&evidence.key),
             escape(&evidence.owner),
-            evidence.freshness
+            evidence.freshness.as_str()
         );
         match &evidence.reference {
             EvidenceReference::Local {
@@ -1850,12 +1864,12 @@ fn render_html(report: &LinkageReport<'_>) -> String {
             link.implementations.iter().map(subject_identity).collect::<Vec<_>>().join(", ");
         let _ = write!(
             output,
-            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{:?}</td></tr>",
+            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
             html(&link.key),
             html(&requirements),
             html(&implementations),
             html(&link.evidence_keys.join(", ")),
-            link.implementation_status
+            link.implementation_status.as_str()
         );
     }
     output.push_str("</tbody></table><h2>Maintenance findings</h2><ul>");
@@ -1882,11 +1896,11 @@ fn render_html(report: &LinkageReport<'_>) -> String {
         };
         let _ = write!(
             output,
-            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{}</td></tr>",
+            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
             html(&evidence.key),
             html(&evidence.owner),
             html(&evidence.evidence_type),
-            evidence.freshness,
+            evidence.freshness.as_str(),
             html(&reference)
         );
     }

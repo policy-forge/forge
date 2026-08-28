@@ -356,8 +356,13 @@ fn uri_reports_are_redacted_and_never_fetched() {
     let index: Value = serde_json::from_slice(&std::fs::read(output).unwrap()).unwrap();
     assert_eq!(index["findings"][0]["reason_code"], "evidence-uri-unverified");
     assert_eq!(index["findings"][0]["action_required"], false);
-    for secret in ["user", "password", "token", "secret", "#private"] {
-        assert!(!combined.contains(secret), "leaked URI field {secret}");
+    assert!(combined.contains("freshness=unverified-uri"));
+    assert!(!combined.contains("UnverifiedUri"));
+    for sensitive_marker in ["user", "password", "token", "secret", "#private"] {
+        assert!(
+            !combined.contains(sensitive_marker),
+            "rendered output exposed a sensitive URI field"
+        );
     }
 }
 
@@ -372,6 +377,10 @@ fn html_trace_and_owner_queue_remain_metadata_only() {
     let html_text = std::fs::read_to_string(&html).unwrap();
     assert!(html_text.contains("access-link"));
     assert!(html_text.contains("requirements:control:ac-1"));
+    assert!(html_text.contains("<td>implemented</td>"));
+    assert!(html_text.contains("<td>changed</td>"));
+    assert!(!html_text.contains("Implemented"));
+    assert!(!html_text.contains("Changed"));
     assert!(!html_text.contains("changed private evidence"));
 
     let queue = fixture.dir.path().join("queue.json");
@@ -429,6 +438,23 @@ fn wrong_side_duplicate_and_missing_subjects_are_invalid_analysis() {
     assert_eq!(result.status.code(), Some(2));
     assert!(!output.exists());
     assert!(String::from_utf8_lossy(&result.stderr).contains("has type 'control'"));
+}
+
+#[test]
+fn evidence_validation_reports_the_nested_location_path() {
+    let fixture = Fixture::new();
+    let mut manifest: Value =
+        serde_json::from_slice(&std::fs::read(&fixture.manifest).unwrap()).unwrap();
+    manifest["evidence"][0]["location"]["root_key"] = json!("missing");
+    write_json(&fixture.manifest, &manifest);
+    let output = fixture.dir.path().join("must-not-exist.json");
+    let result = fixture.build(&output, &[]);
+    assert_eq!(result.status.code(), Some(2));
+    assert!(!output.exists());
+    assert!(
+        String::from_utf8_lossy(&result.stderr)
+            .contains("$.evidence[0].location.root_key references an unknown root")
+    );
 }
 
 #[test]

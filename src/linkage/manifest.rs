@@ -212,6 +212,19 @@ pub enum ImplementationStatus {
     Unknown,
 }
 
+impl ImplementationStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Planned => "planned",
+            Self::Partial => "partial",
+            Self::Implemented => "implemented",
+            Self::NotApplicable => "not-applicable",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ReviewEvidence {
@@ -430,20 +443,22 @@ fn validate_evidence<'a>(
         match &value.location {
             EvidenceLocation::Local { root_key, path: relative, expected_sha256, .. } => {
                 if !roots.contains(root_key.as_str()) {
-                    return Err(error(format!("{path}.root_key references an unknown root")));
+                    return Err(error(format!(
+                        "{path}.location.root_key references an unknown root"
+                    )));
                 }
-                local_path(&format!("{path}.path"), relative)?;
-                sha256(&format!("{path}.expected_sha256"), expected_sha256)?;
+                local_path(&format!("{path}.location.path"), relative)?;
+                sha256(&format!("{path}.location.expected_sha256"), expected_sha256)?;
             }
             EvidenceLocation::Uri { uri, unverified, expected_sha256 } => {
-                non_empty(&format!("{path}.uri"), uri)?;
+                non_empty(&format!("{path}.location.uri"), uri)?;
                 if !unverified {
                     return Err(error(format!(
-                        "{path}.unverified must be true because URI evidence is never fetched"
+                        "{path}.location.unverified must be true because URI evidence is never fetched"
                     )));
                 }
                 if let Some(hash) = expected_sha256 {
-                    sha256(&format!("{path}.expected_sha256"), hash)?;
+                    sha256(&format!("{path}.location.expected_sha256"), hash)?;
                 }
             }
         }

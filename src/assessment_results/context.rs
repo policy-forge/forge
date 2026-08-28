@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use super::manifest::{ArtifactManifest, ContextManifest, EvidenceIndexManifest, SubjectType};
 use crate::json_strict::{self, Limits};
+use crate::linkage::{EvidenceRecord, EvidenceReference, LinkageIndex};
 use crate::validate::{self, OscalModelType};
 use crate::{ForgeError, io};
 
@@ -911,55 +912,41 @@ fn load_evidence_index(
     if value.get("schema_version").and_then(Value::as_str) != Some("forge.linkage-index/1") {
         return Err(error("evidence index must declare schema_version 'forge.linkage-index/1'"));
     }
-    let mut identities = BTreeMap::new();
-    collect_evidence_identities(&value, 0, &mut identities)?;
+    let index: LinkageIndex = serde_json::from_value(value)
+        .map_err(|cause| error(format!("invalid PRD 060 evidence index: {cause}")))?;
+    let identities = collect_evidence_identities(&index.evidence)?;
     Ok((hash, identities, path))
 }
 
 fn collect_evidence_identities(
-    value: &Value,
-    depth: usize,
-    identities: &mut BTreeMap<String, String>,
-) -> Result<(), ForgeError> {
-    enforce_depth(depth)?;
-    match value {
-        Value::Object(object) => {
-            if let (Some(key), Some(hash)) = (
-                object.get("key").and_then(Value::as_str),
-                object.get("sha256").and_then(Value::as_str),
-            ) {
-                json_strict::validate_lowercase_sha256("evidence.sha256", hash).map_err(error)?;
-                match identities.insert(key.to_string(), hash.to_string()) {
-                    Some(previous) if previous != hash => {
-                        return Err(error(format!(
-                            "evidence index key '{}' has conflicting SHA-256 identities",
-                            bounded(key)
-                        )));
-                    }
-                    Some(_) => {
-                        return Err(error(format!(
-                            "evidence index key '{}' is duplicated",
-                            bounded(key)
-                        )));
-                    }
-                    None => {}
-                }
-                if identities.len() > MAX_INVENTORY_ITEMS {
-                    return Err(error("evidence index exceeds the identity inventory limit"));
-                }
-            }
-            for child in object.values() {
-                collect_evidence_identities(child, depth + 1, identities)?;
-            }
-        }
-        Value::Array(values) => {
-            for child in values {
-                collect_evidence_identities(child, depth + 1, identities)?;
-            }
-        }
-        _ => {}
+    records: &[EvidenceRecord],
+) -> Result<BTreeMap<String, String>, ForgeError> {
+    if records.len() > MAX_INVENTORY_ITEMS {
+        return Err(error("evidence index exceeds the identity inventory limit"));
     }
-    Ok(())
+    let mut identities = BTreeMap::new();
+    let mut keys = BTreeSet::new();
+    for record in records {
+        if record.key.trim().is_empty() {
+            return Err(error("evidence index contains an empty evidence key"));
+        }
+        if !keys.insert(record.key.as_str()) {
+            return Err(error(format!(
+                "evidence index key '{}' is duplicated",
+                bounded(&record.key)
+            )));
+        }
+        let hash = match &record.reference {
+            EvidenceReference::Local { approved_sha256, observed_sha256, .. } => {
+                observed_sha256.as_ref().unwrap_or(approved_sha256)
+            }
+            EvidenceReference::Uri { expected_sha256: Some(hash), .. } => hash,
+            EvidenceReference::Uri { expected_sha256: None, .. } => continue,
+        };
+        json_strict::validate_lowercase_sha256("evidence.reference.sha256", hash).map_err(error)?;
+        identities.insert(record.key.clone(), hash.clone());
+    }
+    Ok(identities)
 }
 
 fn resolve_confined_regular_file(
@@ -1060,16 +1047,78 @@ mod tests {
     use super::*;
 
     #[test]
-    fn evidence_identity_collection_rejects_conflicting_keys() {
-        let value = serde_json::json!({
-            "evidence": [
-                {"key": "e-1", "sha256": "a".repeat(64)},
-                {"key": "e-1", "sha256": "b".repeat(64)}
-            ]
-        });
-        let error = collect_evidence_identities(&value, 0, &mut BTreeMap::new())
-            .expect_err("conflicting evidence identity must fail");
-        assert!(error.to_string().contains("conflicting SHA-256 identities"));
+    fn evidence_identity_collection_rejects_duplicate_keys() {
+        let records: Vec<EvidenceRecord> = serde_json::from_value(serde_json::json!([
+            evidence_record("e-1", &"a".repeat(64)),
+            evidence_record("e-1", &"b".repeat(64))
+        ]))
+        .expect("records");
+        let error = collect_evidence_identities(&records)
+            .expect_err("duplicate evidence identity must fail");
+        assert!(error.to_string().contains("is duplicated"));
+    }
+
+    #[test]
+    fn evidence_identity_uses_observed_local_hash_and_verified_uri_hash() {
+        let records: Vec<EvidenceRecord> = serde_json::from_value(serde_json::json!([
+            evidence_record("local", &"a".repeat(64)),
+            {
+                "key": "remote",
+                "title": "Remote evidence",
+                "evidence_type": "ticket",
+                "owner": "owner",
+                "collected_at": "2026-08-20T00:00:00Z",
+                "sensitivity_label": "restricted",
+                "source_label": "reviewed reference",
+                "freshness": "unverified-uri",
+                "reference": {
+                    "kind": "uri",
+                    "redacted_uri": "https://example.invalid/ticket/1",
+                    "expected_sha256": "c".repeat(64)
+                }
+            },
+            {
+                "key": "unhashed-remote",
+                "title": "Unhashed remote evidence",
+                "evidence_type": "ticket",
+                "owner": "owner",
+                "collected_at": "2026-08-20T00:00:00Z",
+                "sensitivity_label": "restricted",
+                "source_label": "reviewed reference",
+                "freshness": "unverified-uri",
+                "reference": {
+                    "kind": "uri",
+                    "redacted_uri": "https://example.invalid/ticket/2"
+                }
+            }
+        ]))
+        .expect("records");
+        let identities = collect_evidence_identities(&records).expect("identities");
+        assert_eq!(identities["local"], "b".repeat(64));
+        assert_eq!(identities["remote"], "c".repeat(64));
+        assert!(!identities.contains_key("unhashed-remote"));
+    }
+
+    fn evidence_record(key: &str, approved_sha256: &str) -> Value {
+        serde_json::json!({
+            "key": key,
+            "title": "Local evidence",
+            "evidence_type": "artifact",
+            "owner": "owner",
+            "collected_at": "2026-08-20T00:00:00Z",
+            "sensitivity_label": "restricted",
+            "source_label": "reviewed artifact",
+            "freshness": "changed",
+            "reference": {
+                "kind": "local",
+                "root_key": "local",
+                "relative_label": "record.bin",
+                "approved_sha256": approved_sha256,
+                "approved_size": 1,
+                "observed_sha256": "b".repeat(64),
+                "observed_size": 1
+            }
+        })
     }
 
     #[cfg(unix)]
