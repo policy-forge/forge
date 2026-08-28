@@ -55,7 +55,12 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 - **Citation extraction** — URLs and references extracted into OSCAL back-matter resources
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
 - **Evidence linkage** — Deterministic requirement-to-implementation indexes with metadata-only evidence freshness and baseline checks
+- **Reusable policy components** — Compose local, hash-pinned Markdown clauses with bounded typed values and span-level provenance
 - **Zero network dependencies** — Reads and writes local files only
+
+See [Reusable Policy Components](docs/reusable-policy-components.md) for the
+closed component/composition contracts, safe substitution rules, impact report,
+and OSCAL trace provenance workflow.
 
 ## 🚦 Quick Start
 

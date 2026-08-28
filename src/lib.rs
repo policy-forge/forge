@@ -73,6 +73,8 @@ pub mod parameter;
 pub mod parse;
 /// End-to-end policy-to-OSCAL conversion pipelines.
 pub mod pipeline;
+/// Deterministic composition of local, hash-pinned Markdown policy components.
+pub mod policy;
 /// OSCAL artifact round-trip validation.
 pub mod round_trip;
 /// Input sanitization utilities (control-character stripping, etc.).

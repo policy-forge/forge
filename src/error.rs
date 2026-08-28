@@ -233,6 +233,10 @@ pub enum ForgeError {
     #[error("Framework impact analysis error: {0}")]
     FrameworkImpact(String),
 
+    /// A reusable policy component or composition contract is invalid.
+    #[error("Policy composition error: {0}")]
+    PolicyComposition(String),
+
     /// Framework impact construction failed while preserving its source error.
     #[error("Framework impact analysis error: {context}: {source}")]
     FrameworkImpactWithSource {
@@ -529,6 +533,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::ApplicabilityAnalysis(_)
         | ForgeError::FrameworkImpact(_)
         | ForgeError::FrameworkImpactWithSource { .. }
+        | ForgeError::PolicyComposition(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)

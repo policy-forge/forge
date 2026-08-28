@@ -12,9 +12,29 @@ use crate::trace::generate_trace_report;
 ///
 /// Returns `ForgeError` if artifact reading, parsing, or output writing fails.
 pub fn execute(artifact: &Path, source: &Path, output: Option<&Path>) -> Result<(), ForgeError> {
+    execute_with_composition_provenance(artifact, source, output, None)
+}
+
+/// Execute trace reporting with an optional PRD 059 composition provenance bridge.
+///
+/// # Errors
+///
+/// Returns [`ForgeError`] when trace inputs, composition provenance, or output cannot be
+/// validated, read, rendered, or written.
+pub fn execute_with_composition_provenance(
+    artifact: &Path,
+    source: &Path,
+    output: Option<&Path>,
+    composition_provenance: Option<&Path>,
+) -> Result<(), ForgeError> {
     let report = generate_trace_report(artifact, source)
         .map_err(|error| contextualize_trace_input_error(error, artifact, source))?;
-    let table = format_trace_table(&report);
+    let mut table = format_trace_table(&report);
+    if let Some(provenance) = composition_provenance {
+        table.push_str(&crate::policy::format_composition_trace_origins(
+            provenance, source, &report,
+        )?);
+    }
 
     crate::cli::output::write_output(&table, output)?;
     if let Some(path) = output {
