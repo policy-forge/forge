@@ -426,6 +426,33 @@ fn owner_queue_cannot_overwrite_a_referenced_evidence_file() {
 }
 
 #[test]
+fn owner_queue_deduplicates_identical_cross_manifest_findings() {
+    let fixture = Fixture::new();
+    std::fs::write(&fixture.evidence, b"changed private evidence\n").unwrap();
+    let second_manifest = fixture.dir.path().join("linkage-copy.json");
+    std::fs::copy(&fixture.manifest, &second_manifest).unwrap();
+    let queue = fixture.dir.path().join("queue.json");
+    let queued = run_in(
+        fixture.dir.path(),
+        &[
+            "linkage",
+            "queue",
+            "--manifest",
+            fixture.manifest.to_str().unwrap(),
+            "--manifest",
+            second_manifest.to_str().unwrap(),
+            "--as-of",
+            "2026-08-27",
+            "--output",
+            queue.to_str().unwrap(),
+        ],
+    );
+    assert_eq!(queued.status.code(), Some(1));
+    let queue: Value = serde_json::from_slice(&std::fs::read(queue).unwrap()).unwrap();
+    assert_eq!(queue["groups"][0]["items"].as_array().unwrap().len(), 1);
+}
+
+#[test]
 fn wrong_side_duplicate_and_missing_subjects_are_invalid_analysis() {
     let fixture = Fixture::new();
     let mut manifest: Value =
@@ -477,6 +504,13 @@ fn not_applicable_assertions_require_independent_review_evidence() {
     write_json(&fixture.manifest, &manifest);
     let accepted = fixture.build(&output, &[]);
     assert!(accepted.status.success(), "{}", String::from_utf8_lossy(&accepted.stderr));
+
+    manifest["links"][0]["implementation_status"] = json!("implemented");
+    write_json(&fixture.manifest, &manifest);
+    let invalid_output = fixture.dir.path().join("invalid-index.json");
+    let rejected = fixture.build(&invalid_output, &[]);
+    assert_eq!(rejected.status.code(), Some(2));
+    assert!(!invalid_output.exists());
 }
 
 #[test]
@@ -506,13 +540,25 @@ fn profile_requirement_requires_and_fingerprints_reviewed_companion() {
         "type": "profile",
         "artifact": "profile.json",
         "href": "profile.json",
-        "resolved_catalog": "catalog.json",
-        "resolved_catalog_attestation": true,
-        "expected_sha256": file_hash(&profile_path),
-        "expected_resolved_catalog_sha256": file_hash(&catalog_path)
+        "expected_sha256": file_hash(&profile_path)
     });
     write_json(&fixture.manifest, &manifest);
     let output = fixture.dir.path().join("index.json");
+    let missing_companion = fixture.build(&output, &[]);
+    assert_eq!(missing_companion.status.code(), Some(2));
+    assert!(!output.exists());
+
+    manifest["requirement_resources"][0]["resolved_catalog"] = json!("catalog.json");
+    manifest["requirement_resources"][0]["resolved_catalog_attestation"] = json!(false);
+    manifest["requirement_resources"][0]["expected_resolved_catalog_sha256"] =
+        json!(file_hash(&catalog_path));
+    write_json(&fixture.manifest, &manifest);
+    let unreviewed_companion = fixture.build(&output, &[]);
+    assert_eq!(unreviewed_companion.status.code(), Some(2));
+    assert!(!output.exists());
+
+    manifest["requirement_resources"][0]["resolved_catalog_attestation"] = json!(true);
+    write_json(&fixture.manifest, &manifest);
     let result = fixture.build(&output, &[]);
     assert!(result.status.success(), "{}", String::from_utf8_lossy(&result.stderr));
     let index: Value = serde_json::from_slice(&std::fs::read(output).unwrap()).unwrap();
@@ -520,6 +566,16 @@ fn profile_requirement_requires_and_fingerprints_reviewed_companion() {
         index["provenance"]["requirement_resources"][0]["resolved_catalog_sha256"],
         file_hash(&catalog_path)
     );
+
+    manifest["requirement_resources"][0]["type"] = json!("catalog");
+    manifest["requirement_resources"][0]["artifact"] = json!("catalog.json");
+    manifest["requirement_resources"][0]["href"] = json!("catalog.json");
+    manifest["requirement_resources"][0]["expected_sha256"] = json!(file_hash(&catalog_path));
+    write_json(&fixture.manifest, &manifest);
+    let invalid_output = fixture.dir.path().join("catalog-with-companion.json");
+    let catalog_with_companion = fixture.build(&invalid_output, &[]);
+    assert_eq!(catalog_with_companion.status.code(), Some(2));
+    assert!(!invalid_output.exists());
 }
 
 #[cfg(unix)]

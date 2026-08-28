@@ -258,7 +258,10 @@ pub fn execute_init(
     implementation_path: &Path,
     output: Option<&Path>,
 ) -> Result<(), ForgeError> {
-    let requirement_value = read_json(requirement_path, io::MAX_FILE_SIZE, "requirement artifact")?;
+    let requirement_bytes =
+        inventory::read_bounded_file(requirement_path, io::MAX_FILE_SIZE, "requirement artifact")?;
+    let requirement_value: Value = serde_json::from_slice(&requirement_bytes)
+        .map_err(|cause| error(format!("requirement artifact is not JSON: {cause}")))?;
     let resource_type = match validate::detect_model_type(&requirement_value)
         .map_err(|cause| error(format!("requirement artifact: {cause}")))?
     {
@@ -281,8 +284,6 @@ pub fn execute_init(
     {
         return Err(error("--resolved-catalog is only valid for a Profile"));
     }
-    let requirement_bytes =
-        inventory::read_bounded_file(requirement_path, io::MAX_FILE_SIZE, "requirement artifact")?;
     let companion_hash = resolved_catalog
         .map(|path| {
             inventory::read_bounded_file(path, io::MAX_FILE_SIZE, "resolved Catalog")
@@ -446,6 +447,7 @@ pub fn execute_queue(
         findings.extend(prepared.index.findings);
     }
     findings.sort();
+    findings.dedup();
     let mut groups = BTreeMap::<String, Vec<QueueItem>>::new();
     for finding in &findings {
         groups
@@ -1995,11 +1997,6 @@ fn descendant_path(path: &Path, output: Option<&Path>) -> Result<PathBuf, ForgeE
         .map_err(|_| error("init inputs must be descendants of the manifest directory"))
 }
 
-fn read_json(path: &Path, max: u64, label: &str) -> Result<Value, ForgeError> {
-    let bytes = inventory::read_bounded_file(path, max, label)?;
-    serde_json::from_slice(&bytes).map_err(|cause| error(format!("{label} is not JSON: {cause}")))
-}
-
 fn required_string(value: Option<&Value>, label: &str) -> Result<String, ForgeError> {
     value
         .and_then(Value::as_str)
@@ -2094,24 +2091,26 @@ fn normalize_relative_label(path: &Path) -> String {
 }
 
 fn sanitize_reference_label(value: &str) -> String {
-    if let Ok(uri) = Url::parse(value)
-        && !uri.scheme().is_empty()
-    {
-        return validate_and_redact_uri(value, &[uri.scheme().to_string()])
-            .unwrap_or_else(|_| "redacted-reference".to_string());
-    }
     let looks_windows_absolute = value.as_bytes().get(1) == Some(&b':')
         && value.as_bytes().get(2).is_some_and(|byte| matches!(byte, b'/' | b'\\'));
     let path = Path::new(value);
     if path.is_absolute() || looks_windows_absolute {
         return safe_file_label(path);
     }
+    if let Ok(uri) = Url::parse(value)
+        && !uri.scheme().is_empty()
+    {
+        return validate_and_redact_uri(value, &[uri.scheme().to_string()])
+            .unwrap_or_else(|_| "redacted-reference".to_string());
+    }
     escape(value)
 }
 
 fn safe_file_label(path: &Path) -> String {
-    path.file_name()
-        .map_or_else(|| "artifact.json".to_string(), |name| name.to_string_lossy().into_owned())
+    path.to_string_lossy()
+        .rsplit(['/', '\\'])
+        .find(|part| !part.is_empty())
+        .map_or_else(|| "artifact.json".to_string(), str::to_string)
 }
 
 fn sorted(mut values: Vec<String>) -> Vec<String> {
@@ -2197,6 +2196,15 @@ mod tests {
     fn uri_policy_rejects_http_and_allows_explicit_custom_scheme() {
         assert!(validate_and_redact_uri("http://example.com/evidence", &[]).is_err());
         assert!(validate_and_redact_uri("vault+corp://records/1", &["vault+corp".into()]).is_ok());
+    }
+
+    #[test]
+    fn reference_labels_remove_both_windows_absolute_path_forms() {
+        assert_eq!(sanitize_reference_label("C:/private/reports/catalog.json"), "catalog.json");
+        assert_eq!(
+            sanitize_reference_label(r"C:\private\reports\component.json"),
+            "component.json"
+        );
     }
 
     #[test]

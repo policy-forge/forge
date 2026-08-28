@@ -50,9 +50,6 @@ pub fn generate_trace_report(
     let json: serde_json::Value = serde_json::from_str(&artifact_content)
         .map_err(|error| ForgeError::Parse(format!("Invalid JSON in artifact: {error}")))?;
 
-    // Read the source line count and mtime from the same opened-file snapshot.
-    let (source_line_count, source_modified) = read_source_file(source_path)?;
-
     let art_type = walker::detect_artifact_type(&json)?;
     let entries = match art_type {
         OscalModelType::Catalog => {
@@ -86,6 +83,10 @@ pub fn generate_trace_report(
             });
         }
     };
+
+    // Read the source line count and mtime from the same opened-file snapshot only after the
+    // artifact has been accepted for traceability.
+    let (source_line_count, source_modified) = read_source_file(source_path)?;
 
     let metadata_last_modified = json
         .get(art_type.as_str())

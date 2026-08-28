@@ -103,6 +103,16 @@ fn error_unsupported_type() {
     assert!(matches!(err, forge::ForgeError::TraceUnsupportedArtifact { .. }));
 }
 
+#[test]
+fn unsupported_ssp_is_rejected_before_reading_source() {
+    let temp = tempfile::NamedTempFile::new().unwrap();
+    std::fs::write(temp.path(), r#"{"system-security-plan": {}}"#).unwrap();
+
+    let error = generate_trace_report(temp.path(), Path::new("nonexistent-source.md"))
+        .expect_err("SSP must be rejected before source I/O");
+    assert!(matches!(error, forge::ForgeError::TraceUnsupportedArtifact { .. }));
+}
+
 // T030: Integration test — file output
 #[test]
 fn output_to_file() {

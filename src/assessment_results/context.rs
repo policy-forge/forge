@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use super::manifest::{ArtifactManifest, ContextManifest, EvidenceIndexManifest, SubjectType};
 use crate::json_strict::{self, Limits};
-use crate::linkage::{EvidenceRecord, EvidenceReference, LinkageIndex};
+use crate::linkage::{EvidenceFreshness, EvidenceRecord, EvidenceReference, LinkageIndex};
 use crate::validate::{self, OscalModelType};
 use crate::{ForgeError, io};
 
@@ -937,10 +937,19 @@ fn collect_evidence_identities(
             )));
         }
         let hash = match &record.reference {
-            EvidenceReference::Local { approved_sha256, observed_sha256, .. } => {
-                observed_sha256.as_ref().unwrap_or(approved_sha256)
+            EvidenceReference::Local { observed_sha256: Some(hash), .. }
+            | EvidenceReference::Uri { expected_sha256: Some(hash), .. } => hash,
+            EvidenceReference::Local { observed_sha256: None, .. }
+                if record.freshness == EvidenceFreshness::Unavailable =>
+            {
+                continue;
             }
-            EvidenceReference::Uri { expected_sha256: Some(hash), .. } => hash,
+            EvidenceReference::Local { observed_sha256: None, .. } => {
+                return Err(error(format!(
+                    "evidence index key '{}' is not unavailable but has no observed SHA-256 identity",
+                    bounded(&record.key)
+                )));
+            }
             EvidenceReference::Uri { expected_sha256: None, .. } => continue,
         };
         json_strict::validate_lowercase_sha256("evidence.reference.sha256", hash).map_err(error)?;
@@ -1090,6 +1099,23 @@ mod tests {
                     "kind": "uri",
                     "redacted_uri": "https://example.invalid/ticket/2"
                 }
+            },
+            {
+                "key": "unavailable-local",
+                "title": "Unavailable local evidence",
+                "evidence_type": "artifact",
+                "owner": "owner",
+                "collected_at": "2026-08-20T00:00:00Z",
+                "sensitivity_label": "restricted",
+                "source_label": "reviewed artifact",
+                "freshness": "unavailable",
+                "reference": {
+                    "kind": "local",
+                    "root_key": "local",
+                    "relative_label": "missing.bin",
+                    "approved_sha256": "d".repeat(64),
+                    "approved_size": 1
+                }
             }
         ]))
         .expect("records");
@@ -1097,6 +1123,7 @@ mod tests {
         assert_eq!(identities["local"], "b".repeat(64));
         assert_eq!(identities["remote"], "c".repeat(64));
         assert!(!identities.contains_key("unhashed-remote"));
+        assert!(!identities.contains_key("unavailable-local"));
     }
 
     fn evidence_record(key: &str, approved_sha256: &str) -> Value {

@@ -165,10 +165,8 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
         OscalModelType::Profile => {
             include_str!("../../schemas/oscal_profile_schema.json")
         }
-        // The existing SSP schema baseline predates its use by the public validator. Keep the
-        // single checked-in schema source until the schema-refresh workflow promotes all models.
         OscalModelType::SystemSecurityPlan => {
-            include_str!("../../tests/fixtures/schemas/oscal_ssp_schema.json")
+            include_str!("../../schemas/oscal_ssp_schema.json")
         }
         OscalModelType::Mapping => {
             include_str!("../../schemas/oscal_mapping_schema.json")
