@@ -486,7 +486,8 @@ fn symlinked_component_source_is_rejected() {
     use std::os::unix::fs::symlink;
 
     let fixture = Fixture::new();
-    let outside = fixture.root.parent().unwrap().join("outside-policy-component.md");
+    let outside_directory = tempfile::tempdir().expect("outside tempdir");
+    let outside = outside_directory.path().join("outside-policy-component.md");
     std::fs::write(&outside, "## Outside\n").unwrap();
     std::fs::remove_file(&fixture.source).unwrap();
     symlink(&outside, &fixture.source).unwrap();

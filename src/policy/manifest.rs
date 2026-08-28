@@ -2,6 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
+use std::sync::LazyLock;
 
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +17,12 @@ pub const MAX_STRING_BYTES: usize = 16 * 1024;
 const MAX_JSON_DEPTH: usize = 32;
 const STRICT_JSON_LIMITS: crate::json_strict::Limits =
     crate::json_strict::Limits { max_depth: MAX_JSON_DEPTH, max_string_bytes: MAX_STRING_BYTES };
+static SEMANTIC_VERSION_PATTERN: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(
+        r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$",
+    )
+    .expect("static semantic-version grammar must compile")
+});
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -349,15 +356,19 @@ pub fn validate_value(
 ) -> Result<(), ForgeError> {
     validate_value_type(path, declaration.parameter_type, value)?;
     let constraints = &declaration.constraints;
+    let declared_regex = constraints
+        .regex
+        .as_deref()
+        .map(regex::Regex::new)
+        .transpose()
+        .map_err(|source| error(source.to_string()))?;
     match value {
         ParameterValue::String(value) => {
             validate_text_value(path, value)?;
             let length = value.chars().count();
             range(path, "length", length, constraints.min_length, constraints.max_length)?;
-            if let Some(pattern) = &constraints.regex
-                && !regex::Regex::new(pattern)
-                    .map_err(|source| error(source.to_string()))?
-                    .is_match(value)
+            if let Some(pattern) = &declared_regex
+                && !pattern.is_match(value)
             {
                 return Err(error(format!("{path} does not match the declared regex")));
             }
@@ -381,10 +392,8 @@ pub fn validate_value(
                     constraints.min_length,
                     constraints.max_length,
                 )?;
-                if let Some(pattern) = &constraints.regex
-                    && !regex::Regex::new(pattern)
-                        .map_err(|source| error(source.to_string()))?
-                        .is_match(value)
+                if let Some(pattern) = &declared_regex
+                    && !pattern.is_match(value)
                 {
                     return Err(error(format!(
                         "{path}[{index}] does not match the declared regex"
@@ -459,11 +468,7 @@ fn non_empty(path: &str, value: &str) -> Result<(), ForgeError> {
 
 fn semantic_version(path: &str, value: &str) -> Result<(), ForgeError> {
     non_empty(path, value)?;
-    let pattern = regex::Regex::new(
-        r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$",
-    )
-    .map_err(|source| error(format!("internal semantic-version grammar failed: {source}")))?;
-    if pattern.is_match(value) {
+    if SEMANTIC_VERSION_PATTERN.is_match(value) {
         Ok(())
     } else {
         Err(error(format!("{path} must be a semantic version such as 1.2.3")))
@@ -523,7 +528,7 @@ pub fn validate_local_path(
     if value.as_os_str().is_empty() {
         return Err(error(format!("{path} must not be empty")));
     }
-    let spelling = value.to_string_lossy();
+    let spelling = value.to_str().ok_or_else(|| error(format!("{path} must be valid UTF-8")))?;
     let bytes = spelling.as_bytes();
     let windows_drive = bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
     let unsafe_component = value.components().any(|component| {
@@ -632,17 +637,31 @@ mod tests {
     fn path_spelling_rejects_cross_platform_escape_forms() {
         for value in [
             "../outside.md",
-            r"..\\outside.md",
+            r"..\outside.md",
             r"components\clause.md",
             "/tmp/x.md",
-            r"C:\\x.md",
-            r"\\server\\x.md",
+            r"C:\x.md",
+            r"\\server\x.md",
         ] {
             assert!(
                 validate_local_path("$.source", Path::new(value), Some("md")).is_err(),
                 "accepted {value}"
             );
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn path_spelling_rejects_invalid_utf8() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let value = Path::new(std::ffi::OsStr::from_bytes(b"component-\xff.md"));
+        assert!(
+            validate_local_path("$.source", value, Some("md"))
+                .unwrap_err()
+                .to_string()
+                .contains("valid UTF-8")
+        );
     }
 
     #[test]
