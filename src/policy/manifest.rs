@@ -460,7 +460,7 @@ fn non_empty(path: &str, value: &str) -> Result<(), ForgeError> {
 fn semantic_version(path: &str, value: &str) -> Result<(), ForgeError> {
     non_empty(path, value)?;
     let pattern = regex::Regex::new(
-        r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$",
+        r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$",
     )
     .map_err(|source| error(format!("internal semantic-version grammar failed: {source}")))?;
     if pattern.is_match(value) {
@@ -642,12 +642,22 @@ mod tests {
     #[test]
     fn component_version_is_semantic() {
         let mut manifest = valid_component();
-        manifest["version"] = json!("version-one");
-        assert!(
-            parse_component(&serde_json::to_vec(&manifest).unwrap())
-                .unwrap_err()
-                .to_string()
-                .contains("semantic version")
-        );
+        for invalid in ["version-one", "1.0.0-01", "1.0.0-alpha.01"] {
+            manifest["version"] = json!(invalid);
+            assert!(
+                parse_component(&serde_json::to_vec(&manifest).unwrap())
+                    .unwrap_err()
+                    .to_string()
+                    .contains("semantic version"),
+                "accepted invalid semantic version {invalid}"
+            );
+        }
+        for valid in ["1.0.0-0", "1.0.0-alpha.1", "1.0.0-alpha-01", "1.0.0+01"] {
+            manifest["version"] = json!(valid);
+            assert!(
+                parse_component(&serde_json::to_vec(&manifest).unwrap()).is_ok(),
+                "rejected valid semantic version {valid}"
+            );
+        }
     }
 }

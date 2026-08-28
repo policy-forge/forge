@@ -247,6 +247,39 @@ fn unsupported_placeholder_context_and_output_alias_fail_closed() {
 }
 
 #[test]
+fn substitutions_escape_setext_markers_and_reject_new_block_structure() {
+    let fixture = Fixture::new();
+    let source = b"## Access Review\n\n{{forge:param:owner-role}}\n";
+    std::fs::write(&fixture.source, source).unwrap();
+    let mut sidecar: Value =
+        serde_json::from_slice(&std::fs::read(&fixture.component_manifest).unwrap()).unwrap();
+    sidecar["expected_sha256"] = json!(hash(source));
+    sidecar["parameters"] = json!([{
+        "name": "owner-role",
+        "type": "string",
+        "required": true
+    }]);
+    write_json(&fixture.component_manifest, &sidecar);
+
+    let mut composition: Value =
+        serde_json::from_slice(&std::fs::read(&fixture.manifest).unwrap()).unwrap();
+    composition["components"][0]["parameters"] = json!({"owner-role": "==="});
+    composition["components"][1]["parameters"] = json!({"owner-role": "ordinary text"});
+    write_json(&fixture.manifest, &composition);
+    let escaped = fixture.compose(false);
+    assert!(escaped.status.success(), "{}", String::from_utf8_lossy(&escaped.stderr));
+    assert!(std::fs::read_to_string(fixture.output("policy.md")).unwrap().contains(r"\=\=\="));
+
+    composition["components"][0]["parameters"] = json!({"owner-role": "    indented code"});
+    write_json(&fixture.manifest, &composition);
+    let structural = fixture.compose(false);
+    assert_eq!(structural.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&structural.stderr).contains("changes Markdown block structure")
+    );
+}
+
+#[test]
 fn byte_identical_projects_in_different_absolute_directories_match() {
     let first = Fixture::new();
     let second = Fixture::new();
@@ -288,6 +321,39 @@ fn impact_report_is_explicit_deterministic_and_does_not_refresh_locks() {
     assert_eq!(impact["affected_instances"][0]["pin_matches"], false);
     assert_eq!(impact["affected_instances"][1]["pin_matches"], false);
     assert_eq!(std::fs::read(fixture.output("policy.lock.json")).unwrap(), lock_before);
+}
+
+#[test]
+fn impact_report_distinguishes_same_named_manifests_and_policy_keys() {
+    let first = Fixture::new();
+    let second = Fixture::new();
+    let report = first.root.join("portfolio-impact.json");
+    let result = run(&[
+        "policy",
+        "component",
+        "impact",
+        "--component-key",
+        "access-review",
+        "--manifest",
+        first.manifest.to_str().unwrap(),
+        "--manifest",
+        second.manifest.to_str().unwrap(),
+        "--output",
+        report.to_str().unwrap(),
+    ]);
+    assert!(result.status.success(), "{}", String::from_utf8_lossy(&result.stderr));
+    let impact: Value = serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
+    assert_eq!(impact["affected_policy_count"], 2);
+    assert_eq!(impact["affected_instance_count"], 4);
+    let labels = impact["affected_instances"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|dependency| dependency["composition_manifest"].as_str().unwrap())
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(labels.len(), 2);
+    assert!(labels.contains("manifest-0001/composition.json"));
+    assert!(labels.contains("manifest-0002/composition.json"));
 }
 
 #[test]

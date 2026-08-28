@@ -1,8 +1,9 @@
 //! One-pass Markdown component rendering with span-level provenance.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Range;
 
-use pulldown_cmark::{Event, HeadingLevel, Parser, Tag};
+use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -204,11 +205,15 @@ fn render_component(
             component.source_label
         ))
     })?;
-    validate_heading_structure(text, &component.source_label)?;
+    validate_static_component(
+        &component.manifest,
+        &component.source_label,
+        &component.source_bytes,
+    )?;
     let declarations: BTreeMap<_, _> =
         component.manifest.parameters.iter().map(|item| (item.name.as_str(), item)).collect();
     let mut used = BTreeSet::new();
-    let mut fence: Option<char> = None;
+    let component_start = state.lines.len();
     for (line_index, raw_line) in text.split('\n').enumerate() {
         let line = raw_line.strip_suffix('\r').unwrap_or(raw_line);
         let source_line = line_index + 1;
@@ -223,7 +228,6 @@ fn render_component(
             parameter_values,
             &mut used,
             &mut state.spans,
-            &mut fence,
             remaining_line_bytes,
         )?;
         state.push_line(rendered)?;
@@ -231,6 +235,8 @@ fn render_component(
     while state.lines.last().is_some_and(String::is_empty) {
         state.pop_empty_line();
     }
+    let rendered = state.lines[component_start..].join("\n");
+    validate_preserved_block_structure(text, &rendered, &component.source_label)?;
     Ok(used)
 }
 
@@ -244,29 +250,9 @@ fn render_line(
     values: &BTreeMap<String, ParameterValue>,
     used: &mut BTreeSet<String>,
     spans: &mut Vec<ProvenanceSpan>,
-    fence: &mut Option<char>,
     max_line_bytes: usize,
 ) -> Result<String, crate::ForgeError> {
-    let trimmed = line.trim_start_matches(' ');
-    let fence_marker = if trimmed.starts_with("```") {
-        Some('`')
-    } else if trimmed.starts_with("~~~") {
-        Some('~')
-    } else {
-        None
-    };
-    let inside_fence = fence.is_some() || fence_marker.is_some();
     let mut occurrences = placeholder_occurrences(line)?;
-    if inside_fence && !occurrences.is_empty() {
-        return Err(context_error(component, source_line, "fenced code block"));
-    }
-    if let Some(marker) = fence_marker {
-        if *fence == Some(marker) {
-            *fence = None;
-        } else if fence.is_none() {
-            *fence = Some(marker);
-        }
-    }
     if occurrences.is_empty() {
         if line.len() > max_line_bytes {
             return Err(composition_error(format!(
@@ -289,21 +275,6 @@ fn render_line(
         }
         return Ok(line.to_string());
     }
-    if heading_level(line).is_some() {
-        return Err(context_error(component, source_line, "heading"));
-    }
-    if line.contains('<') || line.contains('>') {
-        return Err(context_error(component, source_line, "raw HTML or angle-bracket text"));
-    }
-    for occurrence in &occurrences {
-        if is_inline_code(line, occurrence.start) {
-            return Err(context_error(component, source_line, "inline code"));
-        }
-        if is_link_destination(line, occurrence.start) {
-            return Err(context_error(component, source_line, "URL or link destination"));
-        }
-    }
-
     let mut rendered = String::new();
     let mut previous = 0;
     let mut output_column = 1;
@@ -436,6 +407,11 @@ struct Occurrence {
     name: String,
 }
 
+struct ForbiddenContext {
+    range: Range<usize>,
+    name: &'static str,
+}
+
 fn placeholder_occurrences(line: &str) -> Result<Vec<Occurrence>, crate::ForgeError> {
     const PREFIX: &str = "{{forge:";
     const PARAM_PREFIX: &str = "{{forge:param:";
@@ -482,37 +458,12 @@ pub fn validate_static_component(
     })?;
     validate_heading_structure(text, source_label)?;
     let declared: BTreeSet<_> = manifest.parameters.iter().map(|item| item.name.as_str()).collect();
-    let mut fence = None;
+    let forbidden = forbidden_contexts(text);
+    let mut forbidden_index = 0usize;
+    let mut line_offset = 0usize;
     for (index, raw_line) in text.split('\n').enumerate() {
         let line = raw_line.strip_suffix('\r').unwrap_or(raw_line);
         let occurrences = placeholder_occurrences(line)?;
-        let trimmed = line.trim_start_matches(' ');
-        let marker = if trimmed.starts_with("```") {
-            Some('`')
-        } else if trimmed.starts_with("~~~") {
-            Some('~')
-        } else {
-            None
-        };
-        if (fence.is_some() || marker.is_some()) && !occurrences.is_empty() {
-            return Err(composition_error(format!(
-                "component '{source_label}' line {} contains a placeholder in a fenced code block",
-                index + 1
-            )));
-        }
-        if let Some(marker) = marker {
-            if fence == Some(marker) {
-                fence = None;
-            } else if fence.is_none() {
-                fence = Some(marker);
-            }
-        }
-        if !occurrences.is_empty() && heading_level(line).is_some() {
-            return Err(composition_error(format!(
-                "component '{source_label}' line {} contains a placeholder in a heading",
-                index + 1
-            )));
-        }
         for occurrence in occurrences {
             if !declared.contains(occurrence.name.as_str()) {
                 return Err(composition_error(format!(
@@ -521,24 +472,51 @@ pub fn validate_static_component(
                     occurrence.name
                 )));
             }
-            if is_inline_code(line, occurrence.start)
-                || is_link_destination(line, occurrence.start)
-                || line.contains('<')
-                || line.contains('>')
+            let global_offset = line_offset + occurrence.start;
+            while forbidden
+                .get(forbidden_index)
+                .is_some_and(|context| context.range.end <= global_offset)
+            {
+                forbidden_index += 1;
+            }
+            if let Some(context) = forbidden.get(forbidden_index).filter(|context| {
+                context.range.start <= global_offset && global_offset < context.range.end
+            }) {
+                return Err(composition_error(format!(
+                    "component '{source_label}' line {} contains a placeholder in unsupported {}",
+                    index + 1,
+                    context.name
+                )));
+            }
+            if is_link_destination(line, occurrence.start)
+                || is_reference_definition(line)
+                || is_bare_url(line, occurrence.start)
             {
                 return Err(composition_error(format!(
-                    "component '{source_label}' line {} uses a placeholder in an unsupported Markdown context",
+                    "component '{source_label}' line {} contains a placeholder in an unsupported URL or link destination",
                     index + 1
                 )));
             }
         }
-    }
-    if fence.is_some() {
-        return Err(composition_error(format!(
-            "component '{source_label}' contains an unterminated fenced code block"
-        )));
+        line_offset = line_offset.saturating_add(raw_line.len()).saturating_add(1);
     }
     Ok(())
+}
+
+fn forbidden_contexts(text: &str) -> Vec<ForbiddenContext> {
+    Parser::new(text)
+        .into_offset_iter()
+        .filter_map(|(event, range)| {
+            let name = match event {
+                Event::Start(Tag::Heading { .. }) => "heading",
+                Event::Start(Tag::CodeBlock(_)) => "fenced code block or indented code block",
+                Event::Start(Tag::HtmlBlock) | Event::Html(_) | Event::InlineHtml(_) => "raw HTML",
+                Event::Code(_) => "inline code",
+                _ => return None,
+            };
+            Some(ForbiddenContext { range, name })
+        })
+        .collect()
 }
 
 fn validate_heading_structure(text: &str, label: &str) -> Result<(), crate::ForgeError> {
@@ -558,13 +536,21 @@ fn validate_heading_structure(text: &str, label: &str) -> Result<(), crate::Forg
     }
     let mut parsed_headings = 0usize;
     for event in Parser::new(text) {
-        if let Event::Start(Tag::Heading { level, .. }) = event {
-            parsed_headings += 1;
-            if level == HeadingLevel::H1 || (level == HeadingLevel::H2 && parsed_headings > 1) {
+        match event {
+            Event::Start(Tag::Heading { level, .. }) => {
+                parsed_headings += 1;
+                if level == HeadingLevel::H1 || (level == HeadingLevel::H2 && parsed_headings > 1) {
+                    return Err(composition_error(format!(
+                        "component '{label}' contains a reserved or repeated top-level heading"
+                    )));
+                }
+            }
+            Event::Html(html) | Event::InlineHtml(html) if contains_html_h1(&html) => {
                 return Err(composition_error(format!(
-                    "component '{label}' contains a reserved or repeated top-level heading"
+                    "component '{label}' contains a reserved raw HTML level-one heading"
                 )));
             }
+            _ => {}
         }
     }
     for (index, line) in lines.enumerate() {
@@ -590,6 +576,28 @@ fn validate_heading_structure(text: &str, label: &str) -> Result<(), crate::Forg
     Ok(())
 }
 
+fn contains_html_h1(html: &str) -> bool {
+    let bytes = html.as_bytes();
+    let mut cursor = 0usize;
+    while let Some(relative) = html[cursor..].find('<') {
+        let mut tag = cursor + relative + 1;
+        if bytes.get(tag) == Some(&b'/') {
+            tag += 1;
+        }
+        let is_h1 = bytes
+            .get(tag..tag.saturating_add(2))
+            .is_some_and(|name| name.eq_ignore_ascii_case(b"h1"));
+        let valid_boundary = bytes
+            .get(tag.saturating_add(2))
+            .is_some_and(|byte| byte.is_ascii_whitespace() || matches!(byte, b'>' | b'/'));
+        if is_h1 && valid_boundary {
+            return true;
+        }
+        cursor = tag.min(bytes.len());
+    }
+    false
+}
+
 fn heading_level(line: &str) -> Option<usize> {
     let trimmed = line.trim_start_matches(' ');
     if line.len() - trimmed.len() > 3 {
@@ -602,6 +610,62 @@ fn heading_level(line: &str) -> Option<usize> {
         .flatten()
         .filter(u8::is_ascii_whitespace)
         .map(|_| count)
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum BlockStructure {
+    ParagraphStart,
+    ParagraphEnd,
+    HeadingStart(HeadingLevel),
+    HeadingEnd(HeadingLevel),
+    BlockQuoteStart,
+    BlockQuoteEnd,
+    CodeBlockStart,
+    CodeBlockEnd,
+    HtmlBlockStart,
+    HtmlBlockEnd,
+    ListStart(bool),
+    ListEnd(bool),
+    ItemStart,
+    ItemEnd,
+    Rule,
+}
+
+fn validate_preserved_block_structure(
+    source: &str,
+    rendered: &str,
+    label: &str,
+) -> Result<(), crate::ForgeError> {
+    if block_structure(source) == block_structure(rendered) {
+        Ok(())
+    } else {
+        Err(composition_error(format!(
+            "component '{label}' parameter substitution changes Markdown block structure"
+        )))
+    }
+}
+
+fn block_structure(markdown: &str) -> Vec<BlockStructure> {
+    Parser::new(markdown)
+        .filter_map(|event| match event {
+            Event::Start(Tag::Paragraph) => Some(BlockStructure::ParagraphStart),
+            Event::End(TagEnd::Paragraph) => Some(BlockStructure::ParagraphEnd),
+            Event::Start(Tag::Heading { level, .. }) => Some(BlockStructure::HeadingStart(level)),
+            Event::End(TagEnd::Heading(level)) => Some(BlockStructure::HeadingEnd(level)),
+            Event::Start(Tag::BlockQuote(_)) => Some(BlockStructure::BlockQuoteStart),
+            Event::End(TagEnd::BlockQuote(_)) => Some(BlockStructure::BlockQuoteEnd),
+            Event::Start(Tag::CodeBlock(_)) => Some(BlockStructure::CodeBlockStart),
+            Event::End(TagEnd::CodeBlock) => Some(BlockStructure::CodeBlockEnd),
+            Event::Start(Tag::HtmlBlock) => Some(BlockStructure::HtmlBlockStart),
+            Event::End(TagEnd::HtmlBlock) => Some(BlockStructure::HtmlBlockEnd),
+            Event::Start(Tag::List(start)) => Some(BlockStructure::ListStart(start.is_some())),
+            Event::End(TagEnd::List(ordered)) => Some(BlockStructure::ListEnd(ordered)),
+            Event::Start(Tag::Item) => Some(BlockStructure::ItemStart),
+            Event::End(TagEnd::Item) => Some(BlockStructure::ItemEnd),
+            Event::Rule => Some(BlockStructure::Rule),
+            _ => None,
+        })
+        .collect()
 }
 
 fn resolve_values(
@@ -673,6 +737,7 @@ pub fn escape_markdown(value: &str) -> String {
                 | '+'
                 | '-'
                 | '.'
+                | '='
                 | '!'
                 | '|'
                 | '~'
@@ -684,37 +749,33 @@ pub fn escape_markdown(value: &str) -> String {
     escaped
 }
 
-fn is_inline_code(line: &str, offset: usize) -> bool {
-    let bytes = line.as_bytes();
-    let mut cursor = 0;
-    while cursor < bytes.len() {
-        if bytes[cursor] != b'`' {
-            cursor += 1;
-            continue;
-        }
-        let start = cursor;
-        while cursor < bytes.len() && bytes[cursor] == b'`' {
-            cursor += 1;
-        }
-        let width = cursor - start;
-        let delimiter = &line[start..cursor];
-        if let Some(relative_end) = line[cursor..].find(delimiter) {
-            let end = cursor + relative_end;
-            if offset >= cursor && offset < end {
-                return true;
-            }
-            cursor = end + width;
-        }
-    }
-    false
-}
-
 fn is_link_destination(line: &str, offset: usize) -> bool {
     let before = &line[..offset];
     let after = &line[offset..];
     before
         .rfind("](")
         .is_some_and(|start| !before[start + 2..].contains(')') && after.contains(')'))
+}
+
+fn is_reference_definition(line: &str) -> bool {
+    let trimmed = line.trim_start_matches(' ');
+    let indentation = line.len().saturating_sub(trimmed.len());
+    indentation <= 3
+        && trimmed.starts_with('[')
+        && trimmed.find("]:").is_some_and(|closing| closing > 1)
+}
+
+fn is_bare_url(line: &str, offset: usize) -> bool {
+    let before = &line[..offset];
+    let token_start = before
+        .char_indices()
+        .rev()
+        .find(|(_, character)| {
+            character.is_whitespace() || matches!(character, '(' | '[' | '{' | '<' | '"' | '\'')
+        })
+        .map_or(0, |(index, character)| index + character.len_utf8());
+    let prefix = before[token_start..].to_ascii_lowercase();
+    prefix.contains("://") || prefix.starts_with("www.") || prefix.starts_with("mailto:")
 }
 
 fn valid_parameter_name(value: &str) -> bool {
@@ -752,13 +813,6 @@ fn component_span(
     }
 }
 
-fn context_error(component: &LoadedComponent, line: usize, context: &str) -> crate::ForgeError {
-    composition_error(format!(
-        "component '{}' line {line} contains a placeholder in unsupported {context}",
-        component.source_label
-    ))
-}
-
 fn byte_to_column(line: &str, offset: usize) -> usize {
     line[..offset].chars().count() + 1
 }
@@ -783,11 +837,36 @@ fn pretty_json<T: Serialize>(value: &T) -> Result<Vec<u8>, crate::ForgeError> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
+    use crate::policy::manifest::{ComponentStatus, ParameterConstraints, ParameterType};
+
+    fn parameterized_component() -> ComponentManifest {
+        ComponentManifest {
+            schema_version: "forge.policy-component/1".to_string(),
+            component_key: "clause".to_string(),
+            version: "1.0.0".to_string(),
+            title: "Clause".to_string(),
+            owner: "security".to_string(),
+            status: ComponentStatus::Draft,
+            source: PathBuf::from("clause.md"),
+            expected_sha256: "0".repeat(64),
+            replacement_component_key: None,
+            parameters: vec![ParameterDeclaration {
+                name: "owner-role".to_string(),
+                parameter_type: ParameterType::String,
+                required: true,
+                default: None,
+                constraints: ParameterConstraints::default(),
+            }],
+        }
+    }
 
     #[test]
     fn escapes_markdown_and_does_not_reparse_placeholder_values() {
         assert_eq!(escape_markdown("# [admin](x)"), r"\# \[admin\]\(x\)");
+        assert_eq!(escape_markdown("==="), r"\=\=\=");
         assert_eq!(escape_markdown("{{forge:param:other}}"), r"\{\{forge:param:other\}\}");
     }
 
@@ -808,6 +887,8 @@ mod tests {
             "## Clause\n\nAnother\n---\n",
             "## \n",
             "## Clause\n\n<h1>Unsafe</h1>\n",
+            "## Clause\n\n<div><h1>Embedded</h1></div>\n",
+            "## Clause\n\nText <H1 class=\"unsafe\">Embedded</H1>\n",
         ] {
             assert!(
                 validate_heading_structure(invalid, "component.md").is_err(),
@@ -817,9 +898,40 @@ mod tests {
     }
 
     #[test]
-    fn multi_backtick_inline_code_is_detected() {
-        let line = "before ``{{forge:param:owner}}`` after";
-        let offset = line.find("{{forge:").unwrap();
-        assert!(is_inline_code(line, offset));
+    fn full_document_contexts_reject_multiline_code_fences_and_urls() {
+        let manifest = parameterized_component();
+        for invalid in [
+            "## Clause\n\n`before\n{{forge:param:owner-role}}\nafter`\n",
+            "## Clause\n\n[policy]: https://example.test/{{forge:param:owner-role}}\n\n[link][policy]\n",
+            "## Clause\n\nhttps://example.test/{{forge:param:owner-role}}\n",
+            "## Clause\n\n````text\n```\n{{forge:param:owner-role}}\n````\n```\n",
+        ] {
+            assert!(
+                validate_static_component(&manifest, "clause.md", invalid.as_bytes()).is_err(),
+                "accepted unsupported placeholder context {invalid:?}"
+            );
+        }
+        let link_text = "## Clause\n\n[{{forge:param:owner-role}}](https://example.test)\n";
+        assert!(validate_static_component(&manifest, "clause.md", link_text.as_bytes()).is_ok());
+    }
+
+    #[test]
+    fn rendered_values_cannot_change_markdown_block_structure() {
+        assert!(
+            validate_preserved_block_structure(
+                "## Clause\n\n{{forge:param:owner-role}}\n",
+                "## Clause\n\n    indented code\n",
+                "clause.md",
+            )
+            .is_err()
+        );
+        assert!(
+            validate_preserved_block_structure(
+                "## Clause\n\n{{forge:param:owner-role}}. Item\n",
+                "## Clause\n\n1. Item\n",
+                "clause.md",
+            )
+            .is_err()
+        );
     }
 }

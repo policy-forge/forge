@@ -198,13 +198,17 @@ pub fn component_impact(
         return Err(composition_error("component impact requires at least one --manifest"));
     }
     let mut dependencies = Vec::new();
-    for manifest_path in composition_manifests {
+    for (manifest_index, manifest_path) in composition_manifests.iter().enumerate() {
         let manifest_path = regular_non_symlink(manifest_path, "composition manifest")?;
         let bytes = io::read_bounded(&manifest_path, manifest::MAX_MANIFEST_BYTES)?;
         let composition = manifest::parse_composition(&bytes)?;
         let parent = manifest_path.parent().unwrap_or_else(|| Path::new("."));
         let root = resolve_root(parent, &composition.project_root)?;
-        let manifest_label = crate::io::sanitize_artifact_path(&manifest_path);
+        let manifest_label = format!(
+            "manifest-{:04}/{}",
+            manifest_index + 1,
+            crate::io::sanitize_artifact_path(&manifest_path)
+        );
         for instance in &composition.components {
             let sidecar_path =
                 resolve_input(&root, &instance.component_manifest, "component manifest")?;
