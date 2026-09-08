@@ -1,16 +1,29 @@
 # FORGE Roadmap
 
-> **Last Updated:** 2026-08-22
-> **Current Release Line:** v1.1.0
+> **Last Updated:** 2026-09-08
+> **Current Release Line:** v1.1.0 released; post-v1.1.0 development active
 > **Canonical Detail:** [docs/FORGE_PRODUCT_ROADMAP.md](docs/FORGE_PRODUCT_ROADMAP.md)
 
-This roadmap reconciles the historical 50-work-item FORGE plan against the current repository state. FORGE has completed the original Phase 1, Phase 2, and Phase 3 scope and is now in the v1.1.0 release line.
+This roadmap reconciles the historical 50-work-item FORGE plan and the next-wave
+PRDs against the current repository state. FORGE has completed the original
+Phase 1, Phase 2, and Phase 3 scope, released v1.1.0, and is executing the
+post-v1.1.0 product roadmap.
 
 ---
 
 ## Current Status
 
-FORGE v1.0.0 is the community-ready release of the Markdown-to-OSCAL pipeline. The original roadmap is complete: **50 of 50 work items are Done**.
+FORGE v1.0.0 is the community-ready release of the Markdown-to-OSCAL pipeline,
+and v1.1.0 adds native PDF/DOCX ingestion. The original roadmap remains
+complete: **50 of 50 work items are Done**.
+
+The post-v1.1.0 roadmap contains **14 PRDs**:
+
+- **7 technically implemented:** PRDs 055–060 and 063. Their implementation is
+  merged, while their PRD-level human release gates remain pending where noted.
+- **7 planned:** PRDs 061, 062, and 064–068. No implementation merge is present
+  for these initiatives.
+- **0 currently recorded as in progress** in this repository.
 
 **What is built:**
 
@@ -21,6 +34,10 @@ FORGE v1.0.0 is the community-ready release of the Markdown-to-OSCAL pipeline. T
 - Schema validation, semantic validation, human-readable and JSON validation reports.
 - Traceability reporting, diff reporting, summary dashboards, batch conversion, and NIST oscal-cli integration.
 - Community examples, usage documentation, contributor documentation, architecture documentation, cross-platform CI, release workflow, checksums, and SLSA provenance.
+- Human-reviewed control mappings, framework applicability and gap analysis,
+  framework-change impact monitoring, policy lifecycle management, reusable
+  policy components, evidence/implementation linkage, and OSCAL Assessment
+  Results workflows.
 
 ---
 
@@ -109,9 +126,46 @@ v1.1.0 (released 2026-06-09) extends the completed pipeline beyond Markdown-only
 
 Note: this reverses the 2026-02-10 "Markdown-only input" decision recorded in [docs/FORGE_PRODUCT_ROADMAP.md](docs/FORGE_PRODUCT_ROADMAP.md); see that document's decision log for rationale.
 
-## v1.0.0 Release Gate
+## Post-v1.1.0 Roadmap (PRDs 055–068)
 
-The v1.0.0 release line is the reconciled release target. The release gate consists of:
+"Technical implementation complete" means the implementation and remediation
+changes are merged into `main`. It does not claim that human release approvals,
+design-partner validation, publication, or adoption gates are complete.
+
+| PRD | Initiative | Repository Status | Evidence / Next Gate |
+|-----|------------|-------------------|----------------------|
+| [055](docs/PRD/055-prd-control-mapping.md) | Human-reviewed OSCAL control mapping | Technical implementation complete | Merged in `81ad6f9`; human release gates remain |
+| [056](docs/PRD/056-prd-framework-applicability-gap-analysis.md) | Framework applicability and gap analysis | Technical implementation complete | Merged in `ffc83b8`; human release gates remain |
+| [057](docs/PRD/057-prd-framework-change-impact-monitoring.md) | Framework-change impact monitoring | Technical implementation complete | Merged in `989a684`; human release gates remain |
+| [058](docs/PRD/058-prd-policy-lifecycle-management.md) | Policy lifecycle management | Technical implementation complete | Merged in `f8784d1`; remediation merged in `a254d16`; human release gates remain |
+| [059](docs/PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merged in `09f1f37`; PRD release gates remain |
+| [060](docs/PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merged in `a5d0aff`; PRD release gates remain |
+| [061](docs/PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | Planned | Requires PRD 056 output; product, compliance, legal, and design-partner readiness gates remain |
+| [062](docs/PRD/062-prd-local-web-workspace.md) | API-first local web workspace | Planned — proposed next | Start with Slice 0 contracts, threat model, schemas, fixtures, and ADRs before browser implementation |
+| [063](docs/PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merged in `34d9869`; PRD release gates remain |
+| [064](docs/PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | PRD 063 dependency is implemented; schema, status semantics, and source-of-truth decisions remain |
+| [065](docs/PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | Requires a stable source-report contract and approved provider/auth boundary |
+| [066](docs/PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review |
+| [067](docs/PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | Requires stable project discovery, shared read-only queries, and a completed threat model |
+| [068](docs/PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | Requires a selected first review workflow and approved identity/quorum boundaries |
+
+### Now / Next / Later
+
+This sequence communicates dependency order, not committed dates.
+
+| Horizon | Initiative | Outcome / Gate |
+|---------|------------|----------------|
+| **Now** | PRD 062 Slice 0 | Establish the normative API contract, capability matrix, project index schema, threat model, service boundaries, fixtures, ADRs, and drift checks |
+| **Now** | PRDs 055–060 and 063 release-gate reconciliation | Complete or explicitly defer the human, pilot, documentation, and release approvals still open in the PRDs |
+| **Next** | PRD 062 Slices 1–4 | Deliver read-only exploration, safe mutation, applicability/mapping review, and a local pilot in gated increments |
+| **Next** | PRD 064 Phase 1 | Add deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
+| **Next** | PRD 061 Phase 1 | Add traceable drafting plans and skeletons after product, compliance, legal, and design-partner readiness decisions |
+| **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after their shared contracts stabilize |
+| **Later** | PRD 066 | Add quarantined AI suggestions only after the authoring schema, evaluation corpus, and provider/privacy gates are approved |
+
+## Historical v1.0.0 Release Gate
+
+The completed v1.0.0 release gate consisted of:
 
 - `Cargo.toml` version set to `1.0.0`.
 - `CHANGELOG.md` containing the v1.0.0 release notes.
@@ -122,23 +176,18 @@ The v1.0.0 release line is the reconciled release target. The release gate consi
 
 ---
 
-## Future Roadmap Candidates
+## Unscheduled Roadmap Candidates
 
-The original 50-item roadmap is complete. Future planning should start a new roadmap or v1.x section rather than reopening Phase 1–3 work.
+PRDs 055–068 now own the previously listed Assessment Results, POA&M, control
+mapping, integration, web/API, AI, and collaboration opportunities. Remaining
+unscheduled candidates are:
 
-Candidates already deferred in the PRD and architecture docs:
-
-- OSCAL Assessment Results / SAR generation.
-- OSCAL POA&M generation.
 - Built-in Profile Resolution engine instead of delegating to NIST oscal-cli.
-- OSCAL Control Mapping support for policy-to-framework crosswalks.
-- External GRC, ticketing, and CI/CD integrations.
-- Web UI or API/server mode.
-- AI/ML semantic policy understanding beyond structural/syntactic parsing.
-- Bidirectional source ↔ OSCAL traceability views.
-- HTML or interactive reports.
+- Broader bidirectional source ↔ OSCAL traceability views beyond the planned
+  workspace and MCP contracts.
 - Hosted documentation site such as mdBook or GitHub Pages.
-- Full SSP generation from external system data sources beyond policy-derived templates.
+- Full SSP generation from external system data sources beyond policy-derived
+  templates.
 
 ---
 

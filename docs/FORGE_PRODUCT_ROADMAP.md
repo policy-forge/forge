@@ -2,8 +2,8 @@
 
 > **Document Type:** Product Roadmap
 > **Audience:** LLM agents, human reviewers, leadership stakeholders, engineering leads
-> **Status:** Complete / v1.1.0 Release Line
-> **Last Updated:** 2026-08-22 <!-- @auto -->
+> **Status:** Active / Post-v1.1.0 Roadmap
+> **Last Updated:** 2026-09-08 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Parent Vision:** docs/FORGE_PRODUCT_VISION.md <!-- @auto -->
 
@@ -11,7 +11,10 @@
 
 ## Reconciliation Summary
 
-This document is the canonical reconciled roadmap for FORGE. Earlier roadmap snapshots treated Phase 2 as current and Phase 3 as partially incomplete. The repository has since moved ahead: the original 50-work-item roadmap is complete and the release line is **v1.1.0**.
+This document is the canonical reconciled roadmap for FORGE. Earlier roadmap
+snapshots treated Phase 2 as current and Phase 3 as partially incomplete. The
+repository has since moved ahead: the original 50-work-item roadmap is complete,
+v1.1.0 is released, and the post-v1.1.0 roadmap is active.
 
 **Current state:**
 
@@ -19,8 +22,14 @@ This document is the canonical reconciled roadmap for FORGE. Earlier roadmap sna
 - Phase 1 Foundation is complete.
 - Phase 2 Control Layer & Multi-Format is complete.
 - Phase 3 Ecosystem & Community is complete.
-- v1.0.0 is the target/current release line for community-ready distribution.
+- v1.0.0 established the community-ready distribution baseline.
 - v1.1.0 (2026-06-09) added native PDF and DOCX ingestion and policy-derived SSP control implementations.
+- The next-wave registry contains 14 PRDs (055–068): 7 have technically complete
+  implementations merged into `main`, and 7 remain planned.
+- PRDs 055–060 and 063 are technically implemented. Their human release,
+  pilot, adoption, or other PRD-level gates remain open where the PRDs say so.
+- PRDs 061, 062, and 064–068 do not have implementation merges and remain
+  planned.
 
 This reconciliation supersedes stale counts such as “43/50 done,” “44/50 done,” “8/15 Phase 3 done,” and “7 remaining.”
 
@@ -28,7 +37,9 @@ This reconciliation supersedes stale counts such as “43/50 done,” “44/50 d
 
 ## Roadmap Context
 
-FORGE translates Markdown security policy documents into deterministic, schema-validated OSCAL artifacts. The completed roadmap takes the project from scaffolding through community-ready release:
+FORGE translates source policy documents into deterministic, schema-validated
+OSCAL artifacts. The completed original roadmap takes the project from
+scaffolding through community-ready release:
 
 1. Markdown ingestion and policy parsing.
 2. Internal domain modeling and deterministic identifiers.
@@ -37,6 +48,11 @@ FORGE translates Markdown security policy documents into deterministic, schema-v
 5. XML/YAML export and round-trip validation.
 6. Profile generation, tailoring, modality tagging, and parameter extraction.
 7. oscal-cli integration, traceability reports, diff reports, batch conversion, summary dashboards, Assessment Plan scaffolding, SSP templates, community examples, documentation, CI, and release automation.
+
+The active post-v1.1.0 roadmap extends that foundation into reviewed governance
+workflows, reusable policy authoring, assessment and remediation artifacts,
+local API-driven interaction, external handoff, and bounded automation. The
+original WI-1–WI-50 history remains closed and is not reopened by this work.
 
 ---
 
@@ -147,9 +163,62 @@ FORGE translates Markdown security policy documents into deterministic, schema-v
 
 ---
 
-## Release Gate: v1.0.0
+## Post-v1.1.0 Initiative Registry
 
-v1.0.0 is the reconciled version target. A release candidate is ready when the following are true:
+The status **Technical implementation complete** means implementation and
+remediation changes are merged into `main`. It does not claim completion of
+human approvals, design-partner exercises, publication, adoption, or release
+gates in the corresponding PRD.
+
+| PRD | Initiative | Status | Repository Evidence | Dependencies / Remaining Gate |
+|-----|------------|--------|---------------------|-------------------------------|
+| [055](PRD/055-prd-control-mapping.md) | Human-reviewed OSCAL control mapping | Technical implementation complete | Merge `81ad6f9` | Human release gates remain |
+| [056](PRD/056-prd-framework-applicability-gap-analysis.md) | Framework applicability and gap analysis | Technical implementation complete | Merge `ffc83b8` | Human release gates remain |
+| [057](PRD/057-prd-framework-change-impact-monitoring.md) | Framework-change impact monitoring | Technical implementation complete | Merge `989a684` | Human release gates remain |
+| [058](PRD/058-prd-policy-lifecycle-management.md) | Policy lifecycle management | Technical implementation complete | Merges `f8784d1`, `a254d16` | Human release gates remain |
+| [059](PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merge `09f1f37` | PRD release gates remain |
+| [060](PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merge `a5d0aff` | PRD release gates remain |
+| [061](PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | Planned | No implementation merge | Requires PRD 056 output plus product, compliance, legal, and design-partner readiness |
+| [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | Planned — proposed next | No implementation merge | Slice 0 contracts, threat model, schemas, fixtures, and ADRs must precede UI code |
+| [063](PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merge `34d9869` | PRD release gates remain |
+| [064](PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | No implementation merge | PRD 063 is implemented; schema, status semantics, and editable source-of-truth decisions remain |
+| [065](PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | No implementation merge | Requires a stable source-report contract and approved provider/auth boundary |
+| [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review |
+| [067](PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | No implementation merge | Requires stable project discovery, shared read-only queries, and a completed threat model |
+| [068](PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | No implementation merge | Requires a selected first review workflow and approved identity/quorum boundaries |
+
+### Now / Next / Later
+
+This is a dependency-oriented sequence, not a date commitment.
+
+| Horizon | Initiative | Intended Outcome / Exit Gate |
+|---------|------------|--------------------------------|
+| **Now** | PRD 062 Slice 0 | Normative OpenAPI contract, capability matrix, project index schema, threat model, service/effect boundary, representative fixtures, ADRs, and CI drift checks approved before browser implementation |
+| **Now** | PRDs 055–060 and 063 release-gate reconciliation | Complete or explicitly defer each remaining human, pilot, documentation, and release approval without overstating technical completion as product release |
+| **Next** | PRD 062 Slices 1–4 | Deliver read-only exploration, safe mutation, review workflows, and a local pilot as separately gated increments |
+| **Next** | PRD 064 Phase 1 | Build deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
+| **Next** | PRD 061 Phase 1 | Build traceable drafting plans and skeletons after product, compliance, legal, and design-partner readiness decisions |
+| **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after project, query, identity, and review contracts stabilize |
+| **Later** | PRD 066 | Add quarantined AI suggestions after authoring schemas, evaluation data, and provider/privacy gates are approved |
+
+### Active Risks and Dependencies
+
+- PRD 062 is the proposed next body of work, but its product boundary, golden
+  path, API ownership, frontend/build approach, containment primitives, and
+  accessibility patterns require approval before implementation advances past
+  Slice 0.
+- PRD 064 can proceed only after stable Assessment Results identity and POA&M
+  schema/status/source-of-truth decisions are approved.
+- PRD 061 is technically dependency-ready but remains blocked by product,
+  compliance, legal, and design-partner inputs.
+- PRDs 065–068 must not bypass their provider, privacy, identity, discovery,
+  evaluation, or human-authority boundaries merely to accelerate delivery.
+
+---
+
+## Historical Release Gate: v1.0.0
+
+The completed v1.0.0 release gate required the following:
 
 - `Cargo.toml` package version is `1.0.0`.
 - `CHANGELOG.md` includes v1.0.0 release notes.
@@ -173,25 +242,24 @@ v1.0.0 is the reconciled version target. A release candidate is ready when the f
 | T-6: Ecosystem & Community | 15 | 15 | 0 | 0 | 0 | Complete |
 | **Total** | **50** | **50** | **0** | **0** | **0** | **v1.1.0** |
 
+### Post-v1.1.0 PRD Status
+
+| Initiatives Total | Technical Implementation Complete | In Progress | Planned / Not Started | Human Release Gates Pending |
+|------------------:|----------------------------------:|------------:|----------------------:|----------------------------:|
+| **14** | **7** | **0** | **7** | **7** |
+
 ---
 
-## Future Roadmap Candidates
+## Unscheduled Roadmap Candidates
 
-The original roadmap is complete. Future work should be tracked in a new roadmap for v1.x or v2 rather than by reopening WI-1 through WI-50.
-
-Candidate future work from PRD deferrals and architecture notes:
+PRDs 055–068 now own the previously listed Assessment Results, POA&M, control
+mapping, integration, web/API, AI, and collaboration opportunities. Remaining
+unscheduled candidates are:
 
 | Candidate | Rationale |
 |-----------|-----------|
-| Assessment Results / SAR generation | Requires actual assessment observations and findings |
-| POA&M generation | Requires remediation data and milestone tracking |
 | Built-in Profile Resolution engine | Would remove dependency on NIST oscal-cli for profile resolution |
-| OSCAL Control Mapping model | Enables policy-to-framework crosswalks |
-| External GRC/ticketing/CI integrations | Connects FORGE outputs to operational compliance workflows |
-| Web UI or API/server mode | Makes FORGE usable beyond CLI workflows |
-| AI/ML semantic policy understanding | Improves intent extraction beyond structural/syntactic parsing |
-| Bidirectional traceability view | Interleaves source-to-OSCAL and OSCAL-to-source navigation |
-| HTML/interactive reporting | Rich report consumption for non-terminal users |
+| Broader bidirectional traceability views | Extends beyond the planned workspace and MCP query contracts |
 | Hosted docs site | Improves search and discoverability after community release |
 | Full SSP generation from external system data | Moves beyond policy-derived templates using CMDB/cloud/system inventory sources |
 
@@ -202,7 +270,7 @@ Candidate future work from PRD deferrals and architecture notes:
 | Review Type | Frequency | Purpose |
 |-------------|-----------|---------|
 | Release Review | Per release candidate | Verify CI, changelog, version, examples, docs, and artifacts |
-| Roadmap Refresh | When planning v1.x/v2 | Create a new roadmap rather than editing completed Phase 1–3 history |
+| Roadmap Refresh | Monthly and after initiative merges | Reconcile PRD status and dependencies without rewriting completed Phase 1–3 history |
 | Post-release Retrospective | After v1.0.0 publication | Identify maintenance and next-roadmap priorities |
 
 ---
@@ -217,6 +285,7 @@ Candidate future work from PRD deferrals and architecture notes:
 | 0.9 | 2026-05-18 | Hermes (Vega) | Major refresh: Phase 1+2 complete, Phase 3 partially complete |
 | **1.0** | **2026-05-21** | **Hermes** | **Roadmap reconciliation for v1.0.0: all 50 work items marked Done, stale Phase 3 remaining-work sections removed, future work moved to separate candidate list.** |
 | 1.1 | 2026-08-22 | ox-alpha | Reconciled status to v1.1.0 release line; recorded v1.1.0 PDF/DOCX ingestion and SSP control-implementation changes; added decision-log entry superseding the Markdown-only decision. |
+| 1.2 | 2026-09-08 | Codex | Added PRDs 055–068; reconciled seven technically implemented and seven planned initiatives; added dependency-oriented Now/Next/Later sequencing and explicit remaining gates. |
 
 ---
 
@@ -230,9 +299,18 @@ Candidate future work from PRD deferrals and architecture notes:
 | 2026-02-10 | Could Have items in Phase 3 | Must Have and Should Have items came first | Ecosystem work moved later | Include C-items in Phase 2 |
 | 2026-05-18 | MS-7 target compressed | Roadmap execution was far ahead of original plan | Phase 3 pulled into near-term release plan | Keep April 2027 target |
 | 2026-05-21 | v1.0.0 is the release line | User confirmed version is 1.0; repo contains completed Phase 3 evidence | Roadmap, README, package version, and completion plan reconciled to v1.0.0 | Keep an interim 0.x release |
+| 2026-09-08 | Track post-v1.1.0 work as PRD initiatives | The original 50 work items are complete, while PRDs 055–068 have independent requirements, risks, and release gates | Preserve WI-1–WI-50 as completed history and report next-wave technical versus human-gate status separately | Reopen completed phases; renumber PRDs as work items |
 
 ---
 
 ## Open Questions
 
-No open roadmap questions block v1.0.0. Future product questions should be captured in a new v1.x/v2 roadmap.
+No open roadmap question changes the completed status of WI-1–WI-50 or the
+v1.1.0 release. The active post-v1.1.0 roadmap still requires decisions on:
+
+- Which future release will contain the technically implemented PRDs 055–060
+  and 063 after their human release gates are dispositioned.
+- PRD 062's local-only product boundary, golden path, normative API ownership,
+  frontend/build approach, containment primitives, and accessibility patterns.
+- Whether PRD 064 Phase 1 or PRD 061 Phase 1 follows PRD 062 Slice 0 when
+  capacity allows only one additional implementation lane.
