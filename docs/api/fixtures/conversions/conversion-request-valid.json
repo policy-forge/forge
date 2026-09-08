@@ -1,0 +1,5 @@
+{
+  "source_resource_id": "res_0f1e2d3c4b5a69788796a5b4",
+  "output_kind": "oscal-catalog",
+  "target_path": "artifacts/acceptable-use_catalog.json"
+}

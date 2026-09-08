@@ -1,0 +1,17 @@
+{
+  "version": "9f4c1b2a3d6e7f80",
+  "project_label": "Acme ISMS project",
+  "workspace_index_present": true,
+  "health": "needs-attention",
+  "resource_counts": {
+    "total": 6,
+    "valid": 4,
+    "invalid": 1,
+    "stale": 1,
+    "not_validated": 0
+  },
+  "review_counts": {
+    "total_open": 12
+  },
+  "next_action": "resolve-review-items"
+}

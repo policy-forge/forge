@@ -1,0 +1,27 @@
+{
+  "resource_version": "beef0011c0ffee12",
+  "page": {
+    "items": [
+      {
+        "item_id": "qi_3d4e5f60718293a4",
+        "reason_code": "scope-decision-required",
+        "classification": "under-review",
+        "control_id": "ac-1",
+        "resource_id": null,
+        "summary": "Control AC-1 has no explicit applicability decision.",
+        "evidence_refs": ["prov_4e5f60718293a4b5"]
+      },
+      {
+        "item_id": "qi_4e5f60718293a4b5",
+        "reason_code": "no-reviewed-mapping",
+        "classification": "applicable-unmapped",
+        "control_id": "ac-2",
+        "resource_id": null,
+        "summary": "Control AC-2 is applicable without a reviewed mapping.",
+        "evidence_refs": ["prov_5f60718293a4b5c6", "prov_60718293a4b5c6d7"]
+      }
+    ],
+    "next_cursor": "cur_5f60718293a4b5c6",
+    "total_matching": 12
+  }
+}

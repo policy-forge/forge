@@ -1,0 +1,243 @@
+{
+  "fixture_format": "forge.api-fixtures/1",
+  "fixtures": [
+    {
+      "file": "workspace/valid-minimal.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "valid",
+      "description": "Minimal valid forge.workspace.json index with one policy-source resource."
+    },
+    {
+      "file": "workspace/valid-full-roles.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "valid",
+      "description": "Valid index exercising every supported role exactly once."
+    },
+    {
+      "file": "workspace/invalid-absolute-path.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the resource path is absolute (leading slash)."
+    },
+    {
+      "file": "workspace/invalid-parent-traversal.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because a path segment is the parent-directory traversal '..'."
+    },
+    {
+      "file": "workspace/invalid-backslash-path.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the path contains a backslash (Windows separator)."
+    },
+    {
+      "file": "workspace/invalid-windows-drive.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the path carries a Windows drive prefix 'C:'."
+    },
+    {
+      "file": "workspace/invalid-schema-version.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because schema_version is 'forge.workspace/2' instead of the const 'forge.workspace/1'."
+    },
+    {
+      "file": "workspace/invalid-unknown-role.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the role 'policy-artifact' is outside the closed role enum."
+    },
+    {
+      "file": "workspace/invalid-extra-property.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because of the unknown property 'approval_state'; the index is closed and must not admit approval state."
+    },
+    {
+      "file": "session/unlock-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SessionUnlockRequest",
+      "expectation": "valid",
+      "description": "Minimal valid unlock request for unlockSession."
+    },
+    {
+      "file": "session/unlock-request-invalid-short.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SessionUnlockRequest",
+      "expectation": "invalid",
+      "description": "Rejected because the passphrase is shorter than the 15-character minimum for unlockSession."
+    },
+    {
+      "file": "session/get-session-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/Session",
+      "expectation": "valid",
+      "description": "Valid 200 getSession body: writable browser session with API major and contract version discovery."
+    },
+    {
+      "file": "session/unlock-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SessionUnlockResponse",
+      "expectation": "valid",
+      "description": "Valid 200 unlockSession body returning the one-time memory-only browser capability and session metadata."
+    },
+    {
+      "file": "project/summary-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectSummary",
+      "expectation": "valid",
+      "description": "Valid 200 getProjectSummary body: needs-attention health, reconciled resource and review counts, next human action."
+    },
+    {
+      "file": "resources/register-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/RegisterResourceRequest",
+      "expectation": "valid",
+      "description": "Valid registerResource body referencing an existing root-contained Markdown policy."
+    },
+    {
+      "file": "resources/upload-request-invalid-absolute-target.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/UploadResourceRequest",
+      "expectation": "invalid",
+      "description": "Rejected because the upload target_path is absolute; uploads must target a confirmed root-contained path."
+    },
+    {
+      "file": "resources/page-valid.json",
+      "kind": "pagination",
+      "schema": "openapi:components/schemas/ResourcePage",
+      "expectation": "valid",
+      "description": "Valid listResources page envelope: one item, null next_cursor (last page), total_matching denominator."
+    },
+    {
+      "file": "conversions/conversion-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ConversionRequest",
+      "expectation": "valid",
+      "description": "Valid preparePolicyConversion body for an OSCAL Catalog output."
+    },
+    {
+      "file": "conversions/result-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ConversionResult",
+      "expectation": "valid",
+      "description": "Valid getConversion 200 body: derived product summary, validation diagnostics, and the bound EffectPreview with create status and one-time receipt."
+    },
+    {
+      "file": "effects/preview-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/EffectPreview",
+      "expectation": "valid",
+      "description": "Valid getEffectPreview 200 body: overwrite target, base/target hashes, input hashes, warning diagnostic, escaped diff, and receipt with expiry."
+    },
+    {
+      "file": "effects/commit-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CommitEffectRequest",
+      "expectation": "valid",
+      "description": "Valid commitEffectPreview body: one-time receipt token, observed version, and literal confirmation intent."
+    },
+    {
+      "file": "applicability/report-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ApplicabilityReportView",
+      "expectation": "valid",
+      "description": "Valid getApplicabilityReport 200 body: current input fingerprints, all six classification counts, and the 263-control denominator."
+    },
+    {
+      "file": "queue/counts-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ReviewQueueCounts",
+      "expectation": "valid",
+      "description": "Valid getReviewQueueCounts 200 body whose by_reason counts sum to total_open (12)."
+    },
+    {
+      "file": "pagination/review-queue-page-valid.json",
+      "kind": "pagination",
+      "schema": "openapi:components/schemas/QueueItemPage",
+      "expectation": "valid",
+      "description": "Valid listReviewQueueItems page envelope: two stable reason-code items, non-null next_cursor, total_matching denominator."
+    },
+    {
+      "file": "error/version-conflict-409.json",
+      "kind": "version-conflict",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 409 error envelope exercising the stable code 'version-conflict' with the current resource_version; documents AC-21."
+    },
+    {
+      "file": "error/read-only-session-403.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 403 error envelope exercising the stable code 'read-only-session' returned by every mutation operation in a read-only session."
+    },
+    {
+      "file": "error/receipt-expired-410.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 410 error envelope exercising the stable code 'receipt-expired' with a retryable safe recovery message."
+    },
+    {
+      "file": "error/validation-failed-422.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 422 error envelope exercising the stable code 'validation-failed' with a safe field pointer and no source excerpt."
+    },
+    {
+      "file": "error/unauthorized-401.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid generic 401 error envelope exercising the stable code 'unauthorized' with no project-state or credential disclosure."
+    },
+    {
+      "file": "error/unlock-failed-401.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid generic unlock failure envelope exercising the stable code 'unlock-failed'; indistinguishable for any wrong passphrase."
+    },
+    {
+      "file": "operation/commit-succeeded-valid.json",
+      "kind": "operation",
+      "schema": "openapi:components/schemas/Operation",
+      "expectation": "valid",
+      "description": "Valid succeeded commit operation lifecycle: typed CommitResult with write_committed true and the committed hash (AC-22 response-loss recovery)."
+    },
+    {
+      "file": "operation/analysis-running-valid.json",
+      "kind": "operation",
+      "schema": "openapi:components/schemas/Operation",
+      "expectation": "valid",
+      "description": "Valid running applicability-analysis operation with bounded progress facts and cancellation not yet requested."
+    },
+    {
+      "file": "operation/conversion-failed-valid.json",
+      "kind": "operation",
+      "schema": "openapi:components/schemas/Operation",
+      "expectation": "valid",
+      "description": "Valid failed conversion operation carrying a safe terminal error and stating that no output was written."
+    },
+    {
+      "file": "exports/export-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ExportRequest",
+      "expectation": "valid",
+      "description": "Valid prepareReportExport body: applicability-gap report, strict-default redaction profile, static HTML format."
+    }
+  ]
+}

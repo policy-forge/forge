@@ -1,0 +1,12 @@
+{
+  "capability": "cap_5f6e7d8c9b0a1f2e3d4c5b6a7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e",
+  "session": {
+    "session_id": "sess_7f3k9m2q8w1c",
+    "mode": "browser",
+    "read_only": false,
+    "api_major": 1,
+    "contract_version": "1.0.0",
+    "project_label": "Acme ISMS project",
+    "launched_at": "2026-09-08T14:02:00Z"
+  }
+}

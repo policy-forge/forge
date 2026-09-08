@@ -1,0 +1,11 @@
+{
+  "schema_version": "forge.workspace/1",
+  "label": "Acme ISMS project",
+  "resources": [
+    {
+      "key": "pol-escape",
+      "role": "policy-source",
+      "path": "/etc/passwd"
+    }
+  ]
+}

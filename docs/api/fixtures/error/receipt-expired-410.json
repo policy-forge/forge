@@ -1,0 +1,6 @@
+{
+  "code": "receipt-expired",
+  "message": "The preview receipt expired. Preview the change again and reconfirm the new preview.",
+  "retryable": true,
+  "correlation_id": "corr_3d4c5b6a7f8e"
+}

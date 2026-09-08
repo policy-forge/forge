@@ -1,0 +1,12 @@
+{
+  "operation_id": "op_6e7d8c9b0a1f2e3d",
+  "kind": "applicability-analysis",
+  "state": "running",
+  "created_at": "2026-09-08T14:06:02Z",
+  "updated_at": "2026-09-08T14:06:41Z",
+  "cancel_requested": false,
+  "progress": {
+    "completed_items": 140,
+    "total_items": 263
+  }
+}

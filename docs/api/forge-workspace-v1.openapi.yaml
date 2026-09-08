@@ -1,0 +1,2704 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+
+info:
+  title: FORGE Local Workspace API
+  version: 1.0.0
+  description: >-
+    Normative, contract-authored OpenAPI 3.1 description of the PRD 062 local
+    web workspace API. This artifact is authored before any HTTP handler or
+    browser view exists and is the single source of truth for /api/v1 product
+    behavior; handlers, fixtures, generated or type-checked clients, and the
+    bundled UI must not drift from it. Contract ownership and drift
+    enforcement are recorded in docs/adr/0001-openapi-contract-ownership.md
+    (authored in parallel; referenced by path only). The governed product
+    contract is docs/PRD/062-prd-local-web-workspace.md, in particular
+    "Golden Path and Information Architecture", "Workspace, Data, and
+    Authority Model", "Trust Model and Security Boundaries", "API-First
+    Architecture and Shared Application-Service Boundary", "Write Preview
+    and Transaction Model", and the "MVP API Capability Matrix" table.
+
+    Transport rules (normative):
+
+    - The server binds exactly one OS-assigned port on 127.0.0.1 only;
+      never 0.0.0.0, ::, a LAN address, or the hostname localhost, with no
+      configurable host flag. Every request must carry the exact Host value
+      127.0.0.1:<assigned-port>; DNS names, alternate ports, forwarded-host
+      headers, and proxy routing are rejected generically before
+      authorization.
+    - No CORS. Browser state-changing requests additionally require the
+      exact session Origin, appropriate Fetch Metadata, and a non-simple
+      JSON content type. All API and project-derived responses use no-store.
+    - Static bootstrap assets (locked shell and unlock form) are served
+      outside /api/v1, may be unauthenticated, and contain no project data.
+      The machine bootstrap is a one-line sensitive JSON descriptor printed
+      on stdout by `forge workspace --project <DIR> --machine-session`,
+      also outside /api/v1.
+    - Exactly one operation is callable without a bearer capability:
+      POST /api/v1/session/unlock. Everything else requires the scoped
+      capability described by the capabilityBearer security scheme.
+    - Versioned project files on disk are authoritative. No hidden
+      database, no arbitrary path read/write endpoints, no shell or
+      subprocess endpoints, no remote fetch of any kind.
+
+    Cross-cutting semantics (normative, enforced per operation below):
+
+    - Strong versioning: every mutable resource response carries an opaque
+      strong `version` (an ETag equivalent conveyed in the body). Every
+      mutation observes a version and fails with the typed version-conflict
+      error, including the current resource_version, on mismatch.
+      Last-write-wins is prohibited.
+    - Idempotency: requests that create a preview, an operation, or commit
+      an effect require a client-generated Idempotency-Key header. A retry
+      with the same key and identical content returns the original preview,
+      operation, or commit result without repeating the effect; reuse of a
+      key with different content fails with idempotency-key-conflict.
+    - Two-step effects: material writes happen only through a preview
+      (exact target, create/overwrite status, base/target and input hashes,
+      validation diagnostics, semantic summary, escaped text diff) followed
+      by a commit presenting a one-time receipt bound to the session,
+      operation type, destination identity, base hash, input hashes, and
+      exact-byte hash. Commits revalidate every binding.
+    - Operations: bounded long-running work is a queryable Operation with a
+      stable ID, a pending|running|succeeded|failed|cancelled state machine,
+      a typed terminal result, safe cancellation, and enough state to
+      determine whether a write committed after a lost response.
+    - Pagination: collections use a deterministic opaque-cursor envelope
+      (page.items, page.next_cursor, page.total_matching) with bounded page
+      size and documented stable sort and filter fields; traversal of an
+      unchanged resource version neither duplicates nor omits items.
+    - Errors: a closed envelope with a stable machine-readable code, safe
+      message, optional resource/field pointers, retryability, correlation
+      id, and current resource version when relevant. Errors never contain
+      capabilities, absolute paths, raw source excerpts, or Rust debug
+      strings.
+    - Read-only sessions: when the session capability is read-only, every
+      mutation returns the typed read-only-session error and no project
+      file changes.
+
+  license:
+    name: MIT
+
+servers:
+  - url: http://127.0.0.1
+    description: >-
+      Loopback-only workspace server. The OS assigns the port at launch;
+      clients append it (http://127.0.0.1:<port>). The exact Host value
+      127.0.0.1:<port> is required on every request. No other bind address,
+      hostname, or scheme is supported.
+
+security:
+  - capabilityBearer: []
+
+tags:
+  - name: Session
+    description: >-
+      Local unlock, session metadata and API version discovery, and orderly
+      shutdown. POST /api/v1/session/unlock is the only unauthenticated
+      /api/v1 operation.
+  - name: Project
+    description: >-
+      Project-level summary and configuration status derived from the
+      explicit project root and registered resources. No recursive or
+      arbitrary scanning.
+  - name: Resources
+    description: >-
+      Registered project resource inventory, inspection, registration, and
+      bounded upload. Addresses resources by opaque registered IDs;
+      project-relative paths appear only in authorized metadata and effect
+      previews.
+  - name: Policy Onboarding
+    description: >-
+      Markdown-to-OSCAL conversion preparation and inspection of derived
+      products. Conversion prepares outputs through the shared conversion
+      application service; writes happen only through the Effects pattern.
+  - name: Validation
+    description: >-
+      Structured validation of registered resources and proposed drafts with
+      stable codes and resource/field pointers. No terminal-output parsing.
+  - name: Applicability
+    description: >-
+      PRD 056 framework scope inventory, applicability manifest draft
+      read/validate/save, deterministic gap analysis, and the current report
+      view. Omitted controls remain under-review; the API never infers a
+      decision.
+  - name: Mapping
+    description: >-
+      PRD 055 mapping subject inventory, mapping manifest draft
+      read/validate/save, collection build, and consistency checks. Preserves
+      exact resource identity and the positive versus explicit
+      no-relationship distinction.
+  - name: Review Queue
+    description: >-
+      Stable reason-code review items with deterministic filter, sort, and
+      pagination, plus counts that reconcile to the unfiltered denominator.
+  - name: Provenance
+    description: >-
+      Bidirectional traversal among report items, controls, decisions,
+      mapping edges, policy subjects, and bounded source excerpts with
+      resource fingerprints. No arbitrary path reads.
+  - name: Effects
+    description: >-
+      Preview retrieval (including the escaped text diff) and conditional,
+      idempotent, exact-byte commit. Previews are created by the
+      preview-producing operations in the Resources, Policy Onboarding,
+      Applicability, Mapping, and Exports tags; commits are the only write
+      path.
+  - name: Operations
+    description: >-
+      Queryable operation lifecycle: status, typed terminal result, and safe
+      cancellation for bounded work started by conversion, analysis, build,
+      export, and commit requests.
+  - name: Exports
+    description: >-
+      Self-contained, redacted static report export preparation and download.
+      No remote publish.
+
+paths:
+  /api/v1/applicability/analyses:
+    post:
+      operationId: analyzeApplicability
+      tags: [Applicability]
+      summary: Rebuild the deterministic applicability gap analysis
+      description: >-
+        Runs the shared applicability analysis application service over the
+        currently committed applicability manifest, mapping inputs, and
+        registered framework resources. Creates a bounded Operation (kind
+        applicability-analysis) whose terminal result carries classification
+        counts, the eligible-control denominator, input staleness, and an
+        EffectPreview for the regenerated report file; the report is written
+        only after that preview is committed through commitEffectPreview.
+        Identical retries with the same Idempotency-Key return the original
+        operation.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: >-
+            Analysis operation created; identical idempotent retries return
+            it unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/applicability/controls:
+    get:
+      operationId: listApplicabilityControls
+      tags: [Applicability]
+      summary: List the complete framework control inventory
+      description: >-
+        Deterministic, cursor-paginated inventory of every eligible framework
+        control with its current classification and explicit decision state.
+        The complete control denominator is observable here: controls
+        omitted from the manifest appear as under-review. Stable sort is by
+        control_id ascending; filters are exact-match. Traversing one
+        unchanged report version neither duplicates nor omits controls.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: classification
+          in: query
+          required: false
+          description: Filter by gap classification.
+          schema:
+            $ref: '#/components/schemas/GapClassification'
+        - name: decision_state
+          in: query
+          required: false
+          description: Filter by explicit human decision state.
+          schema:
+            $ref: '#/components/schemas/DecisionState'
+      responses:
+        '200':
+          description: One page of the control inventory.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControlPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/applicability/draft:
+    get:
+      operationId: getApplicabilityDraft
+      tags: [Applicability]
+      summary: Read the current applicability manifest draft
+      description: >-
+        Returns the on-disk forge.applicability/1 manifest as the current
+        draft, its strong version, and a validation summary computed at read
+        time. Returns not-found when no applicability manifest is registered
+        yet (setup state).
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Current applicability manifest draft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicabilityDraft'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putApplicabilityDraft
+      tags: [Applicability]
+      summary: Validate a complete proposed applicability manifest and preview its write
+      description: >-
+        Submits a complete proposed forge.applicability/1 document plus the
+        observed version of the manifest being replaced. The service parses
+        and validates the whole document through the shared domain parser
+        and, when valid, returns an EffectPreview (operation type
+        applicability-manifest-write) bound to the exact proposed bytes; no
+        file changes until commitEffectPreview. A structurally invalid
+        document returns validation-failed; use
+        validateApplicabilityDraft for diagnostics without a preview.
+        Idempotent retries return the original preview.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicabilityDraftPutRequest'
+      responses:
+        '200':
+          description: >-
+            Validation outcome plus the write preview; nothing committed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '409':
+          $ref: '#/components/responses/ConflictVersion'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/applicability/draft/validation:
+    post:
+      operationId: validateApplicabilityDraft
+      tags: [Applicability]
+      summary: Validate a proposed applicability manifest without creating a preview
+      description: >-
+        Pure validation of a complete proposed forge.applicability/1
+        document. Returns the same structured diagnostics the put and commit
+        paths enforce. Computes only; safe in read-only sessions and never
+        mints a receipt.
+      security:
+        - capabilityBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftValidationRequest'
+      responses:
+        '200':
+          description: Structured validation report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/applicability/report:
+    get:
+      operationId: getApplicabilityReport
+      tags: [Applicability]
+      summary: Read the current applicability gap report
+      description: >-
+        Returns the last committed gap report from disk with its version,
+        the input fingerprints it was generated from, whether any input has
+        changed since (stale), reconciled classification counts, and the
+        eligible-control total. Returns not-found when no report exists yet.
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Current applicability gap report view.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicabilityReportView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/conversions:
+    post:
+      operationId: preparePolicyConversion
+      tags: [Policy Onboarding]
+      summary: Prepare a Markdown policy conversion
+      description: >-
+        Prepares Catalog or Component Definition conversion outputs for a
+        registered policy-source resource through the shared conversion
+        application service. Creates a bounded Operation (kind conversion);
+        its terminal result (retrievable via getConversion) lists the
+        derived products with an EffectPreview for the proposed output
+        file. No output is written until commitEffectPreview. Identical
+        retries with the same Idempotency-Key return the original
+        operation.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversionRequest'
+      responses:
+        '202':
+          description: Conversion operation created; identical idempotent
+            retries return it unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/conversions/{operation_id}:
+    get:
+      operationId: getConversion
+      tags: [Policy Onboarding]
+      summary: Inspect derived conversion products
+      description: >-
+        Typed terminal view of a succeeded conversion operation: derived
+        product summaries, structured validation diagnostics for the
+        proposed outputs, and the EffectPreview carrying target, hashes,
+        semantic summary, diff, and receipt. The operation_id is the ID
+        returned by preparePolicyConversion.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/OperationIdPath'
+      responses:
+        '200':
+          description: Conversion products and preview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversionResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/effects/commits:
+    post:
+      operationId: commitEffectPreview
+      tags: [Effects]
+      summary: Commit the exact previewed bytes
+      description: >-
+        The only write path. Submits the one-time preview receipt, the
+        observed resource version, and explicit confirmation intent. The
+        service revalidates the session binding, operation type, destination
+        identity, base hash, input hashes, and exact-byte hash; any
+        mismatch, expiry, or reuse invalidates the receipt without a write.
+        A valid commit creates a stable Operation (kind commit) that
+        atomically writes only the previewed bytes and returns the
+        committed fingerprint; after a lost response, an identical retry
+        with the same Idempotency-Key returns the original operation and
+        committed hash without a second write.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitEffectRequest'
+      responses:
+        '202':
+          description: Commit operation created; poll getOperation for the
+            terminal result and committed hash.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '409':
+          description: >-
+            Version conflict, idempotency key reuse with different content,
+            receipt reuse, or receipt binding mismatch. The error envelope
+            carries resource_version on version-conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: The preview receipt has expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/effects/previews/{preview_id}:
+    get:
+      operationId: getEffectPreview
+      tags: [Effects]
+      summary: Retrieve a preview including its diff
+      description: >-
+        Returns the full preview the human is confirming: project-relative
+        target, create/overwrite status, base and input hashes, exact-byte
+        hash, validation diagnostics, semantic summary, escaped text diff,
+        and the one-time receipt with expiry. gone once the receipt has
+        expired.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/PreviewIdPath'
+      responses:
+        '200':
+          description: The stored preview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectPreview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: The preview receipt has expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/exports:
+    post:
+      operationId: prepareReportExport
+      tags: [Exports]
+      summary: Prepare a redacted static report export
+      description: >-
+        Prepares a self-contained, redacted static HTML export from the same
+        versioned report model used by the CLI renderers. Creates a bounded
+        Operation (kind export); its terminal result carries the redaction
+        summary and an EffectPreview for the export file beneath the project
+        root. The file is written only through commitEffectPreview.
+        Identical retries with the same Idempotency-Key return the original
+        operation.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '202':
+          description: Export operation created; identical idempotent
+            retries return it unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/exports/{operation_id}/download:
+    get:
+      operationId: downloadExport
+      tags: [Exports]
+      summary: Download a committed export
+      description: >-
+        Streams the committed export bytes with a safe filename and
+        content type (text/html; charset=utf-8), no-store, and restrictive
+        download headers. Available only after the export commit operation
+        has succeeded; otherwise not-found. The body is inert, escaped
+        content rendered by the same shared service that produced the
+        previewed bytes.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/OperationIdPath'
+      responses:
+        '200':
+          description: The committed export document.
+          content:
+            text/html:
+              schema:
+                type: string
+                contentMediaType: text/html
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/mapping/builds:
+    post:
+      operationId: buildMapping
+      tags: [Mapping]
+      summary: Build the mapping collection model
+      description: >-
+        Builds the PRD 055 mapping model from the currently committed
+        mapping manifest and registered inputs through the shared mapping
+        application service. Creates a bounded Operation (kind
+        mapping-build); its terminal result carries participation totals,
+        coverage, and an EffectPreview for the rendered collection report,
+        which is written only through commitEffectPreview. Identical retries
+        with the same Idempotency-Key return the original operation.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Mapping build operation created; identical idempotent
+            retries return it unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/mapping/checks:
+    post:
+      operationId: checkMapping
+      tags: [Mapping]
+      summary: Run mapping collection consistency checks
+      description: >-
+        Runs the shared mapping check service over the currently committed
+        mapping inputs and returns structured diagnostics with stable codes
+        and resource/field pointers. Synchronous, bounded, read-only
+        compute; safe in read-only sessions.
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Mapping check diagnostics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/mapping/draft:
+    get:
+      operationId: getMappingDraft
+      tags: [Mapping]
+      summary: Read the current mapping manifest draft
+      description: >-
+        Returns the on-disk forge.mapping-manifest/1 manifest as the current
+        draft, its strong version, and a validation summary computed at read
+        time. Returns not-found when no mapping manifest is registered yet
+        (setup state).
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Current mapping manifest draft.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MappingDraft'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMappingDraft
+      tags: [Mapping]
+      summary: Validate a complete proposed mapping manifest and preview its write
+      description: >-
+        Submits a complete proposed forge.mapping-manifest/1 document plus
+        the observed version of the manifest being replaced. The service
+        parses and validates the whole document through the shared domain
+        parser and, when valid, returns an EffectPreview (operation type
+        mapping-manifest-write) bound to the exact proposed bytes and exact
+        subject/resource identities; no file changes until
+        commitEffectPreview. A structurally invalid document returns
+        validation-failed; use validateMappingDraft for diagnostics without
+        a preview. Idempotent retries return the original preview.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MappingDraftPutRequest'
+      responses:
+        '200':
+          description: Validation outcome plus the write preview; nothing
+            committed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '409':
+          $ref: '#/components/responses/ConflictVersion'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/mapping/draft/validation:
+    post:
+      operationId: validateMappingDraft
+      tags: [Mapping]
+      summary: Validate a proposed mapping manifest without creating a preview
+      description: >-
+        Pure validation of a complete proposed forge.mapping-manifest/1
+        document. Returns the same structured diagnostics the put and commit
+        paths enforce. Computes only; safe in read-only sessions and never
+        mints a receipt.
+      security:
+        - capabilityBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftValidationRequest'
+      responses:
+        '200':
+          description: Structured validation report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/mapping/subjects:
+    get:
+      operationId: listMappingSubjects
+      tags: [Mapping]
+      summary: List policy and framework mapping subjects
+      description: >-
+        Deterministic, cursor-paginated inventory of policy and framework
+        subjects available for mapping decisions, each carrying its exact
+        registered resource identity and content fingerprint. Stable sort is
+        by subject_id ascending. Absence of a relationship is never
+        interpreted as a decision.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: side
+          in: query
+          required: false
+          description: Filter by subject side.
+          schema:
+            type: string
+            enum: [policy, framework]
+        - name: resource_id
+          in: query
+          required: false
+          description: Filter to subjects of one registered resource.
+          schema:
+            $ref: '#/components/schemas/ResourceId'
+      responses:
+        '200':
+          description: One page of the subject inventory.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/operations/{operation_id}:
+    get:
+      operationId: getOperation
+      tags: [Operations]
+      summary: Query an operation
+      description: >-
+        Returns the operation's stable ID, kind, state, timestamps,
+        progress facts when available, cancellation status, and, when
+        terminal, its typed result or safe error. The result states
+        explicitly whether a write committed and, if so, the committed hash,
+        so a client that lost a commit response can recover exactly.
+        Operations are session-scoped: only the session that created them
+        may query them.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/OperationIdPath'
+      responses:
+        '200':
+          description: Current operation state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/operations/{operation_id}/cancellation:
+    post:
+      operationId: cancelOperation
+      tags: [Operations]
+      summary: Request safe cancellation of an operation
+      description: >-
+        Requests cancellation of a pending or running operation. Cancellation
+        is cooperative and safe: a cancelled operation never leaves a
+        partial write; any effect that already committed is reported
+        truthfully in the terminal result. Sets cancel_requested and returns
+        the current operation state. operation-not-cancellable when the
+        operation already reached a terminal state.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/OperationIdPath'
+      responses:
+        '200':
+          description: Cancellation recorded; the operation state is
+            returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The operation is already terminal and cannot be
+            cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/project/config-status:
+    get:
+      operationId: getProjectConfigStatus
+      tags: [Project]
+      summary: Read project configuration status
+      description: >-
+        Reports whether an optional .forge.toml exists beneath the project
+        root, whether it parses and validates, and bounded safe issue
+        summaries. Never returns the raw file contents.
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Project configuration status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectConfigStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/project/summary:
+    get:
+      operationId: getProjectSummary
+      tags: [Project]
+      summary: Read the project overview
+      description: >-
+        One authoritative overview distinguishing setup, invalid inputs,
+        stale inputs, unresolved review items, and completed outputs, with
+        counts that link to the exact affected resources through the
+        resource, queue, and provenance APIs, plus the next recommended
+        human action. The Overview navigation view is rendered entirely
+        from this resource and the endpoints it links to.
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Project summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/provenance/entries:
+    get:
+      operationId: listProvenanceEntries
+      tags: [Provenance]
+      summary: Traverse provenance from an anchor
+      description: >-
+        Bidirectional traversal among report items, framework controls,
+        applicability decisions, mapping edges, policy subjects, and source
+        references, starting from an opaque anchor identifier obtained from
+        a count, classification, queue item, or report view. Entries carry
+        bounded labels and resource fingerprints; excerpts are fetched
+        separately and bounded by getProvenanceExcerpt. Stable sort is by
+        entry_id ascending. No arbitrary path reads.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: anchor
+          in: query
+          required: true
+          description: >-
+            Opaque anchor to traverse from (a report item, control,
+            classification, queue item, or excerpt reference).
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 128
+        - name: kind
+          in: query
+          required: false
+          description: Filter entries by kind.
+          schema:
+            $ref: '#/components/schemas/ProvenanceKind'
+      responses:
+        '200':
+          description: One page of provenance entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceEntryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/provenance/excerpts/{excerpt_id}:
+    get:
+      operationId: getProvenanceExcerpt
+      tags: [Provenance]
+      summary: Read one bounded source excerpt
+      description: >-
+        Returns one bounded, escaped source excerpt referenced by a
+        provenance entry: the registered resource, its content fingerprint,
+        exact line range, and the escaped text (truncated flag when bounds
+        were applied). Excerpts are inert text; there is no way to read
+        arbitrary file ranges.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ExcerptIdPath'
+      responses:
+        '200':
+          description: One bounded source excerpt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceExcerpt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/resources:
+    get:
+      operationId: listResources
+      tags: [Resources]
+      summary: List registered project resources
+      description: >-
+        Deterministic, cursor-paginated inventory of resources registered in
+        the forge.workspace/1 index, with current hashes, sizes, and
+        validation state computed at read time. Stable sort is by resource
+        key ascending. There is no recursive or arbitrary directory
+        scanning; only registered resources appear.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: role
+          in: query
+          required: false
+          description: Filter by resource role.
+          schema:
+            $ref: '#/components/schemas/WorkspaceRole'
+        - name: validation_state
+          in: query
+          required: false
+          description: Filter by current validation state.
+          schema:
+            $ref: '#/components/schemas/ValidationState'
+        - name: stale
+          in: query
+          required: false
+          description: Filter by input staleness against the current report.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: One page of registered resources.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourcePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/resources/register:
+    post:
+      operationId: registerResource
+      tags: [Resources]
+      summary: Register an existing root-contained file
+      description: >-
+        References an existing, regular, root-contained supported file
+        without copying it. The path is normalized and validated against
+        project containment; absolute paths, traversal, platform prefixes,
+        backslashes, symlinks, and special files are rejected with
+        resource-containment. Returns validation of the proposed
+        forge.workspace/1 index change plus an EffectPreview (operation
+        type workspace-index-update); the index changes only after
+        commitEffectPreview. Idempotent retries return the original
+        preview.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterResourceRequest'
+      responses:
+        '200':
+          description: Index-change validation plus preview; nothing
+            committed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ConflictVersion'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/resources/upload:
+    post:
+      operationId: uploadResource
+      tags: [Resources]
+      summary: Upload bounded bytes to a confirmed root-contained target
+      description: >-
+        Accepts bounded user-selected file bytes (base64 within JSON, at
+        most 10 MiB decoded) for a user-confirmed target beneath the project
+        root; the server neither receives nor retains the source machine
+        path. Content is inert data validated by declared role, extension
+        and media type, size, parser, and destination rules before a
+        preview is offered, and never fetched from or followed to the
+        network. Returns validation plus an EffectPreview (operation type
+        resource-upload); nothing is written until commitEffectPreview.
+        Idempotent retries return the original preview.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadResourceRequest'
+      responses:
+        '200':
+          description: Uploaded-content validation plus preview; nothing
+            committed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '409':
+          $ref: '#/components/responses/ConflictVersion'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/resources/{resource_id}:
+    get:
+      operationId: getResource
+      tags: [Resources]
+      summary: Inspect one registered resource
+      description: >-
+        Returns one registered resource's metadata: stable key, typed role,
+        project-relative path (authorized metadata only), current SHA-256
+        and size computed at read time, validation state, staleness, and
+        strong version.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceIdPath'
+      responses:
+        '200':
+          description: Registered resource metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/resources/{resource_id}/validation:
+    get:
+      operationId: getResourceValidation
+      tags: [Validation]
+      summary: Retrieve structured diagnostics for one resource
+      description: >-
+        Recomputes and returns the structured validation diagnostics for one
+        registered resource on demand, deterministically, with stable codes
+        and resource/field pointers. Derived from the same shared
+        validation services the CLI uses; never parsed from terminal
+        output.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceIdPath'
+      responses:
+        '200':
+          description: Structured validation report for the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/review-queue/counts:
+    get:
+      operationId: getReviewQueueCounts
+      tags: [Review Queue]
+      summary: Read reconciled review queue counts
+      description: >-
+        Counts of open review items grouped by stable reason code, plus the
+        total. Counts always reconcile to the unfiltered denominator exposed
+        by listReviewQueueItems (total_matching with no filters).
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Review queue counts by reason code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewQueueCounts'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/review-queue/items:
+    get:
+      operationId: listReviewQueueItems
+      tags: [Review Queue]
+      summary: List, filter, sort, and page review items
+      description: >-
+        Deterministic, cursor-paginated view of unresolved applicability,
+        mapping, validation, stale-input, and conflict items with stable
+        reason codes. Stable sort is by reason-code priority then item_id
+        ascending; filters are exact-match. Each item links to its evidence
+        through provenance entry references. Traversing one unchanged
+        resource version neither duplicates nor omits items.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+        - name: reason_code
+          in: query
+          required: false
+          description: Filter by stable reason code.
+          schema:
+            $ref: '#/components/schemas/ReviewReasonCode'
+        - name: classification
+          in: query
+          required: false
+          description: Filter by gap classification.
+          schema:
+            $ref: '#/components/schemas/GapClassification'
+        - name: resource_id
+          in: query
+          required: false
+          description: Filter to items affecting one registered resource.
+          schema:
+            $ref: '#/components/schemas/ResourceId'
+      responses:
+        '200':
+          description: One page of review queue items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueItemPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/session:
+    get:
+      operationId: getSession
+      tags: [Session]
+      summary: Read session metadata and API version
+      description: >-
+        Returns session identity, client mode, read-only scope, the API
+        major and exact contract version supported by the server, and the
+        project label. Clients use this for version discovery and to render
+        the session's capability scope. Contains no absolute paths and no
+        capability material.
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Session metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/session/shutdown:
+    post:
+      operationId: shutdownSession
+      tags: [Session]
+      summary: Stop the workspace
+      description: >-
+        Confirmed in-UI "Stop workspace" action. Begins orderly shutdown:
+        the passphrase verifier, all session capabilities, and all in-memory
+        preview receipts are invalidated, in-flight operations finish or
+        cancel safely, and no further requests succeed. Safe to call from a
+        read-only session because it modifies no project file. After this
+        response, clients must treat the process as stopped.
+      security:
+        - capabilityBearer: []
+      responses:
+        '200':
+          description: Shutdown accepted and in progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShutdownResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/session/unlock:
+    post:
+      operationId: unlockSession
+      tags: [Session]
+      summary: Unlock a browser session with the per-launch passphrase
+      description: >-
+        The only /api/v1 operation callable without a bearer capability.
+        Accepts the per-launch passphrase over the exact loopback origin;
+        verification uses Argon2id with a per-launch salt. Failures are
+        generic and indistinguishable, with bounded increasing delay after
+        failures. On success, mints and returns once a distinct
+        browser-scoped, memory-only capability; a second browser context
+        must unlock separately and receives a different capability. Neither
+        the response nor failures reveal project state, the passphrase, or
+        its hash.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionUnlockRequest'
+      responses:
+        '200':
+          description: >-
+            Unlock succeeded; the capability is returned exactly once and
+            must be retained only in page memory.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionUnlockResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: >-
+            Generic unlock failure (wrong or malformed passphrase).
+            Indistinguishable for any wrong value; no project-state
+            disclosure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: >-
+            Unlock throttled after repeated failures; retry after the
+            documented bounded delay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/validation/runs:
+    post:
+      operationId: runValidation
+      tags: [Validation]
+      summary: Run structured validation over selected resources
+      description: >-
+        Runs the shared validation services over all registered resources or
+        an explicit selection and returns structured diagnostics with stable
+        codes and resource/field pointers. Synchronous, bounded, read-only
+        compute; safe in read-only sessions. Draft documents are validated
+        through the applicability and mapping draft validation operations.
+      security:
+        - capabilityBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRunRequest'
+      responses:
+        '200':
+          description: Structured validation report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    capabilityBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: capability
+      description: >-
+        Memory-only, per-launch capability delivered exactly once (unlock
+        response for browser sessions; machine-session stdout descriptor
+        otherwise). Not an account, durable identity, role, reviewer
+        attestation, or ambient HTTP Basic credential; never placed in URLs,
+        cookies, browser storage, server-rendered HTML, logs, or crash
+        output; expired on process shutdown. Scoped browser|machine x
+        read|write and bound to session ID, project root, client mode, and
+        scope: cross-mode use is rejected and a read-only capability is
+        rejected on every mutation with the typed read-only-session error.
+        Secrets are compared in constant time. Requests must also carry the
+        exact Host 127.0.0.1:<port>.
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        Client-generated key for effect-creating requests (preview,
+        operation, or commit creation). Same key with identical content
+        returns the original result; same key with different content fails
+        with idempotency-key-conflict.
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 255
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: >-
+        Opaque deterministic cursor from a previous page.next_cursor; stable
+        only for an unchanged underlying resource version.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 512
+    PageSize:
+      name: page_size
+      in: query
+      required: false
+      description: Maximum number of items returned in one page (1-200,
+        default 50).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    ResourceIdPath:
+      name: resource_id
+      in: path
+      required: true
+      description: Opaque registered resource identifier.
+      schema:
+        $ref: '#/components/schemas/ResourceId'
+    OperationIdPath:
+      name: operation_id
+      in: path
+      required: true
+      description: Stable operation identifier.
+      schema:
+        $ref: '#/components/schemas/OperationId'
+    PreviewIdPath:
+      name: preview_id
+      in: path
+      required: true
+      description: Opaque effect preview identifier.
+      schema:
+        $ref: '#/components/schemas/PreviewId'
+    ExcerptIdPath:
+      name: excerpt_id
+      in: path
+      required: true
+      description: Opaque bounded excerpt identifier.
+      schema:
+        type: string
+        pattern: '^ex_[0-9a-z]{12,80}$'
+
+  responses:
+    BadRequest:
+      description: >-
+        Malformed request (invalid JSON, duplicate object keys, wrong
+        content type, invalid query parameters, or structural bound
+        violations).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: >-
+        Missing, malformed, or wrong capability, or a rejected Host, Origin,
+        or Fetch Metadata context. Generic rejection with no project-state
+        disclosure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ForbiddenReadOnly:
+      description: >-
+        The session capability is read-only; the operation is a mutation.
+        No project file changes.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The addressed resource or operation does not exist in this
+        session.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConflictVersion:
+      description: >-
+        The observed version does not match the current resource version
+        (version-conflict); the error carries resource_version with the
+        current value. Alternatively an idempotency-key or receipt conflict
+        (see the Error code).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableValidation:
+      description: >-
+        The submitted document or content failed domain validation; the
+        error is typed and safe. Fetch full diagnostics through the
+        validation operations.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PayloadTooLarge:
+      description: The uploaded content exceeds the documented bounded size.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    AnalysisResult:
+      type: object
+      additionalProperties: false
+      required: [classification_counts, eligible_controls, stale_inputs, report_preview]
+      description: Typed terminal result of a succeeded applicability-analysis
+        operation.
+      properties:
+        classification_counts:
+          type: array
+          minItems: 0
+          maxItems: 6
+          description: Reconciled classification totals.
+          items:
+            type: object
+            additionalProperties: false
+            required: [classification, count]
+            properties:
+              classification:
+                $ref: '#/components/schemas/GapClassification'
+              count:
+                type: integer
+                minimum: 0
+        eligible_controls:
+          type: integer
+          minimum: 0
+          description: Complete denominator of eligible framework controls.
+        stale_inputs:
+          type: boolean
+          description: Whether any analysis input changed since the last
+            committed report.
+        report_preview:
+          $ref: '#/components/schemas/EffectPreview'
+
+    ApplicabilityDraft:
+      type: object
+      additionalProperties: false
+      required: [version, manifest, validation_summary]
+      description: Current applicability manifest draft read from disk.
+      properties:
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+        manifest:
+          type: object
+          description: >-
+            Complete forge.applicability/1 document exactly as stored on
+            disk. Validated by the shared domain parser (snake_case fields,
+            closed contract, duplicate-key rejection); the API does not
+            redefine the domain schema.
+        validation_summary:
+          $ref: '#/components/schemas/DiagnosticSummary'
+
+    ApplicabilityDraftPutRequest:
+      type: object
+      additionalProperties: false
+      required: [manifest, observed_version]
+      properties:
+        manifest:
+          type: object
+          description: Complete proposed forge.applicability/1 document.
+        observed_version:
+          $ref: '#/components/schemas/ResourceVersion'
+
+    ApplicabilityReportView:
+      type: object
+      additionalProperties: false
+      required: [version, stale, input_fingerprints, classification_counts, eligible_controls]
+      description: Current committed applicability gap report view.
+      properties:
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+        stale:
+          type: boolean
+          description: Whether any input fingerprint no longer matches the
+            registered resource content.
+        input_fingerprints:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [resource_id, sha256, matches_current]
+            properties:
+              resource_id:
+                $ref: '#/components/schemas/ResourceId'
+              sha256:
+                $ref: '#/components/schemas/Sha256Hex'
+              matches_current:
+                type: boolean
+        classification_counts:
+          type: array
+          minItems: 0
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [classification, count]
+            properties:
+              classification:
+                $ref: '#/components/schemas/GapClassification'
+              count:
+                type: integer
+                minimum: 0
+        eligible_controls:
+          type: integer
+          minimum: 0
+
+    CommitEffectRequest:
+      type: object
+      additionalProperties: false
+      required: [receipt, observed_version, confirmed]
+      description: >-
+        Confirmation submits only the one-time receipt token, the observed
+        resource version, and explicit confirmation intent, plus the
+        Idempotency-Key header.
+      properties:
+        receipt:
+          type: string
+          minLength: 16
+          maxLength: 512
+          description: One-time preview receipt token.
+        observed_version:
+          $ref: '#/components/schemas/ResourceVersion'
+        confirmed:
+          type: boolean
+          enum: [true]
+          description: Must be the literal true; absent or false is
+            rejected.
+
+    CommitResult:
+      type: object
+      additionalProperties: false
+      required: [write_committed, committed_sha256, target_path, new_version]
+      description: Typed terminal result of a succeeded commit operation.
+      properties:
+        write_committed:
+          type: boolean
+          enum: [true]
+          description: The exact previewed bytes were atomically written.
+        committed_sha256:
+          $ref: '#/components/schemas/Sha256Hex'
+        target_path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+        new_version:
+          $ref: '#/components/schemas/ResourceVersion'
+
+    ControlInventoryItem:
+      type: object
+      additionalProperties: false
+      required: [control_id, title, classification, decision_state, has_positive_mapping, review_reason]
+      properties:
+        control_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Stable framework control identifier.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Safe, bounded control title.
+        classification:
+          $ref: '#/components/schemas/GapClassification'
+        decision_state:
+          $ref: '#/components/schemas/DecisionState'
+        has_positive_mapping:
+          type: boolean
+        review_reason:
+          oneOf:
+            - $ref: '#/components/schemas/ReviewReasonCode'
+            - type: 'null'
+
+    ControlPage:
+      type: object
+      additionalProperties: false
+      required: [resource_version, page]
+      properties:
+        resource_version:
+          $ref: '#/components/schemas/ResourceVersion'
+        page:
+          type: object
+          additionalProperties: false
+          required: [items, next_cursor, total_matching]
+          properties:
+            items:
+              type: array
+              minItems: 0
+              maxItems: 200
+              items:
+                $ref: '#/components/schemas/ControlInventoryItem'
+            next_cursor:
+              oneOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 512
+                - type: 'null'
+              description: Opaque cursor for the next page; null on the
+                last page.
+            total_matching:
+              type: integer
+              minimum: 0
+              description: Denominator for the current resource version and
+                applied filters; with no filters it is the unfiltered
+                total.
+
+    ResourcePage:
+      type: object
+      additionalProperties: false
+      required: [resource_version, page]
+      properties:
+        resource_version:
+          $ref: '#/components/schemas/ResourceVersion'
+        page:
+          type: object
+          additionalProperties: false
+          required: [items, next_cursor, total_matching]
+          properties:
+            items:
+              type: array
+              minItems: 0
+              maxItems: 200
+              items:
+                $ref: '#/components/schemas/Resource'
+            next_cursor:
+              oneOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 512
+                - type: 'null'
+            total_matching:
+              type: integer
+              minimum: 0
+
+    SubjectPage:
+      type: object
+      additionalProperties: false
+      required: [resource_version, page]
+      properties:
+        resource_version:
+          $ref: '#/components/schemas/ResourceVersion'
+        page:
+          type: object
+          additionalProperties: false
+          required: [items, next_cursor, total_matching]
+          properties:
+            items:
+              type: array
+              minItems: 0
+              maxItems: 200
+              items:
+                $ref: '#/components/schemas/MappingSubject'
+            next_cursor:
+              oneOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 512
+                - type: 'null'
+            total_matching:
+              type: integer
+              minimum: 0
+
+    QueueItemPage:
+      type: object
+      additionalProperties: false
+      required: [resource_version, page]
+      properties:
+        resource_version:
+          $ref: '#/components/schemas/ResourceVersion'
+        page:
+          type: object
+          additionalProperties: false
+          required: [items, next_cursor, total_matching]
+          properties:
+            items:
+              type: array
+              minItems: 0
+              maxItems: 200
+              items:
+                $ref: '#/components/schemas/QueueItem'
+            next_cursor:
+              oneOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 512
+                - type: 'null'
+            total_matching:
+              type: integer
+              minimum: 0
+
+    ProvenanceEntryPage:
+      type: object
+      additionalProperties: false
+      required: [resource_version, page]
+      properties:
+        resource_version:
+          $ref: '#/components/schemas/ResourceVersion'
+        page:
+          type: object
+          additionalProperties: false
+          required: [items, next_cursor, total_matching]
+          properties:
+            items:
+              type: array
+              minItems: 0
+              maxItems: 200
+              items:
+                $ref: '#/components/schemas/ProvenanceEntry'
+            next_cursor:
+              oneOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 512
+                - type: 'null'
+            total_matching:
+              type: integer
+              minimum: 0
+
+    ConversionRequest:
+      type: object
+      additionalProperties: false
+      required: [source_resource_id, output_kind, target_path]
+      properties:
+        source_resource_id:
+          $ref: '#/components/schemas/ResourceId'
+        output_kind:
+          type: string
+          enum: [oscal-catalog, oscal-component-definition]
+          description: Which conversion pipeline to prepare.
+        target_path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+
+    ConversionResult:
+      type: object
+      additionalProperties: false
+      required: [operation_id, products, validation, preview]
+      description: Typed inspection of a succeeded conversion operation.
+      properties:
+        operation_id:
+          $ref: '#/components/schemas/OperationId'
+        products:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items:
+            type: object
+            additionalProperties: false
+            required: [kind, statement_count]
+            properties:
+              kind:
+                type: string
+                enum: [oscal-catalog, oscal-component-definition]
+              statement_count:
+                type: integer
+                minimum: 0
+        validation:
+          $ref: '#/components/schemas/ValidationReport'
+        preview:
+          $ref: '#/components/schemas/EffectPreview'
+
+    DiagnosticSummary:
+      type: object
+      additionalProperties: false
+      required: [state, error_count, warning_count]
+      properties:
+        state:
+          $ref: '#/components/schemas/ValidationState'
+        error_count:
+          type: integer
+          minimum: 0
+        warning_count:
+          type: integer
+          minimum: 0
+
+    DraftPreviewResponse:
+      type: object
+      additionalProperties: false
+      required: [validation, preview]
+      description: >-
+        Shared response for synchronous preview-producing operations:
+        validation of the complete proposed document plus the bound write
+        preview. Nothing is committed.
+      properties:
+        validation:
+          $ref: '#/components/schemas/ValidationReport'
+        preview:
+          $ref: '#/components/schemas/EffectPreview'
+
+    DraftValidationRequest:
+      type: object
+      additionalProperties: false
+      required: [manifest]
+      properties:
+        manifest:
+          type: object
+          description: Complete proposed forge.applicability/1 or
+            forge.mapping-manifest/1 document.
+
+    DecisionState:
+      type: string
+      enum: [applicable, not-applicable, deferred, under-review]
+      description: >-
+        PRD 056 explicit human applicability states. Omitted controls have
+        under-review semantics; the API never infers a state.
+
+    EffectPreview:
+      type: object
+      additionalProperties: false
+      required: [preview_id, operation_type, target, base_sha256, exact_bytes_sha256, input_hashes, validation, semantic_summary, diff_text, diff_truncated, receipt]
+      description: >-
+        Everything a human confirms against: exact target, hashes,
+        validation, semantic summary, escaped text diff, and the one-time
+        receipt.
+      properties:
+        preview_id:
+          $ref: '#/components/schemas/PreviewId'
+        operation_type:
+          type: string
+          enum: [workspace-index-update, resource-upload, policy-conversion, applicability-manifest-write, mapping-manifest-write, applicability-report-write, mapping-report-write, report-export]
+        target:
+          type: object
+          additionalProperties: false
+          required: [path, status]
+          properties:
+            path:
+              $ref: '#/components/schemas/ProjectRelativePath'
+            status:
+              type: string
+              enum: [create, overwrite]
+        base_sha256:
+          oneOf:
+            - $ref: '#/components/schemas/Sha256Hex'
+            - type: 'null'
+          description: Current target content hash; null when creating a new
+            file.
+        target_version:
+          oneOf:
+            - $ref: '#/components/schemas/ResourceVersion'
+            - type: 'null'
+          description: Current version of the target resource when
+            overwriting.
+        exact_bytes_sha256:
+          $ref: '#/components/schemas/Sha256Hex'
+        input_hashes:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [resource_id, sha256]
+            properties:
+              resource_id:
+                $ref: '#/components/schemas/ResourceId'
+              sha256:
+                $ref: '#/components/schemas/Sha256Hex'
+        validation:
+          $ref: '#/components/schemas/ValidationReport'
+        semantic_summary:
+          type: string
+          maxLength: 4000
+          description: Safe, escaped summary of the semantic change.
+        diff_text:
+          type: string
+          maxLength: 200000
+          description: Escaped unified text diff of the exact proposed
+            bytes.
+        diff_truncated:
+          type: boolean
+        receipt:
+          type: object
+          additionalProperties: false
+          required: [token, expires_at]
+          description: >-
+            One-time receipt bound to the session, operation type,
+            destination identity, base hash, input hashes, and exact-byte
+            hash.
+          properties:
+            token:
+              type: string
+              minLength: 16
+              maxLength: 512
+            expires_at:
+              type: string
+              format: date-time
+
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message, retryable]
+      examples:
+        - code: version-conflict
+          message: The resource changed since it was read. Reload and retry.
+          resource: res_0f1e2d3c4b5a69788796a5b4
+          retryable: true
+          correlation_id: corr_1f2e3d4c5b6a
+          resource_version: aa99887766554433
+      description: >-
+        Closed error envelope. Prohibited content (enforced by contract and
+        CI): capabilities, absolute paths, raw source excerpts, and Rust
+        debug strings. The code list below is closed in this contract
+        version; additive codes are permitted within v1 only as documented
+        in docs/api/compatibility.md, and the meaning of an existing code
+        never changes within v1.
+      properties:
+        code:
+          type: string
+          enum: [invalid-request, unauthorized, unlock-failed, unlock-throttled, read-only-session, not-found, unsupported-media-type, payload-too-large, resource-containment, version-conflict, idempotency-key-conflict, receipt-expired, receipt-reused, receipt-mismatch, validation-failed, operation-not-cancellable, shutdown-in-progress, internal-error]
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Safe, human-readable message with no sensitive
+            content.
+        resource:
+          type: string
+          minLength: 3
+          maxLength: 128
+          description: Optional opaque resource or operation identifier the
+            error concerns.
+        field:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Optional JSON pointer into the request document.
+        retryable:
+          type: boolean
+          description: Whether an identical retry can succeed later.
+        correlation_id:
+          type: string
+          minLength: 8
+          maxLength: 128
+        resource_version:
+          $ref: '#/components/schemas/ResourceVersion'
+
+    ExportRequest:
+      type: object
+      additionalProperties: false
+      required: [report_kind, target_path]
+      properties:
+        report_kind:
+          type: string
+          enum: [applicability-gap, mapping-collection, trace]
+        target_path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+        redaction_profile:
+          type: string
+          enum: [strict-default]
+          default: strict-default
+          description: Only the strict default redaction profile exists in
+            v1.
+        format:
+          type: string
+          enum: [static-html]
+          default: static-html
+
+    ExportResult:
+      type: object
+      additionalProperties: false
+      required: [operation_id, preview, redaction_summary]
+      description: Typed terminal result of a succeeded export operation.
+      properties:
+        operation_id:
+          $ref: '#/components/schemas/OperationId'
+        preview:
+          $ref: '#/components/schemas/EffectPreview'
+        redaction_summary:
+          type: object
+          additionalProperties: false
+          required: [removed_categories]
+          properties:
+            removed_categories:
+              type: array
+              minItems: 0
+              maxItems: 8
+              items:
+                type: string
+                enum: [reviewer-names, absolute-paths, source-excerpts, secrets]
+
+    GapClassification:
+      type: string
+      enum: [applicable-mapped, applicable-reviewed-no-relationship, applicable-unmapped, not-applicable, deferred, under-review]
+      description: PRD 056 gap classifications; participation terminology
+        only, never a compliance claim.
+
+    MappingBuildResult:
+      type: object
+      additionalProperties: false
+      required: [maps_total, positive_relationship_count, no_relationship_count, controls_covered, coverage_ratio, report_preview]
+      description: Typed terminal result of a succeeded mapping-build
+        operation.
+      properties:
+        maps_total:
+          type: integer
+          minimum: 0
+        positive_relationship_count:
+          type: integer
+          minimum: 0
+        no_relationship_count:
+          type: integer
+          minimum: 0
+        controls_covered:
+          type: integer
+          minimum: 0
+        coverage_ratio:
+          type: number
+          minimum: 0
+          maximum: 1
+        report_preview:
+          $ref: '#/components/schemas/EffectPreview'
+
+    MappingDraft:
+      type: object
+      additionalProperties: false
+      required: [version, manifest, validation_summary]
+      properties:
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+        manifest:
+          type: object
+          description: Complete forge.mapping-manifest/1 document exactly as
+            stored on disk.
+        validation_summary:
+          $ref: '#/components/schemas/DiagnosticSummary'
+
+    MappingDraftPutRequest:
+      type: object
+      additionalProperties: false
+      required: [manifest, observed_version]
+      properties:
+        manifest:
+          type: object
+          description: Complete proposed forge.mapping-manifest/1 document.
+        observed_version:
+          $ref: '#/components/schemas/ResourceVersion'
+
+    MappingSubject:
+      type: object
+      additionalProperties: false
+      required: [subject_id, side, resource_id, label, fingerprint, statement_count]
+      properties:
+        subject_id:
+          type: string
+          pattern: '^subj_[0-9a-z]{12,80}$'
+        side:
+          type: string
+          enum: [policy, framework]
+        resource_id:
+          $ref: '#/components/schemas/ResourceId'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 500
+        fingerprint:
+          $ref: '#/components/schemas/Sha256Hex'
+        statement_count:
+          type: integer
+          minimum: 0
+
+    Operation:
+      type: object
+      additionalProperties: false
+      required: [operation_id, kind, state, created_at, updated_at, cancel_requested]
+      description: >-
+        Queryable bounded work. Session-scoped: only the creating session
+        may query or cancel it. After a lost response, state plus result
+        determines whether a write committed; failed operations never
+        convert into partial success.
+      properties:
+        operation_id:
+          $ref: '#/components/schemas/OperationId'
+        kind:
+          type: string
+          enum: [conversion, applicability-analysis, mapping-build, commit, export]
+        state:
+          type: string
+          enum: [pending, running, succeeded, failed, cancelled]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        cancel_requested:
+          type: boolean
+          description: True once cancellation was requested (state may still
+            be running).
+        progress:
+          oneOf:
+            - type: 'null'
+            - type: object
+              additionalProperties: false
+              required: [completed_items, total_items]
+              properties:
+                completed_items:
+                  type: integer
+                  minimum: 0
+                total_items:
+                  type: integer
+                  minimum: 0
+        result:
+          oneOf:
+            - $ref: '#/components/schemas/ConversionResult'
+            - $ref: '#/components/schemas/AnalysisResult'
+            - $ref: '#/components/schemas/MappingBuildResult'
+            - $ref: '#/components/schemas/CommitResult'
+            - $ref: '#/components/schemas/ExportResult'
+          description: Typed terminal result; present only when state is
+            succeeded.
+        error:
+          $ref: '#/components/schemas/Error'
+          description: Safe terminal error; present only when state is
+            failed.
+
+    OperationId:
+      type: string
+      pattern: '^op_[0-9a-z]{12,80}$'
+      description: Stable, opaque operation identifier.
+
+    PreviewId:
+      type: string
+      pattern: '^prev_[0-9a-z]{12,80}$'
+      description: Stable, opaque preview identifier.
+
+    ProjectConfigStatus:
+      type: object
+      additionalProperties: false
+      required: [present, valid]
+      properties:
+        present:
+          type: boolean
+          description: Whether a .forge.toml exists beneath the project
+            root.
+        valid:
+          type: boolean
+          description: Whether it parses and validates; false when absent.
+        issues:
+          type: array
+          minItems: 0
+          maxItems: 100
+          description: Bounded, safe issue summaries.
+          items:
+            type: string
+            maxLength: 500
+
+    ProjectRelativePath:
+      type: string
+      minLength: 1
+      maxLength: 512
+      pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$'
+      description: >-
+        Project-relative POSIX-style path identical to the forge.workspace/1
+        path rules; the same rejections apply (absolute paths, traversal,
+        Windows drive prefixes, backslashes, leading-dot segments), and the
+        runtime additionally rejects symlinks and non-regular files.
+
+    ProjectSummary:
+      type: object
+      additionalProperties: false
+      required: [version, project_label, workspace_index_present, health, resource_counts, review_counts, next_action]
+      properties:
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+        project_label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        workspace_index_present:
+          type: boolean
+          description: Whether forge.workspace.json exists; false renders
+            the setup state.
+        health:
+          type: string
+          enum: [setup, needs-attention, ready]
+          description: Aggregate state distinguishing invalid inputs, stale
+            inputs, unresolved review items, and completed outputs.
+        resource_counts:
+          type: object
+          additionalProperties: false
+          required: [total, valid, invalid, stale, not_validated]
+          properties:
+            total:
+              type: integer
+              minimum: 0
+            valid:
+              type: integer
+              minimum: 0
+            invalid:
+              type: integer
+              minimum: 0
+            stale:
+              type: integer
+              minimum: 0
+            not_validated:
+              type: integer
+              minimum: 0
+        review_counts:
+          type: object
+          additionalProperties: false
+          required: [total_open]
+          properties:
+            total_open:
+              type: integer
+              minimum: 0
+              description: Reconciles with getReviewQueueCounts and the
+                unfiltered queue denominator.
+        next_action:
+          type: string
+          enum: [register-resources, fix-invalid-inputs, resolve-review-items, review-scope, review-mappings, regenerate-analysis, none]
+          description: Next recommended human action for the golden path.
+
+    ProvenanceEntry:
+      type: object
+      additionalProperties: false
+      required: [entry_id, kind, label, refs]
+      properties:
+        entry_id:
+          type: string
+          pattern: '^prov_[0-9a-z]{12,80}$'
+        kind:
+          $ref: '#/components/schemas/ProvenanceKind'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Safe, bounded display label.
+        fingerprint:
+          $ref: '#/components/schemas/Sha256Hex'
+        refs:
+          type: array
+          minItems: 0
+          maxItems: 50
+          description: Edges to related entries for bidirectional
+            traversal.
+          items:
+            type: object
+            additionalProperties: false
+            required: [kind, id]
+            properties:
+              kind:
+                type: string
+                enum: [report-item, control, applicability-decision, mapping-edge, policy-subject, source-reference, resource]
+              id:
+                type: string
+                minLength: 3
+                maxLength: 128
+        excerpt_refs:
+          type: array
+          minItems: 0
+          maxItems: 20
+          description: Bounded excerpt identifiers fetched via
+            getProvenanceExcerpt.
+          items:
+            type: string
+            pattern: '^ex_[0-9a-z]{12,80}$'
+
+    ProvenanceExcerpt:
+      type: object
+      additionalProperties: false
+      required: [excerpt_id, resource_id, sha256, start_line, end_line, text, truncated]
+      properties:
+        excerpt_id:
+          type: string
+          pattern: '^ex_[0-9a-z]{12,80}$'
+        resource_id:
+          $ref: '#/components/schemas/ResourceId'
+        sha256:
+          $ref: '#/components/schemas/Sha256Hex'
+        start_line:
+          type: integer
+          minimum: 1
+        end_line:
+          type: integer
+          minimum: 1
+        text:
+          type: string
+          maxLength: 20000
+          description: Escaped, inert excerpt text.
+        truncated:
+          type: boolean
+
+    ProvenanceKind:
+      type: string
+      enum: [report-item, control, applicability-decision, mapping-edge, policy-subject, source-reference]
+
+    QueueItem:
+      type: object
+      additionalProperties: false
+      required: [item_id, reason_code, summary]
+      properties:
+        item_id:
+          type: string
+          pattern: '^qi_[0-9a-z]{12,80}$'
+        reason_code:
+          $ref: '#/components/schemas/ReviewReasonCode'
+        classification:
+          oneOf:
+            - $ref: '#/components/schemas/GapClassification'
+            - type: 'null'
+        control_id:
+          type:
+            - string
+            - 'null'
+          minLength: 1
+          maxLength: 200
+        resource_id:
+          oneOf:
+            - $ref: '#/components/schemas/ResourceId'
+            - type: 'null'
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Safe, bounded human-readable summary.
+        evidence_refs:
+          type: array
+          minItems: 0
+          maxItems: 50
+          description: Provenance entry identifiers supporting this item.
+          items:
+            type: string
+            pattern: '^prov_[0-9a-z]{12,80}$'
+
+    RegisterResourceRequest:
+      type: object
+      additionalProperties: false
+      required: [role, path]
+      properties:
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+        path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+        key:
+          type:
+            - string
+            - 'null'
+          pattern: '^[a-z0-9][a-z0-9-]{1,63}$'
+          default: null
+          description: Optional stable local key; the server derives one
+            from the filename when omitted and rejects duplicates.
+
+    Resource:
+      type: object
+      additionalProperties: false
+      required: [resource_id, key, role, path, sha256, size_bytes, validation_state, stale, version]
+      description: Registered resource metadata with read-time computed
+        facts.
+      properties:
+        resource_id:
+          $ref: '#/components/schemas/ResourceId'
+        key:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{1,63}$'
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+        path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+        media_type:
+          type:
+            - string
+            - 'null'
+          maxLength: 128
+        sha256:
+          $ref: '#/components/schemas/Sha256Hex'
+        size_bytes:
+          type: integer
+          minimum: 0
+        validation_state:
+          $ref: '#/components/schemas/ValidationState'
+        stale:
+          type: boolean
+          description: Whether this input changed since the last committed
+            analysis that consumed it.
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+
+    ResourceId:
+      type: string
+      pattern: '^res_[0-9a-z]{12,80}$'
+      description: Opaque registered resource identifier; project objects
+        are never addressed by raw paths.
+
+    ResourceVersion:
+      type: string
+      minLength: 8
+      maxLength: 128
+      examples:
+        - 9f4c1b2a3d6e7f80
+      description: >-
+        Opaque strong version (ETag equivalent conveyed in the body) of a
+        mutable resource. Mutations must present the observed version;
+        mismatch returns version-conflict with the current
+        resource_version.
+
+    ReviewQueueCounts:
+      type: object
+      additionalProperties: false
+      required: [total_open, by_reason]
+      properties:
+        total_open:
+          type: integer
+          minimum: 0
+          description: Reconciles with the unfiltered queue denominator
+            (total_matching with no filters).
+        by_reason:
+          type: array
+          minItems: 0
+          maxItems: 7
+          items:
+            type: object
+            additionalProperties: false
+            required: [reason_code, count]
+            properties:
+              reason_code:
+                $ref: '#/components/schemas/ReviewReasonCode'
+              count:
+                type: integer
+                minimum: 0
+
+    ReviewReasonCode:
+      type: string
+      enum: [reviewed-no-positive-relationship, no-reviewed-mapping, deferred-scope-decision, scope-decision-required, invalid-resource, stale-input, external-conflict]
+      description: >-
+        Stable review queue reason codes. The first four are the PRD 056
+        domain queue reasons; the last three cover validation, staleness,
+        and external-change items surfaced in the same queue.
+
+    Session:
+      type: object
+      additionalProperties: false
+      required: [session_id, mode, read_only, api_major, contract_version, project_label]
+      description: Session metadata and API version discovery; no
+        capability material and no absolute paths.
+      properties:
+        session_id:
+          type: string
+          pattern: '^sess_[0-9a-z]{8,64}$'
+        mode:
+          type: string
+          enum: [browser, machine]
+        read_only:
+          type: boolean
+        api_major:
+          type: integer
+          const: 1
+        contract_version:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Exact contract version (info.version of the
+            normative OpenAPI document) served by this process.
+        project_label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        launched_at:
+          type: string
+          format: date-time
+
+    SessionUnlockRequest:
+      type: object
+      additionalProperties: false
+      required: [passphrase]
+      properties:
+        passphrase:
+          type: string
+          minLength: 15
+          maxLength: 128
+          description: >-
+            Per-launch passphrase, 15-128 characters, spaces and Unicode
+            allowed, no composition rules. Never accepted from a
+            command-line argument, environment variable, URL value, or
+            project/workspace file, and never logged or persisted.
+
+    SessionUnlockResponse:
+      type: object
+      additionalProperties: false
+      required: [capability, session]
+      description: >-
+        Returns the browser-scoped capability exactly once; the client must
+        retain it only in page memory.
+      properties:
+        capability:
+          type: string
+          minLength: 32
+          maxLength: 512
+          description: >-
+            Newly minted memory-only browser-scoped bearer capability (at
+            least 256 bits of cryptographically secure random material,
+            rendered opaquely). Distinct per unlock; never persisted,
+            rotated into logs, reflected into HTML, included in crash
+            output, or sent in a referrer.
+        session:
+          $ref: '#/components/schemas/Session'
+
+    Sha256Hex:
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+      description: Lowercase hexadecimal SHA-256 digest.
+
+    ShutdownResponse:
+      type: object
+      additionalProperties: false
+      required: [state]
+      properties:
+        state:
+          type: string
+          const: shutting-down
+
+    UploadResourceRequest:
+      type: object
+      additionalProperties: false
+      required: [role, target_path, filename, content_base64]
+      properties:
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+        target_path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+        filename:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: User-selected local filename for type inference and
+            display only; the source machine path is never sent or
+            retained.
+        content_base64:
+          type: string
+          contentEncoding: base64
+          maxLength: 13981016
+          description: Base64-encoded inert file bytes; at most 10 MiB
+            decoded. Validated by declared role, extension/media type,
+            size, parser, and destination rules before a preview is
+            offered.
+
+    ValidationDiagnostic:
+      type: object
+      additionalProperties: false
+      required: [code, severity, message]
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Stable domain diagnostic code from the shared
+            validation services.
+        severity:
+          type: string
+          enum: [error, warning, info]
+        message:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Safe, bounded message.
+        resource_id:
+          oneOf:
+            - $ref: '#/components/schemas/ResourceId'
+            - type: 'null'
+        field:
+          type:
+            - string
+            - 'null'
+          maxLength: 256
+          description: JSON pointer into the validated document.
+
+    ValidationReport:
+      type: object
+      additionalProperties: false
+      required: [state, error_count, warning_count, diagnostics]
+      description: Structured, deterministic diagnostics from the shared
+        validation services.
+      properties:
+        state:
+          type: string
+          enum: [valid, invalid]
+        error_count:
+          type: integer
+          minimum: 0
+        warning_count:
+          type: integer
+          minimum: 0
+        diagnostics:
+          type: array
+          minItems: 0
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/ValidationDiagnostic'
+
+    ValidationRunRequest:
+      type: object
+      additionalProperties: false
+      required: [scope]
+      properties:
+        scope:
+          type: string
+          enum: [all, selected]
+        resource_ids:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          description: Required when scope is selected.
+          items:
+            $ref: '#/components/schemas/ResourceId'
+
+    ValidationState:
+      type: string
+      enum: [valid, invalid, not-validated, stale]
+
+    WorkspaceRole:
+      type: string
+      enum: [policy-source, oscal-catalog-artifact, oscal-component-artifact, mapping-collection, applicability-manifest, applicability-report, trace-report]
+      description: >-
+        Typed resource role, identical to the closed forge.workspace/1 role
+        enum. policy-source is a human-authored Markdown conversion input;
+        oscal-catalog-artifact and oscal-component-artifact are generated
+        OSCAL outputs split by model; mapping-collection is a PRD 055
+        mapping input; applicability-manifest is a human-authored
+        forge.applicability/1 input; applicability-report is a generated
+        gap-analysis output; trace-report is a trace/report output.
