@@ -5,10 +5,10 @@ use std::ops::Range;
 
 use pulldown_cmark::{Event, HeadingLevel, Parser, Tag, TagEnd};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 use super::manifest::{ComponentInstance, ComponentManifest, ParameterDeclaration, ParameterValue};
 use super::{LoadedComponent, composition_error};
+use crate::hashing::sha256_hex;
 
 const MAX_ASSEMBLED_BYTES: usize = 50 * 1024 * 1024;
 const MAX_PROVENANCE_SPANS: usize = 100_000;
@@ -172,7 +172,7 @@ pub(crate) fn render(
     }
 
     let markdown = format!("{}\n", state.lines.join("\n")).into_bytes();
-    let output_sha256 = sha256(&markdown);
+    let output_sha256 = sha256_hex(&markdown);
     let lock = CompositionLock {
         schema_version: "forge.policy-composition-lock/1",
         composition_manifest_sha256: manifest_sha256.to_string(),
@@ -819,12 +819,8 @@ fn byte_to_column(line: &str, offset: usize) -> usize {
 
 fn hash_json(value: &ParameterValue) -> Result<String, crate::ForgeError> {
     serde_json::to_vec(value)
-        .map(|bytes| sha256(&bytes))
+        .map(|bytes| sha256_hex(&bytes))
         .map_err(|source| composition_error(format!("failed to hash parameter value: {source}")))
-}
-
-pub(crate) fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }
 
 fn pretty_json<T: Serialize>(value: &T) -> Result<Vec<u8>, crate::ForgeError> {

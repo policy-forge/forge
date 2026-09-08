@@ -1,4 +1,8 @@
 
 # cargo-vet audits file
 
-[audits]
+[[audits.chacha20]]
+who = "Codex"
+criteria = "safe-to-deploy"
+delta = "0.10.1 -> 0.10.2"
+notes = "Reviewed the exact 0.10.1 to 0.10.2 delta: the SSE2 backend replaces an SSE4.1 counter extraction with bounded unaligned SSE2 state loads and stores; no new ambient capabilities."

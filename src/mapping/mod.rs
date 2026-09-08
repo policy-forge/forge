@@ -8,9 +8,8 @@ pub mod model;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use sha2::{Digest, Sha256};
-
 use crate::cli::{MappingFailOn, MappingReportFormat};
+use crate::hashing::sha256_hex;
 use crate::{ForgeError, io, validate};
 
 struct PreparedBuild {
@@ -160,7 +159,7 @@ fn scaffold_resource(
                 io::MAX_FILE_SIZE,
                 &format!("{label} resolved Catalog"),
             )?;
-            Ok::<_, ForgeError>(format!("{:x}", Sha256::digest(&bytes)))
+            Ok::<_, ForgeError>(sha256_hex(&bytes))
         })
         .transpose()?;
     let temporary = manifest::ResourceManifest {

@@ -7,11 +7,11 @@
 use std::sync::LazyLock;
 
 use regex::Regex;
-use sha2::{Digest, Sha256};
 
 use tracing::{debug, warn};
 
 use crate::ForgeError;
+use crate::hashing::sha256_hex;
 use crate::model::{PolicyDocument, PolicyRequirement, PolicySection};
 
 /// Maximum number of atomic requirements that can be produced from a single compound statement.
@@ -69,8 +69,7 @@ pub struct AtomizationResult {
 #[must_use]
 pub fn preliminary_id(text: &str, source_line: usize, atom_index: usize) -> String {
     let input = format!("{text}|{source_line}|{atom_index}");
-    let hash = Sha256::digest(input.as_bytes());
-    format!("{hash:x}")
+    sha256_hex(input.as_bytes())
 }
 
 /// Generate a preliminary ID scoped to a section's structural path.
@@ -85,8 +84,7 @@ fn preliminary_id_with_section(
     section_context: &str,
 ) -> String {
     let input = format!("{section_context}|{text}|{source_line}|{atom_index}");
-    let hash = Sha256::digest(input.as_bytes());
-    format!("{hash:x}")
+    sha256_hex(input.as_bytes())
 }
 
 /// Extract the shared subject from a compound statement.

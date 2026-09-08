@@ -9,9 +9,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 
 use crate::cli::{ApplicabilityFailOn, ApplicabilityReportFormat, ApplicabilityStateFilter};
+use crate::hashing::sha256_hex;
 use crate::mapping::inventory::{self, FORGE_MAPPING_NS, LoadedResource, ResourceEvidence};
 use crate::mapping::manifest::{ResourceManifest, ResourceType, SubjectType};
 use crate::mapping::model::{
@@ -100,7 +100,7 @@ fn verify_input_fingerprints(inputs: &[PreparedInputFingerprint]) -> Result<(), 
                 input.max_bytes
             )));
         }
-        if bytes.len() as u64 != input.byte_len || sha256(&bytes) != input.sha256 {
+        if bytes.len() as u64 != input.byte_len || sha256_hex(&bytes) != input.sha256 {
             return Err(error(format!(
                 "prepared input '{}' changed after analysis preparation",
                 input.path.display()
@@ -211,7 +211,7 @@ pub(crate) fn prepare_analysis(
     let mut validation_state = MappingValidationState::default();
     let mut input_fingerprints = vec![PreparedInputFingerprint {
         path: manifest_path.to_path_buf(),
-        sha256: sha256(&manifest_bytes),
+        sha256: sha256_hex(&manifest_bytes),
         byte_len: manifest_bytes.len() as u64,
         max_bytes: manifest::MAX_MANIFEST_BYTES,
     }];
@@ -256,7 +256,7 @@ pub(crate) fn prepare_analysis(
 
     let report = model::build_report(
         &parsed,
-        sha256(&manifest_bytes),
+        sha256_hex(&manifest_bytes),
         framework.evidence,
         &framework.inventory,
         evidence,
@@ -391,7 +391,7 @@ fn load_mapping(
     }
     Ok(model::MappingEvidence {
         uuid: collection.mapping_collection.uuid.to_string(),
-        raw_sha256: sha256(&bytes),
+        raw_sha256: sha256_hex(&bytes),
         version: collection.mapping_collection.metadata.version,
         oscal_version: collection.mapping_collection.metadata.oscal_version,
         reviewed_at,
@@ -1198,7 +1198,7 @@ fn scaffold_framework(
         .map(|companion| {
             let bytes = io::read_bounded(companion, io::MAX_FILE_SIZE)
                 .map_err(|cause| error(format!("resolved Catalog cannot be read: {cause}")))?;
-            Ok::<_, ForgeError>(sha256(&bytes))
+            Ok::<_, ForgeError>(sha256_hex(&bytes))
         })
         .transpose()?;
     let temporary = ResourceManifest {
@@ -1258,10 +1258,6 @@ fn validate_destination(inputs: &[PathBuf], output: Option<&Path>) -> Result<(),
 
 fn safe_file_label(path: &Path) -> String {
     path.file_name().and_then(|name| name.to_str()).unwrap_or("framework.json").to_string()
-}
-
-fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }
 
 fn relabel_mapping_error(cause: ForgeError) -> ForgeError {
@@ -1347,7 +1343,7 @@ mod tests {
         let path = directory.path().join("input.json");
         let original = br#"{"value":"original"}"#;
         std::fs::write(&path, original).expect("write original input");
-        let fingerprint = capture_input_fingerprint(&path, sha256(original), io::MAX_FILE_SIZE)
+        let fingerprint = capture_input_fingerprint(&path, sha256_hex(original), io::MAX_FILE_SIZE)
             .expect("capture input fingerprint");
         std::fs::write(&path, br#"{"value":"replacement"}"#).expect("replace input");
         let error = verify_input_fingerprints(&[fingerprint]).expect_err("replacement must fail");

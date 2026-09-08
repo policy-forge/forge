@@ -3,7 +3,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use super::context::LoadedContext;
@@ -12,6 +11,7 @@ use super::manifest::{
     ProvenanceManifest, RiskManifest,
 };
 use crate::ForgeError;
+use crate::hashing::sha256_hex;
 
 /// FORGE extension namespace for stable reviewer keys and provenance hashes.
 pub const FORGE_ASSESSMENT_RESULTS_NS: &str =
@@ -576,7 +576,7 @@ fn build_observation(
         &manifest.task_uuids,
         &manifest.evidence_keys,
     ))?;
-    let rationale_sha256 = sha256(manifest.provenance.rationale.as_bytes());
+    let rationale_sha256 = sha256_hex(manifest.provenance.rationale.as_bytes());
     let uuid = observation_uuids[&manifest.key].clone();
     snapshots.insert(
         (ConclusionType::Observation, manifest.key.clone()),
@@ -657,7 +657,7 @@ fn build_finding(
         &manifest.target.id,
         &manifest.implementation_statement_uuid,
     ))?;
-    let rationale_sha256 = sha256(manifest.provenance.rationale.as_bytes());
+    let rationale_sha256 = sha256_hex(manifest.provenance.rationale.as_bytes());
     let status = format!(
         "{}:{}",
         manifest.target.state.as_str(),
@@ -730,7 +730,7 @@ fn build_risk(
         &manifest.severity,
         manifest.confidence.map(f64::to_bits),
     ))?;
-    let rationale_sha256 = sha256(manifest.provenance.rationale.as_bytes());
+    let rationale_sha256 = sha256_hex(manifest.provenance.rationale.as_bytes());
     let uuid = risk_uuids[&manifest.key].clone();
     snapshots.insert(
         (ConclusionType::Risk, manifest.key.clone()),
@@ -872,12 +872,8 @@ fn prop(name: &'static str, value: impl Into<String>) -> OscalProperty {
 
 fn hash_fields(value: &impl Serialize) -> Result<String, ForgeError> {
     serde_json::to_vec(value)
-        .map(|bytes| sha256(&bytes))
+        .map(|bytes| sha256_hex(&bytes))
         .map_err(|cause| error(format!("content fingerprint serialization failed: {cause}")))
-}
-
-fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }
 
 fn bounded(value: &str) -> String {

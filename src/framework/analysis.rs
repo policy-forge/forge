@@ -4,7 +4,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use super::manifest::{FrameworkResource, FrameworkRole, ImpactManifest, MappingDependency};
@@ -13,6 +12,7 @@ use super::model::{
     ImpactFinding, ImpactReport, REPORT_SCHEMA_VERSION, ReasonCode, ReportStatus, RequiredAction,
     SubjectFingerprint,
 };
+use crate::hashing::sha256_hex;
 use crate::mapping::inventory::{Inventory, LoadedResource};
 use crate::mapping::manifest::{Relationship, ResourceManifest, SubjectType};
 use crate::mapping::model::{MappingCollectionEnvelope, MappingItem, OscalMap, OscalProp};
@@ -349,7 +349,7 @@ fn apply_dispositions(
         io::read_bounded(prior_report_path, super::disposition::MAX_PRIOR_REPORT_BYTES)
             .map_err(|error| impact_error(format!("$.prior_report: {error}")))?;
     let dispositions = super::disposition::load(disposition_path)?;
-    if sha256(&prior_bytes) != dispositions.prior_report_sha256 {
+    if sha256_hex(&prior_bytes) != dispositions.prior_report_sha256 {
         return Err(impact_error(
             "$.disposition_file prior_report_sha256 does not match $.prior_report",
         ));
@@ -729,7 +729,7 @@ fn load_mapping_references(
         }
         let bytes = io::read_bounded(&path, io::MAX_FILE_SIZE)
             .map_err(|error| impact_error(format!("{label}.artifact: {error}")))?;
-        let raw_sha256 = sha256(&bytes);
+        let raw_sha256 = sha256_hex(&bytes);
         let value = parse_mapping_value(&bytes, &label)?;
         validate_mapping(&label, &value)?;
         let collection: MappingCollectionEnvelope = serde_json::from_value(value)
@@ -1238,7 +1238,7 @@ fn finding(
 
 fn migration_identity(change: &super::model::ControlChange) -> String {
     let Some(migration) = &change.migration else { return "not-migrated".to_string() };
-    sha256(
+    sha256_hex(
         format!(
             "{}\0{}\0{}\0{}\0{}",
             change.subject_id,
@@ -1300,10 +1300,6 @@ fn map_migration_error(error: ForgeError) -> ForgeError {
         ForgeError::MigrationError(message) => impact_error(message),
         other => impact_error(other.to_string()),
     }
-}
-
-fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }
 
 fn impact_error(message: impl Into<String>) -> ForgeError {

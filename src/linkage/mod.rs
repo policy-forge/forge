@@ -14,11 +14,11 @@ use std::path::{Component, Path, PathBuf};
 use chrono::{Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use url::Url;
 use uuid::Uuid;
 
 use crate::cli::{LinkageFailOn, LinkageReportFormat};
+use crate::hashing::sha256_hex;
 use crate::mapping::inventory::{self, LoadedResource};
 use crate::mapping::manifest::{ResourceManifest, SubjectType};
 use crate::{ForgeError, OscalModelType, io, validate};
@@ -287,7 +287,7 @@ pub fn execute_init(
     let companion_hash = resolved_catalog
         .map(|path| {
             inventory::read_bounded_file(path, io::MAX_FILE_SIZE, "resolved Catalog")
-                .map(|bytes| digest(&bytes))
+                .map(|bytes| sha256_hex(&bytes))
         })
         .transpose()?;
     let temporary_requirement = manifest::RequirementResourceManifest {
@@ -297,7 +297,7 @@ pub fn execute_init(
         href: safe_file_label(requirement_path),
         resolved_catalog: resolved_catalog.map(Path::to_path_buf),
         resolved_catalog_attestation: resolved_catalog.map(|_| true),
-        expected_sha256: digest(&requirement_bytes),
+        expected_sha256: sha256_hex(&requirement_bytes),
         expected_resolved_catalog_sha256: companion_hash,
     };
     let loaded_requirement = load_requirement(Path::new("."), &temporary_requirement)?;
@@ -330,7 +330,7 @@ pub fn execute_init(
         resource_type: implementation_type,
         artifact: implementation_path.to_path_buf(),
         href: safe_file_label(implementation_path),
-        expected_sha256: digest(&implementation_bytes),
+        expected_sha256: sha256_hex(&implementation_bytes),
     };
     let _ = load_implementation(Path::new("."), &temporary_implementation)?;
 
@@ -692,7 +692,7 @@ fn prepare(
         project_title: manifest.project.title.clone(),
         as_of,
         provenance: Provenance {
-            manifest_sha256: digest(&manifest_bytes),
+            manifest_sha256: sha256_hex(&manifest_bytes),
             requirement_resources: requirement_evidence,
             implementation_resource: implementation.evidence,
         },
@@ -748,7 +748,7 @@ fn load_implementation(
 ) -> Result<ImplementationInventory, ForgeError> {
     let path = manifest_dir.join(&resource.artifact);
     let bytes = inventory::read_bounded_file(&path, io::MAX_FILE_SIZE, "implementation artifact")?;
-    let raw_sha256 = digest(&bytes);
+    let raw_sha256 = sha256_hex(&bytes);
     if raw_sha256 != resource.expected_sha256 {
         return Err(error(format!(
             "$.implementation_resource.expected_sha256 mismatch: expected {}, got {raw_sha256}",
@@ -1027,7 +1027,7 @@ fn load_evidence(
                         manifest.project.max_evidence_bytes,
                         &evidence.key,
                     )?;
-                    let observed_sha256 = digest(&bytes);
+                    let observed_sha256 = sha256_hex(&bytes);
                     let observed_size = bytes.len() as u64;
                     let freshness =
                         if &observed_sha256 != expected_sha256 || observed_size != *expected_size {
@@ -2005,13 +2005,9 @@ fn required_string(value: Option<&Value>, label: &str) -> Result<String, ForgeEr
         .ok_or_else(|| error(format!("{label} must be a non-empty string")))
 }
 
-fn digest(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
-}
-
 fn canonical_sha256(value: &Value) -> String {
     let bytes = serde_json::to_vec(value).expect("serde_json::Value serialization cannot fail");
-    digest(&bytes)
+    sha256_hex(&bytes)
 }
 
 fn namespace(seed: &str) -> Uuid {

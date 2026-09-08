@@ -5,10 +5,10 @@ use std::path::{Component, Path, PathBuf};
 
 use serde::Serialize;
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use super::manifest::{ArtifactManifest, ContextManifest, EvidenceIndexManifest, SubjectType};
+use crate::hashing::sha256_hex;
 use crate::json_strict::{self, Limits};
 use crate::linkage::{EvidenceFreshness, EvidenceRecord, EvidenceReference, LinkageIndex};
 use crate::validate::{self, OscalModelType};
@@ -267,7 +267,7 @@ fn load_artifact(
     let path = resolve_confined_regular_file(root, &expected.artifact, kind)?;
     let bytes = io::read_bounded(&path, io::MAX_FILE_SIZE)
         .map_err(|cause| error(format!("cannot read {kind}: {cause}")))?;
-    let sha256 = sha256(&bytes);
+    let sha256 = sha256_hex(&bytes);
     if sha256 != expected.expected_sha256 {
         return Err(error(format!(
             "{kind} SHA-256 mismatch: expected {}, got {sha256}",
@@ -896,7 +896,7 @@ fn load_evidence_index(
     let path = resolve_confined_regular_file(root, &manifest.artifact, "evidence index")?;
     let bytes = io::read_bounded(&path, io::MAX_FILE_SIZE)
         .map_err(|cause| error(format!("cannot read evidence index: {cause}")))?;
-    let hash = sha256(&bytes);
+    let hash = sha256_hex(&bytes);
     if hash != manifest.expected_sha256 {
         return Err(error(format!(
             "evidence index SHA-256 mismatch: expected {}, got {hash}",
@@ -1037,10 +1037,6 @@ fn enforce_depth(depth: usize) -> Result<(), ForgeError> {
     } else {
         Ok(())
     }
-}
-
-fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }
 
 fn bounded(value: &str) -> String {
