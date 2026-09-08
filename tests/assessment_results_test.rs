@@ -11,9 +11,10 @@ use forge::oscal::{
     SspComponentInput, build_assessment_plan, build_profile, build_ssp_skeleton,
 };
 use serde_json::{Value, json};
-use sha2::{Digest as _, Sha256};
 use tempfile::TempDir;
 use uuid::Uuid;
+
+mod common;
 
 const CONTROL_ID: &str = "AC-1";
 const STATEMENT_ID: &str = "AC-1_smt";
@@ -42,22 +43,12 @@ fn write_json(path: &Path, value: &Value) -> Vec<u8> {
     bytes
 }
 
-fn sha256(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let mut hex = String::with_capacity(digest.len() * 2);
-    for &byte in &digest {
-        use std::fmt::Write as _;
-        let _ = write!(hex, "{byte:02x}");
-    }
-    hex
-}
-
 fn artifact(path: &str, href: &str, bytes: &[u8], value: &Value, root: &str) -> Value {
     let document = &value[root];
     json!({
         "artifact": path,
         "href": href,
-        "expected_sha256": sha256(bytes),
+        "expected_sha256": common::sha256_hex(bytes),
         "root_uuid": document["uuid"],
         "document_version": document["metadata"]["version"],
         "oscal_version": document["metadata"]["oscal-version"]
@@ -102,7 +93,7 @@ fn mutate_assessment_plan(fixture: &Fixture, mutate: impl FnOnce(&mut Value)) {
     let mut manifest: Value =
         serde_json::from_slice(&std::fs::read(&fixture.manifest).unwrap()).unwrap();
     manifest["context"]["assessment_plan"]["expected_sha256"] =
-        json!(sha256(&assessment_plan_bytes));
+        json!(common::sha256_hex(&assessment_plan_bytes));
     write_json(&fixture.manifest, &manifest);
 }
 
@@ -281,7 +272,7 @@ fn fixture() -> Fixture {
             ),
             "evidence_index": {
                 "artifact": "evidence-index.json",
-                "expected_sha256": sha256(&evidence_bytes)
+                "expected_sha256": common::sha256_hex(&evidence_bytes)
             }
         },
         "roles": [{"id": "assessor", "title": "Assessor"}],
@@ -554,7 +545,7 @@ fn assessment_plan_scope_excluded_by_profile_is_rejected() {
     let profile_bytes = write_json(&profile_path, &profile);
     let mut manifest: Value =
         serde_json::from_slice(&std::fs::read(&fixture.manifest).unwrap()).unwrap();
-    manifest["context"]["profile"]["expected_sha256"] = json!(sha256(&profile_bytes));
+    manifest["context"]["profile"]["expected_sha256"] = json!(common::sha256_hex(&profile_bytes));
     write_json(&fixture.manifest, &manifest);
 
     let result = run(&[
@@ -813,25 +804,26 @@ fn baseline_reports_object_content_rationale_stale_and_upstream_changes() {
         .retain(|subject| subject["type"] != "location");
     let assessment_plan_bytes = write_json(&assessment_plan_path, &assessment_plan);
     manifest["context"]["assessment_plan"]["expected_sha256"] =
-        json!(sha256(&assessment_plan_bytes));
+        json!(common::sha256_hex(&assessment_plan_bytes));
 
     let ssp_path = root.join("ssp.json");
     let mut ssp: Value = serde_json::from_slice(&std::fs::read(&ssp_path).unwrap()).unwrap();
     ssp["system-security-plan"]["metadata"].as_object_mut().unwrap().remove("locations");
     let ssp_bytes = write_json(&ssp_path, &ssp);
-    manifest["context"]["ssp"]["expected_sha256"] = json!(sha256(&ssp_bytes));
+    manifest["context"]["ssp"]["expected_sha256"] = json!(common::sha256_hex(&ssp_bytes));
 
     let catalog_path = root.join("catalog.json");
     let mut catalog: Value =
         serde_json::from_slice(&std::fs::read(&catalog_path).unwrap()).unwrap();
     catalog["catalog"]["metadata"]["last-modified"] = json!("2026-01-03T00:00:00Z");
     let catalog_bytes = write_json(&catalog_path, &catalog);
-    manifest["context"]["catalog"]["expected_sha256"] = json!(sha256(&catalog_bytes));
+    manifest["context"]["catalog"]["expected_sha256"] = json!(common::sha256_hex(&catalog_bytes));
 
     let evidence_path = root.join("evidence-index.json");
     let evidence = linkage_index(&json!([]));
     let evidence_bytes = write_json(&evidence_path, &evidence);
-    manifest["context"]["evidence_index"]["expected_sha256"] = json!(sha256(&evidence_bytes));
+    manifest["context"]["evidence_index"]["expected_sha256"] =
+        json!(common::sha256_hex(&evidence_bytes));
     write_json(&fixture.manifest, &manifest);
 
     let result = run(&[

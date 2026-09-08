@@ -4,19 +4,10 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let mut hex = String::with_capacity(digest.len() * 2);
-    for &byte in &digest {
-        use std::fmt::Write as _;
-        let _ = write!(hex, "{byte:02x}");
-    }
-    hex
-}
 
 use tempfile::TempDir;
+
+mod common;
 
 const FRAMEWORK_UUID: &str = "77777777-7777-4777-8777-777777777777";
 const POLICY_UUID: &str = "88888888-8888-4888-8888-888888888888";
@@ -28,7 +19,7 @@ fn run(args: &[&str]) -> Output {
 fn write_json(path: &Path, value: &Value) -> String {
     let bytes = serde_json::to_vec_pretty(value).expect("serialize fixture");
     std::fs::write(path, &bytes).expect("write fixture");
-    sha256_hex(&bytes)
+    common::sha256_hex(&bytes)
 }
 
 fn catalog(uuid: &str, version: &str, groups: &[(&str, &[(&str, &str)])]) -> Value {
@@ -313,7 +304,7 @@ fn filters_reject_ambiguous_groups_invalid_values_and_unsafe_policy_hrefs() {
         }]
     }));
     let old_hash = write_json(&directory.path().join("old.json"), &old);
-    let new_hash = sha256_hex(&std::fs::read(directory.path().join("new.json")).unwrap());
+    let new_hash = common::sha256_hex(&std::fs::read(directory.path().join("new.json")).unwrap());
     write_json(&manifest, &impact_manifest(&old_hash, &new_hash));
     let ambiguous = run(&[
         "framework",

@@ -58,7 +58,7 @@ Rust edition 2024 with MSRV 1.85. The version ranges below mirror
 | serde | 1 | Serialization framework (derive) |
 | serde_json | 1 | JSON serialization |
 | serde_yaml_ng | 0.10 | YAML frontmatter parsing |
-| sha2 | 0.10 | SHA-256 fingerprinting |
+| sha2 | 0.11 | SHA-256 fingerprinting |
 | thiserror | 2 | Error type derivation |
 | tracing | 0.1 | Structured logging |
 | tracing-subscriber | 0.3 | Log output (env-filter) |
@@ -72,7 +72,7 @@ Rust edition 2024 with MSRV 1.85. The version ranges below mirror
 | tempfile | 3 | Atomic temporary output files |
 | pdf-extract | 0.12 | Local PDF text extraction |
 | zip | 8 | DOCX/OOXML archive reading (deflate only) |
-| toml | 0.9 | Project configuration parsing (parse and serde features) |
+| toml | 1.1 | Project configuration parsing (parse and serde features) |
 | libc | 0.2 | Unix no-follow filesystem operations |
 
 ### Development

@@ -4,26 +4,17 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let mut hex = String::with_capacity(digest.len() * 2);
-    for &byte in &digest {
-        use std::fmt::Write as _;
-        let _ = write!(hex, "{byte:02x}");
-    }
-    hex
-}
 
 use tempfile::TempDir;
+
+mod common;
 
 const FRAMEWORK_UUID: &str = "77777777-7777-4777-8777-777777777777";
 
 fn write_json(path: &Path, value: &Value) -> String {
     let bytes = serde_json::to_vec_pretty(value).expect("serialize fixture");
     std::fs::write(path, &bytes).expect("write fixture");
-    sha256_hex(&bytes)
+    common::sha256_hex(&bytes)
 }
 
 fn catalog(uuid: &str, version: &str, controls: &[(&str, &str)]) -> Value {
@@ -130,7 +121,7 @@ fn write_disposition_fixture(path: &Path, prior_bytes: &[u8], prior_report: &Val
         path,
         &json!({
             "schema_version": "forge.framework-impact-dispositions/1",
-            "prior_report_sha256": sha256_hex(prior_bytes),
+            "prior_report_sha256": common::sha256_hex(prior_bytes),
             "dispositions": [
                 {
                     "finding_id": finding("control_added"),
@@ -413,8 +404,8 @@ fn traverses_exact_mapping_dependencies_with_stable_paths_and_priorities() {
     ]);
     assert!(build.status.success(), "{}", String::from_utf8_lossy(&build.stderr));
 
-    let old_hash = sha256_hex(&std::fs::read(dir.path().join("old.json")).unwrap());
-    let new_hash = sha256_hex(&std::fs::read(dir.path().join("new.json")).unwrap());
+    let old_hash = common::sha256_hex(&std::fs::read(dir.path().join("old.json")).unwrap());
+    let new_hash = common::sha256_hex(&std::fs::read(dir.path().join("new.json")).unwrap());
     write_json(
         &manifest_path,
         &impact_manifest(
@@ -642,8 +633,8 @@ fn rejects_mapping_from_a_different_baseline_without_partial_output() {
     props.iter_mut().find(|prop| prop["name"] == "raw-sha256").unwrap()["value"] =
         json!("0".repeat(64));
     write_json(&mapping_path, &mapping);
-    let old_hash = sha256_hex(&std::fs::read(dir.path().join("old.json")).unwrap());
-    let new_hash = sha256_hex(&std::fs::read(dir.path().join("new.json")).unwrap());
+    let old_hash = common::sha256_hex(&std::fs::read(dir.path().join("old.json")).unwrap());
+    let new_hash = common::sha256_hex(&std::fs::read(dir.path().join("new.json")).unwrap());
     write_json(
         &manifest_path,
         &impact_manifest(
@@ -1193,8 +1184,8 @@ fn applicability_impacts_preserve_prior_gap_state_and_feed_lifecycle_review() {
     applicability["mapping_collections"] = json!(["mapping.json"]);
     write_json(&applicability_path, &applicability);
 
-    let old_hash = sha256_hex(&std::fs::read(dir.path().join("old.json")).unwrap());
-    let new_hash = sha256_hex(&std::fs::read(dir.path().join("new.json")).unwrap());
+    let old_hash = common::sha256_hex(&std::fs::read(dir.path().join("old.json")).unwrap());
+    let new_hash = common::sha256_hex(&std::fs::read(dir.path().join("new.json")).unwrap());
     let mut impact = impact_manifest(
         &old_hash,
         &new_hash,

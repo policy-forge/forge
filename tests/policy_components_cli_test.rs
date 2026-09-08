@@ -4,21 +4,12 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use tempfile::TempDir;
+
+mod common;
 
 fn run(args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_forge")).args(args).output().expect("run forge")
-}
-
-fn hash(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let mut hex = String::with_capacity(digest.len() * 2);
-    for &byte in &digest {
-        use std::fmt::Write as _;
-        let _ = write!(hex, "{byte:02x}");
-    }
-    hex
 }
 
 fn write_json(path: &Path, value: &Value) {
@@ -55,7 +46,7 @@ impl Fixture {
                 "owner": "security-governance",
                 "status": "approved",
                 "source": "access-review.md",
-                "expected_sha256": hash(markdown),
+                "expected_sha256": common::sha256_hex(markdown),
                 "parameters": [
                     {
                         "name": "owner-role",
@@ -237,7 +228,7 @@ fn unsupported_placeholder_context_and_output_alias_fail_closed() {
     std::fs::write(&fixture.source, fenced).unwrap();
     let mut sidecar: Value =
         serde_json::from_slice(&std::fs::read(&fixture.component_manifest).unwrap()).unwrap();
-    sidecar["expected_sha256"] = json!(hash(fenced));
+    sidecar["expected_sha256"] = json!(common::sha256_hex(fenced));
     write_json(&fixture.component_manifest, &sidecar);
     let result = fixture.compose(false);
     assert_eq!(result.status.code(), Some(2));
@@ -259,7 +250,7 @@ fn substitutions_escape_setext_markers_and_reject_new_block_structure() {
     std::fs::write(&fixture.source, source).unwrap();
     let mut sidecar: Value =
         serde_json::from_slice(&std::fs::read(&fixture.component_manifest).unwrap()).unwrap();
-    sidecar["expected_sha256"] = json!(hash(source));
+    sidecar["expected_sha256"] = json!(common::sha256_hex(source));
     sidecar["parameters"] = json!([{
         "name": "owner-role",
         "type": "string",
@@ -388,7 +379,7 @@ fn scaffold_emits_a_draft_pinned_sidecar_without_approval() {
     let sidecar: Value = serde_json::from_slice(&std::fs::read(&output).unwrap()).unwrap();
     assert_eq!(sidecar["status"], "draft");
     assert_eq!(sidecar["source"], "incident-reporting.md");
-    assert_eq!(sidecar["expected_sha256"], hash(&std::fs::read(source).unwrap()));
+    assert_eq!(sidecar["expected_sha256"], common::sha256_hex(&std::fs::read(source).unwrap()));
     let check = run(&["policy", "component", "check", output.to_str().unwrap()]);
     assert!(check.status.success(), "{}", String::from_utf8_lossy(&check.stderr));
 }
