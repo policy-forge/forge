@@ -11,6 +11,7 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use super::manifest::{ResourceInventorySnapshot, ResourceManifest, ResourceType, SubjectType};
+use crate::hashing::{lower_hex, sha256_hex};
 use crate::validate::{self, OscalModelType};
 use crate::{ForgeError, io};
 
@@ -134,7 +135,7 @@ impl LoadedResource {
                 }
             }
         }
-        hex::encode(hasher.finalize())
+        lower_hex(&hasher.finalize())
     }
 }
 
@@ -158,7 +159,7 @@ pub fn load(
 ) -> Result<LoadedResource, ForgeError> {
     let artifact_path = manifest_dir.join(&resource.artifact);
     let bytes = read_bounded_file(&artifact_path, io::MAX_FILE_SIZE, path_label)?;
-    let raw_sha256 = sha256(&bytes);
+    let raw_sha256 = sha256_hex(&bytes);
     if let Some(expected) = &resource.expected_sha256
         && expected != &raw_sha256
     {
@@ -191,7 +192,7 @@ pub fn load(
         })?;
         let companion_path = manifest_dir.join(companion);
         let companion_bytes = read_bounded_file(&companion_path, io::MAX_FILE_SIZE, path_label)?;
-        let resolved_catalog_sha256 = sha256(&companion_bytes);
+        let resolved_catalog_sha256 = sha256_hex(&companion_bytes);
         let expected_resolved_catalog_sha256 =
             resource.expected_resolved_catalog_sha256.as_ref().ok_or_else(|| {
                 mapping_error(format!(
@@ -442,7 +443,7 @@ fn insert_subject<'a>(
 fn canonical_subject_sha256(value: &Value) -> Result<String, ForgeError> {
     let mut bytes = Vec::new();
     write_canonical_json(&mut bytes, value)?;
-    Ok(sha256(&bytes))
+    Ok(sha256_hex(&bytes))
 }
 
 fn write_canonical_json(out: &mut Vec<u8>, value: &Value) -> Result<(), ForgeError> {
@@ -590,10 +591,6 @@ pub(crate) fn read_bounded_file(
     Ok(bytes)
 }
 
-fn sha256(bytes: &[u8]) -> String {
-    hex::encode(Sha256::digest(bytes))
-}
-
 fn bounded(value: &str) -> String {
     value.chars().take(120).flat_map(char::escape_default).collect()
 }
@@ -637,7 +634,7 @@ mod tests {
             "{error}"
         );
 
-        let expected = sha256(companion);
+        let expected = sha256_hex(companion);
         let loaded =
             load(directory.path(), "$.mapping.target", &profile_resource(expected.clone()))
                 .expect("matching resolved Catalog hash is accepted");

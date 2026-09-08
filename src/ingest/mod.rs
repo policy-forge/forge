@@ -10,10 +10,10 @@ use std::path::{Path, PathBuf};
 use quick_xml::Reader;
 use quick_xml::events::Event as XmlEvent;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 use zip::ZipArchive;
 
 use crate::ForgeError;
+use crate::hashing::sha256_hex;
 
 /// A single line from a source document, with its 1-based line number.
 #[derive(Debug, Serialize, PartialEq)]
@@ -123,7 +123,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         return Err(ForgeError::BinaryFile { path: path.to_path_buf() });
     }
 
-    let fingerprint = hex::encode(Sha256::digest(&bytes));
+    let fingerprint = sha256_hex(&bytes);
 
     let content = match format {
         InputFormat::Markdown => String::from_utf8(bytes)
@@ -428,7 +428,7 @@ mod tests {
         // Independently compute expected SHA-256
         let mut hasher = Sha256::new();
         hasher.update(content.as_bytes());
-        let expected = hex::encode(hasher.finalize());
+        let expected = format!("{:x}", hasher.finalize());
         assert_eq!(doc.fingerprint, expected);
     }
 

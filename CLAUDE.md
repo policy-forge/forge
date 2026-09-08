@@ -45,36 +45,43 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 
 ## Dependencies
 
-Rust edition 2024, stable 1.93.0.
+Rust edition 2024 with MSRV 1.85. The version ranges below mirror
+`Cargo.toml`; `Cargo.lock` is authoritative for exact resolved versions.
 
 ### Production
 
 | Crate | Version | Purpose |
 |-------|---------|---------|
-| clap | 4.x | CLI argument parsing (derive) |
+| clap | 4 | CLI argument parsing (derive) |
 | pulldown-cmark | 0.13 | Markdown event-stream parsing |
 | regex | 1 | Pattern matching (atomization, citations) |
-| serde | 1.0.228 | Serialization framework (derive) |
-| serde_json | 1.0.149 | JSON serialization |
+| serde | 1 | Serialization framework (derive) |
+| serde_json | 1 | JSON serialization |
 | serde_yaml_ng | 0.10 | YAML frontmatter parsing |
-| sha2 | 0.10.9 | SHA-256 fingerprinting |
-| thiserror | 2.0.18 | Error type derivation |
-| tracing | 0.1.44 | Structured logging |
+| sha2 | 0.10 | SHA-256 fingerprinting |
+| thiserror | 2 | Error type derivation |
+| tracing | 0.1 | Structured logging |
 | tracing-subscriber | 0.3 | Log output (env-filter) |
 | anyhow | 1 | Context-rich error propagation (binary crate) |
 | chrono | 0.4 | Timestamps (OSCAL metadata) |
-| url | 2.5 | URL parsing (back matter, citations) |
-| uuid | 1.20.0 | Deterministic v5 + random v4 identifiers |
-| jsonschema | 0.41.0 | OSCAL schema validation |
-| quick-xml | 0.37 | XML serialization/deserialization (feature: serde) |
+| url | 2 | URL parsing (back matter, citations) |
+| uuid | 1 | Deterministic v5 + random v4 identifiers |
+| jsonschema | 0.45 | Offline OSCAL schema validation (resolver defaults disabled) |
+| quick-xml | 0.41 | XML serialization/deserialization (serialize feature) |
+| rayon | 1 | Parallel batch processing |
+| tempfile | 3 | Atomic temporary output files |
+| pdf-extract | 0.12 | Local PDF text extraction |
+| zip | 8 | DOCX/OOXML archive reading (deflate only) |
+| toml | 0.9 | Project configuration parsing (parse and serde features) |
+| libc | 0.2 | Unix no-follow filesystem operations |
 
 ### Development
 
 | Crate | Version | Purpose |
 |-------|---------|---------|
-| criterion | 0.8.2 | Benchmarking (html_reports) |
-| insta | 1.46.3 | Snapshot testing (json feature) |
-| tempfile | 3.25.0 | Temporary files in tests |
+| criterion | 0.8 | Benchmarking (html_reports) |
+| insta | 1 | Snapshot testing (json feature) |
+| proptest | 1 | Property-based testing |
 
 ## Phase 1 Status
 

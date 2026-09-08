@@ -115,24 +115,30 @@ benches/             # Criterion benchmarks
 
 Do not add new dependencies without checking for existing alternatives. Key crates already available:
 
+Version ranges mirror `Cargo.toml`; use `Cargo.lock` when an exact resolved
+version matters.
+
 | Purpose | Crate |
 |---------|-------|
 | CLI parsing | `clap 4` (derive feature) |
 | Markdown parsing | `pulldown-cmark 0.13` |
 | Regex | `regex 1` |
-| Serialization | `serde 1.0.228` |
-| JSON | `serde_json 1.0.149` |
-| XML | `quick-xml 0.37` (serialize feature) |
+| Serialization | `serde 1` |
+| JSON | `serde_json 1` |
+| XML | `quick-xml 0.41` (serialize feature) |
 | YAML | `serde_yaml_ng 0.10` (aliased `serde_yaml`) |
-| Error types | `thiserror 2.0.18` |
-| Logging | `tracing 0.1.44`, `tracing-subscriber 0.3` |
-| UUIDs | `uuid 1.20.0` (v4, v5, serde) |
+| Error types | `thiserror 2` |
+| Logging | `tracing 0.1`, `tracing-subscriber 0.3` |
+| UUIDs | `uuid 1` (v4, v5, serde) |
 | Timestamps | `chrono 0.4` |
-| Hashing | `sha2 0.10.9` |
-| Schema validation | `jsonschema 0.41.0` |
+| Hashing | `sha2 0.10` through the shared `src/hashing.rs` helper |
+| Schema validation | `jsonschema 0.45` (resolver defaults disabled) |
 | Parallel execution | `rayon 1` |
-| Snapshot testing | `insta 1.46.3` (json feature) |
-| Temp files | `tempfile 3.25.0` |
+| Project configuration | `toml 0.9` (parse and serde features) |
+| PDF ingestion | `pdf-extract 0.12` |
+| DOCX ingestion | `zip 8` (deflate only) |
+| Snapshot testing | `insta 1` (json feature) |
+| Temp files | `tempfile 3` |
 
 ## Important Notes
 

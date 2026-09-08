@@ -20,7 +20,7 @@ fn write_json(path: &Path, value: &Value) {
 }
 
 fn file_hash(path: &Path) -> String {
-    hex::encode(Sha256::digest(std::fs::read(path).expect("read fixture")))
+    format!("{:x}", Sha256::digest(std::fs::read(path).expect("read fixture")))
 }
 
 fn catalog() -> Value {

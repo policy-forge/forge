@@ -8,9 +8,10 @@ use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 
 use manifest::{ComponentInstance, ComponentManifest, CompositionManifest};
-use render::{RenderedComposition, sha256, validate_static_component};
+use render::{RenderedComposition, validate_static_component};
 use serde::Serialize;
 
+use crate::hashing::sha256_hex;
 use crate::{ForgeError, io};
 
 const MAX_COMPONENT_BYTES: u64 = 10 * 1024 * 1024;
@@ -93,7 +94,7 @@ pub fn check_component(manifest_path: &Path) -> Result<(), ForgeError> {
         .map_err(ForgeError::Io)?;
     let source = resolve_input(&root, &manifest.source, "component source")?;
     let source_bytes = io::read_bounded(&source, MAX_COMPONENT_BYTES)?;
-    let actual = sha256(&source_bytes);
+    let actual = sha256_hex(&source_bytes);
     if actual != manifest.expected_sha256 {
         return Err(composition_error(format!(
             "component '{}' SHA-256 mismatch: expected {}, found {actual}",
@@ -152,7 +153,7 @@ pub fn scaffold_component(
         owner: owner.to_string(),
         status: manifest::ComponentStatus::Draft,
         source: PathBuf::from(source_name),
-        expected_sha256: sha256(&source_bytes),
+        expected_sha256: sha256_hex(&source_bytes),
         replacement_component_key: None,
         parameters: Vec::new(),
     };
@@ -223,7 +224,7 @@ pub fn component_impact(
             let source =
                 resolve_input_from(&root, sidecar_parent, &sidecar.source, "component source")?;
             let source_bytes = io::read_bounded(&source, MAX_COMPONENT_BYTES)?;
-            let current_sha256 = sha256(&source_bytes);
+            let current_sha256 = sha256_hex(&source_bytes);
             dependencies.push(ComponentDependency {
                 composition_manifest: manifest_label.clone(),
                 policy_key: composition.policy_key.clone(),
@@ -293,7 +294,7 @@ pub fn format_composition_trace_origins(
         return Err(composition_error("composition provenance exceeds 1000000 spans"));
     }
     let source_bytes = io::read_bounded(source_path, io::MAX_FILE_SIZE)?;
-    if sha256(&source_bytes) != provenance.output_sha256 {
+    if sha256_hex(&source_bytes) != provenance.output_sha256 {
         return Err(composition_error(
             "composition provenance output_sha256 does not match the supplied trace source",
         ));
@@ -369,7 +370,7 @@ fn prepare_composition(manifest_path: &Path) -> Result<PreparedComposition, Forg
         &manifest.policy_key,
         &manifest.title,
         &manifest.version,
-        &sha256(&manifest_bytes),
+        &sha256_hex(&manifest_bytes),
         &components,
     )?;
     Ok(PreparedComposition { root, outputs, rendered })
@@ -443,7 +444,7 @@ fn load_components(
                 "composition sources exceed the {MAX_COMPOSITION_SOURCE_BYTES} byte aggregate limit"
             )));
         }
-        let source_sha256 = sha256(&source_bytes);
+        let source_sha256 = sha256_hex(&source_bytes);
         if source_sha256 != component.expected_sha256 {
             return Err(composition_error(format!(
                 "component '{}' SHA-256 mismatch: expected {}, found {source_sha256}",
@@ -459,7 +460,7 @@ fn load_components(
         loaded.push(LoadedComponent {
             instance: instance.clone(),
             manifest: component,
-            manifest_sha256: sha256(&manifest_bytes),
+            manifest_sha256: sha256_hex(&manifest_bytes),
             source_bytes,
             source_sha256,
             source_label,

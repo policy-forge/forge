@@ -2,13 +2,12 @@ use std::fs::File;
 use std::io::Read as _;
 use std::path::Path;
 
-use sha2::{Digest, Sha256};
-
 use super::types::{
     InputFormat, InventoryRequirement, LocationBasis, RequirementInventory, RequirementLocation,
     SourceProvenance,
 };
 use crate::error::ForgeError;
+use crate::hashing::sha256_hex;
 use crate::model::{PolicyRequirement, PolicySection};
 
 pub(crate) fn build_inventory(
@@ -151,7 +150,7 @@ fn inventory_requirement(
         ))
     })?;
     let normalized_text = crate::uuid::normalize_for_hashing(&requirement.text);
-    let normalized_text_sha256 = hex::encode(Sha256::digest(normalized_text.as_bytes()));
+    let normalized_text_sha256 = sha256_hex(normalized_text.as_bytes());
     Ok(InventoryRequirement {
         stable_id,
         normalized_text_sha256,

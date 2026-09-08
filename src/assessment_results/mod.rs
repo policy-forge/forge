@@ -10,9 +10,9 @@ use std::io::Write as _;
 use std::path::{Component, Path, PathBuf};
 
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 
 use crate::cli::{AssessmentResultsFailOn, AssessmentResultsReportFormat};
+use crate::hashing::sha256_hex;
 use crate::{ForgeError, io};
 
 struct PreparedBuild {
@@ -131,7 +131,7 @@ pub fn execute_init(
                 .map_err(|cause| error(format!("cannot read evidence index: {cause}")))?;
             Ok::<_, ForgeError>(manifest::EvidenceIndexManifest {
                 artifact,
-                expected_sha256: sha256(&bytes),
+                expected_sha256: sha256_hex(&bytes),
             })
         })
         .transpose()?;
@@ -279,7 +279,7 @@ fn scaffold_artifact(
     Ok(manifest::ArtifactManifest {
         artifact,
         href,
-        expected_sha256: sha256(&bytes),
+        expected_sha256: sha256_hex(&bytes),
         root_uuid,
         document_version,
         oscal_version,
@@ -365,10 +365,6 @@ fn confined_href(root: &Path, path: &Path, label: &str) -> Result<String, ForgeE
         .to_str()
         .ok_or_else(|| error(format!("{label} path cannot be represented as a UTF-8 href")))?;
     Ok(href.replace('\\', "/"))
-}
-
-fn sha256(bytes: &[u8]) -> String {
-    hex::encode(Sha256::digest(bytes))
 }
 
 fn error(message: impl Into<String>) -> ForgeError {

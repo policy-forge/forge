@@ -9,9 +9,9 @@ use std::path::{Component, Path, PathBuf};
 use chrono::NaiveDate;
 use serde::Serialize;
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 
 use crate::cli::{LifecycleGate, LifecycleOutputFormat};
+use crate::hashing::sha256_hex;
 use crate::{ForgeError, io, validate};
 use record::{
     APPROVAL_POLICY_VERSION, ActorAssertion, ApprovalPolicy, ArtifactFingerprint, DeclaredRole,
@@ -562,7 +562,7 @@ fn fingerprint(
                 error(format!("cannot resolve '{}': {source}", path.display()))
             })?,
         )?,
-        sha256: sha256(&bytes),
+        sha256: sha256_hex(&bytes),
         oscal_type,
         root_uuid,
     })
@@ -1185,10 +1185,6 @@ mod windows_file_identity {
         // SAFETY: the successful Windows API call initialized the complete structure.
         Ok(unsafe { information.assume_init() })
     }
-}
-
-fn sha256(bytes: &[u8]) -> String {
-    hex::encode(Sha256::digest(bytes))
 }
 
 fn error(message: impl Into<String>) -> ForgeError {

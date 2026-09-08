@@ -12,7 +12,7 @@ fn run(args: &[&str]) -> Output {
 }
 
 fn hash(bytes: &[u8]) -> String {
-    hex::encode(Sha256::digest(bytes))
+    format!("{:x}", Sha256::digest(bytes))
 }
 
 fn write_json(path: &Path, value: &Value) {

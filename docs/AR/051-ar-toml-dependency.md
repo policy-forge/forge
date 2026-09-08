@@ -3,7 +3,7 @@
 > **Document Type:** Architecture Review / Decision Record
 > **Audience:** LLM agents, human reviewers
 > **Status:** Accepted
-> **Last Updated:** 2026-08-23 <!-- @auto -->
+> **Last Updated:** 2026-09-08 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 > **Deciders:** Brian Luby <!-- @human-required -->
 
@@ -26,7 +26,7 @@
 > Approve the direct dependency on the `toml` crate (`toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }`) in `Cargo.toml` as the TOML parsing layer for `.forge.toml` project configuration files.
 
 ### TL;DR for Agents 🟡 `@human-review`
-> FORGE parses checked-in `.forge.toml` files using the `toml` crate v0.9+ with minimal feature surface (`parse`, `serde`; no defaults). This is an explicitly approved new production dependency. Do NOT hand-roll a TOML parser, do NOT enable additional features (`display`, default features), and do NOT add other TOML crates. Any change to this dependency must go through `cargo vet` and an updated ADR.
+> FORGE parses checked-in `.forge.toml` files using the `toml` crate's 0.9 series with minimal feature surface (`parse`, `serde`; no defaults). The current resolved package carries `+spec-1.1.0` build metadata, so crate semver and TOML language-version support must not be conflated. This is an explicitly approved production dependency. Do NOT hand-roll a TOML parser, do NOT enable additional features (`display`, default features), and do NOT add other TOML crates. Any change to the declared version series or feature set must go through `cargo vet` and an updated ADR.
 
 ---
 
@@ -110,6 +110,7 @@ TOML parsing is unavoidable for PRD 051's core deliverable. Option 0 abandons th
 
 ### Constraints Added by this Decision 🟡 `@human-review`
 - Only the `parse` and `serde` features may be enabled; do not add `display` or re-enable defaults without revisiting this ADR.
+- The accepted `0.9` requirement currently resolves to `0.9.12+spec-1.1.0`; the build metadata identifies TOML 1.1 language support and is not a reason by itself to change the crate's semver requirement.
 - No other TOML-parsing crates may be added while this decision stands.
 - Every crate pulled in by `toml` must remain covered in `supply-chain/config.toml`; convert exemptions to imported audits as they become available upstream.
 - Config parsing must consume `toml::Value` without redundant clones and reject unknown keys before typed conversion (see `src/config.rs`).
@@ -139,6 +140,7 @@ TOML parsing is unavoidable for PRD 051's core deliverable. Option 0 abandons th
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.1 | 2026-09-08 | Codex | Clarified the approved crate series, TOML specification build metadata, and re-review boundary. |
 | 1.0 | 2026-08-23 | Brian Luby | Accepted: approve `toml` dependency per PR #116 review finding |
 
 ---
@@ -147,4 +149,5 @@ TOML parsing is unavoidable for PRD 051's core deliverable. Option 0 abandons th
 
 | Date | Event | Details |
 |------|-------|---------|
+| 2026-09-08 | Clarified | Confirmed that the retained `toml = "0.9"` requirement resolves to a TOML 1.1 parser and that future crate-series or feature changes require renewed vetting and an ADR update. |
 | 2026-08-23 | Accepted | Explicit approval of `toml = "0.9"` (features: parse, serde), resolving [PR #116 discussion r3837390792](https://github.com/policy-forge/forge/pull/116#discussion_r3837390792) as won't-fix-by-requester with documented approval |

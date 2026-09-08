@@ -48,6 +48,7 @@ pub mod error;
 pub mod export;
 /// Read-only framework revision impact analysis.
 pub mod framework;
+mod hashing;
 /// Input file ingestion and content reconstruction.
 pub mod ingest;
 /// Filesystem I/O helpers and file-size limits.
