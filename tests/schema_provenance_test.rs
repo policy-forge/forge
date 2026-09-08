@@ -5,6 +5,16 @@ use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    let mut hex = String::with_capacity(digest.len() * 2);
+    for &byte in &digest {
+        use std::fmt::Write as _;
+        let _ = write!(hex, "{byte:02x}");
+    }
+    hex
+}
+
 #[derive(Debug, Deserialize)]
 struct Manifest {
     repository: String,
@@ -109,7 +119,7 @@ fn vendored_assets_match_release_sizes_and_sha256_digests() {
 
         let bytes = std::fs::read(root.join(relative)).expect("manifest asset must exist");
         assert_eq!(bytes.len() as u64, asset.size, "{} size mismatch", asset.name);
-        let actual = format!("{:x}", Sha256::digest(&bytes));
+        let actual = sha256_hex(&bytes);
         assert_eq!(actual, asset.sha256, "{} SHA-256 mismatch", asset.name);
     }
 }

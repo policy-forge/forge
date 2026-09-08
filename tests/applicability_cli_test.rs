@@ -5,6 +5,16 @@ use std::process::{Command, Output};
 
 use sha2::{Digest, Sha256};
 
+fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    let mut hex = String::with_capacity(digest.len() * 2);
+    for &byte in &digest {
+        use std::fmt::Write as _;
+        let _ = write!(hex, "{byte:02x}");
+    }
+    hex
+}
+
 use serde_json::{Value, json};
 
 fn write_json(path: &Path, value: &Value) {
@@ -1056,10 +1066,8 @@ fn profile_companion_analysis_accepts_exact_profile_target_mapping() {
         &dir.path().join("resolved-catalog.json"),
         &catalog("88888888-8888-4888-8888-888888888888", &["profile-control"]),
     );
-    let resolved_catalog_sha256 = format!(
-        "{:x}",
-        Sha256::digest(std::fs::read(dir.path().join("resolved-catalog.json")).expect("companion"))
-    );
+    let resolved_catalog_sha256 =
+        sha256_hex(&std::fs::read(dir.path().join("resolved-catalog.json")).expect("companion"));
     let mut mapping = mapping_manifest();
     mapping["mapping"]["target"] = json!({
         "type": "profile",

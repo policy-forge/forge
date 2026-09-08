@@ -428,7 +428,7 @@ mod tests {
         // Independently compute expected SHA-256
         let mut hasher = Sha256::new();
         hasher.update(content.as_bytes());
-        let expected = format!("{:x}", hasher.finalize());
+        let expected = crate::hashing::lower_hex(&hasher.finalize());
         assert_eq!(doc.fingerprint, expected);
     }
 
