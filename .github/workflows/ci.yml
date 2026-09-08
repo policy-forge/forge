@@ -49,6 +49,12 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
+      # PRD-062 contract drift gate (see docs/adr/0001-openapi-contract-ownership.md):
+      # validates the normative OpenAPI 3.1 document, forge.workspace/1 schema,
+      # fixture suite, and capability-matrix coverage offline on every platform.
+      - name: API contract validation
+        run: cargo test --test api_contract_validation --verbose
+
 
       - name: Lint
         run: cargo clippy --all-targets -- -D warnings
