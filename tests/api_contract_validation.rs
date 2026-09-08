@@ -108,6 +108,12 @@ fn unlock_operation_id(document: &Value) -> String {
         .unwrap_or_default()
 }
 
+/// True when any security requirement object is `{}`, which `OpenAPI` treats as
+/// "authentication optional" rather than "authenticated".
+fn has_empty_security_requirement(requirements: &[Value]) -> bool {
+    requirements.iter().any(|requirement| requirement.as_object().is_some_and(Map::is_empty))
+}
+
 /// Rewrite `#/components/schemas/<Name>` references to `#/$defs/<Name>` so one
 /// component schema can be compiled standalone together with its siblings.
 fn rewrite_component_refs(value: &Value) -> Value {
@@ -347,6 +353,7 @@ fn openapi_document_is_valid_openapi_3_1() {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)] // Keeps the complete namespace/security/parameter gate auditable in one place.
 fn openapi_paths_operations_and_security_invariants_hold() {
     let document = load_openapi();
     let paths = document.get("paths").and_then(Value::as_object).expect("document has paths");
@@ -391,6 +398,77 @@ fn openapi_paths_operations_and_security_invariants_hold() {
         .filter(|requirements| !requirements.is_empty());
     if global_security.is_none() {
         errors.push("document-level security must require a capability for all operations".into());
+    }
+    // An empty security-requirement object `{}` silently makes authentication
+    // optional for an operation; only the unlock operation may opt out, and it
+    // must do so with an explicit empty requirements list (`security: []`).
+    if let Some(requirements) = global_security {
+        if has_empty_security_requirement(requirements) {
+            errors.push("document-level security contains an empty requirement object".into());
+        }
+    }
+    for operation in &found {
+        let operation_object = &document["paths"][&operation.path][operation.method];
+        if let Some(Value::Array(requirements)) = operation_object.get("security") {
+            if !requirements.is_empty() && has_empty_security_requirement(requirements) {
+                errors.push(format!(
+                    "{} {} declares an empty security requirement object",
+                    operation.method, operation.path
+                ));
+            }
+        }
+    }
+
+    // Every `{template}` path segment must be declared as an in-path parameter
+    // on each of the path item's operations (inline or via components/parameters).
+    for (path, path_item) in paths {
+        let template_names: Vec<&str> = path
+            .split('/')
+            .filter_map(|segment| segment.strip_prefix('{')?.strip_suffix('}'))
+            .collect();
+        if template_names.is_empty() {
+            continue;
+        }
+        let Some(items) = path_item.as_object() else {
+            continue;
+        };
+        let mut path_level: Vec<&Value> = Vec::new();
+        if let Some(Value::Array(parameters)) = items.get("parameters") {
+            path_level.extend(parameters.iter());
+        }
+        for method in HTTP_METHODS {
+            let Some(Value::Object(operation)) = items.get(method) else {
+                continue;
+            };
+            let mut declared: BTreeSet<String> = BTreeSet::new();
+            let parameter_lists = path_level.iter().copied().chain(
+                operation
+                    .get("parameters")
+                    .and_then(Value::as_array)
+                    .map(Vec::as_slice)
+                    .unwrap_or_default(),
+            );
+            for parameter in parameter_lists {
+                let resolved = match parameter.get("$ref").and_then(Value::as_str) {
+                    Some(target) => document
+                        .pointer(target.strip_prefix('#').unwrap_or(target))
+                        .unwrap_or_else(|| panic!("unresolved parameter ref {target}")),
+                    None => parameter,
+                };
+                if resolved.get("in").and_then(Value::as_str) == Some("path") {
+                    if let Some(name) = resolved.get("name").and_then(Value::as_str) {
+                        declared.insert(name.to_string());
+                    }
+                }
+            }
+            for name in &template_names {
+                if !declared.contains(*name) {
+                    errors.push(format!(
+                        "{method} {path} does not declare path parameter {{{name}}}"
+                    ));
+                }
+            }
+        }
     }
 
     let unauthenticated: Vec<_> =
