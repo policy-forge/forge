@@ -685,12 +685,9 @@ fn fixtures_validate_against_the_live_contract() {
         let instance = match read_json_strict(&bytes, &label) {
             Ok(value) => value,
             Err(error) => {
-                // An invalid-expectation fixture may legitimately fail strict parsing.
-                if expectation == "invalid" {
-                    kinds.entry(kind.to_string()).or_insert(0);
-                    listed_files.insert(file.to_string());
-                    continue;
-                }
+                // Every fixture must be complete, well-formed strict JSON
+                // (fixtures README rule 3: an invalid fixture fails schema
+                // validation for its single documented reason, not parsing).
                 errors.push(error);
                 continue;
             }
