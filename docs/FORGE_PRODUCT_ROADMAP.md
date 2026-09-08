@@ -179,7 +179,7 @@ gates in the corresponding PRD.
 | [059](PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merge `09f1f37` | PRD release gates remain |
 | [060](PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merge `a5d0aff` | PRD release gates remain |
 | [061](PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | Planned | No implementation merge | Requires PRD 056 output plus product, compliance, legal, and design-partner readiness |
-| [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — Slice 0 technically complete | Slice 0 branch `codex/062-api-contract-foundation` | Contract, schema, matrix, fixtures, threat model, and ADRs delivered with CI drift checks; human review gates remain before UI code |
+| [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — Slice 0 technically complete | Slice 0 delivered in PR #142 | Contract, schema, matrix, fixtures, threat model, and ADRs delivered with CI drift checks; human review gates remain before UI code |
 | [063](PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merge `34d9869` | PRD release gates remain |
 | [064](PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | No implementation merge | PRD 063 is implemented; schema, status semantics, and editable source-of-truth decisions remain |
 | [065](PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | No implementation merge | Requires a stable source-report contract and approved provider/auth boundary |

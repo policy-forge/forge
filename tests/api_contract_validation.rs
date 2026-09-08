@@ -60,8 +60,14 @@ struct OperationRef {
 fn load_yaml_as_json(path: &Path) -> Value {
     let text =
         fs::read_to_string(path).unwrap_or_else(|error| panic!("read {}: {error}", path.display()));
-    serde_yaml::from_str(&text)
-        .unwrap_or_else(|error| panic!("parse {} as YAML: {error}", path.display()))
+    // Parse through the duplicate-key-rejecting visitor: deserializing
+    // directly into serde_json::Value would silently keep the last value for
+    // duplicated YAML mapping keys.
+    let deserializer = serde_yaml::Deserializer::from_str(&text);
+    StrictValue::deserialize(deserializer).map_or_else(
+        |error| panic!("parse {} as strict YAML: {error}", path.display()),
+        |value| value.0,
+    )
 }
 
 fn load_openapi() -> Value {
@@ -449,10 +455,21 @@ fn openapi_paths_operations_and_security_invariants_hold() {
                     .unwrap_or_default(),
             );
             for parameter in parameter_lists {
-                let resolved = match parameter.get("$ref").and_then(Value::as_str) {
-                    Some(target) => document
-                        .pointer(target.strip_prefix('#').unwrap_or(target))
-                        .unwrap_or_else(|| panic!("unresolved parameter ref {target}")),
+                let resolved_parameter = parameter.get("$ref").and_then(Value::as_str);
+                let resolved = match resolved_parameter.and_then(|target| {
+                    target
+                        .strip_prefix('#')
+                        .filter(|pointer| !pointer.is_empty())
+                        .and_then(|pointer| document.pointer(pointer))
+                }) {
+                    Some(resolved) => resolved,
+                    None if resolved_parameter.is_some() => {
+                        errors.push(format!(
+                            "{method} {path}: parameter reference {} is not a resolvable local pointer",
+                            resolved_parameter.unwrap_or_default()
+                        ));
+                        continue;
+                    }
                     None => parameter,
                 };
                 if resolved.get("in").and_then(Value::as_str) == Some("path") {
@@ -499,10 +516,18 @@ fn openapi_servers_are_loopback_only() {
         .expect("document declares at least one server");
     for server in servers {
         let url = server.get("url").and_then(Value::as_str).unwrap_or_default();
-        assert!(url.starts_with("http://127.0.0.1"), "server url {url} must be loopback-only");
+        // Anchor the host on a terminator so DNS names that merely start with
+        // the loopback literal (e.g. http://127.0.0.1.attacker.example) fail.
+        let Some(rest) = url.strip_prefix("http://127.0.0.1") else {
+            panic!("server url {url} must be the loopback literal 127.0.0.1");
+        };
         assert!(
-            !url.contains("localhost"),
-            "server url {url} must use the literal 127.0.0.1, not a DNS name"
+            rest.is_empty()
+                || rest
+                    .chars()
+                    .next()
+                    .is_some_and(|first| first == ':' || first == '/' || first == '{'),
+            "server url {url} must end the host after 127.0.0.1 (port, path, or variable only)"
         );
     }
 }
@@ -596,7 +621,7 @@ fn workspace_schema_is_closed_versioned_and_bounded() {
         Some(&Value::Bool(false)),
         "workspace schema must be closed at the root"
     );
-    for required in ["schema_version", "resources"] {
+    for required in ["schema_version", "label", "resources"] {
         assert!(
             schema
                 .get("required")
