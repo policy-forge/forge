@@ -141,7 +141,7 @@ design-partner validation, publication, or adoption gates are complete.
 | [059](docs/PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merged in `09f1f37`; PRD release gates remain |
 | [060](docs/PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merged in `a5d0aff`; PRD release gates remain |
 | [061](docs/PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | Planned | Requires PRD 056 output; product, compliance, legal, and design-partner readiness gates remain |
-| [062](docs/PRD/062-prd-local-web-workspace.md) | API-first local web workspace | Planned — proposed next | Start with Slice 0 contracts, threat model, schemas, fixtures, and ADRs before browser implementation |
+| [062](docs/PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — Slice 0 technically complete | Contract, `forge.workspace/1` schema, capability matrix, fixtures, threat model, service boundaries, ADRs, and CI drift checks delivered in PR #142; human API/security/accessibility review gates remain before Slice 1 |
 | [063](docs/PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merged in `34d9869`; PRD release gates remain |
 | [064](docs/PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | PRD 063 dependency is implemented; schema, status semantics, and source-of-truth decisions remain |
 | [065](docs/PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | Requires a stable source-report contract and approved provider/auth boundary |
@@ -155,7 +155,7 @@ This sequence communicates dependency order, not committed dates.
 
 | Horizon | Initiative | Outcome / Gate |
 |---------|------------|----------------|
-| **Now** | PRD 062 Slice 0 | Establish the normative API contract, capability matrix, project index schema, threat model, service boundaries, fixtures, ADRs, and drift checks |
+| **Now** | PRD 062 Slice 0 | Establish the normative API contract, capability matrix, project index schema, threat model, service boundaries, fixtures, ADRs, and drift checks — artifacts and CI drift gate delivered; human review approval remains |
 | **Now** | PRDs 055–060 and 063 release-gate reconciliation | Complete or explicitly defer the human, pilot, documentation, and release approvals still open in the PRDs |
 | **Next** | PRD 062 Slices 1–4 | Deliver read-only exploration, safe mutation, applicability/mapping review, and a local pilot in gated increments |
 | **Next** | PRD 064 Phase 1 | Add deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |

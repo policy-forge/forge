@@ -1,0 +1,9 @@
+{
+  "total_open": 12,
+  "by_reason": [
+    { "reason_code": "scope-decision-required", "count": 5 },
+    { "reason_code": "no-reviewed-mapping", "count": 4 },
+    { "reason_code": "reviewed-no-positive-relationship", "count": 2 },
+    { "reason_code": "deferred-scope-decision", "count": 1 }
+  ]
+}

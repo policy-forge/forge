@@ -1,0 +1,11 @@
+{
+  "schema_version": "forge.workspace/1",
+  "label": "Acme ISMS project",
+  "resources": [
+    {
+      "key": "pol-backslash",
+      "role": "policy-source",
+      "path": "policies\\POL-01_Acceptable_Use_Policy.md"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "version": "77aabbccddeeff00",
+  "stale": false,
+  "input_fingerprints": [
+    {
+      "resource_id": "res_0f1e2d3c4b5a69788796a5b4",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matches_current": true
+    },
+    {
+      "resource_id": "res_112233445566778899aabbcc",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "matches_current": true
+    }
+  ],
+  "classification_counts": [
+    { "classification": "applicable-mapped", "count": 241 },
+    { "classification": "applicable-reviewed-no-relationship", "count": 4 },
+    { "classification": "applicable-unmapped", "count": 5 },
+    { "classification": "not-applicable", "count": 8 },
+    { "classification": "deferred", "count": 1 },
+    { "classification": "under-review", "count": 4 }
+  ],
+  "eligible_controls": 263
+}

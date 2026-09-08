@@ -35,6 +35,7 @@ require_cargo_subcommands audit deny vet
 run_step "cargo fmt --check" cargo fmt --check
 run_step "cargo clippy --all-targets -- -D warnings" cargo clippy --all-targets -- -D warnings
 run_step "cargo test" cargo test
+run_step "API contract validation (PRD-062)" cargo test --test api_contract_validation
 
 if [[ "${CI_LOCAL_BENCH:-0}" == "1" ]]; then
     run_step "cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3" \

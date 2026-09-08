@@ -1,0 +1,8 @@
+{
+  "code": "validation-failed",
+  "message": "The submitted manifest failed validation. Request structured diagnostics for details.",
+  "resource": "res_3344556677889900aabbccd1",
+  "field": "/decisions/7/control_id",
+  "retryable": false,
+  "correlation_id": "corr_4c5b6a7f8e9d"
+}

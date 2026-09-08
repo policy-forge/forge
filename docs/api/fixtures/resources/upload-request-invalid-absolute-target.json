@@ -1,0 +1,6 @@
+{
+  "role": "policy-source",
+  "target_path": "/tmp/uploaded-policy.md",
+  "filename": "uploaded-policy.md",
+  "content_base64": "IyBJVCBSaXNrIEFzc2Vzc21lbnQgUG9saWN5Cg=="
+}

@@ -1,0 +1,317 @@
+[
+  {
+    "id": "CM-01",
+    "action": "Unlock the browser session with the per-launch passphrase",
+    "golden_path_step": 1,
+    "user_stories": ["US-12"],
+    "operations": ["unlockSession"],
+    "authorization": "unlock",
+    "notes": "Only unauthenticated /api/v1 operation. Argon2id verification, bounded throttling, generic indistinguishable failures, one-time memory-only browser capability. Covers the locked and throttled-unlock UX states."
+  },
+  {
+    "id": "CM-02",
+    "action": "Read session metadata and discover the supported API version",
+    "golden_path_step": 1,
+    "user_stories": ["US-1", "US-13"],
+    "operations": ["getSession"],
+    "authorization": "browser-read",
+    "notes": "Publishes api_major and exact contract_version; clients fail closed on mismatch (AC-25). Shows read-only scope in the session chrome."
+  },
+  {
+    "id": "CM-03",
+    "action": "Stop the workspace from the UI",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-10", "US-12"],
+    "operations": ["shutdownSession"],
+    "authorization": "browser-read",
+    "notes": "Confirmed in-UI Stop workspace action covering the process-stopped UX state. Modifies no project file, so it stays available in read-only sessions. Invalidates the passphrase verifier, all capabilities, and all in-memory receipts."
+  },
+  {
+    "id": "CM-04",
+    "action": "Serve the static locked bootstrap shell",
+    "golden_path_step": 1,
+    "user_stories": ["US-12"],
+    "operations": ["unlockSession"],
+    "authorization": "none",
+    "notes": "The unauthenticated bootstrap shell is served outside /api/v1 and contains no project data; from the locked shell the only /api/v1 call available before any capability exists is unlockSession, the sole unauthenticated operation."
+  },
+  {
+    "id": "CM-05",
+    "action": "Bootstrap a machine session from the stdout descriptor",
+    "golden_path_step": 1,
+    "user_stories": ["US-13"],
+    "operations": ["getSession"],
+    "authorization": "machine",
+    "notes": "The --machine-session launch prints exactly one sensitive JSON descriptor on stdout (base URL, API version, session ID, capability, mode, process identity) outside /api/v1 with no passphrase prompt; the machine capability then authorizes getSession and the rest of the contract for headless clients (AC-18)."
+  },
+  {
+    "id": "CM-06",
+    "action": "Understand project state and configuration",
+    "golden_path_step": 3,
+    "user_stories": ["US-1"],
+    "operations": ["getProjectSummary", "getProjectConfigStatus"],
+    "authorization": "browser-read",
+    "notes": "Overview view. Distinguishes setup, invalid, stale, review-required, and completed states with counts that link to exact resources; next_action recommends the next human action. Covers the setup/empty UX state."
+  },
+  {
+    "id": "CM-07",
+    "action": "Browse and inspect registered resources",
+    "golden_path_step": 2,
+    "user_stories": ["US-1"],
+    "operations": ["listResources", "getResource"],
+    "authorization": "browser-read",
+    "notes": "Policies & Artifacts and Overview views. Read-time hashes and validation state; opaque resource IDs only. Covers loading and refresh UX states via documented reads."
+  },
+  {
+    "id": "CM-08",
+    "action": "Register an existing root-contained file",
+    "golden_path_step": 2,
+    "user_stories": ["US-5"],
+    "operations": ["registerResource"],
+    "authorization": "browser-write",
+    "notes": "References without copying. The forge.workspace/1 index changes only through preview/commit; containment violations return the typed resource-containment error (AC-4)."
+  },
+  {
+    "id": "CM-09",
+    "action": "Upload bounded bytes to a confirmed root-contained target",
+    "golden_path_step": 2,
+    "user_stories": ["US-5"],
+    "operations": ["uploadResource"],
+    "authorization": "browser-write",
+    "notes": "At most 10 MiB decoded, inert data validated by role, media type, size, parser, and destination rules before a preview; the source machine path is never sent or retained."
+  },
+  {
+    "id": "CM-10",
+    "action": "Prepare and inspect Markdown-to-OSCAL conversion",
+    "golden_path_step": 2,
+    "user_stories": ["US-5"],
+    "operations": ["preparePolicyConversion", "getConversion"],
+    "authorization": "browser-write",
+    "notes": "Policies & Artifacts view. Shared conversion application service; derived products and their write preview appear only after the bounded operation succeeds; no direct write (AC-6)."
+  },
+  {
+    "id": "CM-11",
+    "action": "Run validation and retrieve structured diagnostics",
+    "golden_path_step": 3,
+    "user_stories": ["US-1"],
+    "operations": ["runValidation", "getResourceValidation"],
+    "authorization": "browser-read",
+    "notes": "Invalid-input UX state. Stable codes and resource/field pointers from the shared validation services; no terminal parsing; safe in read-only sessions."
+  },
+  {
+    "id": "CM-12",
+    "action": "Review the complete framework control inventory",
+    "golden_path_step": 4,
+    "user_stories": ["US-2"],
+    "operations": ["listApplicabilityControls"],
+    "authorization": "browser-read",
+    "notes": "Framework Scope view. Complete control denominator; controls omitted from the manifest surface as under-review and are never inferred (AC-7)."
+  },
+  {
+    "id": "CM-13",
+    "action": "Read and validate the applicability decisions draft",
+    "golden_path_step": 4,
+    "user_stories": ["US-2"],
+    "operations": ["getApplicabilityDraft", "validateApplicabilityDraft"],
+    "authorization": "browser-read",
+    "notes": "Framework Scope view editor backing. Validates required state, rationale, reviewer, and review-time fields without minting a receipt."
+  },
+  {
+    "id": "CM-14",
+    "action": "Save applicability decisions as a manifest write preview",
+    "golden_path_step": 4,
+    "user_stories": ["US-2"],
+    "operations": ["putApplicabilityDraft"],
+    "authorization": "browser-write",
+    "notes": "Full-document put with observed version; the forge.applicability/1 file changes only through commitEffectPreview (M-9, M-13)."
+  },
+  {
+    "id": "CM-15",
+    "action": "Regenerate the deterministic gap analysis",
+    "golden_path_step": 7,
+    "user_stories": ["US-4"],
+    "operations": ["analyzeApplicability"],
+    "authorization": "browser-write",
+    "notes": "Same shared analysis service as the CLI; the regenerated report is written only via its EffectPreview and commit, keeping versioned files authoritative."
+  },
+  {
+    "id": "CM-16",
+    "action": "View the current gap report and its staleness",
+    "golden_path_step": 3,
+    "user_stories": ["US-1", "US-6"],
+    "operations": ["getApplicabilityReport"],
+    "authorization": "browser-read",
+    "notes": "Overview and Trace & Reports views. Classification counts with input fingerprints; stale flag drives the stale-input UX state (AC-9)."
+  },
+  {
+    "id": "CM-17",
+    "action": "Compare policy and framework mapping subjects",
+    "golden_path_step": 5,
+    "user_stories": ["US-3"],
+    "operations": ["listMappingSubjects"],
+    "authorization": "browser-read",
+    "notes": "Mappings view. Exact resource identity and fingerprints on both sides; absence of a relationship is never converted into a decision (AC-8)."
+  },
+  {
+    "id": "CM-18",
+    "action": "Read and validate the mapping decisions draft",
+    "golden_path_step": 5,
+    "user_stories": ["US-3"],
+    "operations": ["getMappingDraft", "validateMappingDraft"],
+    "authorization": "browser-read",
+    "notes": "Mappings view editor backing. Preserves the positive versus explicit no-relationship distinction through validation."
+  },
+  {
+    "id": "CM-19",
+    "action": "Save mapping decisions as a manifest write preview",
+    "golden_path_step": 5,
+    "user_stories": ["US-3"],
+    "operations": ["putMappingDraft"],
+    "authorization": "browser-write",
+    "notes": "Full-document put with observed version; the forge.mapping-manifest/1 file changes only through commitEffectPreview (M-10, M-13)."
+  },
+  {
+    "id": "CM-20",
+    "action": "Run mapping collection consistency checks",
+    "golden_path_step": 5,
+    "user_stories": ["US-3", "US-4"],
+    "operations": ["checkMapping"],
+    "authorization": "browser-read",
+    "notes": "Synchronous, bounded, read-only compute over the currently committed mapping inputs; stable diagnostic codes."
+  },
+  {
+    "id": "CM-21",
+    "action": "Build the mapping collection model",
+    "golden_path_step": 7,
+    "user_stories": ["US-4"],
+    "operations": ["buildMapping"],
+    "authorization": "browser-write",
+    "notes": "Bounded operation over the shared mapping service; participation totals and coverage come from the typed result, and the rendered report is written only via its preview and commit."
+  },
+  {
+    "id": "CM-22",
+    "action": "Work the review queue with filters, sorting, and paging",
+    "golden_path_step": 3,
+    "user_stories": ["US-1", "US-4"],
+    "operations": ["listReviewQueueItems"],
+    "authorization": "browser-read",
+    "notes": "Review Queue view. Stable reason codes in priority order; deterministic cursor traversal that neither duplicates nor omits items for an unchanged version (AC-24)."
+  },
+  {
+    "id": "CM-23",
+    "action": "Reconcile review queue counts",
+    "golden_path_step": 3,
+    "user_stories": ["US-1"],
+    "operations": ["getReviewQueueCounts"],
+    "authorization": "browser-read",
+    "notes": "Counts by reason code that reconcile to the unfiltered denominator exposed by listReviewQueueItems; every displayed count is navigable via CM-24 (AC-9)."
+  },
+  {
+    "id": "CM-24",
+    "action": "Traverse provenance and read bounded source excerpts",
+    "golden_path_step": 8,
+    "user_stories": ["US-6"],
+    "operations": ["listProvenanceEntries", "getProvenanceExcerpt"],
+    "authorization": "browser-read",
+    "notes": "Trace & Reports view. Bidirectional traversal from any count or classification to controls, decisions, mapping edges, policy subjects, exact source locations, and fingerprints; excerpts are bounded and escaped; no arbitrary path reads."
+  },
+  {
+    "id": "CM-25",
+    "action": "Inspect an effect preview before confirming",
+    "golden_path_step": 6,
+    "user_stories": ["US-9"],
+    "operations": ["getEffectPreview"],
+    "authorization": "browser-read",
+    "notes": "Confirm-dialog evidence: exact target, create/overwrite status, base/target/input hashes, validation diagnostics, semantic summary, escaped text diff, and receipt expiry."
+  },
+  {
+    "id": "CM-26",
+    "action": "Commit the exact previewed bytes",
+    "golden_path_step": 7,
+    "user_stories": ["US-9", "US-10"],
+    "operations": ["commitEffectPreview"],
+    "authorization": "browser-write",
+    "notes": "Only write path. One-time receipt plus observed version plus idempotency key; any mismatch, expiry, or reuse rejects without a write (AC-10, AC-11); identical retries return the original result (AC-22). Covers the expired-preview and external-conflict UX states."
+  },
+  {
+    "id": "CM-27",
+    "action": "Query bounded operations",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-10", "US-13"],
+    "operations": ["getOperation"],
+    "authorization": "browser-read",
+    "notes": "Read-available, session-scoped operation resources created by conversion, analysis, build, export, and commit requests. State plus typed result determines whether a write committed after disconnect or timeout (AC-23)."
+  },
+  {
+    "id": "CM-28",
+    "action": "Cancel a running operation safely",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-10"],
+    "operations": ["cancelOperation"],
+    "authorization": "browser-write",
+    "notes": "Cancel UX state. Cooperative cancellation that never leaves a partial write; a committed effect is reported truthfully in the terminal result (AC-17)."
+  },
+  {
+    "id": "CM-29",
+    "action": "Prepare a redacted static report export",
+    "golden_path_step": 8,
+    "user_stories": ["US-8"],
+    "operations": ["prepareReportExport"],
+    "authorization": "browser-write",
+    "notes": "Trace & Reports view. Self-contained static HTML from the same versioned report model with the strict-default redaction profile; export bytes are written only via preview and commit."
+  },
+  {
+    "id": "CM-30",
+    "action": "Download a committed export",
+    "golden_path_step": 8,
+    "user_stories": ["US-8"],
+    "operations": ["downloadExport"],
+    "authorization": "browser-read",
+    "notes": "Reading a committed export is a download of inert, escaped content with a safe filename and content type; available only after the commit operation succeeded; no remote publish."
+  },
+  {
+    "id": "CM-31",
+    "action": "Enforce read-only launch mode",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-7"],
+    "operations": ["registerResource", "uploadResource", "preparePolicyConversion", "putApplicabilityDraft", "putMappingDraft", "analyzeApplicability", "buildMapping", "commitEffectPreview", "prepareReportExport"],
+    "authorization": "browser-write",
+    "notes": "Every mutation returns the typed read-only-session error with no file change (AC-2), covering the permission-denied UX state; all read operations in CM-02, CM-06, CM-07, CM-11 through CM-13, CM-16 through CM-18, CM-20, CM-22 through CM-25, and CM-30 keep working."
+  },
+  {
+    "id": "CM-32",
+    "action": "Render loading, refresh, and empty states from documented reads",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-1"],
+    "operations": ["getProjectSummary", "listResources", "listReviewQueueItems"],
+    "authorization": "browser-read",
+    "notes": "Loading, automatic refresh, and empty states must poll documented operations only; no undocumented request may exist (AC-19)."
+  },
+  {
+    "id": "CM-33",
+    "action": "Recover from errors, conflicts, and lost responses",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-10"],
+    "operations": ["commitEffectPreview", "getOperation"],
+    "authorization": "browser-write",
+    "notes": "Error and retry UX states: typed retryable codes, version-conflict carrying the current version, and idempotent retry after response loss (AC-21, AC-22)."
+  },
+  {
+    "id": "CM-34",
+    "action": "Expose machine-readable status for accessible announcements",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-11"],
+    "operations": ["getOperation", "listReviewQueueItems"],
+    "authorization": "browser-read",
+    "notes": "The API supplies stable states, counts, and reason codes so the UI can announce status and errors to assistive technology; WCAG 2.2 AA conformance itself is a UI-layer obligation documented outside the API contract."
+  },
+  {
+    "id": "CM-35",
+    "action": "Drive the complete workspace through the published API",
+    "golden_path_step": "cross-cutting",
+    "user_stories": ["US-13"],
+    "operations": ["analyzeApplicability", "buildMapping", "cancelOperation", "checkMapping", "commitEffectPreview", "downloadExport", "getApplicabilityDraft", "getApplicabilityReport", "getConversion", "getEffectPreview", "getMappingDraft", "getOperation", "getProjectConfigStatus", "getProjectSummary", "getProvenanceExcerpt", "getResource", "getResourceValidation", "getReviewQueueCounts", "getSession", "listApplicabilityControls", "listMappingSubjects", "listProvenanceEntries", "listResources", "listReviewQueueItems", "preparePolicyConversion", "prepareReportExport", "putApplicabilityDraft", "putMappingDraft", "registerResource", "runValidation", "shutdownSession", "unlockSession", "uploadResource", "validateApplicabilityDraft", "validateMappingDraft"],
+    "authorization": "browser-write",
+    "notes": "US-13 completeness entry: a write-capable session (browser or machine) can perform the entire golden path with only these operations (AC-18). This entry intentionally lists every operationId as the exhaustive coverage denominator for CI."
+  }
+]

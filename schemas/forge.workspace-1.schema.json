@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/forge/schemas/forge.workspace-1.schema.json",
+  "title": "FORGE workspace resource index (forge.workspace/1)",
+  "description": "Closed, versioned schema for the optional forge.workspace.json project resource index consumed by the PRD 062 local web workspace. The file is an index of explicitly registered, supported FORGE resources: it is an index, not a database and not a domain authority. Domain manifests and OSCAL artifacts retain their own provenance contracts; current hashes and validation state are computed at read time and are never stored here. The index must not contain launch tokens, secrets, absolute paths, reviewer credentials, cached source text, UI layout, approval state, or inferred relationships; the closed property set below enforces that by construction.",
+  "$comment": "The authoritative schema_version constant 'forge.workspace/1' lives in this schema. The future Rust parser for forge.workspace.json must match this constant and must also reject duplicate JSON object keys, following src/json_strict.rs and the manifest conventions in src/applicability/manifest.rs and src/mapping/manifest.rs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "label",
+    "resources"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.workspace/1",
+      "description": "Fixed schema identifier for this index format."
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Human-readable project label used for display only. Not a path and not an identity claim."
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 1000,
+      "description": "Ordered list of explicitly registered supported resources. Array order is the authorial display order and is preserved on write. Keys must be unique across the list (enforced by the parser; see $comment).",
+      "items": {
+        "$ref": "#/$defs/resource"
+      }
+    }
+  },
+  "$defs": {
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "role",
+        "path"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+          "description": "Stable local key (1-64 characters, lowercase alphanumeric with interior hyphens, no leading or trailing hyphen), unique within the index, used by API resource metadata and effect previews."
+        },
+        "role": {
+          "$ref": "#/$defs/role"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$",
+          "description": "Project-relative POSIX-style path. Every segment must begin with an alphanumeric character, which rejects absolute paths (leading '/'), parent or current directory traversal ('..', '.'), Windows drive prefixes ('C:\\', 'C:/'), backslashes, and leading-dot hidden files. Symlinks and non-regular files are rejected by the runtime, not by this pattern."
+        }
+      }
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "policy-source",
+        "oscal-catalog-artifact",
+        "oscal-component-artifact",
+        "mapping-collection",
+        "applicability-manifest",
+        "applicability-report",
+        "trace-report"
+      ],
+      "description": "Typed role of the registered resource. The PRD 062 role families map to these values as follows: 'policy source' is policy-source (human-authored Markdown conversion input); 'generated OSCAL artifact' is split by model into oscal-catalog-artifact and oscal-component-artifact; 'mapping manifest/collection' is mapping-collection (PRD 055 inputs); 'applicability manifest/report' is split by direction into applicability-manifest (human-authored forge.applicability/1 input) and applicability-report (generated gap-analysis output); 'trace/report output' is trace-report. The enum is closed; adding a role requires a new schema version."
+    }
+  }
+}

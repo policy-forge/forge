@@ -1,0 +1,21 @@
+{
+  "resource_version": "cafe1234abcd5678",
+  "page": {
+    "items": [
+      {
+        "resource_id": "res_0f1e2d3c4b5a69788796a5b4",
+        "key": "pol-acceptable-use",
+        "role": "policy-source",
+        "path": "policies/POL-01_Acceptable_Use_Policy.md",
+        "media_type": "text/markdown",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 4529,
+        "validation_state": "valid",
+        "stale": false,
+        "version": "1029384756abcdef"
+      }
+    ],
+    "next_cursor": null,
+    "total_matching": 1
+  }
+}
