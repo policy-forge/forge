@@ -151,7 +151,7 @@ fn inventory_requirement(
         ))
     })?;
     let normalized_text = crate::uuid::normalize_for_hashing(&requirement.text);
-    let normalized_text_sha256 = format!("{:x}", Sha256::digest(normalized_text.as_bytes()));
+    let normalized_text_sha256 = hex::encode(Sha256::digest(normalized_text.as_bytes()));
     Ok(InventoryRequirement {
         stable_id,
         normalized_text_sha256,

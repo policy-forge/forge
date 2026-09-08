@@ -824,7 +824,7 @@ fn hash_json(value: &ParameterValue) -> Result<String, crate::ForgeError> {
 }
 
 pub(crate) fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex::encode(Sha256::digest(bytes))
 }
 
 fn pretty_json<T: Serialize>(value: &T) -> Result<Vec<u8>, crate::ForgeError> {

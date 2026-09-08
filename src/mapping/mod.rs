@@ -160,7 +160,7 @@ fn scaffold_resource(
                 io::MAX_FILE_SIZE,
                 &format!("{label} resolved Catalog"),
             )?;
-            Ok::<_, ForgeError>(format!("{:x}", Sha256::digest(&bytes)))
+            Ok::<_, ForgeError>(hex::encode(Sha256::digest(&bytes)))
         })
         .transpose()?;
     let temporary = manifest::ResourceManifest {

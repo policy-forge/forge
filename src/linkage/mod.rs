@@ -2006,7 +2006,7 @@ fn required_string(value: Option<&Value>, label: &str) -> Result<String, ForgeEr
 }
 
 fn digest(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex::encode(Sha256::digest(bytes))
 }
 
 fn canonical_sha256(value: &Value) -> String {

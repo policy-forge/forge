@@ -109,7 +109,7 @@ fn vendored_assets_match_release_sizes_and_sha256_digests() {
 
         let bytes = std::fs::read(root.join(relative)).expect("manifest asset must exist");
         assert_eq!(bytes.len() as u64, asset.size, "{} size mismatch", asset.name);
-        let actual = format!("{:x}", Sha256::digest(&bytes));
+        let actual = hex::encode(Sha256::digest(&bytes));
         assert_eq!(actual, asset.sha256, "{} SHA-256 mismatch", asset.name);
     }
 }

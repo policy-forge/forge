@@ -134,7 +134,7 @@ impl LoadedResource {
                 }
             }
         }
-        format!("{:x}", hasher.finalize())
+        hex::encode(hasher.finalize())
     }
 }
 
@@ -591,7 +591,7 @@ pub(crate) fn read_bounded_file(
 }
 
 fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex::encode(Sha256::digest(bytes))
 }
 
 fn bounded(value: &str) -> String {

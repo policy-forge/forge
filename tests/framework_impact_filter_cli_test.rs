@@ -17,7 +17,7 @@ fn run(args: &[&str]) -> Output {
 fn write_json(path: &Path, value: &Value) -> String {
     let bytes = serde_json::to_vec_pretty(value).expect("serialize fixture");
     std::fs::write(path, &bytes).expect("write fixture");
-    format!("{:x}", Sha256::digest(&bytes))
+    hex::encode(Sha256::digest(&bytes))
 }
 
 fn catalog(uuid: &str, version: &str, groups: &[(&str, &[(&str, &str)])]) -> Value {
@@ -303,7 +303,7 @@ fn filters_reject_ambiguous_groups_invalid_values_and_unsafe_policy_hrefs() {
     }));
     let old_hash = write_json(&directory.path().join("old.json"), &old);
     let new_hash =
-        format!("{:x}", Sha256::digest(std::fs::read(directory.path().join("new.json")).unwrap()));
+        hex::encode(Sha256::digest(std::fs::read(directory.path().join("new.json")).unwrap()));
     write_json(&manifest, &impact_manifest(&old_hash, &new_hash));
     let ambiguous = run(&[
         "framework",

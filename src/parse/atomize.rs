@@ -70,7 +70,7 @@ pub struct AtomizationResult {
 pub fn preliminary_id(text: &str, source_line: usize, atom_index: usize) -> String {
     let input = format!("{text}|{source_line}|{atom_index}");
     let hash = Sha256::digest(input.as_bytes());
-    format!("{hash:x}")
+    hex::encode(hash)
 }
 
 /// Generate a preliminary ID scoped to a section's structural path.
@@ -86,7 +86,7 @@ fn preliminary_id_with_section(
 ) -> String {
     let input = format!("{section_context}|{text}|{source_line}|{atom_index}");
     let hash = Sha256::digest(input.as_bytes());
-    format!("{hash:x}")
+    hex::encode(hash)
 }
 
 /// Extract the shared subject from a compound statement.

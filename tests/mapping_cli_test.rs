@@ -14,7 +14,7 @@ fn write_json(path: &Path, value: &Value) {
 }
 
 fn sha256_file(path: &Path) -> String {
-    format!("{:x}", Sha256::digest(std::fs::read(path).expect("read fixture")))
+    hex::encode(Sha256::digest(std::fs::read(path).expect("read fixture")))
 }
 
 fn catalog(uuid: &str, ids: &[&str]) -> Value {

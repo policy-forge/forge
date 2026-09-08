@@ -1303,7 +1303,7 @@ fn map_migration_error(error: ForgeError) -> ForgeError {
 }
 
 fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex::encode(Sha256::digest(bytes))
 }
 
 fn impact_error(message: impl Into<String>) -> ForgeError {

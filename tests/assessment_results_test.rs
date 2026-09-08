@@ -43,7 +43,7 @@ fn write_json(path: &Path, value: &Value) -> Vec<u8> {
 }
 
 fn sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex::encode(Sha256::digest(bytes))
 }
 
 fn artifact(path: &str, href: &str, bytes: &[u8], value: &Value, root: &str) -> Value {

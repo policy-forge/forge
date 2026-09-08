@@ -123,7 +123,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         return Err(ForgeError::BinaryFile { path: path.to_path_buf() });
     }
 
-    let fingerprint = format!("{:x}", Sha256::digest(&bytes));
+    let fingerprint = hex::encode(Sha256::digest(&bytes));
 
     let content = match format {
         InputFormat::Markdown => String::from_utf8(bytes)
@@ -428,7 +428,7 @@ mod tests {
         // Independently compute expected SHA-256
         let mut hasher = Sha256::new();
         hasher.update(content.as_bytes());
-        let expected = format!("{:x}", hasher.finalize());
+        let expected = hex::encode(hasher.finalize());
         assert_eq!(doc.fingerprint, expected);
     }
 
