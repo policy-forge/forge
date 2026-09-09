@@ -237,6 +237,14 @@ pub enum ForgeError {
     #[error("Policy composition error: {0}")]
     PolicyComposition(String),
 
+    /// Invalid or unsafe local policy-authoring input or output.
+    #[error("Policy authoring error: {0}")]
+    Authoring(String),
+
+    /// A valid authoring plan contains unresolved gaps or required context.
+    #[error("Policy authoring action required")]
+    AuthoringActionRequired,
+
     /// Framework impact construction failed while preserving its source error.
     #[error("Framework impact analysis error: {context}: {source}")]
     FrameworkImpactWithSource {
@@ -518,6 +526,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::LifecycleActionRequired
         | ForgeError::ApplicabilityReviewRequired
         | ForgeError::FrameworkReviewRequired
+        | ForgeError::AuthoringActionRequired
         | ForgeError::AssessmentResultsReviewRequired
         | ForgeError::RoundTripFailed(_) => 1,
 
@@ -534,6 +543,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::FrameworkImpact(_)
         | ForgeError::FrameworkImpactWithSource { .. }
         | ForgeError::PolicyComposition(_)
+        | ForgeError::Authoring(_)
         | ForgeError::NoStructureDetected { .. }
         | ForgeError::Parse(_)
         | ForgeError::CatalogBuild(_)

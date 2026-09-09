@@ -313,6 +313,12 @@ pub enum Commands {
         command: PolicyCommand,
     },
 
+    /// Plan and build traceable policy skeletons from explicit local human inputs
+    Author {
+        #[command(subcommand)]
+        command: AuthorCommand,
+    },
+
     /// Inspect and validate project configuration (.forge.toml)
     Config {
         /// Config subcommands
@@ -841,6 +847,40 @@ pub enum ApplicabilityStateFilter {
     NotApplicable,
     Deferred,
     UnderReview,
+}
+
+/// Framework-guided policy drafting commands. Authoring state is separate from lifecycle state.
+#[derive(Debug, Subcommand)]
+pub enum AuthorCommand {
+    /// Validate exact baseline pins and report drafting work without generating policy prose
+    Plan {
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+        /// Optional new directory beneath the manifest's project root for plan reports
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+    },
+    /// Build Markdown skeletons with pinned human clauses and exact provenance
+    Build {
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+        /// New directory beneath the project root; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+    },
+}
+
+/// Authoring plan report formats.
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
+pub enum AuthorReportFormat {
+    Text,
+    Json,
 }
 
 /// Framework revision analysis commands.
@@ -1623,6 +1663,17 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 }
             }
         },
+        Commands::Author { command } => {
+            let action_required = match command {
+                AuthorCommand::Plan { manifest, format, output_dir } => {
+                    crate::authoring::execute(manifest, false, output_dir.as_deref(), format)?
+                }
+                AuthorCommand::Build { manifest, format, output_dir } => {
+                    crate::authoring::execute(manifest, true, Some(output_dir), format)?
+                }
+            };
+            if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }
+        }
         Commands::Framework { command } => match command {
             FrameworkCommand::Impact {
                 manifest,

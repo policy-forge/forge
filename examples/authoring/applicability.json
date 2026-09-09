@@ -1,0 +1,45 @@
+{
+  "schema_version": "forge.applicability/1",
+  "framework": {
+    "type": "catalog",
+    "artifact": "framework.json",
+    "href": "framework.json",
+    "resolved_catalog": null,
+    "resolved_catalog_attestation": null,
+    "expected_sha256": "bd2f4399bee74f92cbd5fe0b7c6c87c0b0f3b404f4b78390c061a7b80c78c48e",
+    "expected_resolved_catalog_sha256": null,
+    "inventory": {
+      "root_uuid": "11111111-1111-4111-8111-111111111111",
+      "document_version": "1.0.0",
+      "oscal_version": "1.2.3",
+      "control_ids": [
+        "sample-1",
+        "sample-2"
+      ],
+      "statement_ids": [],
+      "fingerprint_digest": "f5687e5d43e179cce9d3e41b63b02af5fcb15aa7cbd694a955aa48ab230ebf43"
+    }
+  },
+  "reviewers": [
+    {
+      "key": "synthetic-reviewer",
+      "type": "person",
+      "name": "Synthetic Reviewer"
+    }
+  ],
+  "decisions": [
+    {
+      "control_id": "sample-1",
+      "state": "applicable",
+      "reviewer_key": "synthetic-reviewer",
+      "reviewed_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "control_id": "sample-2",
+      "state": "applicable",
+      "reviewer_key": "synthetic-reviewer",
+      "reviewed_at": "2026-09-01T00:00:00Z"
+    }
+  ],
+  "mapping_collections": []
+}

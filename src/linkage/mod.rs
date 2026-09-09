@@ -1420,6 +1420,18 @@ fn validate_open_evidence(
     )))
 }
 
+/// Reuse the held-handle confinement and hard-link checks for another local workflow.
+/// The root must be an absolute, normalized directory and the path a descendant.
+pub(crate) fn read_confined_local_file(
+    root: &Path,
+    relative: &Path,
+    max_bytes: u64,
+) -> Result<(Vec<u8>, (u64, u64)), ForgeError> {
+    let (file, identity) = open_confined_evidence(root, relative, "input")?;
+    let bytes = read_open_evidence(file, max_bytes, "input")?;
+    Ok((bytes, (identity.volume, identity.file)))
+}
+
 fn read_open_evidence(
     file: File,
     max_bytes: u64,

@@ -32,6 +32,7 @@ fn main() -> ExitCode {
             | ForgeError::LifecycleActionRequired
             | ForgeError::ApplicabilityReviewRequired
             | ForgeError::FrameworkReviewRequired
+            | ForgeError::AuthoringActionRequired
             | ForgeError::AssessmentResultsReviewRequired,
         ) => ExitCode::from(1u8),
         Err(e) => {

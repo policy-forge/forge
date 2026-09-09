@@ -27,6 +27,12 @@ All three agents completed a read-only first
 pass before this interface freeze. Only the coordinator stages, commits,
 rebases, pushes, or opens the PR; Cargo builds run sequentially.
 
+Before final verification, origin advanced to
+`150115247f39f63ed449b2e10ec61c4a1d1de1c3`. The isolated branch was fast-forwarded
+to that freshly fetched baseline while preserving the authoring work. The
+complete integrated tree passed formatting, strict clippy, and the locked test
+suite (2,205 passed, 3 ignored) before candidate commits were created.
+
 ## Existing contracts and reuse
 
 - `applicability::model::ApplicabilityReport` is the existing typed, serialize-only

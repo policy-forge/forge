@@ -1,0 +1,84 @@
+{
+  "schema_version": "forge.author-project/1",
+  "project_key": "synthetic-project",
+  "project_root": ".",
+  "baseline": {
+    "framework_sha256": "bd2f4399bee74f92cbd5fe0b7c6c87c0b0f3b404f4b78390c061a7b80c78c48e",
+    "report_sha256": "66db11cfbf9f7479f10627c9e8b1d2636e7bbf39fe2d082afd4e767440339f2d"
+  },
+  "applicability_manifest": {
+    "path": "applicability.json",
+    "expected_sha256": "76adb8656a5356f67aa4e7bd9487ebd8c0be6e1c1ae4302c7d64f8d9dd9d4aaa"
+  },
+  "gap_report": {
+    "path": "gap-report.json",
+    "expected_sha256": "66db11cfbf9f7479f10627c9e8b1d2636e7bbf39fe2d082afd4e767440339f2d"
+  },
+  "authoring_pack": {
+    "path": "pack.json",
+    "expected_sha256": "e6dacd5683bf8175c91348ef6f5b4b085229dc776a6c1103c38ec3f8e507c82e"
+  },
+  "as_of": "2026-09-08T00:00:00Z",
+  "reviewers": [
+    {
+      "key": "synthetic-reviewer",
+      "name": "Synthetic Reviewer"
+    }
+  ],
+  "baseline_review": {
+    "reviewer_key": "synthetic-reviewer",
+    "reviewed_at": "2026-09-01T00:00:00Z",
+    "rationale": "Explicit synthetic fixture decision."
+  },
+  "policies": [
+    {
+      "key": "sample-policy",
+      "policy_family_key": "sample-family",
+      "title": "Sample policy draft"
+    }
+  ],
+  "answers": [
+    {
+      "key": "sample-answer",
+      "question_key": "sample-question",
+      "question_sha256": "0315325fffa6aff850b6c81bbaccc030a4ac369144662a8e3d1134b60f5a573c",
+      "authoring_pack_sha256": "e6dacd5683bf8175c91348ef6f5b4b085229dc776a6c1103c38ec3f8e507c82e",
+      "owner": "sample-owner",
+      "source_label": "Synthetic questionnaire",
+      "sensitivity": "internal",
+      "review": {
+        "reviewer_key": "synthetic-reviewer",
+        "reviewed_at": "2026-09-01T00:00:00Z",
+        "rationale": "Explicit synthetic fixture decision."
+      },
+      "state": "provided",
+      "value": "Fictional draft custodian"
+    }
+  ],
+  "deferrals": [],
+  "human_clauses": [
+    {
+      "key": "sample-clause",
+      "policy_key": "sample-policy",
+      "topic_key": "sample-topic",
+      "gap_ids": [
+        "a7c92203655ad70a787ffd2bd682111a845fdff84e73ee5f974c935f53944605"
+      ],
+      "answer_refs": [
+        {
+          "answer_key": "sample-answer",
+          "expected_sha256": "390631cd0391e5240b4256d1e886859c2be21e752e18770781d9fc6937414a97"
+        }
+      ],
+      "source": {
+        "path": "clause.md",
+        "expected_sha256": "9a64704ef43b2f4fb838389fbab16685d68a206ff71c2d02865454cffcfae89c"
+      },
+      "review": {
+        "reviewer_key": "synthetic-reviewer",
+        "reviewed_at": "2026-09-01T00:00:00Z",
+        "rationale": "Explicit synthetic fixture decision."
+      }
+    }
+  ]
+}
