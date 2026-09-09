@@ -1,0 +1,106 @@
+{
+  "schema_version": "forge.authoring-pack/1",
+  "pack_key": "synthetic-pack",
+  "version": "1.0.0",
+  "baseline": {
+    "framework_sha256": "bd2f4399bee74f92cbd5fe0b7c6c87c0b0f3b404f4b78390c061a7b80c78c48e",
+    "report_sha256": "66db11cfbf9f7479f10627c9e8b1d2636e7bbf39fe2d082afd4e767440339f2d"
+  },
+  "reviewers": [
+    {
+      "key": "synthetic-reviewer",
+      "name": "Synthetic Reviewer"
+    }
+  ],
+  "content_rights": {
+    "source_label": "Synthetic fixture",
+    "statement": "All fixture content is original synthetic text.",
+    "review": {
+      "reviewer_key": "synthetic-reviewer",
+      "reviewed_at": "2026-09-01T00:00:00Z",
+      "rationale": "Explicit synthetic fixture decision."
+    }
+  },
+  "topics": [
+    {
+      "key": "sample-topic",
+      "title": "Sample drafting section",
+      "order": 1,
+      "question_keys": [
+        "sample-question"
+      ]
+    },
+    {
+      "key": "independent-topic",
+      "title": "Independent drafting section",
+      "order": 2,
+      "question_keys": []
+    }
+  ],
+  "policy_families": [
+    {
+      "key": "sample-family",
+      "title": "Sample policy family"
+    }
+  ],
+  "questions": [
+    {
+      "key": "sample-question",
+      "prompt": "Which fictional role writes the draft?",
+      "type": "string",
+      "required": true,
+      "owner": "sample-owner",
+      "sensitivity": "internal",
+      "source_label": "Synthetic questionnaire",
+      "max_age_days": 30,
+      "constraints": {
+        "min_length": 1,
+        "max_length": 100
+      }
+    }
+  ],
+  "control_assignments": [
+    {
+      "key": "sample-control-topic",
+      "control_id": "sample-1",
+      "topic_key": "sample-topic",
+      "review": {
+        "reviewer_key": "synthetic-reviewer",
+        "reviewed_at": "2026-09-01T00:00:00Z",
+        "rationale": "Explicit synthetic fixture decision."
+      }
+    },
+    {
+      "key": "independent-control-topic",
+      "control_id": "sample-2",
+      "topic_key": "independent-topic",
+      "review": {
+        "reviewer_key": "synthetic-reviewer",
+        "reviewed_at": "2026-09-01T00:00:00Z",
+        "rationale": "Explicit synthetic fixture decision."
+      }
+    }
+  ],
+  "family_assignments": [
+    {
+      "key": "sample-topic-family",
+      "topic_key": "sample-topic",
+      "policy_family_key": "sample-family",
+      "review": {
+        "reviewer_key": "synthetic-reviewer",
+        "reviewed_at": "2026-09-01T00:00:00Z",
+        "rationale": "Explicit synthetic fixture decision."
+      }
+    },
+    {
+      "key": "independent-topic-family",
+      "topic_key": "independent-topic",
+      "policy_family_key": "sample-family",
+      "review": {
+        "reviewer_key": "synthetic-reviewer",
+        "reviewed_at": "2026-09-01T00:00:00Z",
+        "rationale": "Explicit synthetic fixture decision."
+      }
+    }
+  ]
+}

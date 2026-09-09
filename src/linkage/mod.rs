@@ -1420,6 +1420,62 @@ fn validate_open_evidence(
     )))
 }
 
+/// Reuse the held-handle confinement and hard-link checks for another local workflow.
+/// The root must be an absolute, normalized directory and the path a descendant.
+pub(crate) fn read_confined_local_file(
+    root: &Path,
+    relative: &Path,
+    max_bytes: u64,
+) -> Result<(Vec<u8>, (u64, u64)), ForgeError> {
+    if !root.is_absolute()
+        || root
+            .components()
+            .any(|component| matches!(component, Component::CurDir | Component::ParentDir))
+        || !has_normalized_path_spelling(root)
+    {
+        return Err(error("confined input root must be an absolute normalized directory"));
+    }
+    if relative.as_os_str().is_empty()
+        || relative.components().any(|component| !matches!(component, Component::Normal(_)))
+        || !has_normalized_path_spelling(relative)
+    {
+        return Err(error("confined input path must be a nonempty normalized descendant"));
+    }
+    let (file, identity) = open_confined_evidence(root, relative, "input")?;
+    let bytes = read_open_evidence(file, max_bytes, "input")?;
+    Ok((bytes, (identity.volume, identity.file)))
+}
+
+fn has_normalized_path_spelling(path: &Path) -> bool {
+    let normalized: PathBuf = path.components().collect();
+    // Components remove internal `.` and redundant separators. Compare the raw
+    // spelling too, while preserving both separator spellings accepted on Windows.
+    #[cfg(not(windows))]
+    {
+        path.as_os_str() == normalized.as_os_str()
+    }
+    #[cfg(windows)]
+    {
+        // Win32 can resolve these spellings as aliases of another component.
+        // Inspect only names, preserving drive, UNC, and verbatim prefixes.
+        if path.components().any(|component| {
+            matches!(
+                component,
+                Component::Normal(name)
+                    if name.as_encoded_bytes().last()
+                        .is_some_and(|byte| matches!(*byte, b' ' | b'.'))
+            )
+        }) {
+            return false;
+        }
+        let separator = |byte| if byte == b'/' { b'\\' } else { byte };
+        let original_bytes = path.as_os_str().as_encoded_bytes().iter().copied().map(separator);
+        let normalized_bytes =
+            normalized.as_os_str().as_encoded_bytes().iter().copied().map(separator);
+        original_bytes.eq(normalized_bytes)
+    }
+}
+
 fn read_open_evidence(
     file: File,
     max_bytes: u64,
@@ -2274,5 +2330,117 @@ mod tests {
         )
         .expect_err("intermediate symlink must fail closed");
         assert!(failure.to_string().contains("open evidence path component"));
+    }
+
+    #[test]
+    fn confined_local_file_rejects_relative_and_non_normalized_roots_before_io() {
+        let absolute = std::env::current_dir().expect("absolute current directory");
+        let append_raw = |suffix| {
+            // PathBuf::join can normalize verbatim Windows paths before validation.
+            let mut spelling = absolute.as_os_str().to_os_string();
+            spelling.push(std::path::MAIN_SEPARATOR_STR);
+            spelling.push(suffix);
+            PathBuf::from(spelling)
+        };
+        for root in [
+            PathBuf::new(),
+            PathBuf::from("."),
+            PathBuf::from("relative-root"),
+            append_raw(".."),
+            append_raw("missing/./nested"),
+            append_raw("missing//nested"),
+            append_raw("missing/"),
+        ] {
+            let failure = read_confined_local_file(&root, Path::new("missing.bin"), 10)
+                .expect_err("invalid root must fail before opening any file");
+            assert!(failure.to_string().contains("absolute normalized directory"), "{root:?}");
+        }
+    }
+
+    #[test]
+    fn confined_local_file_rejects_non_descendant_and_non_normalized_paths_before_io() {
+        let root = std::env::current_dir().expect("absolute current directory");
+        for relative in
+            ["", ".", "./file", "../file", "a/../file", "a/./file", "a//file", "a/file/"]
+        {
+            let failure = read_confined_local_file(&root, Path::new(relative), 10)
+                .expect_err("invalid descendant must fail before opening any file");
+            assert!(failure.to_string().contains("normalized descendant"), "{relative:?}");
+        }
+        let failure = read_confined_local_file(&root, &root.join("missing.bin"), 10)
+            .expect_err("absolute input path must fail before opening any file");
+        assert!(failure.to_string().contains("normalized descendant"));
+    }
+
+    #[cfg(any(unix, windows))]
+    #[test]
+    fn confined_local_file_accepts_normalized_descendant_with_portable_separators() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let root = directory.path().canonicalize().expect("canonical root");
+        std::fs::create_dir(root.join("nested")).expect("nested directory");
+        std::fs::write(root.join("nested/input.bin"), b"input").expect("input file");
+        let (bytes, _) = read_confined_local_file(&root, Path::new("nested/input.bin"), 10)
+            .expect("normalized descendant");
+        assert_eq!(bytes, b"input");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn confined_local_file_rejects_windows_dot_space_aliases_before_io() {
+        for root in [
+            r"C:\unused-root.",
+            r"C:\unused-root ",
+            r"C:\unused-root.\nested",
+            r"C:\unused-root \nested",
+            r"\\?\C:\unused-root.",
+            r"\\?\C:\unused-root \nested",
+            r"\\server\share\unused-root.",
+            r"\\?\UNC\server\share\unused-root ",
+        ] {
+            let failure = read_confined_local_file(Path::new(root), Path::new("input.bin"), 10)
+                .expect_err("root aliases must fail before local or network I/O");
+            assert!(failure.to_string().contains("absolute normalized directory"), "{root:?}");
+        }
+        for relative in
+            ["input.", "input ", "dir./input", "dir /input", r"dir.\input", r"dir \input"]
+        {
+            let failure =
+                read_confined_local_file(Path::new(r"C:\unused-root"), Path::new(relative), 10)
+                    .expect_err("descendant aliases must fail before I/O");
+            assert!(failure.to_string().contains("normalized descendant"), "{relative:?}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn normalized_windows_spellings_preserve_prefixes_and_valid_names() {
+        for path in [
+            r"C:\",
+            r"C:\project\policy.v1",
+            "C:/project/with spaces/input.bin",
+            r"\\?\C:\project\.hidden",
+            r"\\server\share\project",
+            r"\\?\UNC\server\share\project",
+            "with spaces/policy.v1",
+            r"with spaces\policy.v1",
+        ] {
+            assert!(has_normalized_path_spelling(Path::new(path)), "{path:?}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn confined_local_file_preserves_legal_unix_dot_space_names() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let base = directory.path().canonicalize().expect("canonical base");
+        for suffix in [".", " "] {
+            let root = base.join(format!("root{suffix}"));
+            let filename = format!("input{suffix}");
+            std::fs::create_dir(&root).expect("root directory");
+            std::fs::write(root.join(&filename), b"input").expect("input file");
+            let (bytes, _) = read_confined_local_file(&root, Path::new(&filename), 10)
+                .expect("Unix names must retain their exact spelling");
+            assert_eq!(bytes, b"input");
+        }
     }
 }

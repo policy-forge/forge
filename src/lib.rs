@@ -32,6 +32,8 @@ pub const DEFAULT_MAX_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 pub mod applicability;
 /// Human-authored OSCAL Assessment Results construction and revision review.
 pub mod assessment_results;
+/// Local framework-guided drafting plans, human clauses, and traceable skeletons.
+pub mod authoring;
 /// Batch processing: parallel conversion of multiple policy files.
 pub mod batch;
 /// Citation extraction from normative requirement text.

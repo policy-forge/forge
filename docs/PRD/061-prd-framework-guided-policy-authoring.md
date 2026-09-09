@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** Draft
-> **Last Updated:** 2026-08-24 <!-- @auto -->
+> **Status:** In Progress — Phase 1 technical foundation; human gates pending
+> **Last Updated:** 2026-09-09 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `061-framework-guided-policy-authoring`
 **Created**: 2026-08-24
-**Status**: Draft
+**Status**: In Progress — Phase 1 technical foundation; human gates pending
 **Input**: Post-v1.3 product planning
 
 ---
@@ -182,6 +182,24 @@ Draft state is one of `planned`, `blocked-context`, `skeleton-ready`, or `human-
 - **Phase 1:** Plan, questions, skeletons, human clause files, and provenance.
 - **Phase 2:** PRD 059 components, impact analysis, static HTML, and lifecycle handoff.
 - **Phase 3:** Design-partner authoring packs and measured gap-to-draft exercises.
+
+### Phase 1 technical disposition
+
+The [Phase 1 implementation plan](../authoring-phase1-plan.md) freezes the local
+contracts, exact PRD-056 baseline binding, explicit human assignments and answers,
+Markdown skeletons, human clause files, provenance, and atomic output boundary.
+This tranche proceeds as a technical foundation with all human readiness,
+legal/content, design-partner, pilot, and release gates visibly pending.
+The release gate includes public Rust API semver and migration review: new
+variants in exhaustive error and CLI enums can break downstream exhaustive
+matches. This tranche does not claim that source-compatibility gate is complete.
+
+**M-13 remains unchecked and deferred to Phase 2.** Its MVP Must Have label is
+inconsistent with the phase allocation above; this tranche explicitly follows
+the Phase 2 allocation. Rejecting stale source hashes does not implement baseline
+impact analysis. The PRD-059 component branch of M-9, static HTML, and lifecycle
+handoff also remain Phase 2. Phase 1 completion cannot establish that all MVP
+Must Haves or PRD-061 as a whole are complete.
 
 ## Risks and Mitigations :yellow_circle: `@human-review`
 

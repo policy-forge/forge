@@ -1,0 +1,438 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/authoring-pack/1",
+  "title": "FORGE authoring-pack Phase 1",
+  "description": "Closed local Phase 1 authoring-pack contract. Runtime additionally rejects decoded duplicate keys, duplicate logical keys and relationships, dangling pack references, and incompatible question constraints. Reviewer metadata is asserted provenance.",
+  "$comment": "Runtime enforces a 2 MiB document byte limit, depth 32, a 16 KiB UTF-8 string bound, valid calendar timestamps, and source-label rules. JSON Schema lengths count Unicode characters. Timestamp patterns are lexical; runtime performs full timestamp validation. Baseline fingerprints are matched to project inputs when the pack is loaded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_key",
+    "version",
+    "baseline",
+    "reviewers",
+    "content_rights",
+    "topics",
+    "policy_families",
+    "questions",
+    "control_assignments",
+    "family_assignments"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.authoring-pack/1"
+    },
+    "pack_key": {
+      "$ref": "#/$defs/key"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 128,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "baseline": {
+      "$ref": "#/$defs/baseline"
+    },
+    "reviewers": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/reviewer"
+      }
+    },
+    "content_rights": {
+      "$ref": "#/$defs/content_rights"
+    },
+    "topics": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/topic"
+      }
+    },
+    "policy_families": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/policy_family"
+      }
+    },
+    "questions": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/question"
+      }
+    },
+    "control_assignments": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/control_assignment"
+      }
+    },
+    "family_assignments": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/family_assignment"
+      }
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "pattern": "[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060-\\u2064\\u3000\\ufeff\\ufff9-\\ufffb]",
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])[Tt ](?:[01][0-9]|2[0-3]):[0-5][0-9]:(?:[0-5][0-9]|60)(?:\\.[0-9]+)?(?:[Zz]|[+\\-\\u2212](?:[01][0-9]|2[0-3]):[0-5][0-9])$(?![\\s\\S])",
+      "$comment": "Lexical guard preserves Chrono RFC 3339 spellings, including lowercase t/z, space, leap seconds, Unicode minus, and fractional precision. Runtime validates calendar dates and the 64-byte bound; JSON Schema maxLength counts characters. Standard date-time format assertions are intentionally absent because they can reject these runtime-accepted spellings."
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 16384
+        },
+        {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "type": "string",
+            "maxLength": 16384
+          }
+        }
+      ]
+    },
+    "sensitivity": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ]
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "framework_sha256",
+        "report_sha256"
+      ],
+      "properties": {
+        "framework_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "resolved_catalog_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "report_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "name"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "name": {
+          "$ref": "#/$defs/single_line"
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_key",
+        "reviewed_at",
+        "rationale"
+      ],
+      "properties": {
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "reviewed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "rationale": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "content_rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_label",
+        "statement",
+        "review"
+      ],
+      "properties": {
+        "source_label": {
+          "$ref": "#/$defs/label"
+        },
+        "statement": {
+          "$ref": "#/$defs/text"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "topic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "order",
+        "question_keys"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "title": {
+          "$ref": "#/$defs/single_line"
+        },
+        "order": {
+          "description": "Sections are sorted by (order, topic key); equal order values are legal and use the stable key as the tie-break.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "question_keys": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "policy_family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "title": {
+          "$ref": "#/$defs/single_line"
+        }
+      }
+    },
+    "control_assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "control_id",
+        "topic_key",
+        "review"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "control_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^\\S+$"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "family_assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "topic_key",
+        "policy_family_key",
+        "review"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "policy_family_key": {
+          "$ref": "#/$defs/key"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "question_constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "min_length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "max_length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "min_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "max_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "regex": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "allowed_values": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/value"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "prompt",
+        "type",
+        "required",
+        "owner",
+        "sensitivity",
+        "source_label",
+        "constraints"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "prompt": {
+          "$ref": "#/$defs/text"
+        },
+        "type": {
+          "enum": [
+            "string",
+            "integer",
+            "boolean",
+            "string-list"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "owner": {
+          "$ref": "#/$defs/key"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        },
+        "source_label": {
+          "$ref": "#/$defs/label"
+        },
+        "max_age_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36500
+        },
+        "constraints": {
+          "$ref": "#/$defs/question_constraints"
+        }
+      }
+    },
+    "single_line": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/text"
+        }
+      ],
+      "pattern": "^[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000](?:[\\s\\S]*[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000])?$(?![\\s\\S])",
+      "not": {
+        "pattern": "[\\n\\r\\t]"
+      }
+    },
+    "label": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/single_line"
+        }
+      ],
+      "not": {
+        "pattern": "^(?:[/\\\\]|[A-Za-z]:[/\\\\]|[Ff][Ii][Ll][Ee]:)"
+      },
+      "$comment": "Human source labels allow ordinary colons and punctuation; only rooted local paths and file URIs are prohibited."
+    }
+  }
+}

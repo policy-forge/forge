@@ -1,0 +1,434 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/author-project/1",
+  "title": "FORGE author-project Phase 1",
+  "description": "Local Phase 1 technical contract. Runtime additionally rejects decoded duplicate keys, noncanonical paths, duplicate logical keys/edges, invalid reference and constraint relationships, and enforces exact input pins. Reviewer metadata is provenance only.",
+  "$comment": "Runtime enforces a 2 MiB byte limit, depth 32, 16 KiB UTF-8 string bound, calendar-valid timestamps, source-label/path semantics, and cross-record validation beyond JSON Schema. Schema lengths count Unicode characters. Enable format assertions when validating date fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_key",
+    "project_root",
+    "baseline",
+    "applicability_manifest",
+    "gap_report",
+    "authoring_pack",
+    "as_of",
+    "reviewers",
+    "baseline_review",
+    "policies",
+    "answers",
+    "deferrals",
+    "human_clauses"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.author-project/1"
+    },
+    "project_key": {
+      "$ref": "#/$defs/key"
+    },
+    "project_root": {
+      "const": "."
+    },
+    "baseline": {
+      "$ref": "#/$defs/baseline"
+    },
+    "applicability_manifest": {
+      "$ref": "#/$defs/pinned_file"
+    },
+    "gap_report": {
+      "$ref": "#/$defs/pinned_file"
+    },
+    "authoring_pack": {
+      "$ref": "#/$defs/pinned_file"
+    },
+    "as_of": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "reviewers": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/reviewer"
+      }
+    },
+    "baseline_review": {
+      "$ref": "#/$defs/review"
+    },
+    "policies": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/policy"
+      }
+    },
+    "answers": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/answer"
+      }
+    },
+    "deferrals": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/deferral"
+      }
+    },
+    "human_clauses": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/human_clause"
+      }
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "pattern": "[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060-\\u2064\\u3000\\ufeff\\ufff9-\\ufffb]",
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])[Tt ](?:[01][0-9]|2[0-3]):[0-5][0-9]:(?:[0-5][0-9]|60)(?:\\.[0-9]+)?(?:[Zz]|[+\\-\\u2212](?:[01][0-9]|2[0-3]):[0-5][0-9])$(?![\\s\\S])",
+      "$comment": "Lexical guard preserves Chrono RFC 3339 spellings, including lowercase t/z, space, leap seconds, Unicode minus, and fractional precision. Runtime validates calendar dates and the 64-byte bound; JSON Schema maxLength counts characters. Standard date-time format assertions are intentionally absent because they can reject these runtime-accepted spellings."
+    },
+    "path": {
+      "$comment": "Runtime additionally rejects unsafe/control characters, reserved device names, whitespace/dot aliases and components over 255 UTF-8 bytes. Character-count limits here are preflight only; confined reads reject filesystem aliases and symlinks.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*(?:\\\\|:|//))(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[/]$).+$"
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 16384
+        },
+        {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "type": "string",
+            "maxLength": 16384
+          }
+        }
+      ]
+    },
+    "sensitivity": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ]
+    },
+    "pinned_file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "expected_sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "framework_sha256",
+        "report_sha256"
+      ],
+      "properties": {
+        "framework_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "resolved_catalog_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "report_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "name"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "name": {
+          "$ref": "#/$defs/single_line"
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_key",
+        "reviewed_at",
+        "rationale"
+      ],
+      "properties": {
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "reviewed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "rationale": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "policy_family_key",
+        "title"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "policy_family_key": {
+          "$ref": "#/$defs/key"
+        },
+        "title": {
+          "$ref": "#/$defs/single_line"
+        }
+      }
+    },
+    "answer_pin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer_key",
+        "expected_sha256"
+      ],
+      "properties": {
+        "answer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "deferral": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "gap_id",
+        "review"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "gap_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        },
+        "revisit_date": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      }
+    },
+    "human_clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "policy_key",
+        "topic_key",
+        "gap_ids",
+        "answer_refs",
+        "source",
+        "review"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "gap_ids": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "answer_refs": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/answer_pin"
+          }
+        },
+        "source": {
+          "$ref": "#/$defs/pinned_file"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        }
+      }
+    },
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "question_key",
+        "question_sha256",
+        "authoring_pack_sha256",
+        "owner",
+        "source_label",
+        "sensitivity",
+        "review",
+        "state"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "question_key": {
+          "$ref": "#/$defs/key"
+        },
+        "question_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authoring_pack_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "owner": {
+          "$ref": "#/$defs/key"
+        },
+        "source_label": {
+          "$ref": "#/$defs/label"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "state": {
+          "enum": [
+            "provided",
+            "no-answer"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/value"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "provided"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "value"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "single_line": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/text"
+        }
+      ],
+      "pattern": "^[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000](?:[\\s\\S]*[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000])?$(?![\\s\\S])",
+      "not": {
+        "pattern": "[\\n\\r\\t]"
+      }
+    },
+    "label": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/single_line"
+        }
+      ],
+      "not": {
+        "pattern": "^(?:[/\\\\]|[A-Za-z]:[/\\\\]|[Ff][Ii][Ll][Ee]:)"
+      },
+      "$comment": "Human source labels allow ordinary colons and punctuation; only rooted local paths and file URIs are prohibited."
+    }
+  }
+}

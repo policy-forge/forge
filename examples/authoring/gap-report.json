@@ -1,0 +1,67 @@
+{
+  "schema_version": "forge.applicability-report/1",
+  "manifest_sha256": "76adb8656a5356f67aa4e7bd9487ebd8c0be6e1c1ae4302c7d64f8d9dd9d4aaa",
+  "framework": {
+    "resource_type": "catalog",
+    "href": "framework.json",
+    "raw_sha256": "bd2f4399bee74f92cbd5fe0b7c6c87c0b0f3b404f4b78390c061a7b80c78c48e",
+    "root_uuid": "11111111-1111-4111-8111-111111111111",
+    "document_version": "1.0.0",
+    "oscal_version": "1.2.3"
+  },
+  "mapping_collections": [],
+  "reviewers": [
+    {
+      "key": "synthetic-reviewer",
+      "type": "person",
+      "name": "Synthetic Reviewer"
+    }
+  ],
+  "counts": {
+    "total": 2,
+    "applicable_mapped": 0,
+    "applicable_reviewed_no_relationship": 0,
+    "applicable_unmapped": 2,
+    "not_applicable": 0,
+    "deferred": 0,
+    "under_review": 0
+  },
+  "filters": {},
+  "matched_controls": 2,
+  "controls": [
+    {
+      "control_id": "sample-1",
+      "groups": [],
+      "classification": "applicable-unmapped",
+      "reviewer_key": "synthetic-reviewer",
+      "reviewed_at": "2026-09-01T00:00:00Z",
+      "positive_mapping_count": 0,
+      "no_relationship_count": 0,
+      "policy_sources": []
+    },
+    {
+      "control_id": "sample-2",
+      "groups": [],
+      "classification": "applicable-unmapped",
+      "reviewer_key": "synthetic-reviewer",
+      "reviewed_at": "2026-09-01T00:00:00Z",
+      "positive_mapping_count": 0,
+      "no_relationship_count": 0,
+      "policy_sources": []
+    }
+  ],
+  "review_queue": [
+    {
+      "control_id": "sample-1",
+      "reason_code": "no-reviewed-mapping",
+      "owner": "synthetic-reviewer",
+      "policy_sources": []
+    },
+    {
+      "control_id": "sample-2",
+      "reason_code": "no-reviewed-mapping",
+      "owner": "synthetic-reviewer",
+      "policy_sources": []
+    }
+  ]
+}
