@@ -1,0 +1,43 @@
+{
+  "schema_version": "forge.author-project/1",
+  "project_key": "synthetic-project",
+  "project_root": ".",
+  "baseline": {
+    "framework_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "report_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "applicability_manifest": {
+    "path": "applicability.json",
+    "expected_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "gap_report": {
+    "path": "gap-report.json",
+    "expected_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "authoring_pack": {
+    "path": "pack.json",
+    "expected_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "as_of": "2026-09-08T00:00:00Z",
+  "reviewers": [
+    {
+      "key": "synthetic-reviewer",
+      "name": "Synthetic Reviewer"
+    }
+  ],
+  "baseline_review": {
+    "reviewer_key": "synthetic-reviewer",
+    "reviewed_at": "2026-09-01T00:00:00Z",
+    "rationale": "Explicit synthetic fixture decision."
+  },
+  "policies": [
+    {
+      "key": "sample-policy",
+      "policy_family_key": "sample-family",
+      "title": "Sample policy draft"
+    }
+  ],
+  "answers": [],
+  "deferrals": [],
+  "human_clauses": []
+}
