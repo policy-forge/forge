@@ -5,6 +5,28 @@ use std::path::{Path, PathBuf};
 
 use forge::model::{DocumentMetadata, PolicyDocument, PolicyRequirement, PolicySection};
 
+use sha2::{Digest, Sha256};
+
+/// SHA-256 fingerprint as 64 lowercase hexadecimal characters.
+///
+/// Mirrors the production representation in `src/hashing.rs` (digest outputs
+/// lost their `LowerHex` impl in the sha2 0.11 stack, so bytes are encoded
+/// explicitly).
+pub fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    let mut hex = String::with_capacity(digest.len() * 2);
+    for &byte in &digest {
+        use std::fmt::Write as _;
+        let _ = write!(hex, "{byte:02x}");
+    }
+    hex
+}
+
+/// SHA-256 fingerprint of one file's contents.
+pub fn sha256_file(path: &std::path::Path) -> String {
+    sha256_hex(&std::fs::read(path).expect("read fixture"))
+}
+
 /// Normalize a JSON value for stable snapshot comparison.
 ///
 /// Replaces dynamic fields with stable placeholder values so that

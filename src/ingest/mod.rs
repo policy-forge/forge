@@ -425,10 +425,16 @@ mod tests {
             doc.fingerprint
         );
 
-        // Independently compute expected SHA-256
+        // Independently compute expected SHA-256. The hex encoding is also
+        // computed independently of the shared src/hashing.rs helper so a
+        // broken shared encoder cannot make both sides agree.
         let mut hasher = Sha256::new();
         hasher.update(content.as_bytes());
-        let expected = format!("{:x}", hasher.finalize());
+        let mut expected = String::new();
+        for byte in hasher.finalize() {
+            use std::fmt::Write as _;
+            let _ = write!(expected, "{byte:02x}");
+        }
         assert_eq!(doc.fingerprint, expected);
     }
 

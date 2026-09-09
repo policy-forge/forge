@@ -3,18 +3,14 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use sha2::{Digest, Sha256};
-
 use serde_json::{Value, json};
 use tempfile::TempDir;
+
+mod common;
 
 fn write_json(path: &Path, value: &Value) {
     std::fs::write(path, serde_json::to_vec_pretty(value).expect("serialize fixture"))
         .expect("write fixture");
-}
-
-fn sha256_file(path: &Path) -> String {
-    format!("{:x}", Sha256::digest(std::fs::read(path).expect("read fixture")))
 }
 
 fn catalog(uuid: &str, ids: &[&str]) -> Value {
@@ -510,7 +506,7 @@ fn profile_requires_and_records_resolved_catalog_companion() {
         "type": "profile",
         "artifact": "target-profile.json",
         "resolved_catalog": "target.json",
-        "expected_resolved_catalog_sha256": sha256_file(&dir.path().join("target.json")),
+        "expected_resolved_catalog_sha256": common::sha256_file(&dir.path().join("target.json")),
         "resolved_catalog_attestation": true,
         "href": "target-profile.json"
     });
@@ -559,7 +555,7 @@ fn baseline_check_rejects_resolved_catalog_companion_hash_changes() {
         "artifact": "target-profile.json",
         "resolved_catalog": "target.json",
         "resolved_catalog_attestation": true,
-        "expected_resolved_catalog_sha256": sha256_file(&dir.path().join("target.json")),
+        "expected_resolved_catalog_sha256": common::sha256_file(&dir.path().join("target.json")),
         "href": "target-profile.json"
     });
     write_json(&manifest_path, &profile_manifest);

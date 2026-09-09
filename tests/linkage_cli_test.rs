@@ -4,7 +4,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
+
+mod common;
 
 fn run_in(directory: &Path, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_forge"))
@@ -17,10 +18,6 @@ fn run_in(directory: &Path, args: &[&str]) -> Output {
 fn write_json(path: &Path, value: &Value) {
     std::fs::write(path, serde_json::to_vec_pretty(value).expect("serialize fixture"))
         .expect("write fixture");
-}
-
-fn file_hash(path: &Path) -> String {
-    format!("{:x}", Sha256::digest(std::fs::read(path).expect("read fixture")))
 }
 
 fn catalog() -> Value {
@@ -116,14 +113,14 @@ impl Fixture {
                     "type": "catalog",
                     "artifact": "catalog.json",
                     "href": "catalog.json",
-                    "expected_sha256": file_hash(&catalog_path)
+                    "expected_sha256": common::sha256_file(&catalog_path)
                 }],
                 "implementation_resource": {
                     "key": "implementation",
                     "type": "component-definition",
                     "artifact": "component.json",
                     "href": "component.json",
-                    "expected_sha256": file_hash(&implementation_path)
+                    "expected_sha256": common::sha256_file(&implementation_path)
                 },
                 "evidence_roots": [{"key": "local", "path": "evidence"}],
                 "evidence": [{
@@ -139,7 +136,7 @@ impl Fixture {
                         "kind": "local",
                         "root_key": "local",
                         "path": "record.bin",
-                        "expected_sha256": file_hash(&evidence),
+                        "expected_sha256": common::sha256_file(&evidence),
                         "expected_size": std::fs::metadata(&evidence).unwrap().len()
                     }
                 }],
@@ -540,7 +537,7 @@ fn profile_requirement_requires_and_fingerprints_reviewed_companion() {
         "type": "profile",
         "artifact": "profile.json",
         "href": "profile.json",
-        "expected_sha256": file_hash(&profile_path)
+        "expected_sha256": common::sha256_file(&profile_path)
     });
     write_json(&fixture.manifest, &manifest);
     let output = fixture.dir.path().join("index.json");
@@ -551,7 +548,7 @@ fn profile_requirement_requires_and_fingerprints_reviewed_companion() {
     manifest["requirement_resources"][0]["resolved_catalog"] = json!("catalog.json");
     manifest["requirement_resources"][0]["resolved_catalog_attestation"] = json!(false);
     manifest["requirement_resources"][0]["expected_resolved_catalog_sha256"] =
-        json!(file_hash(&catalog_path));
+        json!(common::sha256_file(&catalog_path));
     write_json(&fixture.manifest, &manifest);
     let unreviewed_companion = fixture.build(&output, &[]);
     assert_eq!(unreviewed_companion.status.code(), Some(2));
@@ -564,13 +561,14 @@ fn profile_requirement_requires_and_fingerprints_reviewed_companion() {
     let index: Value = serde_json::from_slice(&std::fs::read(output).unwrap()).unwrap();
     assert_eq!(
         index["provenance"]["requirement_resources"][0]["resolved_catalog_sha256"],
-        file_hash(&catalog_path)
+        common::sha256_file(&catalog_path)
     );
 
     manifest["requirement_resources"][0]["type"] = json!("catalog");
     manifest["requirement_resources"][0]["artifact"] = json!("catalog.json");
     manifest["requirement_resources"][0]["href"] = json!("catalog.json");
-    manifest["requirement_resources"][0]["expected_sha256"] = json!(file_hash(&catalog_path));
+    manifest["requirement_resources"][0]["expected_sha256"] =
+        json!(common::sha256_file(&catalog_path));
     write_json(&fixture.manifest, &manifest);
     let invalid_output = fixture.dir.path().join("catalog-with-companion.json");
     let catalog_with_companion = fixture.build(&invalid_output, &[]);
@@ -656,7 +654,8 @@ fn baseline_distinguishes_subject_content_and_relationship_edits() {
     write_json(&implementation_path, &implementation);
     let mut manifest: Value =
         serde_json::from_slice(&std::fs::read(&fixture.manifest).unwrap()).unwrap();
-    manifest["implementation_resource"]["expected_sha256"] = json!(file_hash(&implementation_path));
+    manifest["implementation_resource"]["expected_sha256"] =
+        json!(common::sha256_file(&implementation_path));
     manifest["links"][0]["evidence_keys"] = json!([]);
     manifest["links"][0]["evidence_required"] = json!(false);
     write_json(&fixture.manifest, &manifest);
@@ -759,14 +758,14 @@ fn system_security_plan_implemented_requirements_are_schema_valid_subjects() {
                 "type": "catalog",
                 "artifact": "catalog.json",
                 "href": "catalog.json",
-                "expected_sha256": file_hash(&catalog_path)
+                "expected_sha256": common::sha256_file(&catalog_path)
             }],
             "implementation_resource": {
                 "key": "ssp",
                 "type": "system-security-plan",
                 "artifact": "ssp.json",
                 "href": "ssp.json",
-                "expected_sha256": file_hash(&ssp_path)
+                "expected_sha256": common::sha256_file(&ssp_path)
             },
             "links": [{
                 "key": "ssp-link",
