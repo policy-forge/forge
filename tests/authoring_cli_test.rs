@@ -1,5 +1,6 @@
 //! PRD-061 Phase 1 CLI, containment, baseline, and end-to-end provenance contracts.
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -121,6 +122,60 @@ impl Fixture {
         write_json(&self.root.join("project.json"), &self.project);
     }
 
+    fn refresh_baseline(&mut self, manifest_path: &str) {
+        assert!(self.project["answers"].as_array().unwrap().is_empty());
+        let old_report_hash =
+            self.project["baseline"]["report_sha256"].as_str().unwrap().to_owned();
+        let old_report: Value =
+            serde_json::from_slice(&std::fs::read(self.root.join("gap-report.json")).unwrap())
+                .unwrap();
+        let output = run(
+            &self.root,
+            &["applicability", "analyze", "--manifest", manifest_path, "--format", "json"],
+        );
+        assert_exit(&output, 0);
+        let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let report_hash = hash(&output.stdout);
+        let remap_gap = |old_gap: &Value| {
+            let control = old_report["controls"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|control| {
+                    forge::authoring::manifest::gap_id(
+                        &old_report_hash,
+                        control["control_id"].as_str().unwrap(),
+                    ) == old_gap.as_str().unwrap()
+                })
+                .unwrap();
+            Value::String(forge::authoring::manifest::gap_id(
+                &report_hash,
+                control["control_id"].as_str().unwrap(),
+            ))
+        };
+        for deferral in self.project["deferrals"].as_array_mut().unwrap() {
+            deferral["gap_id"] = remap_gap(&deferral["gap_id"]);
+        }
+        for clause in self.project["human_clauses"].as_array_mut().unwrap() {
+            for gap in clause["gap_ids"].as_array_mut().unwrap() {
+                *gap = remap_gap(gap);
+            }
+        }
+        let baseline = json!({
+            "framework_sha256":report["framework"]["raw_sha256"],
+            "report_sha256":report_hash
+        });
+        self.project["baseline"] = baseline.clone();
+        self.pack["baseline"] = baseline;
+        self.project["applicability_manifest"] = json!({
+            "path":manifest_path,
+            "expected_sha256":hash(&std::fs::read(self.root.join(manifest_path)).unwrap())
+        });
+        self.project["gap_report"]["expected_sha256"] = report_hash.into();
+        std::fs::write(self.root.join("gap-report.json"), &output.stdout).unwrap();
+        self.save();
+    }
+
     fn answer(&mut self, value: Value) {
         let question: forge::authoring::manifest::Question =
             serde_json::from_value(self.pack["questions"][0].clone()).unwrap();
@@ -180,6 +235,7 @@ impl Fixture {
     }
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn output_tree(root: &Path) -> BTreeMap<String, Vec<u8>> {
     fn visit(base: &Path, path: &Path, files: &mut BTreeMap<String, Vec<u8>>) {
         for entry in std::fs::read_dir(path).unwrap() {
@@ -285,6 +341,30 @@ fn age_expiry_and_optional_unanswered_context_are_explicit() {
 }
 
 #[test]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn optional_context_pinned_by_a_clause_uses_a_truthful_blocking_marker() {
+    let mut fixture = Fixture::new();
+    fixture.pack["questions"][0]["required"] = json!(false);
+    fixture.save();
+    fixture.answered_clause();
+    fixture.project["answers"][0]["state"] = json!("no-answer");
+    fixture.project["answers"][0].as_object_mut().unwrap().remove("value");
+    let answer: forge::authoring::manifest::Answer =
+        serde_json::from_value(fixture.project["answers"][0].clone()).unwrap();
+    fixture.project["human_clauses"][1]["answer_refs"][0]["expected_sha256"] =
+        forge::authoring::manifest::answer_sha256(&answer).unwrap().into();
+    fixture.save();
+
+    assert_exit(&fixture.build("drafts"), 1);
+    let markdown =
+        std::fs::read_to_string(fixture.root.join("drafts/policies/access-policy.md")).unwrap();
+    assert!(markdown.contains("UNRESOLVED OPTIONAL CONTEXT"));
+    assert!(markdown.contains("Unresolved context prevents inclusion of human clauses"));
+    assert!(!markdown.contains("Required context prevents"));
+    assert!(!markdown.contains("fictional café team"));
+}
+
+#[test]
 fn exact_source_fingerprint_mismatches_fail_without_output() {
     for file in
         ["framework.json", "applicability.json", "gap-report.json", "pack.json", "clause.md"]
@@ -332,6 +412,204 @@ fn assignment_and_deferral_conflicts_are_rejected() {
     fixture.project["deferrals"][0]["gap_id"] = fixture.gap_id("c-1").into();
     fixture.save();
     assert_exit(&fixture.plan(), 2);
+}
+
+#[test]
+fn imported_baseline_accepts_upstream_sized_rationale_and_framework_prose() {
+    let mut fixture = Fixture::new();
+    let framework_path = fixture.root.join("framework.json");
+    let mut framework: Value =
+        serde_json::from_slice(&std::fs::read(&framework_path).unwrap()).unwrap();
+    let prose = "Synthetic ".repeat(7 * 1024);
+    assert_eq!(prose.len(), 70 * 1024);
+    framework["catalog"]["controls"][0]["parts"] = json!([{
+        "id":"c-1-statement", "name":"statement", "prose":prose
+    }]);
+    write_json(&framework_path, &framework);
+    let initial = run(&fixture.root, &["applicability", "init", "--framework", "framework.json"]);
+    assert_exit(&initial, 0);
+    let scaffold: Value = serde_json::from_slice(&initial.stdout).unwrap();
+    let manifest_path = fixture.root.join("applicability.json");
+    let mut applicability: Value =
+        serde_json::from_slice(&std::fs::read(&manifest_path).unwrap()).unwrap();
+    applicability["framework"] = scaffold["framework"].clone();
+    let rationale = "Synthetic ".repeat(2048);
+    assert_eq!(rationale.len(), 20 * 1024);
+    applicability["decisions"][0]["rationale"] = rationale.clone().into();
+    applicability["decisions"][1]["note"] = rationale.clone().into();
+    write_json(&manifest_path, &applicability);
+    fixture.refresh_baseline("applicability.json");
+    let report: Value =
+        serde_json::from_slice(&std::fs::read(fixture.root.join("gap-report.json")).unwrap())
+            .unwrap();
+    assert_eq!(report["controls"][0]["rationale"], rationale);
+    assert_eq!(report["controls"][1]["note"], rationale);
+    let output = fixture.plan();
+    assert_exit(&output, 1);
+    let plan: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(plan["counts"], json!({"total":4,"assigned":2,"deferred":1,"unresolved":1}));
+    assert_eq!(
+        plan["provenance"]["framework"]["raw_sha256"],
+        hash(&std::fs::read(framework_path).unwrap())
+    );
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    assert_exit(&fixture.build("drafts"), 1);
+}
+
+#[test]
+fn imported_applicability_manifest_above_two_mib_keeps_its_exact_byte_pin() {
+    let mut fixture = Fixture::new();
+    let path = fixture.root.join("applicability.json");
+    let mut bytes = std::fs::read(&path).unwrap();
+    bytes.resize(2 * 1024 * 1024 + 1, b' ');
+    std::fs::write(&path, &bytes).unwrap();
+    fixture.refresh_baseline("applicability.json");
+    let output = fixture.plan();
+    assert_exit(&output, 1);
+    let plan: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let fingerprint = plan["provenance"]["inputs"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|input| input["role"] == "applicability-manifest")
+        .unwrap();
+    assert_eq!(fingerprint["sha256"], hash(&bytes));
+    assert_eq!(fingerprint["byte_length"].as_u64().unwrap(), u64::try_from(bytes.len()).unwrap());
+    assert_eq!(fixture.project["applicability_manifest"]["expected_sha256"], hash(&bytes));
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    assert_exit(&fixture.build("drafts"), 1);
+}
+
+#[test]
+fn nested_applicability_manifest_can_reference_its_contained_parent_framework() {
+    let mut fixture = Fixture::new();
+    let mut applicability: Value =
+        serde_json::from_slice(&std::fs::read(fixture.root.join("applicability.json")).unwrap())
+            .unwrap();
+    applicability["framework"]["artifact"] = "../framework.json".into();
+    std::fs::create_dir(fixture.root.join("baselines")).unwrap();
+    write_json(&fixture.root.join("baselines/applicability.json"), &applicability);
+    fixture.refresh_baseline("baselines/applicability.json");
+    let output = fixture.plan();
+    assert_exit(&output, 1);
+    let plan: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let inputs = plan["provenance"]["inputs"].as_array().unwrap();
+    assert!(inputs.iter().any(|input| input["role"] == "applicability-manifest"
+        && input["path"] == "baselines/applicability.json"));
+    assert!(
+        inputs
+            .iter()
+            .any(|input| input["role"] == "framework" && input["path"] == "framework.json")
+    );
+    assert_eq!(plan["counts"], json!({"total":4,"assigned":2,"deferred":1,"unresolved":1}));
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    assert_exit(&fixture.build("drafts"), 1);
+}
+
+#[test]
+fn noncanonical_baseline_dependencies_fail_even_with_a_real_matching_report() {
+    for artifact in
+        ["sub/../framework.json", "./framework.json", "sub//framework.json", "sub/./framework.json"]
+    {
+        let mut fixture = Fixture::new();
+        std::fs::create_dir(fixture.root.join("sub")).unwrap();
+        std::fs::copy(fixture.root.join("framework.json"), fixture.root.join("sub/framework.json"))
+            .unwrap();
+        let path = fixture.root.join("applicability.json");
+        let mut applicability: Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        applicability["framework"]["artifact"] = artifact.into();
+        write_json(&path, &applicability);
+        fixture.refresh_baseline("applicability.json");
+        for output in [fixture.plan(), fixture.build("drafts")] {
+            assert_exit(&output, 2);
+            assert!(output.stdout.is_empty());
+            assert!(
+                String::from_utf8_lossy(&output.stderr).contains("non-canonical path spelling"),
+                "{artifact}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        assert!(!fixture.root.join("drafts").exists());
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn canceled_symlink_dependency_is_rejected_even_when_the_external_bytes_match() {
+    use std::os::unix::fs::symlink;
+
+    let mut fixture = Fixture::new();
+    let outside = tempfile::tempdir().unwrap();
+    let outside_root = outside.path().canonicalize().unwrap();
+    std::fs::create_dir(outside_root.join("leaf")).unwrap();
+    std::fs::copy(fixture.root.join("framework.json"), outside_root.join("framework.json"))
+        .unwrap();
+    symlink(outside_root.join("leaf"), fixture.root.join("sub")).unwrap();
+    let path = fixture.root.join("applicability.json");
+    let mut applicability: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    applicability["framework"]["artifact"] = "sub/../framework.json".into();
+    write_json(&path, &applicability);
+    fixture.refresh_baseline("applicability.json");
+    for output in [fixture.plan(), fixture.build("drafts")] {
+        assert_exit(&output, 2);
+        assert!(output.stdout.is_empty());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("non-canonical path spelling"));
+    }
+    assert!(!fixture.root.join("drafts").exists());
+    assert!(!outside_root.join("drafts").exists());
+}
+
+#[test]
+fn checked_in_synthetic_example_keeps_its_exact_hash_chain_and_published_contracts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let inputs: [(&str, &[u8]); 6] = [
+        ("framework.json", include_bytes!("../examples/authoring/framework.json")),
+        ("applicability.json", include_bytes!("../examples/authoring/applicability.json")),
+        ("gap-report.json", include_bytes!("../examples/authoring/gap-report.json")),
+        ("pack.json", include_bytes!("../examples/authoring/pack.json")),
+        ("project.json", include_bytes!("../examples/authoring/project.json")),
+        ("clause.md", include_bytes!("../examples/authoring/clause.md")),
+    ];
+    for (name, bytes) in inputs {
+        std::fs::write(root.join(name), bytes).unwrap();
+    }
+    for (name, schema_bytes) in [
+        ("pack.json", include_bytes!("../schemas/authoring-pack.schema.json").as_slice()),
+        ("project.json", include_bytes!("../schemas/author-project.schema.json").as_slice()),
+    ] {
+        let schema: Value = serde_json::from_slice(schema_bytes).unwrap();
+        let instance: Value =
+            serde_json::from_slice(&std::fs::read(root.join(name)).unwrap()).unwrap();
+        let validator = jsonschema::options().should_validate_formats(true).build(&schema).unwrap();
+        assert!(validator.is_valid(&instance), "example violates published schema: {name}");
+    }
+    let output = run(&root, &["author", "plan", "--manifest", "project.json", "--format", "json"]);
+    assert_exit(&output, 0);
+    let plan: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(plan["counts"], json!({"total":2,"assigned":2,"deferred":0,"unresolved":0}));
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        for destination in ["first", "second"] {
+            let build = run(
+                &root,
+                &[
+                    "author",
+                    "build",
+                    "--manifest",
+                    "project.json",
+                    "--format",
+                    "json",
+                    "--output-dir",
+                    destination,
+                ],
+            );
+            assert_exit(&build, 0);
+            assert_eq!(build.stdout, output.stdout);
+        }
+        assert_eq!(output_tree(&root.join("first")), output_tree(&root.join("second")));
+    }
 }
 
 #[test]

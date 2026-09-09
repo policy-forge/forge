@@ -28,8 +28,13 @@ directory and writes those reports, `provenance.json`, and one
 All input paths and output-directory paths resolve from the author manifest's
 directory. Phase 1 requires `project_root` to be exactly `"."`. Supply canonical
 relative descendant input paths: no absolute paths, drive prefixes, backslashes,
-symlinks, hard links, or aliases. A nested PRD-056 manifest may reference a parent
-directory only when the normalized dependency remains inside the author root.
+symlinks, hard links, or aliases. A nested PRD-056 manifest may use leading `../`
+segments only when the dependency remains inside the author root. Internal
+canceled descents such as `sub/../framework.json`, `./`, repeated separators, and
+trailing separators are rejected before capture; discarded directory components
+cannot hide aliases.
+The manifest's directory ancestry must also be free of symlinks. Use the physical
+project path (for example, `/private/tmp` rather than macOS's `/tmp` alias).
 Remote links embedded in framework resources are never fetched.
 
 Exit statuses:
@@ -156,11 +161,18 @@ destination is complete. A later directory-sync failure may report an error even
 though a complete generation has been published; it never exposes a partial
 generation. Existing output generations remain unchanged on validation failures.
 
-Limits include 2 MiB per author manifest, 16 KiB per string, depth 32, 256
-reviewers, 1,000 topics/families/policies, 4,096 questions/answers, 10,000
+Limits for the two authoring contracts include 2 MiB per manifest, 16 KiB per
+string, depth 32, 256 reviewers, 1,000 topics/families/policies, 4,096
+questions/answers, 10,000
 assignments/deferrals/clauses, 128 references per record, 1 MiB per human clause,
 and 50 MiB total captured source bytes and rendered artifacts. The schema and
 runtime validators specify narrower type-specific bounds where needed.
+
+Imported PRD-056 manifests, reports, framework resources, and Mapping Collections
+retain their upstream semantic limits within the same 50 MiB total captured-input
+budget. They do not inherit the narrower authoring-contract string or manifest
+limits. Each confined read is bounded by the remaining aggregate budget before
+allocation.
 
 ## Remaining scope
 
@@ -173,3 +185,5 @@ services are outside this tranche.
 
 See [the implementation plan](authoring-phase1-plan.md) for interface ownership,
 requirement disposition, and the verification/delivery workflow.
+The [review dispositions](authoring-phase1-review.md) record confirmed fixes and
+source-backed explanations for the initial exact-commit OCR findings.

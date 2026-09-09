@@ -8,12 +8,8 @@ use crate::applicability::model::ReportFilters;
 use crate::hashing::sha256_hex;
 
 use super::error;
-use super::manifest::{self, PinnedFile};
+use super::manifest::{self, MAX_CLAUSE_BYTES, MAX_MANIFEST_BYTES, MAX_TOTAL_BYTES, PinnedFile};
 use super::model::{InputFingerprint, LoadedAuthorProject, LoadedClause};
-
-const MAX_MANIFEST_BYTES: u64 = 2 * 1024 * 1024;
-const MAX_CLAUSE_BYTES: u64 = 1024 * 1024;
-const MAX_SOURCE_BYTES: usize = 50 * 1024 * 1024;
 
 pub(super) struct PreparedProject {
     pub root: PathBuf,
@@ -32,7 +28,7 @@ struct CaptureSet {
     root: PathBuf,
     files: BTreeMap<String, CapturedFile>,
     identities: BTreeSet<(u64, u64)>,
-    byte_count: usize,
+    byte_count: u64,
 }
 
 impl CaptureSet {
@@ -51,6 +47,7 @@ impl CaptureSet {
         if self.files.keys().any(|existing| existing.eq_ignore_ascii_case(&label)) {
             return Err(error(format!("{role} aliases another input")));
         }
+        let max_bytes = max_bytes.min(MAX_TOTAL_BYTES.saturating_sub(self.byte_count));
         let (bytes, identity) =
             crate::linkage::read_confined_local_file(&self.root, path, max_bytes)
                 .map_err(|cause| error(format!("{role}: {cause}")))?;
@@ -63,9 +60,9 @@ impl CaptureSet {
         }
         self.byte_count = self
             .byte_count
-            .checked_add(bytes.len())
+            .checked_add(bytes.len() as u64)
             .ok_or_else(|| error("input byte count overflow"))?;
-        if self.byte_count > MAX_SOURCE_BYTES {
+        if self.byte_count > MAX_TOTAL_BYTES {
             return Err(error("captured project inputs exceed the 50 MiB total limit"));
         }
         let fingerprint = InputFingerprint {
@@ -139,7 +136,7 @@ pub(super) fn prepare(manifest_path: &Path) -> Result<PreparedProject, ForgeErro
     let applicability_bytes = captures.pinned(
         "applicability-manifest",
         &project.applicability_manifest,
-        MAX_MANIFEST_BYTES,
+        crate::applicability::manifest::MAX_MANIFEST_BYTES,
     )?;
     let applicability = crate::applicability::manifest::parse(&applicability_bytes)
         .map_err(|cause| error(format!("applicability manifest: {cause}")))?;
@@ -260,7 +257,10 @@ fn strict_json(bytes: &[u8], label: &str) -> Result<serde_json::Value, ForgeErro
     crate::json_strict::parse_value(
         bytes,
         label,
-        crate::json_strict::Limits { max_depth: 128, max_string_bytes: 16 * 1024 },
+        // Imported artifacts retain their upstream semantic bounds. The confined
+        // capture already bounds the complete byte buffer; authoring's narrower
+        // string limit applies only to the new pack/project contracts.
+        crate::json_strict::Limits { max_depth: 128, max_string_bytes: bytes.len() },
     )
     .map_err(|cause| error(cause.to_string()))
 }
@@ -283,17 +283,23 @@ fn contained_dependency(base: &Path, relative: &Path) -> Result<PathBuf, ForgeEr
         return Err(error("baseline dependencies must be portable local paths"));
     }
     let mut normalized = base.to_path_buf();
-    for component in relative.components() {
+    let mut descended = false;
+    // Only leading parent hops from a nested manifest are supported. Discarding
+    // an internal `sub/..` would hide whether `sub` is a symlink or invalid path,
+    // and would change how the unchanged source reference resolves in a snapshot.
+    for component in raw.split('/') {
         match component {
-            Component::Normal(name) => normalized.push(name),
-            Component::CurDir => {}
-            Component::ParentDir => {
+            ".." if !descended => {
                 if !normalized.pop() {
                     return Err(error("baseline dependency escapes the author project root"));
                 }
             }
-            Component::RootDir | Component::Prefix(_) => {
-                return Err(error("absolute baseline dependency is forbidden"));
+            "" | "." | ".." => {
+                return Err(error("baseline dependency has a non-canonical path spelling"));
+            }
+            name => {
+                descended = true;
+                normalized.push(name);
             }
         }
     }
@@ -334,7 +340,17 @@ mod tests {
             contained_dependency(Path::new("baselines"), Path::new("../../outside.json")).is_err()
         );
         assert!(contained_dependency(Path::new(""), Path::new("C:\\outside.json")).is_err());
-        for invalid in ["CON.json", "dir./catalog.json", "a?.json", "line\nbreak.json"] {
+        for invalid in [
+            "CON.json",
+            "dir./catalog.json",
+            "a?.json",
+            "line\nbreak.json",
+            "sub/../framework.json",
+            "./framework.json",
+            "sub//framework.json",
+            "../sub/../framework.json",
+            "framework.json/",
+        ] {
             assert!(contained_dependency(Path::new("nested"), Path::new(invalid)).is_err());
         }
     }
@@ -359,5 +375,34 @@ mod tests {
         captures.read("framework", Path::new("framework.json"), None, 20).unwrap();
         let failure = captures.read("mapping", Path::new("FRAMEWORK.json"), None, 20).unwrap_err();
         assert!(failure.to_string().contains("aliases another input"));
+    }
+
+    #[test]
+    fn remaining_source_budget_limits_each_read_before_capture() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        std::fs::write(root.join("source.json"), b"123").unwrap();
+        let mut captures = CaptureSet::new(root);
+        captures.byte_count = MAX_TOTAL_BYTES - 2;
+        let failure = captures.read("source", Path::new("source.json"), None, 100).unwrap_err();
+        assert!(failure.to_string().contains("2 byte limit"));
+        assert!(captures.files.is_empty());
+        assert_eq!(captures.byte_count, MAX_TOTAL_BYTES - 2);
+    }
+
+    #[test]
+    fn captured_identity_rejects_unicode_aliases_on_normalizing_filesystems() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        std::fs::write(root.join("Ä.json"), b"{}").unwrap();
+        let mut captures = CaptureSet::new(root.clone());
+        captures.read("framework", Path::new("Ä.json"), None, 20).unwrap();
+        for alias in ["ä.json", "A\u{308}.json"] {
+            let exists = root.join(alias).exists();
+            let failure = captures.read("mapping", Path::new(alias), None, 20).unwrap_err();
+            if exists {
+                assert!(failure.to_string().contains("aliases another input file"));
+            }
+        }
     }
 }

@@ -276,23 +276,8 @@ pub fn parse_pack(bytes: &[u8]) -> Result<AuthoringPack, ForgeError> {
 /// # Errors
 /// Returns an authoring error for unsupported or invalid contracts.
 pub fn parse_project(bytes: &[u8]) -> Result<AuthorProject, ForgeError> {
-    let value = parse_value(bytes, "author project")?;
-    // `Option<Value>` erases explicit null. The wire contract distinguishes
-    // absence from a supplied null, so inspect that distinction before Serde.
-    if let Some(answers) = value.get("answers").and_then(Value::as_array) {
-        for answer in answers {
-            if answer.get("value").is_some_and(Value::is_null)
-                || (answer.get("state").and_then(Value::as_str) == Some("no-answer")
-                    && answer.get("value").is_some())
-            {
-                return Err(error(
-                    "answer value must be a supported value or absent for no-answer",
-                ));
-            }
-        }
-    }
-    let project: AuthorProject = serde_json::from_value(value)
-        .map_err(|cause| error(format!("invalid author project contract: {cause}")))?;
+    // Strict decoding rejects null before Serde can turn it into an absent Option.
+    let project = parse_closed(bytes, "author project")?;
     validate_project(&project)?;
     Ok(project)
 }
@@ -534,10 +519,7 @@ pub fn validate_relationships(
         require_ref(&controls, &assignment.control_id, "assignment framework control")?;
     }
     let families: BTreeSet<_> = pack.policy_families.iter().map(|item| item.key.as_str()).collect();
-    let topics: BTreeMap<_, _> = pack.topics.iter().map(|item| (item.key.as_str(), item)).collect();
     let questions: BTreeSet<_> = pack.questions.iter().map(|item| item.key.as_str()).collect();
-    let policies: BTreeMap<_, _> =
-        project.policies.iter().map(|item| (item.key.as_str(), item)).collect();
     for policy in &project.policies {
         require_ref(&families, &policy.policy_family_key, "project policy family")?;
     }
@@ -583,66 +565,108 @@ pub fn validate_relationships(
             return Err(error("applicable gap cannot be both assigned and deferred"));
         }
     }
-    let answers: BTreeMap<_, _> =
-        project.answers.iter().map(|item| (item.key.as_str(), item)).collect();
+    let clause_index = ClauseIndex::new(pack, project)?;
     for clause in &project.human_clauses {
-        validate_clause_relationships(clause, pack, &policies, &topics, &gaps, &answers)?;
+        validate_clause_relationships(clause, &gaps, &clause_index)?;
     }
     Ok(())
 }
 
+/// Build shared relationships once rather than rescan the bounded input graph
+/// and rehash potentially large answers for every clause and dependency.
+struct ClauseIndex<'a> {
+    policies: BTreeMap<&'a str, &'a Policy>,
+    required_answers: BTreeMap<&'a str, BTreeSet<&'a str>>,
+    family_edges: BTreeSet<(&'a str, &'a str)>,
+    control_edges: BTreeSet<(&'a str, &'a str)>,
+    answers: BTreeMap<&'a str, (&'a Answer, String)>,
+}
+
+impl<'a> ClauseIndex<'a> {
+    fn new(pack: &'a AuthoringPack, project: &'a AuthorProject) -> Result<Self, ForgeError> {
+        let required: BTreeSet<_> = pack
+            .questions
+            .iter()
+            .filter(|question| question.required)
+            .map(|question| question.key.as_str())
+            .collect();
+        let answered: BTreeSet<_> =
+            project.answers.iter().map(|answer| answer.question_key.as_str()).collect();
+        let required_answers = pack
+            .topics
+            .iter()
+            .map(|topic| {
+                let dependencies = topic
+                    .question_keys
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|key| required.contains(key) && answered.contains(key))
+                    .collect();
+                (topic.key.as_str(), dependencies)
+            })
+            .collect();
+        Ok(Self {
+            policies: project.policies.iter().map(|item| (item.key.as_str(), item)).collect(),
+            required_answers,
+            family_edges: pack
+                .family_assignments
+                .iter()
+                .map(|edge| (edge.topic_key.as_str(), edge.policy_family_key.as_str()))
+                .collect(),
+            control_edges: pack
+                .control_assignments
+                .iter()
+                .map(|edge| (edge.control_id.as_str(), edge.topic_key.as_str()))
+                .collect(),
+            answers: project
+                .answers
+                .iter()
+                .map(|answer| Ok((answer.key.as_str(), (answer, answer_sha256(answer)?))))
+                .collect::<Result<_, ForgeError>>()?,
+        })
+    }
+}
+
 fn validate_clause_relationships(
     clause: &HumanClause,
-    pack: &AuthoringPack,
-    policies: &BTreeMap<&str, &Policy>,
-    topics: &BTreeMap<&str, &Topic>,
     gaps: &BTreeMap<String, &str>,
-    answers: &BTreeMap<&str, &Answer>,
+    index: &ClauseIndex<'_>,
 ) -> Result<(), ForgeError> {
-    let policy = policies
+    let policy = index
+        .policies
         .get(clause.policy_key.as_str())
         .ok_or_else(|| error("human clause references an unknown policy"))?;
-    let topic = topics
+    let required_answers = index
+        .required_answers
         .get(clause.topic_key.as_str())
         .ok_or_else(|| error("human clause references an unknown topic"))?;
-    if !pack.family_assignments.iter().any(|edge| {
-        edge.topic_key == clause.topic_key && edge.policy_family_key == policy.policy_family_key
-    }) {
+    if !index.family_edges.contains(&(clause.topic_key.as_str(), policy.policy_family_key.as_str()))
+    {
         return Err(error("human clause topic has no explicit assignment to its policy family"));
     }
     for gap in &clause.gap_ids {
         let control = gaps
             .get(gap)
             .ok_or_else(|| error("human clause references an unknown applicable gap"))?;
-        if !pack
-            .control_assignments
-            .iter()
-            .any(|edge| edge.control_id == *control && edge.topic_key == clause.topic_key)
-        {
+        if !index.control_edges.contains(&(*control, clause.topic_key.as_str())) {
             return Err(error("human clause gap has no explicit assignment to its topic"));
         }
     }
     let mut pinned_questions = BTreeSet::new();
     for pin in &clause.answer_refs {
-        let answer = answers
+        let (answer, digest) = index
+            .answers
             .get(pin.answer_key.as_str())
             .ok_or_else(|| error("human clause references an unknown answer"))?;
-        if answer_sha256(answer)? != pin.expected_sha256 {
+        if *digest != pin.expected_sha256 {
             return Err(error("human clause answer pin does not match exact answer record"));
         }
         pinned_questions.insert(answer.question_key.as_str());
     }
     // Every existing required context dependency must be an explicit clause pin.
     // An absent answer remains a scoped context blocker; it cannot supply text.
-    for question in pack
-        .questions
-        .iter()
-        .filter(|question| question.required && topic.question_keys.contains(&question.key))
-    {
-        let has_answer = answers.values().any(|answer| answer.question_key == question.key);
-        if has_answer && !pinned_questions.contains(question.key.as_str()) {
-            return Err(error("human clause must pin every required topic answer"));
-        }
+    if !required_answers.is_subset(&pinned_questions) {
+        return Err(error("human clause must pin every required topic answer"));
     }
     Ok(())
 }
@@ -906,7 +930,7 @@ fn validate_pin(name: &str, pin: &PinnedFile, extension: Option<&str>) -> Result
     }) {
         return Err(error(format!("{name} has an unsupported file extension")));
     }
-    sha("input expected_sha256", &pin.expected_sha256)
+    sha(&format!("{name}.expected_sha256"), &pin.expected_sha256)
 }
 
 /// Validate one canonical portable descendant path, before filesystem traversal.
@@ -1073,8 +1097,17 @@ fn single_line(name: &str, value: &str) -> Result<(), ForgeError> {
 
 fn label(name: &str, value: &str) -> Result<(), ForgeError> {
     single_line(name, value)?;
-    crate::applicability::manifest::validate_report_href(name, value)
-        .map_err(|_| error(format!("{name} must not contain an absolute local path")))
+    // Labels are human text, not filesystem hrefs: ordinary colons do not
+    // introduce NTFS streams. Reject only rooted local paths and file URIs.
+    let bytes = value.as_bytes();
+    let drive_root = bytes.first().is_some_and(u8::is_ascii_alphabetic)
+        && bytes.get(1) == Some(&b':')
+        && bytes.get(2).is_some_and(|byte| matches!(*byte, b'/' | b'\\'));
+    let file_uri = value.get(..5).is_some_and(|prefix| prefix.eq_ignore_ascii_case("file:"));
+    if value.starts_with(['/', '\\']) || drive_root || file_uri {
+        return Err(error(format!("{name} must not be an absolute local path or file URI")));
+    }
+    Ok(())
 }
 
 fn timestamp(name: &str, value: &str) -> Result<DateTime<FixedOffset>, ForgeError> {
@@ -1168,7 +1201,8 @@ mod tests {
         ] {
             let schema: Value = serde_json::from_slice(schema).unwrap();
             let document: Value = serde_json::from_slice(bytes).unwrap();
-            let validator = jsonschema::validator_for(&schema).unwrap();
+            let validator =
+                jsonschema::options().should_validate_formats(true).build(&schema).unwrap();
             assert!(
                 validator.is_valid(&document),
                 "{:?}",
@@ -1177,6 +1211,147 @@ mod tests {
         }
         let (pack, project) = fixtures();
         validate_relationships(&pack, &project, &report()).unwrap();
+    }
+
+    #[test]
+    fn published_schemas_reject_invalid_text_and_timestamp_spellings() {
+        let schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-pack.schema.json"))
+                .unwrap();
+        // These constraints must work even when format is annotation-only.
+        let validator = jsonschema::validator_for(&schema).unwrap();
+        for (pointer, invalid) in [
+            ("/content_rights/review/reviewed_at", "not-a-timestamp"),
+            ("/content_rights/review/reviewed_at", "2026-09-01T24:00:00Z"),
+            ("/content_rights/review/reviewed_at", "2026-09-01T00:00:00Z\n"),
+            ("/content_rights/statement", " \t\n"),
+            ("/content_rights/statement", "hidden\u{1b}command"),
+            ("/content_rights/statement", "unsafe\u{202e}direction"),
+            ("/topics/0/title", " title"),
+            ("/topics/0/title", "title\n"),
+            ("/reviewers/0/name", "two\tcolumns"),
+            ("/questions/0/source_label", "/private/input"),
+        ] {
+            let mut value: Value = serde_json::from_slice(PACK).unwrap();
+            *value.pointer_mut(pointer).unwrap() = json!(invalid);
+            assert!(!validator.is_valid(&value), "{pointer}: {invalid:?}");
+            assert!(parse_pack(&serde_json::to_vec(&value).unwrap()).is_err());
+        }
+    }
+
+    #[test]
+    fn source_labels_allow_human_punctuation_and_reject_absolute_local_paths() {
+        let pack_schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-pack.schema.json"))
+                .unwrap();
+        let project_schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/author-project.schema.json"))
+                .unwrap();
+        let pack_validator = jsonschema::validator_for(&pack_schema).unwrap();
+        let project_validator = jsonschema::validator_for(&project_schema).unwrap();
+        for (source, accepted) in [
+            ("Interview: CISO, 2026-08", true),
+            ("Workshop / round 2: follow-up", true),
+            ("C: interview notes", true),
+            ("https://example.invalid/interview", true),
+            ("/private/interview", false),
+            ("C:/interview", false),
+            ("C:\\interview", false),
+            ("\\\\server\\interview", false),
+            ("file:///private/interview", false),
+            ("FILE:/private/interview", false),
+        ] {
+            let (mut pack, mut project) = fixtures();
+            pack.content_rights.source_label = source.into();
+            pack.questions[0].source_label = source.into();
+            let mut record = answer(&pack.questions[0]);
+            record.source_label = source.into();
+            project.answers.push(record);
+            let pack_value = serde_json::to_value(&pack).unwrap();
+            let project_value = serde_json::to_value(&project).unwrap();
+            assert_eq!(pack_validator.is_valid(&pack_value), accepted, "{source}");
+            assert_eq!(project_validator.is_valid(&project_value), accepted, "{source}");
+            assert_eq!(
+                parse_pack(&serde_json::to_vec(&pack).unwrap()).is_ok(),
+                accepted,
+                "{source}"
+            );
+            assert_eq!(
+                parse_project(&serde_json::to_vec(&project).unwrap()).is_ok(),
+                accepted,
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn schema_timestamp_guard_preserves_runtime_spellings_and_precision() {
+        let schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-pack.schema.json"))
+                .unwrap();
+        let validator = jsonschema::options().should_validate_formats(true).build(&schema).unwrap();
+        for accepted in [
+            "2026-09-01T00:00:00Z",
+            "2026-09-01t00:00:00z",
+            "2026-09-01 00:00:00Z",
+            "2026-09-01T00:00:00.123456789123456789+23:59",
+            "2026-09-01T00:00:00\u{2212}01:00",
+            "2026-09-01T00:00:60-00:00",
+            "0000-02-29T00:00:00Z",
+        ] {
+            let mut value: Value = serde_json::from_slice(PACK).unwrap();
+            value["content_rights"]["review"]["reviewed_at"] = json!(accepted);
+            assert!(validator.is_valid(&value), "{accepted}");
+            parse_pack(&serde_json::to_vec(&value).unwrap()).unwrap();
+        }
+        // Calendar validation remains explicit runtime work, unlike lexical guards.
+        assert!(timestamp("reviewed_at", "2026-02-31T00:00:00Z").is_err());
+    }
+
+    fn collect_schema_definitions(value: &Value, schema: &Value, reached: &mut BTreeSet<String>) {
+        match value {
+            Value::Object(fields) => {
+                if let Some(reference) = fields.get("$ref").and_then(Value::as_str) {
+                    let name =
+                        reference.strip_prefix("#/$defs/").expect("offline local schema reference");
+                    assert!(schema["$defs"].get(name).is_some(), "missing definition: {name}");
+                    if reached.insert(name.to_owned()) {
+                        collect_schema_definitions(&schema["$defs"][name], schema, reached);
+                    }
+                }
+                for (key, value) in fields {
+                    if key != "$defs" {
+                        collect_schema_definitions(value, schema, reached);
+                    }
+                }
+            }
+            Value::Array(values) => {
+                for value in values {
+                    collect_schema_definitions(value, schema, reached);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn standalone_schemas_have_only_reachable_and_consistent_shared_definitions() {
+        let pack: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-pack.schema.json"))
+                .unwrap();
+        let project: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/author-project.schema.json"))
+                .unwrap();
+        for schema in [&pack, &project] {
+            let mut reached = BTreeSet::new();
+            collect_schema_definitions(schema, schema, &mut reached);
+            assert_eq!(reached, schema["$defs"].as_object().unwrap().keys().cloned().collect());
+        }
+        for (name, definition) in pack["$defs"].as_object().unwrap() {
+            if let Some(other) = project["$defs"].get(name) {
+                assert_eq!(definition, other, "shared definition drift: {name}");
+            }
+        }
     }
 
     #[test]
@@ -1379,6 +1554,30 @@ mod tests {
     }
 
     #[test]
+    fn explicit_empty_values_are_distinct_from_no_answer_when_constraints_allow_them() {
+        for (question_type, value) in
+            [(QuestionType::String, json!("")), (QuestionType::StringList, json!([]))]
+        {
+            let (mut pack, project) = fixtures();
+            let question = &mut pack.questions[0];
+            question.question_type = question_type;
+            question.constraints = QuestionConstraints::default();
+            assert!(question.required);
+            let mut record = answer(question);
+            record.value = Some(value);
+            let evaluate = |record: &Answer| {
+                evaluate_question(question, Some(record), &"d".repeat(64), &project.as_of)
+                    .unwrap()
+                    .state
+            };
+            assert_eq!(evaluate(&record), AnswerStatus::Available);
+            record.state = AnswerState::NoAnswer;
+            record.value = None;
+            assert_eq!(evaluate(&record), AnswerStatus::NoAnswer);
+        }
+    }
+
+    #[test]
     fn hashes_are_domain_separated_and_bind_complete_records() {
         let (pack, _) = fixtures();
         let question = &pack.questions[0];
@@ -1435,6 +1634,20 @@ mod tests {
             review: project.baseline_review.clone(),
         });
         validate_relationships(&pack, &project, &baseline).unwrap();
+        // An existing required topic answer must have a clause pin. Absence
+        // remains a context blocker rather than a dangling reference.
+        let valid_refs = project.human_clauses[0].answer_refs.clone();
+        project.human_clauses[0].answer_refs.clear();
+        assert!(
+            validate_relationships(&pack, &project, &baseline)
+                .unwrap_err()
+                .to_string()
+                .contains("every required topic answer")
+        );
+        let existing_answer = project.answers.pop().unwrap();
+        validate_relationships(&pack, &project, &baseline).unwrap();
+        project.answers.push(existing_answer);
+        project.human_clauses[0].answer_refs = valid_refs;
         project.answers[0].value = Some(json!("Changed supplied role"));
         let failure = validate_relationships(&pack, &project, &baseline).unwrap_err().to_string();
         assert!(failure.contains("answer pin"));

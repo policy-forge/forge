@@ -19,6 +19,8 @@ const MAX_EXPANDED_REFERENCES: usize = 100_000;
 ///
 /// No answer value is rendered or interpolated. The loader owns byte-pin and
 /// baseline revalidation; this engine owns the accounting and dependency states.
+/// Cross-contract validation is intentional here too: this public function also
+/// accepts directly constructed in-memory inputs, outside the loader workflow.
 ///
 /// # Errors
 ///

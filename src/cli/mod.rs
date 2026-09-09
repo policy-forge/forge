@@ -854,6 +854,7 @@ pub enum ApplicabilityStateFilter {
 pub enum AuthorCommand {
     /// Validate exact baseline pins and report drafting work without generating policy prose
     Plan {
+        /// Versioned forge.author-project/1 JSON manifest
         #[arg(long)]
         manifest: PathBuf,
         /// Print text or versioned JSON to stdout
@@ -865,6 +866,7 @@ pub enum AuthorCommand {
     },
     /// Build Markdown skeletons with pinned human clauses and exact provenance
     Build {
+        /// Versioned forge.author-project/1 JSON manifest
         #[arg(long)]
         manifest: PathBuf,
         /// Print text or versioned JSON to stdout

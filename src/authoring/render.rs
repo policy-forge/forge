@@ -350,7 +350,7 @@ fn render_section(
     }
     if section.state == DraftState::BlockedContext {
         text.append(
-            b"\\[UNRESOLVED: Required context prevents inclusion of human clauses for this section.\\]\n\n",
+            b"\\[UNRESOLVED: Unresolved context prevents inclusion of human clauses for this section.\\]\n\n",
             metadata_origin(policy, Some(section), "blocked-context"),
         )?;
         return Ok(());
