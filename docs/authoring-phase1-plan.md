@@ -5,6 +5,11 @@ security, engineering acceptance, design-partner, pilot, and release gates remai
 pending. Reviewer metadata records assertions, not authenticated identity or
 independent review. This work does not transition PRD-058 lifecycle state.
 
+The release gate includes public Rust API compatibility. Added variants in the
+public exhaustive error and CLI command enums can require downstream match
+updates. Migration guidance and an appropriate semver release decision remain
+pending; the current package version is not a release authorization.
+
 ## Scope and M-13 disposition
 
 Implement local plans, questions, Markdown skeletons, explicitly pinned human

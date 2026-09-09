@@ -47,10 +47,28 @@ impl CaptureSet {
         if self.files.keys().any(|existing| existing.eq_ignore_ascii_case(&label)) {
             return Err(error(format!("{role} aliases another input")));
         }
-        let max_bytes = max_bytes.min(MAX_TOTAL_BYTES.saturating_sub(self.byte_count));
+        let remaining = MAX_TOTAL_BYTES.saturating_sub(self.byte_count);
+        if remaining == 0 {
+            return Err(error(format!(
+                "{role}: captured project inputs have exhausted the 50 MiB total source budget"
+            )));
+        }
+        let effective_limit = max_bytes.min(remaining);
         let (bytes, identity) =
-            crate::linkage::read_confined_local_file(&self.root, path, max_bytes)
-                .map_err(|cause| error(format!("{role}: {cause}")))?;
+            crate::linkage::read_confined_local_file(&self.root, path, effective_limit).map_err(
+                |cause| {
+                    if effective_limit < max_bytes {
+                        // Report the known limit without guessing why the read failed.
+                        // Missing-file and permission failures must retain their cause too.
+                        error(format!(
+                            "{role}: input read failed with {remaining} bytes remaining in the \
+                             50 MiB total source budget (per-file limit: {max_bytes} bytes): {cause}"
+                        ))
+                    } else {
+                        error(format!("{role}: {cause}"))
+                    }
+                },
+            )?;
         let digest = sha256_hex(&bytes);
         if expected_sha256.is_some_and(|expected| expected != digest) {
             return Err(error(format!("{role} SHA-256 does not match its exact byte pin")));
@@ -62,6 +80,7 @@ impl CaptureSet {
             .byte_count
             .checked_add(bytes.len() as u64)
             .ok_or_else(|| error("input byte count overflow"))?;
+        // Retain the aggregate invariant independently of the confined reader's bounds.
         if self.byte_count > MAX_TOTAL_BYTES {
             return Err(error("captured project inputs exceed the 50 MiB total limit"));
         }
@@ -71,8 +90,15 @@ impl CaptureSet {
             sha256: digest,
             byte_length: bytes.len() as u64,
         };
-        self.files
-            .insert(label, CapturedFile { fingerprint, bytes: bytes.clone(), identity, max_bytes });
+        self.files.insert(
+            label,
+            CapturedFile {
+                fingerprint,
+                bytes: bytes.clone(),
+                identity,
+                max_bytes: effective_limit,
+            },
+        );
         Ok(bytes)
     }
 
@@ -282,7 +308,12 @@ fn contained_dependency(base: &Path, relative: &Path) -> Result<PathBuf, ForgeEr
     if raw.contains(['\\', ':', '\0']) || relative.is_absolute() || raw.is_empty() {
         return Err(error("baseline dependencies must be portable local paths"));
     }
-    let mut normalized = base.to_path_buf();
+    let base_raw = base.to_str().ok_or_else(|| error("baseline directory must be UTF-8"))?;
+    if !base_raw.is_empty() {
+        manifest::validate_local_path("baseline directory", base)?;
+    }
+    let mut normalized =
+        if base_raw.is_empty() { Vec::new() } else { base_raw.split('/').collect::<Vec<_>>() };
     let mut descended = false;
     // Only leading parent hops from a nested manifest are supported. Discarding
     // an internal `sub/..` would hide whether `sub` is a symlink or invalid path,
@@ -290,7 +321,7 @@ fn contained_dependency(base: &Path, relative: &Path) -> Result<PathBuf, ForgeEr
     for component in raw.split('/') {
         match component {
             ".." if !descended => {
-                if !normalized.pop() {
+                if normalized.pop().is_none() {
                     return Err(error("baseline dependency escapes the author project root"));
                 }
             }
@@ -303,6 +334,9 @@ fn contained_dependency(base: &Path, relative: &Path) -> Result<PathBuf, ForgeEr
             }
         }
     }
+    // PathBuf::push would introduce native backslashes on Windows, while the
+    // captured input label must keep the portable spelling from the contract.
+    let normalized = PathBuf::from(normalized.join("/"));
     portable_label(&normalized)?;
     Ok(normalized)
 }
@@ -356,6 +390,43 @@ mod tests {
     }
 
     #[test]
+    fn baseline_dependencies_preserve_exact_portable_separators_and_utf8() {
+        for (base, relative, expected) in [
+            ("", "resources/framework.json", "resources/framework.json"),
+            ("baselines", "framework.json", "baselines/framework.json"),
+            ("baselines", "resources/framework.json", "baselines/resources/framework.json"),
+            (
+                "baselines/nested",
+                "../resources/framework.json",
+                "baselines/resources/framework.json",
+            ),
+            ("baselines/nested", "../../resources/framework.json", "resources/framework.json"),
+            ("baselines/équipe", "../資料/é.json", "baselines/資料/é.json"),
+        ] {
+            let actual = contained_dependency(Path::new(base), Path::new(relative)).unwrap();
+            assert_eq!(actual.to_str(), Some(expected), "{base} + {relative}");
+            assert_eq!(portable_label(&actual).unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn baseline_dependencies_reject_noncanonical_base_directory_spellings() {
+        for base in ["./baselines", "baselines//nested", "baselines/../nested", "base\\nested"] {
+            assert!(contained_dependency(Path::new(base), Path::new("framework.json")).is_err());
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn baseline_dependencies_reject_non_utf8_without_lossy_conversion() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let invalid = Path::new(std::ffi::OsStr::from_bytes(b"invalid-\xff"));
+        assert!(contained_dependency(invalid, Path::new("framework.json")).is_err());
+        assert!(contained_dependency(Path::new("baselines"), invalid).is_err());
+    }
+
+    #[test]
     fn prepared_inputs_detect_changes_before_output() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
@@ -382,11 +453,69 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().canonicalize().unwrap();
         std::fs::write(root.join("source.json"), b"123").unwrap();
+        let original = crate::linkage::read_confined_local_file(&root, Path::new("source.json"), 2)
+            .unwrap_err()
+            .to_string();
         let mut captures = CaptureSet::new(root);
         captures.byte_count = MAX_TOTAL_BYTES - 2;
         let failure = captures.read("source", Path::new("source.json"), None, 100).unwrap_err();
-        assert!(failure.to_string().contains("2 byte limit"));
+        let message = failure.to_string();
+        assert!(message.contains("2 bytes remaining in the 50 MiB total source budget"));
+        assert!(message.contains("per-file limit: 100 bytes"));
+        assert!(message.ends_with(&original));
         assert!(captures.files.is_empty());
+        assert!(captures.identities.is_empty());
+        assert_eq!(captures.byte_count, MAX_TOTAL_BYTES - 2);
+    }
+
+    #[test]
+    fn remaining_source_budget_accepts_an_exactly_fitting_input() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        std::fs::write(root.join("source.json"), b"{}").unwrap();
+        let mut captures = CaptureSet::new(root);
+        captures.byte_count = MAX_TOTAL_BYTES - 2;
+        assert_eq!(captures.read("source", Path::new("source.json"), None, 100).unwrap(), b"{}");
+        assert_eq!(captures.byte_count, MAX_TOTAL_BYTES);
+        assert_eq!(captures.files.len(), 1);
+        assert_eq!(captures.identities.len(), 1);
+        assert_eq!(captures.files["source.json"].max_bytes, 2);
+        captures.verify().unwrap();
+    }
+
+    #[test]
+    fn exhausted_source_budget_is_reported_before_reading_another_input() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let mut captures = CaptureSet::new(root);
+        captures.byte_count = MAX_TOTAL_BYTES;
+        let failure =
+            captures.read("next source", Path::new("missing.json"), None, 100).unwrap_err();
+        assert!(failure.to_string().contains(
+            "next source: captured project inputs have exhausted the 50 MiB total source budget"
+        ));
+        assert!(captures.files.is_empty());
+        assert!(captures.identities.is_empty());
+        assert_eq!(captures.byte_count, MAX_TOTAL_BYTES);
+    }
+
+    #[test]
+    fn partial_source_budget_keeps_the_original_missing_file_cause() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let original =
+            crate::linkage::read_confined_local_file(&root, Path::new("missing.json"), 2)
+                .unwrap_err()
+                .to_string();
+        let mut captures = CaptureSet::new(root);
+        captures.byte_count = MAX_TOTAL_BYTES - 2;
+        let failure = captures.read("source", Path::new("missing.json"), None, 100).unwrap_err();
+        let message = failure.to_string();
+        assert!(message.contains("2 bytes remaining in the 50 MiB total source budget"));
+        assert!(message.ends_with(&original));
+        assert!(!message.contains("exhausted"));
+        assert!(captures.files.is_empty());
+        assert!(captures.identities.is_empty());
         assert_eq!(captures.byte_count, MAX_TOTAL_BYTES - 2);
     }
 

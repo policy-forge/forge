@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://policy-forge.github.io/schemas/authoring-pack/1",
   "title": "FORGE authoring-pack Phase 1",
-  "description": "Local Phase 1 technical contract. Runtime additionally rejects decoded duplicate keys, noncanonical paths, duplicate logical keys/edges, invalid reference and constraint relationships, and enforces exact input pins. Reviewer metadata is provenance only.",
-  "$comment": "Runtime enforces a 2 MiB byte limit, depth 32, 16 KiB UTF-8 string bound, calendar-valid timestamps, source-label/path semantics, and cross-record validation beyond JSON Schema. Schema lengths count Unicode characters. Enable format assertions when validating date fields.",
+  "description": "Closed local Phase 1 authoring-pack contract. Runtime additionally rejects decoded duplicate keys, duplicate logical keys and relationships, dangling pack references, and incompatible question constraints. Reviewer metadata is asserted provenance.",
+  "$comment": "Runtime enforces a 2 MiB document byte limit, depth 32, a 16 KiB UTF-8 string bound, valid calendar timestamps, and source-label rules. JSON Schema lengths count Unicode characters. Timestamp patterns are lexical; runtime performs full timestamp validation. Baseline fingerprints are matched to project inputs when the pack is loaded.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -96,7 +96,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 16384,
-      "pattern": "[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]",
+      "pattern": "[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060-\\u2064\\u3000\\ufeff\\ufff9-\\ufffb]",
       "not": {
         "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
       }

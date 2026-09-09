@@ -153,8 +153,8 @@ pub(crate) fn validate_clause(bytes: &[u8]) -> Result<(), ForgeError> {
         return Err(error("human clause must contain 1 byte through 1 MiB"));
     }
     let text = std::str::from_utf8(bytes).map_err(|_| error("human clause must be valid UTF-8"))?;
-    if text.trim().is_empty() {
-        return Err(error("human clause must contain visible content"));
+    if !super::manifest::has_nonblank_text(text) {
+        return Err(error("human clause must contain nonblank text"));
     }
     if text.contains("{{forge:") {
         return Err(error("human clauses cannot contain reserved FORGE template syntax"));
@@ -548,6 +548,49 @@ mod tests {
         assert!(validate_clause(b" \r\n ").is_err());
         validate_clause("Explicit résumé text.\r\n\r\n- A human list item.\r\n".as_bytes())
             .unwrap();
+    }
+
+    #[test]
+    fn clauses_reject_whitespace_and_invisible_format_characters_alone() {
+        for source in [
+            "\u{200b}",
+            "\u{200c}",
+            "\u{200d}",
+            "\u{2060}",
+            "\u{2061}",
+            "\u{2062}",
+            "\u{2063}",
+            "\u{2064}",
+            "\u{feff}",
+            "\u{fff9}",
+            "\u{fffa}",
+            "\u{fffb}",
+            " \r\n\t\u{200b}\u{2064}\u{feff}\u{fffb}\u{a0}",
+        ] {
+            let failure = validate_clause(source.as_bytes()).unwrap_err();
+            assert!(failure.to_string().contains("nonblank text"), "{source:?}");
+        }
+    }
+
+    #[test]
+    fn readable_unicode_clauses_preserve_joiners_and_exact_source_bytes() {
+        for source in [
+            "Synthetic phrase: می\u{200c}رود.\r\n",
+            "The fictional reviewer 👩\u{200d}💻 records sample changes.\r\n",
+            "The fictional team records draft\u{2060}changes.\r\n",
+        ] {
+            let source = source.as_bytes();
+            validate_clause(source).unwrap();
+            let (rendered, provenance) =
+                render_policy(&policy(), &clauses(source), &gap_controls()).unwrap();
+            let span = provenance
+                .spans
+                .iter()
+                .find(|span| matches!(span.origin.kind, OriginKind::HumanClause))
+                .expect("human clause span");
+            assert_eq!(&rendered.markdown[span.output.start..span.output.end], source);
+            assert_eq!(span.origin.source.as_ref().unwrap().sha256, sha256_hex(source));
+        }
     }
 
     #[test]

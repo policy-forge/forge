@@ -1456,6 +1456,18 @@ fn has_normalized_path_spelling(path: &Path) -> bool {
     }
     #[cfg(windows)]
     {
+        // Win32 can resolve these spellings as aliases of another component.
+        // Inspect only names, preserving drive, UNC, and verbatim prefixes.
+        if path.components().any(|component| {
+            matches!(
+                component,
+                Component::Normal(name)
+                    if name.as_encoded_bytes().last()
+                        .is_some_and(|byte| matches!(*byte, b' ' | b'.'))
+            )
+        }) {
+            return false;
+        }
         let separator = |byte| if byte == b'/' { b'\\' } else { byte };
         let original_bytes = path.as_os_str().as_encoded_bytes().iter().copied().map(separator);
         let normalized_bytes =
@@ -2370,5 +2382,65 @@ mod tests {
         let (bytes, _) = read_confined_local_file(&root, Path::new("nested/input.bin"), 10)
             .expect("normalized descendant");
         assert_eq!(bytes, b"input");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn confined_local_file_rejects_windows_dot_space_aliases_before_io() {
+        for root in [
+            r"C:\unused-root.",
+            r"C:\unused-root ",
+            r"C:\unused-root.\nested",
+            r"C:\unused-root \nested",
+            r"\\?\C:\unused-root.",
+            r"\\?\C:\unused-root \nested",
+            r"\\server\share\unused-root.",
+            r"\\?\UNC\server\share\unused-root ",
+        ] {
+            let failure = read_confined_local_file(Path::new(root), Path::new("input.bin"), 10)
+                .expect_err("root aliases must fail before local or network I/O");
+            assert!(failure.to_string().contains("absolute normalized directory"), "{root:?}");
+        }
+        for relative in
+            ["input.", "input ", "dir./input", "dir /input", r"dir.\input", r"dir \input"]
+        {
+            let failure =
+                read_confined_local_file(Path::new(r"C:\unused-root"), Path::new(relative), 10)
+                    .expect_err("descendant aliases must fail before I/O");
+            assert!(failure.to_string().contains("normalized descendant"), "{relative:?}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn normalized_windows_spellings_preserve_prefixes_and_valid_names() {
+        for path in [
+            r"C:\",
+            r"C:\project\policy.v1",
+            "C:/project/with spaces/input.bin",
+            r"\\?\C:\project\.hidden",
+            r"\\server\share\project",
+            r"\\?\UNC\server\share\project",
+            "with spaces/policy.v1",
+            r"with spaces\policy.v1",
+        ] {
+            assert!(has_normalized_path_spelling(Path::new(path)), "{path:?}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn confined_local_file_preserves_legal_unix_dot_space_names() {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let base = directory.path().canonicalize().expect("canonical base");
+        for suffix in [".", " "] {
+            let root = base.join(format!("root{suffix}"));
+            let filename = format!("input{suffix}");
+            std::fs::create_dir(&root).expect("root directory");
+            std::fs::write(root.join(&filename), b"input").expect("input file");
+            let (bytes, _) = read_confined_local_file(&root, Path::new(&filename), 10)
+                .expect("Unix names must retain their exact spelling");
+            assert_eq!(bytes, b"input");
+        }
     }
 }

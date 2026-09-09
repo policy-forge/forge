@@ -507,6 +507,69 @@ fn nested_applicability_manifest_can_reference_its_contained_parent_framework() 
 }
 
 #[test]
+fn nested_baseline_dependencies_keep_portable_labels_on_every_platform() {
+    for (manifest_path, artifact, framework_path) in [
+        ("applicability.json", "resources/framework.json", "resources/framework.json"),
+        (
+            "baselines/applicability.json",
+            "resources/framework.json",
+            "baselines/resources/framework.json",
+        ),
+        (
+            "baselines/nested/applicability.json",
+            "../resources/framework.json",
+            "baselines/resources/framework.json",
+        ),
+    ] {
+        let mut fixture = Fixture::new();
+        let mut applicability: Value = serde_json::from_slice(
+            &std::fs::read(fixture.root.join("applicability.json")).unwrap(),
+        )
+        .unwrap();
+        applicability["framework"]["artifact"] = artifact.into();
+        let framework = fixture.root.join(framework_path);
+        std::fs::create_dir_all(framework.parent().unwrap()).unwrap();
+        std::fs::copy(fixture.root.join("framework.json"), &framework).unwrap();
+        let manifest = fixture.root.join(manifest_path);
+        std::fs::create_dir_all(manifest.parent().unwrap()).unwrap();
+        write_json(&manifest, &applicability);
+        fixture.refresh_baseline(manifest_path);
+        let output = fixture.plan();
+        assert_exit(&output, 1);
+        let plan: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let inputs = plan["provenance"]["inputs"].as_array().unwrap();
+        assert!(
+            inputs
+                .iter()
+                .any(|input| input["role"] == "framework" && input["path"] == framework_path)
+        );
+        assert!(inputs.iter().all(|input| !input["path"].as_str().unwrap().contains('\\')));
+        assert_eq!(plan["counts"], json!({"total":4,"assigned":2,"deferred":1,"unresolved":1}));
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_manifest_root_aliases_fail_before_input_reads() {
+    let fixture = Fixture::new();
+    for suffix in [".", " "] {
+        let mut alias = fixture.root.as_os_str().to_owned();
+        alias.push(suffix);
+        let manifest = PathBuf::from(alias).join("project.json");
+        let output = run(
+            &fixture.root,
+            &["author", "plan", "--manifest", manifest.to_str().unwrap(), "--format", "json"],
+        );
+        assert_exit(&output, 2);
+        assert!(output.stdout.is_empty());
+        assert!(
+            String::from_utf8_lossy(&output.stderr)
+                .contains("confined input root must be an absolute normalized directory")
+        );
+    }
+}
+
+#[test]
 fn noncanonical_baseline_dependencies_fail_even_with_a_real_matching_report() {
     for artifact in
         ["sub/../framework.json", "./framework.json", "sub//framework.json", "sub/./framework.json"]

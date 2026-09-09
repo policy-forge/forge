@@ -9,6 +9,12 @@ This is a technical foundation. PRD-061 readiness, human review, legal content
 decisions, design-partner exercises, time-savings studies, and release gates
 remain pending. Authoring states do not change PRD-058 lifecycle state.
 
+Rust library release compatibility also remains a gate: this feature extends
+the public exhaustive `ForgeError` and CLI command enums. Downstream exhaustive
+matches may require new arms. A release must review the public API, document
+migration, and select a semver-compatible version before publication; this
+technical tranche does not claim source compatibility for those matches.
+
 ## Commands
 
 ```sh

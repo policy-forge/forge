@@ -1077,8 +1077,17 @@ fn sha(name: &str, value: &str) -> Result<(), ForgeError> {
     crate::json_strict::validate_lowercase_sha256(name, value).map_err(error)
 }
 
+/// Require more than whitespace and selected blank formatting characters.
+/// Joiners remain valid alongside other text; this is not glyph visibility validation.
+pub(crate) fn has_nonblank_text(value: &str) -> bool {
+    value.chars().any(|ch| {
+        !ch.is_whitespace()
+            && !matches!(ch, '\u{200b}'..='\u{200d}' | '\u{2060}'..='\u{2064}' | '\u{feff}' | '\u{fff9}'..='\u{fffb}')
+    })
+}
+
 fn text(name: &str, value: &str) -> Result<(), ForgeError> {
-    if value.trim().is_empty() || value.len() > MAX_STRING_BYTES
+    if !has_nonblank_text(value) || value.len() > MAX_STRING_BYTES
         || value.chars().any(|ch| ch.is_control() && !matches!(ch, '\n' | '\t'))
         || value.chars().any(|ch| matches!(ch, '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}'))
     {
@@ -1240,6 +1249,63 @@ mod tests {
     }
 
     #[test]
+    fn text_contracts_reject_blank_format_sequences_and_preserve_unicode_joiners() {
+        let pack_schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-pack.schema.json"))
+                .unwrap();
+        let project_schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/author-project.schema.json"))
+                .unwrap();
+        let pack_validator = jsonschema::validator_for(&pack_schema).unwrap();
+        let project_validator = jsonschema::validator_for(&project_schema).unwrap();
+        let format_characters = [
+            '\u{200b}', '\u{200c}', '\u{200d}', '\u{2060}', '\u{2061}', '\u{2062}', '\u{2063}',
+            '\u{2064}', '\u{feff}', '\u{fff9}', '\u{fffa}', '\u{fffb}',
+        ];
+        let mut cases: Vec<_> =
+            format_characters.iter().map(|ch| (ch.to_string(), false)).collect();
+        cases.extend(format_characters.iter().map(|ch| (format!("Human{ch}name"), true)));
+        cases.extend([
+            (format_characters.iter().collect(), false),
+            ("\u{200b} \u{200c}\u{a0}\u{2060}\u{3000}\u{feff}".into(), false),
+            ("می\u{200c}نا".into(), true),
+            ("क्\u{200d}ष".into(), true),
+            ("👩\u{200d}💻".into(), true),
+        ]);
+        for (value, accepted) in cases {
+            assert_eq!(has_nonblank_text(&value), accepted, "{value:?}");
+            let (mut pack, mut project) = fixtures();
+            pack.topics[0].title.clone_from(&value);
+            pack.reviewers[0].name.clone_from(&value);
+            pack.content_rights.statement.clone_from(&value);
+            pack.content_rights.source_label.clone_from(&value);
+            project.policies[0].title.clone_from(&value);
+            project.reviewers[0].name.clone_from(&value);
+            project.baseline_review.rationale.clone_from(&value);
+            assert_eq!(
+                pack_validator.is_valid(&serde_json::to_value(&pack).unwrap()),
+                accepted,
+                "pack schema: {value:?}"
+            );
+            assert_eq!(
+                project_validator.is_valid(&serde_json::to_value(&project).unwrap()),
+                accepted,
+                "project schema: {value:?}"
+            );
+            assert_eq!(
+                parse_pack(&serde_json::to_vec(&pack).unwrap()).is_ok(),
+                accepted,
+                "pack parser: {value:?}"
+            );
+            assert_eq!(
+                parse_project(&serde_json::to_vec(&project).unwrap()).is_ok(),
+                accepted,
+                "project parser: {value:?}"
+            );
+        }
+    }
+
+    #[test]
     fn source_labels_allow_human_punctuation_and_reject_absolute_local_paths() {
         let pack_schema: Value =
             serde_json::from_slice(include_bytes!("../../schemas/authoring-pack.schema.json"))
@@ -1362,8 +1428,6 @@ mod tests {
                 .as_slice(),
             include_bytes!("../../tests/fixtures/authoring/contracts/duplicate-logical-pack.json")
                 .as_slice(),
-            include_bytes!("../../tests/fixtures/authoring/contracts/duplicate-decoded-key.json")
-                .as_slice(),
         ] {
             assert!(parse_pack(bytes).is_err());
         }
@@ -1375,6 +1439,17 @@ mod tests {
         ] {
             assert!(parse_project(bytes).is_err());
         }
+    }
+
+    #[test]
+    fn duplicate_decoded_key_fixture_reports_the_duplicate_key() {
+        let error = parse_pack(include_bytes!(
+            "../../tests/fixtures/authoring/contracts/duplicate-decoded-key.json"
+        ))
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains("duplicate object key"), "{error}");
+        assert!(error.contains("schema_version"), "{error}");
     }
 
     #[test]

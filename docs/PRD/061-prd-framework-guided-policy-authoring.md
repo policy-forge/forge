@@ -190,6 +190,9 @@ contracts, exact PRD-056 baseline binding, explicit human assignments and answer
 Markdown skeletons, human clause files, provenance, and atomic output boundary.
 This tranche proceeds as a technical foundation with all human readiness,
 legal/content, design-partner, pilot, and release gates visibly pending.
+The release gate includes public Rust API semver and migration review: new
+variants in exhaustive error and CLI enums can break downstream exhaustive
+matches. This tranche does not claim that source-compatibility gate is complete.
 
 **M-13 remains unchecked and deferred to Phase 2.** Its MVP Must Have label is
 inconsistent with the phase allocation above; this tranche explicitly follows
