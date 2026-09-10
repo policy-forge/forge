@@ -419,6 +419,24 @@ mod tests {
             OutputArtifact { relative_path: "plan.json".into(), bytes: b"{}\n".to_vec() },
             OutputArtifact { relative_path: "policies/one.md".into(), bytes: b"# One\n".to_vec() },
             OutputArtifact { relative_path: "policies/two.md".into(), bytes: b"# Two\n".to_vec() },
+            OutputArtifact {
+                relative_path: "one.lifecycle.json".into(),
+                bytes: b"{\"state\":\"draft\"}\n".to_vec(),
+            },
+            OutputArtifact {
+                relative_path: "two.lifecycle.json".into(),
+                bytes: b"{\"state\":\"draft\"}\n".to_vec(),
+            },
+            OutputArtifact { relative_path: "handoff.json".into(), bytes: b"{}\n".to_vec() },
+            OutputArtifact {
+                relative_path: "components.lock.json".into(),
+                bytes: b"{}\n".to_vec(),
+            },
+            OutputArtifact { relative_path: "provenance.json".into(), bytes: b"{}\n".to_vec() },
+            OutputArtifact {
+                relative_path: "plan.html".into(),
+                bytes: b"<!doctype html>\n".to_vec(),
+            },
         ]
     }
 

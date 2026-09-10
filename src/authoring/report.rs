@@ -12,19 +12,30 @@ use crate::ForgeError;
 ///
 /// Returns an authoring error when serialization fails.
 pub fn render_json(plan: &AuthoringPlan) -> Result<Vec<u8>, ForgeError> {
-    let mut destination = BoundedJson(Vec::new());
-    serde_json::to_writer_pretty(&mut destination, plan)
+    encode(plan)
+}
+
+pub(super) fn encode(value: &impl serde::Serialize) -> Result<Vec<u8>, ForgeError> {
+    encode_bounded(value, super::output::MAX_OUTPUT_BYTES)
+}
+
+pub(super) fn encode_bounded(
+    value: &impl serde::Serialize,
+    limit: usize,
+) -> Result<Vec<u8>, ForgeError> {
+    let mut destination = BoundedJson(Vec::new(), limit);
+    serde_json::to_writer_pretty(&mut destination, value)
         .map_err(|cause| super::error(format!("cannot serialize authoring plan: {cause}")))?;
     std::io::Write::write_all(&mut destination, b"\n")
         .map_err(|cause| super::error(format!("cannot finish authoring plan: {cause}")))?;
     Ok(destination.0)
 }
 
-struct BoundedJson(Vec<u8>);
+struct BoundedJson(Vec<u8>, usize);
 
 impl std::io::Write for BoundedJson {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        if self.0.len().saturating_add(bytes.len()) as u64 > super::manifest::MAX_TOTAL_BYTES {
+        if self.0.len().saturating_add(bytes.len()) > self.1 {
             return Err(std::io::Error::other("authoring plan exceeds the report byte limit"));
         }
         self.0.extend_from_slice(bytes);
@@ -39,7 +50,43 @@ impl std::io::Write for BoundedJson {
 /// Render planning states and complete assignment evidence without answer values.
 #[must_use]
 pub fn render_text(plan: &AuthoringPlan) -> String {
-    let mut output = String::from("FORGE policy drafting plan\n");
+    render_text_buffer(plan, usize::MAX).bytes
+}
+
+pub(super) fn render_text_bounded(
+    plan: &AuthoringPlan,
+    limit: usize,
+) -> Result<String, ForgeError> {
+    let output = render_text_buffer(plan, limit);
+    if output.overflow {
+        return Err(super::error("text report exceeds remaining output budget"));
+    }
+    Ok(output.bytes)
+}
+
+struct BoundedText {
+    bytes: String,
+    limit: usize,
+    overflow: bool,
+}
+impl std::fmt::Write for BoundedText {
+    fn write_str(&mut self, text: &str) -> std::fmt::Result {
+        if text.len() > self.limit.saturating_sub(self.bytes.len()) {
+            self.overflow = true;
+            return Err(std::fmt::Error);
+        }
+        self.bytes.push_str(text);
+        Ok(())
+    }
+}
+impl BoundedText {
+    fn push_str(&mut self, text: &str) {
+        let _ = std::fmt::Write::write_str(self, text);
+    }
+}
+fn render_text_buffer(plan: &AuthoringPlan, limit: usize) -> BoundedText {
+    let mut output = BoundedText { bytes: String::new(), limit, overflow: false };
+    output.push_str("FORGE policy drafting plan\n");
     let _ = writeln!(output, "schema: {}", escaped(&plan.schema_version));
     let _ = writeln!(output, "project: {}", escaped(&plan.project_key));
     let _ = writeln!(output, "as-of: {}", escaped(&plan.as_of));
@@ -102,7 +149,7 @@ pub fn render_text(plan: &AuthoringPlan) -> String {
     output
 }
 
-fn append_provenance(output: &mut String, plan: &AuthoringPlan) {
+fn append_provenance(output: &mut BoundedText, plan: &AuthoringPlan) {
     let provenance = &plan.provenance;
     let _ = writeln!(output, "project-sha256: {}", provenance.project_sha256);
     let _ = writeln!(output, "authoring-pack-sha256: {}", provenance.pack_sha256);
@@ -146,7 +193,7 @@ fn append_provenance(output: &mut String, plan: &AuthoringPlan) {
     }
 }
 
-fn append_gap(output: &mut String, gap: &GapPlan) {
+fn append_gap(output: &mut BoundedText, gap: &GapPlan) {
     let _ = writeln!(
         output,
         "- gap={} control={} classification={} disposition={}",
@@ -182,7 +229,7 @@ fn append_gap(output: &mut String, gap: &GapPlan) {
     }
 }
 
-fn append_question(output: &mut String, prefix: &str, question: &QuestionEvaluation) {
+fn append_question(output: &mut BoundedText, prefix: &str, question: &QuestionEvaluation) {
     let _ = writeln!(
         output,
         "{prefix}question={} question-sha256={} required={} state={} owner={} sensitivity={} source={}",
@@ -210,7 +257,7 @@ fn append_question(output: &mut String, prefix: &str, question: &QuestionEvaluat
     }
 }
 
-fn append_review(output: &mut String, prefix: &str, review: &Review) {
+fn append_review(output: &mut BoundedText, prefix: &str, review: &Review) {
     let _ = writeln!(
         output,
         "{prefix}: reviewer={} reviewed-at={} rationale={}",

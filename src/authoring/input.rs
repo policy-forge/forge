@@ -14,7 +14,7 @@ use super::model::{InputFingerprint, LoadedAuthorProject, LoadedClause};
 pub(super) struct PreparedProject {
     pub root: PathBuf,
     pub loaded: LoadedAuthorProject,
-    captures: CaptureSet,
+    pub(super) captures: CaptureSet,
 }
 
 struct CapturedFile {
@@ -24,19 +24,51 @@ struct CapturedFile {
     max_bytes: u64,
 }
 
-struct CaptureSet {
+pub(super) struct CaptureSet {
     root: PathBuf,
     files: BTreeMap<String, CapturedFile>,
     identities: BTreeSet<(u64, u64)>,
     byte_count: u64,
+    byte_limit: u64,
 }
 
 impl CaptureSet {
-    fn new(root: PathBuf) -> Self {
-        Self { root, files: BTreeMap::new(), identities: BTreeSet::new(), byte_count: 0 }
+    pub(super) fn new(root: PathBuf) -> Self {
+        Self {
+            root,
+            files: BTreeMap::new(),
+            identities: BTreeSet::new(),
+            byte_count: 0,
+            byte_limit: MAX_TOTAL_BYTES,
+        }
     }
 
-    fn read(
+    pub(super) fn byte_count(&self) -> u64 {
+        self.byte_count
+    }
+
+    pub(super) fn restrict_budget(&mut self, limit: u64) -> Result<(), ForgeError> {
+        self.byte_limit = self.byte_limit.min(limit);
+        if self.byte_count > self.byte_limit {
+            return Err(error("captured requests exceed the aggregate input budget"));
+        }
+        Ok(())
+    }
+
+    pub(super) fn reject_cross_aliases(&self, other: &Self) -> Result<(), ForgeError> {
+        let identities: BTreeMap<_, _> =
+            other.files.iter().map(|(path, file)| (file.identity, path)).collect();
+        for (path, file) in &self.files {
+            if let Some(other_path) = identities.get(&file.identity)
+                && self.root.join(path) != other.root.join(other_path)
+            {
+                return Err(error("snapshot inputs alias one file through distinct paths"));
+            }
+        }
+        Ok(())
+    }
+
+    pub(super) fn read(
         &mut self,
         role: &str,
         path: &Path,
@@ -47,7 +79,7 @@ impl CaptureSet {
         if self.files.keys().any(|existing| existing.eq_ignore_ascii_case(&label)) {
             return Err(error(format!("{role} aliases another input")));
         }
-        let remaining = MAX_TOTAL_BYTES.saturating_sub(self.byte_count);
+        let remaining = self.byte_limit.saturating_sub(self.byte_count);
         if remaining == 0 {
             return Err(error(format!(
                 "{role}: captured project inputs have exhausted the 50 MiB total source budget"
@@ -81,7 +113,7 @@ impl CaptureSet {
             .checked_add(bytes.len() as u64)
             .ok_or_else(|| error("input byte count overflow"))?;
         // Retain the aggregate invariant independently of the confined reader's bounds.
-        if self.byte_count > MAX_TOTAL_BYTES {
+        if self.byte_count > self.byte_limit {
             return Err(error("captured project inputs exceed the 50 MiB total limit"));
         }
         let fingerprint = InputFingerprint {
@@ -102,18 +134,23 @@ impl CaptureSet {
         Ok(bytes)
     }
 
-    fn pinned(&mut self, role: &str, pin: &PinnedFile, limit: u64) -> Result<Vec<u8>, ForgeError> {
+    pub(super) fn pinned(
+        &mut self,
+        role: &str,
+        pin: &PinnedFile,
+        limit: u64,
+    ) -> Result<Vec<u8>, ForgeError> {
         self.read(role, &pin.path, Some(&pin.expected_sha256), limit)
     }
 
-    fn fingerprints(&self) -> Vec<InputFingerprint> {
+    pub(super) fn fingerprints(&self) -> Vec<InputFingerprint> {
         let mut entries: Vec<_> =
             self.files.values().map(|file| file.fingerprint.clone()).collect();
         entries.sort_by(|left, right| (&left.role, &left.path).cmp(&(&right.role, &right.path)));
         entries
     }
 
-    fn verify(&self) -> Result<(), ForgeError> {
+    pub(super) fn verify(&self) -> Result<(), ForgeError> {
         for (path, capture) in &self.files {
             let (bytes, identity) = crate::linkage::read_confined_local_file(
                 &self.root,
@@ -133,6 +170,47 @@ impl CaptureSet {
 }
 
 impl PreparedProject {
+    pub(super) fn byte_count(&self) -> u64 {
+        self.captures.byte_count
+    }
+
+    pub(super) fn control_fingerprints(&self) -> Result<BTreeMap<String, String>, ForgeError> {
+        let snapshot =
+            tempfile::tempdir().map_err(|_| error("cannot create inventory snapshot"))?;
+        for (path, captured) in &self.captures.files {
+            let target = snapshot.path().join(path);
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|_| error("cannot prepare inventory snapshot"))?;
+            }
+            std::fs::write(target, &captured.bytes)
+                .map_err(|_| error("cannot write inventory snapshot"))?;
+        }
+        let baseline = &self.loaded.project.applicability_manifest.path;
+        let capture = self
+            .captures
+            .files
+            .get(&portable_label(baseline)?)
+            .ok_or_else(|| error("missing captured baseline"))?;
+        let manifest = crate::applicability::manifest::parse(&capture.bytes)?;
+        let root = snapshot.path().join(baseline.parent().unwrap_or_else(|| Path::new("")));
+        let resource = crate::mapping::inventory::load(&root, "framework", &manifest.framework)?;
+        let kind = crate::mapping::manifest::SubjectType::Control;
+        resource
+            .inventory
+            .ids_of_type(kind)
+            .into_iter()
+            .map(|id| {
+                let digest = resource
+                    .inventory
+                    .fingerprint(kind, &id)
+                    .ok_or_else(|| error("validated control lacks a fingerprint"))?
+                    .to_owned();
+                Ok((id, digest))
+            })
+            .collect()
+    }
+
     /// Reopen every source through the same confined traversal before publication.
     pub(super) fn verify_inputs(&self) -> Result<(), ForgeError> {
         self.captures.verify()
@@ -140,6 +218,21 @@ impl PreparedProject {
 }
 
 pub(super) fn prepare(manifest_path: &Path) -> Result<PreparedProject, ForgeError> {
+    prepare_bounded(manifest_path, MAX_TOTAL_BYTES)
+}
+
+pub(super) fn prepare_bounded(
+    manifest_path: &Path,
+    budget: u64,
+) -> Result<PreparedProject, ForgeError> {
+    prepare_pinned(manifest_path, budget, None)
+}
+
+pub(super) fn prepare_pinned(
+    manifest_path: &Path,
+    budget: u64,
+    expected: Option<&str>,
+) -> Result<PreparedProject, ForgeError> {
     let absolute = absolute_manifest_path(manifest_path)?;
     let root = absolute
         .parent()
@@ -147,8 +240,9 @@ pub(super) fn prepare(manifest_path: &Path) -> Result<PreparedProject, ForgeErro
         .to_path_buf();
     let manifest_name = absolute.file_name().ok_or_else(|| error("manifest must name a file"))?;
     let mut captures = CaptureSet::new(root.clone());
+    captures.byte_limit = budget.min(MAX_TOTAL_BYTES);
     let project_bytes =
-        captures.read("author-project", Path::new(manifest_name), None, MAX_MANIFEST_BYTES)?;
+        captures.read("author-project", Path::new(manifest_name), expected, MAX_MANIFEST_BYTES)?;
     let project = manifest::parse_project(&project_bytes)?;
     if project.project_root != Path::new(".") {
         return Err(error("Phase 1 project_root must be '.' (the author manifest directory)"));
@@ -341,7 +435,7 @@ fn contained_dependency(base: &Path, relative: &Path) -> Result<PathBuf, ForgeEr
     Ok(normalized)
 }
 
-fn absolute_manifest_path(path: &Path) -> Result<PathBuf, ForgeError> {
+pub(super) fn absolute_manifest_path(path: &Path) -> Result<PathBuf, ForgeError> {
     let base = if path.is_absolute() {
         PathBuf::new()
     } else {

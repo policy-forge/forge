@@ -2,8 +2,13 @@
 
 pub mod component_model;
 pub mod components;
+mod generation;
+pub mod handoff;
+pub mod html;
 pub mod impact;
 mod input;
+
+pub use generation::{execute_extended, execute_handoff, execute_impact};
 pub mod manifest;
 pub mod model;
 pub mod output;

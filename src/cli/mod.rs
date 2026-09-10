@@ -860,6 +860,12 @@ pub enum AuthorCommand {
         /// Print text or versioned JSON to stdout
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
+        /// Explicit project-relative forge.author-components/1 extension
+        #[arg(long)]
+        components: Option<PathBuf>,
+        /// Include offline HTML views in the new output generation
+        #[arg(long, requires = "output_dir")]
+        html: bool,
         /// Optional new directory beneath the manifest's project root for plan reports
         #[arg(long)]
         output_dir: Option<PathBuf>,
@@ -872,9 +878,37 @@ pub enum AuthorCommand {
         /// Print text or versioned JSON to stdout
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
+        /// Explicit project-relative forge.author-components/1 extension
+        #[arg(long)]
+        components: Option<PathBuf>,
+        /// Include offline HTML views in the new output generation
+        #[arg(long, requires = "output_dir")]
+        html: bool,
         /// New directory beneath the project root; existing destinations are rejected
         #[arg(long)]
         output_dir: PathBuf,
+    },
+    /// Compare two explicitly pinned authoring snapshots without changing either
+    Impact {
+        /// Closed forge.authoring-impact/1 request
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+        #[arg(long, requires = "output_dir")]
+        html: bool,
+    },
+    /// Copy an exact reviewed build into a new generation with draft-only lifecycle records
+    Handoff {
+        /// Closed forge.author-handoff/1 request with explicit identities and pins
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        output_dir: PathBuf,
+        #[arg(long)]
+        html: bool,
     },
 }
 
@@ -1667,11 +1701,36 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         },
         Commands::Author { command } => {
             let action_required = match command {
-                AuthorCommand::Plan { manifest, format, output_dir } => {
-                    crate::authoring::execute(manifest, false, output_dir.as_deref(), format)?
+                AuthorCommand::Plan { manifest, format, output_dir, components, html } => {
+                    crate::authoring::execute_extended(
+                        manifest,
+                        false,
+                        output_dir.as_deref(),
+                        format,
+                        components.as_deref(),
+                        *html,
+                    )?
                 }
-                AuthorCommand::Build { manifest, format, output_dir } => {
-                    crate::authoring::execute(manifest, true, Some(output_dir), format)?
+                AuthorCommand::Build { manifest, format, output_dir, components, html } => {
+                    crate::authoring::execute_extended(
+                        manifest,
+                        true,
+                        Some(output_dir),
+                        format,
+                        components.as_deref(),
+                        *html,
+                    )?
+                }
+                AuthorCommand::Impact { manifest, format, output_dir, html } => {
+                    crate::authoring::execute_impact(
+                        manifest,
+                        output_dir.as_deref(),
+                        format,
+                        *html,
+                    )?
+                }
+                AuthorCommand::Handoff { manifest, output_dir, html } => {
+                    crate::authoring::execute_handoff(manifest, output_dir, *html)?
                 }
             };
             if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }
