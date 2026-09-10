@@ -2,6 +2,7 @@
 
 pub mod component_model;
 pub mod components;
+pub mod impact;
 mod input;
 pub mod manifest;
 pub mod model;
