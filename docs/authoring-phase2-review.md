@@ -95,13 +95,30 @@ Its terminal coverage and any provider limitations are recorded on the PR.
 | Fragment default/span wording | Clarify shared grammar/default selection rules separately from intentional zero-width fragment spans; legacy composition semantics stay unchanged. |
 | CLI exit helper assumed only one domain error variant | Check the application diagnostic prefix to exclude clap usage errors while allowing shared composition/lifecycle errors that also map to exit 2. Scenario-specific assertions continue to check the intended failure. |
 
+
+## Review follow-up at `18fa937`
+
+| Intake | Disposition |
+|---|---|
+| Restore guide qualifier or repeat all gates in the changelog | Editorial only: the entry explicitly scopes the guide to plan/build `/1`, links Phase 2 commands/contracts, and keeps human acceptance pending. Both roadmap views explicitly retain product/compliance. No capability or readiness claim is missing from the referenced guides. |
+| Test-candidate label precision | The chronological counts already agree; use latest local verification wording in the plan to distinguish its current summary from historical runs. |
+| Correspondence and component-heading descriptions | Align schema comments, usage and frozen matrix with existing rules: every supplied map replaces automatic matching, and the source's very first line must be the exact H2. No input contract is widened. |
+| Component failure-phase assignment inside Option::map | Optional refactor. Assignment explicitly precedes the fallible call, subsequent loading resets the phase, and same/different-project regressions protect the result. |
+| Generic application-error prefix in CLI helper | Intentional: it excludes clap usage errors while allowing legitimate shared domain validators. Scenario-specific structured output, privacy and publication assertions check intended behavior. |
+| Imported long control failed impact only when a finding was created | Reproduced with valid CLI snapshots: no-op passed, report whitespace/pin churn failed. Only nine control-derived finding categories use the existing upstream 64 KiB limit; authored labels/correspondence retain 16 KiB. Regressions cover bounds, report churn, gap/control membership and HTML. |
+| CodeRabbit: reduced capture budget still named global 50 MiB | Preserve existing full-budget diagnostics, report actual reduced totals/remaining bytes, and retain original read causes. Regression checks also verify capture state and no refunded budget after failure. |
+| Alias for the fully qualified imported-string constant | Optional refactor: the qualified mapping constant and adjacent comment explicitly distinguish it from authored bounds, and large-ID regressions reject an accidental substitution. |
+| Extra assertion of Unicode fixture length | Optional fixture assertion: the fixed 64 KiB ceiling is even and `é` is two UTF-8 bytes, so the constructed string is exactly at the inclusive byte limit; the adjacent over-limit case checks rejection. |
+
 ## Verification boundary
 
 The freshly fetched baseline passed 2,234 tests with three ignored. The integrated
 suite passed 2,300 tests with three ignored after initial independent remediation,
 before the external review fixes recorded above. The remediated candidate then
-passed 2,322 tests with three ignored. The final OCR follow-up passed 2,325
-tests with three ignored. Formatting,
+passed 2,322 tests with three ignored. The `18fa937` OCR follow-up passed 2,325
+tests with three ignored. The imported-control and diagnostic follow-up passed
+2,331 tests with three ignored; direct rebuilt-CLI replay preserved no-op exit 0
+and changed report binding exit 1 for the synthetic 32 KiB control ID. Formatting,
 strict locked all-target clippy and `git diff --check` passed. The final exact
 commit, test counts, OCR terminal coverage and hosted CI/review dispositions are
 recorded with the pull request. A skipped or incomplete bot review is not counted

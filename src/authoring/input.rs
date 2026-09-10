@@ -50,9 +50,25 @@ impl CaptureSet {
     pub(super) fn restrict_budget(&mut self, limit: u64) -> Result<(), ForgeError> {
         self.byte_limit = self.byte_limit.min(limit);
         if self.byte_count > self.byte_limit {
-            return Err(error("captured requests exceed the aggregate input budget"));
+            return Err(error(if self.byte_limit == MAX_TOTAL_BYTES {
+                "captured requests exceed the aggregate input budget".to_owned()
+            } else {
+                format!(
+                    "captured requests exceed the {} byte aggregate input budget \
+                     (captured: {} bytes; remaining: 0 bytes)",
+                    self.byte_limit, self.byte_count
+                )
+            }));
         }
         Ok(())
+    }
+
+    fn total_budget_label(&self) -> String {
+        if self.byte_limit == MAX_TOTAL_BYTES {
+            "50 MiB".to_owned()
+        } else {
+            format!("{} byte", self.byte_limit)
+        }
     }
 
     pub(super) fn reject_cross_aliases(&self, other: &Self) -> Result<(), ForgeError> {
@@ -81,9 +97,17 @@ impl CaptureSet {
         }
         let remaining = self.byte_limit.saturating_sub(self.byte_count);
         if remaining == 0 {
-            return Err(error(format!(
-                "{role}: captured project inputs have exhausted the 50 MiB total source budget"
-            )));
+            return Err(error(if self.byte_limit == MAX_TOTAL_BYTES {
+                format!(
+                    "{role}: captured project inputs have exhausted the 50 MiB total source budget"
+                )
+            } else {
+                format!(
+                    "{role}: captured project inputs have exhausted the {} byte total source budget \
+                     (0 bytes remaining)",
+                    self.byte_limit
+                )
+            }));
         }
         let effective_limit = max_bytes.min(remaining);
         let (bytes, identity) =
@@ -94,7 +118,8 @@ impl CaptureSet {
                         // Missing-file and permission failures must retain their cause too.
                         error(format!(
                             "{role}: input read failed with {remaining} bytes remaining in the \
-                             50 MiB total source budget (per-file limit: {max_bytes} bytes): {cause}"
+                             {} total source budget (per-file limit: {max_bytes} bytes): {cause}",
+                            self.total_budget_label()
                         ))
                     } else {
                         error(format!("{role}: {cause}"))
@@ -114,7 +139,15 @@ impl CaptureSet {
             .ok_or_else(|| error("input byte count overflow"))?;
         // Retain the aggregate invariant independently of the confined reader's bounds.
         if self.byte_count > self.byte_limit {
-            return Err(error("captured project inputs exceed the 50 MiB total limit"));
+            return Err(error(if self.byte_limit == MAX_TOTAL_BYTES {
+                "captured project inputs exceed the 50 MiB total limit".to_owned()
+            } else {
+                format!(
+                    "captured project inputs exceed the {} byte total limit \
+                     (captured: {} bytes; remaining: 0 bytes)",
+                    self.byte_limit, self.byte_count
+                )
+            }));
         }
         let fingerprint = InputFingerprint {
             role: role.to_owned(),
@@ -614,6 +647,73 @@ mod tests {
         assert!(captures.files.is_empty());
         assert!(captures.identities.is_empty());
         assert_eq!(captures.byte_count, MAX_TOTAL_BYTES - 2);
+    }
+
+    #[test]
+    fn reduced_source_budget_reports_actual_limit_and_preserves_read_failure_causes() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        std::fs::write(root.join("first.json"), b"123").unwrap();
+        std::fs::write(root.join("oversized.json"), b"123").unwrap();
+        let mut captures = CaptureSet::new(root.clone());
+        captures.restrict_budget(5).unwrap();
+        captures.read("first", Path::new("first.json"), None, 100).unwrap();
+        for name in ["oversized.json", "missing.json"] {
+            let original = crate::linkage::read_confined_local_file(&root, Path::new(name), 2)
+                .unwrap_err()
+                .to_string();
+            let message =
+                captures.read("next", Path::new(name), None, 100).unwrap_err().to_string();
+            assert!(message.contains("2 bytes remaining in the 5 byte total source budget"));
+            assert!(message.contains("per-file limit: 100 bytes"));
+            assert!(message.ends_with(&original));
+            assert!(!message.contains("50 MiB"));
+            assert!(!message.contains("exhausted"));
+            assert_eq!(captures.byte_count(), 3);
+            assert_eq!(captures.files.len(), 1);
+            assert_eq!(captures.identities.len(), 1);
+        }
+    }
+
+    #[test]
+    fn exhausted_reduced_source_budget_reports_zero_remaining_before_reading() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        std::fs::write(root.join("first.json"), b"123").unwrap();
+        let mut captures = CaptureSet::new(root);
+        captures.restrict_budget(3).unwrap();
+        captures.read("first", Path::new("first.json"), None, 100).unwrap();
+        let message =
+            captures.read("next", Path::new("missing.json"), None, 100).unwrap_err().to_string();
+        assert!(message.contains("exhausted the 3 byte total source budget (0 bytes remaining)"));
+        assert!(!message.contains("50 MiB"));
+        assert_eq!(captures.byte_count(), 3);
+        assert_eq!(captures.files.len(), 1);
+        assert_eq!(captures.identities.len(), 1);
+        captures.verify().unwrap();
+    }
+
+    #[test]
+    fn restricting_below_captured_bytes_reports_the_effective_reduced_budget() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        std::fs::write(root.join("first.json"), b"123").unwrap();
+        let mut captures = CaptureSet::new(root);
+        captures.read("first", Path::new("first.json"), None, 100).unwrap();
+        let message = captures.restrict_budget(2).unwrap_err().to_string();
+        assert!(
+            message
+                .contains("2 byte aggregate input budget (captured: 3 bytes; remaining: 0 bytes)")
+        );
+        assert!(!message.contains("50 MiB"));
+        assert_eq!(captures.byte_limit, 2);
+        assert_eq!(captures.byte_count(), 3);
+        assert_eq!(captures.files.len(), 1);
+        assert_eq!(captures.identities.len(), 1);
+        // Repeating a looser request cannot restore the spent aggregate allowance.
+        let message = captures.restrict_budget(4).unwrap_err().to_string();
+        assert!(message.contains("2 byte aggregate input budget"));
+        assert_eq!(captures.byte_limit, 2);
     }
 
     #[test]

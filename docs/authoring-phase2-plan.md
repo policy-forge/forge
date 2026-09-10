@@ -61,8 +61,9 @@ hashes and provenance, never values. All declarations require explicit bindings,
 including PRD-059 defaults; defaults cannot satisfy missing context.
 
 Reuse PRD-059 tokenization, validation, escaping, and one-pass substitution.
-At most one component per policy/topic in this extension version; its first H2
-must exactly match the generated topic heading and supplies that section's
+At most one component per policy/topic in this extension version; its first source
+line must equal `## <escaped topic title>`, with no preceding blank line or prose.
+That H2 supplies the section's
 heading without rebasing or discarding structure. One policy H1 remains.
 Human clauses may follow. All referenced sources and grammar are validated even
 for blocked sections. Repeated components need distinct instance keys.
@@ -73,7 +74,10 @@ Snapshots pin project and optional component extension independently. Exact
 framework and resolved-catalog hashes permit automatic same-control-ID
 correspondence. Changed framework resources require explicit reviewed one-to-one
 control correspondence bound to both exact resources, otherwise comparison is
-unsupported. Report hash churn alone never creates added/removed gaps. Findings
+unsupported. Every supplied map replaces automatic matching, including maps for
+identical framework resources, and requires at least one reviewed pair plus both
+sides of every control ID surviving in both inventories. Report hash churn alone
+never creates added/removed gaps. Findings
 retain old/new gap IDs and report hashes. Compare substantive dependencies,
 provenance bindings, authoring state, and exact output bytes separately. Global
 binding churn is reported independently of local affected sections. Unaffected
@@ -120,8 +124,8 @@ acceptance, human readiness, pilot metrics and release approval remain pending.
 
 ## Local technical evidence
 
-The remediated candidate passed formatting, strict locked all-target clippy,
-2,325 locked tests (three ignored), and diff whitespace checks. M-13 has explicit
+The latest local verification passed formatting, strict locked all-target clippy,
+2,331 locked tests (three ignored), and diff whitespace checks. M-13 has explicit
 unit/CLI cases for every change category, including raw report/extension churn,
 private incomplete component inputs, reviewed framework correspondence and
 unchanged local dependencies. Exact commit OCR and hosted checks remain separate

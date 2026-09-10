@@ -320,7 +320,11 @@ fn validate_sha(value: &str) -> Result<(), ForgeError> {
 }
 
 fn validate_label(value: &str) -> Result<(), ForgeError> {
-    if !manifest::has_nonblank_text(value) || value.len() > manifest::MAX_STRING_BYTES || value.trim() != value
+    validate_label_bounded(value, manifest::MAX_STRING_BYTES)
+}
+
+fn validate_label_bounded(value: &str, limit: usize) -> Result<(), ForgeError> {
+    if !manifest::has_nonblank_text(value) || value.len() > limit || value.trim() != value
         || value.chars().any(|c| c.is_control() || matches!(c, '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')) {
         return Err(error("invalid impact identifier or review metadata"));
     }
@@ -634,6 +638,24 @@ fn unchanged(value: &ChangeAxes) -> bool {
     value == &ChangeAxes::default()
 }
 
+// Only these finding subjects come from validated upstream control inventory.
+// Authored manifest labels and reviewed correspondence retain their closed 16 KiB limit.
+fn validate_finding_subject(category: ChangeCategory, subject: &str) -> Result<(), ForgeError> {
+    let limit = match category {
+        ChangeCategory::FrameworkControlChanged
+        | ChangeCategory::FrameworkControlAdded
+        | ChangeCategory::FrameworkControlRemoved
+        | ChangeCategory::GapAdded
+        | ChangeCategory::GapRemoved
+        | ChangeCategory::GapClassificationChanged
+        | ChangeCategory::GapBindingChanged
+        | ChangeCategory::AssignmentChanged
+        | ChangeCategory::DeferralChanged => crate::mapping::manifest::MAX_STRING_BYTES,
+        _ => manifest::MAX_STRING_BYTES,
+    };
+    validate_label_bounded(subject, limit)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn add_finding(
     report: &mut ImpactReport,
@@ -649,7 +671,7 @@ fn add_finding(
     if report.findings.len() >= MAX_FINDINGS {
         return Err(error("impact exceeds 10000 finding limit"));
     }
-    validate_label(subject)?;
+    validate_finding_subject(category, subject)?;
     if sections.len() > MAX_GRAPH.saturating_sub(report.reference_count) {
         return Err(error("impact expanded finding references exceed limit"));
     }
@@ -911,12 +933,13 @@ fn section_set(policy: &str, topic: &str) -> BTreeSet<SectionKey> {
 /// Exact framework hashes permit same-ID matching; changed frameworks require
 /// explicit nonempty reviewed correspondence bound to both exact resource pairs.
 /// Every supplied correspondence must explicitly pair both sides of each ID
-/// surviving in both inventories (including an optional exact-resource map). Unpaired controls absent from the opposite inventory
-/// are reported as additions/removals without inferring successor relationships.
+/// surviving in both inventories (including an optional exact-resource map).
+/// Unpaired controls absent from the opposite inventory are reported as additions/removals without inferring successor relationships.
 /// Explicit pack control/topic dependencies are tracked even without a current gap.
 /// # Errors
 /// Returns an error for invalid snapshots, correspondence or exceeded bounds.
-/// Missing correspondence produces an unsupported report with no unaffected claims.
+/// Missing correspondence for changed framework resources produces an unsupported
+/// report with no unaffected claims.
 #[allow(clippy::too_many_lines)] // One ordered comparison preserves the independent change axes.
 pub fn compare(
     old: &ImpactSnapshot,
@@ -1860,6 +1883,110 @@ mod tests {
             render_json(&report).unwrap(),
             render_json(&compare(&old, &new, None).unwrap()).unwrap()
         );
+    }
+
+    #[test]
+    fn imported_control_finding_subject_limits_do_not_expand_authored_labels() {
+        let maximum = "x".repeat(crate::mapping::manifest::MAX_STRING_BYTES);
+        let oversized = format!("{maximum}x");
+        for category in [
+            ChangeCategory::FrameworkControlChanged,
+            ChangeCategory::FrameworkControlAdded,
+            ChangeCategory::FrameworkControlRemoved,
+            ChangeCategory::GapAdded,
+            ChangeCategory::GapRemoved,
+            ChangeCategory::GapClassificationChanged,
+            ChangeCategory::GapBindingChanged,
+            ChangeCategory::AssignmentChanged,
+            ChangeCategory::DeferralChanged,
+        ] {
+            assert!(validate_finding_subject(category, &maximum).is_ok());
+            assert!(validate_finding_subject(category, &oversized).is_err());
+            assert!(validate_finding_subject(category, "control\n").is_err());
+        }
+        assert!(validate_finding_subject(ChangeCategory::AnswerChanged, &maximum).is_err());
+        assert!(validate_label(&maximum).is_err());
+    }
+
+    fn long_unassigned_control() -> (ImpactSnapshot, LoadedAuthorProject, String) {
+        let mut loaded = load_example();
+        let control = "x".repeat(32 * 1024);
+        loaded.baseline_report.controls[1].control_id.clone_from(&control);
+        loaded.pack.control_assignments.retain(|item| item.control_id != "sample-2");
+        refresh(&mut loaded, true);
+        (snapshot(loaded.clone()), loaded, control)
+    }
+
+    #[test]
+    fn imported_long_control_supports_no_op_report_churn_and_gap_membership_changes() {
+        let (old, mut loaded, control) = long_unassigned_control();
+        assert!(compare(&old, &snapshot(loaded.clone()), None).unwrap().findings.is_empty());
+        loaded.report_sha256 = sha256_hex(b"reformatted report with long imported control");
+        loaded.project.human_clauses[0].gap_ids =
+            vec![manifest::gap_id(&loaded.report_sha256, "sample-1")];
+        refresh(&mut loaded, true);
+        let report = compare(&old, &snapshot(loaded.clone()), None).unwrap();
+        assert!(report.is_complete());
+        let binding = report
+            .findings
+            .iter()
+            .find(|finding| {
+                finding.category == ChangeCategory::GapBindingChanged
+                    && finding.subject_key == control
+            })
+            .unwrap();
+        assert_ne!(binding.old_gap_id, binding.new_gap_id);
+        assert!(!has(&report, ChangeCategory::GapAdded));
+        assert!(!has(&report, ChangeCategory::GapRemoved));
+        let html = super::super::html::render_impact_bounded(
+            &report,
+            super::super::output::MAX_OUTPUT_BYTES,
+        )
+        .unwrap();
+        assert!(String::from_utf8(html).unwrap().contains(&control));
+        loaded.baseline_report.controls[1].classification = GapClassification::NotApplicable;
+        loaded.baseline_report.counts.applicable_unmapped -= 1;
+        loaded.baseline_report.counts.not_applicable += 1;
+        refresh(&mut loaded, true);
+        let new = snapshot(loaded);
+        let removal = compare(&old, &new, None).unwrap();
+        assert!(removal.findings.iter().any(|finding| {
+            finding.category == ChangeCategory::GapRemoved && finding.subject_key == control
+        }));
+        let addition = compare(&new, &old, None).unwrap();
+        assert!(addition.findings.iter().any(|finding| {
+            finding.category == ChangeCategory::GapAdded && finding.subject_key == control
+        }));
+    }
+
+    #[test]
+    fn imported_long_control_additions_and_removals_keep_authored_correspondence_bounds() {
+        let (old, mut loaded, old_control) = long_unassigned_control();
+        let new_control = "y".repeat(32 * 1024);
+        loaded.baseline_report.controls[1].control_id.clone_from(&new_control);
+        revised_framework(&mut loaded);
+        let new = snapshot(loaded);
+        let mut reviewed = correspondence(&old, &new);
+        reviewed.controls.pop();
+        let report = compare(&old, &new, Some(&reviewed)).unwrap();
+        assert!(report.is_complete());
+        for (category, subject) in [
+            (ChangeCategory::FrameworkControlRemoved, &old_control),
+            (ChangeCategory::GapRemoved, &old_control),
+            (ChangeCategory::FrameworkControlAdded, &new_control),
+            (ChangeCategory::GapAdded, &new_control),
+        ] {
+            assert!(report.findings.iter().any(|finding| {
+                finding.category == category && &finding.subject_key == subject
+            }));
+        }
+        // Explicit author-supplied correspondence still cannot carry a >16 KiB ID.
+        reviewed.controls.push(ControlCorrespondence {
+            old_control_id: old_control,
+            new_control_id: new_control,
+        });
+        assert!(validate_correspondence(&reviewed).is_err());
+        assert!(compare(&old, &new, Some(&reviewed)).is_err());
     }
 
     #[test]

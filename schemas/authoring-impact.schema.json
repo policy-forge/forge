@@ -199,7 +199,7 @@
           "$comment": "Independent cardinality ceiling, not a promise that 100000 pairs fit the complete 2 MiB manifest byte limit."
         }
       },
-      "$comment": "The controls cardinality ceiling and byte bounds are independent: at most 100000 reviewed one-to-one control pairs, within a complete manifest of at most 2 MiB and strings of at most 16384 UTF-8 bytes. The effective number of encodable pairs is lower and depends on identifier lengths and the other manifest fields. Runtime checks the complete byte limit before parsing or allocating correspondence records. At least one reviewed pair is required. Across different framework resources, runtime requires explicit old/new coverage of every same-spelled ID surviving on both sides; unpaired controls absent from the opposite inventory are reported as additions/removals without inferred successors."
+      "$comment": "The controls cardinality ceiling and byte bounds are independent: at most 100000 reviewed one-to-one control pairs, within a complete manifest of at most 2 MiB and strings of at most 16384 UTF-8 bytes. The effective number of encodable pairs is lower and depends on identifier lengths and the other manifest fields. Runtime checks the complete byte limit before parsing or allocating correspondence records. At least one reviewed pair is required. Any supplied correspondence, including one between identical framework resources, replaces automatic matching and requires explicit old/new coverage of every same-spelled ID surviving on both sides; unpaired controls absent from the opposite inventory are reported as additions/removals without inferred successors."
     }
   }
 }

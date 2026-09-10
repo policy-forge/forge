@@ -67,8 +67,8 @@ are not encryption and can reveal low-entropy values through guessing.
 The adapter uses PRD-059's grammar, parameter checks, one-pass rendering and
 escaping. It adds conservative authoring restrictions: no raw HTML, code blocks,
 document-wide reference definitions or unsafe links. One component may supply a
-policy/topic section in this extension version. Its first H2 must exactly match
-the escaped topic title. The heading is retained as supplied; it is not stripped
+policy/topic section in this extension version. Its first source line must be the
+H2 heading `## <escaped topic title>`, with no leading blank line or prose. The heading is retained as supplied; it is not stripped
 or rebased. Deeper headings remain inside that component, and explicitly supplied
 human clauses can follow. The policy retains one generated H1 and topic ordering.
 Components never set `human-draft-present` or policy approval state.
@@ -107,12 +107,17 @@ Exact framework and resolved-catalog hashes permit automatic same-control-ID
 correspondence. Changed framework resources require a reviewed, one-to-one
 control correspondence bound to both exact hashes and any resolved-catalog
 hashes. Matching IDs or UUIDs in unrelated frameworks alone are insufficient.
-Without correspondence the report is unsupported and has no unaffected claims.
+For changed framework resources, omitting correspondence produces an unsupported
+report with no unaffected claims.
 Every supplied correspondence must contain at least one reviewed pair and cover
-both sides of every control ID surviving in both inventories, including an optional
-map supplied for identical framework and resolved-catalog hashes. A supplied map
-replaces automatic same-control-ID matching. Unpaired surviving
-IDs produce an unsupported report. Controls absent from the opposite inventory
+both sides of every control ID surviving in both inventories. This obligation also
+applies to an optional map supplied for identical framework and resolved-catalog
+hashes: a supplied map replaces automatic same-control-ID matching. Unpaired surviving
+IDs produce an unsupported report. Imported control IDs used as finding subjects
+retain the upstream 64 KiB ceiling; authored impact metadata and explicit
+correspondence IDs retain the closed 16 KiB limit. Those correspondence bounds
+can make a changed-framework comparison unsupported; no matching is inferred
+to bypass them. Controls absent from the opposite inventory
 are explicit additions/removals, with no inferred successor. Explicit pack
 control/topic dependencies remain visible even when they have no current gap.
 Gap IDs include exact report hashes; comparison preserves both IDs while using
