@@ -257,3 +257,4 @@ remain pending.
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for framework-guided, provenance-preserving policy authoring |
+| 0.2 | 2026-09-09 | Codex | Recorded merged Phase 1 foundation and Phase 2 component, M-13, HTML and draft-handoff technical disposition; retained human acceptance and public API/release gates. |

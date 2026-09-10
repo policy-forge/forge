@@ -31,8 +31,8 @@ fn exit(output: &Output, code: i32) {
     );
     if code == 2 {
         assert!(
-            String::from_utf8_lossy(&output.stderr).contains("Error: Policy authoring error:"),
-            "expected authoring validation, not a clap usage failure: {}",
+            String::from_utf8_lossy(&output.stderr).starts_with("Error: "),
+            "expected an application diagnostic, not a clap usage failure: {}",
             String::from_utf8_lossy(&output.stderr)
         );
     }
@@ -831,55 +831,60 @@ fn handoff_publishes_complete_drafts_with_exit_one_when_drafting_work_remains() 
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 #[test]
-fn same_project_impact_with_outside_component_pin_publishes_an_incomplete_report() {
-    let (_tmp, root) = temp();
-    fixture(&root.join("nested"));
-    extension(&root.join("nested"));
-    std::fs::copy(root.join("nested/components.json"), root.join("outside-components.json"))
-        .unwrap();
-    write(
-        &root,
-        "impact.json",
-        &json!({
-            "schema_version":"forge.authoring-impact/1",
-            "old":{"project":pin(&root,"nested/project.json")},
-            "new":{"project":pin(&root,"nested/project.json"),"components":pin(&root,"outside-components.json")}
-        }),
-    );
-    let output = run(
-        &root,
-        &[
-            "author",
-            "impact",
-            "--manifest",
+fn outside_component_pins_are_classified_consistently_across_snapshot_locations() {
+    for new_project in ["nested/project.json", "other/project.json"] {
+        let (_tmp, root) = temp();
+        fixture(&root.join("nested"));
+        fixture(&root.join("other"));
+        extension(&root.join("nested"));
+        std::fs::copy(root.join("nested/components.json"), root.join("outside-components.json"))
+            .unwrap();
+        write(
+            &root,
             "impact.json",
-            "--format",
-            "json",
-            "--html",
-            "--output-dir",
-            "incomplete",
-        ],
-    );
-    exit(&output, 2);
-    let artifacts = tree(&root.join("incomplete"));
-    assert_eq!(
-        artifacts.keys().map(String::as_str).collect::<Vec<_>>(),
-        vec!["impact.html", "impact.json", "impact.txt"]
-    );
-    assert_eq!(artifacts["impact.json"], output.stdout);
-    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(report["status"], "incomplete");
-    assert!(report["sections"].as_array().unwrap().is_empty());
-    assert!(report["policies"].as_array().unwrap().is_empty());
-    for (path, bytes) in &artifacts {
-        let text = String::from_utf8_lossy(bytes);
-        for private in [
-            "outside-components.json",
-            "nested/project.json",
-            "Fictional draft custodian",
-            root.to_str().unwrap(),
-        ] {
-            assert!(!text.contains(private), "{path}");
+            &json!({
+                "schema_version":"forge.authoring-impact/1",
+                "old":{"project":pin(&root,"nested/project.json")},
+                "new":{"project":pin(&root,new_project),"components":pin(&root,"outside-components.json")}
+            }),
+        );
+        let output = run(
+            &root,
+            &[
+                "author",
+                "impact",
+                "--manifest",
+                "impact.json",
+                "--format",
+                "json",
+                "--html",
+                "--output-dir",
+                "incomplete",
+            ],
+        );
+        exit(&output, 2);
+        let artifacts = tree(&root.join("incomplete"));
+        assert_eq!(
+            artifacts.keys().map(String::as_str).collect::<Vec<_>>(),
+            vec!["impact.html", "impact.json", "impact.txt"]
+        );
+        assert_eq!(artifacts["impact.json"], output.stdout);
+        let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(report["status"], "incomplete");
+        assert_eq!(report["findings"][0]["category"], "component-input-unverified");
+        assert_eq!(report["findings"][0]["unverified_reason"], "component-input");
+        assert!(report["sections"].as_array().unwrap().is_empty());
+        assert!(report["policies"].as_array().unwrap().is_empty());
+        for (path, bytes) in &artifacts {
+            let text = String::from_utf8_lossy(bytes);
+            for private in [
+                "outside-components.json",
+                "nested/project.json",
+                "Fictional draft custodian",
+                root.to_str().unwrap(),
+            ] {
+                assert!(!text.contains(private), "{path}");
+            }
         }
     }
 }
@@ -917,5 +922,75 @@ fn failed_old_capture_does_not_refund_unknown_bytes_to_the_new_snapshot() {
         assert!(report["new_report_sha256"].is_null());
         assert!(report["sections"].as_array().unwrap().is_empty());
         assert!(report["policies"].as_array().unwrap().is_empty());
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn html_views_accept_validated_upstream_control_ids_beyond_authored_input_string_limits() {
+    let (_tmp, root) = temp();
+    fixture(&root);
+    let control_id = "x".repeat(32 * 1024);
+    let mut framework = read(&root, "framework.json");
+    framework["catalog"]["controls"].as_array_mut().unwrap().push(json!({
+        "id":control_id,"title":"Synthetic long unassigned control identifier"
+    }));
+    write(&root, "framework.json", &framework);
+    let original_applicability = read(&root, "applicability.json");
+    let init = run(&root, &["applicability", "init", "--framework", "framework.json"]);
+    exit(&init, 0);
+    let mut applicability: Value = serde_json::from_slice(&init.stdout).unwrap();
+    applicability["reviewers"] = original_applicability["reviewers"].clone();
+    applicability["decisions"] = original_applicability["decisions"].clone();
+    let mut decision = original_applicability["decisions"][0].clone();
+    decision["control_id"] = json!(control_id);
+    applicability["decisions"].as_array_mut().unwrap().push(decision);
+    write(&root, "applicability.json", &applicability);
+    let analysis = run(
+        &root,
+        &["applicability", "analyze", "--manifest", "applicability.json", "--format", "json"],
+    );
+    exit(&analysis, 0);
+    std::fs::write(root.join("gap-report.json"), &analysis.stdout).unwrap();
+    let mut pack = read(&root, "pack.json");
+    pack["baseline"]["framework_sha256"] = pin(&root, "framework.json")["expected_sha256"].clone();
+    pack["baseline"]["report_sha256"] = pin(&root, "gap-report.json")["expected_sha256"].clone();
+    write(&root, "pack.json", &pack);
+    let mut project = read(&root, "project.json");
+    project["baseline"] = pack["baseline"].clone();
+    project["applicability_manifest"] = pin(&root, "applicability.json");
+    project["gap_report"] = pin(&root, "gap-report.json");
+    project["authoring_pack"] = pin(&root, "pack.json");
+    project["answers"] = json!([]);
+    project["human_clauses"] = json!([]);
+    write(&root, "project.json", &project);
+    let reference =
+        run(&root, &["author", "plan", "--manifest", "project.json", "--format", "json"]);
+    exit(&reference, 1);
+    let plan: Value = serde_json::from_slice(&reference.stdout).unwrap();
+    assert!(plan["gaps"].as_array().unwrap().iter().any(|gap| gap["control_id"] == control_id));
+    for command in ["plan", "build"] {
+        let destination = format!("{command}-html");
+        exit(
+            &run(
+                &root,
+                &[
+                    "author",
+                    command,
+                    "--manifest",
+                    "project.json",
+                    "--html",
+                    "--output-dir",
+                    &destination,
+                ],
+            ),
+            1,
+        );
+        let outputs = tree(&root.join(&destination));
+        assert_eq!(outputs["plan.json"], reference.stdout);
+        assert!(String::from_utf8_lossy(&outputs["plan.html"]).contains(&control_id));
+        if command == "build" {
+            assert!(String::from_utf8_lossy(&outputs["provenance.html"]).contains(&control_id));
+        }
     }
 }

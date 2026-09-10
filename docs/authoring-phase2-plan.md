@@ -120,8 +120,8 @@ acceptance, human readiness, pilot metrics and release approval remain pending.
 
 ## Local technical evidence
 
-The integrated candidate passed formatting, strict locked all-target clippy,
-2,322 locked tests (three ignored), and diff whitespace checks. M-13 has explicit
+The remediated candidate passed formatting, strict locked all-target clippy,
+2,325 locked tests (three ignored), and diff whitespace checks. M-13 has explicit
 unit/CLI cases for every change category, including raw report/extension churn,
 private incomplete component inputs, reviewed framework correspondence and
 unchanged local dependencies. Exact commit OCR and hosted checks remain separate

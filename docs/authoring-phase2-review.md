@@ -58,7 +58,7 @@ completion evidence.
 | Missing component answer edges and unknown question references | Validate known question relationships while retaining declared question dependencies for missing answers; blocked context stays scoped. |
 | Empty unverified report hashes and unbudgeted scope records | Use explicit null for incomplete comparisons and reserve scope/ID evidence before allocation. |
 | Same-project component location failure bypassed incomplete report | Keep the failure inside the snapshot result so it follows the closed incomplete-report path. |
-| Component could override or omit topic heading | False positive: `components::validate_structure` requires the exact escaped first H2 before fragment preparation, including blocked sections; shared helper and heading regressions enforce this. |
+| Component could override or omit topic heading | False positive: `components::validate_structure` requires the component source's first line to equal `## <escaped topic title>` before fragment preparation, including blocked sections; shared helper and heading regressions enforce this. |
 | Repeated component search in rendering and section hashes | Build a borrowed policy/topic index once for each operation. |
 | Inventory snapshot diagnostics omitted OS cause | Include the non-sensitive I/O error kind; retain private path and raw diagnostic suppression. |
 | Handoff exit 1 after publication | Intentional existing authoring convention; explicitly document successful publication with remaining drafting work and verify receipt/output in CLI tests. |
@@ -69,12 +69,39 @@ completion evidence.
 | Copilot: plan-buffer copy before hashing | Hash the borrowed bytes directly, preserving the digest without the extra allocation. |
 | Copilot: generic serializers used plan-specific errors | Use report wording for shared bounded serialization failures. |
 
+
+## Final-candidate OCR follow-up
+
+The exact `9099ef3` review prompted these additional source-validated changes.
+Its terminal coverage and any provider limitations are recorded on the PR.
+
+| Intake | Disposition |
+|---|---|
+| Changelog guide label, output inventory and API note | Link the complete Phase 2 contract table and add a Changed entry. Phase 2 changes `AuthorCommand` variants and fields; `ForgeError` is unchanged in this diff and remains part of the carried Phase 1 API gate. |
+| Changelog publication novelty and opt-in values | Explicitly identify the reused Phase 1 publication primitive and public/internal substitutions into draft Markdown; report/HTML raw-value omission remains distinct. |
+| Shared PRD-059 error diagnostics | Record effective-budget diagnostic wording changes; successful composition bytes and existing provenance semantics remain preserved. |
+| Roadmap chronology and product/compliance gates | Restore chronological changelog rows and retain the same pending human gates in both roadmap views. |
+| Evidence subject, digest terminology and first-line heading rule | Name the remediated test candidate, use lowercase-hex digest terminology and describe the exact first-line component H2 check. |
+| Optional exact-resource correspondence lacked a direct case | Clarify that every supplied map replaces automatic matching and requires surviving-ID coverage; regression covers omitted, complete, partial and empty mappings with identical framework hashes. |
+| Same-project component-location failures used the generic category | Mark the component validation phase before path confinement; CLI regression requires component-input findings for both same/different project locations and preserves private incomplete reports. |
+| HTML typed-schema mismatch lacked a direct case | Add explicit mismatched-contract coverage through the typed adapter. |
+| HTML's 16 KiB guard rejected valid imported control IDs | Reuse the existing 64 KiB imported-metadata limit, retaining depth and aggregate byte caps; exercise the real validated long-control planning path and over-limit rejection. |
+| HTML DOM duplication | Streaming guard is an optional optimization: current serialized input is bounded before parsing and producer graph/cardinality limits remain enforced. The byte limit is not claimed as an exact peak-heap limit. |
+| Additional PRD requirement checkboxes | Intentionally unchanged: this tranche closes M-13's technical evidence and explicitly preserves other acceptance/human gates. Expanding checkbox scope would claim evidence outside this delivery. |
+| PRD revision history | Add a dated technical-disposition row without changing human acceptance status. |
+| Hypothetical duplicate component index | Not reachable through supported callers: `render_with_components` and `section_hashes` are confined to the authoring module, generation calls `components::prepare`, and closed `/1` parsing rejects duplicate policy/topic pairs. Public construction of `LoadedComponents` cannot invoke those private rendering adapters. No last/first-wins behavior is supported. |
+| Repeated HTML serialize/parse advice | Duplicate of the DOM optimization item; retain the runtime privacy/schema guard requested by the preceding review, with bounded producer inputs and the corrected imported-string ceiling. |
+| Claimed `ErrorKind` formatting compile failure | False positive: `ErrorKind` has implemented Display since Rust 1.60, predating the declared MSRV ([standard-library documentation](https://doc.rust-lang.org/std/io/enum.ErrorKind.html#impl-Display-for-ErrorKind)). Exact-candidate locked clippy/tests and Linux/macOS/Windows CI passed; a standalone rustc program using the disputed `{}` formatting also compiled and printed `permission denied`. No source change needed. |
+| Fragment default/span wording | Clarify shared grammar/default selection rules separately from intentional zero-width fragment spans; legacy composition semantics stay unchanged. |
+| CLI exit helper assumed only one domain error variant | Check the application diagnostic prefix to exclude clap usage errors while allowing shared composition/lifecycle errors that also map to exit 2. Scenario-specific assertions continue to check the intended failure. |
+
 ## Verification boundary
 
 The freshly fetched baseline passed 2,234 tests with three ignored. The integrated
 suite passed 2,300 tests with three ignored after initial independent remediation,
 before the external review fixes recorded above. The remediated candidate then
-passed 2,322 tests with three ignored. Formatting,
+passed 2,322 tests with three ignored. The final OCR follow-up passed 2,325
+tests with three ignored. Formatting,
 strict locked all-target clippy and `git diff --check` passed. The final exact
 commit, test counts, OCR terminal coverage and hosted CI/review dispositions are
 recorded with the pull request. A skipped or incomplete bot review is not counted

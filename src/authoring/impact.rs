@@ -2594,6 +2594,35 @@ mod tests {
     }
 
     #[test]
+    fn optional_exact_framework_correspondence_requires_complete_surviving_coverage() {
+        let (old, loaded) = pair();
+        let new = snapshot(loaded);
+        assert_eq!(
+            old.loaded.baseline_report.framework.raw_sha256,
+            new.loaded.baseline_report.framework.raw_sha256
+        );
+        assert_eq!(
+            old.loaded.baseline_report.framework.resolved_catalog_sha256,
+            new.loaded.baseline_report.framework.resolved_catalog_sha256
+        );
+        let automatic = compare(&old, &new, None).unwrap();
+        assert!(automatic.is_complete());
+        assert!(!automatic.sections.is_empty());
+        assert!(automatic.sections.iter().all(|section| section.unaffected));
+
+        let mut reviewed = correspondence(&old, &new);
+        assert!(compare(&old, &new, Some(&reviewed)).unwrap().is_complete());
+        reviewed.controls.pop();
+        let partial = compare(&old, &new, Some(&reviewed)).unwrap();
+        assert_eq!(partial.status, ComparisonStatus::Unsupported);
+        assert!(partial.sections.is_empty() && partial.policies.is_empty());
+        assert!(has(&partial, ChangeCategory::UnsupportedCorrespondence));
+        assert_eq!(partial.findings[0].subject_key, "unpaired-surviving-controls");
+        reviewed.controls.clear();
+        assert!(compare(&old, &new, Some(&reviewed)).is_err());
+    }
+
+    #[test]
     fn reviewed_partial_pairs_allow_true_absent_side_control_additions_and_removals() {
         let (old, mut loaded) = pair();
         loaded.baseline_report.controls[1].control_id = "sample-3".into();

@@ -89,8 +89,9 @@ pub(crate) struct RenderedFragment {
     pub spans: Vec<ProvenanceSpan>,
 }
 
-/// This pure PRD-059 entry point retains PRD-059 default semantics. Authoring
-/// calls it only after `bind_parameters` supplied every declared parameter and
+/// Pure fragment rendering over the shared PRD-059 grammar and byte/span limits.
+/// Unlike composition, fragments retain zero-width substitution spans. Authoring
+/// calls this only after `bind_parameters` supplied every declared parameter and
 /// every bound answer is available; sidecar defaults are permitted but never
 /// implicitly selected by that authoring caller.
 pub(crate) fn render_fragment(

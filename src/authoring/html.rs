@@ -63,7 +63,14 @@ fn require_schema(bytes: &[u8], allowed: &[&str], limit: usize) -> Result<(), Fo
     let value = crate::json_strict::parse_value(
         bytes,
         "HTML report",
-        crate::json_strict::Limits { max_depth: 64, max_string_bytes: 16 * 1024 },
+        // Control IDs and framework inventory metadata come from the validated
+        // PRD-056/055 ResourceManifest, whose strings may exceed authoring's
+        // narrower 16 KiB authored-input limit. Preserve that upstream ceiling;
+        // raw report bytes and escaped output still share the caller's budget.
+        crate::json_strict::Limits {
+            max_depth: 64,
+            max_string_bytes: crate::mapping::manifest::MAX_STRING_BYTES,
+        },
     )
     .map_err(|cause| error(cause.to_string()))?;
     if !value
@@ -226,6 +233,16 @@ mod tests {
             assert!(
                 render_typed_document("Typed report", &report, schema, MAX_OUTPUT_BYTES).is_err()
             );
+            let other_schema = if schema == super::super::model::PLAN_SCHEMA_VERSION {
+                super::super::impact::REPORT_SCHEMA_VERSION
+            } else {
+                super::super::model::PLAN_SCHEMA_VERSION
+            };
+            let mismatched = serde_json::json!({"schema_version":other_schema});
+            let error =
+                render_typed_document("Typed report", &mismatched, schema, MAX_OUTPUT_BYTES)
+                    .unwrap_err();
+            assert!(error.to_string().contains("unsupported report contract"));
         }
     }
 
@@ -242,5 +259,19 @@ mod tests {
         assert!(render_provenance_bounded(input, rendered.len() - 1).is_err());
         assert_eq!(render_provenance_bounded(input, rendered.len()).unwrap(), rendered);
         assert!(bounded_json(&serde_json::json!({"label":"long"}), 4).is_err());
+    }
+
+    #[test]
+    fn imported_report_strings_keep_the_upstream_limit_and_remaining_byte_budget() {
+        let limit = crate::mapping::manifest::MAX_STRING_BYTES;
+        let mut value = serde_json::json!({
+            "schema_version":"forge.authoring-provenance/1",
+            "metadata":"é".repeat(limit / 2)
+        });
+        let bytes = serde_json::to_vec(&value).unwrap();
+        assert!(render_provenance(&bytes).is_ok());
+        assert!(render_provenance_bounded(&bytes, bytes.len() - 1).is_err());
+        value["metadata"] = serde_json::json!("x".repeat(limit + 1));
+        assert!(render_provenance(&serde_json::to_vec(&value).unwrap()).is_err());
     }
 }

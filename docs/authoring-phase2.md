@@ -109,7 +109,9 @@ control correspondence bound to both exact hashes and any resolved-catalog
 hashes. Matching IDs or UUIDs in unrelated frameworks alone are insufficient.
 Without correspondence the report is unsupported and has no unaffected claims.
 Every supplied correspondence must contain at least one reviewed pair and cover
-both sides of every control ID surviving in both inventories. Unpaired surviving
+both sides of every control ID surviving in both inventories, including an optional
+map supplied for identical framework and resolved-catalog hashes. A supplied map
+replaces automatic same-control-ID matching. Unpaired surviving
 IDs produce an unsupported report. Controls absent from the opposite inventory
 are explicit additions/removals, with no inferred successor. Explicit pack
 control/topic dependencies remain visible even when they have no current gap.
@@ -131,7 +133,7 @@ The request hash binds finding identities to the explicit snapshot selection.
 Missing, invalid or drifted inputs produce an incomplete comparison with closed
 failure-phase metadata and no unaffected output. Both report hashes
 are explicit JSON `null` for an incomplete comparison. Fully verified comparisons
-retain the exact old/new 64-digit report hashes. The tool does not accept or
+retain the exact old/new 64-character lowercase-hex report hashes. The tool does not accept or
 render mismatched content, update pins, migrate answers, rewrite assignments,
 regenerate published drafts, or mutate lifecycle records.
 

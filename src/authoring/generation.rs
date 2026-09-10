@@ -423,7 +423,10 @@ pub fn execute_impact(
             .new
             .components
             .as_ref()
-            .map(|pin| relative_component(&request.new.project, pin))
+            .map(|pin| {
+                new_phase.set(impact::UnverifiedReason::ComponentInput);
+                relative_component(&request.new.project, pin)
+            })
             .transpose();
         component
             .and_then(|component| {

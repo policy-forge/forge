@@ -290,8 +290,8 @@ unscheduled candidates are:
 | 0.9 | 2026-05-18 | Hermes (Vega) | Major refresh: Phase 1+2 complete, Phase 3 partially complete |
 | **1.0** | **2026-05-21** | **Hermes** | **Roadmap reconciliation for v1.0.0: all 50 work items marked Done, stale Phase 3 remaining-work sections removed, future work moved to separate candidate list.** |
 | 1.1 | 2026-08-22 | ox-alpha | Reconciled status to v1.1.0 release line; recorded v1.1.0 PDF/DOCX ingestion and SSP control-implementation changes; added decision-log entry superseding the Markdown-only decision. |
-| 1.3 | 2026-09-09 | Codex | Reconciled merged PRD-061 Phase 1 and PRD-062 Slice 0; recorded Phase 2 technical evidence and pending API/human/release gates; retired the resolved Phase 1 sequencing question. |
 | 1.2 | 2026-09-08 | Codex | Added PRDs 055–068; reconciled seven technically implemented and seven planned initiatives; added dependency-oriented Now/Next/Later sequencing and explicit remaining gates. |
+| 1.3 | 2026-09-09 | Codex | Reconciled merged PRD-061 Phase 1 and PRD-062 Slice 0; recorded Phase 2 technical evidence and pending API/human/release gates; retired the resolved Phase 1 sequencing question. |
 
 ---
 
