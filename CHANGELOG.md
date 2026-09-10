@@ -4,6 +4,39 @@ All notable changes to FORGE will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+See the [authoring guide](docs/authoring.md) for the plan/build and `/1`
+contracts merged in PR #144. This section records the current authoring tranche; it is not a complete release
+inventory of all post-v1.1.0 changes.
+
+### Added
+
+- PRD-061 Phase 2: `forge author impact` for M-13 baseline/dependency comparison,
+  `forge author handoff` for opt-in draft-only lifecycle records, and
+  `--components FILE` / `--html` on author plan/build. Explicit component bindings
+  can substitute supplied public/internal answer or literal values into draft
+  Markdown; reports and HTML omit raw values. New closed input contracts
+  are `forge.author-components/1`, `forge.authoring-impact/1` and
+  `forge.author-handoff/1`; component output uses `forge.authoring-plan/2` and
+  `forge.authoring-provenance/2`. The [Phase 2 contract table](docs/authoring-phase2.md)
+  also documents the impact report, component lock and handoff receipt outputs.
+  Static HTML is offline and value-redacted.
+  Phase 2 outputs reuse Phase 1's publication boundary: one no-replace directory
+  rename on Linux/macOS, failing closed on other platforms. Existing Phase 1
+  inputs and default artifacts remain unchanged. Public Rust API migration/semver review and human acceptance,
+  legal/content, design-partner, pilot and release gates remain pending.
+
+### Changed
+
+- Shared PRD-059 rendering reports effective byte/span limits in budget errors;
+  exact error wording changes while existing successful composition bytes and
+  provenance semantics remain preserved.
+- `AuthorCommand` gains variants and fields. Downstream constructors and
+  exhaustive matches may require changes. The API gate carried from Phase 1
+  (including `ForgeError`) and the migration/semver release review
+  remain pending. No release compatibility is claimed.
+
 ## [1.1.0] — 2026-06-09
 
 FORGE v1.1.0 adds native PDF and DOCX ingestion, removing the requirement to pre-convert policy documents to Markdown with external tools.

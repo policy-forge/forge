@@ -40,6 +40,7 @@ pub struct ByteSpan {
 enum OriginKind {
     GeneratedMetadata,
     HumanClause,
+    Component,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -65,6 +66,18 @@ struct SpanOrigin {
     clause_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     source: Option<SourceSpan>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    component: Option<ComponentSpanOrigin>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct ComponentSpanOrigin {
+    instance_key: String,
+    kind: super::component_model::ComponentOrigin,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parameter_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parameter_value_sha256: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -93,11 +106,16 @@ struct ProvenanceGraph<'a> {
     policy_plans: &'a [PolicyPlan],
     clauses: Vec<&'a HumanClause>,
     policies: Vec<PolicyProvenance>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    component_manifest_sha256: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    components: Option<Vec<&'a super::component_model::ComponentEvidence>>,
 }
 
 struct TextBuilder {
     bytes: Vec<u8>,
     spans: Vec<ProvenanceSpan>,
+    byte_limit: usize,
 }
 
 struct BoundedJson {
@@ -124,7 +142,7 @@ impl TextBuilder {
         if bytes.is_empty() {
             return Ok(());
         }
-        if self.bytes.len().saturating_add(bytes.len()) > MAX_OUTPUT_BYTES {
+        if self.bytes.len().saturating_add(bytes.len()) > self.byte_limit {
             return Err(error("rendered policy exceeds the 50 MiB output limit"));
         }
         if self.spans.len() >= MAX_SPANS {
@@ -213,6 +231,34 @@ pub fn render(
     loaded: &LoadedAuthorProject,
     plan: &AuthoringPlan,
 ) -> Result<RenderedAuthorProject, ForgeError> {
+    render_inner(loaded, plan, None, None, MAX_OUTPUT_BYTES)
+}
+
+pub(super) fn render_with_components(
+    loaded: &LoadedAuthorProject,
+    plan: &AuthoringPlan,
+    components: &super::component_model::LoadedComponents,
+    plan_bytes: &[u8],
+    limit: usize,
+) -> Result<RenderedAuthorProject, ForgeError> {
+    render_inner(loaded, plan, Some(components), Some(plan_bytes), limit)
+}
+
+pub(super) fn render_bounded(
+    loaded: &LoadedAuthorProject,
+    plan: &AuthoringPlan,
+    limit: usize,
+) -> Result<RenderedAuthorProject, ForgeError> {
+    render_inner(loaded, plan, None, None, limit)
+}
+
+fn render_inner(
+    loaded: &LoadedAuthorProject,
+    plan: &AuthoringPlan,
+    components: Option<&super::component_model::LoadedComponents>,
+    plan_bytes: Option<&[u8]>,
+    limit: usize,
+) -> Result<RenderedAuthorProject, ForgeError> {
     for clause in loaded.clauses.values() {
         validate_clause(&clause.bytes)?;
         if sha256_hex(&clause.bytes) != clause.source.source.expected_sha256 {
@@ -231,50 +277,90 @@ pub fn render(
         .iter()
         .map(|gap| (gap.gap_id.clone(), gap.control_id.clone()))
         .collect::<BTreeMap<_, _>>();
+    let component_index = index_components(components);
     for policy in policy_plans {
         if !seen.insert(&policy.policy_key) {
             return Err(error("duplicate rendered policy key"));
         }
-        let (rendered, source_map) = render_policy(policy, &loaded.clauses, &gap_controls)?;
+        let (rendered, source_map) = render_policy_inner(
+            policy,
+            &loaded.clauses,
+            &gap_controls,
+            &component_index,
+            limit.saturating_sub(total_bytes),
+        )?;
         total_bytes = total_bytes.saturating_add(rendered.markdown.len());
         total_spans = total_spans.saturating_add(source_map.spans.len());
-        if total_bytes > MAX_OUTPUT_BYTES || total_spans > MAX_SPANS {
+        if total_bytes > limit || total_spans > MAX_SPANS {
             return Err(error("authoring generation exceeds rendering bounds"));
         }
         policies.push(rendered);
         provenance.push(source_map);
     }
     let graph = ProvenanceGraph {
-        schema_version: "forge.authoring-provenance/1",
+        schema_version: if components.is_some() {
+            "forge.authoring-provenance/2"
+        } else {
+            "forge.authoring-provenance/1"
+        },
         project_key: &plan.project_key,
-        plan_sha256: sha256_hex(&super::report::render_json(plan)?),
+        plan_sha256: match plan_bytes {
+            Some(bytes) => sha256_hex(bytes),
+            None => sha256_hex(&super::report::render_json(plan)?),
+        },
         input_provenance: &plan.provenance,
         gaps: &plan.gaps,
         questions: &plan.questions,
         policy_plans: &plan.policies,
         clauses: loaded.clauses.values().map(|clause| &clause.source).collect(),
         policies: provenance,
+        component_manifest_sha256: components.map(|items| items.manifest_sha256.as_str()),
+        components: components
+            .map(|items| items.instances.values().map(|item| &item.evidence).collect()),
     };
     let mut destination = BoundedJson {
         bytes: Vec::new(),
-        limit: MAX_OUTPUT_BYTES.saturating_sub(total_bytes).saturating_sub(1),
+        limit: limit.saturating_sub(total_bytes).saturating_sub(1),
     };
     serde_json::to_writer_pretty(&mut destination, &graph)
         .map_err(|cause| error(format!("cannot serialize authoring provenance: {cause}")))?;
     let mut provenance = destination.bytes;
     provenance.push(b'\n');
-    if total_bytes.saturating_add(provenance.len()) > MAX_OUTPUT_BYTES {
+    if total_bytes.saturating_add(provenance.len()) > limit {
         return Err(error("authoring provenance and policies exceed the 50 MiB output limit"));
     }
     Ok(RenderedAuthorProject { policies, provenance })
 }
 
+#[cfg(test)]
 fn render_policy(
     policy: &PolicyPlan,
     clauses: &BTreeMap<String, LoadedClause>,
     gap_controls: &BTreeMap<String, String>,
 ) -> Result<(RenderedPolicy, PolicyProvenance), ForgeError> {
-    let mut text = TextBuilder { bytes: Vec::new(), spans: Vec::new() };
+    render_policy_inner(policy, clauses, gap_controls, &BTreeMap::new(), MAX_OUTPUT_BYTES)
+}
+
+type ComponentIndex<'a> = BTreeMap<(&'a str, &'a str), &'a super::component_model::LoadedInstance>;
+
+fn index_components(
+    components: Option<&super::component_model::LoadedComponents>,
+) -> ComponentIndex<'_> {
+    components
+        .into_iter()
+        .flat_map(|items| items.instances.values())
+        .map(|item| ((item.evidence.policy_key.as_str(), item.evidence.topic_key.as_str()), item))
+        .collect()
+}
+
+fn render_policy_inner(
+    policy: &PolicyPlan,
+    clauses: &BTreeMap<String, LoadedClause>,
+    gap_controls: &BTreeMap<String, String>,
+    components: &ComponentIndex<'_>,
+    byte_limit: usize,
+) -> Result<(RenderedPolicy, PolicyProvenance), ForgeError> {
+    let mut text = TextBuilder { bytes: Vec::new(), spans: Vec::new(), byte_limit };
     text.append(
         format!("# {}\n\n", escape_markdown(&policy.title)).as_bytes(),
         metadata_origin(policy, None, "policy-title"),
@@ -292,7 +378,9 @@ fn render_policy(
         if !seen.insert(&section.topic_key) {
             return Err(error("duplicate rendered section topic"));
         }
-        render_section(&mut text, policy, section, clauses, gap_controls)?;
+        let component =
+            components.get(&(policy.policy_key.as_str(), section.topic_key.as_str())).copied();
+        render_section(&mut text, policy, section, clauses, gap_controls, component)?;
     }
     if policy.sections.is_empty() {
         text.append(
@@ -324,38 +412,50 @@ fn render_section(
     section: &SectionPlan,
     clauses: &BTreeMap<String, LoadedClause>,
     gap_controls: &BTreeMap<String, String>,
+    component: Option<&super::component_model::LoadedInstance>,
 ) -> Result<(), ForgeError> {
-    text.append(
-        format!(
-            "## {}\n\nDraft state: {}.\n\n",
-            escape_markdown(&section.title),
-            section.state.as_str()
-        )
-        .as_bytes(),
-        metadata_origin(policy, Some(section), "section-title-and-state"),
-    )?;
-    for question in &section.questions {
-        if question.state != AnswerStatus::Available {
-            let kind = if question.required { "CONTEXT" } else { "OPTIONAL CONTEXT" };
-            text.append(
-                format!(
-                    "\\[UNRESOLVED {kind}: {} ({})\\]\n\n",
-                    escape_markdown(&question.question_key),
-                    question.state.as_str()
-                )
-                .as_bytes(),
-                metadata_origin(policy, Some(section), "unresolved-question"),
-            )?;
+    if component.is_none() || section.state == DraftState::BlockedContext {
+        text.append(
+            format!(
+                "## {}\n\nDraft state: {}.\n\n",
+                escape_markdown(&section.title),
+                section.state.as_str()
+            )
+            .as_bytes(),
+            metadata_origin(policy, Some(section), "section-title-and-state"),
+        )?;
+    }
+    if component.is_none() || section.state == DraftState::BlockedContext {
+        for question in &section.questions {
+            if question.state != AnswerStatus::Available {
+                let kind = if question.required { "CONTEXT" } else { "OPTIONAL CONTEXT" };
+                text.append(
+                    format!(
+                        "\\[UNRESOLVED {kind}: {} ({})\\]\n\n",
+                        escape_markdown(&question.question_key),
+                        question.state.as_str()
+                    )
+                    .as_bytes(),
+                    metadata_origin(policy, Some(section), "unresolved-question"),
+                )?;
+            }
         }
     }
     if section.state == DraftState::BlockedContext {
         text.append(
-            b"\\[UNRESOLVED: Unresolved context prevents inclusion of human clauses for this section.\\]\n\n",
+            if component.is_some() {
+                b"\\[UNRESOLVED: Unresolved context prevents inclusion of drafting content for this section.\\]\n\n"
+            } else {
+                b"\\[UNRESOLVED: Unresolved context prevents inclusion of human clauses for this section.\\]\n\n"
+            },
             metadata_origin(policy, Some(section), "blocked-context"),
         )?;
         return Ok(());
     }
-    if section.clause_keys.is_empty() {
+    if let Some(instance) = component {
+        render_component(text, policy, section, instance)?;
+    }
+    if section.clause_keys.is_empty() && component.is_none() {
         text.append(
             b"\\[UNRESOLVED: Human-authored clause content is pending.\\]\n\n",
             metadata_origin(policy, Some(section), "unresolved-clause"),
@@ -379,6 +479,113 @@ fn render_section(
     Ok(())
 }
 
+fn render_component(
+    text: &mut TextBuilder,
+    policy: &PolicyPlan,
+    section: &SectionPlan,
+    instance: &super::component_model::LoadedInstance,
+) -> Result<(), ForgeError> {
+    let fragment = instance
+        .fragment
+        .as_ref()
+        .ok_or_else(|| error("available component lacks a rendered fragment"))?;
+    let mut end = 0;
+    for span in &fragment.spans {
+        if span.output.start != end
+            || span.output.end < span.output.start
+            || span.output.end > fragment.markdown.len()
+        {
+            return Err(error("component output spans do not exactly partition its bytes"));
+        }
+        let mut origin = metadata_origin(policy, Some(section), "component");
+        origin.kind = OriginKind::Component;
+        // Resolve reviewed gap assignments through the instance evidence once,
+        // rather than repeating its entire dependency graph for each substitution.
+        origin.component = Some(ComponentSpanOrigin {
+            instance_key: instance.evidence.instance_key.clone(),
+            kind: span.kind.clone(),
+            parameter_name: span.parameter_name.clone(),
+            parameter_value_sha256: span.parameter_value_sha256.clone(),
+        });
+        if let Some(source) = &span.source {
+            origin.source = Some(SourceSpan {
+                path: instance
+                    .evidence
+                    .source
+                    .path
+                    .to_str()
+                    .ok_or_else(|| error("component source path must be UTF-8"))?
+                    .to_owned(),
+                sha256: instance.evidence.source.expected_sha256.clone(),
+                bytes: source.clone(),
+            });
+        }
+        if let Some(answer) = &span.answer_ref {
+            origin.answer_refs.push(answer.clone());
+        }
+        let bytes = &fragment.markdown[span.output.start..span.output.end];
+        if bytes.is_empty() {
+            if text.spans.len() >= MAX_SPANS {
+                return Err(error("component provenance exceeds span limit"));
+            }
+            text.spans.push(ProvenanceSpan {
+                output: ByteSpan { start: text.bytes.len(), end: text.bytes.len() },
+                origin,
+            });
+        } else {
+            text.append(bytes, origin)?;
+        }
+        end = span.output.end;
+    }
+    if end != fragment.markdown.len() {
+        return Err(error("component provenance leaves uncovered output"));
+    }
+    text.append(b"\n", metadata_origin(policy, Some(section), "component-separator"))?;
+    text.append(
+        format!("Draft state: {}.\n\n", section.state.as_str()).as_bytes(),
+        metadata_origin(policy, Some(section), "section-state"),
+    )?;
+    for question in &section.questions {
+        if question.state != AnswerStatus::Available {
+            let kind = if question.required { "CONTEXT" } else { "OPTIONAL CONTEXT" };
+            text.append(
+                format!(
+                    "\\[UNRESOLVED {kind}: {} ({})\\]\n\n",
+                    escape_markdown(&question.question_key),
+                    question.state.as_str()
+                )
+                .as_bytes(),
+                metadata_origin(policy, Some(section), "unresolved-question"),
+            )?;
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn section_hashes(
+    loaded: &LoadedAuthorProject,
+    plan: &AuthoringPlan,
+    components: Option<&super::component_model::LoadedComponents>,
+) -> Result<BTreeMap<(String, String), String>, ForgeError> {
+    let gaps = plan.gaps.iter().map(|gap| (gap.gap_id.clone(), gap.control_id.clone())).collect();
+    let mut result = BTreeMap::new();
+    let components = index_components(components);
+    for policy in &plan.policies {
+        for section in &policy.sections {
+            let mut text =
+                TextBuilder { bytes: Vec::new(), spans: Vec::new(), byte_limit: MAX_OUTPUT_BYTES };
+            let instance =
+                components.get(&(policy.policy_key.as_str(), section.topic_key.as_str())).copied();
+            render_section(&mut text, policy, section, &loaded.clauses, &gaps, instance)?;
+            result.insert(
+                (policy.policy_key.clone(), section.topic_key.clone()),
+                sha256_hex(&text.bytes),
+            );
+        }
+    }
+    Ok(result)
+}
+
 fn metadata_origin(policy: &PolicyPlan, section: Option<&SectionPlan>, field: &str) -> SpanOrigin {
     SpanOrigin {
         kind: OriginKind::GeneratedMetadata,
@@ -395,6 +602,7 @@ fn metadata_origin(policy: &PolicyPlan, section: Option<&SectionPlan>, field: &s
         answer_refs: Vec::new(),
         clause_key: None,
         source: None,
+        component: None,
     }
 }
 
@@ -461,7 +669,7 @@ fn clause_origin(
     Ok(origin)
 }
 
-fn escape_markdown(value: &str) -> String {
+pub(super) fn escape_markdown(value: &str) -> String {
     let mut escaped = String::new();
     for character in value.chars() {
         if character.is_ascii_punctuation() {

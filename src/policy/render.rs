@@ -82,10 +82,73 @@ pub struct RenderedComposition {
     pub provenance: Vec<u8>,
 }
 
+/// Pure section rendering for authoring. This uses the same grammar and one-pass
+/// substitution as composition and adds no policy title or output files.
+pub(crate) struct RenderedFragment {
+    pub markdown: Vec<u8>,
+    pub spans: Vec<ProvenanceSpan>,
+}
+
+/// Pure fragment rendering over the shared PRD-059 grammar and byte/span limits.
+/// Unlike composition, fragments retain zero-width substitution spans. Authoring
+/// calls this only after `bind_parameters` supplied every declared parameter and
+/// every bound answer is available; sidecar defaults are permitted but never
+/// implicitly selected by that authoring caller.
+pub(crate) fn render_fragment(
+    component: &LoadedComponent,
+    max_bytes: usize,
+    max_spans: usize,
+) -> Result<RenderedFragment, crate::ForgeError> {
+    let values = resolve_values(&component.manifest, &component.instance)?;
+    let mut state = RenderState {
+        lines: Vec::new(),
+        spans: Vec::new(),
+        bytes: 0,
+        limit: max_bytes.min(MAX_ASSEMBLED_BYTES),
+        span_limit: max_spans.min(MAX_PROVENANCE_SPANS),
+    };
+    let used = render_component(&mut state, component, &values, true)?;
+    ensure_supplied_parameters_used(&component.instance, &used)?;
+    Ok(RenderedFragment {
+        markdown: format!("{}\n", state.lines.join("\n")).into_bytes(),
+        spans: state.spans,
+    })
+}
+
+fn ensure_supplied_parameters_used(
+    instance: &ComponentInstance,
+    used: &BTreeSet<String>,
+) -> Result<(), crate::ForgeError> {
+    for name in instance.parameters.keys() {
+        if !used.contains(name) {
+            return Err(composition_error(format!(
+                "instance '{}' supplies unused parameter '{name}'",
+                instance.instance_key
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Return the declared grammar's used names without evaluating parameter data.
+pub(crate) fn parameter_names(bytes: &[u8]) -> Result<BTreeSet<String>, crate::ForgeError> {
+    let text = std::str::from_utf8(bytes)
+        .map_err(|_| composition_error("component source must be UTF-8"))?;
+    let mut names = BTreeSet::new();
+    for line in text.lines() {
+        for occurrence in placeholder_occurrences(line)? {
+            names.insert(occurrence.name);
+        }
+    }
+    Ok(names)
+}
+
 struct RenderState {
     lines: Vec<String>,
     spans: Vec<ProvenanceSpan>,
     bytes: usize,
+    limit: usize,
+    span_limit: usize,
 }
 
 impl RenderState {
@@ -94,6 +157,8 @@ impl RenderState {
         let end_column = line.chars().count() + 1;
         Self {
             bytes: line.len() + 2,
+            limit: MAX_ASSEMBLED_BYTES,
+            span_limit: MAX_PROVENANCE_SPANS,
             lines: vec![line, String::new()],
             spans: vec![ProvenanceSpan {
                 output: TextSpan { line: 1, start_column: 1, end_column },
@@ -107,7 +172,7 @@ impl RenderState {
     }
 
     fn remaining_line_bytes(&self) -> usize {
-        MAX_ASSEMBLED_BYTES.saturating_sub(self.bytes).saturating_sub(1)
+        self.limit.saturating_sub(self.bytes).saturating_sub(1)
     }
 
     fn push_line(&mut self, line: String) -> Result<(), crate::ForgeError> {
@@ -116,9 +181,10 @@ impl RenderState {
             .checked_add(line.len())
             .and_then(|bytes| bytes.checked_add(1))
             .ok_or_else(|| composition_error("assembled Markdown byte count overflowed"))?;
-        if next > MAX_ASSEMBLED_BYTES {
+        if next > self.limit {
             return Err(composition_error(format!(
-                "assembled Markdown exceeds the {MAX_ASSEMBLED_BYTES} byte limit"
+                "assembled Markdown exceeds the {} byte limit",
+                self.limit
             )));
         }
         self.bytes = next;
@@ -145,15 +211,8 @@ pub(crate) fn render(
     let mut locked = Vec::with_capacity(components.len());
     for (index, component) in components.iter().enumerate() {
         let parameter_values = resolve_values(&component.manifest, &component.instance)?;
-        let used = render_component(&mut state, component, &parameter_values)?;
-        for supplied in component.instance.parameters.keys() {
-            if !used.contains(supplied) {
-                return Err(composition_error(format!(
-                    "instance '{}' supplies unused parameter '{supplied}'",
-                    component.instance.instance_key
-                )));
-            }
-        }
+        let used = render_component(&mut state, component, &parameter_values, false)?;
+        ensure_supplied_parameters_used(&component.instance, &used)?;
         let parameter_value_sha256 = parameter_values
             .iter()
             .map(|(name, value)| Ok((name.clone(), hash_json(value)?)))
@@ -198,6 +257,7 @@ fn render_component(
     state: &mut RenderState,
     component: &LoadedComponent,
     parameter_values: &BTreeMap<String, ParameterValue>,
+    retain_empty_substitutions: bool,
 ) -> Result<BTreeSet<String>, crate::ForgeError> {
     let text = std::str::from_utf8(&component.source_bytes).map_err(|_| {
         composition_error(format!(
@@ -229,6 +289,8 @@ fn render_component(
             &mut used,
             &mut state.spans,
             remaining_line_bytes,
+            retain_empty_substitutions,
+            state.span_limit,
         )?;
         state.push_line(rendered)?;
     }
@@ -251,17 +313,20 @@ fn render_line(
     used: &mut BTreeSet<String>,
     spans: &mut Vec<ProvenanceSpan>,
     max_line_bytes: usize,
+    retain_empty_substitutions: bool,
+    max_spans: usize,
 ) -> Result<String, crate::ForgeError> {
     let mut occurrences = placeholder_occurrences(line)?;
     if occurrences.is_empty() {
         if line.len() > max_line_bytes {
             return Err(composition_error(format!(
-                "assembled Markdown exceeds the {MAX_ASSEMBLED_BYTES} byte limit"
+                "rendered line exceeds its {max_line_bytes} byte budget"
             )));
         }
         if !line.is_empty() {
             push_span(
                 spans,
+                max_spans,
                 component_span(
                     component,
                     output_line,
@@ -278,6 +343,7 @@ fn render_line(
     let mut rendered = String::new();
     let mut previous = 0;
     let mut output_column = 1;
+    let mut source_column = 1;
     for occurrence in occurrences.drain(..) {
         let literal = &line[previous..occurrence.start];
         if !literal.is_empty() {
@@ -285,17 +351,19 @@ fn render_line(
             push_bounded(&mut rendered, literal, max_line_bytes)?;
             push_span(
                 spans,
+                max_spans,
                 component_span(
                     component,
                     output_line,
                     output_column,
                     output_column + length,
                     source_line,
-                    byte_to_column(line, previous),
-                    byte_to_column(line, occurrence.start),
+                    source_column,
+                    source_column + length,
                 ),
             )?;
             output_column += length;
+            source_column += length;
         }
         let declaration = declarations.get(occurrence.name.as_str()).ok_or_else(|| {
             composition_error(format!(
@@ -320,9 +388,10 @@ fn render_line(
         let substituted = render_parameter(value);
         let length = substituted.chars().count();
         push_bounded(&mut rendered, &substituted, max_line_bytes)?;
-        if length > 0 {
+        if length > 0 || retain_empty_substitutions {
             push_span(
                 spans,
+                max_spans,
                 ProvenanceSpan {
                     output: TextSpan {
                         line: output_line,
@@ -334,8 +403,8 @@ fn render_line(
                         source_sha256: component.source_sha256.clone(),
                         source: TextSpan {
                             line: source_line,
-                            start_column: byte_to_column(line, occurrence.start),
-                            end_column: byte_to_column(line, occurrence.end),
+                            start_column: source_column,
+                            end_column: source_column + occurrence.end - occurrence.start,
                         },
                         instance_key: component.instance.instance_key.clone(),
                         parameter_name: occurrence.name.clone(),
@@ -345,6 +414,8 @@ fn render_line(
             )?;
         }
         output_column += length;
+        // Placeholder grammar is ASCII, so its byte width equals scalar width.
+        source_column += occurrence.end - occurrence.start;
         used.insert(occurrence.name);
         previous = occurrence.end;
     }
@@ -354,14 +425,15 @@ fn render_line(
         push_bounded(&mut rendered, literal, max_line_bytes)?;
         push_span(
             spans,
+            max_spans,
             component_span(
                 component,
                 output_line,
                 output_column,
                 output_column + length,
                 source_line,
-                byte_to_column(line, previous),
-                line.chars().count() + 1,
+                source_column,
+                source_column + length,
             ),
         )?;
     }
@@ -381,7 +453,7 @@ fn push_bounded(
 ) -> Result<(), crate::ForgeError> {
     if rendered.len().saturating_add(value.len()) > max_line_bytes {
         return Err(composition_error(format!(
-            "assembled Markdown exceeds the {MAX_ASSEMBLED_BYTES} byte limit"
+            "rendered line exceeds its {max_line_bytes} byte budget"
         )));
     }
     rendered.push_str(value);
@@ -390,11 +462,12 @@ fn push_bounded(
 
 fn push_span(
     spans: &mut Vec<ProvenanceSpan>,
+    max_spans: usize,
     span: ProvenanceSpan,
 ) -> Result<(), crate::ForgeError> {
-    if spans.len() >= MAX_PROVENANCE_SPANS {
+    if spans.len() >= max_spans {
         return Err(composition_error(format!(
-            "composition provenance exceeds the {MAX_PROVENANCE_SPANS} span limit"
+            "rendered provenance exceeds the {max_spans} span limit"
         )));
     }
     spans.push(span);
@@ -813,10 +886,6 @@ fn component_span(
     }
 }
 
-fn byte_to_column(line: &str, offset: usize) -> usize {
-    line[..offset].chars().count() + 1
-}
-
 fn hash_json(value: &ParameterValue) -> Result<String, crate::ForgeError> {
     serde_json::to_vec(value)
         .map(|bytes| sha256_hex(&bytes))
@@ -929,5 +998,104 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn authoring_fragment_uses_the_composition_engine_without_generated_title() {
+        let bytes = "## Clause\r\n\r\nThe {{forge:param:owner-role}} records résumé changes.\r\n"
+            .as_bytes()
+            .to_vec();
+        let component = LoadedComponent {
+            instance: ComponentInstance {
+                instance_key: "explicit-instance".into(),
+                component_manifest: "clause.json".into(),
+                parameters: BTreeMap::from([(
+                    "owner-role".into(),
+                    ParameterValue::String("équipe [draft]".into()),
+                )]),
+            },
+            manifest: parameterized_component(),
+            manifest_sha256: "a".repeat(64),
+            source_sha256: sha256_hex(&bytes),
+            source_bytes: bytes,
+            source_label: "clause.md".into(),
+        };
+        let fragment =
+            render_fragment(&component, MAX_ASSEMBLED_BYTES, MAX_PROVENANCE_SPANS).unwrap();
+        let composition =
+            render("policy", "Draft", "1.0.0", &"b".repeat(64), std::slice::from_ref(&component))
+                .unwrap();
+        let mut expected = b"# Draft\n\n".to_vec();
+        expected.extend_from_slice(&fragment.markdown);
+        assert_eq!(composition.markdown, expected);
+        assert!(
+            fragment
+                .spans
+                .iter()
+                .all(|span| !matches!(span.origin, ProvenanceOrigin::GeneratedMetadata { .. }))
+        );
+        assert!(
+            render_fragment(&component, fragment.markdown.len() - 1, MAX_PROVENANCE_SPANS).is_err()
+        );
+        let byte_failure = render_fragment(&component, 5, MAX_PROVENANCE_SPANS).err().unwrap();
+        assert!(byte_failure.to_string().contains("4 byte budget"));
+        let span_failure = render_fragment(&component, MAX_ASSEMBLED_BYTES, 1).err().unwrap();
+        assert!(span_failure.to_string().contains("1 span limit"));
+    }
+
+    #[test]
+    fn byte_budget_errors_report_effective_limits_without_mutating_buffers() {
+        let mut state =
+            RenderState { lines: Vec::new(), spans: Vec::new(), bytes: 0, limit: 3, span_limit: 1 };
+        let error = state.push_line("abc".to_owned()).unwrap_err();
+        assert!(error.to_string().contains("3 byte limit"));
+        assert!(state.lines.is_empty());
+        assert_eq!(state.bytes, 0);
+
+        let mut line = "ab".to_owned();
+        let error = push_bounded(&mut line, "cd", 3).unwrap_err();
+        assert!(error.to_string().contains("3 byte budget"));
+        assert_eq!(line, "ab");
+    }
+
+    #[test]
+    fn authoring_empty_substitution_retains_span_without_changing_legacy_composition() {
+        let bytes = b"## Clause\n\nThe {{forge:param:owner-role}} records changes.\n".to_vec();
+        let component = LoadedComponent {
+            instance: ComponentInstance {
+                instance_key: "empty-instance".into(),
+                component_manifest: "clause.json".into(),
+                parameters: BTreeMap::from([(
+                    "owner-role".into(),
+                    ParameterValue::String(String::new()),
+                )]),
+            },
+            manifest: parameterized_component(),
+            manifest_sha256: "a".repeat(64),
+            source_sha256: sha256_hex(&bytes),
+            source_bytes: bytes,
+            source_label: "clause.md".into(),
+        };
+        let fragment =
+            render_fragment(&component, MAX_ASSEMBLED_BYTES, MAX_PROVENANCE_SPANS).unwrap();
+        let parameter = fragment
+            .spans
+            .iter()
+            .find(|span| matches!(span.origin, ProvenanceOrigin::Parameter { .. }))
+            .unwrap();
+        assert_eq!(parameter.output.start_column, parameter.output.end_column);
+        let composition =
+            render("policy", "Draft", "1.0.0", &"b".repeat(64), std::slice::from_ref(&component))
+                .unwrap();
+        let provenance: ProvenanceMap = serde_json::from_slice(&composition.provenance).unwrap();
+        assert!(
+            provenance
+                .spans
+                .iter()
+                .all(|span| !matches!(span.origin, ProvenanceOrigin::Parameter { .. }))
+        );
+        let mut expected = b"# Draft\n\n".to_vec();
+        expected.extend_from_slice(&fragment.markdown);
+        assert_eq!(composition.markdown, expected);
     }
 }

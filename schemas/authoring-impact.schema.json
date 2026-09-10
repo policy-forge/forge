@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/authoring-impact.schema.json",
+  "title": "Explicit authoring snapshot impact comparison",
+  "description": "Closed local comparison contract. Runtime additionally verifies exact pins, canonical contained paths, independently validated snapshots, reviewed one-to-one framework correspondence and aggregate limits. All reviewer metadata is asserted provenance. Existing author-project/1 inputs are unchanged.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "old",
+    "new"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.authoring-impact/1"
+    },
+    "old": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "new": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "correspondence": {
+      "$ref": "#/$defs/correspondence"
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$(?![\\s\\S])"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$(?![\\s\\S])"
+    },
+    "pinned_file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "expected_sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "path": {
+      "$comment": "The pattern requires the actual end of the string, and the schema rejects control characters. Runtime additionally rejects reserved device names, whitespace/dot aliases and components over 255 UTF-8 bytes. Character-count limits here are preflight only; confined reads reject filesystem aliases and symlinks.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*(?:\\\\|:|//))(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[/]$).+$(?![\\s\\S])",
+      "not": {
+        "pattern": "[\\u0000-\\u001f\\u007f-\\u009f]"
+      }
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "name"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "name": {
+          "$ref": "#/$defs/single_line"
+        }
+      }
+    },
+    "single_line": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/text"
+        }
+      ],
+      "pattern": "^[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000](?:[\\s\\S]*[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000])?$(?![\\s\\S])",
+      "not": {
+        "pattern": "[\\n\\r\\t]"
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])[Tt ](?:[01][0-9]|2[0-3]):[0-5][0-9]:(?:[0-5][0-9]|60)(?:\\.[0-9]+)?(?:[Zz]|[+\\-\\u2212](?:[01][0-9]|2[0-3]):[0-5][0-9])$(?![\\s\\S])",
+      "$comment": "Lexical guard preserves Chrono RFC 3339 spellings, including lowercase t/z, space, leap seconds, Unicode minus, and fractional precision. Runtime validates calendar dates and the 64-byte bound; JSON Schema maxLength counts characters. Standard date-time format assertions are intentionally absent because they can reject these runtime-accepted spellings."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "pattern": "[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060-\\u2064\\u3000\\ufeff\\ufff9-\\ufffb]",
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      },
+      "$comment": "JSON Schema maxLength counts characters. Runtime independently bounds every string to 16384 UTF-8 bytes, so multibyte text can satisfy this preflight and still exceed the runtime byte limit. This applies transitively to reviewer names, rationale and control IDs through single_line."
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project"
+      ],
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/pinned_file"
+        },
+        "components": {
+          "$ref": "#/$defs/pinned_file"
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_key",
+        "reviewed_at",
+        "rationale"
+      ],
+      "properties": {
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "reviewed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "rationale": {
+          "$ref": "#/$defs/single_line"
+        }
+      }
+    },
+    "pair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old_control_id",
+        "new_control_id"
+      ],
+      "properties": {
+        "old_control_id": {
+          "$ref": "#/$defs/single_line"
+        },
+        "new_control_id": {
+          "$ref": "#/$defs/single_line"
+        }
+      }
+    },
+    "correspondence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old_framework_sha256",
+        "new_framework_sha256",
+        "reviewers",
+        "review",
+        "controls"
+      ],
+      "properties": {
+        "old_framework_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "new_framework_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "old_resolved_catalog_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "new_resolved_catalog_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reviewers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/reviewer"
+          }
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        },
+        "controls": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/pair"
+          },
+          "$comment": "Independent cardinality ceiling, not a promise that 100000 pairs fit the complete 2 MiB manifest byte limit."
+        }
+      },
+      "$comment": "The controls cardinality ceiling and byte bounds are independent: at most 100000 reviewed one-to-one control pairs, within a complete manifest of at most 2 MiB and strings of at most 16384 UTF-8 bytes. The effective number of encodable pairs is lower and depends on identifier lengths and the other manifest fields. Runtime checks the complete byte limit before parsing or allocating correspondence records. At least one reviewed pair is required. Any supplied correspondence, including one between identical framework resources, replaces automatic matching and requires explicit old/new coverage of every same-spelled ID surviving on both sides; unpaired controls absent from the opposite inventory are reported as additions/removals without inferred successors."
+    }
+  }
+}

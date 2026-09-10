@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/author-handoff/1",
+  "title": "FORGE explicit authoring draft lifecycle handoff",
+  "description": "Closed opt-in request. All generated policies must be selected explicitly. Publication creates only draft records with empty history. Governance metadata is supplied assertion.",
+  "$comment": "Runtime rejects duplicate decoded keys/nulls and enforces 2 MiB raw bytes, depth 16, 4096-byte strings, unique identities, portable contained paths and aliases, exact pins and replayed bytes, actual calendar dates, role counts, schedule relationships, and complete policy selection. JSON Schema lengths count characters. No network resolution is needed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project",
+    "provenance",
+    "policies"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.author-handoff/1"
+    },
+    "project": {
+      "$ref": "#/$defs/pin"
+    },
+    "components": {
+      "$ref": "#/$defs/pin"
+    },
+    "provenance": {
+      "$ref": "#/$defs/pin"
+    },
+    "policies": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "author_policy_key",
+          "draft",
+          "policy_key",
+          "version_key",
+          "title",
+          "owner_keys",
+          "parties",
+          "approval_policy",
+          "review"
+        ],
+        "properties": {
+          "author_policy_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          },
+          "draft": {
+            "$ref": "#/$defs/pin"
+          },
+          "policy_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "\\S"
+          },
+          "version_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "\\S"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "pattern": "\\S"
+          },
+          "owner_keys": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 64,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "\\S"
+            },
+            "uniqueItems": true
+          },
+          "parties": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 64,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "roles"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096,
+                  "pattern": "\\S"
+                },
+                "roles": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 5,
+                  "items": {
+                    "enum": [
+                      "author",
+                      "reviewer",
+                      "approver",
+                      "owner",
+                      "custodian"
+                    ]
+                  },
+                  "uniqueItems": true
+                }
+              }
+            }
+          },
+          "approval_policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "schema_version",
+              "required_roles",
+              "separation"
+            ],
+            "properties": {
+              "schema_version": {
+                "const": "forge.approval-policy/1"
+              },
+              "required_roles": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 5,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "role",
+                    "count"
+                  ],
+                  "properties": {
+                    "role": {
+                      "enum": [
+                        "author",
+                        "reviewer",
+                        "approver",
+                        "owner",
+                        "custodian"
+                      ]
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 65535
+                    }
+                  }
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "role"
+                      ],
+                      "properties": {
+                        "role": {
+                          "const": "reviewer"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "role"
+                      ],
+                      "properties": {
+                        "role": {
+                          "const": "approver"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "separation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "author_reviewer",
+                  "author_approver",
+                  "reviewer_approver"
+                ],
+                "properties": {
+                  "author_reviewer": {
+                    "type": "boolean"
+                  },
+                  "author_approver": {
+                    "type": "boolean"
+                  },
+                  "reviewer_approver": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cadence_days",
+              "next_review_date",
+              "due_soon_days",
+              "timezone_policy"
+            ],
+            "properties": {
+              "cadence_days": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "next_review_date": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+              },
+              "due_soon_days": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "timezone_policy": {
+                "const": "date-only"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "pin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "expected_sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "expected_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*(?:\\\\|:|//))(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[/]$).+$",
+      "$comment": "Runtime additionally rejects reserved device names, control characters, whitespace/dot aliases, unsafe punctuation and overlong components; confined capture rejects symlinks and filesystem aliases."
+    }
+  }
+}
