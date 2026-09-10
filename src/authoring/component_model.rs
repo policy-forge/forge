@@ -1,6 +1,6 @@
 //! Closed opt-in component bindings and value-redacted captured evidence.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -107,13 +107,17 @@ impl LoadedComponents {
     /// A missing bound value blocks all content in its explicitly assigned section.
     /// Component content never sets the human-draft-present state.
     pub fn apply_plan(&self, plan: &mut AuthoringPlan) {
+        let blocked: BTreeSet<_> = self
+            .instances
+            .values()
+            .filter(|instance| instance.evidence.blocked)
+            .map(|instance| {
+                (instance.evidence.policy_key.as_str(), instance.evidence.topic_key.as_str())
+            })
+            .collect();
         for policy in &mut plan.policies {
             for section in &mut policy.sections {
-                if self.instances.values().any(|instance| {
-                    instance.evidence.policy_key == policy.policy_key
-                        && instance.evidence.topic_key == section.topic_key
-                        && instance.evidence.blocked
-                }) {
+                if blocked.contains(&(policy.policy_key.as_str(), section.topic_key.as_str())) {
                     section.state = DraftState::BlockedContext;
                 }
             }

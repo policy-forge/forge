@@ -92,6 +92,17 @@ pub enum ComparisonStatus {
     Unsupported,
 }
 
+impl ComparisonStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Complete => "complete",
+            Self::Incomplete => "incomplete",
+            Self::Unsupported => "unsupported",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ChangeCategory {
@@ -103,6 +114,8 @@ pub enum ChangeCategory {
     BaselineBindingChanged,
     ProjectBindingChanged,
     FrameworkControlChanged,
+    FrameworkControlAdded,
+    FrameworkControlRemoved,
     GapAdded,
     GapRemoved,
     GapClassificationChanged,
@@ -159,8 +172,10 @@ pub struct ImpactFinding {
     pub new_sha256: Option<String>,
     pub old_gap_id: Option<String>,
     pub new_gap_id: Option<String>,
-    pub old_report_sha256: String,
-    pub new_report_sha256: String,
+    /// Exact report hash for fully verified comparison inputs; both are null for incomplete comparisons.
+    pub old_report_sha256: Option<String>,
+    /// Exact report hash for fully verified comparison inputs; both are null for incomplete comparisons.
+    pub new_report_sha256: Option<String>,
     pub affected_sections: Vec<SectionReference>,
 }
 
@@ -197,8 +212,10 @@ pub struct ImpactReport {
     pub status: ComparisonStatus,
     pub old_project_sha256: String,
     pub new_project_sha256: String,
-    pub old_report_sha256: String,
-    pub new_report_sha256: String,
+    /// Exact report hash for fully verified comparison inputs; both are null for incomplete comparisons.
+    pub old_report_sha256: Option<String>,
+    /// Exact report hash for fully verified comparison inputs; both are null for incomplete comparisons.
+    pub new_report_sha256: Option<String>,
     pub correspondence_sha256: Option<String>,
     pub request_sha256: Option<String>,
     pub findings: Vec<ImpactFinding>,
@@ -226,7 +243,10 @@ impl ImpactReport {
 /// Rejects invalid, aliased, duplicate-key, unsupported or over-limit contracts.
 pub fn parse_manifest(bytes: &[u8]) -> Result<ImpactManifest, ForgeError> {
     if bytes.len() as u64 > manifest::MAX_MANIFEST_BYTES {
-        return Err(error("authoring impact manifest exceeds 2 MiB"));
+        return Err(error(format!(
+            "authoring impact manifest exceeds {} byte limit",
+            manifest::MAX_MANIFEST_BYTES
+        )));
     }
     let value = crate::json_strict::parse_value(
         bytes,
@@ -242,6 +262,15 @@ pub fn parse_manifest(bytes: &[u8]) -> Result<ImpactManifest, ForgeError> {
     }
     let mut paths = BTreeSet::new();
     for snapshot in [&parsed.old, &parsed.new] {
+        if snapshot
+            .components
+            .as_ref()
+            .is_some_and(|components| components.path == snapshot.project.path)
+        {
+            return Err(error(
+                "a snapshot project and component extension must name distinct files",
+            ));
+        }
         for pin in std::iter::once(&snapshot.project).chain(snapshot.components.iter()) {
             validate_pin(pin)?;
             let path = pin.path.to_str().ok_or_else(|| error("impact paths must be UTF-8"))?;
@@ -318,7 +347,8 @@ fn validate_correspondence(value: &ReviewedCorrespondence) -> Result<(), ForgeEr
     {
         validate_sha(sha)?;
     }
-    if value.controls.len() > MAX_GRAPH
+    if value.controls.is_empty()
+        || value.controls.len() > MAX_GRAPH
         || value.reviewers.is_empty()
         || value.reviewers.len() > manifest::MAX_REVIEWERS
     {
@@ -367,7 +397,10 @@ struct BoundedWriter {
 impl Write for BoundedWriter {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
         if bytes.len() > self.limit.saturating_sub(self.bytes.len()) {
-            return Err(std::io::Error::other("impact output exceeds 50 MiB"));
+            return Err(std::io::Error::other(format!(
+                "impact output exceeds {} byte limit",
+                self.limit
+            )));
         }
         self.bytes.extend_from_slice(bytes);
         Ok(bytes.len())
@@ -384,9 +417,11 @@ fn bounded_json(value: &impl Serialize, pretty: bool, limit: usize) -> Result<Ve
     } else {
         serde_json::to_writer(&mut writer, value)
     }
-    .map_err(|_| error("impact serialization exceeds output limits"))?;
+    .map_err(|_| error(format!("impact JSON exceeds {} byte limit", writer.limit)))?;
     if pretty {
-        writer.write_all(b"\n").map_err(|_| error("impact output exceeds limit"))?;
+        writer
+            .write_all(b"\n")
+            .map_err(|_| error(format!("impact JSON exceeds {} byte limit", writer.limit)))?;
     }
     Ok(writer.bytes)
 }
@@ -419,13 +454,15 @@ pub fn render_text_bounded(report: &ImpactReport, limit: usize) -> Result<String
     let mut out =
         BoundedWriter { bytes: Vec::new(), limit: limit.min(super::output::MAX_OUTPUT_BYTES) };
     writeln!(out, "FORGE authoring impact — drafting dependencies only")
-        .map_err(|_| error("impact text exceeds limit"))?;
+        .map_err(|_| error(format!("impact text exceeds {} byte limit", out.limit)))?;
     writeln!(
         out,
-        "Comparison: {:?}\nOld project: {}\nNew project: {}",
-        report.status, report.old_project_sha256, report.new_project_sha256
+        "Comparison: {}\nOld project: {}\nNew project: {}",
+        report.status.as_str(),
+        report.old_project_sha256,
+        report.new_project_sha256
     )
-    .map_err(|_| error("impact text exceeds limit"))?;
+    .map_err(|_| error(format!("impact text exceeds {} byte limit", out.limit)))?;
     for finding in &report.findings {
         let category = serde_json::to_value(finding.category)
             .map_err(|_| error("impact category serialization failed"))?;
@@ -436,7 +473,7 @@ pub fn render_text_bounded(report: &ImpactReport, limit: usize) -> Result<String
             finding.subject_key,
             finding.finding_id
         )
-        .map_err(|_| error("impact text exceeds limit"))?;
+        .map_err(|_| error(format!("impact text exceeds {} byte limit", out.limit)))?;
     }
     for policy in &report.policies {
         writeln!(
@@ -445,7 +482,7 @@ pub fn render_text_bounded(report: &ImpactReport, limit: usize) -> Result<String
             policy.policy_key,
             if policy.unaffected { "unaffected (exact bytes and dependencies)" } else { "changed" }
         )
-        .map_err(|_| error("impact text exceeds limit"))?;
+        .map_err(|_| error(format!("impact text exceeds {} byte limit", out.limit)))?;
     }
     String::from_utf8(out.bytes).map_err(|_| error("impact text encoding failed"))
 }
@@ -481,7 +518,7 @@ pub fn incomplete_report_with_reason(
     if !matches!(side, "old" | "new" | "both") {
         return Err(error("invalid unverified snapshot side"));
     }
-    let mut report = empty_report(old_project_sha256, new_project_sha256, "", "");
+    let mut report = empty_report(old_project_sha256, new_project_sha256, None, None);
     report.status = ComparisonStatus::Incomplete;
     let category = match reason {
         UnverifiedReason::ComponentInput => ChangeCategory::ComponentInputUnverified,
@@ -555,21 +592,27 @@ pub fn bind_request(report: &mut ImpactReport, request_sha256: &str) -> Result<(
     Ok(())
 }
 
-fn empty_report(old: &str, new: &str, old_report: &str, new_report: &str) -> ImpactReport {
+fn empty_report(
+    old: &str,
+    new: &str,
+    old_report: Option<&str>,
+    new_report: Option<&str>,
+) -> ImpactReport {
     ImpactReport {
         schema_version: REPORT_SCHEMA_VERSION.into(),
         status: ComparisonStatus::Complete,
         old_project_sha256: old.into(),
         new_project_sha256: new.into(),
-        old_report_sha256: old_report.into(),
-        new_report_sha256: new_report.into(),
+        old_report_sha256: old_report.map(str::to_owned),
+        new_report_sha256: new_report.map(str::to_owned),
         correspondence_sha256: None,
         request_sha256: None,
         findings: Vec::new(),
         sections: Vec::new(),
         policies: Vec::new(),
         reference_count: 0,
-        evidence_bytes: 0,
+        // Reserve fixed report metadata, including a later exact request binding.
+        evidence_bytes: 2048,
     }
 }
 
@@ -665,6 +708,14 @@ struct SnapshotIndex<'a> {
     control_sections: BTreeMap<String, BTreeSet<SectionKey>>,
 }
 
+fn reserve_references(total: &mut usize, additional: usize) -> Result<(), ForgeError> {
+    if additional > MAX_GRAPH.saturating_sub(*total) {
+        return Err(error("impact dependency graph exceeds bounds"));
+    }
+    *total += additional;
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)] // One ordered comparison preserves the independent change axes.
 fn index(snapshot: &ImpactSnapshot) -> Result<SnapshotIndex<'_>, ForgeError> {
     if let Some(sha) = &snapshot.component_manifest_sha256 {
@@ -682,10 +733,7 @@ fn index(snapshot: &ImpactSnapshot) -> Result<SnapshotIndex<'_>, ForgeError> {
             component.answer_keys.len().saturating_add(component.question_keys.len())
         }))
     {
-        planned_references = planned_references.saturating_add(count);
-        if planned_references > MAX_GRAPH {
-            return Err(error("impact dependency graph exceeds bounds"));
-        }
+        reserve_references(&mut planned_references, count)?;
     }
     if snapshot.plan.policies.len() > manifest::MAX_TOPICS
         || snapshot.sections.len() > MAX_GRAPH
@@ -737,6 +785,30 @@ fn index(snapshot: &ImpactSnapshot) -> Result<SnapshotIndex<'_>, ForgeError> {
             }
         }
     }
+    let mut topic_sections: BTreeMap<&str, Vec<&SectionKey>> = BTreeMap::new();
+    for key in index.sections.keys() {
+        topic_sections.entry(key.1.as_str()).or_default().push(key);
+    }
+    for assignment in &snapshot.loaded.pack.control_assignments {
+        for &key in topic_sections.get(assignment.topic_key.as_str()).into_iter().flatten() {
+            if index
+                .control_sections
+                .get(&assignment.control_id)
+                .is_some_and(|sections| sections.contains(key))
+            {
+                continue;
+            }
+            // Preserve the clause/component edge allowance already reserved by
+            // preflight; new no-gap edges consume only its remaining budget.
+            reserve_references(&mut planned_references, 1)?;
+            index
+                .control_sections
+                .entry(assignment.control_id.clone())
+                .or_default()
+                .insert(key.clone());
+            references += 1;
+        }
+    }
     let answer_questions: BTreeMap<_, _> = snapshot
         .loaded
         .project
@@ -754,6 +826,8 @@ fn index(snapshot: &ImpactSnapshot) -> Result<SnapshotIndex<'_>, ForgeError> {
             references += 1;
         }
     }
+    let known_questions: BTreeSet<_> =
+        snapshot.loaded.pack.questions.iter().map(|q| q.key.as_str()).collect();
     let mut component_keys = BTreeSet::new();
     for component in &snapshot.components {
         let key = (component.policy_key.clone(), component.topic_key.clone());
@@ -767,14 +841,28 @@ fn index(snapshot: &ImpactSnapshot) -> Result<SnapshotIndex<'_>, ForgeError> {
             validate_sha(sha)?;
         }
         for question in &component.question_keys {
+            if !known_questions.contains(question.as_str()) {
+                return Err(error("impact component names an unknown question dependency"));
+            }
             index.question_sections.entry(question.clone()).or_default().insert(key.clone());
             references += 1;
         }
         for answer in &component.answer_keys {
             if let Some(question) = answer_questions.get(answer) {
+                if !component.question_keys.contains(question) {
+                    return Err(error(
+                        "impact component answer lacks its explicit question dependency",
+                    ));
+                }
                 index.question_sections.entry((*question).clone()).or_default().insert(key.clone());
                 references += 1;
+            } else if component.question_keys.is_empty() {
+                return Err(error(
+                    "impact missing component answer requires an explicit question dependency",
+                ));
             }
+            // An absent answer is valid blocked context. Its declared question
+            // edge above remains indexed; never drop it or invent a replacement.
         }
     }
     if references > MAX_GRAPH
@@ -821,7 +909,11 @@ fn section_set(policy: &str, topic: &str) -> BTreeSet<SectionKey> {
 
 /// Compare complete validated snapshots without mutating source data or drafts.
 /// Exact framework hashes permit same-ID matching; changed frameworks require
-/// explicit reviewed correspondence bound to both exact resource pairs.
+/// explicit nonempty reviewed correspondence bound to both exact resource pairs.
+/// Every supplied correspondence must explicitly pair both sides of each ID
+/// surviving in both inventories (including an optional exact-resource map). Unpaired controls absent from the opposite inventory
+/// are reported as additions/removals without inferring successor relationships.
+/// Explicit pack control/topic dependencies are tracked even without a current gap.
 /// # Errors
 /// Returns an error for invalid snapshots, correspondence or exceeded bounds.
 /// Missing correspondence produces an unsupported report with no unaffected claims.
@@ -836,8 +928,8 @@ pub fn compare(
     let mut report = empty_report(
         &old.loaded.project_sha256,
         &new.loaded.project_sha256,
-        &old.loaded.report_sha256,
-        &new.loaded.report_sha256,
+        Some(&old.loaded.report_sha256),
+        Some(&new.loaded.report_sha256),
     );
     let old_framework = &old.loaded.baseline_report.framework;
     let new_framework = &new.loaded.baseline_report.framework;
@@ -891,6 +983,29 @@ pub fn compare(
         )?;
         return Ok(report);
     };
+    if correspondence.is_some() {
+        let mapped_new: BTreeSet<_> = correspondence_map.values().collect();
+        let uncovered = old
+            .control_fingerprints
+            .keys()
+            .filter(|id| new.control_fingerprints.contains_key(*id))
+            .any(|id| !correspondence_map.contains_key(id) || !mapped_new.contains(id));
+        if uncovered {
+            report.status = ComparisonStatus::Unsupported;
+            add_finding(
+                &mut report,
+                ChangeCategory::UnsupportedCorrespondence,
+                "unpaired-surviving-controls",
+                ChangeAxes::default(),
+                Some(old_framework.raw_sha256.clone()),
+                Some(new_framework.raw_sha256.clone()),
+                None,
+                None,
+                BTreeSet::new(),
+            )?;
+            return Ok(report);
+        }
+    }
     if old.loaded.project.project_key != new.loaded.project.project_key {
         report.status = ComparisonStatus::Unsupported;
         add_finding(
@@ -970,7 +1085,7 @@ pub fn compare(
     compare_policies(&mut report, old, new)?;
     report.findings.sort_by(|a, b| a.finding_id.cmp(&b.finding_id));
     // IDs attach causal evidence without copying it into every result.
-    finish_impacts(&mut report, old, new, &old_index, &new_index);
+    finish_impacts(&mut report, old, new, &old_index, &new_index)?;
     Ok(report)
 }
 
@@ -999,6 +1114,41 @@ fn compare_controls(
                     old_index.control_sections.get(old_id),
                     new_index.control_sections.get(new_id),
                 ),
+            )?;
+        }
+    }
+    let mapped_new: BTreeSet<_> = mapping.values().collect();
+    let old_gap_ids: BTreeMap<_, _> =
+        old.plan.gaps.iter().map(|gap| (&gap.control_id, &gap.gap_id)).collect();
+    let new_gap_ids: BTreeMap<_, _> =
+        new.plan.gaps.iter().map(|gap| (&gap.control_id, &gap.gap_id)).collect();
+    for (control, sha) in &old.control_fingerprints {
+        if !mapping.contains_key(control) {
+            add_finding(
+                report,
+                ChangeCategory::FrameworkControlRemoved,
+                control,
+                axes(true, true, true),
+                Some(sha.clone()),
+                None,
+                old_gap_ids.get(control).map(|gap| (*gap).clone()),
+                None,
+                old_index.control_sections.get(control).cloned().unwrap_or_default(),
+            )?;
+        }
+    }
+    for (control, sha) in &new.control_fingerprints {
+        if !mapped_new.contains(control) {
+            add_finding(
+                report,
+                ChangeCategory::FrameworkControlAdded,
+                control,
+                axes(true, true, true),
+                None,
+                Some(sha.clone()),
+                None,
+                new_gap_ids.get(control).map(|gap| (*gap).clone()),
+                new_index.control_sections.get(control).cloned().unwrap_or_default(),
             )?;
         }
     }
@@ -1501,7 +1651,8 @@ fn finish_impacts(
     new: &ImpactSnapshot,
     old_index: &SnapshotIndex<'_>,
     new_index: &SnapshotIndex<'_>,
-) {
+) -> Result<(), ForgeError> {
+    reserve_scope_evidence(report, old, new, old_index, new_index)?;
     let mut section_causes: BTreeMap<SectionKey, (ChangeAxes, BTreeSet<String>)> = BTreeMap::new();
     let mut policy_causes: BTreeMap<String, (ChangeAxes, BTreeSet<String>)> = BTreeMap::new();
     for finding in &report.findings {
@@ -1551,6 +1702,56 @@ fn finish_impacts(
             finding_ids: ids.into_iter().collect(),
         });
     }
+    Ok(())
+}
+
+fn reserve_scope_evidence(
+    report: &mut ImpactReport,
+    old: &ImpactSnapshot,
+    new: &ImpactSnapshot,
+    old_index: &SnapshotIndex<'_>,
+    new_index: &SnapshotIndex<'_>,
+) -> Result<(), ForgeError> {
+    let remaining = super::output::MAX_OUTPUT_BYTES.saturating_sub(report.evidence_bytes);
+    let mut additional = 0usize;
+    let mut reserve = |bytes: usize| -> Result<(), ForgeError> {
+        additional = additional.saturating_add(bytes);
+        if additional > remaining {
+            return Err(error("impact scope evidence exceeds remaining aggregate byte budget"));
+        }
+        Ok(())
+    };
+    // Visit the union without allocating another set of owned scope labels.
+    for key in old_index
+        .sections
+        .keys()
+        .chain(new_index.sections.keys().filter(|key| !old_index.sections.contains_key(*key)))
+    {
+        reserve(
+            512usize.saturating_add(key.0.len().saturating_add(key.1.len()).saturating_mul(6)),
+        )?;
+    }
+    for key in old
+        .policies
+        .keys()
+        .chain(new.policies.keys().filter(|key| !old.policies.contains_key(*key)))
+    {
+        reserve(512usize.saturating_add(key.len().saturating_mul(6)))?;
+    }
+    for finding in &report.findings {
+        // An edge can create both section and policy finding-ID references.
+        reserve(finding.affected_sections.len().saturating_mul(2 * 96))?;
+        if matches!(
+            finding.category,
+            ChangeCategory::PolicyAdded
+                | ChangeCategory::PolicyRemoved
+                | ChangeCategory::PolicyDefinitionChanged
+        ) {
+            reserve(96)?;
+        }
+    }
+    report.evidence_bytes = report.evidence_bytes.saturating_add(additional);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -2197,5 +2398,268 @@ mod tests {
         assert!(report.sections.iter().all(|s| s.unaffected));
         assert!(report.policies.iter().all(|p| p.unaffected));
         assert!(report.action_required());
+    }
+    #[test]
+    fn impact_schema_and_runtime_reject_control_character_path_and_hash_suffixes() {
+        let schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-impact.schema.json"))
+                .unwrap();
+        let validator = jsonschema::validator_for(&schema).unwrap();
+        for path in [
+            "old/project.json\n",
+            "old/project.json\r",
+            "old/project.json\r\n",
+            "old/pro\tject.json",
+            "old/pro\u{0085}ject.json",
+        ] {
+            let mut invalid = wire();
+            invalid["old"]["project"]["path"] = json!(path);
+            assert!(!validator.is_valid(&invalid), "schema accepted {path:?}");
+            assert!(
+                parse_manifest(&serde_json::to_vec(&invalid).unwrap()).is_err(),
+                "runtime accepted {path:?}"
+            );
+        }
+        let mut invalid = wire();
+        invalid["old"]["project"]["expected_sha256"] = json!(format!("{}\n", "a".repeat(64)));
+        assert!(!validator.is_valid(&invalid));
+        assert!(parse_manifest(&serde_json::to_vec(&invalid).unwrap()).is_err());
+        let key_validator = jsonschema::validator_for(&schema["$defs"]["key"]).unwrap();
+        assert!(!key_validator.is_valid(&json!("reviewer\n")));
+        assert!(validate_key("reviewer\n").is_err());
+    }
+
+    #[test]
+    fn impact_utf8_byte_bounds_remain_distinct_from_schema_character_preflight() {
+        let schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-impact.schema.json"))
+                .unwrap();
+        let validator = jsonschema::validator_for(&schema).unwrap();
+        let mut value = wire();
+        value["correspondence"] = json!({
+            "old_framework_sha256":"a".repeat(64), "new_framework_sha256":"b".repeat(64),
+            "reviewers":[{"key":"reviewer","name":"Synthetic reviewer"}],
+            "review":{"reviewer_key":"reviewer","reviewed_at":"2026-09-01T00:00:00Z","rationale":"原".repeat(16384)},
+            "controls":[{"old_control_id":"sample-1","new_control_id":"sample-1"}]
+        });
+        assert!(validator.is_valid(&value));
+        assert!(parse_manifest(&serde_json::to_vec(&value).unwrap()).is_err());
+        value["correspondence"]["review"]["rationale"] = json!("原".repeat(16384 / 3));
+        assert!(validator.is_valid(&value));
+        parse_manifest(&serde_json::to_vec(&value).unwrap()).unwrap();
+    }
+    #[test]
+    fn snapshot_roles_must_be_distinct_but_old_and_new_may_repeat_exact_pins() {
+        for side in ["old", "new"] {
+            let mut invalid = wire();
+            invalid[side]["components"] = invalid[side]["project"].clone();
+            let error = parse_manifest(&serde_json::to_vec(&invalid).unwrap()).unwrap_err();
+            assert!(error.to_string().contains("distinct files"));
+        }
+        let mut repeated = wire();
+        repeated["new"] = repeated["old"].clone();
+        parse_manifest(&serde_json::to_vec(&repeated).unwrap()).unwrap();
+    }
+
+    #[test]
+    fn component_question_dependencies_validate_without_rejecting_missing_answers() {
+        let (mut old, mut loaded) = pair();
+        old.components.push(component());
+        loaded.project.answers.clear();
+        loaded.project.human_clauses[0].answer_refs.clear();
+        refresh(&mut loaded, true);
+        let mut new = snapshot(loaded);
+        let mut missing = component();
+        missing.rendered_sha256 = None;
+        new.components.push(missing);
+        let report = compare(&old, &new, None).unwrap();
+        assert!(report.is_complete());
+        assert!(has(&report, ChangeCategory::AnswerStateChanged));
+        assert!(section(&report, "sample-topic").axes.authoring_state_changed);
+        assert!(section(&report, "independent-topic").unaffected);
+        new.components[0].question_keys = vec!["unknown-question".into()];
+        assert!(compare(&old, &new, None).is_err());
+        new.components[0].question_keys.clear();
+        assert!(compare(&old, &new, None).is_err());
+        old.components[0].question_keys.clear();
+        assert!(index(&old).is_err());
+    }
+
+    #[test]
+    fn unavailable_report_fingerprints_are_explicit_null_without_fabricated_hashes() {
+        let report = incomplete_report(&"a".repeat(64), &"b".repeat(64), "both").unwrap();
+        let value: Value = serde_json::from_slice(&render_json(&report).unwrap()).unwrap();
+        for field in ["old_report_sha256", "new_report_sha256"] {
+            assert!(value[field].is_null());
+            assert!(value["findings"][0][field].is_null());
+        }
+        let (old, new) = pair();
+        let complete = compare(&old, &snapshot(new), None).unwrap();
+        assert_eq!(complete.old_report_sha256.as_deref(), Some(old.loaded.report_sha256.as_str()));
+        assert_eq!(complete.new_report_sha256.as_deref(), Some(old.loaded.report_sha256.as_str()));
+    }
+
+    #[test]
+    fn effective_impact_output_budgets_are_reported_and_leave_writer_unchanged() {
+        let report = incomplete_report(&"a".repeat(64), &"b".repeat(64), "both").unwrap();
+        for limit in [0, 1, 32] {
+            let json = render_json_bounded(&report, limit).unwrap_err().to_string();
+            let text = render_text_bounded(&report, limit).unwrap_err().to_string();
+            assert!(json.contains(&format!("{limit} byte limit")));
+            assert!(text.contains(&format!("{limit} byte limit")));
+        }
+        let mut writer = BoundedWriter { bytes: b"a".to_vec(), limit: 2 };
+        let error = writer.write_all(b"bc").unwrap_err();
+        assert!(error.to_string().contains("2 byte limit"));
+        assert_eq!(writer.bytes, b"a");
+        let error =
+            parse_manifest(&vec![b' '; usize::try_from(manifest::MAX_MANIFEST_BYTES).unwrap() + 1])
+                .unwrap_err();
+        assert!(
+            error.to_string().contains(&format!("{} byte limit", manifest::MAX_MANIFEST_BYTES))
+        );
+    }
+
+    #[test]
+    fn text_comparison_status_matches_the_json_contract_label() {
+        let mut report = incomplete_report(&"a".repeat(64), &"b".repeat(64), "both").unwrap();
+        for status in [
+            ComparisonStatus::Complete,
+            ComparisonStatus::Incomplete,
+            ComparisonStatus::Unsupported,
+        ] {
+            report.status = status;
+            let value = serde_json::to_value(status).unwrap();
+            assert_eq!(value, status.as_str());
+            assert!(
+                render_text(&report)
+                    .unwrap()
+                    .contains(&format!("Comparison: {}\n", status.as_str()))
+            );
+        }
+    }
+
+    #[test]
+    fn scope_records_reserve_remaining_budget_before_allocation() {
+        let (old, loaded) = pair();
+        let new = snapshot(loaded);
+        let old_index = index(&old).unwrap();
+        let new_index = index(&new).unwrap();
+        let mut report = empty_report(
+            &old.loaded.project_sha256,
+            &new.loaded.project_sha256,
+            Some(&old.loaded.report_sha256),
+            Some(&new.loaded.report_sha256),
+        );
+        report.evidence_bytes = super::super::output::MAX_OUTPUT_BYTES - 1;
+        let error = finish_impacts(&mut report, &old, &new, &old_index, &new_index).unwrap_err();
+        assert!(error.to_string().contains("scope evidence"));
+        assert!(report.sections.is_empty());
+        assert!(report.policies.is_empty());
+        assert_eq!(report.evidence_bytes, super::super::output::MAX_OUTPUT_BYTES - 1);
+    }
+    fn revised_framework(loaded: &mut LoadedAuthorProject) {
+        loaded.baseline_report.framework.raw_sha256 =
+            sha256_hex(b"independently revised framework");
+        loaded.project.baseline.framework_sha256 =
+            loaded.baseline_report.framework.raw_sha256.clone();
+        refresh(loaded, true);
+    }
+
+    #[test]
+    fn empty_and_partial_correspondence_cannot_hide_surviving_control_changes() {
+        let (old, mut loaded) = pair();
+        revised_framework(&mut loaded);
+        let mut new = snapshot(loaded);
+        new.control_fingerprints
+            .insert("sample-2".into(), sha256_hex(b"changed surviving control"));
+        let mut reviewed = correspondence(&old, &new);
+        reviewed.controls.clear();
+        assert!(compare(&old, &new, Some(&reviewed)).is_err());
+        let schema: Value =
+            serde_json::from_slice(include_bytes!("../../schemas/authoring-impact.schema.json"))
+                .unwrap();
+        let validator = jsonschema::validator_for(&schema).unwrap();
+        let mut value = wire();
+        value["correspondence"] = serde_json::to_value(&reviewed).unwrap();
+        assert!(!validator.is_valid(&value));
+        assert!(parse_manifest(&serde_json::to_vec(&value).unwrap()).is_err());
+        reviewed = correspondence(&old, &new);
+        reviewed.controls.pop();
+        let report = compare(&old, &new, Some(&reviewed)).unwrap();
+        assert_eq!(report.status, ComparisonStatus::Unsupported);
+        assert!(report.sections.is_empty() && report.policies.is_empty());
+        assert!(has(&report, ChangeCategory::UnsupportedCorrespondence));
+        assert!(report.old_report_sha256.is_some() && report.new_report_sha256.is_some());
+    }
+
+    #[test]
+    fn reviewed_partial_pairs_allow_true_absent_side_control_additions_and_removals() {
+        let (old, mut loaded) = pair();
+        loaded.baseline_report.controls[1].control_id = "sample-3".into();
+        loaded.pack.control_assignments[1].control_id = "sample-3".into();
+        revised_framework(&mut loaded);
+        let new = snapshot(loaded);
+        let mut reviewed = correspondence(&old, &new);
+        reviewed.controls.pop();
+        let report = compare(&old, &new, Some(&reviewed)).unwrap();
+        assert!(report.is_complete());
+        assert!(has(&report, ChangeCategory::FrameworkControlAdded));
+        assert!(has(&report, ChangeCategory::FrameworkControlRemoved));
+        assert!(has(&report, ChangeCategory::GapAdded));
+        assert!(has(&report, ChangeCategory::GapRemoved));
+        assert!(!section(&report, "independent-topic").unaffected);
+    }
+
+    #[test]
+    fn explicit_control_topic_dependencies_remain_visible_without_current_gaps() {
+        let mut loaded = load_example();
+        loaded.baseline_report.controls[1].classification = GapClassification::NotApplicable;
+        loaded.baseline_report.counts.applicable_unmapped -= 1;
+        loaded.baseline_report.counts.not_applicable += 1;
+        refresh(&mut loaded, true);
+        let old = snapshot(loaded.clone());
+        assert!(
+            old.plan.policies[0]
+                .sections
+                .iter()
+                .find(|s| s.topic_key == "independent-topic")
+                .unwrap()
+                .gap_ids
+                .is_empty()
+        );
+        revised_framework(&mut loaded);
+        let mut new = snapshot(loaded);
+        new.control_fingerprints
+            .insert("sample-2".into(), sha256_hex(b"changed no-gap dependency"));
+        let reviewed = correspondence(&old, &new);
+        let report = compare(&old, &new, Some(&reviewed)).unwrap();
+        assert!(report.is_complete());
+        let finding = report
+            .findings
+            .iter()
+            .find(|finding| finding.category == ChangeCategory::FrameworkControlChanged)
+            .unwrap();
+        assert_eq!(
+            finding.affected_sections,
+            vec![SectionReference {
+                policy_key: "sample-policy".into(),
+                topic_key: "independent-topic".into()
+            }]
+        );
+        assert!(section(&report, "independent-topic").axes.substantive_changed);
+    }
+    #[test]
+    fn no_gap_edges_cannot_consume_budget_reserved_for_later_component_edges() {
+        // The preflight total includes clause/component edges even before those
+        // indexes are built. Additional no-gap edges consume only its remainder.
+        let mut reserved = MAX_GRAPH - 1;
+        let error = reserve_references(&mut reserved, 2).unwrap_err();
+        assert!(error.to_string().contains("dependency graph"));
+        assert_eq!(reserved, MAX_GRAPH - 1);
+        reserve_references(&mut reserved, 1).unwrap();
+        assert_eq!(reserved, MAX_GRAPH);
+        assert!(reserve_references(&mut reserved, 1).is_err());
+        assert_eq!(reserved, MAX_GRAPH);
     }
 }

@@ -175,16 +175,19 @@ impl PreparedProject {
     }
 
     pub(super) fn control_fingerprints(&self) -> Result<BTreeMap<String, String>, ForgeError> {
-        let snapshot =
-            tempfile::tempdir().map_err(|_| error("cannot create inventory snapshot"))?;
+        let snapshot = tempfile::tempdir().map_err(|cause| {
+            error(format!("cannot create inventory snapshot: {}", cause.kind()))
+        })?;
         for (path, captured) in &self.captures.files {
             let target = snapshot.path().join(path);
             if let Some(parent) = target.parent() {
-                std::fs::create_dir_all(parent)
-                    .map_err(|_| error("cannot prepare inventory snapshot"))?;
+                std::fs::create_dir_all(parent).map_err(|cause| {
+                    error(format!("cannot prepare inventory snapshot: {}", cause.kind()))
+                })?;
             }
-            std::fs::write(target, &captured.bytes)
-                .map_err(|_| error("cannot write inventory snapshot"))?;
+            std::fs::write(target, &captured.bytes).map_err(|cause| {
+                error(format!("cannot write inventory snapshot: {}", cause.kind()))
+            })?;
         }
         let baseline = &self.loaded.project.applicability_manifest.path;
         let capture = self

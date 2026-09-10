@@ -6,10 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
-- PRD-061 Phase 2 technical extension: explicit pinned component instances,
-  authoring baseline/dependency impact (M-13), offline HTML views, and opt-in
-  draft-only lifecycle handoff. Existing Phase 1 inputs and default artifacts
-  remain unchanged. Public Rust API migration/semver review and human acceptance,
+See the [Phase 1 authoring guide](docs/authoring.md) for the plan/build and `/1`
+contracts merged in PR #144. This section records the current authoring tranche; it is not a complete release
+inventory of all post-v1.1.0 changes.
+
+### Added
+
+- PRD-061 Phase 2: `forge author impact` for M-13 baseline/dependency comparison,
+  `forge author handoff` for opt-in draft-only lifecycle records, and
+  `--components FILE` / `--html` on author plan/build. New closed input contracts
+  are `forge.author-components/1`, `forge.authoring-impact/1` and
+  `forge.author-handoff/1`; component output uses `forge.authoring-plan/2` and
+  `forge.authoring-provenance/2`. Static HTML is offline and value-redacted.
+  Directory publication uses one no-replace rename on Linux/macOS and fails
+  closed on other platforms. Existing Phase 1 inputs and default artifacts remain
+  unchanged. Public Rust API migration/semver review and human acceptance,
   legal/content, design-partner, pilot and release gates remain pending.
 
 ## [1.1.0] — 2026-06-09

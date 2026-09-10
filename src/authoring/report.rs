@@ -25,9 +25,9 @@ pub(super) fn encode_bounded(
 ) -> Result<Vec<u8>, ForgeError> {
     let mut destination = BoundedJson(Vec::new(), limit);
     serde_json::to_writer_pretty(&mut destination, value)
-        .map_err(|cause| super::error(format!("cannot serialize authoring plan: {cause}")))?;
+        .map_err(|cause| super::error(format!("cannot serialize authoring report: {cause}")))?;
     std::io::Write::write_all(&mut destination, b"\n")
-        .map_err(|cause| super::error(format!("cannot finish authoring plan: {cause}")))?;
+        .map_err(|cause| super::error(format!("cannot finish authoring report: {cause}")))?;
     Ok(destination.0)
 }
 
@@ -36,7 +36,7 @@ struct BoundedJson(Vec<u8>, usize);
 impl std::io::Write for BoundedJson {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
         if self.0.len().saturating_add(bytes.len()) > self.1 {
-            return Err(std::io::Error::other("authoring plan exceeds the report byte limit"));
+            return Err(std::io::Error::other("authoring report exceeds the byte limit"));
         }
         self.0.extend_from_slice(bytes);
         Ok(bytes.len())

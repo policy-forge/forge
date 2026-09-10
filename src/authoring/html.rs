@@ -13,7 +13,7 @@ pub(crate) fn render_plan_bounded(
     plan: &AuthoringPlan,
     limit: usize,
 ) -> Result<Vec<u8>, ForgeError> {
-    render_document("Authoring plan", &bounded_json(plan, limit)?, limit)
+    render_typed_document("Authoring plan", plan, super::model::PLAN_SCHEMA_VERSION, limit)
 }
 
 /// Render the validated impact report, including unsupported comparisons.
@@ -21,7 +21,20 @@ pub(crate) fn render_impact_bounded(
     report: &super::impact::ImpactReport,
     limit: usize,
 ) -> Result<Vec<u8>, ForgeError> {
-    render_document("Authoring impact", &bounded_json(report, limit)?, limit)
+    render_typed_document("Authoring impact", report, super::impact::REPORT_SCHEMA_VERSION, limit)
+}
+
+fn render_typed_document(
+    title: &str,
+    value: &impl serde::Serialize,
+    schema: &str,
+    limit: usize,
+) -> Result<Vec<u8>, ForgeError> {
+    let bytes = bounded_json(value, limit)?;
+    // Current typed reports contain no raw values. Keep the same fail-closed
+    // guard as the byte adapters if a future report adds a value-bearing field.
+    require_schema(&bytes, &[schema], limit)?;
+    render_document(title, &bytes, limit)
 }
 
 /// Consume only the redacted provenance bytes freshly produced by the renderer.
@@ -206,6 +219,14 @@ mod tests {
         );
         assert!(render_provenance(br#"{"schema_version":"forge.authoring-provenance/1","schema_version":"forge.authoring-provenance/1"}"#).is_err());
         assert!(render_component_plan(br#"{"schema_version":"forge.authoring-plan/1"}"#).is_err());
+        for schema in
+            [super::super::model::PLAN_SCHEMA_VERSION, super::super::impact::REPORT_SCHEMA_VERSION]
+        {
+            let report = serde_json::json!({"schema_version":schema,"nested":{"answer_values":["sensitive"]}});
+            assert!(
+                render_typed_document("Typed report", &report, schema, MAX_OUTPUT_BYTES).is_err()
+            );
+        }
     }
 
     #[test]

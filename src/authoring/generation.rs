@@ -409,7 +409,13 @@ pub fn execute_impact(
         manifest::MAX_TOTAL_BYTES,
         &old_phase,
     );
-    let old_size = old.as_ref().map_or(0, |generation| generation.prepared.byte_count());
+    // A failed private capture may already have consumed its full allowance.
+    // Its partial set is dropped on error; never credit those unknown bytes to
+    // the second snapshot. Conservatively reserve the remaining invocation budget.
+    let old_size = old.as_ref().map_or_else(
+        |_| manifest::MAX_TOTAL_BYTES.saturating_sub(captures.byte_count()),
+        |generation| generation.prepared.byte_count(),
+    );
     let new = if request.old.project.path == request.new.project.path {
         // Re-capture independently through the authoring loader; request pins are
         // checked against this capture below, avoiding a duplicate CaptureSet role.
@@ -418,35 +424,38 @@ pub fn execute_impact(
             .components
             .as_ref()
             .map(|pin| relative_component(&request.new.project, pin))
-            .transpose()?;
-        prepare_generation(
-            &root.join(&request.new.project.path),
-            component.as_deref(),
-            true,
-            false,
-            manifest::MAX_TOTAL_BYTES
-                .saturating_sub(captures.byte_count())
-                .saturating_sub(old_size),
-            &new_phase,
-            Some((
-                &request.new.project.expected_sha256,
-                request.new.components.as_ref().map(|pin| pin.expected_sha256.as_str()),
-            )),
-        )
-        .and_then(|generation| {
-            if generation.prepared.loaded.project_sha256 != request.new.project.expected_sha256
-                || request.new.components.as_ref().is_some_and(|pin| {
-                    generation
-                        .components
-                        .as_ref()
-                        .is_none_or(|items| items.manifest_sha256 != pin.expected_sha256)
-                })
-            {
-                return Err(error("new snapshot pins do not match"));
-            }
-            captures.reject_cross_aliases(&generation.prepared.captures)?;
-            Ok(generation)
-        })
+            .transpose();
+        component
+            .and_then(|component| {
+                prepare_generation(
+                    &root.join(&request.new.project.path),
+                    component.as_deref(),
+                    true,
+                    false,
+                    manifest::MAX_TOTAL_BYTES
+                        .saturating_sub(captures.byte_count())
+                        .saturating_sub(old_size),
+                    &new_phase,
+                    Some((
+                        &request.new.project.expected_sha256,
+                        request.new.components.as_ref().map(|pin| pin.expected_sha256.as_str()),
+                    )),
+                )
+            })
+            .and_then(|generation| {
+                if generation.prepared.loaded.project_sha256 != request.new.project.expected_sha256
+                    || request.new.components.as_ref().is_some_and(|pin| {
+                        generation
+                            .components
+                            .as_ref()
+                            .is_none_or(|items| items.manifest_sha256 != pin.expected_sha256)
+                    })
+                {
+                    return Err(error("new snapshot pins do not match"));
+                }
+                captures.reject_cross_aliases(&generation.prepared.captures)?;
+                Ok(generation)
+            })
     } else {
         pinned_generation(
             &root,

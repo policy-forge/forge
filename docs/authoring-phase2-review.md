@@ -31,10 +31,50 @@ The dependency manifest and lockfile remain unchanged; stale dependency-downgrad
 advice from Phase 1 was not followed. Portable output labels use `/`. Linux/macOS
 retain single no-replace directory publication; other platforms fail closed.
 
+## External review intake and dispositions
+
+OCR reviews each candidate's exact commit with explicit Rust/JSON/Markdown
+selection, including changed tests. Terminal counts and exact-head hosted results
+are recorded on the PR after completion; a preview or running session is not
+completion evidence.
+
+| Intake | Disposition |
+|---|---|
+| Effective rendering budget errors named global constants | Report caller-effective byte/span limits; assertions also verify rejected writes preserve buffers. |
+| Repeated scans made long-line span projection quadratic | Replace projection with monotonic UTF-8 cursors and advance source columns from known literal/token lengths; Unicode, CRLF and empty-substitution regressions preserve exact provenance. |
+| Repeated blocked-instance scan per section | Precompute the explicit blocked policy/topic pair set. |
+| Separate title escaping could drift | Use the existing authoring heading escape helper in the component adapter. |
+| Empty-substitution and literal-variant schema probes | Add direct fragment-versus-legacy zero-width evidence and literal unknown/null rejection cases. |
+| Shared renderer should reject all sidecars containing defaults | Not adopted: PRD-059 deliberately supports defaults, while PRD-061 requires every declared parameter explicitly bound before calling it. Rejecting declared defaults would break consciously supplied selections. Document the pure renderer/caller boundary. |
+| Extension bytes might evade final capture verification | Not present in integrated source: generation captures the extension through the prepared capture set before adapter parsing and verifies that set before publication. Document the pure adapter's capture requirement. |
+| Constructor and positional-budget refactors | Optional refactors deferred; title-bearing composition and title-free fragments intentionally initialize different accounting. Tests protect effective bounds and existing bytes. |
+| Comment-anchor probe | Non-finding: provider tooling probe contains no source defect. |
+| Impact schema end anchors and byte/cardinality documentation | Harden actual-end/control checks, test newline/control suffixes and explain independent 2 MiB, record and UTF-8 byte limits. |
+| Changelog/roadmap status dates, sequencing and gates | Add actionable CLI/contracts/platform notes, current reconciliation date, retire resolved Phase 1 sequencing question and retain API/human/release gates. |
+| CLI help omitted new option descriptions | Add descriptions; retain frozen handoff shape with machine-readable `handoff.json` receipt in the mandatory generation. |
+| Component/impact/handoff documentation absent in early code candidates | Already supplied by the following documentation commit; Phase 1 historical plans remain historical. Add direct extension-schema links in the authoring guide. |
+| CLI attack and handoff privacy coverage gaps | Derive prior answer pins from fixtures; exercise build rejection without publication for every path attack; cover HTML option guards and plan-only views; assert every handoff non-policy artifact excludes rendered answer values. |
+| Partial correspondence could hide surviving control changes | Require nonempty pairs and explicit coverage of surviving IDs, report true control additions/removals, and index pack control/topic dependencies without current gaps. Unsupported comparisons have no unaffected scopes. |
+| Missing component answer edges and unknown question references | Validate known question relationships while retaining declared question dependencies for missing answers; blocked context stays scoped. |
+| Empty unverified report hashes and unbudgeted scope records | Use explicit null for incomplete comparisons and reserve scope/ID evidence before allocation. |
+| Same-project component location failure bypassed incomplete report | Keep the failure inside the snapshot result so it follows the closed incomplete-report path. |
+| Component could override or omit topic heading | False positive: `components::validate_structure` requires the exact escaped first H2 before fragment preparation, including blocked sections; shared helper and heading regressions enforce this. |
+| Repeated component search in rendering and section hashes | Build a borrowed policy/topic index once for each operation. |
+| Inventory snapshot diagnostics omitted OS cause | Include the non-sensitive I/O error kind; retain private path and raw diagnostic suppression. |
+| Handoff exit 1 after publication | Intentional existing authoring convention; explicitly document successful publication with remaining drafting work and verify receipt/output in CLI tests. |
+| CodeRabbit: typed HTML paths lacked the shared raw-value guard | Apply the same bounded schema/redaction guard to plan/impact types; future nested raw-value regression covers both contracts. |
+| CodeRabbit: vacuous spans and ambiguous overwrite regression | Assert the exact policy, nonempty spans and full Markdown partition; require existing-destination rejection while prior handoff inputs still exist. |
+| Peer review: new no-gap edges could spend budget reserved for later edges | Reserve against the full planned dependency count before adding no-gap edges; exact-fit/overflow checks preserve the counter on rejection. |
+| Final audit: failed old snapshot refunded unknown captured bytes | Conservatively reserve its unavailable partial-capture allowance; same/different-project CLI regressions prove the otherwise valid new snapshot remains unverified instead of spending the allowance again. |
+| Copilot: plan-buffer copy before hashing | Hash the borrowed bytes directly, preserving the digest without the extra allocation. |
+| Copilot: generic serializers used plan-specific errors | Use report wording for shared bounded serialization failures. |
+
 ## Verification boundary
 
 The freshly fetched baseline passed 2,234 tests with three ignored. The integrated
-suite passed 2,300 tests with three ignored after remediation. Formatting,
+suite passed 2,300 tests with three ignored after initial independent remediation,
+before the external review fixes recorded above. The remediated candidate then
+passed 2,322 tests with three ignored. Formatting,
 strict locked all-target clippy and `git diff --check` passed. The final exact
 commit, test counts, OCR terminal coverage and hosted CI/review dispositions are
 recorded with the pull request. A skipped or incomplete bot review is not counted

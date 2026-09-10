@@ -893,10 +893,13 @@ pub enum AuthorCommand {
         /// Closed forge.authoring-impact/1 request
         #[arg(long)]
         manifest: PathBuf,
+        /// Print deterministic text or versioned JSON to stdout
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
+        /// Optional new directory beneath the request root; existing destinations are rejected
         #[arg(long)]
         output_dir: Option<PathBuf>,
+        /// Include offline HTML in the new generation; requires --output-dir
         #[arg(long, requires = "output_dir")]
         html: bool,
     },
@@ -905,8 +908,10 @@ pub enum AuthorCommand {
         /// Closed forge.author-handoff/1 request with explicit identities and pins
         #[arg(long)]
         manifest: PathBuf,
+        /// New directory beneath the request root for drafts, records and the JSON receipt
         #[arg(long)]
         output_dir: PathBuf,
+        /// Include offline HTML views in the required output directory
         #[arg(long)]
         html: bool,
     },

@@ -111,6 +111,7 @@ pub fn parse(bytes: &[u8]) -> Result<AuthorComponents, ForgeError> {
 
 /// Capture and validate every selected component, including blocked sections.
 /// The caller supplies its existing confined, bounded, alias-rejecting capture reader.
+/// `bytes` must also come from that capture set, reverified before publication.
 ///
 /// # Errors
 /// Rejects drift, hidden defaults, unsafe structure, protected values or invalid assignments.
@@ -249,13 +250,7 @@ fn validate_structure(
         .map_err(|cause| super::error(format!("component grammar: {cause}")))?;
     let text =
         std::str::from_utf8(source).map_err(|_| super::error("component source must be UTF-8"))?;
-    let escaped_title: String = title
-        .chars()
-        .flat_map(|character| {
-            let prefix = character.is_ascii_punctuation().then_some('\\');
-            prefix.into_iter().chain(std::iter::once(character))
-        })
-        .collect();
+    let escaped_title = super::render::escape_markdown(title);
     let heading = format!("## {escaped_title}");
     if text.lines().next() != Some(heading.as_str()) {
         return Err(super::error(
@@ -448,12 +443,12 @@ fn convert_fragment(
         .map_err(|_| super::error("rendered component must be UTF-8"))?;
     let source = std::str::from_utf8(&component.source_bytes)
         .map_err(|_| super::error("component source must be UTF-8"))?;
-    let output_lines = line_offsets(output);
-    let source_lines = line_offsets(source);
+    let mut output_cursor = SpanCursor::new(output);
+    let mut source_cursor = SpanCursor::new(source);
     let mut spans = Vec::new();
     let mut cursor = 0usize;
     for span in rendered.spans {
-        let output_span = bytes_for_span(output, &output_lines, &span.output)?;
+        let output_span = output_cursor.bytes_for_span(&span.output)?;
         if output_span.start > cursor {
             append_newline(&mut spans, output, cursor, output_span.start, max_spans)?;
         }
@@ -463,7 +458,7 @@ fn convert_fragment(
         let (kind, source_span, name, digest) = match span.origin {
             ProvenanceOrigin::Component { source: span, .. } => (
                 ComponentOrigin::ComponentSource,
-                Some(bytes_for_span(source, &source_lines, &span)?),
+                Some(source_cursor.bytes_for_span(&span)?),
                 None,
                 None,
             ),
@@ -474,7 +469,7 @@ fn convert_fragment(
                 ..
             } => (
                 ComponentOrigin::Parameter,
-                Some(bytes_for_span(source, &source_lines, &span)?),
+                Some(source_cursor.bytes_for_span(&span)?),
                 Some(parameter_name),
                 Some(parameter_value_sha256),
             ),
@@ -534,35 +529,58 @@ fn append_newline(
     Ok(())
 }
 
-fn line_offsets(text: &str) -> Vec<usize> {
-    std::iter::once(0).chain(text.match_indices('\n').map(|(index, _)| index + 1)).collect()
+/// PRD-059 emits monotonically ordered scalar-column spans. Advance each byte
+/// at most once instead of rescanning an entire long line for each occurrence.
+struct SpanCursor<'a> {
+    text: &'a str,
+    byte: usize,
+    line: usize,
+    column: usize,
 }
 
-fn bytes_for_span(text: &str, lines: &[usize], span: &TextSpan) -> Result<ByteSpan, ForgeError> {
-    let start = span
-        .line
-        .checked_sub(1)
-        .and_then(|line| lines.get(line))
-        .copied()
-        .ok_or_else(|| super::error("invalid component provenance line"))?;
-    let line = text[start..].split('\n').next().unwrap_or_default();
-    let line = line.strip_suffix('\r').unwrap_or(line);
-    let column = |column: usize| -> Result<usize, ForgeError> {
-        let index =
-            column.checked_sub(1).ok_or_else(|| super::error("invalid provenance column"))?;
-        if index == line.chars().count() {
-            return Ok(start + line.len());
-        }
-        line.char_indices()
-            .nth(index)
-            .map(|(offset, _)| start + offset)
-            .ok_or_else(|| super::error("component provenance column exceeds its source line"))
-    };
-    let result = ByteSpan { start: column(span.start_column)?, end: column(span.end_column)? };
-    if result.start > result.end {
-        return Err(super::error("inverted component provenance span"));
+impl<'a> SpanCursor<'a> {
+    fn new(text: &'a str) -> Self {
+        Self { text, byte: 0, line: 1, column: 1 }
     }
-    Ok(result)
+
+    fn bytes_for_span(&mut self, span: &TextSpan) -> Result<ByteSpan, ForgeError> {
+        if span.start_column > span.end_column {
+            return Err(super::error("inverted component provenance span"));
+        }
+        let start = self.advance(span.line, span.start_column)?;
+        let end = self.advance(span.line, span.end_column)?;
+        Ok(ByteSpan { start, end })
+    }
+
+    fn advance(&mut self, line: usize, column: usize) -> Result<usize, ForgeError> {
+        if line < self.line || column == 0 || (line == self.line && column < self.column) {
+            return Err(super::error(
+                "component provenance positions must be ordered and one-based",
+            ));
+        }
+        while self.line < line {
+            let newline = self.text[self.byte..]
+                .find('\n')
+                .ok_or_else(|| super::error("invalid component provenance line"))?;
+            self.byte += newline + 1;
+            self.line += 1;
+            self.column = 1;
+        }
+        while self.column < column {
+            let rest = &self.text[self.byte..];
+            let character = rest.chars().next().ok_or_else(|| {
+                super::error("component provenance column exceeds its source line")
+            })?;
+            if character == '\n'
+                || (character == '\r' && (rest.len() == 1 || rest.starts_with("\r\n")))
+            {
+                return Err(super::error("component provenance column exceeds its source line"));
+            }
+            self.byte += character.len_utf8();
+            self.column += 1;
+        }
+        Ok(self.byte)
+    }
 }
 
 type CaptureCache = BTreeMap<String, (String, Vec<u8>)>;
@@ -855,6 +873,52 @@ mod tests {
     }
 
     #[test]
+    fn literal_binding_variant_rejects_unknown_fields_and_null_sensitivity() {
+        let mut fixture = Fixture::new();
+        let schema: Value =
+            serde_json::from_str(include_str!("../../schemas/author-components.schema.json"))
+                .unwrap();
+        let validator = jsonschema::validator_for(&schema).unwrap();
+        fixture.extension["instances"][0]["parameters"]["owner-role"] =
+            json!({"kind":"literal","value":"Explicit sample","sensitivity":"public"});
+        assert!(validator.is_valid(&fixture.extension));
+        assert!(parse(&serde_json::to_vec(&fixture.extension).unwrap()).is_ok());
+        for (field, value) in [("extra", json!(true)), ("sensitivity", Value::Null)] {
+            let mut invalid = fixture.extension.clone();
+            invalid["instances"][0]["parameters"]["owner-role"][field] = value;
+            assert!(!validator.is_valid(&invalid));
+            assert!(parse(&serde_json::to_vec(&invalid).unwrap()).is_err());
+        }
+    }
+
+    #[test]
+    fn ordered_span_cursor_handles_long_unicode_lines_zero_width_and_crlf_exactly() {
+        let body = "é🙂".repeat(20_000);
+        let text = format!("{body}\r\nnext\n");
+        let mut cursor = SpanCursor::new(&text);
+        for index in 0..20_000 {
+            let column = index * 2 + 1;
+            let empty = cursor
+                .bytes_for_span(&TextSpan { line: 1, start_column: column, end_column: column })
+                .unwrap();
+            assert_eq!(empty, ByteSpan { start: index * 6, end: index * 6 });
+            let span = cursor
+                .bytes_for_span(&TextSpan { line: 1, start_column: column, end_column: column + 2 })
+                .unwrap();
+            assert_eq!(&text[span.start..span.end], "é🙂");
+        }
+        let next =
+            cursor.bytes_for_span(&TextSpan { line: 2, start_column: 1, end_column: 5 }).unwrap();
+        assert_eq!(next, ByteSpan { start: body.len() + 2, end: body.len() + 6 });
+        assert!(
+            cursor.bytes_for_span(&TextSpan { line: 2, start_column: 1, end_column: 2 }).is_err()
+        );
+        assert!(
+            cursor.bytes_for_span(&TextSpan { line: 3, start_column: 1, end_column: 2 }).is_err()
+        );
+    }
+
+    #[test]
     fn component_defaults_never_satisfy_missing_explicit_context() {
         let mut fixture = Fixture::new();
         fixture.sidecar["parameters"][0].as_object_mut().unwrap().remove("required");
@@ -862,6 +926,14 @@ mod tests {
         fixture.extension["instances"][0]["parameters"] = json!({});
         fixture.refresh();
         assert!(fixture.run().unwrap_err().to_string().contains("explicit binding"));
+        fixture.extension["instances"][0]["parameters"]["owner-role"] =
+            json!({"kind":"literal","value":"Consciously selected","sensitivity":"public"});
+        let loaded = fixture.run().unwrap();
+        let markdown =
+            std::str::from_utf8(&loaded.instances["first"].fragment.as_ref().unwrap().markdown)
+                .unwrap();
+        assert!(markdown.contains("Consciously selected"));
+        assert!(!markdown.contains("Invisible default"));
     }
 
     #[test]

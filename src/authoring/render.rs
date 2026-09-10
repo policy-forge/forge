@@ -277,6 +277,7 @@ fn render_inner(
         .iter()
         .map(|gap| (gap.gap_id.clone(), gap.control_id.clone()))
         .collect::<BTreeMap<_, _>>();
+    let component_index = index_components(components);
     for policy in policy_plans {
         if !seen.insert(&policy.policy_key) {
             return Err(error("duplicate rendered policy key"));
@@ -285,7 +286,7 @@ fn render_inner(
             policy,
             &loaded.clauses,
             &gap_controls,
-            components,
+            &component_index,
             limit.saturating_sub(total_bytes),
         )?;
         total_bytes = total_bytes.saturating_add(rendered.markdown.len());
@@ -303,10 +304,10 @@ fn render_inner(
             "forge.authoring-provenance/1"
         },
         project_key: &plan.project_key,
-        plan_sha256: sha256_hex(&match plan_bytes {
-            Some(bytes) => bytes.to_vec(),
-            None => super::report::render_json(plan)?,
-        }),
+        plan_sha256: match plan_bytes {
+            Some(bytes) => sha256_hex(bytes),
+            None => sha256_hex(&super::report::render_json(plan)?),
+        },
         input_provenance: &plan.provenance,
         gaps: &plan.gaps,
         questions: &plan.questions,
@@ -337,14 +338,26 @@ fn render_policy(
     clauses: &BTreeMap<String, LoadedClause>,
     gap_controls: &BTreeMap<String, String>,
 ) -> Result<(RenderedPolicy, PolicyProvenance), ForgeError> {
-    render_policy_inner(policy, clauses, gap_controls, None, MAX_OUTPUT_BYTES)
+    render_policy_inner(policy, clauses, gap_controls, &BTreeMap::new(), MAX_OUTPUT_BYTES)
+}
+
+type ComponentIndex<'a> = BTreeMap<(&'a str, &'a str), &'a super::component_model::LoadedInstance>;
+
+fn index_components(
+    components: Option<&super::component_model::LoadedComponents>,
+) -> ComponentIndex<'_> {
+    components
+        .into_iter()
+        .flat_map(|items| items.instances.values())
+        .map(|item| ((item.evidence.policy_key.as_str(), item.evidence.topic_key.as_str()), item))
+        .collect()
 }
 
 fn render_policy_inner(
     policy: &PolicyPlan,
     clauses: &BTreeMap<String, LoadedClause>,
     gap_controls: &BTreeMap<String, String>,
-    components: Option<&super::component_model::LoadedComponents>,
+    components: &ComponentIndex<'_>,
     byte_limit: usize,
 ) -> Result<(RenderedPolicy, PolicyProvenance), ForgeError> {
     let mut text = TextBuilder { bytes: Vec::new(), spans: Vec::new(), byte_limit };
@@ -365,12 +378,8 @@ fn render_policy_inner(
         if !seen.insert(&section.topic_key) {
             return Err(error("duplicate rendered section topic"));
         }
-        let component = components.and_then(|items| {
-            items.instances.values().find(|item| {
-                item.evidence.policy_key == policy.policy_key
-                    && item.evidence.topic_key == section.topic_key
-            })
-        });
+        let component =
+            components.get(&(policy.policy_key.as_str(), section.topic_key.as_str())).copied();
         render_section(&mut text, policy, section, clauses, gap_controls, component)?;
     }
     if policy.sections.is_empty() {
@@ -560,16 +569,13 @@ pub(super) fn section_hashes(
 ) -> Result<BTreeMap<(String, String), String>, ForgeError> {
     let gaps = plan.gaps.iter().map(|gap| (gap.gap_id.clone(), gap.control_id.clone())).collect();
     let mut result = BTreeMap::new();
+    let components = index_components(components);
     for policy in &plan.policies {
         for section in &policy.sections {
             let mut text =
                 TextBuilder { bytes: Vec::new(), spans: Vec::new(), byte_limit: MAX_OUTPUT_BYTES };
-            let instance = components.and_then(|items| {
-                items.instances.values().find(|item| {
-                    item.evidence.policy_key == policy.policy_key
-                        && item.evidence.topic_key == section.topic_key
-                })
-            });
+            let instance =
+                components.get(&(policy.policy_key.as_str(), section.topic_key.as_str())).copied();
             render_section(&mut text, policy, section, &loaded.clauses, &gaps, instance)?;
             result.insert(
                 (policy.policy_key.clone(), section.topic_key.clone()),
@@ -663,7 +669,7 @@ fn clause_origin(
     Ok(origin)
 }
 
-fn escape_markdown(value: &str) -> String {
+pub(super) fn escape_markdown(value: &str) -> String {
     let mut escaped = String::new();
     for character in value.chars() {
         if character.is_ascii_punctuation() {

@@ -212,7 +212,10 @@ remaining human gates. M-13 is technically exercised by the impact unit matrix
 and `authoring_phase2_cli_test`: added/removed gaps, assignments/deferrals,
 answers/definitions/expiry, pack and component changes, drift, human clauses,
 policy changes and unaffected dependencies. This checkbox is technical evidence,
-not human or release acceptance. No approval transition, inferred policy prose, remote
+not human or release acceptance. This tranche updates only M-13's checkbox; the
+other retained requirement boxes are not a complete inventory of implemented
+code. M-9's component branch, S-2's static views and S-3's draft handoff now have
+technical implementation/tests in this tranche, with product acceptance pending. No approval transition, inferred policy prose, remote
 service or release publication is introduced. Phase 3 design-partner packs,
 measured authoring exercises, legal/content acceptance and release approval
 remain pending.

@@ -29,11 +29,11 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 64,
-      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$(?![\\s\\S])"
     },
     "sha256": {
       "type": "string",
-      "pattern": "^[0-9a-f]{64}$"
+      "pattern": "^[0-9a-f]{64}$(?![\\s\\S])"
     },
     "pinned_file": {
       "type": "object",
@@ -52,11 +52,14 @@
       }
     },
     "path": {
-      "$comment": "Runtime additionally rejects unsafe/control characters, reserved device names, whitespace/dot aliases and components over 255 UTF-8 bytes. Character-count limits here are preflight only; confined reads reject filesystem aliases and symlinks.",
+      "$comment": "The pattern requires the actual end of the string, and the schema rejects control characters. Runtime additionally rejects reserved device names, whitespace/dot aliases and components over 255 UTF-8 bytes. Character-count limits here are preflight only; confined reads reject filesystem aliases and symlinks.",
       "type": "string",
       "minLength": 1,
       "maxLength": 1024,
-      "pattern": "^(?!/)(?!.*(?:\\\\|:|//))(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[/]$).+$"
+      "pattern": "^(?!/)(?!.*(?:\\\\|:|//))(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[/]$).+$(?![\\s\\S])",
+      "not": {
+        "pattern": "[\\u0000-\\u001f\\u007f-\\u009f]"
+      }
     },
     "reviewer": {
       "type": "object",
@@ -98,7 +101,8 @@
       "pattern": "[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060-\\u2064\\u3000\\ufeff\\ufff9-\\ufffb]",
       "not": {
         "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
-      }
+      },
+      "$comment": "JSON Schema maxLength counts characters. Runtime independently bounds every string to 16384 UTF-8 bytes, so multibyte text can satisfy this preflight and still exceed the runtime byte limit. This applies transitively to reviewer names, rationale and control IDs through single_line."
     },
     "snapshot": {
       "type": "object",
@@ -187,13 +191,15 @@
         },
         "controls": {
           "type": "array",
-          "minItems": 0,
+          "minItems": 1,
           "maxItems": 100000,
           "items": {
             "$ref": "#/$defs/pair"
-          }
+          },
+          "$comment": "Independent cardinality ceiling, not a promise that 100000 pairs fit the complete 2 MiB manifest byte limit."
         }
-      }
+      },
+      "$comment": "The controls cardinality ceiling and byte bounds are independent: at most 100000 reviewed one-to-one control pairs, within a complete manifest of at most 2 MiB and strings of at most 16384 UTF-8 bytes. The effective number of encodable pairs is lower and depends on identifier lengths and the other manifest fields. Runtime checks the complete byte limit before parsing or allocating correspondence records. At least one reviewed pair is required. Across different framework resources, runtime requires explicit old/new coverage of every same-spelled ID surviving on both sides; unpaired controls absent from the opposite inventory are reported as additions/removals without inferred successors."
     }
   }
 }

@@ -108,6 +108,11 @@ correspondence. Changed framework resources require a reviewed, one-to-one
 control correspondence bound to both exact hashes and any resolved-catalog
 hashes. Matching IDs or UUIDs in unrelated frameworks alone are insufficient.
 Without correspondence the report is unsupported and has no unaffected claims.
+Every supplied correspondence must contain at least one reviewed pair and cover
+both sides of every control ID surviving in both inventories. Unpaired surviving
+IDs produce an unsupported report. Controls absent from the opposite inventory
+are explicit additions/removals, with no inferred successor. Explicit pack
+control/topic dependencies remain visible even when they have no current gap.
 Gap IDs include exact report hashes; comparison preserves both IDs while using
 validated control correspondence. Report whitespace churn therefore produces
 binding findings, not fabricated wholesale gap additions/removals.
@@ -124,7 +129,9 @@ section's content changed. Provenance-only differences are still differences;
 The request hash binds finding identities to the explicit snapshot selection.
 
 Missing, invalid or drifted inputs produce an incomplete comparison with closed
-failure-phase metadata and no unaffected output. The tool does not accept or
+failure-phase metadata and no unaffected output. Both report hashes
+are explicit JSON `null` for an incomplete comparison. Fully verified comparisons
+retain the exact old/new 64-digit report hashes. The tool does not accept or
 render mismatched content, update pins, migrate answers, rewrite assignments,
 regenerate published drafts, or mutate lifecycle records.
 
@@ -175,6 +182,9 @@ forge lifecycle check --record draft-records/sample-policy.lifecycle.json
 
 Existing destinations and histories are never overwritten or transitioned.
 Handoff reports drafting action work using the existing 0/1/2 authoring convention.
+Exit 1 can follow successful publication when the plan still requires authoring
+work; the emitted `handoff.json` receipt records the completed generation. It does
+not mean the destination is absent, and retrying against it is rejected.
 
 ## Publication and limits
 
@@ -189,7 +199,9 @@ Concurrent source changes still require external serialization.
 
 The source budget is 50 MiB across each invocation, including both impact
 snapshots or handoff's prior outputs. Duplicate capture needed for independent
-validation is counted conservatively. Every read receives its remaining budget
+validation is counted conservatively. If the old impact capture fails, its
+unavailable partial byte count reserves the remaining allowance; the new snapshot
+is left unverified and the comparison is incomplete. Every read receives its remaining budget
 before allocation. The output generation budget is 50 MiB with at most 2,048
 artifacts; serializers and escaped HTML use the remaining budget. Components
 are limited to 1,000 instances, 128 bindings/gap references per instance,
@@ -198,5 +210,6 @@ manifests. Handoff accepts at most 128 policies. Upstream stricter record limits
 remain enforced. These are source/output byte limits, not a claim of exact heap
 usage: validated representations and private snapshots may retain extra copies.
 
-See the [interface freeze and acceptance matrix](authoring-phase2-plan.md) and
+See the [interface freeze and acceptance matrix](authoring-phase2-plan.md),
+[Phase 2 review dispositions](authoring-phase2-review.md) and
 [Phase 1 review dispositions](authoring-phase1-review.md) for retained boundaries.

@@ -1,9 +1,10 @@
-# Framework-guided policy authoring — Phase 1
+# Framework-guided policy authoring
 
 `forge author` converts an exact, reviewed applicability/gap baseline and explicit
-human assignments into a drafting plan and Markdown skeletons. It writes no
-substantive text beyond the human clause files supplied by the project. Answer
-values are never interpolated into Markdown or copied into reports.
+human assignments into a drafting plan and Markdown skeletons. Default Phase 1
+builds write no substantive text beyond supplied human clause files and never
+interpolate answer values. Opt-in Phase 2 components substitute only explicitly
+bound public/internal values into Markdown; reports never copy raw values.
 
 This is a technical foundation. PRD-061 readiness, human review, legal content
 decisions, design-partner exercises, time-savings studies, and release gates
@@ -56,7 +57,7 @@ can still be `skeleton-ready`; it is not a finished policy.
 
 ## Local input contracts
 
-The closed JSON schemas are [authoring-pack](../schemas/authoring-pack.schema.json)
+The Phase 1 closed JSON schemas are [authoring-pack](../schemas/authoring-pack.schema.json)
 and [author-project](../schemas/author-project.schema.json). Runtime validation
 also enforces cross-record references, exact hashes, logical uniqueness, value
 constraints, and relationships that JSON Schema alone cannot express.
@@ -195,3 +196,14 @@ See [the implementation plan](authoring-phase1-plan.md) for interface ownership,
 requirement disposition, and the verification/delivery workflow.
 The [review dispositions](authoring-phase1-review.md) record confirmed fixes and
 source-backed explanations for the initial exact-commit OCR findings.
+
+The optional Phase 2 [component extension](../schemas/author-components.schema.json),
+[impact request](../schemas/authoring-impact.schema.json) and
+[handoff request](../schemas/author-handoff.schema.json) have separate closed
+schemas. Runtime checks additionally enforce byte limits (JSON Schema string
+lengths count characters), exact pins, cross-record relationships and valid dates;
+see [Phase 2 contracts](authoring-phase2.md).
+
+The [Phase 2 interface matrix](authoring-phase2-plan.md) and
+[Phase 2 review dispositions](authoring-phase2-review.md) retain implementation,
+review and compatibility evidence.
