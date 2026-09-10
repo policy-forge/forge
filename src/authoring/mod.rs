@@ -1,5 +1,7 @@
 //! Deterministic local drafting plans and policy skeletons from explicit human inputs.
 
+pub mod component_model;
+pub mod components;
 mod input;
 pub mod manifest;
 pub mod model;

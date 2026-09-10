@@ -82,10 +82,60 @@ pub struct RenderedComposition {
     pub provenance: Vec<u8>,
 }
 
+/// Pure section rendering for authoring. This uses the same grammar and one-pass
+/// substitution as composition and adds no policy title or output files.
+pub(crate) struct RenderedFragment {
+    pub markdown: Vec<u8>,
+    pub spans: Vec<ProvenanceSpan>,
+}
+
+pub(crate) fn render_fragment(
+    component: &LoadedComponent,
+    max_bytes: usize,
+    max_spans: usize,
+) -> Result<RenderedFragment, crate::ForgeError> {
+    let values = resolve_values(&component.manifest, &component.instance)?;
+    let mut state = RenderState {
+        lines: Vec::new(),
+        spans: Vec::new(),
+        bytes: 0,
+        limit: max_bytes.min(MAX_ASSEMBLED_BYTES),
+        span_limit: max_spans.min(MAX_PROVENANCE_SPANS),
+    };
+    let used = render_component(&mut state, component, &values, true)?;
+    for name in component.instance.parameters.keys() {
+        if !used.contains(name) {
+            return Err(composition_error(format!(
+                "instance '{}' supplies unused parameter '{name}'",
+                component.instance.instance_key
+            )));
+        }
+    }
+    Ok(RenderedFragment {
+        markdown: format!("{}\n", state.lines.join("\n")).into_bytes(),
+        spans: state.spans,
+    })
+}
+
+/// Return the declared grammar's used names without evaluating parameter data.
+pub(crate) fn parameter_names(bytes: &[u8]) -> Result<BTreeSet<String>, crate::ForgeError> {
+    let text = std::str::from_utf8(bytes)
+        .map_err(|_| composition_error("component source must be UTF-8"))?;
+    let mut names = BTreeSet::new();
+    for line in text.lines() {
+        for occurrence in placeholder_occurrences(line)? {
+            names.insert(occurrence.name);
+        }
+    }
+    Ok(names)
+}
+
 struct RenderState {
     lines: Vec<String>,
     spans: Vec<ProvenanceSpan>,
     bytes: usize,
+    limit: usize,
+    span_limit: usize,
 }
 
 impl RenderState {
@@ -94,6 +144,8 @@ impl RenderState {
         let end_column = line.chars().count() + 1;
         Self {
             bytes: line.len() + 2,
+            limit: MAX_ASSEMBLED_BYTES,
+            span_limit: MAX_PROVENANCE_SPANS,
             lines: vec![line, String::new()],
             spans: vec![ProvenanceSpan {
                 output: TextSpan { line: 1, start_column: 1, end_column },
@@ -107,7 +159,7 @@ impl RenderState {
     }
 
     fn remaining_line_bytes(&self) -> usize {
-        MAX_ASSEMBLED_BYTES.saturating_sub(self.bytes).saturating_sub(1)
+        self.limit.saturating_sub(self.bytes).saturating_sub(1)
     }
 
     fn push_line(&mut self, line: String) -> Result<(), crate::ForgeError> {
@@ -116,7 +168,7 @@ impl RenderState {
             .checked_add(line.len())
             .and_then(|bytes| bytes.checked_add(1))
             .ok_or_else(|| composition_error("assembled Markdown byte count overflowed"))?;
-        if next > MAX_ASSEMBLED_BYTES {
+        if next > self.limit {
             return Err(composition_error(format!(
                 "assembled Markdown exceeds the {MAX_ASSEMBLED_BYTES} byte limit"
             )));
@@ -145,7 +197,7 @@ pub(crate) fn render(
     let mut locked = Vec::with_capacity(components.len());
     for (index, component) in components.iter().enumerate() {
         let parameter_values = resolve_values(&component.manifest, &component.instance)?;
-        let used = render_component(&mut state, component, &parameter_values)?;
+        let used = render_component(&mut state, component, &parameter_values, false)?;
         for supplied in component.instance.parameters.keys() {
             if !used.contains(supplied) {
                 return Err(composition_error(format!(
@@ -198,6 +250,7 @@ fn render_component(
     state: &mut RenderState,
     component: &LoadedComponent,
     parameter_values: &BTreeMap<String, ParameterValue>,
+    retain_empty_substitutions: bool,
 ) -> Result<BTreeSet<String>, crate::ForgeError> {
     let text = std::str::from_utf8(&component.source_bytes).map_err(|_| {
         composition_error(format!(
@@ -229,6 +282,8 @@ fn render_component(
             &mut used,
             &mut state.spans,
             remaining_line_bytes,
+            retain_empty_substitutions,
+            state.span_limit,
         )?;
         state.push_line(rendered)?;
     }
@@ -251,6 +306,8 @@ fn render_line(
     used: &mut BTreeSet<String>,
     spans: &mut Vec<ProvenanceSpan>,
     max_line_bytes: usize,
+    retain_empty_substitutions: bool,
+    max_spans: usize,
 ) -> Result<String, crate::ForgeError> {
     let mut occurrences = placeholder_occurrences(line)?;
     if occurrences.is_empty() {
@@ -262,6 +319,7 @@ fn render_line(
         if !line.is_empty() {
             push_span(
                 spans,
+                max_spans,
                 component_span(
                     component,
                     output_line,
@@ -285,6 +343,7 @@ fn render_line(
             push_bounded(&mut rendered, literal, max_line_bytes)?;
             push_span(
                 spans,
+                max_spans,
                 component_span(
                     component,
                     output_line,
@@ -320,9 +379,10 @@ fn render_line(
         let substituted = render_parameter(value);
         let length = substituted.chars().count();
         push_bounded(&mut rendered, &substituted, max_line_bytes)?;
-        if length > 0 {
+        if length > 0 || retain_empty_substitutions {
             push_span(
                 spans,
+                max_spans,
                 ProvenanceSpan {
                     output: TextSpan {
                         line: output_line,
@@ -354,6 +414,7 @@ fn render_line(
         push_bounded(&mut rendered, literal, max_line_bytes)?;
         push_span(
             spans,
+            max_spans,
             component_span(
                 component,
                 output_line,
@@ -390,9 +451,10 @@ fn push_bounded(
 
 fn push_span(
     spans: &mut Vec<ProvenanceSpan>,
+    max_spans: usize,
     span: ProvenanceSpan,
 ) -> Result<(), crate::ForgeError> {
-    if spans.len() >= MAX_PROVENANCE_SPANS {
+    if spans.len() >= max_spans {
         return Err(composition_error(format!(
             "composition provenance exceeds the {MAX_PROVENANCE_SPANS} span limit"
         )));
@@ -928,6 +990,45 @@ mod tests {
                 "clause.md",
             )
             .is_err()
+        );
+    }
+
+    #[test]
+    fn authoring_fragment_uses_the_composition_engine_without_generated_title() {
+        let bytes = "## Clause\r\n\r\nThe {{forge:param:owner-role}} records résumé changes.\r\n"
+            .as_bytes()
+            .to_vec();
+        let component = LoadedComponent {
+            instance: ComponentInstance {
+                instance_key: "explicit-instance".into(),
+                component_manifest: "clause.json".into(),
+                parameters: BTreeMap::from([(
+                    "owner-role".into(),
+                    ParameterValue::String("équipe [draft]".into()),
+                )]),
+            },
+            manifest: parameterized_component(),
+            manifest_sha256: "a".repeat(64),
+            source_sha256: sha256_hex(&bytes),
+            source_bytes: bytes,
+            source_label: "clause.md".into(),
+        };
+        let fragment =
+            render_fragment(&component, MAX_ASSEMBLED_BYTES, MAX_PROVENANCE_SPANS).unwrap();
+        let composition =
+            render("policy", "Draft", "1.0.0", &"b".repeat(64), std::slice::from_ref(&component))
+                .unwrap();
+        let mut expected = b"# Draft\n\n".to_vec();
+        expected.extend_from_slice(&fragment.markdown);
+        assert_eq!(composition.markdown, expected);
+        assert!(
+            fragment
+                .spans
+                .iter()
+                .all(|span| !matches!(span.origin, ProvenanceOrigin::GeneratedMetadata { .. }))
+        );
+        assert!(
+            render_fragment(&component, fragment.markdown.len() - 1, MAX_PROVENANCE_SPANS).is_err()
         );
     }
 }
