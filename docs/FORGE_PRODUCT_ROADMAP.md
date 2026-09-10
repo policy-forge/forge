@@ -25,11 +25,11 @@ v1.1.0 is released, and the post-v1.1.0 roadmap is active.
 - v1.0.0 established the community-ready distribution baseline.
 - v1.1.0 (2026-06-09) added native PDF and DOCX ingestion and policy-derived SSP control implementations.
 - The next-wave registry contains 14 PRDs (055–068): 7 have technically complete
-  implementations merged into `main`, and 7 remain planned.
+  implementations merged into `main`, 2 are in progress, and 5 remain planned.
 - PRDs 055–060 and 063 are technically implemented. Their human release,
   pilot, adoption, or other PRD-level gates remain open where the PRDs say so.
-- PRDs 061, 062, and 064–068 do not have implementation merges and remain
-  planned.
+- PRD 061 Phase 1 merged in PR #144 and Phase 2 is in progress. PRD 062 Slice 0
+  merged in PR #142; PRDs 064–068 remain planned.
 
 This reconciliation supersedes stale counts such as “43/50 done,” “44/50 done,” “8/15 Phase 3 done,” and “7 remaining.”
 
@@ -178,7 +178,7 @@ gates in the corresponding PRD.
 | [058](PRD/058-prd-policy-lifecycle-management.md) | Policy lifecycle management | Technical implementation complete | Merges `f8784d1`, `a254d16` | Human release gates remain |
 | [059](PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merge `09f1f37` | PRD release gates remain |
 | [060](PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merge `a5d0aff` | PRD release gates remain |
-| [061](PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | In Progress — Phase 1 | [Implementation plan](authoring-phase1-plan.md), local authoring contracts and CLI work | M-13 impact and PRD-059 composition deferred to Phase 2; product, compliance, legal, design-partner, and release gates remain pending |
+| [061](PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | In Progress — Phase 2 | Phase 1 merged in PR #144; [Phase 2 matrix](authoring-phase2-plan.md) | Components, M-13 impact, HTML and draft handoff under technical verification; product, compliance, legal, design-partner, and release gates remain pending |
 | [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — Slice 0 technically complete | Slice 0 delivered in PR #142 | Contract, schema, matrix, fixtures, threat model, and ADRs delivered with CI drift checks; human review gates remain before UI code |
 | [063](PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merge `34d9869` | PRD release gates remain |
 | [064](PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | No implementation merge | PRD 063 is implemented; schema, status semantics, and editable source-of-truth decisions remain |
@@ -197,7 +197,7 @@ This is a dependency-oriented sequence, not a date commitment.
 | **Now** | PRDs 055–060 and 063 release-gate reconciliation | Complete or explicitly defer each remaining human, pilot, documentation, and release approval without overstating technical completion as product release |
 | **Next** | PRD 062 Slices 1–4 | Deliver read-only exploration, safe mutation, review workflows, and a local pilot as separately gated increments |
 | **Next** | PRD 064 Phase 1 | Build deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
-| **Now** | PRD 061 Phase 1 | Deliver the drafting-plan and skeleton technical foundation while preserving pending product, compliance, legal, design-partner, and release gates |
+| **Now** | PRD 061 Phase 2 | Validate explicit components, M-13 impact, offline HTML and draft lifecycle handoff while preserving pending product, compliance, legal, design-partner, and release gates |
 | **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after project, query, identity, and review contracts stabilize |
 | **Later** | PRD 066 | Add quarantined AI suggestions after authoring schemas, evaluation data, and provider/privacy gates are approved |
 
@@ -211,9 +211,9 @@ This is a dependency-oriented sequence, not a date commitment.
   advances past Slice 0.
 - PRD 064 can proceed only after stable Assessment Results identity and POA&M
   schema/status/source-of-truth decisions are approved.
-- PRD 061 Phase 1 technical implementation is in progress. Product, compliance,
+- PRD 061 Phase 1 is merged; Phase 2 technical verification is in progress. Product, compliance,
   legal, design-partner readiness, pilot, and release decisions remain pending;
-  this work does not satisfy those gates or the Phase 2 M-13 impact requirement.
+  this work does not satisfy those gates. M-13 requires the explicit Phase 2 comparison tests.
 - PRDs 065–068 must not bypass their provider, privacy, identity, discovery,
   evaluation, or human-authority boundaries merely to accelerate delivery.
 

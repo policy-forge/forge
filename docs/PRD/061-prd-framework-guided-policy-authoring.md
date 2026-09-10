@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** In Progress — Phase 1 technical foundation; human gates pending
+> **Status:** In Progress — Phase 2 technical extension; human gates pending
 > **Last Updated:** 2026-09-09 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `061-framework-guided-policy-authoring`
 **Created**: 2026-08-24
-**Status**: In Progress — Phase 1 technical foundation; human gates pending
+**Status**: In Progress — Phase 2 technical extension; human gates pending
 **Input**: Post-v1.3 product planning
 
 ---
@@ -135,7 +135,7 @@ Draft state is one of `planned`, `blocked-context`, `skeleton-ready`, or `human-
 - [ ] **M-10 — Provenance:** Emit a machine-readable graph from output spans to policy topic, gaps, control IDs, answers, clauses, component instances, and all input hashes.
 - [ ] **M-11 — Safe output:** Use project-root containment, alias rejection, atomic writes, bounded content, and no absolute paths in artifacts.
 - [ ] **M-12 — Determinism:** Exclude wall-clock time, locale, environment, and directory location from identity and canonical outputs.
-- [ ] **M-13 — Baseline impact:** Distinguish added/removed gaps, answer changes, pack changes, component drift, human-clause changes, and unaffected skeletons.
+- [x] **M-13 — Baseline impact:** Distinguish added/removed gaps, answer changes, pack changes, component drift, human-clause changes, and unaffected skeletons.
 - [ ] **M-14 — Terminology:** Never emit compliant, certified, implemented, effective, or approved based on authoring completeness.
 - [ ] **M-15 — Tests:** Cover gap reconciliation, missing context, stale packs, component drift, provenance completeness, safe paths, and deterministic rebuilds.
 
@@ -194,12 +194,28 @@ The release gate includes public Rust API semver and migration review: new
 variants in exhaustive error and CLI enums can break downstream exhaustive
 matches. This tranche does not claim that source-compatibility gate is complete.
 
-**M-13 remains unchecked and deferred to Phase 2.** Its MVP Must Have label is
+**Phase 1 left M-13 unchecked for Phase 2.** Its MVP Must Have label is
 inconsistent with the phase allocation above; this tranche explicitly follows
 the Phase 2 allocation. Rejecting stale source hashes does not implement baseline
 impact analysis. The PRD-059 component branch of M-9, static HTML, and lifecycle
 handoff also remain Phase 2. Phase 1 completion cannot establish that all MVP
 Must Haves or PRD-061 as a whole are complete.
+
+### Phase 2 technical disposition
+
+The [Phase 2 interface freeze and acceptance matrix](../authoring-phase2-plan.md)
+and [usage contracts](../authoring-phase2.md) cover explicit PRD-059 component
+instances, M-13 baseline/dependency impact, offline HTML and PRD-058 draft-only
+handoff. Existing `/1` inputs retain their closed meaning; component output uses
+explicit `/2` contracts. Technical verification is recorded separately from the
+remaining human gates. M-13 is technically exercised by the impact unit matrix
+and `authoring_phase2_cli_test`: added/removed gaps, assignments/deferrals,
+answers/definitions/expiry, pack and component changes, drift, human clauses,
+policy changes and unaffected dependencies. This checkbox is technical evidence,
+not human or release acceptance. No approval transition, inferred policy prose, remote
+service or release publication is introduced. Phase 3 design-partner packs,
+measured authoring exercises, legal/content acceptance and release approval
+remain pending.
 
 ## Risks and Mitigations :yellow_circle: `@human-review`
 

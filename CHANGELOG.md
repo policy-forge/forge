@@ -4,6 +4,14 @@ All notable changes to FORGE will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+- PRD-061 Phase 2 technical extension: explicit pinned component instances,
+  authoring baseline/dependency impact (M-13), offline HTML views, and opt-in
+  draft-only lifecycle handoff. Existing Phase 1 inputs and default artifacts
+  remain unchanged. Public Rust API migration/semver review and human acceptance,
+  legal/content, design-partner, pilot and release gates remain pending.
+
 ## [1.1.0] — 2026-06-09
 
 FORGE v1.1.0 adds native PDF and DOCX ingestion, removing the requirement to pre-convert policy documents to Markdown with external tools.

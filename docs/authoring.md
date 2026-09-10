@@ -180,14 +180,16 @@ budget. They do not inherit the narrower authoring-contract string or manifest
 limits. Each confined read is bounded by the remaining aggregate budget before
 allocation.
 
-## Remaining scope
+## Phase 2 extensions and remaining scope
 
-M-13 baseline impact remains an unchecked Phase 2 requirement despite its MVP
-Must Have label in PRD-061. PRD-059 component rendering, static HTML, PRD-058
-lifecycle handoff, and design-partner exercises are also deferred. Phase 1
-integrity checks are not a substitute for baseline impact analysis. AI, web
-editing, remote registries, downloads, connectors, collaboration, and hosted
-services are outside this tranche.
+Explicit component instances, M-13 impact comparisons, offline HTML, and draft-only
+lifecycle handoff are described in [Phase 2 usage](authoring-phase2.md). These
+opt-in contracts preserve the Phase 1 inputs and default command behavior above.
+Phase 1 stale-input rejection alone did not implement M-13; its technical evidence
+belongs to the Phase 2 comparison matrix. Phase 3 design-partner packs, measured
+authoring exercises, legal/content acceptance, human readiness, pilot metrics and
+release approval remain pending. AI, web editing, remote registries, downloads,
+connectors, collaboration and hosted services remain outside this tranche.
 
 See [the implementation plan](authoring-phase1-plan.md) for interface ownership,
 requirement disposition, and the verification/delivery workflow.
