@@ -297,6 +297,16 @@ pub(crate) fn run_catalog_pipeline_prepared(
     format: OutputFormat,
     import_ssp_href: Option<&str>,
 ) -> Result<PipelineOutput, ForgeError> {
+    run_catalog_pipeline_with_metadata(input_path, doc_with_ids, format, import_ssp_href, None)
+}
+
+pub(crate) fn run_catalog_pipeline_with_metadata(
+    input_path: &Path,
+    doc_with_ids: &PolicyDocument,
+    format: OutputFormat,
+    import_ssp_href: Option<&str>,
+    metadata: Option<crate::oscal::metadata::MetadataOptions>,
+) -> Result<PipelineOutput, ForgeError> {
     use crate::summary::count_catalog_controls;
     warn_if_default_document_version(doc_with_ids, input_path);
 
@@ -316,7 +326,7 @@ pub(crate) fn run_catalog_pipeline_prepared(
     crate::oscal::trace_embedding::embed_trace_in_catalog(&mut catalog, &trace_links);
 
     // Step 9: Assemble metadata
-    let real_metadata = crate::oscal::assemble_metadata(&doc_with_ids.metadata, None)?;
+    let real_metadata = crate::oscal::assemble_metadata(&doc_with_ids.metadata, metadata)?;
 
     // Step 10: Generate back matter from extracted citations
     let all_citations =
@@ -457,6 +467,24 @@ pub(crate) fn run_component_pipeline_prepared(
     format: OutputFormat,
     import_ssp_href: Option<&str>,
 ) -> Result<PipelineOutput, ForgeError> {
+    run_component_pipeline_with_metadata(
+        input_path,
+        doc_with_ids,
+        source_profile,
+        format,
+        import_ssp_href,
+        None,
+    )
+}
+
+pub(crate) fn run_component_pipeline_with_metadata(
+    input_path: &Path,
+    doc_with_ids: &PolicyDocument,
+    source_profile: Option<&str>,
+    format: OutputFormat,
+    import_ssp_href: Option<&str>,
+    metadata: Option<crate::oscal::metadata::MetadataOptions>,
+) -> Result<PipelineOutput, ForgeError> {
     // S-3: Pipeline stage progress logging (visible with --verbose)
     tracing::info!("Building component definition from prepared policy document");
     warn_if_default_document_version(doc_with_ids, input_path);
@@ -472,11 +500,12 @@ pub(crate) fn run_component_pipeline_prepared(
     // Step 10: Build component definition with source_profile and source_file (WI-17)
     // SEC-1: Use filename-only to prevent absolute path leakage into OSCAL output
     let source_file_str = component_source_file_label(input_path);
-    let envelope = crate::oscal::build_component_definition(
+    let envelope = crate::oscal::component_definition::build_with_metadata(
         doc_with_ids,
         source_profile,
         None,
         Some(&source_file_str),
+        metadata,
     )?;
 
     // Count implemented-requirements as controls_generated for component strategy.

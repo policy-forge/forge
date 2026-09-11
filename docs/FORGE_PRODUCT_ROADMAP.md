@@ -28,7 +28,7 @@ v1.1.0 is released, and the post-v1.1.0 roadmap is active.
   implementations merged into `main`, 2 are in progress, and 5 remain planned.
 - PRDs 055–060 and 063 are technically implemented. Their human release,
   pilot, adoption, or other PRD-level gates remain open where the PRDs say so.
-- PRD 061 Phase 1 merged in PR #144 and Phase 2 is in progress. PRD 062 Slice 0
+- PRD 061 Phases 1–2 merged in PRs #144 and #145. PRD 062 Slice 0
   merged in PR #142; PRDs 064–068 remain planned.
 
 This reconciliation supersedes stale counts such as “43/50 done,” “44/50 done,” “8/15 Phase 3 done,” and “7 remaining.”
@@ -178,8 +178,8 @@ gates in the corresponding PRD.
 | [058](PRD/058-prd-policy-lifecycle-management.md) | Policy lifecycle management | Technical implementation complete | Merges `f8784d1`, `a254d16` | Human release gates remain |
 | [059](PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merge `09f1f37` | PRD release gates remain |
 | [060](PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merge `a5d0aff` | PRD release gates remain |
-| [061](PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | In Progress — Phase 2 (PR #145 under review) | Phase 1 merged in PR #144 ([Phase 1 plan](authoring-phase1-plan.md)); [Phase 2 matrix](authoring-phase2-plan.md) | Components, M-13 impact, HTML and draft handoff under technical verification; public Rust API/semver, product, compliance, legal/content, design-partner, readiness, pilot and release gates remain pending |
-| [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — Slice 0 technically complete | Slice 0 delivered in PR #142 | Contract, schema, matrix, fixtures, threat model, and ADRs delivered with CI drift checks; human review gates remain before UI code |
+| [061](PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | In Progress — Phases 1–2 technically merged | Phase 1 merged in PR #144 ([Phase 1 plan](authoring-phase1-plan.md)); [Phase 2 matrix](authoring-phase2-plan.md) | Components, M-13 impact, HTML and draft handoff merged in PR #145; public Rust API/semver, product, compliance, legal/content, design-partner, readiness, pilot and release gates remain pending |
+| [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — local workspace implementation | Slice 0 delivered in PR #142 | Local API, embedded UI, explicit single-file effects, and headless/browser workflows implemented on the feature branch; full platform, independent review, supply-chain and human gates remain |
 | [063](PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merge `34d9869` | PRD release gates remain |
 | [064](PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | No implementation merge | PRD 063 is implemented; schema, status semantics, and editable source-of-truth decisions remain |
 | [065](PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | No implementation merge | Requires a stable source-report contract and approved provider/auth boundary |
@@ -193,10 +193,10 @@ This is a dependency-oriented sequence, not a date commitment.
 
 | Horizon | Initiative | Intended Outcome / Exit Gate |
 |---------|------------|--------------------------------|
-| **Now** | PRD 062 Slice 0 | Normative OpenAPI contract, capability matrix, project index schema, threat model, service/effect boundary, representative fixtures, ADRs, and CI drift checks — delivered and validating in CI; human API/security/accessibility approval remains before browser implementation |
+| **Now** | PRD 062 Slice 0 | Normative OpenAPI contract, capability matrix, project index schema, threat model, service/effect boundary, representative fixtures, ADRs, and CI drift checks — delivered and validating in CI; human API/security/accessibility approval remains before slice acceptance |
 | **Now** | PRDs 055–060 and 063 release-gate reconciliation | Complete or explicitly defer each remaining human, pilot, documentation, and release approval without overstating technical completion as product release |
 | **Now** | PRD 061 Phase 2 | Validate explicit components, M-13 impact, offline HTML and draft lifecycle handoff while preserving pending public Rust API/semver, product, compliance, legal/content, design-partner, readiness, pilot and release gates |
-| **Next** | PRD 062 Slices 1–4 | Deliver read-only exploration, safe mutation, review workflows, and a local pilot as separately gated increments |
+| **Now** | PRD 062 implementation and verification | Local explorer, safe mutation and review workflow under technical verification; [usage and limitations](local-workspace.md); pilot/release remain pending |
 | **Next** | PRD 064 Phase 1 | Build deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
 | **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after project, query, identity, and review contracts stabilize |
 | **Later** | PRD 066 | Add quarantined AI suggestions after authoring schemas, evaluation data, and provider/privacy gates are approved |
@@ -204,14 +204,14 @@ This is a dependency-oriented sequence, not a date commitment.
 ### Active Risks and Dependencies
 
 - PRD 062 Slice 0 contract artifacts (OpenAPI 3.1 contract, capability
-  matrix, threat model, ADRs) are delivered on the Slice 0 branch with CI
+  matrix, threat model, ADRs) merged in PR #142 with CI
   drift checks executing, but its product boundary, golden path, API
   ownership, frontend/build approach, containment primitives, and
-  accessibility patterns still require human approval before implementation
-  advances past Slice 0.
+  accessibility patterns still require human approval for slice acceptance.
+  User-authorized implementation is proceeding without claiming those gates pass.
 - PRD 064 can proceed only after stable Assessment Results identity and POA&M
   schema/status/source-of-truth decisions are approved.
-- PRD 061 Phase 1 is merged; Phase 2 technical verification is in progress. Product, compliance,
+- PRD 061 Phases 1–2 are technically merged in PRs #144 and #145. Product, compliance,
   public Rust API/semver, legal/content, design-partner readiness, pilot and release
   decisions remain pending; this work does not satisfy those gates. M-13 now has
   explicit Phase 2 comparison tests in the impact unit matrix and CLI suite; that

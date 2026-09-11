@@ -740,6 +740,39 @@ later dependency addition.
 
 ---
 
+## Implementation evidence — 2026-09-10 (not sign-off)
+
+The isolated implementation keeps this record's human findings and acceptance
+gates open. [The workspace guide](../local-workspace.md) records exact limits,
+recovery behavior and publication assumptions; [the verification record](../plans/2026-09-10-062-verification.md)
+separates executable evidence from pending approval.
+
+- D-1 is implemented in `src/workspace/session.rs` with the specified Argon2id
+  parameters, random salt and capability material, zeroizing owned buffers,
+  generic unlock failures, and throttling. The module location changes from
+  the proposed `auth/params.rs`; the parameter values do not change.
+- F2 has an implemented candidate: canonical Windows ancestor handles without
+  delete sharing, the existing confined regular-file reader, and held-handle
+  `SetFileInformationByHandle(FileRenameInfo)` publication. Cross-compilation
+  passes; hosted Windows execution and security acceptance remain required.
+- F3 has explicit candidate limits in the guide and runtime constants. Their
+  suitability and security approval remain pending. Body/tree/output/retention
+  bounds are enforced; bounded CPU operations check their deadline after the
+  domain call rather than supporting forcible mid-call interruption.
+- F4 uses text-only DOM construction and escaped inert static reports. The
+  workspace does not render arbitrary Markdown/HTML into the DOM. Browser
+  tests use synthetic markup-bearing labels and rationale; full accessibility
+  evaluation remains pending.
+- F5 has closed export parsing, canonical byte validation, hash-bound download,
+  redaction assertions, and tamper tests. These tests do not constitute human
+  security approval or a review of real organization content.
+- Conditional overwrite retains the documented final recheck-to-rename window
+  against an uncooperating external writer. It is not a portable filesystem
+  compare-and-swap primitive. Do not claim that the complete M-14 launch gate
+  or all adversarial platform cases are closed.
+
+---
+
 ## Review Sign-off 🔴 `@human-required`
 
 | Role | Name | Date | Decision |

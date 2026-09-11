@@ -527,3 +527,11 @@ Policy Forge: Forging the rules that power the agents.
 ## License
 
 MIT
+
+### Local review workspace
+
+`forge workspace --project <directory>` opens the local web review surface.
+Use `--read-only` to inspect registered files without project writes, or
+`--machine-session` for the documented headless API. See the
+[local workspace guide](docs/local-workspace.md) for unlock, explicit registration,
+review, preview/commit, recovery, API contracts, bounds, and remaining release gates.
