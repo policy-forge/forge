@@ -700,6 +700,23 @@ fn multiple_topics_and_families_do_not_double_count_gaps() {
     let first =
         plan["gaps"].as_array().unwrap().iter().find(|gap| gap["control_id"] == "c-1").unwrap();
     assert_eq!(first["assignments"].as_array().unwrap().len(), 2);
+    // S-4: one gap is shared by both policy families through distinct topics.
+    let mut policy_keys: Vec<&str> = first["assignments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|assignment| assignment["policy_key"].as_str().unwrap())
+        .collect();
+    policy_keys.sort_unstable();
+    assert_eq!(policy_keys, ["access-policy", "operations-policy"]);
+    for policy_key in policy_keys {
+        assert!(plan["policies"].as_array().unwrap().iter().any(|policy| {
+            policy["policy_key"] == policy_key
+                && policy["sections"].as_array().unwrap().iter().any(|section| {
+                    section["gap_ids"].as_array().unwrap().iter().any(|gap| gap == &first["gap_id"])
+                })
+        }));
+    }
 }
 
 #[test]
@@ -1087,4 +1104,61 @@ mod provenance_contract {
         assert_input_hashes(&fixture, &plan, &graph);
         assert_policy_spans(&fixture, &graph, &tree);
     }
+}
+
+/// S-1: scaffold an empty pack from a valid framework inventory.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn scaffold_creates_an_empty_pack_without_assignments_or_reviewer_provenance() {
+    let fixture = Fixture::new();
+    std::fs::remove_file(fixture.root.join("pack.json")).unwrap();
+    assert_exit(&run(&fixture.root, &["author", "scaffold", "--manifest", "project.json"]), 0);
+    let bytes = std::fs::read(fixture.root.join("pack.json")).unwrap();
+    let pack: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(pack["schema_version"], "forge.authoring-pack/1");
+    assert_eq!(pack["baseline"], fixture.project["baseline"]);
+    assert_eq!(pack["reviewers"], json!([]));
+    for field in
+        ["topics", "policy_families", "questions", "control_assignments", "family_assignments"]
+    {
+        assert_eq!(pack[field], json!([]), "{field}");
+    }
+    assert_eq!(
+        pack["content_rights"]["review"],
+        json!({"reviewer_key":"","reviewed_at":"","rationale":""})
+    );
+    // Required reviewer provenance is emitted empty, so the scaffold is intentionally
+    // not yet a usable pack.
+    assert!(forge::authoring::manifest::parse_pack(&bytes).is_err());
+
+    // Identical inputs reproduce identical bytes and never replace an existing pack.
+    std::fs::remove_file(fixture.root.join("pack.json")).unwrap();
+    assert_exit(&run(&fixture.root, &["author", "scaffold", "--manifest", "project.json"]), 0);
+    assert_eq!(std::fs::read(fixture.root.join("pack.json")).unwrap(), bytes);
+    assert_exit(&run(&fixture.root, &["author", "scaffold", "--manifest", "project.json"]), 2);
+    assert_eq!(std::fs::read(fixture.root.join("pack.json")).unwrap(), bytes);
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn scaffold_requires_an_exactly_valid_framework_inventory() {
+    let mut fixture = Fixture::new();
+    std::fs::remove_file(fixture.root.join("pack.json")).unwrap();
+    fixture.project["baseline"]["report_sha256"] = json!("0".repeat(64));
+    fixture.project["gap_report"]["expected_sha256"] = json!("0".repeat(64));
+    write_json(&fixture.root.join("project.json"), &fixture.project);
+    assert_exit(&run(&fixture.root, &["author", "scaffold", "--manifest", "project.json"]), 2);
+    assert!(!fixture.root.join("pack.json").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn scaffold_never_follows_a_symlinked_destination() {
+    let fixture = Fixture::new();
+    let outside = fixture.root.join("elsewhere.json");
+    std::fs::write(&outside, b"{}\n").unwrap();
+    std::fs::remove_file(fixture.root.join("pack.json")).unwrap();
+    std::os::unix::fs::symlink("elsewhere.json", fixture.root.join("pack.json")).unwrap();
+    assert_exit(&run(&fixture.root, &["author", "scaffold", "--manifest", "project.json"]), 2);
+    assert_eq!(std::fs::read(&outside).unwrap(), b"{}\n");
 }

@@ -12,6 +12,12 @@ inventory of all post-v1.1.0 changes.
 
 ### Added
 
+- PRD-061 S-1: `forge author scaffold --manifest <FILE>` writes an empty
+  `forge.authoring-pack/1` template bound to the project's exact framework
+  inventory and baseline. It creates no assignments and leaves the required
+  reviewer provenance fields empty, so a reviewer must complete the pack before
+  `plan`/`build` accepts it. The new public `AuthorCommand` variant feeds the
+  pending public Rust API/semver and migration gate.
 - PRD-061 Phase 2: `forge author impact` for M-13 baseline/dependency comparison,
   `forge author handoff` for opt-in draft-only lifecycle records, and
   `--components FILE` / `--html` on author plan/build. Explicit component bindings

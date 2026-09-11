@@ -58,6 +58,37 @@ pub fn publish(
     }
 }
 
+/// Publish one new file below an existing root without replacing an existing path.
+///
+/// The destination must be a portable relative descendant of `root`. Staging uses
+/// an `O_NOFOLLOW` sibling created relative to the confined root, and the only
+/// operation exposing the destination is one no-replace rename, so an existing
+/// file or symlink is never replaced. Other platforms fail closed, matching
+/// directory generation publication.
+///
+/// # Errors
+///
+/// Returns an authoring error for unsafe paths, an existing destination, bounds,
+/// unsupported platforms, or filesystem failures; a partial destination is never
+/// exposed.
+pub fn publish_new_file(root: &Path, relative_path: &Path, bytes: &[u8]) -> Result<(), ForgeError> {
+    if bytes.len() > MAX_OUTPUT_BYTES {
+        return Err(error("output file exceeds the 50 MiB output limit"));
+    }
+    let destination =
+        relative_path.to_str().ok_or_else(|| error("output file path must be UTF-8"))?;
+    validate_relative(destination)?;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        unix::write_new_file(root, destination, bytes)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let _ = (root, bytes);
+        Err(error("atomic no-replace authoring file publication is unsupported on this platform"))
+    }
+}
+
 fn validate_artifacts(artifacts: &[OutputArtifact]) -> Result<(), ForgeError> {
     if artifacts.is_empty() || artifacts.len() > MAX_ARTIFACTS {
         return Err(error("generation artifact count is outside the supported bound"));
@@ -277,7 +308,7 @@ mod unix {
         }
         staging.sync()?;
         hook(PublishEvent::BeforeRename)?;
-        rename_no_replace(&staging.parent, &staging.name, &name)?;
+        rename_no_replace(&staging.parent, &staging.name, &name, "generation")?;
         staging.committed = true;
         hook(PublishEvent::Published)?;
         staging.parent.sync_all().map_err(|cause| {
@@ -285,6 +316,34 @@ mod unix {
                 "complete generation was published, but parent durability sync failed: {cause}"
             ))
         })
+    }
+
+    /// Create one new file with a no-replace rename after a durable staging write.
+    pub(super) fn write_new_file(
+        root: &Path,
+        destination: &str,
+        bytes: &[u8],
+    ) -> Result<(), ForgeError> {
+        let mut parent = open_root(root)?;
+        let components = destination.split('/').collect::<Vec<_>>();
+        for component in &components[..components.len() - 1] {
+            parent = open_at(&parent, &c_string(OsStr::new(component))?, true, false)?;
+        }
+        let name = c_string(OsStr::new(
+            components.last().ok_or_else(|| error("output file name is missing"))?,
+        ))?;
+        reject_existing(&parent, &name)?;
+        let temporary =
+            c_string(OsStr::new(&format!(".forge-authoring-file-{}", uuid::Uuid::new_v4())))?;
+        let mut file = open_at(&parent, &temporary, false, true)?;
+        file.write_all(bytes).map_err(io_error)?;
+        file.sync_all().map_err(io_error)?;
+        drop(file);
+        if let Err(cause) = rename_no_replace(&parent, &temporary, &name, "file") {
+            unlink(&parent, &temporary, false);
+            return Err(cause);
+        }
+        parent.sync_all().map_err(io_error)
     }
 
     fn open_root(root: &Path) -> Result<File, ForgeError> {
@@ -362,7 +421,12 @@ mod unix {
         Ok(())
     }
 
-    fn rename_no_replace(parent: &File, source: &CStr, target: &CStr) -> Result<(), ForgeError> {
+    fn rename_no_replace(
+        parent: &File,
+        source: &CStr,
+        target: &CStr,
+        label: &str,
+    ) -> Result<(), ForgeError> {
         // SAFETY: both names and the held parent descriptor remain live for this call.
         #[cfg(target_os = "linux")]
         let result = unsafe {
@@ -387,7 +451,7 @@ mod unix {
         };
         if result != 0 {
             return Err(error(format!(
-                "atomic no-replace generation publication failed: {}",
+                "atomic no-replace {label} publication failed: {}",
                 std::io::Error::last_os_error()
             )));
         }

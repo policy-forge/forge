@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** In Progress — Phase 2 technical extension; human gates pending
-> **Last Updated:** 2026-09-09 <!-- @auto -->
+> **Status:** Technical phases merged (Phase 1 PR #144, Phase 2 PR #145); human gates pending
+> **Last Updated:** 2026-09-11 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `061-framework-guided-policy-authoring`
 **Created**: 2026-08-24
-**Status**: In Progress — Phase 2 technical extension; human gates pending
+**Status**: Technical phases merged (Phase 1 PR #144, Phase 2 PR #145); human gates pending
 **Input**: Post-v1.3 product planning
 
 ---
@@ -220,6 +220,38 @@ service or release publication is introduced. Phase 3 design-partner packs,
 measured authoring exercises, legal/content acceptance and release approval
 remain pending.
 
+### Phase 2 closeout disposition
+
+Phase 2 merged in PR #145 (merge `3ac6815`; commits `fedf29e`, `18fa937`,
+`7901148`). The [acceptance evidence map](authoring-phase2-evidence.md) links every
+Phase 2 matrix row to named executable cases and records the closeout verification
+(`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
+`cargo test --locked` with 2,337 passed / 0 failed / 3 ignored, `git diff --check`).
+The [authoring gates register](authoring-gates.md) lists every open human and
+release gate with its owner, decision and required evidence.
+
+**S-1** is now technically implemented as `forge author scaffold --manifest <FILE>`
+plus `scaffold.rs` and CLI tests. It writes an empty `forge.authoring-pack/1`
+template bound to the project's exact framework inventory and baseline, creates no
+topics/questions/families/assignments, and emits the required reviewer provenance
+fields empty, so the scaffold is intentionally unusable until a human reviewer
+supplies them (the `forge mapping init` fail-until-attested convention). S-1 adds a
+**public `AuthorCommand` variant**, so it feeds the pending public Rust API/semver
+and migration gate; no release compatibility is claimed. Its Should-Have checkbox
+stays unchecked because product acceptance is pending.
+
+**S-4** needs no new code. M-4 already admits "one or more policy topics" per gap,
+and `validate_pack` dedupes only the exact `(control_id, topic_key)` and
+`(topic_key, policy_family_key)` pairs, so one gap can be shared by multiple policy
+families. `tests/authoring_cli_test.rs::multiple_topics_and_families_do_not_double_count_gaps`
+now also proves that both policy families share the single gap while per-edge
+responsibility boundaries are preserved. The S-4 checkbox stays unchecked.
+
+No other requirement checkbox changes. The remaining unchecked boxes stay
+unchecked because the PRD's only established check convention (M-13's "technical
+evidence, not human acceptance") is not a substitute for the product, compliance,
+legal, engineering, design-partner, pilot and release gates that remain open.
+
 ## Risks and Mitigations :yellow_circle: `@human-review`
 
 | Risk | Impact | Mitigation |
@@ -258,3 +290,4 @@ remain pending.
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for framework-guided, provenance-preserving policy authoring |
 | 0.2 | 2026-09-09 | Codex | Recorded merged Phase 1 foundation and Phase 2 component, M-13, HTML and draft-handoff technical disposition; retained human acceptance and public API/release gates. |
+| 0.3 | 2026-09-11 | Codex | Recorded the merged Phase 2 (PR #145), added the acceptance-evidence map and gate register, implemented S-1 `author scaffold` (new public CLI variant feeding the API/semver gate) and proved S-4 via M-4; every human/release gate and unchecked requirement box remains open. |

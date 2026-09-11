@@ -218,5 +218,7 @@ remain enforced. These are source/output byte limits, not a claim of exact heap
 usage: validated representations and private snapshots may retain extra copies.
 
 See the [interface freeze and acceptance matrix](authoring-phase2-plan.md),
-[Phase 2 review dispositions](authoring-phase2-review.md) and
+[Phase 2 review dispositions](authoring-phase2-review.md),
+[Phase 2 acceptance evidence](authoring-phase2-evidence.md),
+[authoring gates](authoring-gates.md) and
 [Phase 1 review dispositions](authoring-phase1-review.md) for retained boundaries.
