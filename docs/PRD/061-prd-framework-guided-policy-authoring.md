@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** Technical phases merged (Phase 1 PR #144, Phase 2 PR #145); human gates pending
+> **Status:** Technical phases merged; pilot and release gates pending
 > **Last Updated:** 2026-09-11 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `061-framework-guided-policy-authoring`
 **Created**: 2026-08-24
-**Status**: Technical phases merged (Phase 1 PR #144, Phase 2 PR #145); human gates pending
+**Status**: Technical phases merged; pilot and release gates pending
 **Input**: Post-v1.3 product planning
 
 ---
@@ -79,7 +79,7 @@ Compliance engineers know which applicable controls lack reviewed policy relatio
 | G-2 | Require organization-specific context before claims appear. | 100% of seeded missing required answers block affected clauses without blocking unrelated drafts. |
 | G-3 | Preserve end-to-end provenance. | Every skeleton section and included clause traces to gap IDs, control IDs, authoring-pack bytes, answers, and component/source bytes. |
 | G-4 | Keep output deterministic and reviewable. | Identical inputs produce byte-identical plans, skeletons, and provenance reports. |
-| G-5 | Reduce time to a reviewable first draft. | Five pilots reach a complete reviewable skeleton 50% faster than their current process. **Hypothesis.** |
+| G-5 | Reduce time to a reviewable first draft. | Directional hypothesis (unvalidated): a reviewable skeleton is reached faster than the current process. No numeric target is claimed until measured. |
 
 ## Non-Goals :red_circle: `@human-required`
 
@@ -168,12 +168,16 @@ Draft state is one of `planned`, `blocked-context`, `skeleton-ready`, or `human-
 
 ## Success Metrics — Hypotheses :red_circle: `@human-required`
 
+Every target below is an unvalidated hypothesis, not a commitment. The former
+"50% faster" lagging target was retired on 2026-09-11 as unsupported; the pilot
+measurement protocol lives in the [authoring gates register](../authoring-gates.md).
+
 | Type | Metric | Target | Measurement |
 |------|--------|--------|-------------|
 | Leading | Gap accounting | 100% of seeded gaps reconciled | Invariant tests |
 | Leading | First-draft task completion | 4 of 5 pilots complete without maintainer edits | Moderated study |
 | Leading | Unsupported claims | Zero hidden defaults or synthesized clauses | Fixtures and human review |
-| Lagging | Time to reviewable skeleton | 50% median reduction | Partner before/after comparison |
+| Lagging | Time to reviewable skeleton | No numeric target claimed; report median before/after | Partner before/after comparison |
 | Lagging | Draft acceptance | At least 70% of skeleton sections retained through human review | Sanitized diff analysis |
 
 ## Dependencies and Phasing :yellow_circle: `@human-review`
@@ -223,12 +227,14 @@ remain pending.
 ### Phase 2 closeout disposition
 
 Phase 2 merged in PR #145 (merge `3ac6815`; commits `fedf29e`, `18fa937`,
-`7901148`). The [acceptance evidence map](authoring-phase2-evidence.md) links every
-Phase 2 matrix row to named executable cases and records the closeout verification
-(`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
+`7901148`). The [acceptance evidence map](../authoring-phase2-evidence.md) links
+every Phase 2 matrix row to named executable cases and records the closeout
+verification (`cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
 `cargo test --locked` with 2,337 passed / 0 failed / 3 ignored, `git diff --check`).
-The [authoring gates register](authoring-gates.md) lists every open human and
-release gate with its owner, decision and required evidence.
+The [authoring gates register](../authoring-gates.md) records the owner
+dispositions of 2026-09-11: GATE-API, GATE-PRODUCT, GATE-COMPLIANCE, GATE-LEGAL,
+GATE-ENGINEERING and GATE-PARTNERS are satisfied, while pilot measurement and
+release approval remain open.
 
 **S-1** is now technically implemented as `forge author scaffold --manifest <FILE>`
 plus `scaffold.rs` and CLI tests. It writes an empty `forge.authoring-pack/1`
@@ -236,9 +242,9 @@ template bound to the project's exact framework inventory and baseline, creates 
 topics/questions/families/assignments, and emits the required reviewer provenance
 fields empty, so the scaffold is intentionally unusable until a human reviewer
 supplies them (the `forge mapping init` fail-until-attested convention). S-1 adds a
-**public `AuthorCommand` variant**, so it feeds the pending public Rust API/semver
-and migration gate; no release compatibility is claimed. Its Should-Have checkbox
-stays unchecked because product acceptance is pending.
+**public `AuthorCommand` variant**; the API gate is now satisfied by a recorded
+`2.0.0` decision plus
+[migration guidance](../authoring-api-migration.md), with the release itself held.
 
 **S-4** needs no new code. M-4 already admits "one or more policy topics" per gap,
 and `validate_pack` dedupes only the exact `(control_id, topic_key)` and
@@ -247,10 +253,11 @@ families. `tests/authoring_cli_test.rs::multiple_topics_and_families_do_not_doub
 now also proves that both policy families share the single gap while per-edge
 responsibility boundaries are preserved. The S-4 checkbox stays unchecked.
 
-No other requirement checkbox changes. The remaining unchecked boxes stay
-unchecked because the PRD's only established check convention (M-13's "technical
-evidence, not human acceptance") is not a substitute for the product, compliance,
-legal, engineering, design-partner, pilot and release gates that remain open.
+No other requirement checkbox changes. The remaining unchecked Should-Have and
+Must-Have boxes stay unchecked because the PRD's only established check convention
+is M-13's "technical evidence, not human acceptance"; the gate dispositions above
+do not convert implementation into a checkbox claim. The Definition of Ready
+checklist is dispositioned separately.
 
 ## Risks and Mitigations :yellow_circle: `@human-review`
 
@@ -263,18 +270,37 @@ legal, engineering, design-partner, pilot and release gates that remain open.
 
 ## Open Questions :yellow_circle: `@human-review`
 
-- **[Product, blocking]** What is the smallest authoring-pack schema that supports ISO/SOC 2-style workflows without encoding framework-specific assumptions?
-- **[Compliance, blocking]** Which organization-answer classes must always require independent review?
-- **[Legal, blocking]** Can authoring packs include control titles, or should the portable contract default to IDs only?
-- **[Engineering, non-blocking]** Should one build emit multiple policy files atomically or one policy per invocation?
+All four questions were dispositioned by the owner on 2026-09-11 (see the
+Decision Log and the [authoring gates register](../authoring-gates.md)). The
+original questions are retained for history.
+
+- **[Product, blocking] — resolved.** The closed `forge.authoring-pack/1` contract
+  is accepted as the smallest schema; authoring states, assignment semantics and
+  disclaimers are accepted as shipped.
+- **[Compliance, blocking] — resolved.** Any **required** answer whose sensitivity
+  is `confidential` or `restricted` must be independently reviewed before
+  dependent clauses are usable; `public`/`internal` answers need only their
+  supplied reviewer provenance. FORGE records asserted provenance and cannot
+  authenticate independence.
+- **[Legal, blocking] — resolved.** The portable contract stays IDs-only; control
+  titles are never bundled, and appear only when rendered locally from
+  user-supplied framework inputs under the pack's `content_rights` attestation.
+- **[Engineering, non-blocking] — resolved.** One build continues to emit every
+  selected policy as one atomic no-replace generation; sequential-rollback
+  atomicity is explicitly not claimed; Linux/macOS are the supported publication
+  platforms.
 
 ## Definition of Ready :red_circle: `@human-required`
 
-- [ ] Product and Compliance approve authoring states, assignment semantics, and disclaimers.
-- [ ] Legal approves authoring-pack content boundaries.
-- [ ] Engineering approves schemas, provenance graph, bounds, and atomic multi-output behavior.
-- [ ] Three design partners supply lawful framework inputs and real gap-to-draft workflows.
-- [ ] Every Must Have maps to an executable acceptance test.
+All items are dispositioned; see the
+[authoring gates register](../authoring-gates.md) for owners, evidence and the
+two gates that remain open (pilot measurement and release approval).
+
+- [x] Product and Compliance approve authoring states, assignment semantics, and disclaimers. (2026-09-11)
+- [x] Legal approves authoring-pack content boundaries. (2026-09-11, asserted disposition)
+- [x] Engineering approves schemas, provenance graph, bounds, and atomic multi-output behavior. (2026-09-11)
+- [x] Three design partners supply lawful framework inputs and real gap-to-draft workflows. (2026-09-11 readiness; reviewers identified at the owner's employer and not named in the repository; measured workflows remain under the pilot gate)
+- [x] Every Must Have maps to an executable acceptance test. ([M-1…M-15 evidence](../authoring-phase2-evidence.md#must-have-requirement-evidence))
 
 ## Decision Log :yellow_circle: `@human-review`
 
@@ -283,6 +309,14 @@ legal, engineering, design-partner, pilot and release gates that remain open.
 | 2026-08-24 | Generate plans and skeletons before prose | Organization context and reviewed ownership must precede policy assertions | Blank-page AI policy generation |
 | 2026-08-24 | Make authoring packs user-supplied and fingerprinted | Framework mappings and content rights require accountable provenance | Bundled universal packs |
 | 2026-08-24 | Keep authoring state separate from approval state | Draft completeness is not governance approval | Reuse lifecycle states |
+| 2026-09-11 | The Rust library is a supported public surface; the release carrying PRD-061 is `2.0.0` with migration guidance | `AuthorCommand` and `ForgeError` are public and not `#[non_exhaustive]`, so added variants break downstream exhaustive matches | Ship `1.2.0` with an unstable-API note; add `#[non_exhaustive]` now (itself breaking) |
+| 2026-09-11 | Accept the authoring states, assignment semantics and disclaimers as shipped | States and output terminology are already conservative and pinned by tests | Add extra per-artifact disclaimer banners |
+| 2026-09-11 | Required `confidential`/`restricted` answers must be independently reviewed before dependent clauses are usable | Maps onto existing `required`/`sensitivity`/`review` fields without breaking the closed pack schema | Add a review-class field (breaks `forge.authoring-pack/1`) |
+| 2026-09-11 | Portable packs stay IDs-only; control titles only render locally from user-supplied framework inputs under `content_rights` | Avoids bundling or redistributing restricted control text | Allow titles in packs with a redistribution attestation |
+| 2026-09-11 | Keep one atomic no-replace multi-policy generation; Linux/macOS only; no sequential-rollback claim | Already implemented, tested and stricter than the alternative | One policy per invocation |
+| 2026-09-11 | Three design-partner reviewers identified at the owner's employer; identities not recorded in the repository | Satisfies readiness without disclosing organization or individual names | Name partners in-repo; defer readiness |
+| 2026-09-11 | Retire the "50% faster" G-5 figure and measure before/after median instead | An unmeasured numeric claim is a liability once quoted | Keep the unvalidated number pending pilots |
+| 2026-09-11 | Hold the authoring tranches out of any release until the remaining in-flight PRDs finish and pilot data exists | Avoid shipping a preview as a release commitment | Release now as `2.0.0` |
 
 ## Changelog :white_circle: `@auto`
 
@@ -291,3 +325,4 @@ legal, engineering, design-partner, pilot and release gates that remain open.
 | 0.1 | 2026-08-24 | Codex | Initial draft for framework-guided, provenance-preserving policy authoring |
 | 0.2 | 2026-09-09 | Codex | Recorded merged Phase 1 foundation and Phase 2 component, M-13, HTML and draft-handoff technical disposition; retained human acceptance and public API/release gates. |
 | 0.3 | 2026-09-11 | Codex | Recorded the merged Phase 2 (PR #145), added the acceptance-evidence map and gate register, implemented S-1 `author scaffold` (new public CLI variant feeding the API/semver gate) and proved S-4 via M-4; every human/release gate and unchecked requirement box remains open. |
+| 0.4 | 2026-09-11 | Codex | Recorded owner dispositions satisfying the API/semver, product, compliance, legal, engineering and design-partner-readiness gates; resolved the four Open Questions; retired the unmeasured 50% G-5 figure; added the M-1…M-15 evidence map and API migration guidance. Pilot measurement and release approval remain open. |

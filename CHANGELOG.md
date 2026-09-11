@@ -35,6 +35,11 @@ inventory of all post-v1.1.0 changes.
 
 ### Changed
 
+- The next release carrying the PRD-061 authoring tranches is a **major**
+  (`2.0.0`) release: `AuthorCommand` and `ForgeError` are public and not
+  `#[non_exhaustive]`, so the added variants can break downstream exhaustive
+  matches. See the [authoring library API migration](docs/authoring-api-migration.md).
+  Package version and `Cargo.lock` are unchanged until that release.
 - Shared PRD-059 rendering reports effective byte/span limits in budget errors;
   exact error wording changes while existing successful composition bytes and
   provenance semantics remain preserved.
