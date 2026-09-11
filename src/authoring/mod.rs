@@ -6,7 +6,7 @@ mod generation;
 pub mod handoff;
 pub mod html;
 pub mod impact;
-mod input;
+pub(crate) mod input;
 
 pub use generation::{execute_extended, execute_handoff, execute_impact};
 mod scaffold;

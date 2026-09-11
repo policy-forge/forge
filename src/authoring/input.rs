@@ -24,7 +24,7 @@ struct CapturedFile {
     max_bytes: u64,
 }
 
-pub(super) struct CaptureSet {
+pub(crate) struct CaptureSet {
     root: PathBuf,
     files: BTreeMap<String, CapturedFile>,
     identities: BTreeSet<(u64, u64)>,
@@ -33,7 +33,7 @@ pub(super) struct CaptureSet {
 }
 
 impl CaptureSet {
-    pub(super) fn new(root: PathBuf) -> Self {
+    pub(crate) fn new(root: PathBuf) -> Self {
         Self {
             root,
             files: BTreeMap::new(),
@@ -84,7 +84,7 @@ impl CaptureSet {
         Ok(())
     }
 
-    pub(super) fn read(
+    pub(crate) fn read(
         &mut self,
         role: &str,
         path: &Path,

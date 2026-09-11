@@ -5,4 +5,6 @@
 //! this module generates, rewrites, or merges text, so a candidate can never
 //! become prose that no human supplied.
 
+pub mod blocks;
+pub mod capture;
 pub mod corpus;
