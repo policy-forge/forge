@@ -12,6 +12,12 @@ inventory of all post-v1.1.0 changes.
 
 ### Added
 
+- PRD-061 S-1: `forge author scaffold --manifest <FILE>` writes an empty
+  `forge.authoring-pack/1` template bound to the project's exact framework
+  inventory and baseline. It creates no assignments and leaves the required
+  reviewer provenance fields empty, so a reviewer must complete the pack before
+  `plan`/`build` accepts it. The new public `AuthorCommand` variant feeds the
+  pending public Rust API/semver and migration gate.
 - PRD-061 Phase 2: `forge author impact` for M-13 baseline/dependency comparison,
   `forge author handoff` for opt-in draft-only lifecycle records, and
   `--components FILE` / `--html` on author plan/build. Explicit component bindings
@@ -29,6 +35,11 @@ inventory of all post-v1.1.0 changes.
 
 ### Changed
 
+- The next release carrying the PRD-061 authoring tranches is a **major**
+  (`2.0.0`) release: `AuthorCommand` and `ForgeError` are public and not
+  `#[non_exhaustive]`, so the added variants can break downstream exhaustive
+  matches. See the [authoring library API migration](docs/authoring-api-migration.md).
+  Package version and `Cargo.lock` are unchanged until that release.
 - Shared PRD-059 rendering reports effective byte/span limits in budget errors;
   exact error wording changes while existing successful composition bytes and
   provenance semantics remain preserved.

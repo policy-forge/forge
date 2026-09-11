@@ -130,3 +130,11 @@ unit/CLI cases for every change category, including raw report/extension churn,
 private incomplete component inputs, reviewed framework correspondence and
 unchanged local dependencies. Exact commit OCR and hosted checks remain separate
 delivery evidence; local green checks do not establish merge or release.
+
+## Post-merge closeout evidence
+
+PR #145 merged as `3ac6815`. The current acceptance-matrix-to-test map, the
+closeout verification run, the S-1 scaffold cases and the S-4 shared-gap
+disposition are recorded in
+[Phase 2 acceptance evidence](authoring-phase2-evidence.md); open human gates are
+tracked in [authoring gates](authoring-gates.md).

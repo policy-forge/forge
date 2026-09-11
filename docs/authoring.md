@@ -55,6 +55,27 @@ Exit statuses:
 Exit 0 describes authoring bookkeeping only. A skeleton without human clauses
 can still be `skeleton-ready`; it is not a finished policy.
 
+## Scaffolding an empty pack (S-1)
+
+```sh
+forge author scaffold --manifest project.json
+```
+
+`scaffold` writes an empty `forge.authoring-pack/1` template to the path pinned by
+`authoring_pack` in the manifest. It captures and exactly regenerates the pinned
+framework inventory, copies the project's exact baseline fingerprints, creates no
+topics, questions, policy families, control assignments or family assignments, and
+leaves the required `reviewers` collection and `content_rights` reviewer fields
+empty. A reviewer must supply that provenance — and update the `authoring_pack`
+byte pin — before `plan` or `build` accepts the pack; the template is intentionally
+not yet a usable pack (the `forge mapping init` fail-until-attested convention).
+The command never replaces an existing file, never follows a symlinked
+destination, and creates no assignment, approval evidence or lifecycle state. The
+destination's parent directory must already exist, mirroring the authoring output
+boundary. It fails closed on platforms without atomic no-replace publication. The
+command adds a public `AuthorCommand` variant, so it is included in the pending
+public Rust API/semver and migration gate.
+
 ## Local input contracts
 
 The Phase 1 closed JSON schemas are [authoring-pack](../schemas/authoring-pack.schema.json)

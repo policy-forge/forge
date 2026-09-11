@@ -286,6 +286,47 @@ pub(super) fn prepare_pinned(
     let pack_bytes =
         captures.pinned("authoring-pack", &project.authoring_pack, MAX_MANIFEST_BYTES)?;
     let pack = manifest::parse_pack(&pack_bytes)?;
+    let CapturedInventory { report: baseline_report, report_sha256 } =
+        capture_inventory(&mut captures, &project)?;
+    if pack.baseline != project.baseline
+        || project.baseline.report_sha256 != report_sha256
+        || project.baseline.framework_sha256 != baseline_report.framework.raw_sha256
+        || project.baseline.resolved_catalog_sha256
+            != baseline_report.framework.resolved_catalog_sha256
+    {
+        return Err(error(
+            "pack, project, framework and report baseline fingerprints must match exactly",
+        ));
+    }
+    manifest::validate_relationships(&pack, &project, &baseline_report)?;
+    let clauses = load_clauses(&mut captures, &project)?;
+    captures.verify()?;
+    let loaded = LoadedAuthorProject {
+        project,
+        pack,
+        baseline_report,
+        project_sha256: sha256_hex(&project_bytes),
+        pack_sha256: sha256_hex(&pack_bytes),
+        report_sha256,
+        inputs: captures.fingerprints(),
+        clauses,
+    };
+    Ok(PreparedProject { root, loaded, captures })
+}
+
+struct CapturedInventory {
+    report: crate::applicability::model::ApplicabilityReport,
+    report_sha256: String,
+}
+
+/// Capture and exactly regenerate the pinned PRD-056 framework inventory.
+///
+/// The caller supplies the already parsed project so pack loading and inventory
+/// capture stay independently ordered; this function never reads the authoring pack.
+fn capture_inventory(
+    captures: &mut CaptureSet,
+    project: &manifest::AuthorProject,
+) -> Result<CapturedInventory, ForgeError> {
     let report_bytes =
         captures.pinned("gap-report", &project.gap_report, crate::io::MAX_FILE_SIZE)?;
     let supplied_report = strict_json(&report_bytes, "gap report")?;
@@ -333,38 +374,60 @@ pub(super) fn prepare_pinned(
         strict_json(&bytes, "Mapping Collection")?;
     }
 
-    let baseline_report = analyze_snapshot(&captures, &project.applicability_manifest.path)?;
-    let regenerated = serde_json::to_value(&baseline_report)
+    let report = analyze_snapshot(captures, &project.applicability_manifest.path)?;
+    let regenerated = serde_json::to_value(&report)
         .map_err(|cause| error(format!("cannot serialize baseline: {cause}")))?;
     if regenerated != supplied_report {
         return Err(error(
             "gap report does not exactly represent the complete current unfiltered PRD-056 analysis",
         ));
     }
-    if pack.baseline != project.baseline
-        || project.baseline.report_sha256 != sha256_hex(&report_bytes)
-        || project.baseline.framework_sha256 != baseline_report.framework.raw_sha256
-        || project.baseline.resolved_catalog_sha256
-            != baseline_report.framework.resolved_catalog_sha256
+    Ok(CapturedInventory { report, report_sha256: sha256_hex(&report_bytes) })
+}
+
+/// A validated author project with its exact framework inventory but no authoring pack.
+///
+/// Used only by the scaffold command, which creates the pack the project pins.
+pub(super) struct PreparedInventory {
+    pub root: PathBuf,
+    pub project: manifest::AuthorProject,
+    pub(super) captures: CaptureSet,
+}
+
+impl PreparedInventory {
+    pub(super) fn verify_inputs(&self) -> Result<(), ForgeError> {
+        self.captures.verify()
+    }
+}
+
+/// Capture a project and its framework inventory without reading the authoring pack.
+///
+/// # Errors
+/// Returns an authoring error for invalid inputs, stale pins, or unsafe paths.
+pub(super) fn prepare_inventory(manifest_path: &Path) -> Result<PreparedInventory, ForgeError> {
+    let absolute = absolute_manifest_path(manifest_path)?;
+    let root = absolute
+        .parent()
+        .ok_or_else(|| error("manifest must have a parent directory"))?
+        .to_path_buf();
+    let manifest_name = absolute.file_name().ok_or_else(|| error("manifest must name a file"))?;
+    let mut captures = CaptureSet::new(root.clone());
+    let project_bytes =
+        captures.read("author-project", Path::new(manifest_name), None, MAX_MANIFEST_BYTES)?;
+    let project = manifest::parse_project(&project_bytes)?;
+    if project.project_root != Path::new(".") {
+        return Err(error("Phase 1 project_root must be '.' (the author manifest directory)"));
+    }
+    let CapturedInventory { report, report_sha256 } = capture_inventory(&mut captures, &project)?;
+    if project.baseline.report_sha256 != report_sha256
+        || project.baseline.framework_sha256 != report.framework.raw_sha256
+        || project.baseline.resolved_catalog_sha256 != report.framework.resolved_catalog_sha256
     {
         return Err(error(
-            "pack, project, framework and report baseline fingerprints must match exactly",
+            "project, framework and report baseline fingerprints must match exactly",
         ));
     }
-    manifest::validate_relationships(&pack, &project, &baseline_report)?;
-    let clauses = load_clauses(&mut captures, &project)?;
-    captures.verify()?;
-    let loaded = LoadedAuthorProject {
-        project,
-        pack,
-        baseline_report,
-        project_sha256: sha256_hex(&project_bytes),
-        pack_sha256: sha256_hex(&pack_bytes),
-        report_sha256: sha256_hex(&report_bytes),
-        inputs: captures.fingerprints(),
-        clauses,
-    };
-    Ok(PreparedProject { root, loaded, captures })
+    Ok(PreparedInventory { root, project, captures })
 }
 
 fn load_clauses(

@@ -900,6 +900,13 @@ pub enum AuthorCommand {
         #[arg(long)]
         output_dir: PathBuf,
     },
+    /// Write an empty forge.authoring-pack/1 template bound to the project's exact
+    /// framework inventory; creates no assignments and requires reviewer provenance
+    Scaffold {
+        /// Versioned forge.author-project/1 JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+    },
     /// Compare two explicitly pinned authoring snapshots without changing either
     Impact {
         /// Closed forge.authoring-impact/1 request
@@ -1740,6 +1747,10 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                         components.as_deref(),
                         *html,
                     )?
+                }
+                AuthorCommand::Scaffold { manifest } => {
+                    crate::authoring::execute_scaffold(manifest)?;
+                    false
                 }
                 AuthorCommand::Impact { manifest, format, output_dir, html } => {
                     crate::authoring::execute_impact(
