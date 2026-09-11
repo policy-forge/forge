@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/reuse-corpus/1",
+  "title": "FORGE reuse corpus",
+  "description": "Closed local contract naming operator-supplied candidate documents for retrieval. Documents are never fetched, inferred, or bundled by FORGE. Runtime validation additionally rejects decoded duplicate keys, duplicate document keys or paths, dangling supersedes references, and unsafe paths.",
+  "$comment": "Runtime enforces a 2 MiB manifest byte limit, depth 16, a 16 KiB UTF-8 string bound, at most 512 documents, 1 MiB per document, and portable descendant paths. JSON Schema lengths count Unicode characters. Rights and source labels and document status are asserted provenance, not grants or approvals.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "corpus_key", "documents"],
+  "properties": {
+    "schema_version": {
+      "const": "forge.reuse-corpus/1"
+    },
+    "corpus_key": {
+      "$ref": "#/$defs/key"
+    },
+    "title": {
+      "$ref": "#/$defs/single_line"
+    },
+    "documents": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": {
+        "$ref": "#/$defs/document"
+      }
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "pattern": "[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060-\\u2064\\u3000\\ufeff\\ufff9-\\ufffb]",
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "single_line": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/text"
+        }
+      ],
+      "pattern": "^[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000](?:[\\s\\S]*[^\\u0009-\\u000d\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000])?$(?![\\s\\S])",
+      "not": {
+        "pattern": "[\\n\\r\\t]"
+      }
+    },
+    "label": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/single_line"
+        }
+      ],
+      "not": {
+        "pattern": "^(?:[/\\\\]|[A-Za-z]:[/\\\\]|[Ff][Ii][Ll][Ee]:)"
+      },
+      "$comment": "Human labels allow ordinary colons and punctuation; only rooted local paths and file URIs are prohibited."
+    },
+    "control_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^\\S+$"
+    },
+    "document_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*[\\\\:])[^\\u0000-\\u001f\\u007f]+$",
+      "$comment": "Lexical preflight only: runtime rejects absolute, non-canonical, aliasing, symlinked and reserved paths, and requires a .md extension."
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "path",
+        "title",
+        "status",
+        "rights_label",
+        "source_label",
+        "expected_sha256"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "path": {
+          "$ref": "#/$defs/document_path"
+        },
+        "title": {
+          "$ref": "#/$defs/single_line"
+        },
+        "status": {
+          "enum": ["approved", "draft"]
+        },
+        "rights_label": {
+          "$ref": "#/$defs/label"
+        },
+        "source_label": {
+          "$ref": "#/$defs/label"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "topic_keys": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/key"
+          }
+        },
+        "control_ids": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/control_id"
+          }
+        },
+        "supersedes": {
+          "$ref": "#/$defs/key",
+          "$comment": "Must name another document in this corpus; runtime rejects missing and self references."
+        }
+      }
+    }
+  }
+}
