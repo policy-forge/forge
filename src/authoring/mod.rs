@@ -9,6 +9,8 @@ pub mod impact;
 mod input;
 
 pub use generation::{execute_extended, execute_handoff, execute_impact};
+mod scaffold;
+pub use scaffold::execute as execute_scaffold;
 pub mod manifest;
 pub mod model;
 pub mod output;

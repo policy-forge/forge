@@ -1,6 +1,6 @@
 # FORGE Roadmap
 
-> **Last Updated:** 2026-09-09
+> **Last Updated:** 2026-09-11
 > **Current Release Line:** v1.1.0 released; post-v1.1.0 development active
 > **Canonical Detail:** [docs/FORGE_PRODUCT_ROADMAP.md](docs/FORGE_PRODUCT_ROADMAP.md)
 
@@ -22,7 +22,9 @@ The post-v1.1.0 roadmap contains **14 PRDs**:
 - **7 technically implemented:** PRDs 055–060 and 063. Their implementation is
   merged, while their PRD-level human release gates remain pending where noted.
 - **5 planned:** PRDs 064–068.
-- **2 in progress:** PRD 061 Phase 2 technical extension (under review in PR #145) and PRD 062's local
+- **2 in progress:** PRD 061, whose Phase 1 and Phase 2 technical phases are merged
+  (PR #144 and PR #145) with design-partner readiness satisfied and only pilot
+  measurement and release approval pending, and PRD 062's local
   workspace (Slice 0 delivered in PR #142). Their remaining human gates stay open.
 
 **What is built:**
@@ -140,7 +142,7 @@ design-partner validation, publication, or adoption gates are complete.
 | [058](docs/PRD/058-prd-policy-lifecycle-management.md) | Policy lifecycle management | Technical implementation complete | Merged in `f8784d1`; remediation merged in `a254d16`; human release gates remain |
 | [059](docs/PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merged in `09f1f37`; PRD release gates remain |
 | [060](docs/PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merged in `a5d0aff`; PRD release gates remain |
-| [061](docs/PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | In Progress — Phase 2 (PR #145 under review) | Phase 1 merged in PR #144 ([Phase 1 plan](docs/authoring-phase1-plan.md)); [Phase 2 interface and acceptance matrix](docs/authoring-phase2-plan.md) covers components, M-13, HTML and draft handoff; public Rust API/semver review, product, compliance, legal/content, design-partner, human readiness, pilot and release gates remain pending |
+| [061](docs/PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | Technical phases merged — pilot and release gates pending | Phase 1 merged in PR #144; Phase 2 merged in PR #145 (merge `3ac6815`; commits `fedf29e`, `18fa937`, `7901148`). API/semver (`2.0.0` + [migration guidance](docs/authoring-api-migration.md)), product, compliance, legal, engineering and design-partner-readiness gates satisfied by owner disposition 2026-09-11 ([gate register](docs/authoring-gates.md), [evidence map](docs/authoring-phase2-evidence.md)); measured pilots and release approval remain pending |
 | [062](docs/PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — Slice 0 technically complete | Contract, `forge.workspace/1` schema, capability matrix, fixtures, threat model, service boundaries, ADRs, and CI drift checks delivered in PR #142; human API/security/accessibility review gates remain before Slice 1 |
 | [063](docs/PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merged in `34d9869`; PRD release gates remain |
 | [064](docs/PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | PRD 063 dependency is implemented; schema, status semantics, and source-of-truth decisions remain |
@@ -157,7 +159,7 @@ This sequence communicates dependency order, not committed dates.
 |---------|------------|----------------|
 | **Now** | PRD 062 Slice 0 | Establish the normative API contract, capability matrix, project index schema, threat model, service boundaries, fixtures, ADRs, and drift checks — artifacts and CI drift gate delivered; human review approval remains |
 | **Now** | PRDs 055–060 and 063 release-gate reconciliation | Complete or explicitly defer the human, pilot, documentation, and release approvals still open in the PRDs |
-| **Now** | PRD 061 Phase 2 | Validate explicit components, M-13 dependency impact, offline HTML and draft lifecycle handoff; preserve pending public Rust API/semver, product, compliance, legal/content, design-partner, readiness, pilot and release gates |
+| **Now** | PRD 061 pilot and release gates | Run the measured partner exercises against the recorded protocol, then obtain release approval for the `2.0.0` tranche once the remaining in-flight PRDs finish |
 | **Next** | PRD 062 Slices 1–4 | Deliver read-only exploration, safe mutation, applicability/mapping review, and a local pilot in gated increments |
 | **Next** | PRD 064 Phase 1 | Add deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
 | **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after their shared contracts stabilize |

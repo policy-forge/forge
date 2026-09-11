@@ -58,6 +58,61 @@ pub fn publish(
     }
 }
 
+/// Publication events exposed to tests. Not part of the public API.
+///
+/// Only `unix::write_new_file_with_hook` constructs these, so they are inert on
+/// platforms that fail closed before staging.
+#[cfg_attr(not(any(target_os = "linux", target_os = "macos")), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FilePublishEvent {
+    /// The private staging directory exists and the staged file is durably written.
+    Staged,
+    /// The no-replace rename is about to expose the destination.
+    BeforeRename,
+}
+
+/// Publish one new file below an existing root without replacing an existing path.
+///
+/// The destination must be a portable relative descendant of `root`. The file is
+/// staged inside a private mode-0700 directory below the destination parent, and
+/// the rename source is resolved against that directory's held descriptor, so a
+/// concurrent writer that replaces the staging pathname cannot substitute the
+/// published object. The only operation exposing the destination is one no-replace
+/// rename, so an existing file or symlink is never replaced. Other platforms fail
+/// closed, matching directory generation publication.
+///
+/// # Errors
+///
+/// Returns an authoring error for unsafe paths, an existing destination, bounds,
+/// unsupported platforms, or filesystem failures; a partial destination is never
+/// exposed.
+pub fn publish_new_file(root: &Path, relative_path: &Path, bytes: &[u8]) -> Result<(), ForgeError> {
+    publish_new_file_with_hook(root, relative_path, bytes, |_| Ok(()))
+}
+
+fn publish_new_file_with_hook(
+    root: &Path,
+    relative_path: &Path,
+    bytes: &[u8],
+    hook: impl FnMut(FilePublishEvent) -> Result<(), ForgeError>,
+) -> Result<(), ForgeError> {
+    if bytes.len() > MAX_OUTPUT_BYTES {
+        return Err(error("output file exceeds the 50 MiB output limit"));
+    }
+    let destination =
+        relative_path.to_str().ok_or_else(|| error("output file path must be UTF-8"))?;
+    validate_relative(destination)?;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        unix::write_new_file_with_hook(root, destination, bytes, hook)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let _ = (root, bytes, hook);
+        Err(error("atomic no-replace authoring file publication is unsupported on this platform"))
+    }
+}
+
 fn validate_artifacts(artifacts: &[OutputArtifact]) -> Result<(), ForgeError> {
     if artifacts.is_empty() || artifacts.len() > MAX_ARTIFACTS {
         return Err(error("generation artifact count is outside the supported bound"));
@@ -268,7 +323,11 @@ mod unix {
         let name = c_string(OsStr::new(
             components.last().ok_or_else(|| error("output directory name is missing"))?,
         ))?;
-        reject_existing(&parent, &name)?;
+        reject_existing(
+            &parent,
+            &name,
+            "output directory already exists; use a new generation directory",
+        )?;
         let mut staging = StagingDirectory::create(parent)?;
         hook(PublishEvent::Staged)?;
         for (index, artifact) in artifacts.iter().enumerate() {
@@ -277,7 +336,7 @@ mod unix {
         }
         staging.sync()?;
         hook(PublishEvent::BeforeRename)?;
-        rename_no_replace(&staging.parent, &staging.name, &name)?;
+        rename_no_replace(&staging.parent, &staging.name, &staging.parent, &name, "generation")?;
         staging.committed = true;
         hook(PublishEvent::Published)?;
         staging.parent.sync_all().map_err(|cause| {
@@ -285,6 +344,54 @@ mod unix {
                 "complete generation was published, but parent durability sync failed: {cause}"
             ))
         })
+    }
+
+    /// Create one new file through a private staging directory and a no-replace rename.
+    ///
+    /// The rename source is resolved against the held staging descriptor, never by
+    /// resolving the staging pathname in the destination parent, so a concurrent
+    /// writer cannot substitute the published object.
+    pub(super) fn write_new_file_with_hook(
+        root: &Path,
+        destination: &str,
+        bytes: &[u8],
+        mut hook: impl FnMut(super::FilePublishEvent) -> Result<(), ForgeError>,
+    ) -> Result<(), ForgeError> {
+        let mut parent = open_root(root)?;
+        let components = destination.split('/').collect::<Vec<_>>();
+        for component in &components[..components.len() - 1] {
+            parent = open_at(&parent, &c_string(OsStr::new(component))?, true, false)?;
+        }
+        let name = c_string(OsStr::new(
+            components.last().ok_or_else(|| error("output file name is missing"))?,
+        ))?;
+        reject_existing(&parent, &name, "output file already exists; refusing to replace it")?;
+        let staging_label = format!(".forge-authoring-file-{}", uuid::Uuid::new_v4());
+        let staging_name = c_string(OsStr::new(&staging_label))?;
+        make_directory(&parent, &staging_name)?;
+        let staging = match open_at(&parent, &staging_name, true, false) {
+            Ok(directory) => directory,
+            Err(cause) => {
+                unlink(&parent, &staging_name, true);
+                return Err(cause);
+            }
+        };
+        let staged = c_string(OsStr::new("file"))?;
+        let outcome = (|| -> Result<(), ForgeError> {
+            let mut file = open_at(&staging, &staged, false, true)?;
+            file.write_all(bytes).map_err(io_error)?;
+            file.sync_all().map_err(io_error)?;
+            drop(file);
+            hook(super::FilePublishEvent::Staged)?;
+            staging.sync_all().map_err(io_error)?;
+            hook(super::FilePublishEvent::BeforeRename)?;
+            rename_no_replace(&staging, &staged, &parent, &name, "file")?;
+            parent.sync_all().map_err(io_error)
+        })();
+        // Best-effort cleanup: the staged file is gone after a successful rename.
+        unlink(&staging, &staged, false);
+        unlink(&parent, &staging_name, true);
+        outcome
     }
 
     fn open_root(root: &Path) -> Result<File, ForgeError> {
@@ -341,7 +448,7 @@ mod unix {
         Ok(unsafe { File::from_raw_fd(descriptor) })
     }
 
-    fn reject_existing(parent: &File, name: &CStr) -> Result<(), ForgeError> {
+    fn reject_existing(parent: &File, name: &CStr, message: &str) -> Result<(), ForgeError> {
         let mut metadata = std::mem::MaybeUninit::<libc::stat>::uninit();
         // SAFETY: stat has writable storage, and the name and parent are valid.
         let result = unsafe {
@@ -353,7 +460,7 @@ mod unix {
             )
         };
         if result == 0 {
-            return Err(error("output directory already exists; use a new generation directory"));
+            return Err(error(message));
         }
         let cause = std::io::Error::last_os_error();
         if cause.kind() != std::io::ErrorKind::NotFound {
@@ -362,14 +469,20 @@ mod unix {
         Ok(())
     }
 
-    fn rename_no_replace(parent: &File, source: &CStr, target: &CStr) -> Result<(), ForgeError> {
-        // SAFETY: both names and the held parent descriptor remain live for this call.
+    fn rename_no_replace(
+        source_dir: &File,
+        source: &CStr,
+        target_dir: &File,
+        target: &CStr,
+        label: &str,
+    ) -> Result<(), ForgeError> {
+        // SAFETY: both names and both held descriptors remain live for this call.
         #[cfg(target_os = "linux")]
         let result = unsafe {
             libc::renameat2(
-                parent.as_raw_fd(),
+                source_dir.as_raw_fd(),
                 source.as_ptr(),
-                parent.as_raw_fd(),
+                target_dir.as_raw_fd(),
                 target.as_ptr(),
                 libc::RENAME_NOREPLACE,
             )
@@ -378,16 +491,16 @@ mod unix {
         #[cfg(target_os = "macos")]
         let result = unsafe {
             libc::renameatx_np(
-                parent.as_raw_fd(),
+                source_dir.as_raw_fd(),
                 source.as_ptr(),
-                parent.as_raw_fd(),
+                target_dir.as_raw_fd(),
                 target.as_ptr(),
                 libc::RENAME_EXCL,
             )
         };
         if result != 0 {
             return Err(error(format!(
-                "atomic no-replace generation publication failed: {}",
+                "atomic no-replace {label} publication failed: {}",
                 std::io::Error::last_os_error()
             )));
         }
@@ -623,6 +736,54 @@ mod tests {
                     .unwrap(),
             );
         }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn new_file_publication_refuses_an_existing_destination() {
+        let root = tempfile::tempdir().unwrap();
+        let root = root.path().canonicalize().unwrap();
+        std::fs::write(root.join("pack.json"), b"existing\n").unwrap();
+        let failure =
+            publish_new_file(&root, Path::new("pack.json"), b"replacement\n").unwrap_err();
+        assert!(failure.to_string().contains("already exists"), "{failure}");
+        assert!(!failure.to_string().contains("generation directory"));
+        assert_eq!(std::fs::read(root.join("pack.json")).unwrap(), b"existing\n");
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn replacing_the_staging_pathname_cannot_substitute_the_published_file() {
+        let root = tempfile::tempdir().unwrap();
+        let root = root.path().canonicalize().unwrap();
+        let mut swapped = false;
+        publish_new_file_with_hook(&root, Path::new("pack.json"), b"original\n", |event| {
+            if event == FilePublishEvent::Staged {
+                // Simulate a concurrent writer replacing the staging entry in the
+                // destination parent with an attacker-controlled directory.
+                let staging = std::fs::read_dir(&root)
+                    .unwrap()
+                    .filter_map(Result::ok)
+                    .find(|entry| {
+                        entry.file_name().to_string_lossy().starts_with(".forge-authoring-file-")
+                    })
+                    .expect("the private staging directory is visible")
+                    .path();
+                let staging_name = staging.file_name().unwrap().to_owned();
+                let decoy = root.join("decoy");
+                std::fs::create_dir(&decoy).unwrap();
+                std::fs::write(decoy.join("file"), b"attacker\n").unwrap();
+                std::fs::rename(&staging, root.join("swapped-away")).unwrap();
+                std::fs::rename(&decoy, root.join(staging_name)).unwrap();
+                swapped = true;
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert!(swapped, "the staging pathname was not exercised");
+        // The source rename goes through the held staging descriptor, so the
+        // substituted entry cannot reach the destination.
+        assert_eq!(std::fs::read(root.join("pack.json")).unwrap(), b"original\n");
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos")))]
