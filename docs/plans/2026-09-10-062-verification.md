@@ -63,6 +63,9 @@ Confirmed issues fixed during review:
   inventory fails, the full decision document stays available for explicit repair.
   The confirmation dialog stays open through refresh and the old view is inert,
   preventing edits against an obsolete form version immediately after a save.
+- Fault-injected browser recovery checks preserve unsaved edits after a failed
+  confirmation, focus the modal error, clear it for a fresh preview, and keep a
+  post-commit refresh failure visible after the dialog closes.
 - Browser coverage verifies HTTP methods as well as path templates. Read-only
   browsing uses registered synthetic inputs.
 

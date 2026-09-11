@@ -253,16 +253,21 @@ async function preview(proposed, exportOperation) {
   if(!proposed?.preview_id)throw new Error("The operation did not return a prepared write.");
   const current = await api(`/effects/previews/${encodeURIComponent(proposed.preview_id)}`);
   const dialog = element("preview-dialog"); const content = element("preview-content");
+  dialog.querySelector("[role=alert]")?.remove();
   content.replaceChildren(Object.assign(node("h2", "Review proposed write"),{id:"preview-title"}),node("p", `${current.target.status}: ${current.target.path}`),node("p", current.semantic_summary),
     node("p", `Validation: ${current.validation.state}. Target version: ${current.target_version}`),node("p", `Current hash: ${current.base_sha256 || "new file"}`),node("p", `Proposed hash: ${current.exact_bytes_sha256}`),node("p", `Receipt expires: ${current.receipt.expires_at}`),
     table("Bound input hashes",[["Resource","resource_id"],["SHA-256","sha256"]],current.input_hashes),Object.assign(node("pre",current.diff_text),{tabIndex:0}));
   if(current.diff_truncated) content.append(node("p","The text diff reached its display bound. The hash binds the complete proposed bytes."));
   const key = crypto.randomUUID();
   content.append(button("Keep editing", () => dialog.close()), button("Confirm this exact write", async () => {
+    dialog.querySelector("[role=alert]")?.remove();
     const operation = await api("/effects/commits","POST",{receipt:current.receipt.token,observed_version:current.target_version,confirmed:true},key);
     const observed = await api(`/operations/${encodeURIComponent(operation.operation_id)}`);
     if(observed.state !== "succeeded") throw new Error(observed.error?.message || "The write has not completed.");
-    dirty = false;await renderView();dialog.close();element("status").textContent = `Saved ${observed.result.target_path}.`;
+    dirty = false;await renderView();
+    const refreshError=dialog.querySelector("[role=alert]")?.textContent;
+    dialog.close();element("status").textContent = `Saved ${observed.result.target_path}.`;
+    if(refreshError)showError(new Error(`The write was saved, but the view could not be refreshed. ${refreshError}`));
     if(exportOperation) element("view").prepend(button("Download committed redacted report",async()=>{
       const response=await fetch(`/api/v1/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
       if(!response.ok)throw new Error("The committed export is no longer available or its bytes changed.");
