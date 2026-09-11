@@ -136,11 +136,34 @@ pub(crate) fn mapping(snapshot: &Snapshot) -> Result<crate::mapping::PreparedBui
         .map_err(|_| invalid())
 }
 
+/// The single registered decision manifest for `role`. Absence is setup state:
+/// the browser initializes only when the draft endpoint reports `not-found`
+/// (HTTP 404), so a missing manifest must not be reported as a generic
+/// validation failure. An ambiguous or malformed registration stays a
+/// validation failure.
+fn registered_manifest(snapshot: &Snapshot, role: Role) -> Result<&Item> {
+    let mut matching = snapshot.items.iter().filter(|item| item.registration.role == role);
+    let item = matching.next().ok_or_else(not_found_manifest)?;
+    if matching.next().is_some() {
+        return Err(invalid());
+    }
+    Ok(item)
+}
+
+fn not_found_manifest() -> Error {
+    Error::new("not-found", "The decision manifest is not registered in this project.", false)
+}
+
 pub(crate) fn draft(snapshot: &Snapshot, mapping: bool) -> Result<serde_json::Value> {
     let item = if mapping {
+        // A registered but malformed mapping collection is not setup state; only
+        // an unregistered one is.
+        if !snapshot.items.iter().any(|item| item.registration.role == Role::MappingCollection) {
+            return Err(not_found_manifest());
+        }
         mapping_manifest(snapshot)?
     } else {
-        selected(snapshot, Role::ApplicabilityManifest)?
+        registered_manifest(snapshot, Role::ApplicabilityManifest)?
     };
     let manifest =
         super::contract::parse(&item.captured.bytes, manifest_limit(mapping), 64 * 1024)?;
@@ -576,5 +599,39 @@ mod tests {
                 .fingerprint(crate::mapping::manifest::SubjectType::Control, &long_id)
                 .unwrap()
         );
+    }
+
+    /// Setup state: no decision manifest is registered, so the draft endpoint
+    /// must report `not-found` (HTTP 404) rather than a validation failure, or
+    /// the browser can never tell that it should offer initialization.
+    #[test]
+    fn missing_decision_manifest_is_not_found() {
+        let dir = tempfile::tempdir().unwrap();
+        let snapshot =
+            Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
+        assert_eq!(draft(&snapshot, false).unwrap_err().code, "not-found");
+        assert_eq!(draft(&snapshot, true).unwrap_err().code, "not-found");
+    }
+
+    /// An ambiguous registration is not setup state: it remains a validation
+    /// failure so no other failure code changes.
+    #[test]
+    fn ambiguous_decision_manifest_is_not_a_not_found() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("scope-a.json"), "{}\n").unwrap();
+        std::fs::write(dir.path().join("scope-b.json"), "{}\n").unwrap();
+        std::fs::write(
+            dir.path().join(crate::workspace::index::INDEX_PATH),
+            serde_json::to_vec(&serde_json::json!({"schema_version":"forge.workspace/1","label":"Example project","resources":[
+                {"key":"scope-a","role":"applicability-manifest","path":"scope-a.json"},
+                {"key":"scope-b","role":"applicability-manifest","path":"scope-b.json"}]}))
+            .unwrap(),
+        )
+        .unwrap();
+        let snapshot =
+            Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
+        let error = draft(&snapshot, false).unwrap_err();
+        assert_eq!(error.code, "validation-failed");
+        assert_ne!(error.code, "not-found");
     }
 }

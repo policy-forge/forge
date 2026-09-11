@@ -183,8 +183,16 @@ pub(crate) fn parse(bytes: &[u8], max_bytes: usize, max_string_bytes: usize) -> 
     .map_err(|_| Error::invalid())
 }
 
+/// The only header parameter the runtime implements: `operation_request` binds it
+/// to its idempotency argument and rejects every other declared header by name.
+const IDEMPOTENCY_HEADER: &str = "Idempotency-Key";
+
 /// Match and validate transport parameters against the normative operation.
 /// There is no independently maintained query/header/path schema in the server.
+///
+/// Header parameters are bound one at a time by name, so a contract edit that
+/// declares a header without runtime support would reject every request to that
+/// operation. `every_declared_header_parameter_is_implemented` pins the gap shut.
 pub(crate) fn operation_request(
     method: &str,
     path: &str,
@@ -223,7 +231,7 @@ pub(crate) fn operation_request(
                 let location = parameter["in"].as_str().ok_or_else(Error::invalid)?;
                 let value = match location {
                     "path" => path_values.get(name).copied(),
-                    "header" if name == "Idempotency-Key" => {
+                    "header" if name == IDEMPOTENCY_HEADER => {
                         declared_idempotency = true;
                         idempotency
                     }
@@ -392,6 +400,41 @@ mod tests {
                 )
                 .is_err(),
                 "{invalid}"
+            );
+        }
+    }
+
+    /// A contract bump must move `VERSION` with the document, not leave a stale
+    /// runtime constant that client capability negotiation can compare against.
+    #[test]
+    fn embedded_contract_version_matches_the_runtime_constant() {
+        assert_eq!(DOCUMENT["info"]["version"].as_str(), Some(VERSION));
+    }
+
+    /// `operation_request` binds headers by name, so a header declared in the
+    /// contract without runtime support would make every request to that
+    /// operation fail. Fail here instead, at the moment the contract changes.
+    #[test]
+    fn every_declared_header_parameter_is_implemented() {
+        let mut declared = Vec::new();
+        for path_item in DOCUMENT["paths"].as_object().expect("embedded paths").values() {
+            let operations = path_item.as_object().into_iter().flat_map(serde_json::Map::values);
+            for operation in std::iter::once(path_item).chain(operations) {
+                for parameter in operation["parameters"].as_array().into_iter().flatten() {
+                    let parameter = resolve_parameter(parameter);
+                    if parameter["in"] == "header" {
+                        declared.push(
+                            parameter["name"].as_str().expect("declared header parameter name"),
+                        );
+                    }
+                }
+            }
+        }
+        assert!(!declared.is_empty(), "the contract no longer declares a header parameter");
+        for name in declared {
+            assert_eq!(
+                name, IDEMPOTENCY_HEADER,
+                "{name} is declared in the contract but not implemented by the runtime"
             );
         }
     }

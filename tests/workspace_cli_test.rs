@@ -711,12 +711,27 @@ fn hostile_requests_are_bounded_and_do_not_reflect_private_values() {
     ] {
         assert_eq!(server.request("GET", "/api/v1/resources", true, None, headers, "").0, 401);
     }
-    let (_, error) = server.json(
+    // Lexical traversal never reaches containment: the request contract rejects
+    // it before path handling, and the rejection reflects no private value.
+    let (status, error) = server.json(
         "POST",
         "/api/v1/resources/register",
         Some("hostile-path-0001"),
         &json!({"role":"policy-source","path":"../PRIVATE-SECRET.md"}),
     );
+    assert_eq!(status, 400, "{error}");
+    assert_eq!(error["code"], "invalid-request", "{error}");
+    assert!(!error.to_string().contains("PRIVATE-SECRET"));
+    // A portable-path alias passes the request pattern but is refused by the
+    // containment check, whose rejection also reflects no private value.
+    let (status, error) = server.json(
+        "POST",
+        "/api/v1/resources/register",
+        Some("hostile-path-0002"),
+        &json!({"role":"policy-source","path":"PRIVATE-SECRET."}),
+    );
+    assert_eq!(status, 403, "{error}");
+    assert_eq!(error["code"], "resource-containment", "{error}");
     assert!(!error.to_string().contains("PRIVATE-SECRET"));
 }
 

@@ -64,7 +64,10 @@ jobs:
 
       - name: Maintained local client conformance
         shell: bash
-        run: python3 scripts/test_workspace_client.py --forge target/release/forge${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: |
+          interpreter=python3
+          if [ "${{ runner.os }}" = "Windows" ]; then interpreter=python; fi
+          "$interpreter" scripts/test_workspace_client.py --forge target/release/forge${{ runner.os == 'Windows' && '.exe' || '' }}
 
       # Heavy tooling only on Ubuntu (avoids macOS/Windows timeout and tool availability issues)
       - name: Check formatting

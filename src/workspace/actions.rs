@@ -40,6 +40,36 @@ fn output_target(snapshot: &Snapshot, path: &str, allowed: Option<Role>) -> Resu
     super::index::validate_path(path)
 }
 
+/// Derive the stable index key for a registered path. The committed index
+/// pattern requires a lowercase alphanumeric first and last character
+/// (`^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$`), so the candidate is capped to 64
+/// characters before both ends are trimmed. A candidate that trims to nothing (a
+/// hidden file such as `.env`, or a name that is entirely punctuation) cannot
+/// fall back to a constant like `resource`: every such registration would claim
+/// the same key and collide. Hashing the portable path keeps those keys distinct,
+/// stable, and deterministic across runs.
+fn registration_key(path: &str) -> String {
+    let stem = path
+        .rsplit('/')
+        .next()
+        .unwrap_or("resource")
+        .split('.')
+        .next()
+        .unwrap_or("resource")
+        .to_ascii_lowercase();
+    let candidate: String =
+        stem.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect();
+    // The length cap is applied before the final trim so a trailing separator
+    // introduced by the cap does not survive into the key.
+    let candidate: String = candidate.chars().take(64).collect();
+    let trimmed = candidate.trim_matches('-');
+    if trimmed.is_empty() {
+        format!("resource-{}", &crate::hashing::sha256_hex(path.as_bytes())[..12])
+    } else {
+        trimmed.to_owned()
+    }
+}
+
 /// The registered inputs a prepared manifest write consumes: the manifest being
 /// replaced plus every reference the proposed document resolves to. Deriving the
 /// consumed set keeps the documented 100-input bound a property of the effect
@@ -120,27 +150,7 @@ pub(crate) fn prepare(
             if snapshot.items.iter().any(|item| item.captured.identity == captured.identity) {
                 return Err(Error::containment());
             }
-            let key = request["key"].as_str().map_or_else(
-                || {
-                    let stem = path
-                        .rsplit('/')
-                        .next()
-                        .unwrap_or("resource")
-                        .split('.')
-                        .next()
-                        .unwrap_or("resource")
-                        .to_ascii_lowercase();
-                    let key = stem
-                        .chars()
-                        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
-                        .collect::<String>();
-                    // The index pattern requires an alphanumeric last character,
-                    // so the length cap is applied before the final trim.
-                    let key: String = key.chars().take(64).collect();
-                    key.trim_end_matches('-').to_owned()
-                },
-                str::to_owned,
-            );
+            let key = request["key"].as_str().map_or_else(|| registration_key(path), str::to_owned);
             let registration = Resource { key, role, path: path.to_owned() };
             if !(super::services::validate_bytes(&registration, &captured.bytes)
                 || (role == Role::ApplicabilityReport
@@ -546,5 +556,32 @@ mod tests {
                 .unwrap();
         assert_eq!(index.resources.len(), 1);
         assert_eq!(index.resources[0].key, "a".repeat(63));
+        assert_eq!(index.resources[0].key, super::registration_key(&name));
+    }
+
+    /// A derived key must satisfy the committed index pattern even for a stem
+    /// that leads with a separator or reduces to nothing. A project path cannot
+    /// itself lead with `.` or `-` (`root.read` runs `validate_path` before the
+    /// key is derived, and the index schema rejects both), so the pathological
+    /// inputs are driven through the derivation directly and then round-tripped
+    /// through the same closed-index parse the register route runs.
+    #[test]
+    fn derived_registration_keys_are_pattern_valid_and_distinct() {
+        let leading = super::registration_key("-.md");
+        let empty = super::registration_key(".env");
+        assert_eq!(leading, format!("resource-{}", &crate::hashing::sha256_hex(b"-.md")[..12]));
+        assert_eq!(empty, format!("resource-{}", &crate::hashing::sha256_hex(b".env")[..12]));
+        assert_ne!(leading, empty, "distinct paths must not share one fallback key");
+        for key in [&leading, &empty] {
+            assert!(key.len() <= 64, "{key}");
+            assert!(key.as_bytes().first().is_some_and(u8::is_ascii_alphanumeric), "{key}");
+            assert!(key.as_bytes().last().is_some_and(u8::is_ascii_alphanumeric), "{key}");
+        }
+        let index = json!({"schema_version":"forge.workspace/1","label":"Example project","resources":[
+            {"key":leading,"role":"policy-source","path":"leading.md"},
+            {"key":empty,"role":"policy-source","path":"empty.md"}]});
+        let index = super::super::index::Index::parse(&serde_json::to_vec(&index).unwrap())
+            .expect("both derived keys must register");
+        assert_eq!(index.resources.len(), 2);
     }
 }

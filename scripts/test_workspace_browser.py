@@ -52,4 +52,14 @@ with tempfile.TemporaryDirectory(prefix="forge-browser-") as root:
     finally:
         try:os.kill(pid,signal.SIGTERM)
         except ProcessLookupError:pass
-        os.waitpid(pid,0);os.close(terminal)
+        deadline=time.monotonic()+3
+        while True:
+            try:reaped,_=os.waitpid(pid,os.WNOHANG)
+            except ChildProcessError:reaped=pid
+            if reaped:break
+            if time.monotonic()>=deadline:
+                try:os.kill(pid,signal.SIGKILL)
+                except ProcessLookupError:pass
+                os.waitpid(pid,0);break
+            time.sleep(0.05)
+        os.close(terminal)

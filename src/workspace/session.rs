@@ -19,6 +19,8 @@ const TAG_BYTES: usize = 32;
 const SALT_BYTES: usize = 16;
 const MAX_CAPABILITIES: usize = 16;
 /// SEC-LOG-2: hard ceiling on security-event lines a single process may emit.
+/// The ceiling counts the single `limit-reached` marker line itself, so the
+/// process never writes more than `MAX_SECURITY_EVENTS` lines.
 const MAX_SECURITY_EVENTS: u64 = 1024;
 static SECURITY_EVENTS: AtomicU64 = AtomicU64::new(0);
 
@@ -91,14 +93,19 @@ fn attempt_bucket(count: u32) -> &'static str {
 /// can never reach it. The session identifier is an opaque correlation value, never
 /// an authenticator. `SEC-LOG-3` control-character stripping keeps hostile content
 /// from forging log lines, and the process-wide counter keeps the surface from
-/// becoming an unbounded log amplifier.
+/// becoming an unbounded log amplifier: it admits events while the counter is below
+/// the ceiling and then prints exactly one `limit-reached` marker, which is itself
+/// counted, so no more than `MAX_SECURITY_EVENTS` lines are ever emitted.
 pub(crate) fn security_event(session: &str, kind: &str, outcome: &str, detail: &str) {
-    let emitted = SECURITY_EVENTS.fetch_add(1, Ordering::Relaxed);
-    if emitted == MAX_SECURITY_EVENTS {
+    // `fetch_add` returns the previous value, so reserved slots `0..MAX-1` are
+    // event lines and slot `MAX-1` is the once-only marker. Everything after it
+    // is dropped without writing, keeping the documented ceiling absolute.
+    let reserved = SECURITY_EVENTS.fetch_add(1, Ordering::Relaxed);
+    if reserved == MAX_SECURITY_EVENTS - 1 {
         eprintln!("forge-workspace event=limit-reached limit={MAX_SECURITY_EVENTS}");
         return;
     }
-    if emitted > MAX_SECURITY_EVENTS {
+    if reserved >= MAX_SECURITY_EVENTS {
         return;
     }
     let at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
@@ -395,5 +402,47 @@ mod tests {
         assert!(!valid_passphrase(&"é".repeat(14)));
         assert!(valid_passphrase(&"é".repeat(128)));
         assert!(!valid_passphrase(&"é".repeat(129)));
+    }
+
+    /// Emits far past the ceiling in a fresh process, driven by
+    /// `security_events_stop_at_the_documented_ceiling`.
+    #[test]
+    fn security_event_ceiling_child() {
+        if std::env::var_os("FORGE_WORKSPACE_CEILING_CHILD").is_none() {
+            return;
+        }
+        for index in 0..MAX_SECURITY_EVENTS.saturating_add(8) {
+            security_event("session", "ceiling", "emitted", &format!("index={index}"));
+        }
+    }
+
+    /// SEC-LOG-2: the ceiling counts the `limit-reached` marker line, so however
+    /// many events are attempted the process writes at most `MAX_SECURITY_EVENTS`
+    /// lines and exactly one marker, as the final line.
+    #[test]
+    fn security_events_stop_at_the_documented_ceiling() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                // The harness captures stderr, so the child must opt out for the
+                // emitted lines to reach this process.
+                "--nocapture",
+                "workspace::session::tests::security_event_ceiling_child",
+            ])
+            .env("FORGE_WORKSPACE_CEILING_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        let lines: Vec<&str> =
+            stderr.lines().filter(|line| line.starts_with("forge-workspace ")).collect();
+        assert_eq!(lines.len(), usize::try_from(MAX_SECURITY_EVENTS).unwrap(), "{stderr}");
+        let markers = lines
+            .iter()
+            .filter(|line| line.starts_with("forge-workspace event=limit-reached"))
+            .count();
+        assert_eq!(markers, 1, "{stderr}");
+        let marker = format!("forge-workspace event=limit-reached limit={MAX_SECURITY_EVENTS}");
+        assert_eq!(lines.last().copied(), Some(marker.as_str()));
     }
 }

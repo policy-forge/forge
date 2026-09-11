@@ -197,7 +197,8 @@ impl Graph {
                 // Mapping control subjects use the same explicitly selected resource identity.
                 if entry.element_type == crate::trace::report::ElementType::Control {
                     for side in ["policy", "framework"] {
-                        refs.push(json!({"kind":"policy-subject","id":opaque("prov", &[&opaque("subj", &[side,&artifact,"control",&entry.element_id])])}));
+                        let kind = if side == "policy" { "policy-subject" } else { "control" };
+                        refs.push(json!({"kind":kind,"id":opaque("prov", &[&opaque("subj", &[side,&artifact,"control",&entry.element_id])])}));
                     }
                 }
                 let mut excerpts = Vec::new();
@@ -282,5 +283,51 @@ impl Graph {
                 false,
             )
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// A traced control emits one asserted reference per mapping side. The
+    /// policy side is a `policy-subject`; the framework side is a `control`,
+    /// exactly as the mapping-edge entries in `build` are tagged.
+    #[test]
+    fn provenance_tags_trace_subject_references_by_side() {
+        let ns = crate::oscal::trace_embedding::FORGE_TRACE_NS;
+        let catalog = json!({"catalog":{
+            "uuid":"11111111-1111-4111-8111-111111111111",
+            "metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
+            "controls":[{"id":"control-a","title":"Synthetic control","props":[
+                {"name":"source-file","ns":ns,"value":"policy.md"},
+                {"name":"source-section","ns":ns,"value":"Access Control"}]}]}});
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("catalog.json"), serde_json::to_vec(&catalog).unwrap())
+            .unwrap();
+        std::fs::write(
+            dir.path().join(crate::workspace::index::INDEX_PATH),
+            serde_json::to_vec(
+                &json!({"schema_version":"forge.workspace/1","label":"Example project","resources":[
+                {"key":"catalog","role":"oscal-catalog-artifact","path":"catalog.json"}]}),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let snapshot =
+            Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
+        let graph = Graph::build(&snapshot).unwrap();
+        let trace = graph
+            .entries
+            .values()
+            .find(|entry| {
+                entry["label"].as_str().is_some_and(|label| label.starts_with("Asserted trace"))
+            })
+            .expect("a traced control emits a provenance entry");
+        let kinds: Vec<&str> =
+            trace["refs"].as_array().unwrap().iter().filter_map(|r| r["kind"].as_str()).collect();
+        assert!(kinds.contains(&"policy-subject"), "{kinds:?}");
+        assert!(kinds.contains(&"control"), "{kinds:?}");
     }
 }

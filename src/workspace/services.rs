@@ -285,13 +285,24 @@ impl Snapshot {
                 if self.mapping_queue.len() >= 10000 {
                     return Err(Error::invalid());
                 }
-                let bounded = bounded_label(subject, SUBJECT_LABEL_MAX).0;
+                // The bounded display label is not identity: two identifiers that
+                // share a truncated label must still select their own row. The
+                // opaque `subject_id` is derived exactly as `append_subjects`
+                // derives it, from the supplying resource, side, type, and the
+                // exact identifier, so the lookup is an exact identity match.
+                // The bounded display label is not identity: two identifiers that
+                // share a truncated label must still select their own row. The
+                // opaque `subject_id` is derived exactly as `append_subjects`
+                // derives it, from the supplying resource, side, type, and the
+                // exact identifier, so the lookup is an exact identity match.
                 let reference = subjects
                     .iter()
                     .find(|row| {
-                        row["side"] == side
-                            && row["label"] == bounded
-                            && row["statement_count"] == usize::from(kind == "statement")
+                        row["resource_id"].as_str().is_some_and(|resource| {
+                            row["subject_id"].as_str().is_some_and(|id| {
+                                id == opaque("subj", &[side, resource, kind, subject])
+                            })
+                        })
                     })
                     .ok_or_else(Error::invalid)?;
                 let label: String = subject.chars().take(350).collect();
@@ -862,5 +873,77 @@ mod tests {
             mapping_queue: Vec::new(),
         };
         assert!(crate::workspace::domain::mapping_manifest(&snapshot).is_ok());
+    }
+
+    fn catalog(controls: &[&str], uuid: &str) -> Vec<u8> {
+        serde_json::to_vec(&json!({"catalog":{"uuid":uuid,
+            "metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
+            "controls":controls.iter().map(|id| json!({"id":id,"title":"Synthetic control"})).collect::<Vec<_>>()}}))
+        .unwrap()
+    }
+
+    /// Two identifiers can share the 500-character bounded label while remaining
+    /// distinct. The mapping queue must resolve each to its own inventory row
+    /// (and therefore its own opaque provenance reference), never the first row
+    /// that happens to display the same bounded label.
+    #[test]
+    fn mapping_queue_matches_subjects_by_identity_not_by_bounded_label() {
+        let shared = "c".repeat(600);
+        let first = format!("{shared}a");
+        let second = format!("{shared}b");
+        let source_bytes =
+            catalog(&[&first, &second, "mapped-policy"], "11111111-1111-4111-8111-111111111111");
+        let target_bytes = catalog(&["framework-a"], "22222222-2222-4222-8222-222222222222");
+        let source = fixture_item(Role::OscalCatalogArtifact, "source.json", source_bytes.clone());
+        let target = fixture_item(Role::OscalCatalogArtifact, "target.json", target_bytes.clone());
+        let source_id = resource_id(&source.registration);
+        let target_id = resource_id(&target.registration);
+        let catalog_snapshot = Snapshot {
+            index: Index::empty(),
+            index_present: true,
+            version: "v".to_owned(),
+            items: vec![source, target],
+            analysis: None,
+            mapping_queue: Vec::new(),
+        };
+        let manifest = crate::workspace::domain::initialize(
+            &catalog_snapshot,
+            &json!({
+                "target_path":"mapping.json",
+                "source_resource_id":source_id,
+                "target_resource_id":target_id,
+                "scope":"control-only",
+                "maps":[{"key":"none","relationship":"no-relationship","sources":[{"type":"control","id_ref":"mapped-policy"}],"targets":[{"type":"control","id_ref":"framework-a"}],"reviewer_key":"reviewer","reviewed_at":"2026-09-10T00:00:00Z","rationale":"Explicit initial review."}],
+                "review":{"collection":{"key":"synthetic-map","title":"Synthetic mapping","version":"1","last_modified":"2026-09-10T00:00:00Z"},
+                    "reviewers":[{"key":"reviewer","type":"person","name":"Synthetic Reviewer"}],
+                    "provenance":{"method":"human","matching_rationale":"semantic","status":"draft","mapping_description":"Explicit synthetic review.","reviewer_keys":["reviewer"],"reviewed_at":"2026-09-10T00:00:00Z"}}
+            }),
+            true,
+        )
+        .unwrap();
+        let mut snapshot = Snapshot {
+            index: Index::empty(),
+            index_present: true,
+            version: "v".to_owned(),
+            items: vec![
+                fixture_item(Role::MappingCollection, "mapping.json", manifest),
+                fixture_item(Role::OscalCatalogArtifact, "source.json", source_bytes),
+                fixture_item(Role::OscalCatalogArtifact, "target.json", target_bytes),
+            ],
+            analysis: None,
+            mapping_queue: Vec::new(),
+        };
+        snapshot.populate_mapping_queue().unwrap();
+        let rows: Vec<Value> = snapshot
+            .queue()
+            .into_iter()
+            .filter(|item| item["reason_code"] == "no-reviewed-mapping")
+            .collect();
+        assert_eq!(rows.len(), 2, "{rows:?}");
+        assert_eq!(rows[0]["resource_id"], rows[1]["resource_id"]);
+        assert_ne!(
+            rows[0]["evidence_refs"][0], rows[1]["evidence_refs"][0],
+            "each subject must resolve to its own provenance reference: {rows:?}"
+        );
     }
 }

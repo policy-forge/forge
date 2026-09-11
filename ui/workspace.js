@@ -81,7 +81,7 @@ function table(caption, columns, rows) {
 
 async function pagedTable(path,caption,columns,filters=[]) {
   const section=node("section");const form=node("form");const display=node("div");const controls=node("div");
-  const choices=filters.map(([key,label,values])=>{const select=field(form,label,"select",[["","All"],...values.map(value=>[value,value.replaceAll("-"," ")])]);select.required=false;if(viewFilters[key])select.value=viewFilters[key];return [key,select];});
+  const choices=filters.map(([key,label,values])=>{const select=fieldInput(form,label,"select",[["","All"],...values.map(value=>[value,value.replaceAll("-"," ")])]);select.required=false;if(viewFilters[key])select.value=viewFilters[key];return [key,select];});
   let cursors=[null];let index=0;
   const load=async()=>{
     const query=new URLSearchParams({page_size:"50"});for(const [key,select] of choices)if(select.value)query.set(key,select.value);
@@ -215,7 +215,7 @@ function button(label, action) {
   control.addEventListener("click", async () => { control.disabled = true; try {await action();} catch(error) {showError(error);} finally {control.disabled = false;} });
   return control;
 }
-function field(form, label, type = "text", options) {
+function fieldInput(form, label, type = "text", options) {
   const id = `field-${crypto.randomUUID()}`;
   const caption = node("label", label); caption.htmlFor = id;
   const input = node(type === "select" ? "select" : type === "textarea" ? "textarea" : "input");
@@ -223,8 +223,12 @@ function field(form, label, type = "text", options) {
   if (type !== "select" && type !== "textarea") input.type = type;
   if (type === "textarea") {input.rows = 18; input.spellcheck = false;}
   if (options) for (const [value,label] of options) {const option = node("option",label);option.value = value;input.append(option);}
-  input.addEventListener("input", () => {dirty = true;});
   form.append(caption,input); return input;
+}
+function field(form, label, type = "text", options) {
+  const input = fieldInput(form, label, type, options);
+  input.addEventListener("input", () => {dirty = true;});
+  return input;
 }
 async function effect(path, method, request) {
   const key = crypto.randomUUID();
@@ -300,7 +304,7 @@ function resourceActions(resources) {
 }
 async function draftEditor(kind) {
   let draft;
-  try {draft=await api(`/${kind}/draft`);} catch {return initializeForm(kind);}
+  try {draft=await api(`/${kind}/draft`);} catch (error) {if (error.details?.code === "not-found") return initializeForm(kind); throw error;}
   const form=node("form");
   form.append(node("h2",kind==="mapping"?"Explicit mapping decisions":"Explicit applicability decisions"),node("p","Edit the complete decision document. Supply the reviewer key, review time, state or relationship, and rationale explicitly. Reviewer metadata is asserted provenance."));
   const input=field(form,"Decision manifest (JSON)","textarea");input.value=JSON.stringify(draft.manifest,null,2);input.readOnly=readOnly;
