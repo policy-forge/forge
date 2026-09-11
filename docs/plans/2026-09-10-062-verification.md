@@ -41,7 +41,11 @@ Confirmed issues fixed during review:
   unexpectedly successful capability. Windows also exposed native path
   normalization accepting backslashes; references now validate portable lexical
   spelling before any native path decomposition. Hosted checks must rerun on
-  these fixes.
+  these fixes. The follow-up Windows test suite passed, then lint caught a
+  wildcard import and stack construction of the 64 KiB rename buffer. The
+  buffer now initializes directly in bounded, aligned heap storage; UTF-16
+  collection is capped before allocation. The final Windows lint/build/client
+  job must rerun on this remediation.
 - Malformed unlock JSON/short values now use the same generic, fixed-cost
   failure path; array input no longer risks object-indexing panic.
 - Overwritten base bytes and retained preview representations count toward

@@ -480,7 +480,7 @@ pub(crate) fn conflict() -> Error {
 #[cfg(windows)]
 #[allow(unsafe_code)] // Small documented Windows handle-based publication seam.
 mod windows_publish {
-    use super::*;
+    use super::{Error, File, Path, Result, conflict};
     use std::os::windows::{ffi::OsStrExt as _, io::AsRawHandle as _};
     #[repr(C)]
     struct RenameInfo {
@@ -499,16 +499,23 @@ mod windows_publish {
         ) -> i32;
     }
     pub(super) fn rename(file: &File, target: &Path, replace: bool) -> Result<()> {
-        let name: Vec<_> = target.as_os_str().encode_wide().collect();
+        let name: Vec<_> = target.as_os_str().encode_wide().take(32768).collect();
         if name.len() >= 32768 {
             return Err(Error::containment());
         }
-        let mut info = Box::new(RenameInfo {
-            replace: u32::from(replace),
-            root: std::ptr::null_mut(),
-            length: u32::try_from(name.len() * 2).map_err(|_| Error::containment())?,
-            name: [0; 32768],
-        });
+        // Allocate in place: constructing this 64 KiB record before Box::new
+        // would put the entire path buffer on the smaller Windows thread stack.
+        let mut storage = Box::<RenameInfo>::new_uninit();
+        // SAFETY: the allocation is aligned and sized for RenameInfo. Every
+        // field (integers, UTF-16 units, and the null raw pointer) permits an
+        // all-zero representation; initialize the entire allocation, including
+        // padding, before creating a RenameInfo value or passing bytes to Win32.
+        let mut info = unsafe {
+            storage.as_mut_ptr().write_bytes(0, 1);
+            storage.assume_init()
+        };
+        info.replace = u32::from(replace);
+        info.length = u32::try_from(name.len() * 2).map_err(|_| Error::containment())?;
         info.name[..name.len()].copy_from_slice(&name);
         let length = u32::try_from(std::mem::offset_of!(RenameInfo, name) + name.len() * 2)
             .map_err(|_| Error::containment())?;
