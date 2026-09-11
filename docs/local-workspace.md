@@ -60,7 +60,9 @@ review. After confirming, register the new applicability manifest. Select a
 control, supply its decision and review evidence, apply it to the unsaved
 manifest, validate, and preview the changes. Deferred decisions require a
 revisit date. Full JSON editing remains available for advanced domain fields,
-reviewer records, and explicit mapping-collection references.
+reviewer records, and advanced fields. A separate guided control links an
+explicitly selected registered built mapping collection into the unsaved scope
+manifest; validate and confirm before analyzing it.
 
 **Mappings** initializes a manifest from explicitly selected policy and framework
 Catalogs. Supply collection/reviewer metadata, a review time, scope, rationale,
@@ -68,8 +70,8 @@ and the first reviewed relationship. Load the selected Catalog subjects and
 choose the exact source and target. Existing PRD-055 `/1` rules require at least
 one relationship; the initializer never invents one or treats an empty scaffold
 as a valid reviewed manifest. After registration, the guided editor can update a
-reviewed relationship. Full JSON editing supports additional relationships and
-optional fields. Validation uses the existing PRD-055 engine and rejects stale
+reviewed relationship or add another explicit source/target relationship. Full
+JSON editing supports multi-subject relationships and optional fields. Validation uses the existing PRD-055 engine and rejects stale
 pins or nonexistent subjects before preparing a write.
 
 Reviewer labels are asserted provenance. Neither local unlock nor a mapping

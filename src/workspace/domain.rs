@@ -4,7 +4,7 @@
 //! manifest references are checked before any engine is called. The staging
 //! directory is temporary and never publishes a project artifact.
 
-use std::path::{Component, Path};
+use std::path::Path;
 
 use super::contract::{Error, Result};
 use super::index::{Role, validate_path};
@@ -29,24 +29,22 @@ pub(crate) fn selected(snapshot: &Snapshot, role: Role) -> Result<&Item> {
 
 /// Resolve lexical relative references without allowing escape or OS aliases.
 pub(crate) fn resolve_reference(manifest: &str, reference: &Path) -> Result<String> {
-    if reference.is_absolute() {
+    let reference = reference.to_str().ok_or_else(Error::containment)?;
+    // Parse the portable spelling before native Path components can normalize
+    // Windows backslashes or interior dot segments into apparently safe names.
+    if reference.contains('\\') {
         return Err(Error::containment());
     }
     let mut parts: Vec<_> = manifest.split('/').collect();
     parts.pop();
-    for component in reference.components() {
-        match component {
-            Component::Normal(name) => {
-                let name = name.to_str().ok_or_else(Error::containment)?;
-                validate_path(name)?;
-                parts.push(name);
+    for segment in reference.split('/') {
+        if segment == ".." {
+            if parts.pop().is_none() {
+                return Err(Error::containment());
             }
-            Component::ParentDir => {
-                if parts.pop().is_none() {
-                    return Err(Error::containment());
-                }
-            }
-            _ => return Err(Error::containment()),
+        } else {
+            validate_path(segment)?;
+            parts.push(segment);
         }
     }
     let path = parts.join("/");
@@ -467,6 +465,8 @@ mod tests {
             "C:/outside.json",
             "../CON.json",
             "../a\\b.json",
+            "../a/./b.json",
+            "../a//b.json",
         ] {
             assert!(resolve_reference("manifests/scope.json", Path::new(path)).is_err(), "{path}");
         }

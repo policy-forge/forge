@@ -35,6 +35,13 @@ with candidate review artifacts during delivery.
 
 Confirmed issues fixed during review:
 
+- Initial hosted CI exposed a slow-machine retry-delay bug: delay started
+  before Argon2 verification and could expire during the hash. The delay now
+  starts after verification. Assertion failures no longer debug-print an
+  unexpectedly successful capability. Windows also exposed native path
+  normalization accepting backslashes; references now validate portable lexical
+  spelling before any native path decomposition. Hosted checks must rerun on
+  these fixes.
 - Malformed unlock JSON/short values now use the same generic, fixed-cost
   failure path; array input no longer risks object-indexing panic.
 - Overwritten base bytes and retained preview representations count toward
@@ -47,6 +54,11 @@ Confirmed issues fixed during review:
 - Non-retryable terminal failures do not offer a misleading same-request retry.
   Source excerpts get focus and a return control. Overview counts open matching
   resource lists. The maintained client paces requests below the server limit.
+- Guided forms support adding further relationships and linking built mapping
+  collections into scope analysis without hand-editing JSON. If a guided
+  inventory fails, the full decision document stays available for explicit repair.
+  The confirmation dialog stays open through refresh and the old view is inert,
+  preventing edits against an obsolete form version immediately after a save.
 - Browser coverage verifies HTTP methods as well as path templates. Read-only
   browsing uses registered synthetic inputs.
 

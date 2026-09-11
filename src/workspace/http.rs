@@ -702,11 +702,16 @@ mod tests {
                 work: Arc::new(tokio::sync::Semaphore::new(2)),
                 jobs: Arc::new(tokio::sync::Semaphore::new(1)),
             };
-            let error = unlock_response(&state, &[], None, body.as_bytes()).unwrap_err();
+            let error = unlock_response(&state, &[], None, body.as_bytes())
+                .map(|_| ())
+                .expect_err("invalid unlock must fail");
             assert_eq!(error.code, "unlock-failed");
             assert_eq!(error.message, "The workspace could not be unlocked.");
             assert_eq!(
-                unlock_response(&state, &[], None, b"{}").unwrap_err().code,
+                unlock_response(&state, &[], None, b"{}")
+                    .map(|_| ())
+                    .expect_err("retry must be throttled")
+                    .code,
                 "unlock-throttled"
             );
         }

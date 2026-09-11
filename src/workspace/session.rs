@@ -157,7 +157,9 @@ impl Session {
         };
         if !verified {
             self.unlock_failures = self.unlock_failures.saturating_add(1).min(6);
-            self.unlock_after = now + Duration::from_secs(1 << self.unlock_failures);
+            // Start the retry delay after verification. On slower machines the
+            // fixed-cost hash itself can exceed the initial two-second delay.
+            self.unlock_after = Instant::now() + Duration::from_secs(1 << self.unlock_failures);
             return Err(Error::new("unlock-failed", "The workspace could not be unlocked.", false));
         }
         self.unlock_failures = 0;
@@ -265,8 +267,22 @@ mod tests {
         let mut session =
             Session::new(Mode::Browser, true, Some(Zeroizing::new("valid long passphrase".into())))
                 .unwrap();
-        assert_eq!(session.unlock("wrong long passphrase").unwrap_err().code, "unlock-failed");
-        assert_eq!(session.unlock("valid long passphrase").unwrap_err().code, "unlock-throttled");
+        assert_eq!(
+            session
+                .unlock("wrong long passphrase")
+                .map(|_| ())
+                .expect_err("wrong passphrase must fail")
+                .code,
+            "unlock-failed"
+        );
+        assert_eq!(
+            session
+                .unlock("valid long passphrase")
+                .map(|_| ())
+                .expect_err("retry must be throttled")
+                .code,
+            "unlock-throttled"
+        );
         session.unlock_after = Instant::now();
         let first = session.unlock("valid long passphrase").unwrap();
         session.unlock_after = Instant::now();

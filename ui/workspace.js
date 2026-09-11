@@ -102,6 +102,7 @@ async function renderView() {
   element("error").hidden = true;
   element("status").textContent = "Loading project state…";
   element("refresh").disabled = true;
+  element("view").inert = true;
   const fragment = document.createDocumentFragment();
   try {
     if (activeView === "Overview") {
@@ -154,7 +155,7 @@ async function renderView() {
     element("view-title").textContent = activeView;
     element("status").textContent = "Project state loaded.";
   } catch (error) { if (sequence === pending) { element("view").replaceChildren(); showError(error); element("status").textContent = "The view could not be loaded."; } }
-  finally { if (sequence === pending) element("refresh").disabled = false; }
+  finally { if (sequence === pending) {element("refresh").disabled = false;element("view").inert = false;} }
 }
 
 element("unlock-form").addEventListener("submit", async (event) => {
@@ -261,7 +262,7 @@ async function preview(proposed, exportOperation) {
     const operation = await api("/effects/commits","POST",{receipt:current.receipt.token,observed_version:current.target_version,confirmed:true},key);
     const observed = await api(`/operations/${encodeURIComponent(operation.operation_id)}`);
     if(observed.state !== "succeeded") throw new Error(observed.error?.message || "The write has not completed.");
-    dirty = false;dialog.close();await renderView();element("status").textContent = `Saved ${observed.result.target_path}.`;
+    dirty = false;await renderView();dialog.close();element("status").textContent = `Saved ${observed.result.target_path}.`;
     if(exportOperation) element("view").prepend(button("Download committed redacted report",async()=>{
       const response=await fetch(`/api/v1/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
       if(!response.ok)throw new Error("The committed export is no longer available or its bytes changed.");
@@ -298,8 +299,12 @@ async function draftEditor(kind) {
   const form=node("form");
   form.append(node("h2",kind==="mapping"?"Explicit mapping decisions":"Explicit applicability decisions"),node("p","Edit the complete decision document. Supply the reviewer key, review time, state or relationship, and rationale explicitly. Reviewer metadata is asserted provenance."));
   const input=field(form,"Decision manifest (JSON)","textarea");input.value=JSON.stringify(draft.manifest,null,2);input.readOnly=readOnly;
-  if(kind==="applicability"&&!readOnly)form.append(await applicabilityDecisionForm(input));
-  if(kind==="mapping"&&!readOnly)form.append(mappingDecisionForm(input));
+  if(!readOnly) {
+    try {
+      if(kind==="applicability")form.append(await applicabilityDecisionForm(input),await applicabilityMappingForm(input));
+      else form.append(await mappingDecisionForm(input));
+    } catch(error) {form.append(node("p",`Guided inventory is unavailable: ${error.message} The complete decision document remains available for explicit repair.`));}
+  }
   form.append(button("Validate decisions",async()=>{const report=await api(`/${kind}/draft/validation`,"POST",{manifest:JSON.parse(input.value)});element("status").textContent=`Decision validation: ${report.state}. ${report.error_count} errors.`;}));
   if(!readOnly) {
     form.append(button("Preview decision changes",()=>effect(`/${kind}/draft`,"PUT",{manifest:JSON.parse(input.value),observed_version:draft.version})));
@@ -327,7 +332,7 @@ async function applicabilityDecisionForm(input) {
   }));return section;
 }
 
-function mappingDecisionForm(input) {
+async function mappingDecisionForm(input) {
   const section=node("section");section.append(node("h3","Edit a reviewed relationship"));
   const manifest=JSON.parse(input.value);
   const selected=field(section,"Relationship to review","select",[["","Choose a relationship"],...manifest.mapping.maps.map(row=>[row.key,row.key])]);
@@ -346,6 +351,45 @@ function mappingDecisionForm(input) {
     if(!current)throw new Error("The selected relationship changed in the unsaved manifest. Reload its selection.");
     Object.assign(current,{relationship:relationship.value,reviewer_key:reviewer.value,reviewed_at:time.value,rationale:rationale.value});
     input.value=JSON.stringify(manifest,null,2);dirty=true;input.focus();element("status").textContent="Relationship updated in memory. Validate and preview before saving.";
+  }));
+  const container=node("div");container.append(section,await mappingCreationForm(input));return container;
+}
+
+async function mappingCreationForm(input) {
+  const section=node("section");section.append(node("h3","Add an explicit reviewed relationship"));
+  const manifest=JSON.parse(input.value);const subjects=await collection("/mapping/subjects");
+  const key=field(section,"New relationship key");
+  const options=side=>[["","Choose a subject"],...subjects.filter(row=>row.side===side&&(manifest.mapping.scope!=="control-only"||row.statement_count===0)).map(row=>[JSON.stringify({type:row.statement_count===0?"control":"statement",id_ref:row.label}),row.label])];
+  const source=field(section,"New relationship policy subject","select",options("policy"));
+  const target=field(section,"New relationship framework subject","select",options("framework"));
+  const relationship=field(section,"New relationship type","select",[["","Choose a relationship"],...["equivalent-to","equal-to","subset-of","superset-of","intersects-with","no-relationship"].map(value=>[value,value.replaceAll("-"," ")])]);
+  const reviewer=field(section,"New relationship reviewer","select",[["","Choose a supplied reviewer"],...manifest.reviewers.map(row=>[row.key,`${row.key}: ${row.name}`])]);
+  const time=field(section,"New relationship review time (RFC3339)");const rationale=field(section,"New relationship rationale");
+  section.append(button("Add relationship to unsaved manifest",()=>{
+    for(const control of section.querySelectorAll("input,select"))if(!control.reportValidity())return;
+    const current=JSON.parse(input.value);
+    if(current.mapping.maps.some(row=>row.key===key.value))throw new Error("This relationship key already exists. Choose it in the review editor to update it.");
+    current.mapping.maps.push({key:key.value,relationship:relationship.value,sources:[JSON.parse(source.value)],targets:[JSON.parse(target.value)],reviewer_key:reviewer.value,reviewed_at:time.value,rationale:rationale.value});
+    input.value=JSON.stringify(current,null,2);dirty=true;input.focus();element("status").textContent="Relationship added in memory. Validate and preview before saving.";
+  }));return section;
+}
+function relativeProjectReference(manifest, resource) {
+  const parent=manifest.split("/").slice(0,-1);const target=resource.split("/");let common=0;
+  while(common<parent.length&&common<target.length&&parent[common]===target[common])common++;
+  return [...Array(parent.length-common).fill(".."),...target.slice(common)].join("/");
+}
+async function applicabilityMappingForm(input) {
+  const section=node("section");section.append(node("h3","Link a reviewed mapping collection"));
+  const resources=await collection("/resources");const manifests=resources.filter(row=>row.role==="applicability-manifest");
+  if(manifests.length!==1)return section;
+  const collections=resources.filter(row=>row.role==="mapping-collection");
+  const selected=field(section,"Reviewed mapping collection","select",[["","Choose a registered collection"],...collections.map(row=>[row.path,`${row.key} · ${row.path}`])]);
+  section.append(node("p","Choose a built OSCAL mapping collection. Full domain validation checks its exact framework identity and reviewed relationships before any write."));
+  section.append(button("Link collection to unsaved scope",()=>{
+    if(!selected.reportValidity())return;
+    const manifest=JSON.parse(input.value);const reference=relativeProjectReference(manifests[0].path,selected.value);
+    if(manifest.mapping_collections.includes(reference))throw new Error("This collection is already linked in the unsaved scope document.");
+    manifest.mapping_collections.push(reference);input.value=JSON.stringify(manifest,null,2);dirty=true;input.focus();element("status").textContent="Collection linked in memory. Validate and preview scope changes, then analyze committed decisions.";
   }));return section;
 }
 
