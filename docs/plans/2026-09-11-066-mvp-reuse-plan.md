@@ -267,24 +267,31 @@ T1–T4 are independent of T5–T6 and can proceed in parallel once T1 is frozen
 Sequencing gate: T5 starts only after T1's contract is frozen, so the report
 schema is not designed twice.
 
-## Open decisions
+## Decisions
 
-- **D1** Command placement: `forge author reuse` (proposed) or a top-level
-  `forge reuse`. Affects the public `AuthorCommand` enum and the API gate.
-- **D2** Whether `--emit <candidate> --output <file>` (materialise a candidate
-  as a new clause file, atomic no-replace) is in this tranche or the next.
-  Proposed: next, to keep every write path out of the first tester build.
-- **D3** Corpus manifest name and whether PRD-059 components may be named as
-  corpus entries in `/1` (proposed: no; components are ranked in a later phase
-  because they carry parameter bindings).
-- **D4** The low-confidence floor value (proposed: 1.0) and default
-  `--max-candidates` (proposed: 5).
-- **D5** Where this tranche's gates are recorded: a `GATE-REUSE-*` section in
-  `docs/authoring-gates.md` (proposed) or a separate register.
-- **D6** Whether the tester form lives in this repository or the testers'.
+Resolved 2026-09-11 with the owner.
+
+- **D1 — Command placement: single canonical entry point.** `forge author reuse`
+  only; no top-level duplicate. Two public spellings would add two `Commands`
+  variants to the already-breaking next release, two help surfaces to keep in
+  sync, and a drift risk on every future flag. The implementation is a
+  crate-level function (`reuse::execute`) that the CLI wraps in three lines, so a
+  top-level spelling or an MCP tool can be added later at near-zero cost.
+  Revisit only if testers ask for a short form.
+- **D2 — `--emit` is deferred to the next tranche.** The first tester build has
+  no write path into the project at all.
+- **D3 — Corpus manifest is `forge.reuse-corpus/1`; PRD-059 components are not
+  named as corpus entries in `/1`.** Components carry parameter bindings and are
+  ranked in a later phase.
+- **D4 — Low-confidence floor `1.0`; default `--max-candidates 5`.**
+- **D5 — This tranche's gates are recorded as a `GATE-REUSE-*` section in
+  [authoring-gates](../authoring-gates.md).**
+- **D6 — The tester feedback form lives in the testers' repository**, with an
+  opt-in plain-text summary returned to this project.
 
 ## Changelog
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-09-11 | coordinating agent | Initial MVP plan: deterministic reuse candidates, explicit exclusions, verification and tester programme |
+| 0.2 | 2026-09-11 | coordinating agent | Recorded the owner's decisions D1–D6; D1 keeps one canonical command with a crate-level entry point |
