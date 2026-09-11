@@ -3,7 +3,7 @@ jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 
 info:
   title: FORGE Local Workspace API
-  version: 1.0.0
+  version: 1.1.0
   description: >-
     Normative, contract-authored OpenAPI 3.1 description of the PRD 062 local
     web workspace API. This artifact is authored before any HTTP handler or
@@ -155,6 +155,86 @@ tags:
       No remote publish.
 
 paths:
+  /api/v1/applicability/initializations:
+    post:
+      operationId: initializeApplicabilityDraft
+      tags: [Applicability]
+      summary: Prepare an explicit initial decision manifest
+      description: >-
+        Binds explicitly selected registered Catalog resources and their current
+        inventories. Creates no inferred decisions or relationships. Returns a
+        single-file preview; registration is a separate explicit operation after
+        commit. Scope decisions and reviewers remain empty. The target must be a
+        new unregistered file. Identical idempotent retries return the
+        original preview. No project file is written by initialization.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicabilityInitializationRequest'
+      responses:
+        '200':
+          description: Initial manifest validation and exact-byte preview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '409':
+          $ref: '#/components/responses/ConflictVersion'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
+  /api/v1/mapping/initializations:
+    post:
+      operationId: initializeMappingDraft
+      tags: [Mapping]
+      summary: Prepare an explicit initial decision manifest
+      description: >-
+        Binds explicitly selected registered Catalog resources and their current
+        inventories. Creates no inferred decisions or relationships. Returns a
+        single-file preview; registration is a separate explicit operation after
+        commit. Required review metadata is supplied by the caller. The target
+        must be a new unregistered file. Identical idempotent retries return the
+        original preview. No project file is written by initialization.
+      security:
+        - capabilityBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MappingInitializationRequest'
+      responses:
+        '200':
+          description: Initial manifest validation and exact-byte preview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenReadOnly'
+        '409':
+          $ref: '#/components/responses/ConflictVersion'
+        '422':
+          $ref: '#/components/responses/UnprocessableValidation'
+
   /api/v1/applicability/analyses:
     post:
       operationId: analyzeApplicability
@@ -741,7 +821,10 @@ paths:
       description: >-
         Deterministic, cursor-paginated inventory of policy and framework
         subjects available for mapping decisions, each carrying its exact
-        registered resource identity and content fingerprint. Stable sort is
+        registered resource identity and content fingerprint. Before a mapping
+        manifest exists, both resource_id and side must be supplied explicitly
+        to inspect a selected Catalog; this selection does not persist a mapping
+        role or infer a relationship. Stable sort is
         by subject_id ascending. Absence of a relationship is never
         interpreted as a decision.
       security:
@@ -1485,6 +1568,56 @@ components:
             $ref: '#/components/schemas/Error'
 
   schemas:
+    ApplicabilityInitializationRequest:
+      type: object
+      additionalProperties: false
+      required: [framework_resource_id, target_path]
+      properties:
+        framework_resource_id:
+          $ref: '#/components/schemas/ResourceId'
+        target_path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+
+    MappingInitializationRequest:
+      type: object
+      additionalProperties: false
+      required: [source_resource_id, target_resource_id, target_path, scope, review, maps]
+      properties:
+        source_resource_id:
+          $ref: '#/components/schemas/ResourceId'
+        target_resource_id:
+          $ref: '#/components/schemas/ResourceId'
+        target_path:
+          $ref: '#/components/schemas/ProjectRelativePath'
+        scope:
+          type: string
+          enum: [control-only, control-plus-statement]
+        maps:
+          type: array
+          minItems: 1
+          maxItems: 10000
+          items:
+            type: object
+          description: Explicit reviewed PRD-055 MapManifest entries. The existing domain contract requires at least one relationship; none are inferred.
+        review:
+          type: object
+          additionalProperties: false
+          required: [collection, reviewers, provenance]
+          properties:
+            collection:
+              type: object
+              description: Complete PRD-055 CollectionManifest, validated by its closed domain parser.
+            reviewers:
+              type: array
+              minItems: 1
+              maxItems: 100
+              items:
+                type: object
+              description: Explicit PRD-055 reviewer records; asserted provenance, not authenticated identities.
+            provenance:
+              type: object
+              description: Complete PRD-055 ProvenanceManifest supplied by the reviewer and validated by its closed parser.
+
     AnalysisResult:
       type: object
       additionalProperties: false
@@ -1656,6 +1789,11 @@ components:
           oneOf:
             - $ref: '#/components/schemas/ReviewReasonCode'
             - type: 'null'
+
+        provenance_ref:
+          type: string
+          pattern: '^prov_[0-9a-z]{12,80}$'
+          description: Opaque anchor for explicit provenance traversal, independent of display identifier length.
 
     ControlPage:
       type: object
@@ -2142,6 +2280,11 @@ components:
         statement_count:
           type: integer
           minimum: 0
+
+        provenance_ref:
+          type: string
+          pattern: '^prov_[0-9a-z]{12,80}$'
+          description: Opaque anchor for explicit provenance traversal, independent of display identifier length.
 
     Operation:
       type: object
@@ -2704,4 +2847,99 @@ components:
         OSCAL outputs split by model; mapping-collection is a PRD 055
         mapping input; applicability-manifest is a human-authored
         forge.applicability/1 input; applicability-report is a generated
-        gap-analysis output; trace-report is a trace/report output.
+        gap-analysis output; trace-report accepts a canonical forge.workspace-report/1 trace export, with current input pins and counts revalidated. Arbitrary HTML and CLI text tables are not accepted.
+
+    WorkspaceReportEnvelope:
+      type: object
+      additionalProperties: false
+      required: [schema_version, report_kind, inputs, summary]
+      description: Closed JSON envelope escaped inside canonical workspace static HTML. Runtime also verifies canonical HTML bytes, sorted unique input IDs, and reconciled count invariants. Existing domain report contracts are unchanged.
+      properties:
+        schema_version:
+          const: forge.workspace-report/1
+        report_kind:
+          enum: [trace, applicability-gap, mapping-collection]
+        inputs:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [resource_id, sha256]
+            properties:
+              resource_id:
+                $ref: '#/components/schemas/ResourceId'
+              sha256:
+                $ref: '#/components/schemas/Sha256Hex'
+        summary: {}
+      allOf:
+        - if:
+            properties:
+              report_kind:
+                const: trace
+          then:
+            properties:
+              summary:
+                $ref: '#/components/schemas/WorkspaceTraceCounts'
+        - if:
+            properties:
+              report_kind:
+                const: mapping-collection
+          then:
+            properties:
+              summary:
+                type: object
+                additionalProperties: false
+                required: [eligible_controls, referenced_controls]
+                properties:
+                  eligible_controls:
+                    type: integer
+                    minimum: 0
+                    maximum: 10000
+                  referenced_controls:
+                    type: integer
+                    minimum: 0
+                    maximum: 10000
+        - if:
+            properties:
+              report_kind:
+                const: applicability-gap
+          then:
+            properties:
+              summary:
+                type: array
+                minItems: 6
+                maxItems: 6
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [classification, count]
+                  properties:
+                    classification:
+                      $ref: '#/components/schemas/GapClassification'
+                    count:
+                      type: integer
+                      minimum: 0
+                      maximum: 10000
+
+    WorkspaceTraceCounts:
+      type: object
+      additionalProperties: false
+      required: [total_elements, asserted_trace_elements, current_source_locations, unresolved_elements]
+      properties:
+        total_elements:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        asserted_trace_elements:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        current_source_locations:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        unresolved_elements:
+          type: integer
+          minimum: 0
+          maximum: 10000
