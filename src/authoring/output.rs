@@ -59,6 +59,10 @@ pub fn publish(
 }
 
 /// Publication events exposed to tests. Not part of the public API.
+///
+/// Only `unix::write_new_file_with_hook` constructs these, so they are inert on
+/// platforms that fail closed before staging.
+#[cfg_attr(not(any(target_os = "linux", target_os = "macos")), allow(dead_code))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FilePublishEvent {
     /// The private staging directory exists and the staged file is durably written.
