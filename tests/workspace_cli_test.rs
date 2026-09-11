@@ -241,6 +241,25 @@ fn exact_preview_commit_is_idempotent_and_registration_is_separate() {
     let (_, retry) =
         server.json("POST", "/api/v1/resources/register", Some("register-policy-0001"), &request);
     assert_eq!(first, retry);
+    // The same key with different content is a typed conflict, never a replay.
+    let (status, conflict) = server.json(
+        "POST",
+        "/api/v1/resources/register",
+        Some("register-policy-0001"),
+        &json!({"role":"policy-source","path":"unregistered.md","key":"other"}),
+    );
+    assert_eq!(status, 409, "{conflict}");
+    assert_eq!(conflict["code"], "idempotency-key-conflict");
+    // The request hash binds the raw query string: an otherwise identical retry
+    // under a different raw query is a different request. A fresh key on that
+    // same raw query is accepted, proving the query itself is not rejected.
+    let (status, fresh) =
+        server.json("POST", "/api/v1/resources/register?&", Some("register-policy-0002"), &request);
+    assert_eq!(status, 200, "{fresh}");
+    let (status, conflict) =
+        server.json("POST", "/api/v1/resources/register?&", Some("register-policy-0001"), &request);
+    assert_eq!(status, 409, "{conflict}");
+    assert_eq!(conflict["code"], "idempotency-key-conflict");
     let preview = &first["preview"];
     let commit = json!({"receipt":preview["receipt"]["token"],"observed_version":preview["target_version"],"confirmed":true});
     let (status, operation) =
@@ -294,6 +313,23 @@ fn commit_preview(server: &Server, preview: &Value, key: &str) -> Value {
     value
 }
 
+/// No JSON string in a portable artifact may carry a rooted path prefix.
+fn assert_no_absolute_strings(value: &Value) {
+    match value {
+        Value::String(text) => {
+            let bytes = text.as_bytes();
+            let drive = bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
+            assert!(
+                !text.starts_with('/') && !text.starts_with("\\\\") && !drive,
+                "portable artifact carries an absolute path: {text}"
+            );
+        }
+        Value::Array(items) => items.iter().for_each(assert_no_absolute_strings),
+        Value::Object(entries) => entries.values().for_each(assert_no_absolute_strings),
+        Value::Null | Value::Bool(_) | Value::Number(_) => {}
+    }
+}
+
 #[test]
 fn deterministic_conversion_reuses_domain_pipeline_and_preserves_portable_sources() {
     let left = Server::launch_mode(true, false);
@@ -314,7 +350,53 @@ fn deterministic_conversion_reuses_domain_pipeline_and_preserves_portable_source
     let a = convert(&left);
     let b = convert(&right);
     assert_eq!(a, b);
-    assert!(!String::from_utf8(a).unwrap().contains("/private/"));
+    // Portable means portable on every platform: neither project root may appear
+    // and no JSON string may carry a path prefix, not merely a macOS /private one.
+    let text = String::from_utf8(a.clone()).unwrap();
+    for project in [left.project.path(), right.project.path()] {
+        let prefix = project.to_str().unwrap();
+        assert!(!text.contains(prefix), "artifact leaks the project root {prefix}");
+    }
+    assert_no_absolute_strings(&serde_json::from_slice::<Value>(&a).unwrap());
+}
+
+#[test]
+fn cancellation_route_rejects_completed_and_unknown_operations() {
+    let server = Server::launch_mode(false, false);
+    let listing = |server: &Server| {
+        let mut names: Vec<String> = std::fs::read_dir(server.project.path())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    };
+    let (_, response) = server.json(
+        "POST",
+        "/api/v1/resources/register",
+        Some("cancel-register-0001"),
+        &json!({"role":"policy-source","path":"unregistered.md","key":"policy"}),
+    );
+    let completed = commit_preview(&server, &response["preview"], "cancel-commit-000001");
+    assert_eq!(completed["state"], "succeeded");
+    let id = completed["operation_id"].as_str().unwrap();
+    let before = listing(&server);
+    // A terminal operation is not cancellable and the rejection does not mutate it.
+    let (status, rejected) =
+        server.json("POST", &format!("/api/v1/operations/{id}/cancellation"), None, &json!({}));
+    assert_eq!(status, 409, "{rejected}");
+    assert_eq!(rejected["code"], "operation-not-cancellable");
+    let (status, unchanged) =
+        server.json("GET", &format!("/api/v1/operations/{id}"), None, &json!({}));
+    assert_eq!(status, 200, "{unchanged}");
+    assert_eq!(unchanged, completed);
+    // An unknown operation id is a typed not-found, not a cancellation.
+    let unknown = format!("/api/v1/operations/op_{}/cancellation", "0".repeat(64));
+    let (status, rejected) = server.json("POST", &unknown, None, &json!({}));
+    assert_eq!(status, 404, "{rejected}");
+    assert_eq!(rejected["code"], "not-found");
+    // Neither rejected cancellation created or removed a project file.
+    assert_eq!(before, listing(&server));
 }
 
 #[test]

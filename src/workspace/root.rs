@@ -2,7 +2,7 @@
 
 use std::fs::File;
 use std::path::Path;
-#[cfg(windows)]
+#[cfg(any(unix, windows))]
 use std::path::PathBuf;
 
 use super::contract::{Error, Result};
@@ -10,7 +10,7 @@ use super::index::validate_path;
 
 #[derive(Debug)]
 pub(crate) struct Root {
-    #[cfg(windows)]
+    #[cfg(any(unix, windows))]
     canonical: PathBuf,
     #[cfg(unix)]
     directory: File,
@@ -40,7 +40,7 @@ impl Root {
                     _ => return Err(Error::containment()),
                 }
             }
-            Ok(Self { directory })
+            Ok(Self { canonical, directory })
         }
         #[cfg(windows)]
         {
@@ -78,6 +78,13 @@ impl Root {
 
     pub(crate) fn read_config(&self) -> Result<Option<Captured>> {
         self.read_internal(".forge.toml", 1024 * 1024)
+    }
+
+    /// The canonical project root this handle was opened on. Consumers resolve
+    /// project files through this path, never through the caller's spelling.
+    #[cfg(any(unix, windows))]
+    pub(crate) fn project_path(&self) -> &Path {
+        &self.canonical
     }
 
     pub(crate) fn read(&self, path: &str, limit: usize) -> Result<Captured> {
@@ -323,7 +330,11 @@ impl Root {
         verify_staging(&target.parent, &cleanup.name, &staged, bytes)?;
         let current = self.target(&target.path)?;
         if current.version != target.version || current.parent_identity != target.parent_identity {
-            return Err(conflict());
+            // The 409 envelope carries the current version so the client can
+            // reconcile instead of reading the target again.
+            let mut mismatch = conflict();
+            mismatch.resource_version = Some(current.version);
+            return Err(mismatch);
         }
         let leaf =
             std::ffi::CString::new(target.path.rsplit('/').next().ok_or_else(Error::invalid)?)
@@ -370,7 +381,7 @@ impl Root {
             }
         };
         if result != 0 {
-            return Err(conflict());
+            return Err(rename_failure(&std::io::Error::last_os_error()));
         }
         let _ = target.parent.sync_all();
         Ok(())
@@ -409,7 +420,9 @@ impl Root {
             revalidate()?;
             let current = self.target(&target.path)?;
             if current.version != target.version {
-                return Err(conflict());
+                let mut mismatch = conflict();
+                mismatch.resource_version = Some(current.version);
+                return Err(mismatch);
             }
             windows_publish::rename(&file, &absolute, target.base.is_some())
         })();
@@ -477,10 +490,33 @@ pub(crate) fn conflict() -> Error {
     )
 }
 
+/// The destination refused the atomic publication for a reason an identical
+/// retry cannot clear (rename flags the filesystem does not implement,
+/// permissions, quota or space). Reporting `version-conflict` here would tell
+/// the client to reload and retry something that can never succeed.
+pub(crate) fn publish_failed() -> Error {
+    Error::new(
+        "invalid-request",
+        "The destination could not be published atomically on this filesystem.",
+        false,
+    )
+}
+
+/// Only a lost destination race (`EEXIST`/`ENOTEMPTY` from the no-replace
+/// publication) is a reload-and-retry conflict; every other rename failure is a
+/// filesystem limitation an identical retry reproduces.
+#[cfg(unix)]
+fn rename_failure(error: &std::io::Error) -> Error {
+    match error.raw_os_error() {
+        Some(libc::EEXIST | libc::ENOTEMPTY) => conflict(),
+        _ => publish_failed(),
+    }
+}
+
 #[cfg(windows)]
 #[allow(unsafe_code)] // Small documented Windows handle-based publication seam.
 mod windows_publish {
-    use super::{Error, File, Path, Result, conflict};
+    use super::{Error, File, Path, Result, conflict, publish_failed};
     use std::os::windows::{ffi::OsStrExt as _, io::AsRawHandle as _};
     #[repr(C)]
     struct RenameInfo {
@@ -499,6 +535,11 @@ mod windows_publish {
         ) -> i32;
     }
     pub(super) fn rename(file: &File, target: &Path, replace: bool) -> Result<()> {
+        /// Win32 `ERROR_FILE_EXISTS`, `ERROR_ALREADY_EXISTS`, `ERROR_DIR_NOT_EMPTY`:
+        /// the no-replace publish lost the destination race.
+        const ERROR_FILE_EXISTS: i32 = 80;
+        const ERROR_ALREADY_EXISTS: i32 = 183;
+        const ERROR_DIR_NOT_EMPTY: i32 = 145;
         let name: Vec<_> = target.as_os_str().encode_wide().take(32768).collect();
         if name.len() >= 32768 {
             return Err(Error::containment());
@@ -526,7 +567,13 @@ mod windows_publish {
             SetFileInformationByHandle(file.as_raw_handle(), 3, (&raw const *info).cast(), length)
         };
         if result == 0 {
-            return Err(conflict());
+            let raw = std::io::Error::last_os_error().raw_os_error();
+            let exists = raw == Some(ERROR_FILE_EXISTS)
+                || raw == Some(ERROR_ALREADY_EXISTS)
+                || raw == Some(ERROR_DIR_NOT_EMPTY);
+            // A replace publish targets a destination that already exists, so
+            // only a no-replace publish can lose a destination race.
+            return Err(if !replace && exists { conflict() } else { publish_failed() });
         }
         Ok(())
     }
@@ -535,6 +582,43 @@ mod windows_publish {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn destination_races_are_conflicts_and_publish_limitations_are_not() {
+        for code in [libc::EEXIST, libc::ENOTEMPTY] {
+            let error = rename_failure(&std::io::Error::from_raw_os_error(code));
+            assert_eq!(error.code, "version-conflict", "{code}");
+            assert!(error.retryable, "{code}");
+            assert_eq!(error.resource_version, None);
+        }
+        for code in [libc::EINVAL, libc::ENOSPC, libc::EPERM, libc::EDQUOT] {
+            let error = rename_failure(&std::io::Error::from_raw_os_error(code));
+            assert_eq!(error.code, "invalid-request", "{code}");
+            assert_eq!(
+                error.message,
+                "The destination could not be published atomically on this filesystem."
+            );
+            assert!(!error.retryable, "{code}");
+        }
+    }
+
+    /// A target replaced after preview must report the current version, which is
+    /// already known at the revalidation point.
+    #[test]
+    fn a_stale_target_conflict_carries_the_current_resource_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = Root::open(dir.path()).unwrap();
+        let stale = root.target("output.json").unwrap();
+        assert!(stale.base.is_none());
+        std::fs::write(dir.path().join("output.json"), b"external").unwrap();
+        let error = root.commit(&stale, b"new", || Ok(())).unwrap_err();
+        assert_eq!(error.code, "version-conflict");
+        assert!(error.retryable);
+        let current = root.target("output.json").unwrap();
+        assert_eq!(error.resource_version.as_deref(), Some(current.version.as_str()));
+        assert_eq!(std::fs::read(dir.path().join("output.json")).unwrap(), b"external");
+    }
 
     #[test]
     fn failing_revalidation_preserves_original_and_cleans_staging() {

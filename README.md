@@ -524,14 +524,16 @@ FORGE_PRECOMMIT_STRICT=1 git commit -m "your message"
 
 Policy Forge: Forging the rules that power the agents.
 
-## License
-
-MIT
-
 ### Local review workspace
 
 `forge workspace --project <directory>` opens the local web review surface.
 Use `--read-only` to inspect registered files without project writes, or
-`--machine-session` for the documented headless API. See the
+`--machine-session` for the documented headless API. This is an unreleased
+draft implementation: security, accessibility and pilot gates are still open,
+and it is not part of a release. See the
 [local workspace guide](docs/local-workspace.md) for unlock, explicit registration,
 review, preview/commit, recovery, API contracts, bounds, and remaining release gates.
+
+## License
+
+MIT

@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use subtle::ConstantTimeEq as _;
 
 const MAX_RETAINED: usize = 256;
+const MAX_CONSUMED_INPUTS: usize = 100;
 const MAX_PREVIEW_BYTES: usize = 20 * 1024 * 1024;
 const RECEIPT_LIFETIME: Duration = Duration::from_secs(600);
 
@@ -49,6 +50,16 @@ fn capacity() -> Error {
         false,
     )
 }
+/// A prepared effect that consumes more inputs than the documented bound is a
+/// request the caller resolves, not a session retention condition, so it never
+/// reports the unrelated "start a new session" recovery.
+fn too_many_inputs() -> Error {
+    Error::new(
+        "invalid-request",
+        "The prepared effect consumes more than 100 inputs. Reduce the inputs this effect binds.",
+        false,
+    )
+}
 fn id(prefix: &str) -> Result<String> {
     Ok(format!("{prefix}_{}", *super::session::random_token()?))
 }
@@ -62,10 +73,11 @@ impl Store {
         key: &str,
         method: &str,
         path: &str,
+        query: &str,
         request: &Value,
     ) -> Result<Option<Reply>> {
         if let Some(record) = self.replays.get(key) {
-            if record.request_hash != request_hash(method, path, request)? {
+            if record.request_hash != request_hash(method, path, query, request)? {
                 return Err(Error::new(
                     "idempotency-key-conflict",
                     "The idempotency key already identifies a different request.",
@@ -88,10 +100,11 @@ impl Store {
         key: &str,
         method: &str,
         path: &str,
+        query: &str,
         request: &Value,
         reply: &Reply,
     ) -> Result<()> {
-        let hash = request_hash(method, path, request)?;
+        let hash = request_hash(method, path, query, request)?;
         self.replays.insert(
             key.to_owned(),
             Replay {
@@ -112,8 +125,10 @@ impl Store {
         bytes: Vec<u8>,
         inputs: &[&super::services::Item],
     ) -> Result<Value> {
+        if inputs.len() > MAX_CONSUMED_INPUTS {
+            return Err(too_many_inputs());
+        }
         if self.receipts.len() >= MAX_RETAINED
-            || inputs.len() > 100
             || bytes.len() > 10 * 1024 * 1024
             || self.retained_bytes.saturating_add(bytes.len()) > MAX_PREVIEW_BYTES
         {
@@ -384,9 +399,9 @@ impl Store {
         Ok(captured.bytes)
     }
 }
-fn request_hash(method: &str, path: &str, value: &Value) -> Result<String> {
+fn request_hash(method: &str, path: &str, query: &str, value: &Value) -> Result<String> {
     Ok(crate::hashing::sha256_hex(
-        &serde_json::to_vec(&json!([method, path, value])).map_err(|_| Error::invalid())?,
+        &serde_json::to_vec(&json!([method, path, query, value])).map_err(|_| Error::invalid())?,
     ))
 }
 fn semantic_summary(kind: &str, bytes: &[u8]) -> String {
@@ -538,14 +553,19 @@ mod tests {
         let mut store = Store::default();
         let request = json!({"path":"a.json"});
         let reply = Reply { value: json!({}), schema: "ShutdownResponse", status: 200 };
-        store.remember("same-key", "POST", "/route", &request, &reply).unwrap();
-        assert!(store.replay("same-key", "POST", "/route", &request).unwrap().is_some());
+        store.remember("same-key", "POST", "/route", "page=1", &request, &reply).unwrap();
+        assert!(store.replay("same-key", "POST", "/route", "page=1", &request).unwrap().is_some());
         assert_eq!(
             store
-                .replay("same-key", "POST", "/route", &json!({"path":"b.json"}))
+                .replay("same-key", "POST", "/route", "page=1", &json!({"path":"b.json"}))
                 .err()
                 .unwrap()
                 .code,
+            "idempotency-key-conflict"
+        );
+        // A reused key with a different query string is a different request.
+        assert_eq!(
+            store.replay("same-key", "POST", "/route", "page=2", &request).err().unwrap().code,
             "idempotency-key-conflict"
         );
         let (diff, truncated) = text_diff("café".as_bytes(), "日本語\n".as_bytes());

@@ -11,6 +11,12 @@ use super::root::{Captured, Root};
 const MAX_CAPTURE_BYTES: usize = 50 * 1024 * 1024;
 const MAX_RESOURCE_BYTES: usize = 10 * 1024 * 1024;
 
+/// Contract-bounded display field lengths. Exact identity is carried by the
+/// opaque provenance anchor, so truncating a display label loses no evidence.
+pub(crate) const SUBJECT_LABEL_MAX: usize = 500;
+const CONTROL_ID_MAX: usize = 200;
+const CONTROL_TITLE_MAX: usize = 500;
+
 pub(crate) struct Item {
     pub registration: Resource,
     pub captured: Captured,
@@ -160,6 +166,7 @@ impl Snapshot {
                 }
             }
         }
+        snapshot.mark_input_staleness();
         snapshot.populate_mapping_queue()?;
         for item in &mut snapshot.items {
             if item.registration.role == Role::ApplicabilityReport {
@@ -222,8 +229,7 @@ impl Snapshot {
             // Ambiguous declarations cannot become an empty, apparently ready queue.
             for item in &mut self.items {
                 if item.registration.role == Role::MappingCollection
-                    && contract::parse(&item.captured.bytes, MAX_RESOURCE_BYTES, 64 * 1024)
-                        .is_ok_and(|value| value["schema_version"] == "forge.mapping-manifest/1")
+                    && crate::mapping::manifest::parse(&item.captured.bytes).is_ok()
                 {
                     item.validation = validation(false, Some(&resource_id(&item.registration)));
                     item.metadata["validation_state"] = json!("invalid");
@@ -243,7 +249,21 @@ impl Snapshot {
             item.metadata["validation_state"] = json!("invalid");
             return Ok(());
         };
-        let subjects = super::domain::subjects(self)?;
+        let inventory = super::domain::subject_inventory(self)?;
+        // An over-long identifier is a bounded display limitation, not a broken
+        // snapshot: record it on the supplying resource instead of failing.
+        for (resource, _count) in &inventory.truncated {
+            if let Some(item) =
+                self.items.iter_mut().find(|item| resource_id(&item.registration) == *resource)
+            {
+                add_warning(
+                    &mut item.validation,
+                    "subject-label-truncated",
+                    "A subject identifier exceeds the bounded display label; its opaque provenance reference preserves the exact identifier.",
+                );
+            }
+        }
+        let subjects = &inventory.rows;
         for (side, kind, participation) in [
             ("policy", "control", &built.report.source_controls),
             ("policy", "statement", &built.report.source_statements),
@@ -265,11 +285,12 @@ impl Snapshot {
                 if self.mapping_queue.len() >= 10000 {
                     return Err(Error::invalid());
                 }
+                let bounded = bounded_label(subject, SUBJECT_LABEL_MAX).0;
                 let reference = subjects
                     .iter()
                     .find(|row| {
                         row["side"] == side
-                            && row["label"] == *subject
+                            && row["label"] == bounded
                             && row["statement_count"] == usize::from(kind == "statement")
                     })
                     .ok_or_else(Error::invalid)?;
@@ -304,7 +325,7 @@ impl Snapshot {
                     item.reason_code.as_str()
                 );
                 queue.push(json!({"item_id":format!("qi_{}", &crate::hashing::sha256_hex(identity.as_bytes())[..32]),
-                    "reason_code":item.reason_code.as_str(), "control_id":item.control_id,
+                    "reason_code":item.reason_code.as_str(), "control_id":bounded_label(&item.control_id, CONTROL_ID_MAX).0,
                     "classification":analysis.controls.iter().find(|c|c.control_id == item.control_id).map(|c|c.classification),
                     "evidence_refs":[opaque("prov", &[&analysis.framework.raw_sha256,&item.control_id])],
                     "summary":match item.reason_code.as_str() {
@@ -365,7 +386,9 @@ impl Snapshot {
                 _ => "applicable",
             };
             // Portable display defaults to the exact control ID, never copied framework prose.
-            let value = json!({"control_id":control.control_id,"title":control.control_id,"classification":control.classification,
+            let control_id = bounded_label(&control.control_id, CONTROL_ID_MAX).0;
+            let title = bounded_label(&control.control_id, CONTROL_TITLE_MAX).0;
+            let value = json!({"control_id":control_id,"title":title,"classification":control.classification,
                 "provenance_ref":opaque("prov", &[&analysis.framework.raw_sha256,&control.control_id]),"decision_state":state,"has_positive_mapping":control.positive_mapping_count>0,"review_reason":reason});
             contract::validate("ControlInventoryItem", &value)?;
             Ok(value)
@@ -426,17 +449,35 @@ pub(crate) fn opaque(prefix: &str, fields: &[&str]) -> String {
     format!("{prefix}_{}", &crate::hashing::sha256_hex(encoded.as_bytes())[..32])
 }
 
+/// Truncate a display field to its contract bound and report whether it was
+/// truncated. A byte-short value cannot exceed the character bound.
+pub(crate) fn bounded_label(value: &str, max: usize) -> (String, bool) {
+    if value.len() <= max {
+        return (value.to_owned(), false);
+    }
+    (value.chars().take(max).collect(), true)
+}
+
+/// Record a non-failing limitation in an existing validation report. Warnings
+/// never change the resource's validation state.
+fn add_warning(validation: &mut Value, code: &str, message: &str) {
+    if let Some(diagnostics) = validation["diagnostics"].as_array_mut() {
+        diagnostics.push(json!({"code":code,"severity":"warning","message":message}));
+    }
+    let count = validation["warning_count"].as_u64().unwrap_or(0);
+    validation["warning_count"] = json!(count + 1);
+}
+
 pub(crate) fn config_status(root: &Root) -> Result<Value> {
     let Some(captured) = root.read_config()? else {
         return Ok(json!({"present":false,"valid":false,"issues":[]}));
     };
+    // Validate against the canonical project root, not the process working
+    // directory, so referenced project files resolve where they were registered.
+    let config_path = root.project_path().join(".forge.toml");
     let valid = std::str::from_utf8(&captured.bytes).is_ok_and(|text| {
-        crate::config::parse_and_validate(
-            std::path::Path::new(".forge.toml"),
-            crate::config::SourceKind::Discovered,
-            text,
-        )
-        .is_ok()
+        crate::config::parse_and_validate(&config_path, crate::config::SourceKind::Discovered, text)
+            .is_ok()
     });
     Ok(
         json!({"present":true,"valid":valid,"issues":if valid { vec![] } else {vec!["The project configuration is invalid."]}}),
@@ -485,8 +526,10 @@ impl Snapshot {
         if diagnostics.len() > 500 {
             return Err(Error::invalid());
         }
+        let errors =
+            diagnostics.iter().filter(|diagnostic| diagnostic["severity"] == "error").count();
         Ok(
-            json!({"state":if diagnostics.is_empty() {"valid"} else {"invalid"},"error_count":diagnostics.len(),"warning_count":0,"diagnostics":diagnostics}),
+            json!({"state":if errors == 0 {"valid"} else {"invalid"},"error_count":errors,"warning_count":diagnostics.len()-errors,"diagnostics":diagnostics}),
         )
     }
 
@@ -509,6 +552,27 @@ impl Snapshot {
             crate::applicability::parse_stored_report(&item.captured.bytes).map_err(|_| {
                 Error::new("validation-failed", "The committed report is invalid.", false)
             })?;
+        let fingerprints = self.report_input_fingerprints(&historical)?;
+        let c = &historical.counts;
+        let counts = json!([
+            {"classification":"applicable-mapped","count":c.applicable_mapped},
+            {"classification":"applicable-reviewed-no-relationship","count":c.applicable_reviewed_no_relationship},
+            {"classification":"applicable-unmapped","count":c.applicable_unmapped},
+            {"classification":"not-applicable","count":c.not_applicable},
+            {"classification":"deferred","count":c.deferred},
+            {"classification":"under-review","count":c.under_review}]);
+        Ok(
+            json!({"version":item.metadata["version"],"stale":item.metadata["stale"],"input_fingerprints":fingerprints,"classification_counts":counts,"eligible_controls":c.total}),
+        )
+    }
+
+    /// Compare the committed report's recorded input fingerprints with the
+    /// current captured resources. Rows carry the opaque resource id, so callers
+    /// can mark exactly the inputs that no longer match.
+    fn report_input_fingerprints(
+        &self,
+        historical: &crate::applicability::model::ApplicabilityReport,
+    ) -> Result<Vec<Value>> {
         let manifest = super::domain::selected(self, Role::ApplicabilityManifest)?;
         let mut fingerprints = vec![
             json!({"resource_id":resource_id(&manifest.registration),"sha256":historical.manifest_sha256,"matches_current":historical.manifest_sha256==manifest.captured.sha256}),
@@ -547,17 +611,40 @@ impl Snapshot {
                 return Err(Error::invalid());
             }
         }
-        let c = &historical.counts;
-        let counts = json!([
-            {"classification":"applicable-mapped","count":c.applicable_mapped},
-            {"classification":"applicable-reviewed-no-relationship","count":c.applicable_reviewed_no_relationship},
-            {"classification":"applicable-unmapped","count":c.applicable_unmapped},
-            {"classification":"not-applicable","count":c.not_applicable},
-            {"classification":"deferred","count":c.deferred},
-            {"classification":"under-review","count":c.under_review}]);
-        Ok(
-            json!({"version":item.metadata["version"],"stale":item.metadata["stale"],"input_fingerprints":fingerprints,"classification_counts":counts,"eligible_controls":c.total}),
-        )
+        Ok(fingerprints)
+    }
+
+    /// A resource that supplied an input to the committed report and whose bytes
+    /// no longer match the recorded fingerprint is stale. Best-effort: an
+    /// absent, ambiguous, or unparsable report leaves the default state.
+    fn mark_input_staleness(&mut self) {
+        let Ok(report) = super::domain::selected(self, Role::ApplicabilityReport) else {
+            return;
+        };
+        let Ok(historical) = crate::applicability::parse_stored_report(&report.captured.bytes)
+        else {
+            return;
+        };
+        let Ok(fingerprints) = self.report_input_fingerprints(&historical) else {
+            return;
+        };
+        let stale: Vec<String> = fingerprints
+            .iter()
+            .filter(|fingerprint| fingerprint["matches_current"] == false)
+            .filter_map(|fingerprint| fingerprint["resource_id"].as_str().map(str::to_owned))
+            .collect();
+        for id in stale {
+            if let Some(item) =
+                self.items.iter_mut().find(|item| resource_id(&item.registration) == id)
+            {
+                // An already-invalid input keeps its precise diagnostics.
+                if item.metadata["validation_state"] != "invalid" {
+                    item.validation = validation(false, Some(&id));
+                    item.metadata["validation_state"] = json!("stale");
+                    item.metadata["stale"] = json!(true);
+                }
+            }
+        }
     }
 
     pub(crate) fn analysis_inputs(&self) -> Result<Vec<&Item>> {
@@ -627,5 +714,153 @@ mod tests {
         assert_eq!(second["page"]["items"], json!([3]));
         assert_eq!(second["page"]["total_matching"], 3);
         assert!(paginate(values, "87654321", &next).is_err());
+    }
+
+    fn fixture_item(role: Role, path: &str, bytes: Vec<u8>) -> Item {
+        let registration = Resource {
+            key: path.trim_end_matches(".json").replace('/', "-"),
+            role,
+            path: path.to_owned(),
+        };
+        let id = resource_id(&registration);
+        let sha256 = crate::hashing::sha256_hex(&bytes);
+        let metadata = json!({"resource_id":id, "key":registration.key, "role":registration.role, "path":registration.path,
+            "sha256":sha256, "size_bytes":bytes.len(), "validation_state":"valid", "stale":false, "version":sha256});
+        Item {
+            registration,
+            captured: Captured { bytes, identity: (1, 1), sha256 },
+            metadata,
+            validation: validation(true, Some(&id)),
+        }
+    }
+
+    #[test]
+    fn config_status_validates_against_the_project_root() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join("profiles")).unwrap();
+        std::fs::write(dir.path().join("profiles/source.json"), "{}").unwrap();
+        std::fs::write(
+            dir.path().join(".forge.toml"),
+            "schema-version = 1\n[convert]\nsource-profile = \"profiles/source.json\"\n",
+        )
+        .unwrap();
+        let status = config_status(&Root::open(dir.path()).unwrap()).unwrap();
+        assert_eq!(status["present"], true);
+        assert_eq!(status["valid"], true, "{status}");
+    }
+
+    #[test]
+    fn changed_committed_report_input_is_stale_and_filterable() {
+        let manifest_bytes =
+            include_str!("../../examples/authoring/applicability.json").as_bytes().to_vec();
+        let manifest_sha = crate::hashing::sha256_hex(&manifest_bytes);
+        let mut report: Value =
+            serde_json::from_str(include_str!("../../examples/authoring/gap-report.json")).unwrap();
+        report["manifest_sha256"] = json!(manifest_sha);
+        report["framework"]["raw_sha256"] = json!("b".repeat(64));
+        let report_bytes = serde_json::to_vec(&report).unwrap();
+        let mut snapshot = Snapshot {
+            index: Index::empty(),
+            index_present: true,
+            version: "v".to_owned(),
+            items: vec![
+                fixture_item(Role::ApplicabilityManifest, "scope.json", manifest_bytes),
+                fixture_item(
+                    Role::OscalCatalogArtifact,
+                    "framework.json",
+                    b"changed framework bytes".to_vec(),
+                ),
+                fixture_item(Role::ApplicabilityReport, "applicability-report.json", report_bytes),
+            ],
+            analysis: None,
+            mapping_queue: Vec::new(),
+        };
+        snapshot.mark_input_staleness();
+        let framework =
+            snapshot.items.iter().find(|item| item.registration.path == "framework.json").unwrap();
+        assert_eq!(framework.metadata["stale"], true);
+        assert_eq!(framework.metadata["validation_state"], "stale");
+        assert_eq!(framework.validation["state"], "invalid");
+        let listed = filtered(
+            vec![framework.metadata.clone()],
+            &[("stale".into(), "true".into())],
+            &["role", "validation_state", "stale"],
+        );
+        assert_eq!(listed.len(), 1);
+        let manifest =
+            snapshot.items.iter().find(|item| item.registration.path == "scope.json").unwrap();
+        assert_eq!(manifest.metadata["stale"], false);
+        let report_item = snapshot
+            .items
+            .iter()
+            .find(|item| item.registration.path == "applicability-report.json")
+            .unwrap();
+        assert_eq!(report_item.metadata["stale"], false);
+    }
+
+    #[test]
+    fn warnings_do_not_invalidate_a_validation_report() {
+        let id = "res_0123456789abcdef0123456789abcdef".to_owned();
+        let mut report = validation(true, Some(&id));
+        add_warning(
+            &mut report,
+            "subject-label-truncated",
+            "A subject identifier exceeds the bounded display label.",
+        );
+        assert_eq!(report["state"], "valid");
+        assert_eq!(report["error_count"], 0);
+        assert_eq!(report["warning_count"], 1);
+        contract::validate("ValidationReport", &report).unwrap();
+        let (bounded, truncated) = bounded_label(&"c".repeat(600), SUBJECT_LABEL_MAX);
+        assert!(truncated);
+        assert_eq!(bounded.chars().count(), SUBJECT_LABEL_MAX);
+        let (short, truncated) = bounded_label("res_short", SUBJECT_LABEL_MAX);
+        assert!(!truncated);
+        assert_eq!(short, "res_short");
+    }
+
+    #[test]
+    fn domain_valid_large_mapping_manifest_is_accepted() {
+        let mut reviewers = Vec::new();
+        let mut keys = Vec::new();
+        for index in 0..25 {
+            let key = format!("r{index}");
+            keys.push(key.clone());
+            reviewers.push(json!({"key":key,"type":"person","name":"n".repeat(60_000)}));
+        }
+        let manifest = json!({
+            "schema_version":"forge.mapping-manifest/1",
+            "collection":{"key":"collection","title":"Collection","version":"1","last_modified":"2026-09-10T00:00:00Z"},
+            "reviewers":reviewers,
+            "provenance":{"method":"human","matching_rationale":"semantic","status":"complete","mapping_description":"Reviewed mapping.","reviewer_keys":keys,"reviewed_at":"2026-09-10T00:00:00Z"},
+            "mapping":{"key":"mapping",
+                "source":{"type":"catalog","artifact":"source.json","href":"source.json"},
+                "target":{"type":"catalog","artifact":"target.json","href":"target.json"},
+                "maps":[{"key":"map-1","relationship":"no-relationship","sources":[{"type":"control","id_ref":"a"}],"targets":[{"type":"control","id_ref":"b"}],"reviewer_key":"r0","reviewed_at":"2026-09-10T00:00:00Z","rationale":"Explicit review."}]}
+        });
+        let bytes = serde_json::to_vec(&manifest).unwrap();
+        assert!(
+            bytes.len() > 1024 * 1024
+                && bytes.len()
+                    < usize::try_from(crate::mapping::manifest::MAX_MANIFEST_BYTES).unwrap(),
+            "{}",
+            bytes.len()
+        );
+        crate::mapping::manifest::parse(&bytes).expect("domain-valid mapping manifest");
+        let registration = Resource {
+            key: "mapping".to_owned(),
+            role: Role::MappingCollection,
+            path: "mapping.json".to_owned(),
+        };
+        assert!(validate_bytes(&registration, &bytes));
+        let snapshot = Snapshot {
+            index: Index::empty(),
+            index_present: true,
+            version: "v".to_owned(),
+            items: vec![fixture_item(Role::MappingCollection, "mapping.json", bytes)],
+            analysis: None,
+            mapping_queue: Vec::new(),
+        };
+        assert!(crate::workspace::domain::mapping_manifest(&snapshot).is_ok());
     }
 }

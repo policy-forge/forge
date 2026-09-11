@@ -73,6 +73,7 @@ with tempfile.TemporaryDirectory(prefix="forge-client-") as directory:
         client.commit(export["result"]["preview"],confirmed=True,idempotency_key=str(uuid.uuid4()))
         downloaded=client.request("GET","/api/v1/exports/"+export["operation_id"]+"/download",raw=True)
         assert downloaded==(root/"report.html").read_bytes() and b"Synthetic reviewer" not in downloaded
+    writer=client
     with Workspace(args.forge,root,read_only=True) as client:
         assert client.request("GET","/api/v1/project/summary")["resource_counts"]["total"]==6
         try:
@@ -81,4 +82,17 @@ with tempfile.TemporaryDirectory(prefix="forge-client-") as directory:
             assert error.payload["code"]=="read-only-session"
         else:
             raise AssertionError("Read-only session accepted a write")
+    reader=client
+    # Workspace.close() swallows shutdown failures, so prove each session really
+    # ended: a clean exit code means the shutdown route was honoured rather than
+    # the close() timeout killing the process, and nothing may still answer.
+    for session in (writer,reader):
+        assert session.process.poll()==0, f"Workspace did not shut down cleanly: exit {session.process.poll()}"
+        try:
+            session.request("GET","/api/v1/project/summary")
+        except OSError:
+            continue
+        except WorkspaceError:
+            raise AssertionError("The workspace answered after close()") from None
+        raise AssertionError("The workspace answered after close()")
 print("Maintained headless client: upload, registration, conversion, mapping initialization/edit/build, scope decisions, analysis, trace export, idempotent commit, read-only and shutdown passed.")

@@ -18,6 +18,17 @@ fn invalid() -> Error {
     )
 }
 
+/// The workspace never narrows a registered manifest below the byte bound its
+/// own domain parser enforces.
+pub(crate) fn manifest_limit(mapping: bool) -> usize {
+    let limit = if mapping {
+        crate::mapping::manifest::MAX_MANIFEST_BYTES
+    } else {
+        crate::applicability::manifest::MAX_MANIFEST_BYTES
+    };
+    usize::try_from(limit).unwrap_or(usize::MAX)
+}
+
 pub(crate) fn selected(snapshot: &Snapshot, role: Role) -> Result<&Item> {
     let mut matching = snapshot.items.iter().filter(|item| item.registration.role == role);
     let item = matching.next().ok_or_else(invalid)?;
@@ -106,8 +117,7 @@ pub(crate) fn analyze(
 pub(crate) fn mapping_manifest(snapshot: &Snapshot) -> Result<&Item> {
     let mut matches = snapshot.items.iter().filter(|item| {
         item.registration.role == Role::MappingCollection
-            && super::contract::parse(&item.captured.bytes, 1024 * 1024, 64 * 1024)
-                .is_ok_and(|value| value["schema_version"] == "forge.mapping-manifest/1")
+            && crate::mapping::manifest::parse(&item.captured.bytes).is_ok()
     });
     let selected = matches.next().ok_or_else(invalid)?;
     if matches.next().is_some() {
@@ -132,7 +142,8 @@ pub(crate) fn draft(snapshot: &Snapshot, mapping: bool) -> Result<serde_json::Va
     } else {
         selected(snapshot, Role::ApplicabilityManifest)?
     };
-    let manifest = super::contract::parse(&item.captured.bytes, 1024 * 1024, 64 * 1024)?;
+    let manifest =
+        super::contract::parse(&item.captured.bytes, manifest_limit(mapping), 64 * 1024)?;
     Ok(serde_json::json!({"version":item.metadata["version"],"manifest":manifest,
         "validation_summary":{"state":item.validation["state"],"error_count":item.validation["error_count"],"warning_count":item.validation["warning_count"]}}))
 }
@@ -144,7 +155,7 @@ pub(crate) fn validate_draft(
     value: &serde_json::Value,
 ) -> Result<serde_json::Value> {
     let bytes = serde_json::to_vec(value).map_err(|_| invalid())?;
-    if bytes.len() > 1024 * 1024 {
+    if bytes.len() > manifest_limit(mapping_draft) {
         return Err(invalid());
     }
     let item = if mapping_draft {
@@ -173,7 +184,7 @@ pub(crate) fn validate_draft(
 }
 
 pub(crate) fn subjects(snapshot: &Snapshot) -> Result<Vec<serde_json::Value>> {
-    subjects_for(snapshot, None, None)
+    Ok(subject_inventory(snapshot)?.rows)
 }
 
 /// Before a draft exists, both the resource and its side must be explicitly selected.
@@ -182,8 +193,30 @@ pub(crate) fn subjects_for(
     resource_id: Option<&str>,
     side: Option<&str>,
 ) -> Result<Vec<serde_json::Value>> {
+    Ok(inventory(snapshot, resource_id, side)?.rows)
+}
+
+/// Bounded subject rows plus the resources whose identifiers exceeded the
+/// contract's display-label bound. The opaque `subject_id` and `fingerprint`
+/// carry the exact identity, so a truncated label loses no evidence.
+pub(crate) struct SubjectInventory {
+    pub rows: Vec<serde_json::Value>,
+    /// `(resource_id, truncated subject count)` per supplying resource.
+    pub truncated: Vec<(String, usize)>,
+}
+
+pub(crate) fn subject_inventory(snapshot: &Snapshot) -> Result<SubjectInventory> {
+    inventory(snapshot, None, None)
+}
+
+fn inventory(
+    snapshot: &Snapshot,
+    resource_id: Option<&str>,
+    side: Option<&str>,
+) -> Result<SubjectInventory> {
     let stage = stage(snapshot)?;
     let mut output = Vec::new();
+    let mut truncated = Vec::new();
     if let Ok(item) = mapping_manifest(snapshot) {
         let manifest =
             crate::mapping::manifest::parse(&item.captured.bytes).map_err(|_| invalid())?;
@@ -200,6 +233,7 @@ pub(crate) fn subjects_for(
             let manifest_path = stage.path().join(&item.registration.path);
             append_subjects(
                 &mut output,
+                &mut truncated,
                 manifest_path.parent().ok_or_else(invalid)?,
                 side,
                 resource,
@@ -229,14 +263,15 @@ pub(crate) fn subjects_for(
             expected_resolved_catalog_sha256: None,
             inventory: None,
         };
-        append_subjects(&mut output, stage.path(), side, &resource, item)?;
+        append_subjects(&mut output, &mut truncated, stage.path(), side, &resource, item)?;
     }
     output.sort_by(|a, b| a["subject_id"].as_str().cmp(&b["subject_id"].as_str()));
-    Ok(output)
+    Ok(SubjectInventory { rows: output, truncated })
 }
 
 fn append_subjects(
     output: &mut Vec<serde_json::Value>,
+    truncated: &mut Vec<(String, usize)>,
     parent: &Path,
     side: &str,
     resource: &crate::mapping::manifest::ResourceManifest,
@@ -250,10 +285,21 @@ fn append_subjects(
         }
         for id in loaded.inventory.ids_of_type(kind) {
             let resource_id = super::services::resource_id(&item.registration);
+            let (label, label_truncated) =
+                super::services::bounded_label(&id, super::services::SUBJECT_LABEL_MAX);
+            if label_truncated {
+                if let Some((_, count)) =
+                    truncated.iter_mut().find(|(existing, _)| existing == &resource_id)
+                {
+                    *count += 1;
+                } else {
+                    truncated.push((resource_id.clone(), 1));
+                }
+            }
             let subject_id =
                 super::services::opaque("subj", &[side, &resource_id, kind.as_str(), &id]);
             let value = serde_json::json!({"subject_id":subject_id,"provenance_ref":super::services::opaque("prov", &[&subject_id]),"side":side,"resource_id":resource_id,
-                "label":id,"fingerprint":loaded.inventory.fingerprint(kind,&id).ok_or_else(invalid)?,
+                "label":label,"fingerprint":loaded.inventory.fingerprint(kind,&id).ok_or_else(invalid)?,
                 "statement_count":usize::from(kind == SubjectType::Statement)});
             super::contract::validate("MappingSubject", &value)?;
             output.push(value);
@@ -424,7 +470,7 @@ pub(crate) fn initialize(
     } else {
         serde_json::json!({"schema_version":"forge.applicability/1","framework":resource(request["framework_resource_id"].as_str().ok_or_else(invalid)?)?,"reviewers":[],"decisions":[],"mapping_collections":[]})
     };
-    let mut bytes = super::contract::encode(&value, 1024 * 1024 - 1, true)?;
+    let mut bytes = super::contract::encode(&value, manifest_limit(mapping) - 1, true)?;
     bytes.push(b'\n');
     if mapping {
         crate::mapping::manifest::parse(&bytes).map_err(|_| invalid())?;
@@ -470,5 +516,65 @@ mod tests {
         ] {
             assert!(resolve_reference("manifests/scope.json", Path::new(path)).is_err(), "{path}");
         }
+    }
+
+    fn catalog_item(id: &str) -> (crate::workspace::index::Resource, Vec<u8>) {
+        let catalog = serde_json::json!({"catalog":{"uuid":"11111111-1111-4111-8111-111111111111","metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},"controls":[{"id":id,"title":"Synthetic control"}]}});
+        let bytes = serde_json::to_vec(&catalog).unwrap();
+        (
+            crate::workspace::index::Resource {
+                key: "catalog".to_owned(),
+                role: crate::workspace::index::Role::OscalCatalogArtifact,
+                path: "catalog.json".to_owned(),
+            },
+            bytes,
+        )
+    }
+
+    #[test]
+    fn over_long_subject_ids_are_bounded_without_losing_identity() {
+        let dir = tempfile::tempdir().unwrap();
+        let long_id = "c".repeat(600);
+        let (registration, bytes) = catalog_item(&long_id);
+        std::fs::write(dir.path().join("catalog.json"), &bytes).unwrap();
+        let resource = crate::mapping::manifest::ResourceManifest {
+            resource_type: crate::mapping::manifest::ResourceType::Catalog,
+            artifact: Path::new("catalog.json").to_path_buf(),
+            href: "catalog.json".to_owned(),
+            resolved_catalog: None,
+            resolved_catalog_attestation: None,
+            expected_sha256: None,
+            expected_resolved_catalog_sha256: None,
+            inventory: None,
+        };
+        let id = crate::workspace::services::resource_id(&registration);
+        let sha256 = crate::hashing::sha256_hex(&bytes);
+        let item = Item {
+            registration,
+            captured: crate::workspace::root::Captured { bytes, identity: (1, 1), sha256 },
+            metadata: serde_json::json!({"resource_id": id}),
+            validation: crate::workspace::services::validation(true, Some(&id)),
+        };
+        let mut output = Vec::new();
+        let mut truncated = Vec::new();
+        append_subjects(&mut output, &mut truncated, dir.path(), "policy", &resource, &item)
+            .expect("an over-long id must not fail the inventory");
+        assert_eq!(output.len(), 1);
+        assert_eq!(
+            output[0]["label"].as_str().unwrap().chars().count(),
+            crate::workspace::services::SUBJECT_LABEL_MAX
+        );
+        assert_eq!(truncated, vec![(id, 1)]);
+        crate::workspace::contract::validate("MappingSubject", &output[0]).unwrap();
+        // The opaque anchors still bind the exact, untruncated subject identity.
+        assert_ne!(output[0]["subject_id"].as_str().unwrap(), output[0]["label"].as_str().unwrap());
+        assert_eq!(
+            output[0]["fingerprint"].as_str().unwrap(),
+            crate::mapping::inventory::load(dir.path(), "policy", &resource)
+                .unwrap()
+                .inventory
+                .fingerprint(crate::mapping::manifest::SubjectType::Control, &long_id)
+                .unwrap()
+        );
     }
 }

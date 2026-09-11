@@ -3,7 +3,7 @@ use super::contract::{Error, Result};
 use super::effects::{Reply, Store};
 use super::index::{INDEX_PATH, Index, Resource, Role};
 use super::root::{Root, conflict};
-use super::services::Snapshot;
+use super::services::{Item, Snapshot};
 use base64::Engine as _;
 use serde_json::{Value, json};
 
@@ -38,6 +38,45 @@ fn output_target(snapshot: &Snapshot, path: &str, allowed: Option<Role>) -> Resu
         return Err(Error::containment());
     }
     super::index::validate_path(path)
+}
+
+/// The registered inputs a prepared manifest write consumes: the manifest being
+/// replaced plus every reference the proposed document resolves to. Deriving the
+/// consumed set keeps the documented 100-input bound a property of the effect
+/// instead of a property of how many unrelated resources the project registers.
+fn manifest_inputs<'a>(
+    snapshot: &'a Snapshot,
+    manifest: &str,
+    references: &[&std::path::PathBuf],
+) -> Result<Vec<&'a Item>> {
+    let mut paths = vec![manifest.to_owned()];
+    for reference in references {
+        paths.push(super::domain::resolve_reference(manifest, reference)?);
+    }
+    paths
+        .iter()
+        .map(|path| {
+            snapshot
+                .items
+                .iter()
+                .find(|item| item.registration.path == *path)
+                .ok_or_else(validation_error)
+        })
+        .collect()
+}
+
+/// Both artifacts a mapping manifest binds, with the Profile companion each may
+/// carry. The domain validation already rejects references that are not
+/// registered, so a missing item here can only be a stale prepared request.
+fn mapping_references(
+    manifest: &crate::mapping::manifest::MappingManifest,
+) -> Vec<&std::path::PathBuf> {
+    [&manifest.mapping.source, &manifest.mapping.target]
+        .into_iter()
+        .flat_map(|resource| {
+            std::iter::once(&resource.artifact).chain(resource.resolved_catalog.iter())
+        })
+        .collect()
 }
 
 #[allow(clippy::too_many_lines)] // One audited route-to-effect table.
@@ -95,7 +134,10 @@ pub(crate) fn prepare(
                         .chars()
                         .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
                         .collect::<String>();
-                    key.trim_matches('-').chars().take(64).collect()
+                    // The index pattern requires an alphanumeric last character,
+                    // so the length cap is applied before the final trim.
+                    let key: String = key.chars().take(64).collect();
+                    key.trim_end_matches('-').to_owned()
                 },
                 str::to_owned,
             );
@@ -158,9 +200,31 @@ pub(crate) fn prepare(
             if validation["state"] != "valid" {
                 return Err(validation_error());
             }
-            let mut bytes = super::contract::encode(&request["manifest"], 1024 * 1024 - 1, true)?;
+            // The draft is validated against the deployed manifest contract, so the
+            // encode bound is that contract's byte limit minus the trailing newline
+            // the published document carries, capped at the workspace's 10 MiB
+            // per-resource capture bound: a larger manifest could never be captured
+            // again, so the workspace would fail closed on its own output. The 1 MiB
+            // HTTP body limit keeps a request's pretty encoding well under it.
+            let mut bytes = super::contract::encode(
+                &request["manifest"],
+                super::domain::manifest_limit(mapping).min(10 * 1024 * 1024) - 1,
+                true,
+            )?;
             bytes.push(b'\n');
-            let inputs: Vec<_> = snapshot.items.iter().collect();
+            let inputs = if mapping {
+                let parsed =
+                    crate::mapping::manifest::parse(&bytes).map_err(|_| validation_error())?;
+                manifest_inputs(snapshot, &target, &mapping_references(&parsed))?
+            } else {
+                let parsed = crate::applicability::manifest::parse(&bytes)
+                    .map_err(|_| validation_error())?;
+                let references: Vec<_> = std::iter::once(&parsed.framework.artifact)
+                    .chain(parsed.framework.resolved_catalog.iter())
+                    .chain(parsed.mapping_collections.iter())
+                    .collect();
+                manifest_inputs(snapshot, &target, &references)?
+            };
             Ok(preview_reply(store.preview(
                 root,
                 snapshot,
@@ -227,7 +291,11 @@ pub(crate) fn prepare(
             if manifest_item.registration.path.eq_ignore_ascii_case(target) {
                 return Err(Error::containment());
             }
-            let inputs: Vec<_> = snapshot.items.iter().collect();
+            let inputs = manifest_inputs(
+                snapshot,
+                &manifest_item.registration.path,
+                &mapping_references(&manifest),
+            )?;
             let preview = store.preview(
                 root,
                 snapshot,
@@ -262,10 +330,221 @@ pub(crate) fn prepare(
                 _ => return Err(Error::invalid()),
             };
             let bytes = super::reports::render(snapshot, kind, summary)?;
-            let inputs: Vec<_> = snapshot.items.iter().collect();
+            let inputs = super::reports::inputs(snapshot, kind)?;
             let preview = store.preview(root, snapshot, target, "report-export", bytes, &inputs)?;
             Ok(operation_reply(store.completed("export",json!({"operation_id":"op_000000000000","preview":preview,"redaction_summary":{"removed_categories":["reviewer-names","absolute-paths","source-excerpts","secrets"]}}))?))
         }
         _ => Err(Error::new("not-found", "The requested effect operation was not found.", false)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::AtomicBool;
+
+    fn catalog(controls: &[&str], uuid: &str) -> Value {
+        json!({"catalog":{"uuid":uuid,"metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
+            "controls":controls.iter().map(|id| json!({"id":id,"title":"Synthetic control"})).collect::<Vec<_>>()}})
+    }
+
+    fn write_index(root: &std::path::Path, resources: &[Value]) {
+        std::fs::write(
+            root.join(INDEX_PATH),
+            serde_json::to_vec(&json!({"schema_version":"forge.workspace/1","label":"Example project","resources":resources}))
+                .unwrap(),
+        )
+        .unwrap();
+    }
+
+    fn pick(value: &Value, path: &[&str]) -> Value {
+        let mut value = value;
+        for step in path {
+            value = &value[*step];
+        }
+        value.clone()
+    }
+
+    fn commit(store: &mut Store, root: &Root, preview: &Value) {
+        let operation = store
+            .commit(
+                root,
+                &json!({"receipt":preview["receipt"]["token"],"observed_version":preview["target_version"],"confirmed":true}),
+                &AtomicBool::new(false),
+            )
+            .unwrap();
+        assert_eq!(operation["state"], "succeeded");
+    }
+
+    fn registered_version(snapshot: &Snapshot, key: &str) -> Value {
+        snapshot.items.iter().find(|item| item.registration.key == key).unwrap().metadata["version"]
+            .clone()
+    }
+
+    /// A project may register up to 1,000 resources, and the documented bound is
+    /// 100 *consumed* inputs per effect. Every effect must stay preparable and
+    /// committable when the project registers far more than 100 files.
+    #[test]
+    #[allow(clippy::too_many_lines)] // One audited prepare-and-commit effect walk.
+    fn effects_prepare_and_commit_with_more_than_a_hundred_registrations() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path();
+        std::fs::write(
+            path.join("framework.json"),
+            serde_json::to_vec(&catalog(
+                &["control-a", "framework-a"],
+                "22222222-2222-4222-8222-222222222222",
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        std::fs::write(
+            path.join("policy.json"),
+            serde_json::to_vec(&catalog(&["policy-a"], "11111111-1111-4111-8111-111111111111"))
+                .unwrap(),
+        )
+        .unwrap();
+        let mut resources = vec![
+            json!({"key":"framework","role":"oscal-catalog-artifact","path":"framework.json"}),
+            json!({"key":"policy","role":"oscal-catalog-artifact","path":"policy.json"}),
+        ];
+        for index in 0..150 {
+            let name = format!("source-{index}.md");
+            std::fs::write(path.join(&name), "# Example\n\nA human-supplied clause.\n").unwrap();
+            resources
+                .push(json!({"key":format!("source-{index}"),"role":"policy-source","path":name}));
+        }
+        write_index(path, &resources);
+        let root = Root::open(path).unwrap();
+        assert_eq!(root.project_path(), path.canonicalize().unwrap());
+        let snapshot = Snapshot::capture(&root).unwrap();
+        assert_eq!(snapshot.items.len(), 152);
+        let id = |key: &str| {
+            super::super::services::resource_id(
+                &snapshot
+                    .items
+                    .iter()
+                    .find(|item| item.registration.key == key)
+                    .unwrap()
+                    .registration,
+            )
+        };
+        let scope = super::super::domain::initialize(
+            &snapshot,
+            &json!({"target_path":"scope.json","framework_resource_id":id("framework")}),
+            false,
+        )
+        .unwrap();
+        std::fs::write(path.join("scope.json"), &scope).unwrap();
+        let mapping = super::super::domain::initialize(
+            &snapshot,
+            &json!({"source_resource_id":id("policy"),"target_resource_id":id("framework"),
+                "target_path":"mapping-manifest.json","scope":"control-only",
+                "maps":[{"key":"none","relationship":"no-relationship","sources":[{"type":"control","id_ref":"policy-a"}],"targets":[{"type":"control","id_ref":"framework-a"}],"reviewer_key":"reviewer","reviewed_at":"2026-09-10T00:00:00Z","rationale":"Explicit initial review."}],
+                "review":{"collection":{"key":"synthetic-map","title":"Synthetic mapping","version":"1","last_modified":"2026-09-10T00:00:00Z"},
+                    "reviewers":[{"key":"reviewer","type":"person","name":"Synthetic Reviewer"}],
+                    "provenance":{"method":"human","matching_rationale":"semantic","status":"draft","mapping_description":"Explicit synthetic review.","reviewer_keys":["reviewer"],"reviewed_at":"2026-09-10T00:00:00Z"}}}),
+            true,
+        )
+        .unwrap();
+        std::fs::write(path.join("mapping-manifest.json"), &mapping).unwrap();
+        resources.push(json!({"key":"scope","role":"applicability-manifest","path":"scope.json"}));
+        resources.push(
+            json!({"key":"mapping","role":"mapping-collection","path":"mapping-manifest.json"}),
+        );
+        write_index(path, &resources);
+        assert_eq!(Snapshot::capture(&root).unwrap().items.len(), 154);
+        let mut store = Store::default();
+
+        // Each request re-captures the project, exactly as the server does; a
+        // committed effect changes the destination identity, not just its bytes.
+        let mut snapshot = Snapshot::capture(&root).unwrap();
+        let scope_draft = json!({"manifest":serde_json::from_slice::<Value>(&scope).unwrap(),"observed_version":registered_version(&snapshot,"scope")});
+        let applicability = super::prepare(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "PUT",
+            "/api/v1/applicability/draft",
+            &scope_draft,
+        )
+        .unwrap();
+        let preview = pick(&applicability.value, &["preview"]);
+        assert_eq!(preview["input_hashes"].as_array().unwrap().len(), 2);
+        commit(&mut store, &root, &preview);
+
+        let mut snapshot = Snapshot::capture(&root).unwrap();
+        let mapping_draft = json!({"manifest":serde_json::from_slice::<Value>(&mapping).unwrap(),"observed_version":registered_version(&snapshot,"mapping")});
+        let mapping_preview = super::prepare(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "PUT",
+            "/api/v1/mapping/draft",
+            &mapping_draft,
+        )
+        .unwrap();
+        let preview = pick(&mapping_preview.value, &["preview"]);
+        assert_eq!(preview["input_hashes"].as_array().unwrap().len(), 3);
+        commit(&mut store, &root, &preview);
+
+        let mut snapshot = Snapshot::capture(&root).unwrap();
+        let build = super::prepare(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/mapping/builds",
+            &json!({}),
+        )
+        .unwrap();
+        let preview = pick(&build.value, &["result", "report_preview"]);
+        assert_eq!(preview["input_hashes"].as_array().unwrap().len(), 3);
+        commit(&mut store, &root, &preview);
+
+        let mut snapshot = Snapshot::capture(&root).unwrap();
+        let export = super::prepare(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/exports",
+            &json!({"report_kind":"applicability-gap","target_path":"review.html"}),
+        )
+        .unwrap();
+        let preview = pick(&export.value, &["result", "preview"]);
+        assert_eq!(preview["input_hashes"].as_array().unwrap().len(), 4);
+        commit(&mut store, &root, &preview);
+
+        assert!(path.join("mapping-collection.json").exists());
+        assert!(path.join("review.html").exists());
+    }
+
+    /// The index pattern requires an alphanumeric final character, so a derived
+    /// key must be re-trimmed after the 64-character cap.
+    #[test]
+    fn derived_registration_keys_never_end_with_a_hyphen() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path();
+        let name = format!("{}_b.md", "a".repeat(63));
+        std::fs::write(path.join(&name), "# Example\n\nA human-supplied clause.\n").unwrap();
+        let root = Root::open(path).unwrap();
+        let mut snapshot = Snapshot::capture(&root).unwrap();
+        let mut store = Store::default();
+        let reply = super::prepare(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/resources/register",
+            &json!({"role":"policy-source","path":name}),
+        )
+        .unwrap();
+        commit(&mut store, &root, &pick(&reply.value, &["preview"]));
+        let index =
+            super::super::index::Index::parse(&std::fs::read(path.join(INDEX_PATH)).unwrap())
+                .unwrap();
+        assert_eq!(index.resources.len(), 1);
+        assert_eq!(index.resources[0].key, "a".repeat(63));
     }
 }

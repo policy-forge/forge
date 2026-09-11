@@ -1,7 +1,7 @@
 //! Closed, inert export envelope. Report bytes bind inputs without copying labels or prose.
 use super::contract::{self, Error, Result};
 use super::index::Role;
-use super::services::{Snapshot, resource_id};
+use super::services::{Item, Snapshot, resource_id};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -24,21 +24,47 @@ pub(crate) struct Pin {
     sha256: String,
 }
 
-fn pins(snapshot: &Snapshot) -> Result<Vec<Pin>> {
-    let mut pins: Vec<_> = snapshot
+/// Report kinds bind only the roles they consume; report artifacts are never inputs.
+///
+/// Pinning every registration made exports impossible in any project with more than
+/// 100 registrations, since the envelope is closed at 100 inputs.
+fn pin_role_relevant(kind: &str, role: Role) -> bool {
+    match role {
+        Role::TraceReport | Role::ApplicabilityReport => false,
+        Role::OscalCatalogArtifact | Role::OscalComponentArtifact => true,
+        Role::MappingCollection => matches!(kind, "mapping-collection" | "applicability-gap"),
+        Role::ApplicabilityManifest => kind == "applicability-gap",
+        Role::PolicySource => kind == "trace",
+    }
+}
+
+/// The registered inputs a report kind binds, in index order.
+///
+/// Exposed so an export preview binds exactly the inputs its report pins.
+pub(crate) fn inputs<'a>(snapshot: &'a Snapshot, kind: &str) -> Result<Vec<&'a Item>> {
+    let inputs: Vec<&Item> = snapshot
         .items
         .iter()
-        .filter(|item| {
-            !matches!(item.registration.role, Role::TraceReport | Role::ApplicabilityReport)
-        })
+        .filter(|item| pin_role_relevant(kind, item.registration.role))
+        .collect();
+    if inputs.len() > 100 {
+        return Err(Error::new(
+            "report-binds-too-many-inputs",
+            "The report binds more than 100 inputs of the roles this report kind consumes.",
+            false,
+        ));
+    }
+    Ok(inputs)
+}
+
+fn pins(snapshot: &Snapshot, kind: &str) -> Result<Vec<Pin>> {
+    let mut pins: Vec<_> = inputs(snapshot, kind)?
+        .into_iter()
         .map(|item| Pin {
             resource_id: resource_id(&item.registration),
             sha256: item.captured.sha256.clone(),
         })
         .collect();
-    if pins.len() > 100 {
-        return Err(Error::invalid());
-    }
     pins.sort_by(|a, b| a.resource_id.cmp(&b.resource_id));
     Ok(pins)
 }
@@ -47,7 +73,7 @@ pub(crate) fn render(snapshot: &Snapshot, kind: &str, summary: Value) -> Result<
     let report = Report {
         schema_version: "forge.workspace-report/1".into(),
         kind: kind.into(),
-        inputs: pins(snapshot)?,
+        inputs: pins(snapshot, kind)?,
         summary,
     };
     report.validate()?;
@@ -135,7 +161,7 @@ impl Report {
         Ok(format!("{PREFIX}{escaped}{SUFFIX}").into_bytes())
     }
     pub(crate) fn matches(&self, snapshot: &Snapshot) -> Result<bool> {
-        Ok(self.inputs == pins(snapshot)?
+        Ok(self.inputs == pins(snapshot, &self.kind)?
             && self.kind == "trace"
             && self.summary == super::domain::trace_counts(snapshot)?)
     }

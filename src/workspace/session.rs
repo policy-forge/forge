@@ -1,5 +1,6 @@
 //! Ephemeral local unlock and scoped capabilities. These are not reviewer identities.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use argon2::{Algorithm, Argon2, Params, Version};
@@ -17,6 +18,9 @@ const LANES: u32 = 1;
 const TAG_BYTES: usize = 32;
 const SALT_BYTES: usize = 16;
 const MAX_CAPABILITIES: usize = 16;
+/// SEC-LOG-2: hard ceiling on security-event lines a single process may emit.
+const MAX_SECURITY_EVENTS: u64 = 1024;
+static SECURITY_EVENTS: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -45,6 +49,7 @@ pub(crate) struct Session {
     capabilities: Vec<Capability>,
     unlock_failures: u32,
     unlock_after: Instant,
+    rejections: u32,
     stopped: bool,
 }
 
@@ -64,6 +69,46 @@ fn internal() -> Error {
 }
 fn unauthorized() -> Error {
     Error::new("unauthorized", "A valid session capability is required.", false)
+}
+
+/// Coarse, non-identifying bucket for repeated attempts (SEC-LOG-2).
+fn attempt_bucket(count: u32) -> &'static str {
+    match count {
+        0 => "attempts=0",
+        1 => "attempts=1",
+        2..=3 => "attempts=2-3",
+        4..=6 => "attempts=4-6",
+        7..=15 => "attempts=7-15",
+        16..=63 => "attempts=16-63",
+        _ => "attempts=64+",
+    }
+}
+
+/// SEC-LOG-2/SEC-UU-5: one bounded, secret-free line per security event.
+///
+/// The schema is fixed — event type, timestamp, session id, outcome, and a coarse
+/// attempt bucket — so a passphrase, capability, hash, salt, path, or request value
+/// can never reach it. The session identifier is an opaque correlation value, never
+/// an authenticator. `SEC-LOG-3` control-character stripping keeps hostile content
+/// from forging log lines, and the process-wide counter keeps the surface from
+/// becoming an unbounded log amplifier.
+pub(crate) fn security_event(session: &str, kind: &str, outcome: &str, detail: &str) {
+    let emitted = SECURITY_EVENTS.fetch_add(1, Ordering::Relaxed);
+    if emitted == MAX_SECURITY_EVENTS {
+        eprintln!("forge-workspace event=limit-reached limit={MAX_SECURITY_EVENTS}");
+        return;
+    }
+    if emitted > MAX_SECURITY_EVENTS {
+        return;
+    }
+    let at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let line = format!(
+        "forge-workspace at={at} session={session} event={kind} outcome={outcome} {detail}"
+    );
+    // `strip_control_chars` preserves tab and newline, so a single-line surface
+    // must additionally collapse them (SEC-LOG-3): one event is always one line.
+    let line = crate::sanitize::strip_control_chars(&line).replace(['\n', '\t'], " ");
+    eprintln!("{line}");
 }
 
 fn digest(secret: &[u8]) -> Zeroizing<[u8; 32]> {
@@ -109,13 +154,20 @@ impl Session {
             capabilities: Vec::new(),
             unlock_failures: 0,
             unlock_after: Instant::now(),
+            rejections: 0,
             stopped: false,
         })
     }
 
     fn issue(&mut self) -> Result<Zeroizing<String>> {
-        if self.stopped || self.capabilities.len() >= MAX_CAPABILITIES {
+        if self.stopped {
             return Err(unauthorized());
+        }
+        // SEC-CAP: a browser page reload consumes a slot, so the oldest
+        // capability is reclaimed rather than failing the newest unlock. The
+        // slot bound still holds; only the least recently issued token loses.
+        if self.capabilities.len() >= MAX_CAPABILITIES {
+            self.capabilities.remove(0);
         }
         let token = random_token()?;
         self.capabilities.push(Capability {
@@ -124,6 +176,19 @@ impl Session {
             requests: 0,
         });
         Ok(token)
+    }
+
+    /// Drop a capability that was minted but could not be delivered.
+    pub(crate) fn revoke(&mut self, token: &str) {
+        let candidate = digest(token.as_bytes());
+        self.capabilities.retain(|capability| {
+            !bool::from(candidate.as_slice().ct_eq(capability.hash.as_slice()))
+        });
+    }
+
+    #[cfg(test)]
+    pub(crate) fn capability_count(&self) -> usize {
+        self.capabilities.len()
     }
 
     pub(crate) fn machine_capability(&mut self) -> Result<Zeroizing<String>> {
@@ -138,7 +203,8 @@ impl Session {
             return Err(unauthorized());
         }
         let now = Instant::now();
-        if now < self.unlock_after || self.capabilities.len() >= MAX_CAPABILITIES {
+        if now < self.unlock_after {
+            security_event(&self.id, "throttle", "throttled", attempt_bucket(self.unlock_failures));
             return Err(Error::new(
                 "unlock-throttled",
                 "Unlock is temporarily unavailable. Wait before retrying.",
@@ -160,16 +226,29 @@ impl Session {
             // Start the retry delay after verification. On slower machines the
             // fixed-cost hash itself can exceed the initial two-second delay.
             self.unlock_after = Instant::now() + Duration::from_secs(1 << self.unlock_failures);
+            security_event(&self.id, "unlock", "denied", attempt_bucket(self.unlock_failures));
             return Err(Error::new("unlock-failed", "The workspace could not be unlocked.", false));
         }
+        let prior_failures = self.unlock_failures;
         self.unlock_failures = 0;
         self.unlock_after = Instant::now() + Duration::from_secs(1);
-        self.issue()
+        let token = self.issue()?;
+        security_event(&self.id, "unlock", "granted", attempt_bucket(prior_failures));
+        Ok(token)
     }
 
     /// Browser clients must carry browser metadata; machine capabilities cannot
     /// cross into a browser context even if the token is copied there.
     pub(crate) fn authorize(&mut self, token: &str, browser: bool, mutation: bool) -> Result<()> {
+        let outcome = self.authorize_request(token, browser, mutation);
+        if outcome.is_err() {
+            self.rejections = self.rejections.saturating_add(1);
+            security_event(&self.id, "capability", "rejected", attempt_bucket(self.rejections));
+        }
+        outcome
+    }
+
+    fn authorize_request(&mut self, token: &str, browser: bool, mutation: bool) -> Result<()> {
         if self.stopped || browser != (self.mode == Mode::Browser) || token.len() != 64 {
             return Err(unauthorized());
         }
@@ -291,6 +370,23 @@ mod tests {
         session.authorize(&first, true, false).unwrap();
         session.authorize(&second, true, false).unwrap();
         assert!(session.authorize(&first, false, false).is_err());
+    }
+
+    #[test]
+    fn a_full_capability_table_never_locks_out_unlock() {
+        let mut session = Session::new(
+            Mode::Browser,
+            false,
+            Some(Zeroizing::new("valid long passphrase".into())),
+        )
+        .unwrap();
+        for _ in 0..MAX_CAPABILITIES {
+            session.issue().unwrap();
+        }
+        session.unlock_after = Instant::now();
+        let token = session.unlock("valid long passphrase").unwrap();
+        session.authorize(&token, true, false).unwrap();
+        assert_eq!(session.capabilities.len(), MAX_CAPABILITIES);
     }
 
     #[test]

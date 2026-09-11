@@ -104,7 +104,7 @@ Out of scope (deferred or owned elsewhere):
 > rating reflects the authority delegated, not a known defect; the controls below (loopback-only
 > binding, exact Host/Origin checks, non-ambient scoped capabilities, typed resource APIs,
 > hash-bound one-time preview receipts, race-resistant containment) are designed to reduce
-> residual risk to Low/Medium and are enforced by the adversarial matrix and PRD test layers.
+> residual risk to Low/Medium and are intended to be enforced once the open findings (F2-F5) are closed.
 
 ---
 
@@ -194,7 +194,7 @@ PRD "Protected Assets" list plus session material.
 | Machine capability descriptor | Restricted | CSPRNG at machine bootstrap | One-line stdout descriptor | Session lifetime | N/A | N/A (local stdout) | Local machine |
 | Preview receipts (one-time, hash-bound) | Restricted | Preview service | Process memory | Short-lived, bounded; invalidated at shutdown or on use | N/A | Loopback only | Local machine |
 | Canonical project root path | Internal | CLI launch argument | Process memory; never logged by default | Session lifetime | N/A | N/A | Local machine |
-| Security event logs | Internal | Server | Local stderr/diagnostics | Session lifetime | N/A | N/A | Local machine |
+| Security event logs | Internal | Server | Local stderr: bounded SEC-LOG-2 event lines (type, timestamp, session id, outcome, coarse attempt bucket; no secrets, paths or request content). Tracing is disabled for the workspace command, so these lines are its only process output | Session lifetime | N/A | N/A | Local machine |
 
 ### Data Classification Reference 🟢 `@llm-autonomous`
 
@@ -516,6 +516,8 @@ values must be fixed before Slice 1 and recorded in this document's Decision Log
 | SEC-LOG-4 | The safe session summary printed at launch MUST exclude the passphrase, hash, capability, sensitive bodies, excerpts, and absolute paths by default | Launch Contract; M-16 | Output snapshot test in CI |
 | SEC-LOG-5 | Crash output and panic messages MUST NOT include secrets or project content | AC-12; Local Unlock section | Fault-injection test in CI |
 
+Event classes wired today: unlock attempt/failure/success, capability rejection, and throttling. `bound violations` and `receipt invalidation` are not yet emitted and remain open findings; the emitted line schema is type, timestamp, session id, outcome, and coarse attempt-count bucket only.
+
 ### Response Headers and CSP (SEC-HDR)
 
 | Req ID | Requirement | PRD clause | Verification |
@@ -737,6 +739,7 @@ later dependency addition.
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-09-08 | ZCode (LLM) | Initial threat model, platform/HTTP requirements, Argon2id parameter decision, adversarial verification matrix, ASVS 5.0.0 scoping rule, and decision log for PRD 062 Slice 0 |
+| 0.2 | 2026-09-11 | ZCode (LLM) | Added the 2026-09-10 implementation-evidence section; corrected the enforcement wording to an intended claim pending closure of the open findings F2-F5 |
 
 ---
 

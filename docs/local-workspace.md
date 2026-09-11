@@ -193,10 +193,12 @@ and restarting; results are not silently evicted.
 Rust contract, domain, security, transaction, and headless workflow tests run
 through `cargo test --locked`. Browser tests in `ui/tests/workspace.cjs` exercise
 the embedded assets through the published API; the POSIX harness is
-`scripts/test_workspace_browser.py`. Playwright is development-only. These tests
-check request coverage, blocked non-loopback page traffic, storage absence,
-workflow behavior, and narrow-viewport reflow. This is not proof that all browser
-background traffic or all OS processes are network-denied.
+`scripts/test_workspace_browser.py`. Playwright is development-only. The browser
+harness runs locally only: it is not executed by CI, and installing the browser
+test dependencies in CI remains pending. These tests check request coverage,
+blocked non-loopback page traffic, storage absence, workflow behavior, and
+narrow-viewport reflow. This is not proof that all browser background traffic or
+all OS processes are network-denied.
 
 Manual screen-reader/keyboard evaluation, WCAG 2.2 AA acceptance, the complete
 supported browser/platform matrix, security approval, five target-user studies,

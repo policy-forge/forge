@@ -6,6 +6,13 @@ use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 
 const MAX_ENTRIES: usize = 10000;
+
+/// Bounded display label. Identity-bearing values are hashed or referenced separately,
+/// so truncation here never changes a graph edge.
+fn bounded_label(value: &str) -> String {
+    value.chars().take(500).collect()
+}
+
 pub(crate) struct Graph {
     entries: BTreeMap<String, Value>,
     excerpts: BTreeMap<String, Value>,
@@ -32,7 +39,7 @@ impl Graph {
         for item in &snapshot.items {
             let resource = resource_id(&item.registration);
             let id = opaque("prov", &[&resource, &item.captured.sha256]);
-            let label: String = item.registration.path.chars().take(500).collect();
+            let label: String = bounded_label(&item.registration.path);
             let mut entry = json!({"entry_id":id,"kind":"source-reference","label":label,
                 "fingerprint":item.captured.sha256,"refs":[{"kind":"resource","id":resource}]});
             if item.registration.role == Role::PolicySource && item.validation["state"] == "valid" {
@@ -68,7 +75,11 @@ impl Graph {
             for control in &analysis.controls {
                 let id = opaque("prov", &[&analysis.framework.raw_sha256, &control.control_id]);
                 let mut refs = vec![json!({"kind":"resource","id":manifest_id})];
-                let label = format!("{}: {}", control.control_id, control.classification.as_str());
+                let label: String = bounded_label(&format!(
+                    "{}: {}",
+                    control.control_id,
+                    control.classification.as_str()
+                ));
                 if control.reviewer_key.is_some() {
                     let decision = opaque(
                         "prov",
@@ -107,7 +118,7 @@ impl Graph {
                             refs.push(json!({"kind":"control","id":opaque("prov", &[&analysis.framework.raw_sha256,subject["label"].as_str().ok_or_else(Error::invalid)?])}));
                         }
                     }
-                    graph.insert(json!({"entry_id":opaque("prov", &[subject_id]),"kind":kind,"label":subject["label"],"fingerprint":subject["fingerprint"],"refs":refs}))?;
+                    graph.insert(json!({"entry_id":opaque("prov", &[subject_id]),"kind":kind,"label":bounded_label(subject["label"].as_str().ok_or_else(Error::invalid)?),"fingerprint":subject["fingerprint"],"refs":refs}))?;
                 }
                 for mapping in &manifest.mapping.maps {
                     let mut refs =
@@ -141,7 +152,7 @@ impl Graph {
                             refs.push(json!({"kind":if side=="policy" {"policy-subject"}else{"control"},"id":opaque("prov", &[&subject_id])}));
                         }
                     }
-                    graph.insert(json!({"entry_id":opaque("prov", &[&item.captured.sha256,&mapping.key]),"kind":"mapping-edge","label":format!("Asserted mapping: {}",mapping.key),"fingerprint":item.captured.sha256,"refs":refs}))?;
+                    graph.insert(json!({"entry_id":opaque("prov", &[&item.captured.sha256,&mapping.key]),"kind":"mapping-edge","label":bounded_label(&format!("Asserted mapping: {}",mapping.key)),"fingerprint":item.captured.sha256,"refs":refs}))?;
                 }
             }
         }
@@ -156,7 +167,7 @@ impl Graph {
                 .unwrap_or_default();
             refs.push(json!({"kind":"report-item","id":item["item_id"]}));
             graph.insert(json!({"entry_id":opaque("prov", &[item["item_id"].as_str().ok_or_else(Error::invalid)?]),"kind":"report-item",
-                "label":item["summary"],"refs":refs}))?;
+                "label":bounded_label(item["summary"].as_str().ok_or_else(Error::invalid)?),"refs":refs}))?;
         }
         Ok(graph)
     }

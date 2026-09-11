@@ -75,7 +75,7 @@ and the normative API definition is
 | CM-28 | Cancel a running operation safely | cross-cutting | US-10 | `cancelOperation` | browser-write |
 | CM-29 | Prepare a redacted static report export | 8 | US-8 | `prepareReportExport` | browser-write |
 | CM-30 | Download a committed export | 8 | US-8 | `downloadExport` | browser-read |
-| CM-31 | Enforce read-only launch mode | cross-cutting | US-7 | `registerResource`, `uploadResource`, `preparePolicyConversion`, `putApplicabilityDraft`, `putMappingDraft`, `analyzeApplicability`, `buildMapping`, `commitEffectPreview`, `prepareReportExport` | browser-write |
+| CM-31 | Enforce read-only launch mode | cross-cutting | US-7 | `registerResource`, `uploadResource`, `preparePolicyConversion`, `putApplicabilityDraft`, `putMappingDraft`, `analyzeApplicability`, `buildMapping`, `commitEffectPreview`, `prepareReportExport`, `initializeApplicabilityDraft`, `initializeMappingDraft` | browser-write |
 | CM-32 | Render loading, refresh, and empty states from documented reads | cross-cutting | US-1 | `getProjectSummary`, `listResources`, `listReviewQueueItems` | browser-read |
 | CM-33 | Recover from errors, conflicts, and lost responses | cross-cutting | US-10 | `commitEffectPreview`, `getOperation` | browser-write |
 | CM-34 | Expose machine-readable status for accessible announcements | cross-cutting | US-11 | `getOperation`, `listReviewQueueItems` | browser-read |

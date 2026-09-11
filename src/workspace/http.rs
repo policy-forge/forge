@@ -81,7 +81,15 @@ pub(super) fn launch(project: &Path, read_only: bool, machine: bool, no_open: bo
         while !state.stopped.load(Ordering::Acquire) {
             while connections.try_join_next().is_some() {}
             let accepted = tokio::time::timeout(Duration::from_millis(100), listener.accept()).await;
-            let Ok(Ok((stream, peer))) = accepted else { continue; };
+            let (stream, peer) = match accepted {
+                Ok(Ok(accepted)) => accepted,
+                Ok(Err(_)) => {
+                    // An accept that fails immediately must not spin this loop.
+                    tokio::time::sleep(Duration::from_millis(75)).await;
+                    continue;
+                }
+                Err(_) => continue,
+            };
             if !peer.ip().is_loopback() { continue; }
             let Ok(permit) = Arc::clone(&permits).try_acquire_owned() else { continue; };
             let state = Arc::clone(&state);
@@ -185,12 +193,19 @@ fn guard(state: &State, request: &Request<Incoming>) -> Result<()> {
     {
         return Err(unauthorized());
     }
-    if writes_body && single_header(request, "content-type")? != Some("application/json") {
-        return Err(Error::new(
-            "unsupported-media-type",
-            "Use application/json for API requests.",
-            false,
-        ));
+    if writes_body {
+        // Media-type parameters (`application/json; charset=utf-8`) are valid:
+        // compare type/subtype case-insensitively and ignore parameters.
+        let json = single_header(request, "content-type")?
+            .and_then(|value| value.split(';').next())
+            .is_some_and(|value| value.trim().eq_ignore_ascii_case("application/json"));
+        if !json {
+            return Err(Error::new(
+                "unsupported-media-type",
+                "Use application/json for API requests.",
+                false,
+            ));
+        }
     }
     if request.headers().contains_key("content-encoding")
         || request.headers().contains_key("expect")
@@ -236,16 +251,27 @@ fn unlock_response(
             _ => String::new(),
         },
     );
+    // Everything that can fail before delivery is built first, so a snapshot or
+    // session-view failure can never consume a capability the client never sees.
+    let label = Snapshot::capture(&state.root)?.index.label;
+    let session = session_view(state, &label)?;
     let capability = state.session.lock().map_err(|_| internal())?.unlock(if valid {
         &passphrase
     } else {
         ""
     })?;
-    let label = Snapshot::capture(&state.root)?.index.label;
-    json_response(
-        json!({"capability":&*capability,"session":session_view(state,&label)?}),
+    let response = json_response(
+        json!({"capability":&*capability,"session":session}),
         "SessionUnlockResponse",
-    )
+    );
+    if response.is_err() {
+        // Response validation/encoding is the only remaining post-mint failure;
+        // the token was never delivered, so reclaim its slot.
+        if let Ok(mut session) = state.session.lock() {
+            session.revoke(&capability);
+        }
+    }
+    response
 }
 
 fn is_mutation(method: &str, path: &str) -> bool {
@@ -336,7 +362,7 @@ fn dispatch(
     state: &Arc<State>,
     method: &str,
     path: &str,
-    query: &str,
+    raw_query: &str,
     idempotency: Option<&str>,
     bytes: &[u8],
 ) -> Result<Response<Full<Bytes>>> {
@@ -344,7 +370,7 @@ fn dispatch(
         return Err(Error::invalid());
     }
     let query: Vec<(String, String)> =
-        url::form_urlencoded::parse(query.as_bytes()).into_owned().collect();
+        url::form_urlencoded::parse(raw_query.as_bytes()).into_owned().collect();
     if method == "POST" && path == "/api/v1/session/unlock" {
         return unlock_response(state, &query, idempotency, bytes);
     }
@@ -403,7 +429,7 @@ fn dispatch(
     if let Some(key) = idempotency {
         let request = payload.clone().unwrap_or_else(|| json!({}));
         let mut store = state.effects.lock().map_err(|_| internal())?;
-        let reply = if let Some(reply) = store.replay(key, method, path, &request)? {
+        let reply = if let Some(reply) = store.replay(key, method, path, raw_query, &request)? {
             reply
         } else {
             let kind = match path {
@@ -476,7 +502,7 @@ fn dispatch(
                     &request,
                 )?
             };
-            store.remember(key, method, path, &request, &reply)?;
+            store.remember(key, method, path, raw_query, &request, &reply)?;
             reply
         };
         let mut response = json_response(reply.value, reply.schema)?;
@@ -672,6 +698,49 @@ fn response(status: u16, media_type: &str, bytes: Vec<u8>) -> Response<Full<Byte
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn browser_state(root: Root, passphrase: &str) -> State {
+        State {
+            root,
+            host: "127.0.0.1:1".into(),
+            origin: "http://127.0.0.1:1".into(),
+            session: Mutex::new(
+                Session::new(
+                    Mode::Browser,
+                    false,
+                    Some(zeroize::Zeroizing::new(passphrase.to_owned())),
+                )
+                .unwrap(),
+            ),
+            stopped: AtomicBool::new(false),
+            rate: Mutex::new((Instant::now(), 0)),
+            effects: Mutex::new(super::super::effects::Store::default()),
+            work: Arc::new(tokio::sync::Semaphore::new(2)),
+            jobs: Arc::new(tokio::sync::Semaphore::new(1)),
+        }
+    }
+
+    fn capability_count(state: &State) -> usize {
+        state.session.lock().unwrap_or_else(std::sync::PoisonError::into_inner).capability_count()
+    }
+
+    #[test]
+    fn snapshot_failure_never_consumes_a_capability_slot() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("forge.workspace.json"),
+            br#"{"schema_version":"forge.workspace/1","label":"Example","resources":[{"key":"missing","role":"policy-source","path":"missing.md"}]}"#,
+        )
+        .unwrap();
+        let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        let body = br#"{"passphrase":"correct long passphrase"}"#;
+        assert!(unlock_response(&state, &[], None, body).is_err());
+        assert_eq!(capability_count(&state), 0);
+        std::fs::write(dir.path().join("missing.md"), "# Missing\n").unwrap();
+        assert!(unlock_response(&state, &[], None, body).is_ok());
+        assert_eq!(capability_count(&state), 1);
+    }
+
     #[test]
     fn malformed_and_wrong_unlock_requests_share_the_generic_failure() {
         for body in [
@@ -684,24 +753,7 @@ mod tests {
             "not json",
         ] {
             let dir = tempfile::tempdir().unwrap();
-            let state = State {
-                root: Root::open(dir.path()).unwrap(),
-                host: "127.0.0.1:1".into(),
-                origin: "http://127.0.0.1:1".into(),
-                session: Mutex::new(
-                    Session::new(
-                        Mode::Browser,
-                        false,
-                        Some(zeroize::Zeroizing::new("correct long passphrase".into())),
-                    )
-                    .unwrap(),
-                ),
-                stopped: AtomicBool::new(false),
-                rate: Mutex::new((Instant::now(), 0)),
-                effects: Mutex::new(super::super::effects::Store::default()),
-                work: Arc::new(tokio::sync::Semaphore::new(2)),
-                jobs: Arc::new(tokio::sync::Semaphore::new(1)),
-            };
+            let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
             let error = unlock_response(&state, &[], None, body.as_bytes())
                 .map(|_| ())
                 .expect_err("invalid unlock must fail");

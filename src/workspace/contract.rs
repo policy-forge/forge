@@ -94,6 +94,47 @@ static VALIDATORS: LazyLock<std::collections::BTreeMap<String, jsonschema::Valid
 
 pub(crate) const VERSION: &str = "1.1.0";
 
+/// Resolve a possibly `$ref`-ed parameter against the embedded contract.
+fn resolve_parameter(definition: &Value) -> &Value {
+    definition
+        .get("$ref")
+        .and_then(Value::as_str)
+        .and_then(|reference| reference.strip_prefix('#'))
+        .and_then(|pointer| DOCUMENT.pointer(pointer))
+        .unwrap_or(definition)
+}
+
+/// Validators for every declared parameter, compiled once. The request path
+/// looks one up by the declared parameter instead of cloning
+/// `components.schemas` and compiling a fresh schema per parameter per request.
+static PARAMETER_VALIDATORS: LazyLock<std::collections::BTreeMap<String, jsonschema::Validator>> =
+    LazyLock::new(|| {
+        let definitions = rewrite(&DOCUMENT["components"]["schemas"]);
+        let mut validators = std::collections::BTreeMap::new();
+        let paths = DOCUMENT["paths"].as_object().into_iter().flat_map(serde_json::Map::values);
+        for path_item in paths {
+            let operations = path_item.as_object().into_iter().flat_map(serde_json::Map::values);
+            for operation in operations {
+                for parameter in operation["parameters"].as_array().into_iter().flatten() {
+                    let Some(schema) = resolve_parameter(parameter).get("schema") else {
+                        continue;
+                    };
+                    let schema = rewrite(schema);
+                    validators.entry(parameter.to_string()).or_insert_with(|| {
+                        jsonschema::options()
+                            .with_draft(jsonschema::Draft::Draft202012)
+                            .build(&json!({
+                                "allOf": [schema],
+                                "$defs": definitions.clone(),
+                            }))
+                            .expect("embedded parameter schema is validated by the contract suite")
+                    });
+                }
+            }
+        }
+        validators
+    });
+
 pub(crate) fn validate(name: &str, value: &Value) -> Result<()> {
     if VALIDATORS.get(name).is_some_and(|validator| validator.is_valid(value)) {
         Ok(())
@@ -174,19 +215,18 @@ pub(crate) fn operation_request(
             continue;
         };
         let mut allowed_queries = std::collections::BTreeSet::new();
+        let mut declared_idempotency = false;
         if let Some(parameters) = operation["parameters"].as_array() {
-            for parameter in parameters {
-                let parameter = parameter
-                    .get("$ref")
-                    .and_then(Value::as_str)
-                    .and_then(|reference| reference.strip_prefix('#'))
-                    .and_then(|pointer| DOCUMENT.pointer(pointer))
-                    .unwrap_or(parameter);
+            for declared in parameters {
+                let parameter = resolve_parameter(declared);
                 let name = parameter["name"].as_str().ok_or_else(Error::invalid)?;
                 let location = parameter["in"].as_str().ok_or_else(Error::invalid)?;
                 let value = match location {
                     "path" => path_values.get(name).copied(),
-                    "header" if name == "Idempotency-Key" => idempotency,
+                    "header" if name == "Idempotency-Key" => {
+                        declared_idempotency = true;
+                        idempotency
+                    }
                     "query" => {
                         allowed_queries.insert(name);
                         let mut values = query.iter().filter(|(key, _)| key == name);
@@ -199,23 +239,20 @@ pub(crate) fn operation_request(
                     _ => return Err(Error::invalid()),
                 };
                 if let Some(value) = value {
-                    let schema = rewrite(&parameter["schema"]);
-                    let value = if schema["type"] == "integer" {
-                        json!(value.parse::<u64>().map_err(|_| Error::invalid())?)
-                    } else if schema["type"] == "boolean" {
-                        match value {
+                    let value = match parameter["schema"]["type"].as_str() {
+                        Some("integer") => {
+                            json!(value.parse::<u64>().map_err(|_| Error::invalid())?)
+                        }
+                        Some("boolean") => match value {
                             "true" => json!(true),
                             "false" => json!(false),
                             _ => return Err(Error::invalid()),
-                        }
-                    } else {
-                        json!(value)
+                        },
+                        _ => json!(value),
                     };
-                    let full = json!({"allOf":[schema],"$defs":rewrite(&DOCUMENT["components"]["schemas"])});
-                    let validator = jsonschema::options()
-                        .with_draft(jsonschema::Draft::Draft202012)
-                        .build(&full)
-                        .map_err(|_| Error::invalid())?;
+                    let validator = PARAMETER_VALIDATORS
+                        .get(&declared.to_string())
+                        .ok_or_else(Error::invalid)?;
                     if !validator.is_valid(&value) {
                         return Err(Error::invalid());
                     }
@@ -223,6 +260,11 @@ pub(crate) fn operation_request(
                     return Err(Error::invalid());
                 }
             }
+        }
+        // Mirrors the undeclared-query rejection: an operation that does not
+        // declare `Idempotency-Key` is not an effect path and must not enter it.
+        if idempotency.is_some() && !declared_idempotency {
+            return Err(Error::invalid());
         }
         if query.iter().any(|(key, _)| !allowed_queries.contains(key.as_str())) {
             return Err(Error::invalid());
@@ -290,5 +332,67 @@ mod tests {
         let rendered = serde_json::to_string(&failure).unwrap();
         assert!(!rendered.contains("private-secret"));
         validate("Error", &serde_json::to_value(failure).unwrap()).unwrap();
+    }
+
+    #[test]
+    fn idempotency_header_is_bound_only_to_declaring_operations() {
+        let key = "0123456789abcdef";
+        assert_eq!(
+            operation_request("POST", "/api/v1/mapping/builds", &[], Some(key), None).unwrap(),
+            "buildMapping"
+        );
+        assert!(operation_request("POST", "/api/v1/mapping/builds", &[], None, None).is_err());
+        assert!(operation_request("POST", "/api/v1/validation/runs", &[], None, None).is_err());
+        assert_eq!(
+            operation_request(
+                "POST",
+                "/api/v1/validation/runs",
+                &[],
+                None,
+                Some(&json!({"scope":"all"}))
+            )
+            .unwrap(),
+            "runValidation"
+        );
+        assert_eq!(
+            operation_request(
+                "POST",
+                "/api/v1/validation/runs",
+                &[],
+                Some(key),
+                Some(&json!({"scope":"all"}))
+            )
+            .unwrap_err()
+            .code,
+            "invalid-request"
+        );
+    }
+
+    #[test]
+    fn query_parameters_are_coerced_and_validated() {
+        assert_eq!(
+            operation_request(
+                "GET",
+                "/api/v1/resources",
+                &[("page_size".into(), "50".into())],
+                None,
+                None
+            )
+            .unwrap(),
+            "listResources"
+        );
+        for invalid in ["0", "201", "large"] {
+            assert!(
+                operation_request(
+                    "GET",
+                    "/api/v1/resources",
+                    &[("page_size".into(), invalid.into())],
+                    None,
+                    None
+                )
+                .is_err(),
+                "{invalid}"
+            );
+        }
     }
 }
