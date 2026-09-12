@@ -712,6 +712,37 @@ mod tests {
     }
 
     #[test]
+    fn a_unit_span_past_its_bound_is_refused() {
+        let mut oversized = fixture_request_json();
+        oversized["context"]["units"][0]["payload"] = json!({"start": 0, "end": 0});
+        assert!(parse(&oversized).is_err());
+
+        let mut too_long = fixture_request_json();
+        too_long["context"]["units"][0]["payload"] =
+            json!({"start": 0, "end": MAX_UNIT_SPAN_BYTES + 1});
+        too_long["payload"]["bytes"] = json!(MAX_UNIT_SPAN_BYTES + 1);
+        assert!(parse(&too_long).is_err());
+
+        let mut outside = fixture_request_json();
+        outside["context"]["units"][0]["payload"] = json!({"start": 0, "end": 64});
+        outside["payload"]["bytes"] = json!(32);
+        assert!(parse(&outside).is_err());
+    }
+
+    #[test]
+    fn overlapping_or_unordered_unit_spans_are_refused() {
+        let mut reversed = fixture_request_json();
+        let unit = reversed["context"]["units"][0].clone();
+        let mut second = unit.clone();
+        second["unit_id"] = json!("unit-0002");
+        second["payload"] = json!({"start": 0, "end": 5});
+        reversed["context"]["units"] = json!([unit, second]);
+        reversed["payload"]["units"] = json!(2);
+        reversed["payload"]["bytes"] = json!(37);
+        assert!(parse(&reversed).is_err());
+    }
+
+    #[test]
     fn request_schema_file_is_published_and_closed() {
         let schema: Value =
             serde_json::from_str(include_str!("../../schemas/forge.suggest-request-1.schema.json"))

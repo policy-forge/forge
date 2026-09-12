@@ -241,6 +241,17 @@ mod tests {
     }
 
     #[test]
+    fn subject_and_hint_counts_are_bounded() {
+        let subject: MappingSubject = serde_json::from_value(fixture_subject_json()).unwrap();
+        let mut too_many_hints = subject.clone();
+        too_many_hints.control_ids = (0..=MAX_HINTS).map(|index| format!("c-{index}")).collect();
+        assert!(subjects("subjects", &[too_many_hints]).is_err());
+
+        let too_many_subjects = vec![subject; MAX_SUBJECTS + 1];
+        assert!(subjects("subjects", &too_many_subjects).is_err());
+    }
+
+    #[test]
     fn mapping_task_schema_file_is_published_and_closed() {
         let schema: Value = serde_json::from_str(include_str!(
             "../../../schemas/forge.suggest-task-mapping-1.schema.json"

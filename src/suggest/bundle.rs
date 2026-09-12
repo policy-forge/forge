@@ -470,6 +470,19 @@ mod tests {
     }
 
     #[test]
+    fn a_bundle_past_its_byte_bound_is_refused_before_parsing() {
+        let oversized = vec![b' '; usize::try_from(MAX_BUNDLE_BYTES).unwrap() + 1];
+        assert!(SuggestionsBundle::parse(&oversized).is_err());
+    }
+
+    #[test]
+    fn a_content_digest_that_is_not_the_canonical_body_is_refused() {
+        let mut altered = fixture_bundle_json();
+        altered["suggestions"][0]["content_sha256"] = json!("b".repeat(64));
+        assert!(parse(&altered).is_err());
+    }
+
+    #[test]
     fn bundle_schema_file_is_published_and_closed() {
         let schema: Value =
             serde_json::from_str(include_str!("../../schemas/forge.suggestions-1.schema.json"))

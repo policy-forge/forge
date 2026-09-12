@@ -223,6 +223,20 @@ mod tests {
     }
 
     #[test]
+    fn a_response_without_citations_is_refused_by_the_contract() {
+        let mut uncited = fixture_response_json();
+        uncited["task"]["draft_clauses"][0]["citations"] = json!([]);
+        assert!(parse(&uncited).is_err());
+
+        let mut undeclared = fixture_response_json();
+        undeclared["task"]["draft_clauses"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("unresolved_questions");
+        assert!(parse(&undeclared).is_err());
+    }
+
+    #[test]
     fn response_schema_file_is_published_and_closed() {
         let schema: Value = serde_json::from_str(include_str!(
             "../../schemas/forge.suggest-response-1.schema.json"

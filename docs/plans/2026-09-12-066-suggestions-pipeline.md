@@ -379,7 +379,9 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 | M-14/M-15 | Not claimed. The corpus runner harness is exercised with synthetic fixtures only; thresholds stay open |
 | M-16 | Asserted by absence: no telemetry symbol, no upload path, no training hook in the crate's adapter or bundle modules |
 | M-17 adversarial suite | Dedicated `tests/suggest_adversarial_test.rs`: prompt injection in supplied source text, fabricated/altered citations, exfiltration requests (absolute paths, env values, unrelated files), malformed/oversized output, adapter missing/hang/crash/stderr flood, seeded secrets, quarantine escape attempts, promotion validity |
-| Determinism | Repeated `validate`/`review`/`promote` runs in two different directories produce byte-identical outputs |
+| Determinism | Repeated `validate` runs over copied inputs produce byte-identical bundles; `prepare` produces byte-identical payloads across directories; recorded-response runs are byte-identical |
+| Quarantine isolation | After the whole five-step pipeline every supplied input (project, pack, applicability, gap report, framework, clause, corpus) is byte-identical and every new path is inside a generation the command published |
+| Bounds | Each closed contract refuses input past its byte bound before parsing (`request`, `consent`, `response`, `run`, `suggestions`, `dispositions`, `promotion`, `promotion.patch`), and count bounds (`units`, `redactions`, arguments, subjects, sections, entries, suggestions) have explicit cases |
 | Legacy behaviour | Full locked suite unchanged; existing command outputs byte-identical; no new default artifacts |
 | Delivery | `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`, `git diff --check` |
 

@@ -167,6 +167,13 @@ impl PromotionProposal {
         shared::sha256("promotion.dispositions_sha256", &self.dispositions_sha256)?;
         shared::relative_path("promotion.destination.path", &self.destination.path)?;
         shared::sha256("promotion.destination.expected_sha256", &self.destination.expected_sha256)?;
+        shared::relative_path("promotion.patch.artifact", &self.patch.artifact)?;
+        shared::sha256("promotion.patch.sha256", &self.patch.sha256)?;
+        if self.patch.bytes == 0 || self.patch.bytes > MAX_PATCH_BYTES {
+            return Err(shared::error(format!(
+                "promotion.patch.bytes must be between 1 and {MAX_PATCH_BYTES}"
+            )));
+        }
         if self.entries.is_empty() {
             return Err(shared::error("promotion proposal must promote at least one suggestion"));
         }
@@ -312,6 +319,19 @@ mod tests {
                 "\"status\":\"proposed-unapproved\",\"status\":\"proposed-unapproved\"",
             );
         assert!(PromotionProposal::parse(duplicate.as_bytes()).is_err());
+    }
+
+    #[test]
+    fn a_proposal_past_its_byte_bound_is_refused_before_parsing() {
+        let oversized = vec![b' '; usize::try_from(MAX_PROMOTION_BYTES).unwrap() + 1];
+        assert!(PromotionProposal::parse(&oversized).is_err());
+    }
+
+    #[test]
+    fn a_patch_past_its_byte_bound_is_refused() {
+        let mut oversized = fixture_promotion_json();
+        oversized["patch"]["bytes"] = json!(MAX_PATCH_BYTES + 1);
+        assert!(parse(&oversized).is_err());
     }
 
     #[test]

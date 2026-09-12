@@ -307,6 +307,12 @@ mod tests {
     }
 
     #[test]
+    fn a_manifest_past_its_byte_bound_is_refused_before_parsing() {
+        let oversized = vec![b' '; usize::try_from(MAX_DISPOSITIONS_BYTES).unwrap() + 1];
+        assert!(DispositionManifest::parse(&oversized).is_err());
+    }
+
+    #[test]
     fn disposition_schema_file_is_published_and_closed() {
         let schema: Value = serde_json::from_str(include_str!(
             "../../schemas/forge.suggest-dispositions-1.schema.json"

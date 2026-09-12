@@ -217,6 +217,13 @@ mod tests {
     }
 
     #[test]
+    fn section_counts_are_bounded() {
+        let section: DraftingSection = serde_json::from_value(fixture_section_json()).unwrap();
+        let too_many = vec![section; MAX_SECTIONS + 1];
+        assert!(sections("sections", &too_many).is_err());
+    }
+
+    #[test]
     fn drafting_task_schema_file_is_published_and_closed() {
         let schema: Value = serde_json::from_str(include_str!(
             "../../../schemas/forge.suggest-task-drafting-1.schema.json"

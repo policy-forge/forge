@@ -265,6 +265,12 @@ mod tests {
     }
 
     #[test]
+    fn a_record_past_its_byte_bound_is_refused_before_parsing() {
+        let oversized = vec![b' '; usize::try_from(MAX_RUN_RECORD_BYTES).unwrap() + 1];
+        assert!(RunRecord::parse(&oversized).is_err());
+    }
+
+    #[test]
     fn run_schema_file_is_published_and_closed() {
         let schema: Value =
             serde_json::from_str(include_str!("../../schemas/forge.suggest-run-1.schema.json"))

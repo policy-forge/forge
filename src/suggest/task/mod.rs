@@ -109,6 +109,9 @@ pub(in crate::suggest) fn citations(
     name: &str,
     values: &[Citation],
 ) -> Result<(), crate::ForgeError> {
+    if values.is_empty() {
+        return Err(shared::error(format!("{name} must cite at least one supplied unit")));
+    }
     if values.len() > MAX_SUGGESTIONS {
         return Err(shared::error(format!("{name} exceeds {MAX_SUGGESTIONS} entries")));
     }
