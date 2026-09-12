@@ -184,7 +184,7 @@ gates in the corresponding PRD.
 | [063](PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merge `34d9869` | PRD release gates remain |
 | [064](PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | No implementation merge | PRD 063 is implemented; schema, status semantics, and editable source-of-truth decisions remain |
 | [065](PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | No implementation merge | Requires a stable source-report contract and approved provider/auth boundary |
-| [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review |
+| [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review; the retrieval-only Phase 0 tranche (`forge author reuse`) is under review on its branch and does not change this status |
 | [067](PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | No implementation merge | Requires stable project discovery, shared read-only queries, and a completed threat model |
 | [068](PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | No implementation merge | Requires a selected first review workflow and approved identity/quorum boundaries |
 
@@ -299,6 +299,7 @@ unscheduled candidates are:
 | 1.4 | 2026-09-11 | Codex | Recorded the merged PRD-061 Phase 2 (PR #145, merge `3ac6815`), added the Phase 2 acceptance-evidence map and PRD-061 gate register, and noted the S-1 scaffold plus the S-4 disposition; all human/release gates remain pending. |
 | 1.5 | 2026-09-11 | Codex | Recorded owner dispositions satisfying the PRD-061 API/semver, product, compliance, legal, engineering and design-partner-readiness gates, with API migration guidance and the M-1…M-15 evidence map; retired the unmeasured 50% G-5 figure. Measured pilots and release approval remain open and the tranches stay out of release. |
 | 1.6 | 2026-09-11 | Codex | Merged `main` into the PRD-062 workspace branch and reconciled the PRD-061 status/gate text with the PRD-062 implementation rows, so the merged owner dispositions are preserved while the local-workspace work is recorded as in progress on its feature branch. |
+| 1.7 | 2026-09-11 | Codex | Recorded the PRD-066 Phase 0 retrieval-only reuse tranche (`forge author reuse`, verbatim span-exact candidates, no model or network) as under review on its branch; PRD-066 stays Planned and its usefulness, rubric, privacy/legal and release gates stay open. |
 
 ---
 

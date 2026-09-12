@@ -183,6 +183,24 @@ Evidence support is rated `high`, `medium`, `low`, or `unsupported` using determ
 - **Phase 2:** One approved provider adapter, mapping candidates, strict release gate.
 - **Phase 3:** Policy drafting, local model, and UI review after task-specific evaluation.
 
+### Phase 0 carve-out: retrieval-first reuse
+
+The first Phase 0 tranche is deliberately narrow and does not depend on a model,
+a provider decision, a network boundary, or an approved evaluation corpus. It
+returns only **verbatim, byte-exact excerpts** of operator-supplied approved
+documents as ranked candidate pointers for the unresolved sections of a
+PRD-061 authoring plan, through `forge author reuse` and the closed
+`forge.reuse-corpus/1` and `forge.authoring-reuse/1` contracts. No text is
+generated, rewritten, summarised or merged, and nothing writes into a pack,
+project or plan, so no synthesised prose is possible by construction. This
+tranche needs no M-9 amendment; the generation, critique and provider phases
+below still do. See the [MVP reuse plan](../plans/2026-09-11-066-mvp-reuse-plan.md)
+and the [authoring guide](../authoring.md).
+
+Phase 0's human rubric, threat model, privacy/legal review, adjudicated
+evaluation corpus and measured usefulness remain open; implementing the offline
+retrieval harness is technical evidence, not acceptance.
+
 ## Risks and Mitigations :yellow_circle: `@human-review`
 
 | Risk | Impact | Mitigation |
@@ -222,3 +240,4 @@ Evidence support is rated `high`, `medium`, `low`, or `unsupported` using determ
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for citation-grounded, quarantined AI assistance |
+| 0.2 | 2026-09-11 | Codex | Carved out the retrieval-first Phase 0 tranche (`forge author reuse`, verbatim span-exact candidates, no model or network) and recorded that it needs no M-9 amendment |

@@ -202,6 +202,63 @@ budget. They do not inherit the narrower authoring-contract string or manifest
 limits. Each confined read is bounded by the remaining aggregate budget before
 allocation.
 
+## Reuse candidates (PRD-066 Phase 0)
+
+```sh
+forge author reuse --manifest project.json --corpus corpus.json --format text
+forge author reuse --manifest project.json --corpus corpus.json \
+  --format json --output-dir reuse --html
+```
+
+`reuse` ranks **verbatim** blocks of operator-supplied Markdown against the
+sections of the drafting plan that are not `human-draft-present`. It is
+retrieval only: there is no model, no network, no credentials, and no prompt
+assembly, so the report can only point at bytes the operator supplied. It never
+writes into an authoring pack, project, plan, or pinned input.
+
+The corpus (`forge.reuse-corpus/1`, [schema](../schemas/forge.reuse-corpus-1.schema.json))
+names each document by a portable descendant path relative to the corpus
+manifest's directory, an exact SHA-256, an operator `status` (`approved` or
+`draft`), and asserted rights and source labels, with optional topic/control
+hints. Documents are captured through the same confined, bounded path as every
+other authoring input: no symlinks, hard links, aliases, escaping paths, or
+stale pins. `draft` documents are excluded unless `--include-draft` is passed.
+
+The report (`forge.authoring-reuse/1`,
+[schema](../schemas/forge.authoring-reuse-1.schema.json)) carries section
+metadata, every captured input with its role, path and SHA-256, and per candidate
+`source_key`, `source_path`, `source_sha256`, a zero-based half-open `span`,
+a six-decimal score, machine-readable `reasons` (`control-match`, `topic-terms`,
+`question-terms`, `same-family`), and `low_confidence`. Rankings are
+deterministic: `BM25` (`k1 = 1.2`, `b = 0.75`) over lowercased alphanumeric
+tokens plus a `+2.0` exact control-ID boost and a `+0.5` shared scope-title
+token boost, ordered by score, then source path, span start and source hash.
+Scores are quantised to six decimals, so repeated runs and separate directories
+produce byte-identical reports and published trees.
+
+`--max-candidates` defaults to 5 and accepts at most 100; `--min-score` drops
+candidates below a value and defaults to 0, while candidates scoring below
+`1.0` are still emitted and flagged `low_confidence` rather than hidden. Only
+`approved` documents compete by default, at most 100 blocks per document are
+ranked, and at most 100 candidates are kept per section. Output artifacts
+(≤ 50 MiB total, ≤ 2048 files) are published with the same single-generation
+atomic no-replace rename as `plan`/`build`; `--html` adds an inert, escaped
+`reuse.html` view and requires `--output-dir`.
+
+| Code | Meaning |
+|------|---------|
+| 0 | Valid report; every reported section has at least one candidate |
+| 1 | Valid report; some section has no candidate or only low-confidence candidates |
+| 2 | Invalid input, mismatched pin, unsafe path, or output failure |
+
+A candidate is a pointer, not a recommendation: nothing in the report asserts
+that a candidate is correct, current, applicable, or approved. Ranking is a
+lexical heuristic and its score is not a quality claim. Adopting a candidate
+remains a manual act — a human writes the bytes into a clause file the way they
+do today. The retrieval-first tranche is described in the
+[MVP reuse plan](plans/2026-09-11-066-mvp-reuse-plan.md); generation, critique
+and provider phases remain in [PRD-066](PRD/066-prd-ai-assisted-suggestions.md).
+
 ## Phase 2 extensions and remaining scope
 
 Explicit component instances, M-13 impact comparisons, offline HTML, and draft-only

@@ -36,6 +36,14 @@ inventory of all post-v1.1.0 changes.
   offline review UI over the closed OpenAPI 1.1.0 contract, with explicit
   single-file effects. This is a draft technical implementation; security,
   accessibility, independent-review, supply-chain and release gates remain open.
+- PRD-066 Phase 0 draft: `forge author reuse --manifest <FILE> --corpus <FILE>`
+  ranks verbatim, span-exact excerpts of operator-supplied `approved` Markdown
+  against the unresolved sections of a drafting plan. Retrieval only — no model,
+  network, credentials or new dependency — and no write path into a pack,
+  project or plan. New closed contracts are `forge.reuse-corpus/1` (input) and
+  `forge.authoring-reuse/1` (report: text, JSON, and opt-in inert HTML), with a
+  deterministic lexical score, exact spans and source hashes. Usefulness,
+  rubric, threat-model, privacy/legal and release gates remain open.
 
 ### Changed
 
