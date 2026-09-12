@@ -8,8 +8,13 @@
 use std::path::{Path, PathBuf};
 
 use crate::ForgeError;
-use crate::authoring::manifest::{HumanClause, PROJECT_SCHEMA_VERSION, PinnedFile, Review};
+use crate::authoring::manifest::{
+    AnswerPin, AuthorProject, AuthoringPack, HumanClause, PROJECT_SCHEMA_VERSION, PinnedFile,
+    Review,
+};
 use crate::cli::AuthorReportFormat;
+
+use crate::suggest::task::drafting::DraftClause;
 
 use super::bundle::{Suggestion, SuggestionsBundle};
 use super::disposition::{DispositionManifest, DispositionRecord};
@@ -27,6 +32,8 @@ pub const PROMOTION_ARTIFACT: &str = "promotion.json";
 pub const PROPOSED_PATCH_ARTIFACT: &str = "promotion/proposed-project.json";
 /// Directory holding one proposed clause file per promoted suggestion.
 pub const ENTRY_DIRECTORY: &str = "promotion";
+/// Prefix of the staged candidate project used for the destination's own check.
+const CANDIDATE_PREFIX: &str = ".forge-suggest-candidate-";
 
 /// Arguments for one promote run.
 pub struct PromoteArgs<'a> {
@@ -119,8 +126,12 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
                 "the destination is not a valid {PROJECT_SCHEMA_VERSION} document: {cause}"
             ))
         })?;
+    // The destination's own pinned inputs are what the proposal must satisfy, not
+    // the request's memory of them.
+    let root = shared::document_root(args.destination, "--destination")?;
+    let pack = read_pinned_pack(&root, &project)?;
 
-    let (entries, mut artifacts) = propose_entries(&request, &promoted, &mut project)?;
+    let (entries, mut artifacts) = propose_entries(&request, &pack, &promoted, &mut project)?;
 
     let patch_bytes = serde_json::to_vec_pretty(&project)
         .map_err(|cause| shared::error(format!("cannot encode the proposed project: {cause}")))?;
@@ -135,6 +146,9 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
             "the proposed destination document does not pass its own contract: {cause}"
         ))
     })?;
+    // The proposal must survive the destination's own authoring path before it is
+    // published, so the recipient is not handed a patch that cannot be applied.
+    destination_accepts(&root, &patch_bytes, &artifacts)?;
     artifacts.push(crate::authoring::output::OutputArtifact {
         relative_path: PROPOSED_PATCH_ARTIFACT.to_string(),
         bytes: patch_bytes.clone(),
@@ -189,24 +203,57 @@ fn accepted<'a>(
         .collect()
 }
 
-/// The clause text to propose: the reviewer's edit when there is one.
-fn promoted_text(
-    suggestion: &Suggestion,
-    record: &DispositionRecord,
-) -> Result<String, ForgeError> {
-    let clause = suggestion
-        .body
-        .drafting
+/// The clause the reviewer accepted: their edit when there is one.
+///
+/// The edit is authoritative for every field the destination consumes, not just
+/// the prose: an `accept-edited` disposition may move a clause to another topic.
+///
+/// # Errors
+/// Returns an authoring error when the bundle or the edit is not a drafting body.
+fn effective_clause<'a>(
+    suggestion: &'a Suggestion,
+    record: &'a DispositionRecord,
+) -> Result<&'a DraftClause, ForgeError> {
+    let body = record.edited.as_ref().unwrap_or(&suggestion.body);
+    body.drafting
         .as_ref()
-        .ok_or_else(|| shared::error("a policy-drafting bundle must carry draft clauses"))?;
-    if let Some(edited) = &record.edited {
-        let edited = edited
-            .drafting
-            .as_ref()
-            .ok_or_else(|| shared::error("an edited acceptance must edit the draft clause"))?;
-        return Ok(edited.draft_text.clone());
+        .ok_or_else(|| shared::error("a policy-drafting bundle must carry draft clauses"))
+}
+
+/// The destination's own pins for the required answers of one topic.
+///
+/// The destination requires a clause to pin every required answer that exists for
+/// its topic, so the proposal carries those pins with the exact record digests.
+/// FORGE never invents a pin: they come from the destination's own records.
+///
+/// # Errors
+/// Returns an authoring error when the pack declares no such topic.
+fn answer_pins(
+    pack: &AuthoringPack,
+    project: &AuthorProject,
+    topic_key: &str,
+) -> Result<Vec<AnswerPin>, ForgeError> {
+    let topic = pack.topics.iter().find(|topic| topic.key == topic_key).ok_or_else(|| {
+        shared::error(format!("the destination pack declares no topic '{topic_key}'"))
+    })?;
+    let mut pins = Vec::new();
+    for question in &pack.questions {
+        if !question.required || !topic.question_keys.iter().any(|key| key == &question.key) {
+            continue;
+        }
+        for answer in project.answers.iter().filter(|answer| answer.question_key == question.key) {
+            if answer.value.is_none() {
+                continue;
+            }
+            pins.push(AnswerPin {
+                answer_key: answer.key.clone(),
+                expected_sha256: crate::authoring::manifest::answer_sha256(answer)?,
+            });
+        }
     }
-    Ok(clause.draft_text.clone())
+    pins.sort_by(|left, right| left.answer_key.cmp(&right.answer_key));
+    pins.dedup_by(|left, right| left.answer_key == right.answer_key);
+    Ok(pins)
 }
 
 /// A proposed clause file is the clause text and exactly one trailing newline.
@@ -259,25 +306,46 @@ fn assemble_proposal(
     Ok((proposal, json))
 }
 
+/// Read and verify the destination's own pinned pack.
+///
+/// The proposal is validated against the pack the destination pins today, not
+/// against anything the request remembers.
+///
+/// # Errors
+/// Returns an authoring error when the pin is unreadable, its digest does not
+/// match, or it is not a closed pack contract.
+fn read_pinned_pack(root: &Path, project: &AuthorProject) -> Result<AuthoringPack, ForgeError> {
+    let bytes = crate::io::read_bounded(&root.join(&project.authoring_pack.path), MAX_PATCH_BYTES)?;
+    if crate::hashing::sha256_hex(&bytes) != project.authoring_pack.expected_sha256 {
+        return Err(shared::error(format!(
+            "the destination's pinned pack '{}' no longer matches its digest",
+            project.authoring_pack.path.display()
+        )));
+    }
+    crate::authoring::manifest::parse_pack(&bytes).map_err(|cause| {
+        shared::error(format!("the destination's pinned pack is not a valid pack: {cause}"))
+    })
+}
+
 /// Build one proposed clause per promoted suggestion and extend the project.
 fn propose_entries(
     request: &super::request::SuggestRequest,
+    pack: &AuthoringPack,
     promoted: &[(&Suggestion, &DispositionRecord)],
     project: &mut crate::authoring::manifest::AuthorProject,
 ) -> Result<(Vec<PromotionEntry>, Vec<crate::authoring::output::OutputArtifact>), ForgeError> {
     let mut entries = Vec::new();
     let mut artifacts = Vec::new();
     for (suggestion, record) in promoted {
-        let clause =
-            suggestion.body.drafting.as_ref().ok_or_else(|| {
-                shared::error("a policy-drafting bundle must carry draft clauses")
-            })?;
-        let text = promoted_text(suggestion, record)?;
+        // The reviewer's edit is the clause; the quarantined text is only the
+        // fallback when the disposition accepts it unchanged.
+        let clause = effective_clause(suggestion, record)?;
         let gap_ids = section_gaps(request, &clause.policy_key, &clause.topic_key)?;
+        let answer_refs = answer_pins(pack, project, &clause.topic_key)?;
         // Paths derive from the full suggestion identity, so a later promotion
         // cannot reuse a path an earlier, applied proposal already pinned.
         let relative = format!("{ENTRY_DIRECTORY}/entry-{}.md", suggestion.suggestion_id);
-        let bytes = clause_file(&text);
+        let bytes = clause_file(&clause.draft_text);
         let bytes_len = u64::try_from(bytes.len()).map_err(|_| {
             shared::error("a proposed clause file length does not fit the contract")
         })?;
@@ -287,7 +355,7 @@ fn propose_entries(
             policy_key: clause.policy_key.clone(),
             topic_key: clause.topic_key.clone(),
             gap_ids,
-            answer_refs: Vec::new(),
+            answer_refs,
             source: PinnedFile { path: PathBuf::from(&relative), expected_sha256: sha256.clone() },
             review: Review {
                 reviewer_key: record.reviewer_key.clone(),
@@ -348,6 +416,80 @@ fn portable(path: &Path) -> Result<String, ForgeError> {
     path.to_str()
         .map(|text| text.replace('\\', "/"))
         .ok_or_else(|| shared::error("promote --destination must be UTF-8"))
+}
+
+/// Removes every file this check staged, on every exit path.
+struct StageGuard {
+    files: Vec<PathBuf>,
+    directories: Vec<PathBuf>,
+}
+
+impl Drop for StageGuard {
+    fn drop(&mut self) {
+        for file in self.files.iter().rev() {
+            let _ = std::fs::remove_file(file);
+        }
+        for directory in self.directories.iter().rev() {
+            // Only a directory this check created, and only while it is empty.
+            let _ = std::fs::remove_dir(directory);
+        }
+    }
+}
+
+/// Prove the proposal against the destination's own authoring path.
+///
+/// A shape check cannot promise that `forge author plan` accepts a patch: the
+/// real path also resolves pinned inputs, their transitive dependencies, the
+/// pack relationships and the clause grammar. The candidate project and its
+/// clause files are therefore staged **inside the destination's own directory**,
+/// so every relative input resolves exactly as it does for the real run, and the
+/// same entry point the authoring commands use is invoked on the candidate.
+/// Everything this check writes is removed before it returns.
+///
+/// # Errors
+/// Returns an authoring error when staging fails or when the destination's own
+/// validation rejects the proposal.
+fn destination_accepts(
+    root: &Path,
+    patch_bytes: &[u8],
+    clause_files: &[crate::authoring::output::OutputArtifact],
+) -> Result<(), ForgeError> {
+    let mut guard = StageGuard { files: Vec::new(), directories: Vec::new() };
+    let candidate = PathBuf::from(format!("{CANDIDATE_PREFIX}{}.json", std::process::id()));
+    stage_file(&mut guard, root, &candidate, patch_bytes)?;
+    for file in clause_files {
+        stage_file(&mut guard, root, Path::new(&file.relative_path), &file.bytes)?;
+    }
+    crate::authoring::prepare_plan(&root.join(&candidate)).map_err(|cause| {
+        shared::error(format!(
+            "the destination's own authoring path rejects the proposed patch: {cause}"
+        ))
+    })?;
+    Ok(())
+}
+
+/// Write one staged file, recording it and any directory created for cleanup.
+fn stage_file(
+    guard: &mut StageGuard,
+    root: &Path,
+    relative: &Path,
+    bytes: &[u8],
+) -> Result<(), ForgeError> {
+    let target = root.join(relative);
+    if let Some(parent) = target.parent()
+        && parent != root
+        && !parent.exists()
+    {
+        std::fs::create_dir_all(parent).map_err(|cause| {
+            shared::error(format!("cannot stage '{}': {cause}", relative.display()))
+        })?;
+        guard.directories.push(parent.to_path_buf());
+    }
+    std::fs::write(&target, bytes).map_err(|cause| {
+        shared::error(format!("cannot stage '{}': {cause}", relative.display()))
+    })?;
+    guard.files.push(target);
+    Ok(())
 }
 
 /// The text summary for one promotion.
@@ -463,11 +605,17 @@ mod tests {
             edited,
             edited_sha256: None,
         };
-        assert_eq!(promoted_text(&suggestion, &record(None)).unwrap(), "the original text");
+        assert_eq!(
+            effective_clause(&suggestion, &record(None)).unwrap().draft_text,
+            "the original text"
+        );
         let edited = crate::suggest::SuggestionBody {
             mapping: None,
             drafting: Some(drafting_clause("the reviewed text")),
         };
-        assert_eq!(promoted_text(&suggestion, &record(Some(edited))).unwrap(), "the reviewed text");
+        assert_eq!(
+            effective_clause(&suggestion, &record(Some(edited))).unwrap().draft_text,
+            "the reviewed text"
+        );
     }
 }

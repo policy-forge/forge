@@ -234,6 +234,109 @@ fn decisions_for_another_bundle_are_refused() {
 }
 
 #[test]
+fn required_topic_answers_are_pinned_and_the_destination_accepts_the_patch() {
+    let (_temp, root) = project();
+    let answer_key = common::suggest_add_answer(&root);
+    reviewed(&root, &[(0, "accept-as-is"), (1, "reject")]);
+
+    let output = promote(&root, "project.json", &["--format", "json"]);
+    assert_exit(&output, 0);
+    let proposal: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let patch = std::fs::read(root.join("promotion-1/promotion/proposed-project.json")).unwrap();
+    let proposed = forge::authoring::manifest::parse_project(&patch).unwrap();
+    let clause = proposed.human_clauses.last().unwrap();
+    assert_eq!(clause.answer_refs.len(), 1);
+    assert_eq!(clause.answer_refs[0].answer_key, answer_key);
+    assert_eq!(
+        clause.answer_refs[0].expected_sha256,
+        common::suggest_answer_pin(&root, &answer_key)
+    );
+    assert_eq!(proposal["entries"].as_array().unwrap().len(), 1);
+
+    // The check leaves nothing behind in the destination.
+    let mut names: Vec<String> = std::fs::read_dir(&root)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert!(names.iter().all(|name| !name.starts_with(".forge-suggest-candidate-")), "{names:?}");
+    assert!(!root.join("promotion").exists(), "staged clause files must be removed");
+}
+
+#[test]
+fn a_pack_change_that_invalidates_the_gap_is_refused_by_the_destination() {
+    let (_temp, root) = project();
+    reviewed(&root, &[(0, "accept-as-is"), (1, "reject")]);
+    // The destination's pinned pack moves the access assignment after prepare.
+    common::suggest_repoint_pack_assignment(&root);
+    let output = promote(&root, "project.json", &[]);
+    assert_exit(&output, 2);
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(stderr.contains("destination's own authoring path rejects"), "{stderr}");
+    assert!(!root.join("promotion-1").exists());
+    let mut names: Vec<String> = std::fs::read_dir(&root)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert!(names.iter().all(|name| !name.starts_with(".forge-suggest-candidate-")));
+    assert!(!root.join("promotion").exists());
+}
+
+#[test]
+fn an_edited_acceptance_uses_the_edited_clause_for_its_coordinates() {
+    let (_temp, root) = project();
+    let bundle = reviewed(&root, &[(0, "accept-as-is"), (1, "reject")]);
+    let mut edited = record(&bundle, 0, "accept-edited");
+    let body = json!({
+        "drafting": {
+            "policy_key": "access-policy",
+            "topic_key": "access-topic",
+            "draft_text": "Reviewed text for the access topic.",
+            "citations": [{"unit_id": "unit-0002", "quote": BODY}],
+            "assumptions": [],
+            "unresolved_questions": []
+        }
+    });
+    edited["edited_sha256"] = json!(common::suggest_content_sha256(&body));
+    edited["edited"] = body;
+    assert_exit(&common::suggest_review(&root, &[edited], "review-2"), 1);
+
+    let output = run(
+        &root,
+        &[
+            "suggest",
+            "promote",
+            "--bundle",
+            "prepared/bundle-1/suggestions.json",
+            "--dispositions",
+            "prepared/bundle-1/review-2/dispositions.json",
+            "--request",
+            "prepared/request.json",
+            "--destination",
+            "project.json",
+            "--output-dir",
+            "promotion-2",
+            "--format",
+            "json",
+        ],
+    );
+    assert_exit(&output, 0);
+    let patch = std::fs::read(root.join("promotion-2/promotion/proposed-project.json")).unwrap();
+    let proposed = forge::authoring::manifest::parse_project(&patch).unwrap();
+    let clause = proposed.human_clauses.last().unwrap();
+    assert_eq!(clause.policy_key, "access-policy");
+    assert_eq!(clause.topic_key, "access-topic");
+    let request: Value =
+        serde_json::from_slice(&std::fs::read(root.join("prepared/request.json")).unwrap())
+            .unwrap();
+    assert_eq!(
+        clause.gap_ids,
+        request["task"]["drafting_sections"][0]["gap_ids"].as_array().unwrap().clone()
+    );
+}
+
+#[test]
 fn a_published_promotion_generation_is_never_replaced() {
     let (_temp, root) = project();
     reviewed(&root, &[(0, "accept-as-is"), (1, "reject")]);

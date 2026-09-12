@@ -399,6 +399,68 @@ pub fn suggest_content_sha256(body: &Value) -> String {
     sha256_hex(&serde_json::to_vec(&parsed).unwrap())
 }
 
+/// Add one current approved answer to the fixture project; returns its key.
+///
+/// The digest fields are the ones the authoring loader computes, so the plan
+/// evaluates the answer as available rather than stale.
+pub fn suggest_add_answer(root: &Path) -> String {
+    let pack_bytes = std::fs::read(root.join("pack.json")).unwrap();
+    let pack = forge::authoring::manifest::parse_pack(&pack_bytes).unwrap();
+    let question = pack.questions.first().expect("the fixture pack declares a question");
+    let question_sha256 = forge::authoring::manifest::question_sha256(question).unwrap();
+    let mut project: Value =
+        serde_json::from_slice(&std::fs::read(root.join("project.json")).unwrap()).unwrap();
+    project["answers"] = json!([{
+        "key": "provided-answer",
+        "question_key": question.key,
+        "question_sha256": question_sha256,
+        "authoring_pack_sha256": sha256_hex(&pack_bytes),
+        "owner": "context-owner",
+        "source_label": "Synthetic interview",
+        "sensitivity": "internal",
+        "review": {
+            "reviewer_key": "human",
+            "reviewed_at": "2026-09-01T00:00:00Z",
+            "rationale": "Explicit synthetic answer decision."
+        },
+        "state": "provided",
+        "value": "The fictional security team."
+    }]);
+    write_json(&root.join("project.json"), &project);
+    "provided-answer".to_string()
+}
+
+/// The destination's pin digest for one answer of the fixture project.
+pub fn suggest_answer_pin(root: &Path, answer_key: &str) -> String {
+    let project = forge::authoring::manifest::parse_project(
+        &std::fs::read(root.join("project.json")).unwrap(),
+    )
+    .unwrap();
+    let answer = project
+        .answers
+        .iter()
+        .find(|answer| answer.key == answer_key)
+        .expect("the fixture project declares the answer");
+    forge::authoring::manifest::answer_sha256(answer).unwrap()
+}
+
+/// Move the destination pack's access assignment to another control.
+///
+/// Mirrors the review reproduction: the pack the destination pins changes after
+/// the suggestion was prepared, so the request's gap no longer belongs to the
+/// clause's topic.
+pub fn suggest_repoint_pack_assignment(root: &Path) {
+    let mut pack: Value =
+        serde_json::from_slice(&std::fs::read(root.join("pack.json")).unwrap()).unwrap();
+    pack["control_assignments"][0]["control_id"] = json!("c-4");
+    let pack_bytes = serde_json::to_vec_pretty(&pack).unwrap();
+    std::fs::write(root.join("pack.json"), &pack_bytes).unwrap();
+    let mut project: Value =
+        serde_json::from_slice(&std::fs::read(root.join("project.json")).unwrap()).unwrap();
+    project["authoring_pack"]["expected_sha256"] = json!(sha256_hex(&pack_bytes));
+    write_json(&root.join("project.json"), &project);
+}
+
 /// One disposition record citing the quarantined content of one suggestion.
 pub fn suggest_disposition(bundle: &Value, index: usize, status: &str) -> Value {
     json!({
