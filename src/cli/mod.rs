@@ -1068,6 +1068,21 @@ pub enum SuggestCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+    /// Bind reviewer decisions to a quarantine bundle and publish the record
+    Review {
+        /// The forge.suggestions/1 bundle the decisions are about
+        #[arg(long)]
+        bundle: PathBuf,
+        /// The operator's closed forge.suggest-dispositions/1 document
+        #[arg(long)]
+        decisions: PathBuf,
+        /// New directory beneath the bundle's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
     /// Validate a recorded response into the forge.suggestions/1 quarantine bundle
     Validate {
         /// The prepared forge.suggest-request/1 document
@@ -1985,6 +2000,14 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     recorded_response: recorded_response.as_deref(),
                     format: *format,
                 })?,
+                SuggestCommand::Review { bundle, decisions, output_dir, format } => {
+                    crate::suggest::review::execute(&crate::suggest::review::ReviewArgs {
+                        bundle,
+                        decisions,
+                        output_dir,
+                        format: *format,
+                    })?
+                }
                 SuggestCommand::Validate { request, run, output_dir, retain_raw, format } => {
                     crate::suggest::validate::execute(&crate::suggest::validate::ValidateArgs {
                         request,

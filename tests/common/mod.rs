@@ -272,6 +272,124 @@ pub fn reuse(root: &Path, extra: &[&str]) -> Output {
     run(root, &args)
 }
 
+// ---------------------------------------------------------------------------
+// Shared local-suggestion pipeline fixtures
+// ---------------------------------------------------------------------------
+
+/// The synthetic document every suggestion fixture selects a span from.
+pub const SUGGEST_BODY: &str = "# Access drafting\n\nc-1 Approve access requests quarterly.\n";
+
+/// Write a local adapter stand-in and return its path as an argument string.
+pub fn suggest_adapter(root: &Path) -> String {
+    let path = root.join("local-adapter");
+    std::fs::write(&path, b"#!/bin/sh\ncat\n").unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    path.to_string_lossy().into_owned()
+}
+
+/// Prepare and consent one drafting request; returns the request document path.
+pub fn suggest_prepare(root: &Path) -> PathBuf {
+    let adapter = suggest_adapter(root);
+    corpus(root, SUGGEST_BODY);
+    let output = run(
+        root,
+        &[
+            "suggest",
+            "prepare",
+            "--manifest",
+            "project.json",
+            "--output-dir",
+            "prepared",
+            "--adapter",
+            adapter.as_str(),
+            "--model-id",
+            "synthetic-model",
+            "--corpus",
+            "corpus.json",
+            "--include-document",
+            "prior-access",
+            "--consent",
+            "--operator-key",
+            "human",
+        ],
+    );
+    assert_exit(&output, 0);
+    root.join("prepared/request.json")
+}
+
+/// Record one adapter response as a run beneath the request's directory.
+pub fn suggest_run(root: &Path, run_dir: &str, response: &[u8]) -> Output {
+    std::fs::write(root.join("recorded.json"), response).unwrap();
+    let output = run(
+        root,
+        &[
+            "suggest",
+            "run",
+            "--request",
+            "prepared/request.json",
+            "--consent",
+            "prepared/consent.json",
+            "--output-dir",
+            run_dir,
+            "--recorded-response",
+            "recorded.json",
+        ],
+    );
+    assert_exit(&output, 0);
+    output
+}
+
+/// Validate one recorded run. `run_record` is relative to the project root.
+pub fn suggest_validate(root: &Path, run_record: &str, bundle_dir: &str, extra: &[&str]) -> Output {
+    let mut args = vec![
+        "suggest",
+        "validate",
+        "--request",
+        "prepared/request.json",
+        "--run",
+        run_record,
+        "--output-dir",
+        bundle_dir,
+    ];
+    args.extend_from_slice(extra);
+    run(root, &args)
+}
+
+/// One draft clause citing a single unit.
+pub fn suggest_clause(unit_id: &str, quote: Option<&str>) -> Value {
+    let citations = match quote {
+        Some(quote) => json!([{"unit_id": unit_id, "quote": quote}]),
+        None => json!([{"unit_id": unit_id}]),
+    };
+    json!({
+        "policy_key": "access-policy",
+        "topic_key": "access-topic",
+        "draft_text": "Access requests are approved quarterly.",
+        "citations": citations,
+        "assumptions": [],
+        "unresolved_questions": ["Who approves?"]
+    })
+}
+
+/// A closed `forge.suggest-response/1` document for one task.
+pub fn suggest_response_json(items: &[Value], kind: &str, version: &str) -> Vec<u8> {
+    let task = if kind == "policy-drafting" {
+        json!({"kind": kind, "schema_version": version, "draft_clauses": items})
+    } else {
+        json!({"kind": kind, "schema_version": version, "mapping_candidates": items})
+    };
+    let mut bytes = serde_json::to_vec_pretty(
+        &json!({"schema_version": "forge.suggest-response/1", "task": task}),
+    )
+    .unwrap();
+    bytes.push(b'\n');
+    bytes
+}
+
 #[cfg(test)]
 mod normalization_tests {
     use super::*;

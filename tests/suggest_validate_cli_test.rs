@@ -8,35 +8,13 @@ use serde_json::{Value, json};
 
 mod common;
 use common::sha256_hex as hash;
-use common::{assert_exit, corpus, project, run};
 
-const BODY: &str = "# Access drafting\n\nc-1 Approve access requests quarterly.\n";
+use common::{
+    SUGGEST_BODY as BODY, assert_exit, project, suggest_clause as clause,
+    suggest_response_json as response,
+};
 
-fn expect(output: &Output, code: i32, label: &str) {
-    assert_eq!(
-        output.status.code(),
-        Some(code),
-        "{label}\nstdout: {}\nstderr: {}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-}
-
-fn clause(unit_id: &str, quote: Option<&str>) -> Value {
-    let mut citations = vec![json!({"unit_id": unit_id})];
-    if let Some(quote) = quote {
-        citations = vec![json!({"unit_id": unit_id, "quote": quote})];
-    }
-    json!({
-        "policy_key": "access-policy",
-        "topic_key": "access-topic",
-        "draft_text": "Access requests are approved quarterly.",
-        "citations": citations,
-        "assumptions": [],
-        "unresolved_questions": ["Who approves?"]
-    })
-}
-
+/// One mapping candidate citing a single unit.
 fn candidate() -> Value {
     json!({
         "policy_key": "access-policy",
@@ -50,85 +28,17 @@ fn candidate() -> Value {
     })
 }
 
-fn response(clauses: &[Value], kind: &str, version: &str) -> Vec<u8> {
-    let task = if kind == "policy-drafting" {
-        json!({"kind": kind, "schema_version": version, "draft_clauses": clauses})
-    } else {
-        json!({"kind": kind, "schema_version": version, "mapping_candidates": clauses})
-    };
-    let mut bytes = serde_json::to_vec_pretty(
-        &json!({"schema_version": "forge.suggest-response/1", "task": task}),
-    )
-    .unwrap();
-    bytes.push(b'\n');
-    bytes
-}
-
 /// Prepare, consent and run one recorded response, returning the request path.
 fn pipeline(root: &Path) -> PathBuf {
-    let adapter = root.join("local-adapter");
-    std::fs::write(&adapter, b"#!/bin/sh\ncat\n").unwrap();
-    corpus(root, BODY);
-    let prepared = run(
-        root,
-        &[
-            "suggest",
-            "prepare",
-            "--manifest",
-            "project.json",
-            "--output-dir",
-            "prepared",
-            "--adapter",
-            adapter.to_string_lossy().as_ref(),
-            "--model-id",
-            "synthetic-model",
-            "--corpus",
-            "corpus.json",
-            "--include-document",
-            "prior-access",
-            "--consent",
-            "--operator-key",
-            "human",
-        ],
-    );
-    expect(&prepared, 0, "prepare");
-    root.join("prepared/request.json")
+    common::suggest_prepare(root)
 }
 
 fn record(root: &Path, run_dir: &str, body: &[u8]) -> Output {
-    std::fs::write(root.join("recorded.json"), body).unwrap();
-    let output = run(
-        root,
-        &[
-            "suggest",
-            "run",
-            "--request",
-            "prepared/request.json",
-            "--consent",
-            "prepared/consent.json",
-            "--output-dir",
-            run_dir,
-            "--recorded-response",
-            "recorded.json",
-        ],
-    );
-    expect(&output, 0, "run");
-    output
+    common::suggest_run(root, run_dir, body)
 }
 
 fn validate(root: &Path, run_record: &str, bundle_dir: &str, extra: &[&str]) -> Output {
-    let mut args = vec![
-        "suggest",
-        "validate",
-        "--request",
-        "prepared/request.json",
-        "--run",
-        run_record,
-        "--output-dir",
-        bundle_dir,
-    ];
-    args.extend_from_slice(extra);
-    run(root, &args)
+    common::suggest_validate(root, run_record, bundle_dir, extra)
 }
 
 #[test]

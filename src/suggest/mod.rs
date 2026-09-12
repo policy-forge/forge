@@ -19,6 +19,7 @@ pub mod promotion;
 pub mod redact;
 pub mod request;
 pub mod response;
+pub mod review;
 pub mod run;
 pub mod run_record;
 mod shared;

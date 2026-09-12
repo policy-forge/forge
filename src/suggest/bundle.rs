@@ -98,6 +98,8 @@ impl EvidenceSupport {
 pub struct Suggestion {
     /// Deterministic identifier derived from the suggestion content.
     pub suggestion_id: String,
+    /// Digest of the canonical suggestion content a reviewer decides about.
+    pub content_sha256: String,
     /// Rating computed by the deterministic citation check.
     pub evidence_support: EvidenceSupport,
     /// The validated task payload.
@@ -227,6 +229,12 @@ impl SuggestionsBundle {
                 return Err(shared::error("bundle.suggestions ids must be unique"));
             }
             suggestion.body.validate(&format!("{name}.body"), self.task.kind)?;
+            shared::sha256(&format!("{name}.content_sha256"), &suggestion.content_sha256)?;
+            if suggestion.content_sha256 != content_sha256(&suggestion.body)? {
+                return Err(shared::error(format!(
+                    "{name}.content_sha256 must equal the canonical suggestion content"
+                )));
+            }
         }
         if self.counts != self.recomputed_counts() {
             return Err(shared::error("bundle.counts must equal the suggestions actually present"));
@@ -260,6 +268,19 @@ impl SuggestionsBundle {
     }
 }
 
+/// Digest of the canonical suggestion content a reviewer decides about.
+///
+/// Both the bundle and the disposition manifest use this one definition, so a
+/// disposition always binds the exact content that was quarantined.
+///
+/// # Errors
+/// Returns an authoring error when the suggestion cannot be encoded.
+pub(in crate::suggest) fn content_sha256(body: &SuggestionBody) -> Result<String, ForgeError> {
+    let canonical = serde_json::to_vec(body)
+        .map_err(|cause| shared::error(format!("cannot encode a suggestion: {cause}")))?;
+    Ok(crate::hashing::sha256_hex(&canonical))
+}
+
 impl Provenance {
     fn validate(&self) -> Result<(), ForgeError> {
         shared::sha256("bundle.provenance.adapter_sha256", &self.adapter_sha256)?;
@@ -290,6 +311,15 @@ impl Provenance {
 /// A minimal valid bundle, shared by tests in this module family.
 #[cfg(test)]
 pub(in crate::suggest) fn fixture_bundle_json() -> serde_json::Value {
+    let mut bundle = fixture_bundle_literal();
+    let body: SuggestionBody =
+        serde_json::from_value(bundle["suggestions"][0]["body"].clone()).unwrap();
+    bundle["suggestions"][0]["content_sha256"] = serde_json::json!(content_sha256(&body).unwrap());
+    bundle
+}
+
+#[cfg(test)]
+fn fixture_bundle_literal() -> serde_json::Value {
     serde_json::json!({
         "schema_version": SCHEMA_VERSION,
         "bundle_id": "1b2c3d4e-5f60-4718-9a2b-3c4d5e6f7081",
@@ -315,6 +345,7 @@ pub(in crate::suggest) fn fixture_bundle_json() -> serde_json::Value {
         },
         "suggestions": [{
             "suggestion_id": "3f2b1a4c-5d6e-4f70-8a91-b2c3d4e5f607",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "evidence_support": "high",
             "body": {
                 "drafting": {

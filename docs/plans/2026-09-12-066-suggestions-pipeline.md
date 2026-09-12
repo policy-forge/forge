@@ -267,6 +267,16 @@ House rules, matching the existing authoring and reuse tranches:
   and a non-empty rationale. `accept-edited` requires the edited content and its
   hash; the original content and hash are always preserved. Expiry is computed
   only against a supplied `--as-of`; FORGE never consults the system clock.
+- **The operator writes the record.** `review` takes a closed
+  `forge.suggest-dispositions/1` document and binds it to the bundle: it must
+  cite this bundle's identifier, digest and task; every record must name a
+  suggestion in the bundle; and every record must cite that suggestion's
+  `content_sha256` (the digest of the canonical quarantined content, added to
+  the bundle for exactly this purpose). FORGE adds no reviewer, time or
+  rationale of its own and publishes the operator's document unchanged.
+- **Undecided is a state, not a gap.** A suggestion with no record stays
+  pending, and `review` exits 1 while any suggestion is undecided, so a partial
+  review is visible rather than silently complete.
 - Rendered reports never use approved, compliant, certified, effective or
   validated language about a suggestion; a disposition is a review record, not
   an approval of the underlying control relationship or policy text.

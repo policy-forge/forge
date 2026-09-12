@@ -271,6 +271,7 @@ fn checked_suggestion(
     let canonical = serde_json::to_vec(body)
         .map_err(|cause| shared::error(format!("cannot encode a suggestion: {cause}")))?;
     Ok(Suggestion {
+        content_sha256: super::bundle::content_sha256(body)?,
         suggestion_id: identifier(&[
             "forge.suggestions/1 suggestion",
             &request.project_key,

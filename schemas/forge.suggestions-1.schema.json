@@ -343,11 +343,15 @@
     "suggestion": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["suggestion_id", "evidence_support", "body"],
+      "required": ["suggestion_id", "content_sha256", "evidence_support", "body"],
       "properties": {
         "suggestion_id": {
           "$ref": "#/$defs/uuid",
           "$comment": "Assigned deterministically by FORGE, never supplied by the model."
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256",
+          "$comment": "Digest of the canonical suggestion content; a disposition must cite exactly this value, and runtime recomputes it."
         },
         "evidence_support": {
           "enum": ["high", "medium", "low"],
