@@ -24,6 +24,21 @@ pub(crate) fn render_impact_bounded(
     render_typed_document("Authoring impact", report, super::impact::REPORT_SCHEMA_VERSION, limit)
 }
 
+/// Render closed, value-redacted JSON bytes as an inert escaped HTML view.
+///
+/// The caller supplies freshly serialized bytes for one closed contract; the
+/// same fail-closed guards as the typed adapters apply, so raw answer or
+/// parameter values or an unsupported contract are rejected rather than shown.
+pub(crate) fn render_closed_bounded(
+    title: &str,
+    bytes: &[u8],
+    schema: &str,
+    limit: usize,
+) -> Result<Vec<u8>, ForgeError> {
+    require_schema(bytes, &[schema], limit)?;
+    render_document(title, bytes, limit)
+}
+
 fn render_typed_document(
     title: &str,
     value: &impl serde::Serialize,

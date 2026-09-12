@@ -55,6 +55,24 @@ Once partners exercise real workflows, record:
 
 Until those measurements exist, no numeric time-savings claim is made.
 
+## GATE-REUSE — PRD-066 Phase 0 reuse tranche
+
+The retrieval-first reuse tranche (`forge author reuse`) is a Phase 0 technical
+implementation of [PRD-066](PRD/066-prd-ai-assisted-suggestions.md). It returns
+only verbatim, span-exact excerpts of operator-supplied approved documents and
+therefore needs no PRD-061 M-9 amendment. Like every other tranche here it
+creates no approval, lifecycle or compliance evidence, and its scores are
+lexical ranks, not quality claims. See the
+[MVP reuse plan](plans/2026-09-11-066-mvp-reuse-plan.md) and the
+[authoring guide](authoring.md#reuse-candidates-prd-066-phase-0).
+
+| Gate | Owner | Status |
+|---|---|---|
+| GATE-REUSE-CONTRACT | Engineering owner | **Satisfied** — closed bounded `forge.reuse-corpus/1` and `forge.authoring-reuse/1` contracts, with runtime validation authoritative over JSON Schema |
+| GATE-REUSE-SAFETY | Engineering owner | **Satisfied** — never-synthesise, span-exactness, legacy-equivalence and exit-code matrix tests; no write path into a pack, project or plan |
+| GATE-REUSE-USEFULNESS | Product owner | **Open** — the three GATE-PARTNERS reviewers must run the tester programme; no usefulness or time-savings claim is made |
+| GATE-REUSE-RELEASE | Release maintainer | **Open** — the tranche is held out of any release alongside the rest of the authoring work |
+
 ## Definition of Ready status
 
 | Definition-of-Ready item | Status |

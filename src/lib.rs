@@ -78,6 +78,7 @@ pub mod parse;
 pub mod pipeline;
 /// Deterministic composition of local, hash-pinned Markdown policy components.
 pub mod policy;
+pub mod reuse;
 /// OSCAL artifact round-trip validation.
 pub mod round_trip;
 /// Input sanitization utilities (control-character stripping, etc.).

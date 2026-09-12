@@ -934,6 +934,33 @@ pub enum AuthorCommand {
         #[arg(long)]
         html: bool,
     },
+    /// Rank verbatim reuse candidates for unresolved sections from a pinned corpus
+    Reuse {
+        /// Versioned forge.author-project/1 JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Closed forge.reuse-corpus/1 manifest naming operator-supplied documents
+        #[arg(long)]
+        corpus: PathBuf,
+        /// Print deterministic text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+        /// Optional new directory beneath the project root for report artifacts
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+        /// Maximum candidates kept per section
+        #[arg(long, default_value_t = crate::reuse::rank::MAX_CANDIDATES)]
+        max_candidates: usize,
+        /// Drop candidates scoring below this value
+        #[arg(long, default_value_t = 0.0)]
+        min_score: f64,
+        /// Let operator-declared draft documents compete
+        #[arg(long)]
+        include_draft: bool,
+        /// Include an inert escaped HTML view in the output generation
+        #[arg(long, requires = "output_dir")]
+        html: bool,
+    },
 }
 
 /// Authoring plan report formats.
@@ -1763,6 +1790,25 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 AuthorCommand::Handoff { manifest, output_dir, html } => {
                     crate::authoring::execute_handoff(manifest, output_dir, *html)?
                 }
+                AuthorCommand::Reuse {
+                    manifest,
+                    corpus,
+                    format,
+                    output_dir,
+                    max_candidates,
+                    min_score,
+                    include_draft,
+                    html,
+                } => crate::reuse::execute(
+                    manifest,
+                    corpus,
+                    format,
+                    output_dir.as_deref(),
+                    *max_candidates,
+                    *min_score,
+                    *include_draft,
+                    *html,
+                )?,
             };
             if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }
         }
