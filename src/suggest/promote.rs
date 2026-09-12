@@ -123,7 +123,7 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
         bytes: patch_bytes.clone(),
     });
 
-    let proposal_json = assemble_proposal(
+    let (proposal, proposal_json) = assemble_proposal(
         &ProposalContext {
             bundle: &bundle,
             bundle_bytes: &bundle_bytes,
@@ -155,7 +155,7 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
     let stdout = match args.format {
         AuthorReportFormat::Json => String::from_utf8(proposal_json)
             .map_err(|cause| shared::error(format!("promotion JSON encoding: {cause}")))?,
-        AuthorReportFormat::Text => render_summary(&proposal_json, args),
+        AuthorReportFormat::Text => render_summary(&proposal, args),
     };
     crate::cli::output::write_output(&stdout, None)
         .map_err(|cause| shared::error(format!("cannot write the promote summary: {cause}")))?;
@@ -225,7 +225,7 @@ struct ProposalContext<'a> {
 fn assemble_proposal(
     context: &ProposalContext<'_>,
     entries: Vec<PromotionEntry>,
-) -> Result<Vec<u8>, ForgeError> {
+) -> Result<(PromotionProposal, Vec<u8>), ForgeError> {
     let proposal = PromotionProposal {
         schema_version: super::promotion::SCHEMA_VERSION.to_string(),
         bundle_id: context.bundle.bundle_id.clone(),
@@ -249,7 +249,7 @@ fn assemble_proposal(
     let json = serde_json::to_vec_pretty(&proposal)
         .map_err(|cause| shared::error(format!("cannot encode the promotion proposal: {cause}")))?;
     PromotionProposal::parse(&json)?;
-    Ok(json)
+    Ok((proposal, json))
 }
 
 /// Build one proposed clause per promoted suggestion and extend the project.
@@ -339,22 +339,8 @@ fn portable(path: &Path) -> Result<String, ForgeError> {
 }
 
 /// The text summary for one promotion.
-fn render_summary(proposal_json: &[u8], args: &PromoteArgs<'_>) -> String {
+fn render_summary(proposal: &PromotionProposal, args: &PromoteArgs<'_>) -> String {
     use std::fmt::Write as _;
-    let proposal = PromotionProposal::parse(proposal_json).unwrap_or(PromotionProposal {
-        schema_version: String::new(),
-        bundle_id: String::new(),
-        bundle_sha256: String::new(),
-        dispositions_sha256: String::new(),
-        destination: Destination {
-            kind: DestinationKind::AuthoringProject,
-            path: String::new(),
-            expected_sha256: String::new(),
-        },
-        patch: PatchArtifact { artifact: String::new(), sha256: String::new(), bytes: 0 },
-        status: PromotionStatus::ProposedUnapproved,
-        entries: Vec::new(),
-    });
     let mut summary = String::new();
     let _ = writeln!(summary, "proposed {} clause(s)", proposal.entries.len());
     let _ = writeln!(
