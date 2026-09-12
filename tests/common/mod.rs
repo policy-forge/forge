@@ -461,6 +461,57 @@ pub fn suggest_repoint_pack_assignment(root: &Path) {
     write_json(&root.join("project.json"), &project);
 }
 
+/// Assert every date-like string in `value` carries one of the supplied dates.
+///
+/// A fixed "today" sentinel stops proving anything once that date passes; this
+/// checks the actual property, that no timestamp came from anywhere but the
+/// supplied fixture inputs.
+pub fn assert_only_supplied_dates(value: &Value, supplied: &[&str]) {
+    match value {
+        Value::String(text) => {
+            for date in date_like_strings(text) {
+                assert!(
+                    supplied.iter().any(|allowed| date == *allowed),
+                    "unexpected date '{date}' in '{text}'"
+                );
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                assert_only_supplied_dates(item, supplied);
+            }
+        }
+        Value::Object(entries) => {
+            for item in entries.values() {
+                assert_only_supplied_dates(item, supplied);
+            }
+        }
+        Value::Null | Value::Bool(_) | Value::Number(_) => {}
+    }
+}
+
+/// Every `YYYY-MM-DD` run inside one string.
+fn date_like_strings(text: &str) -> Vec<String> {
+    let bytes = text.as_bytes();
+    let mut dates = Vec::new();
+    let mut index = 0;
+    while index + 10 <= bytes.len() {
+        let window = &bytes[index..index + 10];
+        let shaped = window[..4].iter().all(u8::is_ascii_digit)
+            && window[4] == b'-'
+            && window[5..7].iter().all(u8::is_ascii_digit)
+            && window[7] == b'-'
+            && window[8..].iter().all(u8::is_ascii_digit);
+        if shaped {
+            dates.push(text[index..index + 10].to_string());
+            index += 10;
+        } else {
+            index += 1;
+        }
+    }
+    dates
+}
+
 /// One disposition record citing the quarantined content of one suggestion.
 pub fn suggest_disposition(bundle: &Value, index: usize, status: &str) -> Value {
     json!({

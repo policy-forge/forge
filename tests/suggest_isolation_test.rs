@@ -19,7 +19,7 @@ use common::{
 const TASK_VERSION: &str = "forge.suggest-task-drafting/1";
 
 /// The files the operator supplied; none of them may change.
-const SUPPLIED: [&str; 8] = [
+const SUPPLIED: [&str; 9] = [
     "framework.json",
     "applicability.json",
     "gap-report.json",
@@ -28,6 +28,7 @@ const SUPPLIED: [&str; 8] = [
     "clause.md",
     "corpus.json",
     "prior/access.md",
+    "local-adapter",
 ];
 
 fn digest(path: &Path) -> String {
@@ -196,10 +197,9 @@ fn the_bundle_carries_what_the_run_measured_and_the_run_carries_the_digests() {
         json!(hash(&std::fs::read(root.join("project.json")).unwrap()))
     );
 
-    // No clock: the only timestamps are the supplied project ones.
+    // No clock: every timestamp in the bundle is a supplied project one.
     assert_eq!(bundle["as_of"], json!("2026-09-08T00:00:00Z"));
-    let today = "2026-09-12";
-    assert!(!bundle.to_string().contains(today), "the bundle must not read a clock");
+    common::assert_only_supplied_dates(&bundle, &["2026-09-08"]);
 }
 
 #[test]

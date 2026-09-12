@@ -336,6 +336,7 @@ fn the_payload_carries_no_absolute_path_and_the_request_carries_no_system_clock(
     let root_text = root.to_string_lossy().into_owned();
     assert!(!payload.contains(&root_text), "the payload must not name a local path");
     assert_eq!(request["as_of"], json!("2026-09-08T00:00:00Z"));
-    let today = "2026-09-12";
-    assert!(!request.to_string().contains(today), "no field may read the system clock: {request}");
+    // Every date in the request is one of the supplied project's own; a fixed
+    // "today" sentinel stops proving this once that date has passed.
+    common::assert_only_supplied_dates(&request, &["2026-09-08"]);
 }

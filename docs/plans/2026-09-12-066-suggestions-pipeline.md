@@ -359,6 +359,13 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 - Every output byte is written through `write_output` and the bounded encoder
   with a single trailing newline.
 
+- **Nothing accepted is an outcome, not prose.** When no disposition accepts a
+  suggestion, `promote` exits 1 and prints its text sentence for `--format text`;
+  for `--format json` it prints exactly one JSON object,
+  `{"schema_version": "forge.suggest-promotion-outcome/1", "outcome":
+  "nothing-to-promote", "accepted": 0}`, so a caller parsing stdout is never
+  handed prose. No other command emits a non-contract JSON document.
+
 ## Verification matrix
 
 | Requirement | Executable evidence |
@@ -520,44 +527,43 @@ Commit `934ef0a` — output and adapter boundaries:
   and is **not** sandboxed, instead of implying an egress guarantee FORGE cannot
   enforce for it
 
-### Next: promotion validity (designed, not implemented)
+### Fixed after that
 
-The owner's two P1/P2 promotion findings need the destination's *own* authoring
-path, not a shape check:
+Commit `126359d` — promotion validity, in full:
 
-1. Read the destination's pinned pack (`project.authoring_pack`) with its digest
-   verified, and build the proposed clause from the **effective** clause (the
-   reviewer's edit when the disposition is `accept-edited`), for text, policy,
-   topic and gap ids alike.
-2. Emit `answer_refs` pins for every required question of the clause's topic that
-   has an answer record in the destination, hashing each record with
-   `authoring::manifest::answer_sha256` (`forge.authoring-answer/1`).
-3. Stage a candidate snapshot — the destination project, its three pinned inputs
-   copied at their relative paths, the candidate project and the proposed clause
-   files — in a transient directory beneath the destination, and run the ordinary
-   entry point `crate::authoring::prepare_plan` on it. That single call performs
-   the real path: pin verification, `validate_relationships` (answer pins, gap
-   assignment, dangling references) and clause grammar. Refuse, publishing
-   nothing, when it rejects the proposal. Remove the staging directory on every
-   path, including failure.
-4. Clause paths already carry the full suggestion identity; the staged check is
-   what proves they do not alias a destination input.
+- the destination's pinned pack is read and digest-verified, and the proposal
+  carries `answer_refs` for every required answer the destination has for the
+  clause's topic, hashed with `answer_sha256`, so applying the patch does not
+  fail the destination's "must pin every required topic answer" rule
+- the reviewer's edit is authoritative for the whole clause, not just its prose:
+  coordinates and gap ids come from the effective clause
+- the candidate project and its clause files are staged inside the destination's
+  own directory and run through `authoring::prepare_plan`, the entry point the
+  authoring commands use, so pins, transitive framework inputs, pack
+  relationships, alias rules and clause grammar are all enforced; a proposal the
+  destination rejects is refused and publishes nothing, and staging is removed on
+  every path
 
-### Remaining after that
+Commit `6e5bf69` — remaining validate and provenance findings:
 
-- `validate` must reject a clause whose policy/topic pair is not one of the
-  request's drafting sections, and must reject duplicate suggestion payloads (or
-  make their identifiers position-sensitive).
-- The bundle should carry the run **mode** (a recorded response is not an adapter
-  run) and a digest of the run record it came from.
-- `tests/suggest_isolation_test.rs` should include `local-adapter` in its
-  supplied-input digest check; the clock sentinels in the prepare and isolation
-  tests should compare against fixture-owned timestamps rather than one fixed date.
-- `ROADMAP.md`'s PRD-066 "later" row still reads as if the pipeline waits on the
-  corpora gate.
-- Document the `forge.suggest-promotion-outcome/1` object emitted for
-  `--format json` when nothing is accepted, and reply to each review thread with
-  the commit that addressed it.
+- a clause for a policy or topic the request never supplied, or a mapping
+  candidate outside a supplied subject and its declared controls, is refused
+  instead of quarantined with an evidence rating it cannot act on
+- a response that repeats suggestion content is refused with a clear message
+- the bundle records whether a process ran (`mode`) and the digest of the run
+  receipt it came from (`run_record_sha256`), and the text summary names the mode
+- the isolation test covers the adapter as a supplied input, and the clock checks
+  assert that every date in the output is a supplied project date rather than
+  comparing against one fixed "today"
+
+### Deliberately not changed
+
+- **Windows recorded-response tests.** `tests/suggest_run_cli_test.rs` is gated
+  on Linux/macOS because every case publishes through the authoring atomic
+  no-replace directory rename, which is Linux/macOS only and fails closed
+  elsewhere — the same gate the authoring publication tests use. The gate is
+  about publication, not about the recorded-response mode.
+- **An adapter sandbox.** See the owner decision below.
 
 ### Open owner decision (not mine to make)
 
@@ -573,5 +579,6 @@ until an OS-level boundary exists and ship only the recorded-response workflow.
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-09-12 | coordinating agent | Initial plan: local-only offline pipeline, contracts, bounds, verification matrix, tester programme, owner decisions D1–D8 |
+| 0.4 | 2026-09-12 | coordinating agent | Completed the review remediation: promotion validity through the destination's own authoring path with answer pins and effective-clause coordinates, unsupplied-target and duplicate-content refusal, run mode and receipt digest in the bundle, and the remaining test and roadmap findings |
 | 0.3 | 2026-09-12 | coordinating agent | Recorded the PR #155 review remediation: two commits of fixed findings, the designed-but-unimplemented promotion-validity work, the remaining findings, and the open owner decision on adapter sandboxing |
 | 0.2 | 2026-09-12 | coordinating agent | Recorded the implemented tranche: nine published contracts (the run receipt was added for M-13), payload-span units instead of a second copy of the text, the mapping task withheld with the deferred task decision, and the hardening pass that found and fixed an unbounded patch and an admitted empty citation list |

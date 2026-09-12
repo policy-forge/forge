@@ -165,7 +165,7 @@ This sequence communicates dependency order, not committed dates.
 | **Now** | PRD 062 implementation and verification | Local explorer, safe mutation and review workflow under technical verification (PR #146); [usage and limitations](docs/local-workspace.md); pilot/release remain pending |
 | **Next** | PRD 064 Phase 1 | Add deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
 | **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after their shared contracts stabilize |
-| **Later** | PRD 066 | Add quarantined AI suggestions only after the authoring schemas and adjudicated corpora exist; the provider/privacy question is resolved to a local-only boundary |
+| **Later** | PRD 066 | The offline suggestion pipeline is implemented on its branch; adjudicated corpora, quality thresholds and measured usefulness remain the gates before any release, and the provider/privacy question is resolved to a local-only boundary |
 
 ## Historical v1.0.0 Release Gate
 
