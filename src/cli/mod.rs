@@ -1044,6 +1044,30 @@ pub enum SuggestCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+    /// Invoke the local adapter once for a prepared, consented payload
+    Run {
+        /// The prepared forge.suggest-request/1 document
+        #[arg(long)]
+        request: PathBuf,
+        /// The forge.suggest-consent/1 token authorising this exact payload
+        #[arg(long)]
+        consent: PathBuf,
+        /// New directory beneath the request's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Adapter executable override; its digest must match the request
+        #[arg(long)]
+        adapter: Option<PathBuf>,
+        /// Adapter timeout in seconds
+        #[arg(long, default_value_t = crate::suggest::run::DEFAULT_TIMEOUT_SECS)]
+        timeout: u64,
+        /// Replay a recorded response instead of invoking a process
+        #[arg(long)]
+        recorded_response: Option<PathBuf>,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
 }
 
 /// Framework revision analysis commands.
@@ -1926,6 +1950,23 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                         format: *format,
                     })?
                 }
+                SuggestCommand::Run {
+                    request,
+                    consent,
+                    output_dir,
+                    adapter,
+                    timeout,
+                    recorded_response,
+                    format,
+                } => crate::suggest::run::execute(&crate::suggest::run::RunArgs {
+                    request,
+                    consent,
+                    output_dir,
+                    adapter: adapter.as_deref(),
+                    timeout_secs: *timeout,
+                    recorded_response: recorded_response.as_deref(),
+                    format: *format,
+                })?,
             };
             if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }
         }

@@ -10,6 +10,7 @@
 //! connection, resolves a provider, or reads a credential; the adapter is a
 //! local child process or a recorded response.
 
+pub mod adapter;
 pub mod bundle;
 pub mod consent;
 pub mod disposition;
@@ -18,6 +19,8 @@ pub mod promotion;
 pub mod redact;
 pub mod request;
 pub mod response;
+pub mod run;
+pub mod run_record;
 mod shared;
 pub mod task;
 
@@ -27,15 +30,16 @@ pub use disposition::{DispositionManifest, DispositionRecord, DispositionStatus}
 pub use promotion::{DestinationKind, PromotionEntry, PromotionProposal, PromotionStatus};
 pub use request::{AdapterTarget, ContextUnit, Sensitivity, SourceRef, SuggestRequest};
 pub use response::SuggestResponse;
+pub use run_record::{RunMode, RunRecord};
 pub use task::{Citation, SuggestionBody, TaskIdentity, TaskKind};
 
 #[cfg(test)]
 mod tests {
     use serde_json::{Value, json};
 
-    use super::{bundle, consent, disposition, promotion, request, response, task};
+    use super::{bundle, consent, disposition, promotion, request, response, run_record, task};
 
-    const SCHEMAS: [(&str, &str); 8] = [
+    const SCHEMAS: [(&str, &str); 9] = [
         (
             include_str!("../../schemas/forge.suggest-request-1.schema.json"),
             "https://policy-forge.github.io/schemas/suggest-request/1",
@@ -68,6 +72,10 @@ mod tests {
             include_str!("../../schemas/forge.suggest-promotion-1.schema.json"),
             "https://policy-forge.github.io/schemas/suggest-promotion/1",
         ),
+        (
+            include_str!("../../schemas/forge.suggest-run-1.schema.json"),
+            "https://policy-forge.github.io/schemas/suggest-run/1",
+        ),
     ];
 
     fn instances() -> Vec<Value> {
@@ -88,6 +96,7 @@ mod tests {
             bundle::fixture_bundle_json(),
             disposition::fixture_dispositions_json(),
             promotion::fixture_promotion_json(),
+            run_record::fixture_run_json(),
         ]
     }
 

@@ -103,6 +103,7 @@ artifact.
 | `forge.suggest-task-mapping/1` | embedded in request/response | Versioned task schema for mapping candidates (M-2) |
 | `forge.suggest-task-drafting/1` | embedded in request/response | Versioned task schema for policy drafting (M-2) |
 | `forge.suggest-response/1` | adapter stdout | Untrusted, closed, bounded; tool-call/unknown/oversized content rejected |
+| `forge.suggest-run/1` | output of `run` | Receipt binding request, payload, response and adapter digests, with measured time and exit code |
 | `forge.suggestions/1` | output of `validate` | Quarantine bundle: validated suggestions + provenance |
 | `forge.suggest-dispositions/1` | output of `review` | Reviewer key/time/rationale; original + edited content and hashes |
 | `forge.suggest-promotion/1` | output of `promote` | Proposed downstream patch + destination hash; explicitly unapproved |
@@ -200,11 +201,18 @@ House rules, matching the existing authoring and reuse tranches:
   over the cap. Each maps to `ForgeError::Authoring` (exit 2) except a
   cleanly-reported adapter failure, which is exit 1: the request was valid, the
   environment could not complete it. Nothing partial is retained.
-- **Provenance (M-13).** `run` records adapter path, executable hash, model id
-  (as supplied), argv, request hash, response hash, byte counts, elapsed
-  `Duration` (a measurement, not a timestamp), exit status and the redaction
-  policy. Request ID is the deterministic UUID v5 of the request hash + adapter
-  hash; no clock is involved.
+- **Provenance (M-13).** `run` publishes the exact response beside a
+  `forge.suggest-run/1` receipt: request digest, payload digest, response digest
+  and length, adapter executable digest, model id as supplied, argv, the
+  redaction records, measured `elapsed_ms` and the adapter's exit code. Elapsed
+  time is a measurement, not a timestamp; no clock is read for identity. A
+  receipt is only written for a successful invocation, so its exit code is 0 by
+  construction.
+- **Exit codes for `run`.** A contract violation (bad arguments, an unreadable
+  request, a consent that does not authorise the payload, a payload or adapter
+  that changed after consent) is exit 2. A valid, consented request the local
+  environment could not complete — missing, failing, hanging or over-bound
+  adapter — is exit 1 with the reason on stdout, and nothing is published.
 
 ### validate — M-7, M-8, M-9
 
