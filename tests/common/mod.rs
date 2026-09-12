@@ -390,6 +390,64 @@ pub fn suggest_response_json(items: &[Value], kind: &str, version: &str) -> Vec<
     bytes
 }
 
+/// One disposition record citing the quarantined content of one suggestion.
+pub fn suggest_disposition(bundle: &Value, index: usize, status: &str) -> Value {
+    json!({
+        "suggestion_id": bundle["suggestions"][index]["suggestion_id"],
+        "status": status,
+        "reviewer_key": "human",
+        // Before the synthetic project's own `as_of`, because the destination
+        // contract refuses a review time that post-dates its snapshot.
+        "decided_as_of": "2026-09-07T00:00:00Z",
+        "rationale": "Reviewed against the supplied policy text.",
+        "original_sha256": bundle["suggestions"][index]["content_sha256"]
+    })
+}
+
+/// A closed `forge.suggest-dispositions/1` document for one bundle.
+pub fn suggest_dispositions_json(
+    bundle: &Value,
+    bundle_bytes: &[u8],
+    records: &[Value],
+) -> Vec<u8> {
+    let mut manifest = json!({
+        "schema_version": "forge.suggest-dispositions/1",
+        "bundle_id": bundle["bundle_id"],
+        "bundle_sha256": sha256_hex(bundle_bytes),
+        "task": bundle["task"],
+        "as_of": "2026-09-07T00:00:00Z",
+        "records": records,
+    });
+    manifest["records"] = json!(records);
+    let mut encoded = serde_json::to_vec_pretty(&manifest).unwrap();
+    encoded.push(b'\n');
+    encoded
+}
+
+/// Review one bundle with the supplied decisions.
+pub fn suggest_review(root: &Path, records: &[Value], review_dir: &str) -> Output {
+    let bundle_bytes = std::fs::read(root.join("prepared/bundle-1/suggestions.json")).unwrap();
+    let bundle: Value = serde_json::from_slice(&bundle_bytes).unwrap();
+    std::fs::write(
+        root.join("decisions.json"),
+        suggest_dispositions_json(&bundle, &bundle_bytes, records),
+    )
+    .unwrap();
+    run(
+        root,
+        &[
+            "suggest",
+            "review",
+            "--bundle",
+            "prepared/bundle-1/suggestions.json",
+            "--decisions",
+            "decisions.json",
+            "--output-dir",
+            review_dir,
+        ],
+    )
+}
+
 #[cfg(test)]
 mod normalization_tests {
     use super::*;

@@ -50,40 +50,7 @@ pub fn execute(args: &ReviewArgs<'_>) -> Result<bool, ForgeError> {
         MAX_DISPOSITIONS_BYTES,
     )?)?;
 
-    let bundle_sha256 = crate::hashing::sha256_hex(&bundle_bytes);
-    if manifest.bundle_id != bundle.bundle_id {
-        return Err(shared::error(
-            "the disposition manifest decides a different bundle identifier",
-        ));
-    }
-    if manifest.bundle_sha256 != bundle_sha256 {
-        return Err(shared::error(
-            "the disposition manifest must cite the digest of exactly this bundle",
-        ));
-    }
-    if manifest.task != bundle.task {
-        return Err(shared::error(
-            "the disposition manifest declares a different task than the bundle",
-        ));
-    }
-
-    let quarantined: std::collections::BTreeMap<&str, &str> = bundle
-        .suggestions
-        .iter()
-        .map(|suggestion| (suggestion.suggestion_id.as_str(), suggestion.content_sha256.as_str()))
-        .collect();
-    for (index, record) in manifest.records.iter().enumerate() {
-        let content = quarantined.get(record.suggestion_id.as_str()).ok_or_else(|| {
-            shared::error(format!(
-                "dispositions.records[{index}] decides a suggestion that is not in this bundle"
-            ))
-        })?;
-        if *content != record.original_sha256 {
-            return Err(shared::error(format!(
-                "dispositions.records[{index}].original_sha256 is not the quarantined content digest"
-            )));
-        }
-    }
+    bind(&bundle, &manifest, &bundle_bytes)?;
 
     let decided: BTreeSet<&str> =
         manifest.records.iter().map(|record| record.suggestion_id.as_str()).collect();
@@ -124,6 +91,55 @@ pub fn execute(args: &ReviewArgs<'_>) -> Result<bool, ForgeError> {
     crate::cli::output::write_output(&stdout, None)
         .map_err(|cause| shared::error(format!("cannot write the review summary: {cause}")))?;
     Ok(undecided > 0)
+}
+
+/// Bind an operator's decisions to their bundle.
+///
+/// `review` and `promote` share this: FORGE never invents a reviewer, a time or
+/// a rationale, so both commands check that the document decides exactly this
+/// bundle digest and task, that every record names a suggestion in the bundle,
+/// and that every record cites that suggestion's quarantined content digest.
+///
+/// # Errors
+/// Returns an authoring error naming the first binding that does not hold.
+pub(in crate::suggest) fn bind(
+    bundle: &SuggestionsBundle,
+    manifest: &DispositionManifest,
+    bundle_bytes: &[u8],
+) -> Result<(), ForgeError> {
+    if manifest.bundle_id != bundle.bundle_id {
+        return Err(shared::error(
+            "the disposition manifest decides a different bundle identifier",
+        ));
+    }
+    if manifest.bundle_sha256 != crate::hashing::sha256_hex(bundle_bytes) {
+        return Err(shared::error(
+            "the disposition manifest must cite the digest of exactly this bundle",
+        ));
+    }
+    if manifest.task != bundle.task {
+        return Err(shared::error(
+            "the disposition manifest declares a different task than the bundle",
+        ));
+    }
+    let quarantined: std::collections::BTreeMap<&str, &str> = bundle
+        .suggestions
+        .iter()
+        .map(|suggestion| (suggestion.suggestion_id.as_str(), suggestion.content_sha256.as_str()))
+        .collect();
+    for (index, record) in manifest.records.iter().enumerate() {
+        let content = quarantined.get(record.suggestion_id.as_str()).ok_or_else(|| {
+            shared::error(format!(
+                "dispositions.records[{index}] decides a suggestion that is not in this bundle"
+            ))
+        })?;
+        if *content != record.original_sha256 {
+            return Err(shared::error(format!(
+                "dispositions.records[{index}].original_sha256 is not the quarantined content digest"
+            )));
+        }
+    }
+    Ok(())
 }
 
 /// The text summary for one review.

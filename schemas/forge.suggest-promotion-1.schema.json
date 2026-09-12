@@ -12,6 +12,7 @@
     "bundle_sha256",
     "dispositions_sha256",
     "destination",
+    "patch",
     "status",
     "entries"
   ],
@@ -34,8 +35,8 @@
       "required": ["kind", "path", "expected_sha256"],
       "properties": {
         "kind": {
-          "enum": ["mapping-manifest", "authoring-pack"],
-          "$comment": "A mapping manifest is validated with forge.mapping-manifest/1; an authoring pack with forge.authoring-pack/1."
+          "enum": ["mapping-manifest", "authoring-project"],
+          "$comment": "A mapping manifest is validated with forge.mapping-manifest/1; an authoring project with forge.author-project/1."
         },
         "path": {
           "$ref": "#/$defs/artifact_path"
@@ -44,6 +45,25 @@
           "$ref": "#/$defs/sha256"
         }
       }
+    },
+    "patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact", "sha256", "bytes"],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/artifact_path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2097152
+        }
+      },
+      "$comment": "Runtime validates this document with the destination kind's own contract validator before publishing the proposal."
     },
     "status": {
       "const": "proposed-unapproved",
@@ -82,7 +102,7 @@
           "$ref": "#/$defs/uuid"
         },
         "contract": {
-          "enum": ["forge.mapping-manifest/1", "forge.authoring-pack/1"],
+          "enum": ["forge.mapping-manifest/1", "forge.author-project/1"],
           "$comment": "Must equal the destination kind's contract."
         },
         "artifact": {

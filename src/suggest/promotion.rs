@@ -20,6 +20,8 @@ pub const MAX_PROMOTION_BYTES: u64 = 2 * 1024 * 1024;
 pub const MAX_ENTRIES: usize = 1_000;
 /// Maximum size of one proposed downstream record.
 pub const MAX_ENTRY_BYTES: u64 = 1024 * 1024;
+/// Maximum size of the proposed destination document.
+pub const MAX_PATCH_BYTES: u64 = 2 * 1024 * 1024;
 
 const LIMITS: Limits = Limits { max_depth: 32, max_string_bytes: shared::MAX_STRING_BYTES };
 
@@ -41,8 +43,8 @@ pub struct Destination {
 pub enum DestinationKind {
     /// A PRD-055 control mapping manifest.
     MappingManifest,
-    /// A PRD-061 authoring pack.
-    AuthoringPack,
+    /// A PRD-061 authoring project, which owns human clauses.
+    AuthoringProject,
 }
 
 impl DestinationKind {
@@ -51,7 +53,7 @@ impl DestinationKind {
     pub const fn contract(self) -> &'static str {
         match self {
             Self::MappingManifest => crate::mapping::manifest::MANIFEST_SCHEMA_VERSION,
-            Self::AuthoringPack => crate::authoring::manifest::PACK_SCHEMA_VERSION,
+            Self::AuthoringProject => crate::authoring::manifest::PROJECT_SCHEMA_VERSION,
         }
     }
 }
@@ -72,6 +74,18 @@ impl PromotionStatus {
             Self::ProposedUnapproved => "proposed-unapproved",
         }
     }
+}
+
+/// The proposed destination document that was validated before publication.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PatchArtifact {
+    /// Portable relative path of the proposed destination document.
+    pub artifact: String,
+    /// Digest of the proposed destination document.
+    pub sha256: String,
+    /// Length of the proposed destination document.
+    pub bytes: u64,
 }
 
 /// One proposed downstream record.
@@ -104,6 +118,9 @@ pub struct PromotionProposal {
     pub dispositions_sha256: String,
     /// The downstream artifact the proposal targets.
     pub destination: Destination,
+    /// The proposed destination document, validated with the destination's own
+    /// contract validator in-process.
+    pub patch: PatchArtifact,
     /// Always `proposed-unapproved`.
     pub status: PromotionStatus,
     /// Proposed records, one per promoted suggestion.
@@ -192,14 +209,19 @@ pub(in crate::suggest) fn fixture_promotion_json() -> serde_json::Value {
         "bundle_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "dispositions_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "destination": {
-            "kind": "authoring-pack",
-            "path": "pack.json",
+            "kind": "authoring-project",
+            "path": "project.json",
             "expected_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "patch": {
+            "artifact": "promotion/proposed-project.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "bytes": 1024
         },
         "status": "proposed-unapproved",
         "entries": [{
             "suggestion_id": "3f2b1a4c-5d6e-4f70-8a91-b2c3d4e5f607",
-            "contract": "forge.authoring-pack/1",
+            "contract": "forge.author-project/1",
             "artifact": "promotion/entry-0001.json",
             "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "bytes": 256
@@ -221,7 +243,7 @@ mod tests {
         let parsed = parse(&fixture_promotion_json()).unwrap();
         assert_eq!(parsed.status.as_str(), "proposed-unapproved");
         assert_eq!(parsed.entries().len(), 1);
-        assert_eq!(parsed.destination.kind.contract(), "forge.authoring-pack/1");
+        assert_eq!(parsed.destination.kind.contract(), "forge.author-project/1");
 
         let serialized = serde_json::to_vec(&parsed).unwrap();
         assert_eq!(PromotionProposal::parse(&serialized).unwrap(), parsed);

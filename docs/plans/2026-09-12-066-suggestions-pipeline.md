@@ -284,16 +284,32 @@ House rules, matching the existing authoring and reuse tranches:
 ### promote — M-12
 
 - `promote` selects only suggestions with an `accept-as-is` or `accept-edited`
-  disposition (expired and rejected ones never promote).
-- It constructs the downstream record for the named destination and **runs the
-  destination's existing validator in-process** on the proposed bytes: the
-  PRD-055 manifest parser or the PRD-061 pack/clause contract, whichever the
-  request named. If validation fails, `promote` fails; it does not emit a
-  proposal that could not be applied.
-- Output `forge.suggest-promotion/1` names the destination, its expected hash,
-  the proposed record bytes and hashes, and carries an explicit
-  `approved: false`-style marker in its own vocabulary (`status:
-  "proposed-unapproved"`). It is never written to the destination.
+  disposition (rejected and expired ones never promote), and it re-uses the same
+  binding check as `review`, so a record must still cite this bundle's digest and
+  each suggestion's quarantined content digest.
+- **The task is the decision.** Only a policy-drafting bundle promotes, into a
+  `forge.author-project/1` destination: the mapping task's destination semantics
+  are exactly what the owner's 2026-09-12 deferral postponed, so the command
+  refuses with that reason rather than choosing a destination by accident.
+- **Proposed clauses cite the request's own gaps.** The destination contract
+  requires every human clause to identify at least one gap, and FORGE never
+  invents one: `promote` reads the prepared request (bound by digest to the
+  bundle), takes the gap ids the request selected for that policy and topic, and
+  refuses when the section selected none.
+- **The proposed document passes the destination's own validator.** The current
+  destination is read and parsed with `forge.author-project/1`; the proposed
+  project — the destination plus one clause per promoted suggestion, its review
+  evidence taken from the reviewer's own record — is validated with the same
+  parser in-process before anything is published. That is also where the
+  destination's own rules (a review time that post-dates the project's `as_of`,
+  a clause without a gap) surface, as refusals rather than as a patch that could
+  not be applied.
+- Output `forge.suggest-promotion/1` names the destination and its digest, the
+  proposed document and its digest, one entry per promoted suggestion naming its
+  proposed clause file, and `status: "proposed-unapproved"`. The proposal, the
+  clause files and the proposed document are published *beside* the destination;
+  the destination itself is read-only to this command, and applying the patch
+  stays a human act followed by the ordinary `forge author plan`/`build` path.
 
 ## Provenance, evaluation and consent boundaries
 

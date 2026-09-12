@@ -1083,6 +1083,27 @@ pub enum SuggestCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+    /// Propose a downstream patch for accepted suggestions; approves nothing
+    Promote {
+        /// The forge.suggestions/1 bundle the decisions were made about
+        #[arg(long)]
+        bundle: PathBuf,
+        /// The forge.suggest-dispositions/1 record published by `suggest review`
+        #[arg(long)]
+        dispositions: PathBuf,
+        /// The prepared forge.suggest-request/1 document the bundle came from
+        #[arg(long)]
+        request: PathBuf,
+        /// The destination forge.author-project/1 document, relative to the working directory
+        #[arg(long)]
+        destination: PathBuf,
+        /// New directory beneath the destination's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
     /// Validate a recorded response into the forge.suggestions/1 quarantine bundle
     Validate {
         /// The prepared forge.suggest-request/1 document
@@ -1998,6 +2019,21 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     adapter: adapter.as_deref(),
                     timeout_secs: *timeout,
                     recorded_response: recorded_response.as_deref(),
+                    format: *format,
+                })?,
+                SuggestCommand::Promote {
+                    bundle,
+                    dispositions,
+                    request,
+                    destination,
+                    output_dir,
+                    format,
+                } => crate::suggest::promote::execute(&crate::suggest::promote::PromoteArgs {
+                    bundle,
+                    request,
+                    dispositions,
+                    destination,
+                    output_dir,
                     format: *format,
                 })?,
                 SuggestCommand::Review { bundle, decisions, output_dir, format } => {

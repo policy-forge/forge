@@ -9,7 +9,7 @@ mod common;
 use common::sha256_hex as hash;
 use common::{
     SUGGEST_BODY as BODY, assert_exit, project, run, suggest_clause as clause,
-    suggest_response_json as response,
+    suggest_disposition as record, suggest_response_json as response,
 };
 
 const TASK_VERSION: &str = "forge.suggest-task-drafting/1";
@@ -35,29 +35,7 @@ fn bundled(root: &Path) -> Value {
 /// The decisions an operator would write after reading the bundle.
 fn decisions(root: &Path, bundle: &Value, records: &[Value]) -> Vec<u8> {
     let bytes = std::fs::read(root.join("prepared/bundle-1/suggestions.json")).unwrap();
-    let mut manifest = json!({
-        "schema_version": "forge.suggest-dispositions/1",
-        "bundle_id": bundle["bundle_id"],
-        "bundle_sha256": hash(&bytes),
-        "task": bundle["task"],
-        "as_of": "2026-09-12T00:00:00Z",
-        "records": records,
-    });
-    manifest["records"] = json!(records);
-    let mut encoded = serde_json::to_vec_pretty(&manifest).unwrap();
-    encoded.push(b'\n');
-    encoded
-}
-
-fn record(bundle: &Value, index: usize, status: &str) -> Value {
-    json!({
-        "suggestion_id": bundle["suggestions"][index]["suggestion_id"],
-        "status": status,
-        "reviewer_key": "human",
-        "decided_as_of": "2026-09-12T00:00:00Z",
-        "rationale": "Reviewed against the supplied policy text.",
-        "original_sha256": bundle["suggestions"][index]["content_sha256"]
-    })
+    common::suggest_dispositions_json(bundle, &bytes, records)
 }
 
 fn review(root: &Path, extra: &[&str]) -> std::process::Output {

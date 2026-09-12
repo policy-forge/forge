@@ -15,6 +15,7 @@ pub mod bundle;
 pub mod consent;
 pub mod disposition;
 pub mod prepare;
+pub mod promote;
 pub mod promotion;
 pub mod redact;
 pub mod request;
