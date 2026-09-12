@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/suggestions/1",
+  "title": "FORGE suggestions bundle",
+  "description": "Closed quarantine bundle: the only artifact class a suggestion can live in. It carries validated model output, the provenance of the run that produced it, and the request and response digests that bind it to exactly one payload. It carries no status field by design: a suggestion with no disposition record is pending. Runtime validation additionally rejects decoded duplicate keys, nulls, a payload of the wrong task, retained-response disagreement, and counts that do not match the suggestions present.",
+  "$comment": "Runtime enforces a 50 MiB byte limit, depth 32, a 16 KiB UTF-8 string bound, at most 1000 suggestions, lowercase SHA-256 digests, canonical lowercase UUIDs and portable descendant paths. Bundles are written through the existing atomic no-replace publication and never into a pack, project, plan or lifecycle artifact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "project_key",
+    "as_of",
+    "task",
+    "request",
+    "response",
+    "provenance",
+    "suggestions",
+    "counts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.suggestions/1"
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "project_key": {
+      "$ref": "#/$defs/key"
+    },
+    "as_of": {
+      "$ref": "#/$defs/single_line"
+    },
+    "task": {
+      "$ref": "#/$defs/task"
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "payload_sha256"],
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "payload_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "bytes", "retained"],
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        },
+        "retained": {
+          "type": "boolean",
+          "$comment": "Raw model text is retained only when the operator opts in; runtime requires artifact to be present exactly when retained is true."
+        },
+        "artifact": {
+          "$ref": "#/$defs/artifact_path"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_record_sha256", "mode", "adapter_sha256", "model_id", "elapsed_ms", "exit_code"],
+      "properties": {
+        "run_record_sha256": {
+          "$ref": "#/$defs/sha256",
+          "$comment": "Digest of the run receipt this bundle was validated from."
+        },
+        "mode": {
+          "enum": ["process", "recorded-response"],
+          "$comment": "A recorded response names a run where no adapter process executed."
+        },
+        "adapter_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "argv": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "$comment": "A measured duration, never a timestamp."
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "redactions": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/redaction"
+          }
+        }
+      }
+    },
+    "suggestions": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/suggestion"
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suggestions", "mapping", "drafting", "high", "medium", "low"],
+      "properties": {
+        "suggestions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "mapping": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "drafting": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "high": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "medium": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "low": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      },
+      "$comment": "Runtime recomputes every count from the suggestions present and rejects any mismatch."
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "single_line": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+      }
+    },
+    "artifact_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*[\\\\:])[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schema_version"],
+      "properties": {
+        "kind": {
+          "enum": ["mapping-candidates", "policy-drafting"]
+        },
+        "schema_version": {
+          "enum": ["forge.suggest-task-mapping/1", "forge.suggest-task-drafting/1"]
+        }
+      },
+      "$comment": "Version must match kind."
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id", "rule_id", "rule_sha256"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key"
+        },
+        "rule_id": {
+          "$ref": "#/$defs/key"
+        },
+        "rule_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key"
+        },
+        "quote": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "mapping_body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_key",
+        "topic_key",
+        "control_id",
+        "relationship",
+        "rationale",
+        "citations",
+        "assumptions",
+        "unresolved_questions"
+      ],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "control_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^\\S+$"
+        },
+        "relationship": {
+          "enum": [
+            "equivalent-to",
+            "equal-to",
+            "subset-of",
+            "superset-of",
+            "intersects-with",
+            "no-relationship"
+          ]
+        },
+        "rationale": {
+          "$ref": "#/$defs/text"
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    },
+    "drafting_body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_key", "topic_key", "draft_text", "citations", "assumptions", "unresolved_questions"],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "question_key": {
+          "$ref": "#/$defs/key"
+        },
+        "heading": {
+          "$ref": "#/$defs/single_line"
+        },
+        "draft_text": {
+          "$ref": "#/$defs/text"
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    },
+    "suggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suggestion_id", "content_sha256", "evidence_support", "body"],
+      "properties": {
+        "suggestion_id": {
+          "$ref": "#/$defs/uuid",
+          "$comment": "Assigned deterministically by FORGE, never supplied by the model."
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256",
+          "$comment": "Digest of the canonical suggestion content; a disposition must cite exactly this value, and runtime recomputes it."
+        },
+        "evidence_support": {
+          "enum": ["high", "medium", "low"],
+          "$comment": "Computed from deterministic citation checks, never from a self-reported confidence score."
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mapping": {
+              "$ref": "#/$defs/mapping_body"
+            },
+            "drafting": {
+              "$ref": "#/$defs/drafting_body"
+            }
+          },
+          "$comment": "Runtime requires exactly the arm of the bundle's task kind."
+        }
+      }
+    }
+  }
+}

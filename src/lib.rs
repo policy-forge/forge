@@ -83,6 +83,8 @@ pub mod reuse;
 pub mod round_trip;
 /// Input sanitization utilities (control-character stripping, etc.).
 pub mod sanitize;
+/// Closed, bounded quarantine contracts for the offline suggestion pipeline.
+pub mod suggest;
 /// Conversion statistics and human-readable summaries.
 pub mod summary;
 #[cfg(any(test, debug_assertions, feature = "testing"))]

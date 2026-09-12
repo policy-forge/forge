@@ -13,3 +13,4 @@ pub mod rank;
 pub mod report;
 
 pub use execute::execute;
+pub(crate) use execute::{corpus_location, read_manifest};

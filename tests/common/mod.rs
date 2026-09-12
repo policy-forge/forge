@@ -145,6 +145,431 @@ pub fn make_doc(title: &str, sections: Vec<PolicySection>) -> PolicyDocument {
     }
 }
 
+// Shared authoring/suggestion fixtures
+use serde_json::{Value, json};
+use std::process::{Command, Output};
+pub fn write_json(path: &Path, value: &Value) -> String {
+    let bytes = serde_json::to_vec_pretty(value).unwrap();
+    std::fs::write(path, &bytes).unwrap();
+    sha256_hex(&bytes)
+}
+
+pub fn run(root: &Path, args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_forge")).current_dir(root).args(args).output().unwrap()
+}
+
+pub fn assert_exit(output: &Output, expected: i32) {
+    assert_eq!(
+        output.status.code(),
+        Some(expected),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+pub fn review() -> Value {
+    json!({"reviewer_key":"human", "reviewed_at":"2026-09-01T00:00:00Z", "rationale":"Explicit synthetic drafting decision."})
+}
+
+/// A minimal authoring project with one blocked section and one drafted section.
+pub fn project() -> (tempfile::TempDir, PathBuf) {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let catalog = json!({"catalog": {
+        "uuid":"11111111-1111-4111-8111-111111111111",
+        "metadata": {"title":"Synthetic framework", "last-modified":"2026-09-01T00:00:00Z", "version":"1.0.0", "oscal-version":"1.2.3"},
+        "controls": (1..=4).map(|n| json!({"id":format!("c-{n}"),"title":format!("Synthetic control {n}")})).collect::<Vec<_>>()
+    }});
+    let framework_hash = write_json(&root.join("framework.json"), &catalog);
+    let initial = run(&root, &["applicability", "init", "--framework", "framework.json"]);
+    assert_exit(&initial, 0);
+    let mut applicability: Value = serde_json::from_slice(&initial.stdout).unwrap();
+    applicability["reviewers"] =
+        json!([{"key":"human","type":"person","name":"Synthetic Reviewer"}]);
+    applicability["decisions"] = json!(
+        (1..=4)
+            .map(|n| json!({
+                "control_id":format!("c-{n}"),"state":"applicable","reviewer_key":"human",
+                "reviewed_at":"2026-09-01T00:00:00Z"
+            }))
+            .collect::<Vec<_>>()
+    );
+    let applicability_hash = write_json(&root.join("applicability.json"), &applicability);
+    let result = run(
+        &root,
+        &["applicability", "analyze", "--manifest", "applicability.json", "--format", "json"],
+    );
+    assert_exit(&result, 0);
+    std::fs::write(root.join("gap-report.json"), &result.stdout).unwrap();
+    let report_hash = sha256_hex(&result.stdout);
+    let baseline = json!({"framework_sha256":framework_hash,"report_sha256":report_hash});
+    let question = json!({
+        "key":"responsible-role", "prompt":"Which role writes this draft?", "type":"string",
+        "required":true,"owner":"context-owner","sensitivity":"internal","source_label":"Synthetic interview",
+        "max_age_days":30,"constraints":{"min_length":1,"max_length":100}
+    });
+    let pack = json!({
+        "schema_version":"forge.authoring-pack/1","pack_key":"synthetic-pack","version":"1.0.0",
+        "baseline":baseline,"reviewers":[{"key":"human","name":"Synthetic Reviewer"}],
+        "content_rights":{"source_label":"Repository synthetic fixture","statement":"All fixture content is synthetic.","review":review()},
+        "topics":[
+            {"key":"access-topic","title":"Access drafting","order":20,"question_keys":["responsible-role"]},
+            {"key":"operations-topic","title":"Operations drafting","order":10,"question_keys":[]}
+        ],
+        "policy_families":[{"key":"access-family","title":"Access family"},{"key":"operations-family","title":"Operations family"}],
+        "questions":[question],
+        "control_assignments":[
+            {"key":"control-access","control_id":"c-1","topic_key":"access-topic","review":review()},
+            {"key":"control-operations","control_id":"c-2","topic_key":"operations-topic","review":review()}
+        ],
+        "family_assignments":[
+            {"key":"family-access","topic_key":"access-topic","policy_family_key":"access-family","review":review()},
+            {"key":"family-operations","topic_key":"operations-topic","policy_family_key":"operations-family","review":review()}
+        ]
+    });
+    let pack_hash = write_json(&root.join("pack.json"), &pack);
+    let gap = |id: &str| forge::authoring::manifest::gap_id(&report_hash, id);
+    let clause = "The fictional team records draft changes in the sample register.\n";
+    std::fs::write(root.join("clause.md"), clause).unwrap();
+    let project = json!({
+        "schema_version":"forge.author-project/1","project_key":"synthetic-project","project_root":".",
+        "baseline":baseline,"as_of":"2026-09-08T00:00:00Z",
+        "applicability_manifest":{"path":"applicability.json","expected_sha256":applicability_hash},
+        "gap_report":{"path":"gap-report.json","expected_sha256":report_hash},
+        "authoring_pack":{"path":"pack.json","expected_sha256":pack_hash},
+        "reviewers":[{"key":"human","name":"Synthetic Reviewer"}],"baseline_review":review(),
+        "policies":[{"key":"access-policy","policy_family_key":"access-family","title":"Access draft"},{"key":"operations-policy","policy_family_key":"operations-family","title":"Operations draft"}],
+        "answers":[],
+        "deferrals":[{"key":"later","gap_id":gap("c-3"),"review":review(),"revisit_date":"2026-10-01"}],
+        "human_clauses":[{"key":"operations-clause","policy_key":"operations-policy","topic_key":"operations-topic","gap_ids":[gap("c-2")],"answer_refs":[],"source":{"path":"clause.md","expected_sha256":sha256_hex(clause.as_bytes())},"review":review()}]
+    });
+    write_json(&root.join("project.json"), &project);
+    (temp, root)
+}
+
+/// Write a corpus manifest and its one document, returning the document bytes.
+pub fn corpus(root: &Path, body: &str) -> Vec<u8> {
+    std::fs::create_dir_all(root.join("prior")).unwrap();
+    std::fs::write(root.join("prior/access.md"), body).unwrap();
+    let manifest = json!({
+        "schema_version":"forge.reuse-corpus/1","corpus_key":"synthetic-corpus",
+        "title":"Synthetic prior policies",
+        "documents":[{
+            "key":"prior-access","path":"prior/access.md","title":"Prior access policy",
+            "status":"approved","rights_label":"Repository synthetic fixture",
+            "source_label":"Synthetic interview","expected_sha256":sha256_hex(body.as_bytes()),
+            "topic_keys":["access-topic"],"control_ids":["c-1"]
+        }]
+    });
+    write_json(&root.join("corpus.json"), &manifest);
+    body.as_bytes().to_vec()
+}
+
+pub fn reuse(root: &Path, extra: &[&str]) -> Output {
+    let mut args = vec!["author", "reuse", "--manifest", "project.json", "--corpus", "corpus.json"];
+    args.extend_from_slice(extra);
+    run(root, &args)
+}
+
+// ---------------------------------------------------------------------------
+// Shared local-suggestion pipeline fixtures
+// ---------------------------------------------------------------------------
+
+/// The synthetic document every suggestion fixture selects a span from.
+pub const SUGGEST_BODY: &str = "# Access drafting\n\nc-1 Approve access requests quarterly.\n";
+
+/// Write a local adapter stand-in and return its path as an argument string.
+pub fn suggest_adapter(root: &Path) -> String {
+    let path = root.join("local-adapter");
+    std::fs::write(&path, b"#!/bin/sh\ncat\n").unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    path.to_string_lossy().into_owned()
+}
+
+/// Prepare and consent one drafting request; returns the request document path.
+pub fn suggest_prepare(root: &Path) -> PathBuf {
+    let adapter = suggest_adapter(root);
+    corpus(root, SUGGEST_BODY);
+    let output = run(
+        root,
+        &[
+            "suggest",
+            "prepare",
+            "--manifest",
+            "project.json",
+            "--output-dir",
+            "prepared",
+            "--adapter",
+            adapter.as_str(),
+            "--model-id",
+            "synthetic-model",
+            "--corpus",
+            "corpus.json",
+            "--include-document",
+            "prior-access",
+            "--consent",
+            "--operator-key",
+            "human",
+        ],
+    );
+    assert_exit(&output, 0);
+    root.join("prepared/request.json")
+}
+
+/// Record one adapter response as a run beneath the request's directory.
+pub fn suggest_run(root: &Path, run_dir: &str, response: &[u8]) -> Output {
+    std::fs::write(root.join("recorded.json"), response).unwrap();
+    let output = run(
+        root,
+        &[
+            "suggest",
+            "run",
+            "--request",
+            "prepared/request.json",
+            "--consent",
+            "prepared/consent.json",
+            "--output-dir",
+            run_dir,
+            "--recorded-response",
+            "recorded.json",
+        ],
+    );
+    assert_exit(&output, 0);
+    output
+}
+
+/// Validate one recorded run. `run_record` is relative to the project root.
+pub fn suggest_validate(root: &Path, run_record: &str, bundle_dir: &str, extra: &[&str]) -> Output {
+    let mut args = vec![
+        "suggest",
+        "validate",
+        "--request",
+        "prepared/request.json",
+        "--run",
+        run_record,
+        "--output-dir",
+        bundle_dir,
+    ];
+    args.extend_from_slice(extra);
+    run(root, &args)
+}
+
+/// One draft clause citing a single unit.
+pub fn suggest_clause(unit_id: &str, quote: Option<&str>) -> Value {
+    let citations = match quote {
+        Some(quote) => json!([{"unit_id": unit_id, "quote": quote}]),
+        None => json!([{"unit_id": unit_id}]),
+    };
+    json!({
+        "policy_key": "access-policy",
+        "topic_key": "access-topic",
+        "draft_text": "Access requests are approved quarterly.",
+        "citations": citations,
+        "assumptions": [],
+        "unresolved_questions": ["Who approves?"]
+    })
+}
+
+/// A closed `forge.suggest-response/1` document for one task.
+pub fn suggest_response_json(items: &[Value], kind: &str, version: &str) -> Vec<u8> {
+    let task = if kind == "policy-drafting" {
+        json!({"kind": kind, "schema_version": version, "draft_clauses": items})
+    } else {
+        json!({"kind": kind, "schema_version": version, "mapping_candidates": items})
+    };
+    let mut bytes = serde_json::to_vec_pretty(
+        &json!({"schema_version": "forge.suggest-response/1", "task": task}),
+    )
+    .unwrap();
+    bytes.push(b'\n');
+    bytes
+}
+
+/// The canonical digest a disposition must cite for a suggestion body.
+///
+/// Mirrors the runtime contract: the digest of the *decoded* body, not of the
+/// operator's JSON spelling.
+pub fn suggest_content_sha256(body: &Value) -> String {
+    let parsed: forge::suggest::SuggestionBody = serde_json::from_value(body.clone()).unwrap();
+    sha256_hex(&serde_json::to_vec(&parsed).unwrap())
+}
+
+/// Add one current approved answer to the fixture project; returns its key.
+///
+/// The digest fields are the ones the authoring loader computes, so the plan
+/// evaluates the answer as available rather than stale.
+pub fn suggest_add_answer(root: &Path) -> String {
+    let pack_bytes = std::fs::read(root.join("pack.json")).unwrap();
+    let pack = forge::authoring::manifest::parse_pack(&pack_bytes).unwrap();
+    let question = pack.questions.first().expect("the fixture pack declares a question");
+    let question_sha256 = forge::authoring::manifest::question_sha256(question).unwrap();
+    let mut project: Value =
+        serde_json::from_slice(&std::fs::read(root.join("project.json")).unwrap()).unwrap();
+    project["answers"] = json!([{
+        "key": "provided-answer",
+        "question_key": question.key,
+        "question_sha256": question_sha256,
+        "authoring_pack_sha256": sha256_hex(&pack_bytes),
+        "owner": "context-owner",
+        "source_label": "Synthetic interview",
+        "sensitivity": "internal",
+        "review": {
+            "reviewer_key": "human",
+            "reviewed_at": "2026-09-01T00:00:00Z",
+            "rationale": "Explicit synthetic answer decision."
+        },
+        "state": "provided",
+        "value": "The fictional security team."
+    }]);
+    write_json(&root.join("project.json"), &project);
+    "provided-answer".to_string()
+}
+
+/// The destination's pin digest for one answer of the fixture project.
+pub fn suggest_answer_pin(root: &Path, answer_key: &str) -> String {
+    let project = forge::authoring::manifest::parse_project(
+        &std::fs::read(root.join("project.json")).unwrap(),
+    )
+    .unwrap();
+    let answer = project
+        .answers
+        .iter()
+        .find(|answer| answer.key == answer_key)
+        .expect("the fixture project declares the answer");
+    forge::authoring::manifest::answer_sha256(answer).unwrap()
+}
+
+/// Move the destination pack's access assignment to another control.
+///
+/// Mirrors the review reproduction: the pack the destination pins changes after
+/// the suggestion was prepared, so the request's gap no longer belongs to the
+/// clause's topic.
+pub fn suggest_repoint_pack_assignment(root: &Path) {
+    let mut pack: Value =
+        serde_json::from_slice(&std::fs::read(root.join("pack.json")).unwrap()).unwrap();
+    pack["control_assignments"][0]["control_id"] = json!("c-4");
+    let pack_bytes = serde_json::to_vec_pretty(&pack).unwrap();
+    std::fs::write(root.join("pack.json"), &pack_bytes).unwrap();
+    let mut project: Value =
+        serde_json::from_slice(&std::fs::read(root.join("project.json")).unwrap()).unwrap();
+    project["authoring_pack"]["expected_sha256"] = json!(sha256_hex(&pack_bytes));
+    write_json(&root.join("project.json"), &project);
+}
+
+/// Assert every date-like string in `value` carries one of the supplied dates.
+///
+/// A fixed "today" sentinel stops proving anything once that date passes; this
+/// checks the actual property, that no timestamp came from anywhere but the
+/// supplied fixture inputs.
+pub fn assert_only_supplied_dates(value: &Value, supplied: &[&str]) {
+    match value {
+        Value::String(text) => {
+            for date in date_like_strings(text) {
+                assert!(
+                    supplied.iter().any(|allowed| date == *allowed),
+                    "unexpected date '{date}' in '{text}'"
+                );
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                assert_only_supplied_dates(item, supplied);
+            }
+        }
+        Value::Object(entries) => {
+            for item in entries.values() {
+                assert_only_supplied_dates(item, supplied);
+            }
+        }
+        Value::Null | Value::Bool(_) | Value::Number(_) => {}
+    }
+}
+
+/// Every `YYYY-MM-DD` run inside one string.
+fn date_like_strings(text: &str) -> Vec<String> {
+    let bytes = text.as_bytes();
+    let mut dates = Vec::new();
+    let mut index = 0;
+    while index + 10 <= bytes.len() {
+        let window = &bytes[index..index + 10];
+        let shaped = window[..4].iter().all(u8::is_ascii_digit)
+            && window[4] == b'-'
+            && window[5..7].iter().all(u8::is_ascii_digit)
+            && window[7] == b'-'
+            && window[8..].iter().all(u8::is_ascii_digit);
+        if shaped {
+            dates.push(text[index..index + 10].to_string());
+            index += 10;
+        } else {
+            index += 1;
+        }
+    }
+    dates
+}
+
+/// One disposition record citing the quarantined content of one suggestion.
+pub fn suggest_disposition(bundle: &Value, index: usize, status: &str) -> Value {
+    json!({
+        "suggestion_id": bundle["suggestions"][index]["suggestion_id"],
+        "status": status,
+        "reviewer_key": "human",
+        // Before the synthetic project's own `as_of`, because the destination
+        // contract refuses a review time that post-dates its snapshot.
+        "decided_as_of": "2026-09-07T00:00:00Z",
+        "rationale": "Reviewed against the supplied policy text.",
+        "original_sha256": bundle["suggestions"][index]["content_sha256"]
+    })
+}
+
+/// A closed `forge.suggest-dispositions/1` document for one bundle.
+pub fn suggest_dispositions_json(
+    bundle: &Value,
+    bundle_bytes: &[u8],
+    records: &[Value],
+) -> Vec<u8> {
+    let mut manifest = json!({
+        "schema_version": "forge.suggest-dispositions/1",
+        "bundle_id": bundle["bundle_id"],
+        "bundle_sha256": sha256_hex(bundle_bytes),
+        "task": bundle["task"],
+        "as_of": "2026-09-07T00:00:00Z",
+        "records": records,
+    });
+    manifest["records"] = json!(records);
+    let mut encoded = serde_json::to_vec_pretty(&manifest).unwrap();
+    encoded.push(b'\n');
+    encoded
+}
+
+/// Review one bundle with the supplied decisions.
+pub fn suggest_review(root: &Path, records: &[Value], review_dir: &str) -> Output {
+    let bundle_bytes = std::fs::read(root.join("prepared/bundle-1/suggestions.json")).unwrap();
+    let bundle: Value = serde_json::from_slice(&bundle_bytes).unwrap();
+    std::fs::write(
+        root.join("decisions.json"),
+        suggest_dispositions_json(&bundle, &bundle_bytes, records),
+    )
+    .unwrap();
+    run(
+        root,
+        &[
+            "suggest",
+            "review",
+            "--bundle",
+            "prepared/bundle-1/suggestions.json",
+            "--decisions",
+            "decisions.json",
+            "--output-dir",
+            review_dir,
+        ],
+    )
+}
+
 #[cfg(test)]
 mod normalization_tests {
     use super::*;
