@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/suggest-request/1",
+  "title": "FORGE suggestion request",
+  "description": "Closed local contract describing the exact, redacted payload a local suggestion adapter would receive, the adapter identity, and the only content the adapter may be shown. FORGE opens no network connection; the request is the allowlist. Runtime validation additionally rejects decoded duplicate keys, nulls, an empty allowlist, a task version that does not match its kind, a payload whose unit count differs from the context, and a redaction that names no unit.",
+  "$comment": "Runtime enforces a 2 MiB request byte limit, depth 32, a 16 KiB UTF-8 string bound, at most 4096 units, 64 redactions, 32 adapter arguments, an 8 MiB payload, and portable descendant artifact paths. Redactions record the operator's rule by digest, never the literal removed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_key",
+    "as_of",
+    "task",
+    "adapter",
+    "context",
+    "payload",
+    "retention_notice"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.suggest-request/1"
+    },
+    "project_key": {
+      "$ref": "#/$defs/key"
+    },
+    "as_of": {
+      "$ref": "#/$defs/single_line"
+    },
+    "task": {
+      "$ref": "#/$defs/task"
+    },
+    "adapter": {
+      "$ref": "#/$defs/adapter"
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["units"],
+      "properties": {
+        "units": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/unit"
+          }
+        }
+      }
+    },
+    "redactions": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/redaction"
+      }
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    },
+    "retention_notice": {
+      "$ref": "#/$defs/single_line"
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "single_line": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+      }
+    },
+    "label": {
+      "$ref": "#/$defs/single_line",
+      "maxLength": 256,
+      "not": {
+        "pattern": "^(?:[/\\\\]|[A-Za-z]:[/\\\\]|[Ff][Ii][Ll][Ee]:)"
+      },
+      "$comment": "Human labels allow ordinary colons and punctuation; only rooted local paths and file URIs are prohibited."
+    },
+    "artifact_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*[\\\\:])[^\\u0000-\\u001f\\u007f]+$",
+      "$comment": "Lexical preflight only: runtime rejects absolute, non-canonical, aliasing and reserved paths."
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schema_version"],
+      "properties": {
+        "kind": {
+          "enum": ["mapping-candidates", "policy-drafting"]
+        },
+        "schema_version": {
+          "type": "string",
+          "enum": ["forge.suggest-task-mapping/1", "forge.suggest-task-drafting/1"],
+          "$comment": "Must match kind: mapping-candidates uses the mapping task, policy-drafting the drafting task."
+        },
+        "mapping_subjects": {
+          "$ref": "#/$defs/subjects"
+        },
+        "drafting_sections": {
+          "$ref": "#/$defs/sections"
+        }
+      },
+      "$comment": "Runtime requires exactly one task list to be present and non-empty, and the other absent or empty."
+    },
+    "subjects": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["policy_key", "topic_key", "title", "text"],
+        "properties": {
+          "policy_key": {
+            "$ref": "#/$defs/key"
+          },
+          "topic_key": {
+            "$ref": "#/$defs/key"
+          },
+          "title": {
+            "$ref": "#/$defs/single_line"
+          },
+          "text": {
+            "$ref": "#/$defs/text"
+          },
+          "control_ids": {
+            "$ref": "#/$defs/identifiers"
+          },
+          "gap_ids": {
+            "$ref": "#/$defs/identifiers"
+          }
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["policy_key", "topic_key", "order", "title", "prompt"],
+        "properties": {
+          "policy_key": {
+            "$ref": "#/$defs/key"
+          },
+          "topic_key": {
+            "$ref": "#/$defs/key"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "title": {
+            "$ref": "#/$defs/single_line"
+          },
+          "prompt": {
+            "$ref": "#/$defs/text"
+          },
+          "gap_ids": {
+            "$ref": "#/$defs/identifiers"
+          },
+          "control_ids": {
+            "$ref": "#/$defs/identifiers"
+          }
+        }
+      }
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^\\S+$"
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "executable_sha256", "model_id"],
+      "properties": {
+        "executable": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "$comment": "Recorded verbatim from the operator; FORGE resolves no provider and no host."
+        },
+        "executable_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "argv": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        }
+      }
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id", "kind", "label", "sensitivity", "payload"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key"
+        },
+        "kind": {
+          "enum": ["plan-section", "gap", "answer", "control", "source-span"]
+        },
+        "label": {
+          "$ref": "#/$defs/label"
+        },
+        "sensitivity": {
+          "enum": ["public", "internal", "confidential", "restricted"],
+          "$comment": "Confidential and restricted material requires an explicit operator acknowledgement before it can be selected."
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload_span"
+        }
+      },
+      "$comment": "Runtime requires source for a source-span unit, and requires units to be ordered by ascending, non-overlapping payload spans that lie inside the payload artifact."
+    },
+    "payload_span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "$comment": "Exclusive; runtime requires end > start, at most 1 MiB per unit, and end no greater than the payload byte length."
+        }
+      },
+      "$comment": "The unit carries no copy of its text: the payload artifact is the only source of the bytes an adapter receives."
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "path", "sha256", "start", "end"],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "path": {
+          "$ref": "#/$defs/artifact_path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "$comment": "Exclusive; runtime requires end > start and a span of at most 1 MiB."
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id", "rule_id", "rule_sha256"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key"
+        },
+        "rule_id": {
+          "$ref": "#/$defs/key"
+        },
+        "rule_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "$comment": "Must name a unit in the same request; the rule itself is never recorded."
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact", "sha256", "bytes", "units"],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/artifact_path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        },
+        "units": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        }
+      }
+    }
+  }
+}

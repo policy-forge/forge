@@ -60,6 +60,77 @@ pub(crate) fn reuse_seed(manifest: &Path) -> Result<ReuseSeed, ForgeError> {
     Ok(ReuseSeed { root: prepared.root, plan, prompts, captures: prepared.captures })
 }
 
+/// One question prompt and the sensitivity it was declared at.
+pub(crate) struct SeedPrompt {
+    pub(crate) text: String,
+    pub(crate) sensitivity: manifest::Sensitivity,
+}
+
+/// One approved answer a suggestion prepare run may select.
+pub(crate) struct SeedAnswer {
+    pub(crate) key: String,
+    pub(crate) question_key: String,
+    pub(crate) value: String,
+    pub(crate) sensitivity: manifest::Sensitivity,
+}
+
+/// The plan, project root, prompts, approved answers and captured inputs a
+/// suggestion prepare run needs.
+///
+/// Answers are rendered from the supplied pack exactly as the operator wrote
+/// them: only `provided` answers with a string value are offered, so nothing is
+/// coerced into text FORGE invented.
+pub(crate) struct SuggestSeed {
+    pub(crate) root: PathBuf,
+    pub(crate) plan: AuthoringPlan,
+    pub(crate) prompts: BTreeMap<String, SeedPrompt>,
+    pub(crate) answers: BTreeMap<String, SeedAnswer>,
+    pub(crate) captures: input::CaptureSet,
+}
+
+/// Validate a project and return the plan, root, prompts and approved answers.
+///
+/// # Errors
+/// Returns an authoring error for invalid inputs, stale pins, or unsafe paths.
+pub(crate) fn suggest_seed(manifest: &Path) -> Result<SuggestSeed, ForgeError> {
+    let prepared = input::prepare(manifest)?;
+    let plan = plan::build_plan(&prepared.loaded)?;
+    // The plan's evaluation is what decides whether an answer is usable: a
+    // `provided` answer can still be stale, expired or invalid.
+    let mut prompts = BTreeMap::new();
+    for question in &prepared.loaded.pack.questions {
+        prompts.insert(
+            question.key.clone(),
+            SeedPrompt { text: question.prompt.clone(), sensitivity: question.sensitivity },
+        );
+    }
+    let evaluated: BTreeMap<&str, &model::QuestionEvaluation> =
+        plan.questions.iter().map(|question| (question.question_key.as_str(), question)).collect();
+    let mut answers = BTreeMap::new();
+    for answer in &prepared.loaded.project.answers {
+        let Some(evaluation) = evaluated.get(answer.question_key.as_str()) else {
+            continue;
+        };
+        if evaluation.state != model::AnswerStatus::Available
+            || evaluation.answer_key.as_deref() != Some(answer.key.as_str())
+        {
+            continue;
+        }
+        if let Some(serde_json::Value::String(value)) = &answer.value {
+            answers.insert(
+                answer.key.clone(),
+                SeedAnswer {
+                    key: answer.key.clone(),
+                    question_key: answer.question_key.clone(),
+                    value: value.clone(),
+                    sensitivity: answer.sensitivity,
+                },
+            );
+        }
+    }
+    Ok(SuggestSeed { root: prepared.root, plan, prompts, answers, captures: prepared.captures })
+}
+
 /// Validate a complete project and return its deterministic drafting plan without writing.
 ///
 /// # Errors

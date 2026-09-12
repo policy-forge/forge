@@ -5,6 +5,28 @@ use std::path::Path;
 
 use crate::error::ForgeError;
 
+/// Write a diagnostic line to stderr, never to the requested output stream.
+///
+/// Commands that emit a closed document on stdout keep their diagnostics here so
+/// a machine-readable stream stays parseable. `BrokenPipe` is treated as success.
+///
+/// # Errors
+/// Returns [`ForgeError::Io`] when stderr cannot be written or flushed.
+pub fn write_diagnostic(content: &str) -> Result<(), ForgeError> {
+    let mut stderr = io::stderr().lock();
+    for outcome in [stderr.write_all(content.as_bytes()), stderr.flush()] {
+        if let Err(error) = outcome
+            && error.kind() != io::ErrorKind::BrokenPipe
+        {
+            return Err(ForgeError::Io(io::Error::new(
+                error.kind(),
+                format!("failed writing to stderr: {error}"),
+            )));
+        }
+    }
+    Ok(())
+}
+
 /// Write content to a file (atomically) or stdout.
 ///
 /// `BrokenPipe` from stdout writing or flushing is treated as successful so pipelines

@@ -148,7 +148,7 @@ design-partner validation, publication, or adoption gates are complete.
 | [063](docs/PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merged in `34d9869`; PRD release gates remain |
 | [064](docs/PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | PRD 063 dependency is implemented; schema, status semantics, and source-of-truth decisions remain |
 | [065](docs/PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | Requires a stable source-report contract and approved provider/auth boundary |
-| [066](docs/PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review |
+| [066](docs/PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned — Phase 0 retrieval tranche merged, quarantine pipeline in progress | Phase 0 retrieval-only `forge author reuse` merged in PR #153 (merge `7d0d9f3`; [reuse plan](docs/plans/2026-09-11-066-mvp-reuse-plan.md), [gate register](docs/authoring-gates.md#gate-reuse--prd-066-phase-0-reuse-tranche)); the offline five-step `forge suggest` pipeline is implemented on `codex/066-suggestions-pipeline` ([suggestions plan](docs/plans/2026-09-12-066-suggestions-pipeline.md), [GATE-SUGGEST rows](docs/authoring-gates.md#gate-suggest--prd-066-local-suggestion-pipeline)); adjudicated corpora, M-14/M-15 thresholds, usefulness and release gates remain open |
 | [067](docs/PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | Requires stable project discovery, shared read-only queries, and a completed threat model |
 | [068](docs/PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | Requires a selected first review workflow and approved identity/quorum boundaries |
 | [069](docs/PRD/069-prd-dependency-security-audit.md) | Dependency security audit | Planned | Requires a recorded criteria, an inventory tool and an owned-exception policy; the PRD-062 transport stack and the existing exemptions are the first tranche |
@@ -165,7 +165,7 @@ This sequence communicates dependency order, not committed dates.
 | **Now** | PRD 062 implementation and verification | Local explorer, safe mutation and review workflow under technical verification (PR #146); [usage and limitations](docs/local-workspace.md); pilot/release remain pending |
 | **Next** | PRD 064 Phase 1 | Add deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
 | **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after their shared contracts stabilize |
-| **Later** | PRD 066 | Add quarantined AI suggestions only after the authoring schema, evaluation corpus, and provider/privacy gates are approved |
+| **Later** | PRD 066 | The offline suggestion pipeline is implemented on its branch; adjudicated corpora, quality thresholds and measured usefulness remain the gates before any release, and the provider/privacy question is resolved to a local-only boundary |
 
 ## Historical v1.0.0 Release Gate
 

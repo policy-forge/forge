@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/suggest-task-mapping/1",
+  "title": "FORGE mapping-candidate task",
+  "description": "Versioned shape of the mapping-candidate task: the subjects a request supplies and the candidates a response may return. A candidate must cite allowlisted units; FORGE assigns identifiers and evidence ratings deterministically and never accepts a self-reported confidence score. Runtime validation additionally rejects decoded duplicate keys, nulls, uncited candidates and unsafe identifiers.",
+  "$comment": "Runtime enforces a 16 KiB UTF-8 string bound, at most 1000 subjects, 1000 candidates, 128 control or gap identifiers per subject and 64 citations per candidate. Relationship values are the destination mapping contract's own vocabulary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_schema_version"],
+  "properties": {
+    "task_schema_version": {
+      "const": "forge.suggest-task-mapping/1"
+    },
+    "mapping_subjects": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/subject"
+      }
+    },
+    "mapping_candidates": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "single_line": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+      }
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^\\S+$"
+      }
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key",
+          "$comment": "Must name a unit in the same request; a missing or unknown unit fails validation."
+        },
+        "quote": {
+          "$ref": "#/$defs/text",
+          "$comment": "When present, runtime requires it to be byte-identical to the cited unit's text."
+        }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_key", "topic_key", "title", "text"],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "title": {
+          "$ref": "#/$defs/single_line"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "control_ids": {
+          "$ref": "#/$defs/identifiers"
+        },
+        "gap_ids": {
+          "$ref": "#/$defs/identifiers"
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_key",
+        "topic_key",
+        "control_id",
+        "relationship",
+        "rationale",
+        "citations",
+        "assumptions",
+        "unresolved_questions"
+      ],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "control_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^\\S+$"
+        },
+        "relationship": {
+          "enum": [
+            "equivalent-to",
+            "equal-to",
+            "subset-of",
+            "superset-of",
+            "intersects-with",
+            "no-relationship"
+          ]
+        },
+        "rationale": {
+          "$ref": "#/$defs/text"
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    }
+  }
+}

@@ -263,6 +263,44 @@ do today. The retrieval-first tranche is described in the
 [MVP reuse plan](plans/2026-09-11-066-mvp-reuse-plan.md); generation, critique
 and provider phases remain in [PRD-066](PRD/066-prd-ai-assisted-suggestions.md).
 
+## Local suggestions (PRD-066, offline)
+
+`forge suggest` runs a five-step, local-only pipeline for quarantined model
+suggestions. Nothing leaves the machine: there is no provider, no [ai] network
+configuration and no outbound request. A model call is an operator-supplied
+local executable, or an operator-recorded response.
+
+| Step | Command | What it does |
+|---|---|---|
+| Prepare | `forge suggest prepare --manifest project.json --output-dir prepared --adapter ./local-model --model-id my-model [--corpus corpus.json --include-document KEY] [--answer KEY] [--redact-rules rules.txt] [--consent --operator-key KEY]` | Assembles the exact payload, the closed `forge.suggest-request/1` allowlist, the byte-exact preview, and — only with `--consent` — a token bound to the payload and adapter digests |
+| Run | `forge suggest run --request prepared/request.json --consent prepared/consent.json --output-dir run-1 [--recorded-response recorded.json]` | Invokes the local adapter once (bounded, timed, environment cleared) and publishes `response.raw` with a `forge.suggest-run/1` receipt |
+| Validate | `forge suggest validate --request prepared/request.json --run prepared/run-1/run.json --output-dir bundle-1 [--retain-raw]` | Decodes the response against its closed task schema, resolves every citation against the allowlist and the payload, and publishes the `forge.suggestions/1` quarantine bundle |
+| Review | `forge suggest review --bundle prepared/bundle-1/suggestions.json --decisions decisions.json --output-dir review-1` | Binds your `forge.suggest-dispositions/1` document to exactly that bundle and publishes it unchanged |
+| Promote | `forge suggest promote --bundle … --request prepared/request.json --dispositions …/dispositions.json --destination project.json --output-dir promotion-1` | Proposes a `forge.author-project/1` patch that the destination's own validator accepts, and records it as `proposed-unapproved` |
+
+Exit codes: `0` complete, `1` the step succeeded but a human decision is still
+outstanding (no unresolved section to prepare, an empty response, an undecided
+suggestion, an adapter the environment could not run), `2` a refusal — invalid
+or unsafe input, a consent that does not authorise the payload, a citation that
+does not resolve, or an existing destination. A refusal publishes nothing.
+
+Guarantees worth knowing before you rely on it:
+
+- Every published generation is a new, atomically created directory; existing
+  destinations are refused, and no command writes into your pack, project, plan
+  or lifecycle artifacts.
+- Model text is untrusted: it is decoded against a closed schema, must cite
+  allowlisted units, and a quoted citation must match the payload bytes exactly.
+- Evidence ratings (`high`/`medium`/`low`) are computed from citations, never
+  from a model's self-reported confidence, and no output claims approval.
+- Redaction is refusal-first: a secret-shaped payload stops the prepare unless
+  you declared a rule that removes it, and the rule is recorded by digest only.
+- Promotion is a proposal: review it, apply the clause files by hand, then use
+  the ordinary `forge author plan`/`build` path.
+
+Contracts and gates: [suggestions pipeline plan](plans/2026-09-12-066-suggestions-pipeline.md),
+[gate register](authoring-gates.md#gate-suggest--prd-066-local-suggestion-pipeline).
+
 ## Phase 2 extensions and remaining scope
 
 Explicit component instances, M-13 impact comparisons, offline HTML, and draft-only

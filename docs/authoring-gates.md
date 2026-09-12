@@ -58,11 +58,15 @@ Until those measurements exist, no numeric time-savings claim is made.
 ## GATE-REUSE — PRD-066 Phase 0 reuse tranche
 
 The retrieval-first reuse tranche (`forge author reuse`) is a Phase 0 technical
-implementation of [PRD-066](PRD/066-prd-ai-assisted-suggestions.md). It returns
+implementation of [PRD-066](PRD/066-prd-ai-assisted-suggestions.md). It was
+merged in PR #153 (merge `7d0d9f3`). It returns
 only verbatim, span-exact excerpts of operator-supplied approved documents and
 therefore needs no PRD-061 M-9 amendment. Like every other tranche here it
 creates no approval, lifecycle or compliance evidence, and its scores are
-lexical ranks, not quality claims. See the
+lexical ranks, not quality claims. Merging the tranche is technical evidence
+only: every gate below stays as recorded, and the follow-on local-only
+suggestion pipeline is planned separately in the
+[suggestions pipeline plan](plans/2026-09-12-066-suggestions-pipeline.md). See the
 [MVP reuse plan](plans/2026-09-11-066-mvp-reuse-plan.md) and the
 [authoring guide](authoring.md#reuse-candidates-prd-066-phase-0).
 
@@ -92,3 +96,34 @@ the PRD's only established check convention is "technical evidence, not human
 acceptance", and this register's dispositions do not convert Should-Have
 implementation into a checkbox claim. The technical evidence for S-1…S-4 is in
 [Phase 2 acceptance evidence](authoring-phase2-evidence.md).
+
+## GATE-SUGGEST — PRD-066 local suggestion pipeline
+
+The offline suggestion pipeline (`forge suggest prepare|run|validate|review|promote`)
+implements the task-agnostic part of [PRD-066](PRD/066-prd-ai-assisted-suggestions.md)
+under the owner's 2026-09-12 decisions: no network, no provider, no new
+dependency, and nothing published outside a quarantine generation. It is
+implemented on `codex/066-suggestions-pipeline`, not merged, and creates no
+approval, lifecycle or compliance evidence: a suggestion is inert until a human
+dispositions it, and promotion proposes rather than applies.
+
+The engineering rows below record what the tranche implements; the owner has not
+yet recorded a disposition for any of them, and no row is satisfied by this file
+alone.
+
+| Gate | Owner | Status |
+|---|---|---|
+| GATE-SUGGEST-CONTRACT | Engineering owner | **Implemented; owner disposition pending** — nine closed published contracts with runtime validation authoritative over JSON Schema, and schema/runtime agreement tests |
+| GATE-SUGGEST-CONTEXT | Engineering owner | **Implemented; owner disposition pending** — explicit allowlist, refusal-first redaction, byte-exact preview and consent bound to payload and adapter digests |
+| GATE-SUGGEST-ADAPTER | Engineering owner | **Implemented; owner disposition pending** — typed local invoke seam, cleared environment, capped streams, polled timeout, kill-and-reap; recorded-response mode for the offline workflow |
+| GATE-SUGGEST-VALIDATION | Engineering owner | **Implemented; owner disposition pending** — closed decode, citation resolution, byte-exact quotes, computed evidence rating, whole-response rejection |
+| GATE-SUGGEST-DISPOSITION | Engineering owner | **Implemented; owner disposition pending** — operator-authored records bound to bundle, task and quarantined content digests; undecided suggestions keep the step at exit 1 |
+| GATE-SUGGEST-PROMOTION | Engineering owner | **Implemented; owner disposition pending** — proposed patch validated with the destination's own parser, published beside the destination and marked `proposed-unapproved` |
+| GATE-SUGGEST-SAFETY | Engineering owner | **Implemented; owner disposition pending** — per-contract byte and count bounds, atomic no-replace publication, quarantine-isolation and provenance tests |
+| GATE-SUGGEST-USEFULNESS | Product owner | **Open** — no adjudicated corpus and no measured exercise; no usefulness or time-savings claim is made |
+| GATE-SUGGEST-RELEASE | Release maintainer | **Open** — the tranche is held out of any release alongside the rest of the authoring work |
+
+Phase 1 of the PRD is what this tranche implements (prepare/validate/review with
+recorded responses, plus a local adapter). Phase 2's mapping-candidate task,
+M-14/M-15 numeric thresholds, the adjudicated corpus and the prompt-injection
+corpus remain open; the first generation task stays deferred.

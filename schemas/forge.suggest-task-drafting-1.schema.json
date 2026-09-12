@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/suggest-task-drafting/1",
+  "title": "FORGE policy-drafting task",
+  "description": "Versioned shape of the policy-drafting task: the unresolved sections a request supplies and the clauses a response may return. A clause must cite allowlisted units; any organization fact must be backed by a supplied answer or span. Runtime validation additionally rejects decoded duplicate keys, nulls, uncited clauses and unsafe keys.",
+  "$comment": "Runtime enforces a 16 KiB UTF-8 string bound, at most 1000 sections, 1000 clauses, plan order at most 100000, and 64 citations per clause.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_schema_version"],
+  "properties": {
+    "task_schema_version": {
+      "const": "forge.suggest-task-drafting/1"
+    },
+    "drafting_sections": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/section"
+      }
+    },
+    "draft_clauses": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/clause"
+      }
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "single_line": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+      }
+    },
+    "identifiers": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^\\S+$"
+      }
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key",
+          "$comment": "Must name a unit in the same request; a missing or unknown unit fails validation."
+        },
+        "quote": {
+          "$ref": "#/$defs/text",
+          "$comment": "When present, runtime requires it to be byte-identical to the cited unit's text."
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_key", "topic_key", "order", "title", "prompt"],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "title": {
+          "$ref": "#/$defs/single_line"
+        },
+        "prompt": {
+          "$ref": "#/$defs/text"
+        },
+        "gap_ids": {
+          "$ref": "#/$defs/identifiers"
+        },
+        "control_ids": {
+          "$ref": "#/$defs/identifiers"
+        }
+      }
+    },
+    "clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_key", "topic_key", "draft_text", "citations", "assumptions", "unresolved_questions"],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "question_key": {
+          "$ref": "#/$defs/key"
+        },
+        "heading": {
+          "$ref": "#/$defs/single_line"
+        },
+        "draft_text": {
+          "$ref": "#/$defs/text"
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/suggest-dispositions/1",
+  "title": "FORGE suggestion dispositions",
+  "description": "Closed review record for one quarantine bundle. A suggestion with no record is pending; accept-as-is, accept-edited, reject and expired are reviewer decisions with a key, a supplied time and a rationale. An edit preserves the original digest and the edited content. Runtime validation additionally rejects decoded duplicate keys, nulls, repeated decisions, and an edit that does not agree with its status.",
+  "$comment": "Runtime enforces a 2 MiB byte limit, depth 32, a 16 KiB UTF-8 string bound, at most 1000 records, and portable descendant paths. Timestamps are supplied by the reviewer's inputs, never read from a clock.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bundle_id", "bundle_sha256", "task", "as_of", "records"],
+  "properties": {
+    "schema_version": {
+      "const": "forge.suggest-dispositions/1"
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "bundle_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "task": {
+      "$ref": "#/$defs/task"
+    },
+    "as_of": {
+      "$ref": "#/$defs/single_line"
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "single_line": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schema_version"],
+      "properties": {
+        "kind": {
+          "enum": ["mapping-candidates", "policy-drafting"]
+        },
+        "schema_version": {
+          "enum": ["forge.suggest-task-mapping/1", "forge.suggest-task-drafting/1"]
+        }
+      },
+      "$comment": "Version must match kind."
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key"
+        },
+        "quote": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "edited_body": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mapping": {
+          "type": "object",
+          "$comment": "A mapping candidate as defined by forge.suggest-task-mapping/1."
+        },
+        "drafting": {
+          "type": "object",
+          "$comment": "A draft clause as defined by forge.suggest-task-drafting/1."
+        }
+      },
+      "$comment": "Runtime requires exactly the arm of the manifest's task kind and validates it with that task's rules."
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suggestion_id",
+        "status",
+        "reviewer_key",
+        "decided_as_of",
+        "rationale",
+        "original_sha256"
+      ],
+      "properties": {
+        "suggestion_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "status": {
+          "enum": ["accept-as-is", "accept-edited", "reject", "expired"],
+          "$comment": "accept-as-is and accept-edited may be promoted; reject and expired never are."
+        },
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "decided_as_of": {
+          "$ref": "#/$defs/single_line"
+        },
+        "rationale": {
+          "$ref": "#/$defs/text"
+        },
+        "original_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "edited": {
+          "$ref": "#/$defs/edited_body"
+        },
+        "edited_sha256": {
+          "$ref": "#/$defs/sha256",
+          "$comment": "Runtime requires edited and edited_sha256 together for accept-edited, and forbids both for every other status."
+        }
+      }
+    }
+  }
+}

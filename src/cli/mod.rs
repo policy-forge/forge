@@ -319,6 +319,12 @@ pub enum Commands {
         command: AuthorCommand,
     },
 
+    /// Prepare and review quarantined local model suggestions (offline, no network)
+    Suggest {
+        #[command(subcommand)]
+        command: SuggestCommand,
+    },
+
     /// Open a local, single-user project workspace
     Workspace {
         #[arg(long)]
@@ -968,6 +974,154 @@ pub enum AuthorCommand {
 pub enum AuthorReportFormat {
     Text,
     Json,
+}
+
+/// Suggestion task selection.
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
+pub enum SuggestTask {
+    /// Draft clauses against approved authoring context.
+    Drafting,
+    /// Propose control relationships. No context derivation is selected yet.
+    Mapping,
+}
+
+impl SuggestTask {
+    /// The contract task this selection names.
+    #[must_use]
+    pub const fn kind(self) -> crate::suggest::TaskKind {
+        match self {
+            Self::Drafting => crate::suggest::TaskKind::PolicyDrafting,
+            Self::Mapping => crate::suggest::TaskKind::MappingCandidates,
+        }
+    }
+}
+
+/// Local, offline suggestion pipeline commands.
+#[derive(Debug, Subcommand)]
+pub enum SuggestCommand {
+    /// Assemble the exact allowlisted payload, preview it, and record consent
+    Prepare {
+        /// Versioned forge.author-project/1 JSON manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// New directory beneath the project root; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Selected task
+        #[arg(long, value_enum, default_value_t = SuggestTask::Drafting)]
+        task: SuggestTask,
+        /// Closed forge.reuse-corpus/1 manifest naming candidate documents
+        #[arg(long)]
+        corpus: Option<PathBuf>,
+        /// Corpus document key to include; repeat for each selected document
+        #[arg(long = "include-document")]
+        include_document: Vec<String>,
+        /// Approved answer key to include; repeat for each selected answer
+        #[arg(long = "answer")]
+        answer: Vec<String>,
+        /// Acknowledge confidential or restricted material explicitly
+        #[arg(long)]
+        allow_sensitive: bool,
+        /// Operator redaction rules: one `rule-id<TAB>literal` per line
+        #[arg(long)]
+        redact_rules: Option<PathBuf>,
+        /// Local adapter executable to fingerprint and preview
+        #[arg(long)]
+        adapter: PathBuf,
+        /// Operator-supplied model identifier, recorded verbatim
+        #[arg(long)]
+        model_id: String,
+        /// Retention notice to record verbatim
+        #[arg(long)]
+        retention_notice: Option<String>,
+        /// Write a consent token bound to this exact payload
+        #[arg(long, requires = "operator_key")]
+        consent: bool,
+        /// Operator key granting consent; required with --consent
+        #[arg(long, requires = "consent")]
+        operator_key: Option<String>,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
+    /// Invoke the local adapter once for a prepared, consented payload
+    Run {
+        /// The prepared forge.suggest-request/1 document
+        #[arg(long)]
+        request: PathBuf,
+        /// The forge.suggest-consent/1 token authorising this exact payload
+        #[arg(long)]
+        consent: PathBuf,
+        /// New directory beneath the request's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Adapter executable override; its digest must match the request
+        #[arg(long)]
+        adapter: Option<PathBuf>,
+        /// Adapter timeout in seconds
+        #[arg(long, default_value_t = crate::suggest::run::DEFAULT_TIMEOUT_SECS)]
+        timeout: u64,
+        /// Replay a recorded response instead of invoking a process
+        #[arg(long)]
+        recorded_response: Option<PathBuf>,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
+    /// Bind reviewer decisions to a quarantine bundle and publish the record
+    Review {
+        /// The forge.suggestions/1 bundle the decisions are about
+        #[arg(long)]
+        bundle: PathBuf,
+        /// The operator's closed forge.suggest-dispositions/1 document
+        #[arg(long)]
+        decisions: PathBuf,
+        /// New directory beneath the bundle's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
+    /// Propose a downstream patch for accepted suggestions; approves nothing
+    Promote {
+        /// The forge.suggestions/1 bundle the decisions were made about
+        #[arg(long)]
+        bundle: PathBuf,
+        /// The forge.suggest-dispositions/1 record published by `suggest review`
+        #[arg(long)]
+        dispositions: PathBuf,
+        /// The prepared forge.suggest-request/1 document the bundle came from
+        #[arg(long)]
+        request: PathBuf,
+        /// The destination forge.author-project/1 document, relative to the working directory
+        #[arg(long)]
+        destination: PathBuf,
+        /// New directory beneath the destination's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
+    /// Validate a recorded response into the forge.suggestions/1 quarantine bundle
+    Validate {
+        /// The prepared forge.suggest-request/1 document
+        #[arg(long)]
+        request: PathBuf,
+        /// The forge.suggest-run/1 record naming the raw response
+        #[arg(long)]
+        run: PathBuf,
+        /// New directory beneath the request's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Retain the exact raw response beside the bundle
+        #[arg(long)]
+        retain_raw: bool,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
 }
 
 /// Framework revision analysis commands.
@@ -1809,6 +1963,96 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     *include_draft,
                     *html,
                 )?,
+            };
+            if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }
+        }
+        Commands::Suggest { command } => {
+            let action_required = match command {
+                SuggestCommand::Prepare {
+                    manifest,
+                    output_dir,
+                    task,
+                    corpus,
+                    include_document,
+                    answer,
+                    allow_sensitive,
+                    redact_rules,
+                    adapter,
+                    model_id,
+                    retention_notice,
+                    consent,
+                    operator_key,
+                    format,
+                } => {
+                    let retention = retention_notice.clone().unwrap_or_else(|| {
+                        crate::suggest::prepare::DEFAULT_RETENTION_NOTICE.to_string()
+                    });
+                    crate::suggest::prepare::execute(&crate::suggest::prepare::PrepareArgs {
+                        manifest,
+                        output_dir,
+                        task: task.kind(),
+                        corpus: corpus.as_deref(),
+                        include_documents: include_document,
+                        answers: answer,
+                        allow_sensitive: *allow_sensitive,
+                        redact_rules: redact_rules.as_deref(),
+                        adapter,
+                        model_id,
+                        retention_notice: retention.as_str(),
+                        consent: *consent,
+                        operator_key: operator_key.as_deref(),
+                        format: *format,
+                    })?
+                }
+                SuggestCommand::Run {
+                    request,
+                    consent,
+                    output_dir,
+                    adapter,
+                    timeout,
+                    recorded_response,
+                    format,
+                } => crate::suggest::run::execute(&crate::suggest::run::RunArgs {
+                    request,
+                    consent,
+                    output_dir,
+                    adapter: adapter.as_deref(),
+                    timeout_secs: *timeout,
+                    recorded_response: recorded_response.as_deref(),
+                    format: *format,
+                })?,
+                SuggestCommand::Promote {
+                    bundle,
+                    dispositions,
+                    request,
+                    destination,
+                    output_dir,
+                    format,
+                } => crate::suggest::promote::execute(&crate::suggest::promote::PromoteArgs {
+                    bundle,
+                    request,
+                    dispositions,
+                    destination,
+                    output_dir,
+                    format: *format,
+                })?,
+                SuggestCommand::Review { bundle, decisions, output_dir, format } => {
+                    crate::suggest::review::execute(&crate::suggest::review::ReviewArgs {
+                        bundle,
+                        decisions,
+                        output_dir,
+                        format: *format,
+                    })?
+                }
+                SuggestCommand::Validate { request, run, output_dir, retain_raw, format } => {
+                    crate::suggest::validate::execute(&crate::suggest::validate::ValidateArgs {
+                        request,
+                        run,
+                        output_dir,
+                        retain_raw: *retain_raw,
+                        format: *format,
+                    })?
+                }
             };
             if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }
         }
