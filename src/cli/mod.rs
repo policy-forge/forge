@@ -957,6 +957,9 @@ pub enum AuthorCommand {
         /// Let operator-declared draft documents compete
         #[arg(long)]
         include_draft: bool,
+        /// Include an inert escaped HTML view in the output generation
+        #[arg(long, requires = "output_dir")]
+        html: bool,
     },
 }
 
@@ -1795,6 +1798,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     max_candidates,
                     min_score,
                     include_draft,
+                    html,
                 } => crate::reuse::execute(
                     manifest,
                     corpus,
@@ -1803,6 +1807,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     *max_candidates,
                     *min_score,
                     *include_draft,
+                    *html,
                 )?,
             };
             if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }

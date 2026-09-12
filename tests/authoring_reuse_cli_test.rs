@@ -267,3 +267,66 @@ fn repeated_runs_produce_byte_identical_reports() {
     assert_exit(&first, 0);
     assert_eq!(first.stdout, second.stdout);
 }
+
+#[test]
+fn publishes_a_generation_and_refuses_an_existing_destination() {
+    let (_temp, root) = project();
+    corpus(&root, "# Access drafting\n\nc-1 Approve access requests.\n");
+    let published = reuse(&root, &["--format", "json", "--output-dir", "out", "--html"]);
+    assert_exit(&published, 0);
+    let json = std::fs::read(root.join("out/reuse.json")).unwrap();
+    assert_eq!(json, published.stdout);
+    let text = std::fs::read_to_string(root.join("out/reuse.txt")).unwrap();
+    assert!(text.starts_with("FORGE reuse candidates\n"));
+    assert!(text.chars().all(|ch| !ch.is_control() || ch == '\n'));
+
+    let html = std::fs::read_to_string(root.join("out/reuse.html")).unwrap();
+    assert!(html.starts_with("<!doctype html>"));
+    assert!(html.contains("default-src 'none'"));
+    assert!(html.contains("<pre>"));
+    for forbidden in ["<script", "<img", "<form", "<a ", "<link", "<style"] {
+        assert!(!html.contains(forbidden), "{forbidden}");
+    }
+    assert!(html.contains("&quot;schema_version&quot;"));
+
+    let refused = reuse(&root, &["--format", "json", "--output-dir", "out", "--html"]);
+    assert_exit(&refused, 2);
+    assert!(refused.stdout.is_empty());
+}
+
+#[test]
+fn missing_parent_and_escaping_output_directories_are_rejected() {
+    let (_temp, root) = project();
+    corpus(&root, "# Access drafting\n\nc-1 Approve access requests.\n");
+    for destination in ["absent/nested", "../escape", "/absolute"] {
+        let output = reuse(&root, &["--format", "json", "--output-dir", destination]);
+        assert_exit(&output, 2);
+        assert!(output.stdout.is_empty(), "{destination}");
+    }
+}
+
+#[test]
+fn html_requires_an_output_directory_and_candidates_are_bounded() {
+    let (_temp, root) = project();
+    corpus(&root, "# Access drafting\n\nc-1 Approve access requests.\n");
+    let html = reuse(&root, &["--html"]);
+    assert_exit(&html, 2);
+    let capped = reuse(&root, &["--max-candidates", "101"]);
+    assert_exit(&capped, 2);
+}
+
+#[test]
+fn reports_are_directory_independent_and_hold_no_absolute_paths() {
+    let (_first, first_root) = project();
+    corpus(&first_root, "# Access drafting\n\nc-1 Approve access requests.\n");
+    let (_second, second_root) = project();
+    corpus(&second_root, "# Access drafting\n\nc-1 Approve access requests.\n");
+
+    let first = reuse(&first_root, &["--format", "json"]);
+    let second = reuse(&second_root, &["--format", "json"]);
+    assert_exit(&first, 0);
+    assert_eq!(first.stdout, second.stdout);
+    let rendered = String::from_utf8(first.stdout).unwrap();
+    assert!(!rendered.contains(first_root.to_str().unwrap()));
+    assert!(!rendered.contains(second_root.to_str().unwrap()));
+}

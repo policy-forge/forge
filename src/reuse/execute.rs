@@ -30,7 +30,7 @@ fn error(message: impl Into<String>) -> ForgeError {
 ///
 /// Returns an authoring error for invalid arguments, invalid input contracts,
 /// capture failures, unsafe output, or publication failure.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 pub fn execute(
     manifest: &Path,
     corpus_path: &Path,
@@ -39,6 +39,7 @@ pub fn execute(
     max_candidates: usize,
     min_score: f64,
     include_draft: bool,
+    html: bool,
 ) -> Result<bool, ForgeError> {
     if max_candidates == 0 || max_candidates > MAX_CANDIDATE_LIMIT {
         return Err(error(format!("--max-candidates must be between 1 and {MAX_CANDIDATE_LIMIT}")));
@@ -115,6 +116,32 @@ pub fn execute(
     captured.verify()?;
     let json = report.render_json()?;
     let text = report.render_text();
+    if let Some(destination) = output_dir {
+        let mut artifacts = vec![
+            crate::authoring::output::OutputArtifact {
+                relative_path: "reuse.json".to_owned(),
+                bytes: json.clone(),
+            },
+            crate::authoring::output::OutputArtifact {
+                relative_path: "reuse.txt".to_owned(),
+                bytes: text.clone().into_bytes(),
+            },
+        ];
+        if html {
+            artifacts.push(crate::authoring::output::OutputArtifact {
+                relative_path: "reuse.html".to_owned(),
+                bytes: crate::authoring::html::render_closed_bounded(
+                    "Authoring reuse",
+                    &json,
+                    super::report::REUSE_SCHEMA_VERSION,
+                    super::report::MAX_REPORT_BYTES,
+                )?,
+            });
+        }
+        crate::authoring::output::publish(&seed.root, destination, &artifacts)?;
+    } else if html {
+        return Err(error("HTML output requires --output-dir"));
+    }
     let stdout = match format {
         AuthorReportFormat::Text => text.as_str(),
         AuthorReportFormat::Json => std::str::from_utf8(&json)
@@ -122,19 +149,6 @@ pub fn execute(
     };
     crate::cli::output::write_output(stdout, None)
         .map_err(|cause| error(format!("cannot write reuse report: {cause}")))?;
-    if let Some(destination) = output_dir {
-        let artifacts = vec![
-            crate::authoring::output::OutputArtifact {
-                relative_path: "reuse.json".to_owned(),
-                bytes: json,
-            },
-            crate::authoring::output::OutputArtifact {
-                relative_path: "reuse.txt".to_owned(),
-                bytes: text.into_bytes(),
-            },
-        ];
-        crate::authoring::output::publish(&seed.root, destination, &artifacts)?;
-    }
     Ok(report.action_required())
 }
 
