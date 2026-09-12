@@ -330,3 +330,185 @@ fn reports_are_directory_independent_and_hold_no_absolute_paths() {
     assert!(!rendered.contains(first_root.to_str().unwrap()));
     assert!(!rendered.contains(second_root.to_str().unwrap()));
 }
+
+fn collect_strings(value: &Value, out: &mut std::collections::BTreeSet<String>) {
+    match value {
+        Value::String(text) => {
+            let _ = out.insert(text.clone());
+        }
+        Value::Array(items) => {
+            for item in items {
+                collect_strings(item, out);
+            }
+        }
+        Value::Object(entries) => {
+            for item in entries.values() {
+                collect_strings(item, out);
+            }
+        }
+        Value::Bool(_) | Value::Number(_) | Value::Null => {}
+    }
+}
+
+fn tree_names(root: &Path) -> Vec<String> {
+    fn visit(base: &Path, path: &Path, names: &mut Vec<String>) {
+        for entry in std::fs::read_dir(path).unwrap() {
+            let entry = entry.unwrap();
+            let relative = entry.path().strip_prefix(base).unwrap().to_string_lossy().into_owned();
+            if entry.file_type().unwrap().is_dir() {
+                visit(base, &entry.path(), names);
+            } else {
+                names.push(relative);
+            }
+        }
+    }
+    let mut names = Vec::new();
+    visit(root, root, &mut names);
+    names.sort();
+    names
+}
+
+#[test]
+fn report_holds_only_declared_metadata_and_verbatim_spans() {
+    let (_temp, root) = project();
+    let body = "# Access drafting\n\nc-1 Approve access requests.\n\nUnrelated tail.\n";
+    let bytes = corpus(&root, body);
+    let output = reuse(&root, &["--format", "json"]);
+    assert_exit(&output, 0);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+
+    // (b) every span slices to non-empty, exact source bytes.
+    let mut slices = std::collections::BTreeSet::new();
+    for section in report["sections"].as_array().unwrap() {
+        for candidate in section["candidates"].as_array().unwrap() {
+            let start = usize::try_from(candidate["span"]["start"].as_u64().unwrap()).unwrap();
+            let end = usize::try_from(candidate["span"]["end"].as_u64().unwrap()).unwrap();
+            assert!(start < end && end <= bytes.len());
+            let text = std::str::from_utf8(&bytes[start..end]).unwrap();
+            assert!(!text.trim().is_empty());
+            let _ = slices.insert(text.to_owned());
+        }
+    }
+    assert!(slices.contains("c-1 Approve access requests."));
+
+    // (a) every report string is declared metadata or a verbatim span slice.
+    let mut declared = std::collections::BTreeSet::new();
+    for file in [
+        "project.json",
+        "pack.json",
+        "gap-report.json",
+        "applicability.json",
+        "framework.json",
+        "corpus.json",
+    ] {
+        let value: Value =
+            serde_json::from_slice(&std::fs::read(root.join(file)).unwrap()).unwrap();
+        collect_strings(&value, &mut declared);
+    }
+    // Section metadata is copied from the drafting plan; declare every plan
+    // string (including its derived gap identifiers) as metadata.
+    let plan = run(&root, &["author", "plan", "--manifest", "project.json", "--format", "json"]);
+    let plan_value: Value = serde_json::from_slice(&plan.stdout).unwrap();
+    collect_strings(&plan_value, &mut declared);
+    // Every supplied input path and digest is declared metadata: no hash or
+    // path in the report may be invented.
+    for name in tree_names(&root) {
+        let bytes = std::fs::read(root.join(&name)).unwrap();
+        let _ = declared.insert(name);
+        let _ = declared.insert(hash(&bytes));
+    }
+    for fixed in [
+        "forge.authoring-reuse/1",
+        "author-project",
+        "authoring-pack",
+        "gap-report",
+        "human-clause-operations-clause",
+        "reuse-document-prior-access",
+        "planned",
+        "blocked-context",
+        "skeleton-ready",
+        "control-match",
+        "topic-terms",
+        "question-terms",
+        "same-family",
+    ] {
+        let _ = declared.insert(fixed.to_owned());
+    }
+
+    let mut report_strings = std::collections::BTreeSet::new();
+    collect_strings(&report, &mut report_strings);
+    assert!(!report_strings.is_empty());
+    for value in &report_strings {
+        assert!(
+            declared.contains(value) || slices.contains(value),
+            "report contains a string that is neither declared metadata nor a verbatim span: {value}"
+        );
+    }
+}
+
+#[test]
+fn documented_exit_code_matrix() {
+    let (_temp, root) = project();
+
+    corpus(&root, "# Access drafting\n\nc-1 Approve access requests.\n");
+    assert_exit(&reuse(&root, &["--format", "json"]), 0);
+
+    corpus(&root, "# Access drafting\n\nunrelated words\n");
+    assert_exit(&reuse(&root, &["--format", "json"]), 1);
+
+    corpus(&root, "# Other\n\nzzz\n");
+    assert_exit(&reuse(&root, &["--format", "json"]), 1);
+
+    corpus(&root, "# Access drafting\n\nc-1 Approve access requests.\n");
+    for args in [
+        vec!["--max-candidates", "0"],
+        vec!["--max-candidates", "101"],
+        vec!["--min-score", "-1"],
+        vec!["--output-dir", "../escape"],
+    ] {
+        assert_exit(&reuse(&root, &args), 2);
+    }
+    assert_exit(
+        &run(&root, &["author", "reuse", "--manifest", "project.json", "--corpus", "absent.json"]),
+        2,
+    );
+    assert_exit(
+        &run(&root, &["author", "reuse", "--manifest", "absent.json", "--corpus", "corpus.json"]),
+        2,
+    );
+}
+
+#[test]
+fn existing_author_commands_create_no_reuse_artifacts() {
+    let (_temp, root) = project();
+    let before = tree_names(&root);
+
+    let plan = run(&root, &["author", "plan", "--manifest", "project.json", "--format", "json"]);
+    assert_exit(&plan, 1);
+    let value: Value = serde_json::from_slice(&plan.stdout).unwrap();
+    assert_eq!(value["schema_version"], json!("forge.authoring-plan/1"));
+    assert_eq!(tree_names(&root), before, "author plan must not write default artifacts");
+
+    let build = run(
+        &root,
+        &[
+            "author",
+            "build",
+            "--manifest",
+            "project.json",
+            "--output-dir",
+            "gen",
+            "--format",
+            "json",
+        ],
+    );
+    assert_exit(&build, 1);
+    let names = tree_names(&root);
+    assert!(names.contains(&"gen/plan.json".to_owned()));
+    assert!(names.contains(&"gen/plan.txt".to_owned()));
+    assert!(names.contains(&"gen/provenance.json".to_owned()));
+    assert!(
+        !names.iter().any(|name| name.contains("reuse")),
+        "existing author commands must not emit reuse artifacts: {names:?}"
+    );
+}
