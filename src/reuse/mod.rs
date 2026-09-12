@@ -8,3 +8,4 @@
 pub mod blocks;
 pub mod capture;
 pub mod corpus;
+pub mod rank;
