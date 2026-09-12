@@ -98,7 +98,7 @@ artifact.
 
 | Contract | Direction | Notes |
 |---|---|---|
-| `forge.suggest-request/1` | input to `run`/`validate` | Payload bytes, allowlisted context, target, redaction record, estimates |
+| `forge.suggest-request/1` | input to `run`/`validate` | Payload artifact digest and byte/unit counts, allowlisted context, adapter target, redaction records |
 | `forge.suggest-consent/1` | input to `run` | Payload hash, adapter identity hash, model id, retention notice, operator key, `as_of` |
 | `forge.suggest-task-mapping/1` | embedded in request/response | Versioned task schema for mapping candidates (M-2) |
 | `forge.suggest-task-drafting/1` | embedded in request/response | Versioned task schema for policy drafting (M-2) |
@@ -153,9 +153,9 @@ House rules, matching the existing authoring and reuse tranches:
   adapter executable at prepare time), model id (operator-supplied string, never
   probed), retention notice, operator key, `as_of`. Without `--consent`, no
   token is written and `run` refuses.
-- Exit codes: `0` request written; `1` request valid but the selected context is
-  empty (`AuthoringActionRequired`); `2` invalid, unsafe, sensitive, or
-  oversized input.
+- Exit codes: `0` request written; `1` the selected context is empty, so no
+  request is written at all (`AuthoringActionRequired`); `2` invalid, unsafe,
+  sensitive, or oversized input.
 
 ### run — M-6, M-13
 

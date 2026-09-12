@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/suggest-response/1",
+  "title": "FORGE suggestion response",
+  "description": "Closed local contract for one adapter response. The content is untrusted: it is decoded strictly, bounded, and rejected whole if it carries unknown fields, tool-call shapes, a task version that does not match its kind, or content of the other task. Nothing is repaired. Runtime validation additionally rejects decoded duplicate keys and nulls.",
+  "$comment": "Runtime enforces an 8 MiB byte limit, depth 32, a 16 KiB UTF-8 string bound, at most 1000 suggestions, and the task shapes of forge.suggest-task-mapping/1 and forge.suggest-task-drafting/1. No field may request a tool, a file, a URL or a credential.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "task"],
+  "properties": {
+    "schema_version": {
+      "const": "forge.suggest-response/1"
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schema_version"],
+      "properties": {
+        "kind": {
+          "enum": ["mapping-candidates", "policy-drafting"]
+        },
+        "schema_version": {
+          "enum": ["forge.suggest-task-mapping/1", "forge.suggest-task-drafting/1"],
+          "$comment": "Must match kind."
+        },
+        "mapping_candidates": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        },
+        "draft_clauses": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/clause"
+          }
+        }
+      },
+      "$comment": "Runtime requires the list matching kind and rejects a non-empty list of the other task."
+    },
+    "notes": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/text"
+      },
+      "$comment": "Recorded for the reviewer; never acted on and never promoted."
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
+      }
+    },
+    "single_line": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "not": {
+        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+      }
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id"],
+      "properties": {
+        "unit_id": {
+          "$ref": "#/$defs/key"
+        },
+        "quote": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_key",
+        "topic_key",
+        "control_id",
+        "relationship",
+        "rationale",
+        "citations"
+      ],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "control_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^\\S+$"
+        },
+        "relationship": {
+          "enum": [
+            "equivalent-to",
+            "equal-to",
+            "subset-of",
+            "superset-of",
+            "intersects-with",
+            "no-relationship"
+          ]
+        },
+        "rationale": {
+          "$ref": "#/$defs/text"
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    },
+    "clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_key", "topic_key", "draft_text", "citations"],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/key"
+        },
+        "question_key": {
+          "$ref": "#/$defs/key"
+        },
+        "heading": {
+          "$ref": "#/$defs/single_line"
+        },
+        "draft_text": {
+          "$ref": "#/$defs/text"
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    }
+  }
+}
