@@ -213,19 +213,23 @@ retrieval harness is technical evidence, not acceptance.
 
 ## Open Questions :yellow_circle: `@human-review`
 
-- **[Product, blocking]** Which single task—mapping candidates or clause drafting—has enough user value and corpus quality to launch first?
-- **[Security/privacy, blocking]** Must v1 be local-model-only, or can one external provider meet content-handling requirements?
-- **[Data/evaluation, blocking]** What precision/recall and unsupported-claim thresholds are acceptable per task?
-- **[Legal, blocking]** Which framework/policy content may be transmitted to each approved provider?
+- **[Product, deferred 2026-09-12]** Which single task—mapping candidates or clause drafting—launches first is deferred. Both versioned task schemas (M-2) ship in this tranche and share one task-agnostic pipeline; the task is selected only after adjudicated corpora exist.
+- **[Security/privacy, resolved 2026-09-12]** The model boundary is **local-only**. There is no outbound HTTP/TLS, no provider host, endpoint or key, and no `[ai]` network configuration in any tranche. A model call is a local adapter launched as a child process, or the offline recorded-response workflow. Reopens only if the owner later proposes egress.
+- **[Data/evaluation, open — narrowed 2026-09-12]** Per-task precision/recall and unsupported-claim thresholds still require an adjudicated corpus and stay open as M-14/M-15. No numeric time-savings or quality claim is published in the meantime.
+- **[Legal, resolved 2026-09-12]** No framework or policy content is transmitted to any provider: nothing leaves the machine. Only verbatim operator-supplied content and hashes are produced. Reopens if egress is ever proposed.
 
 ## Definition of Ready :red_circle: `@human-required`
 
-- [ ] One task and target user workflow are selected.
-- [ ] Human-adjudicated evaluation and prompt-injection corpora exist.
-- [ ] Product approves quality, usefulness, latency, and cost gates.
-- [ ] Security/privacy/legal approve provider and payload handling.
-- [ ] Engineering approves quarantine/promotion/provider contracts.
-- [ ] Every Must Have maps to an executable test or human evaluation gate.
+Status recorded 2026-09-12. "Ready" applies per tranche: the task-agnostic
+prepare/run/validate/review/promote pipeline is buildable now, while anything
+that emits machine-authored text stays blocked on the open M-14/M-15 items.
+
+- [ ] **Deferred** — One task and target user workflow are selected. (Owner decision 2026-09-12: both task schemas ship first; task selection waits for adjudicated corpora.)
+- [ ] **Open, blocking generation** — Human-adjudicated evaluation and prompt-injection corpora exist.
+- [ ] **Open, blocking generation** — Product approves quality, usefulness, latency, and cost gates (M-14).
+- [x] **Satisfied for the local boundary** — Security/privacy/legal approve handling: no egress, no provider configuration, nothing leaves the machine. Reopens if egress is ever proposed.
+- [ ] **In review** — Engineering approves quarantine/promotion/adapter contracts, as designed in [the suggestions pipeline plan](../plans/2026-09-12-066-suggestions-pipeline.md).
+- [ ] **In progress** — Every Must Have maps to an executable test (M-17) or a named human evaluation gate; the mapping is recorded in the plan's verification matrix.
 
 ## Decision Log :yellow_circle: `@human-review`
 
@@ -234,6 +238,11 @@ retrieval harness is technical evidence, not acceptance.
 | 2026-08-24 | Quarantine all AI output | Non-deterministic suggestions cannot become governance truth directly | Direct artifact generation |
 | 2026-08-24 | Require exact citations and assumptions | Reviewers need evidence, not fluent confidence | Uncited prose and similarity score |
 | 2026-08-24 | Separate payload consent from product telemetry | Provider processing and analytics are distinct privacy decisions | One blanket consent |
+| 2026-09-12 | Model boundary is local-only; no egress | No outbound HTTP/TLS, no provider hosts/endpoints/keys, no `[ai]` network configuration. A model call is a local adapter launched as a child process (mirroring the `src/oscal_cli` typed-invoke pattern) or the offline recorded-response workflow. `Cargo.toml`/`Cargo.lock` stay untouched without prior owner approval. Resolves the provider/privacy and legal open questions. | One approved external provider with preview, consent and TLS allowlist |
+| 2026-09-12 | Evaluation is corpus-first with no numeric claim | An adjudicated corpus and a prompt-injection corpus are prerequisites for selecting any generation task; per-task thresholds are derived from them. No time-savings or quality number is published; M-14/M-15 stay open. | Select a task first and calibrate thresholds afterwards |
+| 2026-09-12 | Nothing leaves the machine | No payload egress in any tranche. Outputs are verbatim operator-supplied content and hashes only. | External transmission behind payload preview and consent |
+| 2026-09-12 | One PR surfaces the whole PRD-066 work | PR #153 delivered only the Phase 0 retrieval tranche; the follow-on PR presents the full pipeline, contracts and gates so they are reviewable together. | Incremental PR per phase |
+| 2026-09-12 | The first generation task stays deferred | Mapping candidates and clause drafting share one task-agnostic pipeline; the task is chosen after the corpora exist. M-2 still requires both versioned task schemas. | Pick mapping candidates first |
 
 ## Changelog :white_circle: `@auto`
 
@@ -241,3 +250,4 @@ retrieval harness is technical evidence, not acceptance.
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for citation-grounded, quarantined AI assistance |
 | 0.2 | 2026-09-11 | Codex | Carved out the retrieval-first Phase 0 tranche (`forge author reuse`, verbatim span-exact candidates, no model or network) and recorded that it needs no M-9 amendment |
+| 0.3 | 2026-09-12 | Codex | Recorded the owner's 2026-09-12 decisions: local-only model boundary with no egress, corpus-first evaluation with no numeric claim, no content egress, one PR for the whole PRD-066 scope, and a deferred first generation task; resolved the provider/privacy and legal open questions and restated the Definition of Ready per tranche |

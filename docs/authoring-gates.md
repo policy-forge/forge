@@ -58,11 +58,15 @@ Until those measurements exist, no numeric time-savings claim is made.
 ## GATE-REUSE — PRD-066 Phase 0 reuse tranche
 
 The retrieval-first reuse tranche (`forge author reuse`) is a Phase 0 technical
-implementation of [PRD-066](PRD/066-prd-ai-assisted-suggestions.md). It returns
+implementation of [PRD-066](PRD/066-prd-ai-assisted-suggestions.md). It was
+merged in PR #153 (merge `7d0d9f3`). It returns
 only verbatim, span-exact excerpts of operator-supplied approved documents and
 therefore needs no PRD-061 M-9 amendment. Like every other tranche here it
 creates no approval, lifecycle or compliance evidence, and its scores are
-lexical ranks, not quality claims. See the
+lexical ranks, not quality claims. Merging the tranche is technical evidence
+only: every gate below stays as recorded, and the follow-on local-only
+suggestion pipeline is planned separately in the
+[suggestions pipeline plan](plans/2026-09-12-066-suggestions-pipeline.md). See the
 [MVP reuse plan](plans/2026-09-11-066-mvp-reuse-plan.md) and the
 [authoring guide](authoring.md#reuse-candidates-prd-066-phase-0).
 

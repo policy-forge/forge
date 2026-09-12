@@ -184,7 +184,7 @@ gates in the corresponding PRD.
 | [063](PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merge `34d9869` | PRD release gates remain |
 | [064](PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | No implementation merge | PRD 063 is implemented; schema, status semantics, and editable source-of-truth decisions remain |
 | [065](PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | No implementation merge | Requires a stable source-report contract and approved provider/auth boundary |
-| [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review; the retrieval-only Phase 0 tranche (`forge author reuse`) is under review on its branch and does not change this status |
+| [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned — Phase 0 retrieval tranche merged, quarantine pipeline in progress | Phase 0 retrieval-only `forge author reuse` merged in PR #153 (merge `7d0d9f3`); [reuse plan](plans/2026-09-11-066-mvp-reuse-plan.md), [gate register](authoring-gates.md#gate-reuse--prd-066-phase-0-reuse-tranche) | Local-only boundary and offline pipeline recorded by owner decision 2026-09-12 ([suggestions plan](plans/2026-09-12-066-suggestions-pipeline.md)); adjudicated corpora, M-14/M-15 thresholds, usefulness and release gates remain open, so the PRD stays Planned |
 | [067](PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | No implementation merge | Requires stable project discovery, shared read-only queries, and a completed threat model |
 | [068](PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | No implementation merge | Requires a selected first review workflow and approved identity/quorum boundaries |
 | [069](PRD/069-prd-dependency-security-audit.md) | Dependency security audit | Planned | No implementation merge | Requires recorded criteria, an offline inventory and an owned-exception policy; the PRD-062 transport stack is the first tranche |
@@ -201,7 +201,7 @@ This is a dependency-oriented sequence, not a date commitment.
 | **Now** | PRD 062 implementation and verification | Local explorer, safe mutation and review workflow under technical verification (PR #146); [usage and limitations](local-workspace.md); pilot/release remain pending |
 | **Next** | PRD 064 Phase 1 | Build deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
 | **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after project, query, identity, and review contracts stabilize |
-| **Later** | PRD 066 | Add quarantined AI suggestions after authoring schemas, evaluation data, and provider/privacy gates are approved |
+| **Later** | PRD 066 | Add quarantined AI suggestions only after the authoring schemas and adjudicated corpora exist; the provider/privacy question is resolved to a local-only boundary |
 
 ### Active Risks and Dependencies
 
@@ -301,6 +301,7 @@ unscheduled candidates are:
 | 1.5 | 2026-09-11 | Codex | Recorded owner dispositions satisfying the PRD-061 API/semver, product, compliance, legal, engineering and design-partner-readiness gates, with API migration guidance and the M-1…M-15 evidence map; retired the unmeasured 50% G-5 figure. Measured pilots and release approval remain open and the tranches stay out of release. |
 | 1.6 | 2026-09-11 | Codex | Merged `main` into the PRD-062 workspace branch and reconciled the PRD-061 status/gate text with the PRD-062 implementation rows, so the merged owner dispositions are preserved while the local-workspace work is recorded as in progress on its feature branch. |
 | 1.7 | 2026-09-11 | Codex | Recorded the PRD-066 Phase 0 retrieval-only reuse tranche (`forge author reuse`, verbatim span-exact candidates, no model or network) as under review on its branch; PRD-066 stays Planned and its usefulness, rubric, privacy/legal and release gates stay open. |
+| 1.8 | 2026-09-12 | Codex | Recorded the merged PRD-066 Phase 0 retrieval tranche (PR #153, merge `7d0d9f3`) and the owner's 2026-09-12 decisions: local-only model boundary with no egress, corpus-first evaluation with no numeric claim, and one PR for the whole PRD-066 scope; PRD-066 stays Planned with its usefulness, M-14/M-15 and release gates open. |
 
 ---
 
