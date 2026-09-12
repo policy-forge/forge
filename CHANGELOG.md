@@ -32,6 +32,21 @@ inventory of all post-v1.1.0 changes.
   rename on Linux/macOS, failing closed on other platforms. Existing Phase 1
   inputs and default artifacts remain unchanged. Public Rust API migration/semver review and human acceptance,
   legal/content, design-partner, pilot and release gates remain pending.
+- PRD-066 Phase 1 (offline, local-only): a five-step `forge suggest`
+  pipeline — `prepare`, `run`, `validate`, `review`, `promote` — moves untrusted
+  model output into a quarantine bundle and, at most, into an unapproved
+  proposal. No network, no provider configuration, no new dependency: a model
+  call is an operator-supplied local executable or a recorded response. Nine
+  closed contracts — `forge.suggest-request/1`, `forge.suggest-consent/1`,
+  `forge.suggest-response/1`, `forge.suggest-run/1`, `forge.suggestions/1`,
+  `forge.suggest-dispositions/1`, `forge.suggest-promotion/1` and both versioned
+  task schemas — with runtime validation authoritative over the published
+  schemas; the payload, consent and adapter
+  digests bind every step, citations must resolve to allowlisted units and match
+  the payload bytes, evidence ratings are computed rather than self-reported, and
+  every generation is a new atomically published directory. Adjudicated corpora,
+  M-14/M-15 thresholds, usefulness and release gates remain open, and the
+  mapping-candidate task stays deferred.
 - PRD-062 draft: a loopback-only `forge workspace` command serves an embedded
   offline review UI over the closed OpenAPI 1.1.0 contract, with explicit
   single-file effects. This is a draft technical implementation; security,

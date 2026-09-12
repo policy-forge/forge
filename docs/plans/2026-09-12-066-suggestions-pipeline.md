@@ -387,7 +387,9 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 
 ## Phase slices
 
-One reviewable commit slice per row, tests alongside each.
+One reviewable commit slice per row, tests alongside each. Slices 1–8 are
+implemented on `codex/066-suggestions-pipeline`; the changes are unmerged and no
+gate is satisfied by implementation alone.
 
 | # | Slice | Contents | Gate row |
 |---|---|---|---|
@@ -479,3 +481,4 @@ Proposed 2026-09-12; owner agreement required before slice 1.
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-09-12 | coordinating agent | Initial plan: local-only offline pipeline, contracts, bounds, verification matrix, tester programme, owner decisions D1–D8 |
+| 0.2 | 2026-09-12 | coordinating agent | Recorded the implemented tranche: nine published contracts (the run receipt was added for M-13), payload-span units instead of a second copy of the text, the mapping task withheld with the deferred task decision, and the hardening pass that found and fixed an unbounded patch and an admitted empty citation list |

@@ -229,7 +229,7 @@ that emits machine-authored text stays blocked on the open M-14/M-15 items.
 - [ ] **Open, blocking generation** — Product approves quality, usefulness, latency, and cost gates (M-14).
 - [x] **Satisfied for the local boundary** — Security/privacy/legal approve handling: no egress, no provider configuration, nothing leaves the machine. Reopens if egress is ever proposed.
 - [ ] **In review** — Engineering approves quarantine/promotion/adapter contracts, as designed in [the suggestions pipeline plan](../plans/2026-09-12-066-suggestions-pipeline.md).
-- [ ] **In progress** — Every Must Have maps to an executable test (M-17) or a named human evaluation gate; the mapping is recorded in the plan's verification matrix.
+- [ ] **In progress** — Every Must Have maps to an executable test (M-17) or a named human evaluation gate; the mapping is recorded in the plan's verification matrix, and M-1…M-13, M-16 and M-17 have executable evidence in `src/suggest/` and `tests/suggest_*`. M-14/M-15 stay open.
 
 ## Decision Log :yellow_circle: `@human-review`
 
@@ -250,4 +250,5 @@ that emits machine-authored text stays blocked on the open M-14/M-15 items.
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for citation-grounded, quarantined AI assistance |
 | 0.2 | 2026-09-11 | Codex | Carved out the retrieval-first Phase 0 tranche (`forge author reuse`, verbatim span-exact candidates, no model or network) and recorded that it needs no M-9 amendment |
+| 0.4 | 2026-09-12 | Codex | Recorded the implemented (unmerged) Phase 1 tranche: the offline `forge suggest prepare|run|validate|review|promote` pipeline, its nine closed contracts, and the GATE-SUGGEST rows; the mapping task, corpora, thresholds and release gates remain open |
 | 0.3 | 2026-09-12 | Codex | Recorded the owner's 2026-09-12 decisions: local-only model boundary with no egress, corpus-first evaluation with no numeric claim, no content egress, one PR for the whole PRD-066 scope, and a deferred first generation task; resolved the provider/privacy and legal open questions and restated the Definition of Ready per tranche |
