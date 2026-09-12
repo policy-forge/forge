@@ -231,7 +231,7 @@
     "unit": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["unit_id", "kind", "label", "sensitivity", "text"],
+      "required": ["unit_id", "kind", "label", "sensitivity", "payload"],
       "properties": {
         "unit_id": {
           "$ref": "#/$defs/key"
@@ -249,11 +249,28 @@
         "source": {
           "$ref": "#/$defs/source"
         },
-        "text": {
-          "$ref": "#/$defs/text"
+        "payload": {
+          "$ref": "#/$defs/payload_span"
         }
       },
-      "$comment": "Runtime requires source for a source-span unit."
+      "$comment": "Runtime requires source for a source-span unit, and requires units to be ordered by ascending, non-overlapping payload spans that lie inside the payload artifact."
+    },
+    "payload_span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "$comment": "Exclusive; runtime requires end > start, at most 1 MiB per unit, and end no greater than the payload byte length."
+        }
+      },
+      "$comment": "The unit carries no copy of its text: the payload artifact is the only source of the bytes an adapter receives."
     },
     "source": {
       "type": "object",

@@ -195,8 +195,15 @@ impl ContextBundle {
             )));
         }
         let mut seen = std::collections::BTreeSet::new();
+        let mut previous_end = 0_u64;
         for (index, unit) in self.units.iter().enumerate() {
             unit.validate(&format!("request.context.units[{index}]"))?;
+            if unit.payload.start < previous_end {
+                return Err(shared::error(
+                    "request.context.units must be ordered by ascending, non-overlapping payload spans",
+                ));
+            }
+            previous_end = unit.payload.end;
             if !seen.insert(unit.unit_id.as_str()) {
                 return Err(shared::error("request.context unit_ids must be unique"));
             }
@@ -225,6 +232,20 @@ pub enum ContextKind {
     SourceSpan,
 }
 
+impl ContextKind {
+    /// Stable wire spelling.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::PlanSection => "plan-section",
+            Self::Gap => "gap",
+            Self::Answer => "answer",
+            Self::Control => "control",
+            Self::SourceSpan => "source-span",
+        }
+    }
+}
+
 /// Declared sensitivity of the supplied material.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -240,6 +261,17 @@ pub enum Sensitivity {
 }
 
 impl Sensitivity {
+    /// Stable wire spelling.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Public => "public",
+            Self::Internal => "internal",
+            Self::Confidential => "confidential",
+            Self::Restricted => "restricted",
+        }
+    }
+
     /// Whether the operator must acknowledge this material explicitly.
     #[must_use]
     pub const fn requires_acknowledgement(self) -> bool {
@@ -280,7 +312,36 @@ impl SourceRef {
     }
 }
 
-/// One allowlisted unit: the exact text the adapter sees, plus provenance.
+/// Half-open byte range of one unit inside the payload artifact.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PayloadSpan {
+    /// Inclusive zero-based byte offset in the payload artifact.
+    pub start: u64,
+    /// Exclusive zero-based byte offset in the payload artifact.
+    pub end: u64,
+}
+
+impl PayloadSpan {
+    fn validate(&self, name: &str) -> Result<(), ForgeError> {
+        if self.end <= self.start {
+            return Err(shared::error(format!("{name} must name a non-empty half-open byte span")));
+        }
+        if self.end - self.start > MAX_UNIT_SPAN_BYTES {
+            return Err(shared::error(format!(
+                "{name} must not exceed {MAX_UNIT_SPAN_BYTES} bytes"
+            )));
+        }
+        Ok(())
+    }
+}
+
+/// One allowlisted unit: an exact byte range of the payload, plus provenance.
+///
+/// The unit does not carry its own copy of the text: the payload artifact is
+/// the single source of truth for what the adapter receives, and a unit span
+/// must lie inside it. That is what makes a citation checkable against the
+/// exact bytes rather than against a second copy that could disagree.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ContextUnit {
@@ -295,15 +356,15 @@ pub struct ContextUnit {
     /// Provenance, required for a selected source span.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<SourceRef>,
-    /// The exact text included for this unit.
-    pub text: String,
+    /// This unit's exact bytes inside the payload artifact.
+    pub payload: PayloadSpan,
 }
 
 impl ContextUnit {
     fn validate(&self, name: &str) -> Result<(), ForgeError> {
         shared::key(&format!("{name}.unit_id"), &self.unit_id)?;
         shared::label(&format!("{name}.label"), &self.label)?;
-        shared::text(&format!("{name}.text"), &self.text)?;
+        self.payload.validate(&format!("{name}.payload"))?;
         match (self.kind, &self.source) {
             (ContextKind::SourceSpan, None) => {
                 Err(shared::error(format!("{name}.source is required for a source-span unit")))
@@ -400,6 +461,13 @@ impl SuggestRequest {
                 "request.payload.units must equal the number of context units",
             ));
         }
+        for (index, unit) in self.context.units.iter().enumerate() {
+            if unit.payload.end > self.payload.bytes {
+                return Err(shared::error(format!(
+                    "request.context.units[{index}].payload must lie inside the payload artifact"
+                )));
+            }
+        }
         shared::single_line("request.retention_notice", &self.retention_notice)?;
         Ok(())
     }
@@ -472,7 +540,7 @@ pub(in crate::suggest) fn fixture_request_json() -> serde_json::Value {
                     "start": 0,
                     "end": 64
                 },
-                "text": "Accounts must be reviewed every quarter."
+                "payload": {"start": 0, "end": 37}
             }]
         },
         "redactions": [],

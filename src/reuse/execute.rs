@@ -203,7 +203,7 @@ fn merge_inputs(
 /// The manifest is resolved exactly like every other authoring input: a
 /// regular file below an absolute normalized root, never a symlink, device,
 /// FIFO or directory, and never more than [`MAX_CORPUS_BYTES`] bytes.
-fn read_manifest(root: &Path, name: &Path) -> Result<Vec<u8>, ForgeError> {
+pub(crate) fn read_manifest(root: &Path, name: &Path) -> Result<Vec<u8>, ForgeError> {
     let (bytes, _identity) = crate::linkage::read_confined_local_file(root, name, MAX_CORPUS_BYTES)
         .map_err(|cause| error(format!("cannot read the reuse corpus manifest: {cause}")))?;
     Ok(bytes)
@@ -213,7 +213,7 @@ fn read_manifest(root: &Path, name: &Path) -> Result<Vec<u8>, ForgeError> {
 ///
 /// The parent directory anchors every document path, and the name keeps the
 /// confined read a normalized descendant.
-fn corpus_location(path: &Path) -> Result<(PathBuf, PathBuf), ForgeError> {
+pub(crate) fn corpus_location(path: &Path) -> Result<(PathBuf, PathBuf), ForgeError> {
     let base = if path.is_absolute() {
         PathBuf::new()
     } else {

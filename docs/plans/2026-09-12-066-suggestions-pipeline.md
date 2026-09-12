@@ -153,6 +153,17 @@ House rules, matching the existing authoring and reuse tranches:
   adapter executable at prepare time), model id (operator-supplied string, never
   probed), retention notice, operator key, `as_of`. Without `--consent`, no
   token is written and `run` refuses.
+- **Payload span, not a second copy.** A unit names a byte range inside the
+  payload artifact rather than embedding its own text, so the exact bytes the
+  adapter receives are recorded exactly once, spans must be ascending and
+  non-overlapping, and a citation can be checked against those bytes. The
+  payload is deterministic framing around the rendered task payload and the
+  selected unit texts; nothing in it is generated prose.
+- **The mapping task is not selectable yet.** `--task mapping` is refused with
+  a message naming the owner's 2026-09-12 deferral: the mapping task's subject
+  derivation is the task-selection decision, and inventing one here would pick
+  the deferred task by accident. Its contract, schema and validation tests ship
+  and are exercised; only the `prepare` derivation is withheld.
 - Exit codes: `0` request written; `1` the selected context is empty, so no
   request is written at all (`AuthoringActionRequired`); `2` invalid, unsafe,
   sensitive, or oversized input.
