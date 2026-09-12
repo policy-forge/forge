@@ -238,6 +238,48 @@
       "schema": "openapi:components/schemas/ExportRequest",
       "expectation": "valid",
       "description": "Valid prepareReportExport body: applicability-gap report, strict-default redaction profile, static HTML format."
+    },
+    {
+      "file": "applicability/initialization-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ApplicabilityInitializationRequest",
+      "expectation": "valid",
+      "description": "Explicit initialization request."
+    },
+    {
+      "file": "applicability/initialization-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ApplicabilityInitializationRequest",
+      "expectation": "invalid",
+      "description": "Reject unknown future fields."
+    },
+    {
+      "file": "mapping/initialization-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/MappingInitializationRequest",
+      "expectation": "valid",
+      "description": "Explicit initialization request."
+    },
+    {
+      "file": "mapping/initialization-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/MappingInitializationRequest",
+      "expectation": "invalid",
+      "description": "Reject unknown future fields."
+    },
+    {
+      "file": "exports/trace-envelope-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceReportEnvelope",
+      "expectation": "valid",
+      "description": "Closed inert trace export envelope; reject arbitrary private fields."
+    },
+    {
+      "file": "exports/trace-envelope-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceReportEnvelope",
+      "expectation": "invalid",
+      "description": "Closed inert trace export envelope; reject arbitrary private fields."
     }
   ]
 }

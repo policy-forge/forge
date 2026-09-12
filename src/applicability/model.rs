@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::manifest::{ApplicabilityManifest, ControlDecision, DecisionState};
 use crate::mapping::inventory::{Inventory, ResourceEvidence};
@@ -20,7 +20,7 @@ pub struct ControlMappingFacts {
 }
 
 /// Reviewer evidence preserved from an accepted Mapping Collection.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MappingReviewerEvidence {
     pub uuid: String,
     #[serde(rename = "type")]
@@ -29,7 +29,7 @@ pub struct MappingReviewerEvidence {
 }
 
 /// Provenance for one accepted OSCAL Mapping Collection.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MappingEvidence {
     pub uuid: String,
     pub raw_sha256: String,
@@ -41,7 +41,7 @@ pub struct MappingEvidence {
 }
 
 /// Optional report-detail filters. Denominator totals always describe the complete inventory.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ReportFilters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
@@ -71,7 +71,7 @@ pub struct ApplicabilityReport {
 }
 
 /// Reconciled classification totals.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ClassificationCounts {
     pub total: usize,
     pub applicable_mapped: usize,
@@ -83,7 +83,7 @@ pub struct ClassificationCounts {
 }
 
 /// Exactly one classification for one eligible framework control.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControlResult {
     pub control_id: String,
     pub groups: Vec<String>,
@@ -104,7 +104,7 @@ pub struct ControlResult {
 }
 
 /// Closed vocabulary for machine-readable review queue reasons.
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReviewReason {
     ReviewedNoPositiveRelationship,
@@ -132,7 +132,7 @@ impl std::fmt::Display for ReviewReason {
 }
 
 /// Stable, machine-readable human review queue entry.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReviewQueueItem {
     pub control_id: String,
     pub reason_code: ReviewReason,
@@ -144,7 +144,7 @@ pub struct ReviewQueueItem {
 }
 
 /// Truthful mapping-participation and human review-state labels.
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum GapClassification {
     ApplicableMapped,

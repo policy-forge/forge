@@ -319,6 +319,18 @@ pub enum Commands {
         command: AuthorCommand,
     },
 
+    /// Open a local, single-user project workspace
+    Workspace {
+        #[arg(long)]
+        project: PathBuf,
+        #[arg(long)]
+        read_only: bool,
+        #[arg(long)]
+        machine_session: bool,
+        #[arg(long)]
+        no_open: bool,
+    },
+
     /// Inspect and validate project configuration (.forge.toml)
     Config {
         /// Config subcommands
@@ -1322,6 +1334,9 @@ fn run_migrate(
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     reject_unsupported_config_selector(cli)?;
     match &cli.command {
+        Commands::Workspace { project, read_only, machine_session, no_open } => {
+            crate::workspace::launch(project, *read_only, *machine_session, *no_open)
+        }
         Commands::Convert {
             input,
             strategy,

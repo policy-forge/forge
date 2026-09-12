@@ -1,0 +1,52 @@
+{
+  "source_resource_id": "res_111111111111",
+  "target_resource_id": "res_222222222222",
+  "target_path": "mapping-manifest.json",
+  "scope": "control-only",
+  "review": {
+    "collection": {
+      "key": "synthetic",
+      "title": "Synthetic mapping",
+      "version": "1",
+      "last_modified": "2026-09-10T00:00:00Z"
+    },
+    "reviewers": [
+      {
+        "key": "reviewer",
+        "type": "person",
+        "name": "Synthetic Reviewer"
+      }
+    ],
+    "provenance": {
+      "method": "human",
+      "matching_rationale": "semantic",
+      "status": "draft",
+      "mapping_description": "Explicit synthetic review.",
+      "reviewer_keys": [
+        "reviewer"
+      ],
+      "reviewed_at": "2026-09-10T00:00:00Z"
+    }
+  },
+  "maps": [
+    {
+      "key": "explicit-none",
+      "relationship": "no-relationship",
+      "sources": [
+        {
+          "type": "control",
+          "id_ref": "policy-a"
+        }
+      ],
+      "targets": [
+        {
+          "type": "control",
+          "id_ref": "framework-a"
+        }
+      ],
+      "reviewer_key": "reviewer",
+      "reviewed_at": "2026-09-10T00:00:00Z",
+      "rationale": "Explicitly reviewed absence of a relationship."
+    }
+  ]
+}

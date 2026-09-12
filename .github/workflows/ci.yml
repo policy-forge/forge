@@ -47,20 +47,27 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --locked --verbose
 
       # PRD-062 contract drift gate (see docs/adr/0001-openapi-contract-ownership.md):
       # validates the normative OpenAPI 3.1 document, forge.workspace/1 schema,
       # fixture suite, and capability-matrix coverage offline on every platform.
       - name: API contract validation
-        run: cargo test --test api_contract_validation --verbose
+        run: cargo test --locked --test api_contract_validation --verbose
 
 
       - name: Lint
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets -- -D warnings
 
       - name: Build release
-        run: cargo build --release --verbose
+        run: cargo build --locked --release --verbose
+
+      - name: Maintained local client conformance
+        shell: bash
+        run: |
+          interpreter=python3
+          if [ "${{ runner.os }}" = "Windows" ]; then interpreter=python; fi
+          "$interpreter" scripts/test_workspace_client.py --forge target/release/forge${{ runner.os == 'Windows' && '.exe' || '' }}
 
       # Heavy tooling only on Ubuntu (avoids macOS/Windows timeout and tool availability issues)
       - name: Check formatting
