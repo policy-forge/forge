@@ -2,6 +2,8 @@
 //! it must never touch the operator's own inputs, and the record it leaves must
 //! carry what the run actually measured.
 
+#![cfg(any(target_os = "linux", target_os = "macos"))]
+
 use std::collections::BTreeMap;
 use std::path::Path;
 

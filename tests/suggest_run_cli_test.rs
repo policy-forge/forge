@@ -1,6 +1,8 @@
 //! `forge suggest run` end-to-end contracts: consent binding, the local
 //! process boundary, recorded responses, bounds and refusal paths.
 
+#![cfg(any(target_os = "linux", target_os = "macos"))]
+
 use std::path::{Path, PathBuf};
 use std::process::Output;
 

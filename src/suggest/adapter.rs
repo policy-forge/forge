@@ -33,6 +33,37 @@ const ENV_ALLOWLIST: [&str; 4] = ["PATH", "HOME", "TMPDIR", "LANG"];
 const ENV_ALLOWLIST: [&str; 8] =
     ["PATH", "HOME", "TMPDIR", "LANG", "USERPROFILE", "SYSTEMROOT", "TEMP", "TMP"];
 
+/// Read a local executable the operator named, following symlinks to the file.
+///
+/// An executable is not an input document: `/bin/sh`, Homebrew shims, `nvm` and
+/// virtualenv entry points are all symlinks, so requiring a non-symlink here
+/// would refuse ordinary installs. The path must still resolve to a regular
+/// file — never a directory, device, FIFO or socket — and the bytes read are the
+/// ones consent is bound to, so replacing the target after consent is caught.
+///
+/// # Errors
+/// Returns [`ForgeError::Io`] for a missing path, a non-regular file, unreadable
+/// bytes, or a file larger than `max`.
+pub(in crate::suggest) fn read_executable(
+    path: &Path,
+    max: u64,
+) -> Result<Vec<u8>, crate::ForgeError> {
+    let metadata = std::fs::metadata(path)?;
+    if !metadata.is_file() {
+        return Err(crate::ForgeError::Io(std::io::Error::other(format!(
+            "an adapter executable must be a regular file: {}",
+            crate::io::sanitize_artifact_path(path)
+        ))));
+    }
+    if metadata.len() > max {
+        return Err(crate::ForgeError::Io(std::io::Error::other(format!(
+            "an adapter executable must be at most {max} bytes: {}",
+            crate::io::sanitize_artifact_path(path)
+        ))));
+    }
+    Ok(std::fs::read(path)?)
+}
+
 /// What one adapter invocation returned.
 #[derive(Debug)]
 pub struct AdapterOutput {
@@ -279,6 +310,23 @@ mod tests {
         assert_eq!(output.stdout, b"{\"recorded\":true}\n");
         assert_eq!(output.exit_code, Some(0));
         assert!(adapter.executable_sha256().is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_executable_may_be_a_symlink_but_never_a_special_file() {
+        // `/bin/sh` is a symlink on Linux and a regular file on macOS; both are fine.
+        let resolved = read_executable(Path::new("/bin/sh"), 64 * 1024 * 1024).unwrap();
+        assert!(!resolved.is_empty());
+        assert!(read_executable(Path::new("/"), 64 * 1024 * 1024).is_err());
+        let temp = tempfile::tempdir().unwrap();
+        assert!(read_executable(temp.path(), 1024).is_err());
+        let missing = temp.path().join("absent");
+        assert!(read_executable(&missing, 1024).is_err());
+        let small = temp.path().join("executable");
+        std::fs::write(&small, b"x").unwrap();
+        assert!(read_executable(&small, 1).is_ok());
+        assert!(read_executable(&small, 0).is_err());
     }
 
     #[cfg(unix)]

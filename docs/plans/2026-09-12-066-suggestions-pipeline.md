@@ -344,7 +344,7 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 | Spans per citation | 1 |
 | Dispositions per bundle | 1 000 |
 | Published generation | 50 MiB over ≤2 048 artifacts (existing limit) |
-| Publication | atomic no-replace directory rename, Linux/macOS; other platforms fail closed |
+| Publication | atomic no-replace directory rename, Linux/macOS; other platforms fail closed, so the suggestion integration tests carry the same platform gate as the authoring publication tests |
 
 ## Determinism rules
 

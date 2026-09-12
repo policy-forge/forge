@@ -1,6 +1,8 @@
 //! `forge suggest validate` end-to-end contracts: closed decode, citation
 //! resolution, exact quoting, quarantine bundle and refusal paths.
 
+#![cfg(any(target_os = "linux", target_os = "macos"))]
+
 use std::path::{Path, PathBuf};
 use std::process::Output;
 

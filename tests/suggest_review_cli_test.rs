@@ -1,6 +1,8 @@
 //! `forge suggest review` end-to-end contracts: decisions bound to one bundle,
 //! the action-required exit code, and refusals that publish nothing.
 
+#![cfg(any(target_os = "linux", target_os = "macos"))]
+
 use std::path::Path;
 
 use serde_json::{Value, json};

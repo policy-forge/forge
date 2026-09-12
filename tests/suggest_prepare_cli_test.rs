@@ -1,6 +1,8 @@
 //! `forge suggest prepare` end-to-end contracts: allowlist, exact payload,
 //! preview, consent and refusal paths. Nothing here calls a model.
 
+#![cfg(any(target_os = "linux", target_os = "macos"))]
+
 use std::path::Path;
 use std::process::Output;
 

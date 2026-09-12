@@ -1,6 +1,8 @@
 //! `forge suggest promote` end-to-end contracts: a proposal that passes the
 //! destination's own validator, stays unapproved, and never writes into it.
 
+#![cfg(any(target_os = "linux", target_os = "macos"))]
+
 use std::path::Path;
 
 use serde_json::{Value, json};

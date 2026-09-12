@@ -455,7 +455,7 @@ fn read_rules(path: Option<&Path>) -> Result<Vec<RedactionRule>, ForgeError> {
 
 /// Fingerprint the local adapter and record its operator-supplied identity.
 fn adapter_target(adapter: &Path, model_id: &str) -> Result<AdapterTarget, ForgeError> {
-    let bytes = crate::io::read_bounded(adapter, MAX_ADAPTER_BYTES)?;
+    let bytes = super::adapter::read_executable(adapter, MAX_ADAPTER_BYTES)?;
     let executable =
         adapter.to_str().ok_or_else(|| shared::error("--adapter must be UTF-8"))?.to_string();
     Ok(AdapterTarget {
