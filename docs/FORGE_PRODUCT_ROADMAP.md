@@ -24,8 +24,8 @@ v1.1.0 is released, and the post-v1.1.0 roadmap is active.
 - Phase 3 Ecosystem & Community is complete.
 - v1.0.0 established the community-ready distribution baseline.
 - v1.1.0 (2026-06-09) added native PDF and DOCX ingestion and policy-derived SSP control implementations.
-- The next-wave registry contains 14 PRDs (055–068): 7 have technically complete
-  implementations merged into `main`, 2 are in progress, and 5 remain planned.
+- The next-wave registry contains 15 PRDs (055–069): 7 have technically complete
+  implementations merged into `main`, 2 are in progress, and 6 remain planned.
 - PRDs 055–060 and 063 are technically implemented. Their human release,
   pilot, adoption, or other PRD-level gates remain open where the PRDs say so.
 - PRD 061 Phase 1 merged in PR #144 and Phase 2 merged in PR #145; its human
@@ -186,6 +186,7 @@ gates in the corresponding PRD.
 | [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review |
 | [067](PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | No implementation merge | Requires stable project discovery, shared read-only queries, and a completed threat model |
 | [068](PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | No implementation merge | Requires a selected first review workflow and approved identity/quorum boundaries |
+| [069](PRD/069-prd-dependency-security-audit.md) | Dependency security audit | Planned | No implementation merge | Requires recorded criteria, an offline inventory and an owned-exception policy; the PRD-062 transport stack is the first tranche |
 
 ### Now / Next / Later
 
@@ -254,7 +255,7 @@ The completed v1.0.0 release gate required the following:
 
 | Initiatives Total | Technical Implementation Complete | In Progress | Planned / Not Started | Human Release Gates Pending |
 |------------------:|----------------------------------:|------------:|----------------------:|----------------------------:|
-| **14** | **7** | **2** | **5** | **7** |
+| **15** | **7** | **2** | **6** | **7** |
 
 ---
 
@@ -297,6 +298,7 @@ unscheduled candidates are:
 | 1.3 | 2026-09-09 | Codex | Reconciled merged PRD-061 Phase 1 and PRD-062 Slice 0; recorded Phase 2 technical evidence and pending API/human/release gates; retired the resolved Phase 1 sequencing question. |
 | 1.4 | 2026-09-11 | Codex | Recorded the merged PRD-061 Phase 2 (PR #145, merge `3ac6815`), added the Phase 2 acceptance-evidence map and PRD-061 gate register, and noted the S-1 scaffold plus the S-4 disposition; all human/release gates remain pending. |
 | 1.5 | 2026-09-11 | Codex | Recorded owner dispositions satisfying the PRD-061 API/semver, product, compliance, legal, engineering and design-partner-readiness gates, with API migration guidance and the M-1…M-15 evidence map; retired the unmeasured 50% G-5 figure. Measured pilots and release approval remain open and the tranches stay out of release. |
+| 1.6 | 2026-09-11 | Codex | Added PRD 069 (dependency security audit) to the registry: inventory, recorded criteria, owned exceptions, differential audits and a CI gate; reconciled the registry counts to 15 initiatives. |
 
 ---
 
