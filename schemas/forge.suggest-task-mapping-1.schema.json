@@ -109,7 +109,9 @@
         "control_id",
         "relationship",
         "rationale",
-        "citations"
+        "citations",
+        "assumptions",
+        "unresolved_questions"
       ],
       "properties": {
         "policy_key": {

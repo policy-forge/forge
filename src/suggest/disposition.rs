@@ -224,7 +224,9 @@ mod tests {
                 "policy_key": "access-policy",
                 "topic_key": "access-control",
                 "draft_text": "Accounts must be reviewed every quarter by the account owner.",
-                "citations": [{"unit_id": "unit-0001"}]
+                "citations": [{"unit_id": "unit-0001"}],
+                "assumptions": [],
+                "unresolved_questions": []
             }
         })
     }

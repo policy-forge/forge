@@ -108,7 +108,7 @@
     "clause": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["policy_key", "topic_key", "draft_text", "citations"],
+      "required": ["policy_key", "topic_key", "draft_text", "citations", "assumptions", "unresolved_questions"],
       "properties": {
         "policy_key": {
           "$ref": "#/$defs/key"

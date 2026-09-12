@@ -23,6 +23,7 @@ pub mod run;
 pub mod run_record;
 mod shared;
 pub mod task;
+pub mod validate;
 
 pub use bundle::{EvidenceSupport, Suggestion, SuggestionsBundle};
 pub use consent::ConsentToken;

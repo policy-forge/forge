@@ -232,13 +232,30 @@ House rules, matching the existing authoring and reuse tranches:
   no citation is rejected as unsupported.
 - **Redaction.** Model-emitted secret-like strings are rejected, not scrubbed
   into the bundle.
-- Output: `forge.suggestions/1`. Every suggestion is `pending`. The bundle
-  records the response hash and, when `--retain-raw` is passed, the exact raw
-  bytes opted into separately; the default bundle stores hashes only, because
-  raw model text is untrusted and must not ride into the default artifact.
-- Exit codes: `0` all suggestions admitted; `1` valid bundle whose suggestions
-  require review or whose response was rejected and recorded as rejected;
-  `2` invalid request/bundle or unsafe output.
+- **Whole-response rejection.** A citation that names no allowlisted unit, a
+  quote that is not byte-identical to the cited unit's payload span, a shape from
+  the other task, a non-zero exit code in the receipt, a receipt that does not
+  authorise the request, payload and response, or any decode failure refuses the
+  entire response: no partial bundle is published, and the diagnostic names the
+  suggestion index without echoing model text.
+- **Evidence rating is computed, never self-reported.** *high*: every citation
+  cites a selected source span; *medium*: every citation resolves and at least
+  one cites supplied metadata rather than a span; *low*: no citation cites a
+  span. A suggestion with no citation is refused by the contract itself.
+- Output: `forge.suggestions/1`. Every admitted suggestion is pending; a
+  suggestion with no disposition record stays pending, so the bundle carries no
+  status field at all. Suggestion and bundle identifiers are UUID v5 values over
+  the request, response and suggestion content, so the same suggestion always
+  receives the same identifier. When `--retain-raw` is passed the exact raw bytes
+  are published beside the bundle and `response.retained` is true; the default
+  stores hashes only, because raw model text is untrusted and must not ride into
+  the default artifact.
+- Exit codes: `0` every returned suggestion was admitted; `1` the report is
+  complete but empty (nothing to review, `AuthoringActionRequired`); `2` a
+  refusal or an unsafe output. Nothing is published on any refusal.
+- Contract note: `citations` requires at least one entry and `assumptions` /
+  `unresolved_questions` are required fields (`M-8`, `M-9`), in the runtime
+  validator and the published schemas alike — the two never disagree.
 
 ### review and quarantine — M-10, M-11
 

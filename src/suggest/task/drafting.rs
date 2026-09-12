@@ -74,10 +74,8 @@ pub struct DraftClause {
     /// Allowlisted units supporting the clause.
     pub citations: Vec<Citation>,
     /// Explicit assumptions the reviewer must check.
-    #[serde(default)]
     pub assumptions: Vec<String>,
     /// Questions the model could not resolve from the supplied context.
-    #[serde(default)]
     pub unresolved_questions: Vec<String>,
 }
 

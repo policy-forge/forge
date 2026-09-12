@@ -1068,6 +1068,24 @@ pub enum SuggestCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+    /// Validate a recorded response into the forge.suggestions/1 quarantine bundle
+    Validate {
+        /// The prepared forge.suggest-request/1 document
+        #[arg(long)]
+        request: PathBuf,
+        /// The forge.suggest-run/1 record naming the raw response
+        #[arg(long)]
+        run: PathBuf,
+        /// New directory beneath the request's directory; existing destinations are rejected
+        #[arg(long)]
+        output_dir: PathBuf,
+        /// Retain the exact raw response beside the bundle
+        #[arg(long)]
+        retain_raw: bool,
+        /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
 }
 
 /// Framework revision analysis commands.
@@ -1967,6 +1985,15 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     recorded_response: recorded_response.as_deref(),
                     format: *format,
                 })?,
+                SuggestCommand::Validate { request, run, output_dir, retain_raw, format } => {
+                    crate::suggest::validate::execute(&crate::suggest::validate::ValidateArgs {
+                        request,
+                        run,
+                        output_dir,
+                        retain_raw: *retain_raw,
+                        format: *format,
+                    })?
+                }
             };
             if action_required { Err(ForgeError::AuthoringActionRequired) } else { Ok(()) }
         }
