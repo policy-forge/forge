@@ -487,8 +487,10 @@ Proposed 2026-09-12; owner agreement required before slice 1.
 
 Three reviews landed on the pull request: Copilot (2 inline findings), CodeRabbit
 (25) and an owner adversarial review (10). Status is recorded here so a later
-session does not re-derive it. **This section is work in progress; it is not an
-acceptance claim.**
+session does not re-derive it. All 37 findings are dispositioned as of `95c4bd4`,
+with a reply on each review thread and an index comment on the pull request. This
+section records what changed and what deliberately did not; it is not an
+acceptance or quality claim.
 
 ### Fixed
 
@@ -578,7 +580,8 @@ until an OS-level boundary exists and ship only the recorded-response workflow.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 0.1 | 2026-09-12 | coordinating agent | Initial plan: local-only offline pipeline, contracts, bounds, verification matrix, tester programme, owner decisions D1–D8 |
+| 0.5 | 2026-09-12 | coordinating agent | Marked the review remediation complete: all 37 findings dispositioned with per-thread replies and an index comment on PR #155, and the plan changelog ordered newest-first |
 | 0.4 | 2026-09-12 | coordinating agent | Completed the review remediation: promotion validity through the destination's own authoring path with answer pins and effective-clause coordinates, unsupplied-target and duplicate-content refusal, run mode and receipt digest in the bundle, and the remaining test and roadmap findings |
 | 0.3 | 2026-09-12 | coordinating agent | Recorded the PR #155 review remediation: two commits of fixed findings, the designed-but-unimplemented promotion-validity work, the remaining findings, and the open owner decision on adapter sandboxing |
 | 0.2 | 2026-09-12 | coordinating agent | Recorded the implemented tranche: nine published contracts (the run receipt was added for M-13), payload-span units instead of a second copy of the text, the mapping task withheld with the deferred task decision, and the hardening pass that found and fixed an unbounded patch and an admitted empty citation list |
+| 0.1 | 2026-09-12 | coordinating agent | Initial plan: local-only offline pipeline, contracts, bounds, verification matrix, tester programme, owner decisions D1–D8 |
