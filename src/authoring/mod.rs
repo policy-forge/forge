@@ -38,9 +38,12 @@ pub(crate) struct ReuseSeed {
     pub(crate) root: PathBuf,
     pub(crate) plan: AuthoringPlan,
     pub(crate) prompts: BTreeMap<String, String>,
+    /// Captured project inputs, retained so reuse can revalidate them before
+    /// publishing a generation.
+    pub(crate) captures: input::CaptureSet,
 }
 
-/// Validate a project and return the plan, root and question prompts for reuse.
+/// Validate a project and return the plan, root, prompts and captured inputs.
 ///
 /// # Errors
 /// Returns an authoring error for invalid inputs, stale pins, or unsafe paths.
@@ -54,7 +57,7 @@ pub(crate) fn reuse_seed(manifest: &Path) -> Result<ReuseSeed, ForgeError> {
         .iter()
         .map(|question| (question.key.clone(), question.prompt.clone()))
         .collect();
-    Ok(ReuseSeed { root: prepared.root, plan, prompts })
+    Ok(ReuseSeed { root: prepared.root, plan, prompts, captures: prepared.captures })
 }
 
 /// Validate a complete project and return its deterministic drafting plan without writing.

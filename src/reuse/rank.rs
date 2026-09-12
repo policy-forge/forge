@@ -11,6 +11,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
@@ -180,7 +181,7 @@ struct Entry<'a> {
     start: usize,
     end: usize,
     lowered: String,
-    scope_tokens: BTreeSet<String>,
+    scope_tokens: Option<Arc<BTreeSet<String>>>,
     length: u32,
     frequency: BTreeMap<String, u32>,
 }
@@ -207,6 +208,7 @@ impl<'a> Index<'a> {
         let mut topic_hints = Vec::new();
         let mut family_hints = Vec::new();
         let mut total_length: u64 = 0;
+        let mut scope_cache: Option<(String, Arc<BTreeSet<String>>)> = None;
         for captured_document in &captured.documents {
             let document = declared.get(captured_document.key.as_str()).ok_or_else(|| {
                 error(format!("captured document '{}' is not declared", captured_document.key))
@@ -236,11 +238,8 @@ impl<'a> Index<'a> {
                     length = length.saturating_add(1);
                     *frequency.entry(token).or_insert(0) += 1;
                 }
-                let scope_tokens = block
-                    .scope_title
-                    .as_deref()
-                    .map(|title| tokens(title).into_iter().collect())
-                    .unwrap_or_default();
+                let scope_tokens =
+                    shared_scope_tokens(block.scope_title.as_deref(), &mut scope_cache);
                 let index = entries.len();
                 for (token, count) in &frequency {
                     postings.entry(token.clone()).or_default().push((index, *count));
@@ -294,8 +293,10 @@ impl<'a> Index<'a> {
             let question_terms = shares_token(&entry.frequency, &query.question_tokens);
             let same_family = self.topic_hints[entry.hints].contains(&query.topic_key)
                 || !self.family_hints[entry.hints].is_disjoint(&query_families);
-            let scope_match =
-                entry.scope_tokens.iter().any(|token| query.title_tokens.contains(token));
+            let scope_match = entry
+                .scope_tokens
+                .as_ref()
+                .is_some_and(|set| set.iter().any(|token| query.title_tokens.contains(token)));
             let mut score = scores[index];
             if control_match {
                 score += CONTROL_BOOST;
@@ -346,6 +347,30 @@ impl<'a> Index<'a> {
 
 fn shares_token(frequency: &BTreeMap<String, u32>, tokens: &BTreeSet<String>) -> bool {
     tokens.iter().any(|token| frequency.contains_key(token))
+}
+
+/// Tokenise a scope title once and share it with every block in that scope.
+///
+/// Blocks arrive in document order, so consecutive blocks usually repeat the
+/// same scope; caching the last one keeps total scope-token allocation linear
+/// in the document rather than quadratic in blocks.
+fn shared_scope_tokens(
+    title: Option<&str>,
+    cache: &mut Option<(String, Arc<BTreeSet<String>>)>,
+) -> Option<Arc<BTreeSet<String>>> {
+    let title = title?;
+    if let Some((cached, tokens)) = cache.as_ref()
+        && cached == title
+    {
+        return Some(Arc::clone(tokens));
+    }
+    let tokens = Arc::new(tokens_of(title));
+    *cache = Some((title.to_owned(), Arc::clone(&tokens)));
+    Some(tokens)
+}
+
+fn tokens_of(title: &str) -> BTreeSet<String> {
+    tokens(title).into_iter().collect()
 }
 
 fn control_families(control_ids: &[String]) -> BTreeSet<String> {

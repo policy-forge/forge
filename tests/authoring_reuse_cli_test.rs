@@ -268,6 +268,7 @@ fn repeated_runs_produce_byte_identical_reports() {
     assert_eq!(first.stdout, second.stdout);
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 #[test]
 fn publishes_a_generation_and_refuses_an_existing_destination() {
     let (_temp, root) = project();
@@ -292,6 +293,17 @@ fn publishes_a_generation_and_refuses_an_existing_destination() {
     let refused = reuse(&root, &["--format", "json", "--output-dir", "out", "--html"]);
     assert_exit(&refused, 2);
     assert!(refused.stdout.is_empty());
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[test]
+fn publication_fails_closed_on_unsupported_platforms() {
+    let (_temp, root) = project();
+    corpus(&root, "# Access drafting\n\nc-1 Approve access requests.\n");
+    let output = reuse(&root, &["--format", "json", "--output-dir", "out", "--html"]);
+    assert_exit(&output, 2);
+    assert!(!root.join("out/reuse.json").exists());
+    assert!(!root.join("out").exists());
 }
 
 #[test]
@@ -489,26 +501,47 @@ fn existing_author_commands_create_no_reuse_artifacts() {
     assert_eq!(value["schema_version"], json!("forge.authoring-plan/1"));
     assert_eq!(tree_names(&root), before, "author plan must not write default artifacts");
 
-    let build = run(
-        &root,
-        &[
-            "author",
-            "build",
-            "--manifest",
-            "project.json",
-            "--output-dir",
-            "gen",
-            "--format",
-            "json",
-        ],
-    );
-    assert_exit(&build, 1);
-    let names = tree_names(&root);
-    assert!(names.contains(&"gen/plan.json".to_owned()));
-    assert!(names.contains(&"gen/plan.txt".to_owned()));
-    assert!(names.contains(&"gen/provenance.json".to_owned()));
-    assert!(
-        !names.iter().any(|name| name.contains("reuse")),
-        "existing author commands must not emit reuse artifacts: {names:?}"
-    );
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let build = run(
+            &root,
+            &[
+                "author",
+                "build",
+                "--manifest",
+                "project.json",
+                "--output-dir",
+                "gen",
+                "--format",
+                "json",
+            ],
+        );
+        assert_exit(&build, 1);
+        let names = tree_names(&root);
+        assert!(names.contains(&"gen/plan.json".to_owned()));
+        assert!(names.contains(&"gen/plan.txt".to_owned()));
+        assert!(names.contains(&"gen/provenance.json".to_owned()));
+        assert!(
+            !names.iter().any(|name| name.contains("reuse")),
+            "existing author commands must not emit reuse artifacts: {names:?}"
+        );
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let build = run(
+            &root,
+            &[
+                "author",
+                "build",
+                "--manifest",
+                "project.json",
+                "--output-dir",
+                "gen",
+                "--format",
+                "json",
+            ],
+        );
+        assert_exit(&build, 2);
+        assert!(!root.join("gen/plan.json").exists());
+    }
 }

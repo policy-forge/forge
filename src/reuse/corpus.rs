@@ -71,7 +71,7 @@ pub struct CorpusDocument {
     #[serde(default)]
     pub control_ids: Vec<String>,
     /// Optional key of the document this one replaces.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supersedes: Option<String>,
 }
 
@@ -84,7 +84,7 @@ pub struct Corpus {
     /// Stable corpus key.
     pub corpus_key: String,
     /// Optional human title.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     /// Candidate documents.
     pub documents: Vec<CorpusDocument>,
@@ -315,6 +315,34 @@ mod tests {
         assert_eq!(corpus.documents()[1].status, DocumentStatus::Draft);
         assert_eq!(corpus.documents()[1].supersedes.as_deref(), Some("access-policy"));
         assert_eq!(corpus.documents()[0].path.to_str(), Some("prior/access-policy.md"));
+
+        let serialized = serde_json::to_vec(&corpus).unwrap();
+        assert_eq!(Corpus::parse(&serialized).unwrap(), corpus);
+    }
+
+    #[test]
+    fn absent_optional_fields_are_omitted_when_serialized() {
+        let value = json!({
+            "schema_version": CORPUS_SCHEMA_VERSION,
+            "corpus_key": "minimal-corpus",
+            "documents": [{
+                "key": "policy",
+                "path": "policy.md",
+                "title": "Policy",
+                "status": "approved",
+                "rights_label": "Repository synthetic fixture",
+                "source_label": "Synthetic interview",
+                "expected_sha256": DIGEST
+            }]
+        });
+        let corpus = parse(&value).unwrap();
+        let serialized: Value = serde_json::to_value(&corpus).unwrap();
+        assert!(serialized.get("title").is_none(), "absent corpus title must be omitted");
+        assert!(
+            serialized["documents"][0].get("supersedes").is_none(),
+            "absent supersedes must be omitted"
+        );
+        assert_eq!(Corpus::parse(&serde_json::to_vec(&serialized).unwrap()).unwrap(), corpus);
     }
 
     #[test]

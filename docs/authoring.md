@@ -220,7 +220,11 @@ The corpus (`forge.reuse-corpus/1`, [schema](../schemas/forge.reuse-corpus-1.sch
 names each document by a portable descendant path relative to the corpus
 manifest's directory, an exact SHA-256, an operator `status` (`approved` or
 `draft`), and asserted rights and source labels, with optional topic/control
-hints. Documents are captured through the same confined, bounded path as every
+hints. The corpus manifest itself is read through the confined, no-follow path
+and must be a regular file of at most 2 MiB: symlinks, hard links, devices,
+FIFOs and directories are rejected, and the manifest and every document are
+revalidated immediately before any generation is published. Documents are
+captured through the same confined, bounded path as every
 other authoring input: no symlinks, hard links, aliases, escaping paths, or
 stale pins. `draft` documents are excluded unless `--include-draft` is passed.
 

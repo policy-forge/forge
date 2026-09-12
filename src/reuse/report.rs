@@ -298,9 +298,28 @@ impl ReuseReport {
             for candidate in &section.candidates {
                 single_line("source_key", &candidate.source_key)?;
                 single_line("source_path", &candidate.source_path)?;
+                crate::authoring::manifest::validate_local_path(
+                    "candidate source_path",
+                    std::path::Path::new(&candidate.source_path),
+                )?;
                 sha256("source_sha256", &candidate.source_sha256)?;
-                if candidate.span.start > candidate.span.end {
-                    return Err(error("reuse candidate span start exceeds its end"));
+                if candidate.span.start >= candidate.span.end {
+                    return Err(error("reuse candidate span must be non-empty"));
+                }
+                let role = format!("reuse-document-{}", candidate.source_key);
+                let source = self
+                    .inputs
+                    .iter()
+                    .find(|input| {
+                        input.role == role
+                            && input.path == candidate.source_path
+                            && input.sha256 == candidate.source_sha256
+                    })
+                    .ok_or_else(|| {
+                        error("reuse candidate must reference a captured source input")
+                    })?;
+                if candidate.span.end > usize::try_from(source.byte_length).unwrap_or(usize::MAX) {
+                    return Err(error("reuse candidate span exceeds its captured source"));
                 }
                 if !candidate.score.is_finite() || candidate.score < 0.0 {
                     return Err(error(
@@ -432,12 +451,20 @@ mod tests {
             "synthetic-project".to_owned(),
             "2026-09-11T00:00:00Z".to_owned(),
             DIGEST.to_owned(),
-            vec![ReuseInput {
-                role: "author-project".to_owned(),
-                path: "project.json".to_owned(),
-                sha256: DIGEST.to_owned(),
-                byte_length: 10,
-            }],
+            vec![
+                ReuseInput {
+                    role: "author-project".to_owned(),
+                    path: "project.json".to_owned(),
+                    sha256: DIGEST.to_owned(),
+                    byte_length: 10,
+                },
+                ReuseInput {
+                    role: "reuse-document-policy".to_owned(),
+                    path: "prior/policy.md".to_owned(),
+                    sha256: DIGEST.to_owned(),
+                    byte_length: 64,
+                },
+            ],
             sections,
         )
     }
@@ -523,6 +550,24 @@ mod tests {
         .unwrap();
         drafted["sections"][0]["state"] = json!("human-draft-present");
         assert!(ReuseReport::parse(&serde_json::to_vec(&drafted).unwrap()).is_err());
+    }
+
+    #[test]
+    fn candidate_pointers_must_bind_to_a_captured_source() {
+        let good = report(vec![section(DraftState::SkeletonReady, vec![candidate(2.5)])]);
+        assert!(ReuseReport::parse(&good.render_json().unwrap()).is_ok());
+        for (pointer, replacement) in [
+            ("/sections/0/candidates/0/source_path", json!("../../outside.md")),
+            ("/sections/0/candidates/0/source_sha256", json!("b".repeat(64))),
+            ("/sections/0/candidates/0/source_key", json!("undeclared")),
+            ("/sections/0/candidates/0/span/end", json!(65)),
+            ("/sections/0/candidates/0/span/end", json!(10)),
+        ] {
+            let mut value = serde_json::to_value(&good).unwrap();
+            *value.pointer_mut(pointer).unwrap() = replacement;
+            let error = ReuseReport::parse(&serde_json::to_vec(&value).unwrap()).unwrap_err();
+            assert!(matches!(error, ForgeError::Authoring(_)), "{pointer}");
+        }
     }
 
     #[test]

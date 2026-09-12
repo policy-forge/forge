@@ -13,8 +13,9 @@
 //!   returns, and a blank line always ends the current block;
 //! - a span covers whole lines, leading and trailing whitespace included, minus
 //!   the line break;
-//! - nothing here allocates in proportion to the input: the block list is the
-//!   only output.
+//! - a scope title is bounded to [`MAX_SCOPE_TITLE_BYTES`], so duplicating it
+//!   into every block stays linear in a constant rather than in an arbitrarily
+//!   long heading, and the block list is otherwise the only output.
 
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +23,13 @@ use crate::ForgeError;
 
 /// Maximum number of blocks one document may yield.
 pub const MAX_BLOCKS: usize = 4096;
+/// Maximum bytes retained from one heading scope title.
+///
+/// Scope titles are lexical hints for ranking, never emitted report content, so
+/// a pathological heading is truncated to the first whole characters that fit.
+/// This bounds the per-block scope copy: a document of 1 MiB cannot expand into
+/// gigabytes of duplicated heading text before the ranker caps its work.
+pub const MAX_SCOPE_TITLE_BYTES: usize = 4096;
 
 /// One maximal run of non-blank lines inside a heading scope.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -151,7 +159,21 @@ fn heading(line: &str) -> Option<String> {
     } else {
         trimmed
     };
-    Some(title.to_owned())
+    Some(bounded(title))
+}
+
+/// The first whole characters of `title` that fit within the scope bound.
+fn bounded(title: &str) -> String {
+    if title.len() <= MAX_SCOPE_TITLE_BYTES {
+        return title.to_owned();
+    }
+    let end = title
+        .char_indices()
+        .map(|(index, character)| index + character.len_utf8())
+        .take_while(|end| *end <= MAX_SCOPE_TITLE_BYTES)
+        .last()
+        .unwrap_or(0);
+    title[..end].to_owned()
 }
 
 /// The fence character and length of an opening code fence, if `line` is one.
@@ -380,5 +402,21 @@ after
         let over = "a\n\n".repeat(MAX_BLOCKS + 1);
         let rejected = blocks(over.as_bytes()).unwrap_err();
         assert!(rejected.to_string().contains("4096"), "{rejected}");
+    }
+
+    #[test]
+    fn a_pathological_heading_is_retained_once_per_block() {
+        let heading = "a".repeat(MAX_SCOPE_TITLE_BYTES * 16);
+        let document = format!("# {heading}\n\n{}", "body\n\n".repeat(1_024));
+        let segment = blocks(document.as_bytes()).unwrap();
+        assert_eq!(segment.len(), 1_024);
+        let expected = "a".repeat(MAX_SCOPE_TITLE_BYTES);
+        let retained: usize = segment
+            .iter()
+            .filter_map(|block| block.scope_title.as_ref())
+            .map(String::capacity)
+            .sum();
+        assert!(segment.iter().all(|block| block.scope_title.as_deref() == Some(&expected)));
+        assert!(retained < 16 * 1024 * 1024, "retained {retained} bytes of heading text");
     }
 }

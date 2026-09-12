@@ -183,7 +183,7 @@ impl CaptureSet {
         entries
     }
 
-    pub(super) fn verify(&self) -> Result<(), ForgeError> {
+    pub(crate) fn verify(&self) -> Result<(), ForgeError> {
         for (path, capture) in &self.files {
             let (bytes, identity) = crate::linkage::read_confined_local_file(
                 &self.root,

@@ -48,9 +48,9 @@ pub fn execute(
         return Err(error("--min-score must be a finite non-negative number"));
     }
     let seed = crate::authoring::reuse_seed(manifest)?;
-    let corpus_bytes = read_bounded(corpus_path, MAX_CORPUS_BYTES)?;
+    let (root, manifest_name) = corpus_location(corpus_path)?;
+    let corpus_bytes = read_manifest(&root, &manifest_name)?;
     let corpus = Corpus::parse(&corpus_bytes)?;
-    let root = corpus_root(corpus_path)?;
     let captured = capture(&root, &corpus)?;
 
     let mut queries = Vec::new();
@@ -117,6 +117,12 @@ pub fn execute(
     let json = report.render_json()?;
     let text = report.render_text();
     if let Some(destination) = output_dir {
+        // The captured project snapshot and the corpus manifest must still
+        // match, so a source changed during ranking can never be published.
+        seed.captures.verify()?;
+        if read_manifest(&root, &manifest_name)? != corpus_bytes {
+            return Err(error("reuse corpus manifest changed after capture"));
+        }
         let mut artifacts = vec![
             crate::authoring::output::OutputArtifact {
                 relative_path: "reuse.json".to_owned(),
@@ -178,20 +184,22 @@ fn merge_inputs(
     inputs
 }
 
-/// Read a bounded local file without following a directory into memory.
-fn read_bounded(path: &Path, limit: u64) -> Result<Vec<u8>, ForgeError> {
-    let metadata = std::fs::metadata(path).map_err(|cause| {
-        error(format!("cannot read the reuse corpus manifest: {}", cause.kind()))
-    })?;
-    if metadata.len() > limit {
-        return Err(error(format!("reuse corpus exceeds the {limit} byte limit")));
-    }
-    std::fs::read(path)
-        .map_err(|cause| error(format!("cannot read the reuse corpus manifest: {}", cause.kind())))
+/// Read the corpus manifest through the confined, no-follow, bounded reader.
+///
+/// The manifest is resolved exactly like every other authoring input: a
+/// regular file below an absolute normalized root, never a symlink, device,
+/// FIFO or directory, and never more than [`MAX_CORPUS_BYTES`] bytes.
+fn read_manifest(root: &Path, name: &Path) -> Result<Vec<u8>, ForgeError> {
+    let (bytes, _identity) = crate::linkage::read_confined_local_file(root, name, MAX_CORPUS_BYTES)
+        .map_err(|cause| error(format!("cannot read the reuse corpus manifest: {cause}")))?;
+    Ok(bytes)
 }
 
-/// The corpus manifest's parent directory, which anchors every document path.
-fn corpus_root(path: &Path) -> Result<PathBuf, ForgeError> {
+/// The corpus manifest's absolute parent directory and file name.
+///
+/// The parent directory anchors every document path, and the name keeps the
+/// confined read a normalized descendant.
+fn corpus_location(path: &Path) -> Result<(PathBuf, PathBuf), ForgeError> {
     let base = if path.is_absolute() {
         PathBuf::new()
     } else {
@@ -206,8 +214,13 @@ fn corpus_root(path: &Path) -> Result<PathBuf, ForgeError> {
             _ => absolute.push(component.as_os_str()),
         }
     }
-    absolute
+    let root = absolute
         .parent()
         .map(Path::to_path_buf)
-        .ok_or_else(|| error("corpus manifest must have a parent directory"))
+        .ok_or_else(|| error("corpus manifest must have a parent directory"))?;
+    let name = absolute
+        .file_name()
+        .map(PathBuf::from)
+        .ok_or_else(|| error("corpus manifest must name a file"))?;
+    Ok((root, name))
 }
