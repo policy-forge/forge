@@ -8,4 +8,8 @@
 pub mod blocks;
 pub mod capture;
 pub mod corpus;
+mod execute;
 pub mod rank;
+pub mod report;
+
+pub use execute::execute;

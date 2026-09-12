@@ -43,7 +43,7 @@ fn error(message: impl Into<String>) -> ForgeError {
 }
 
 /// Why a block was kept as a candidate. Order is fixed for stable bytes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Reason {
     /// An exact control identifier assigned to the section occurs in the block.

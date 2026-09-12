@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://policy-forge.github.io/schemas/authoring-reuse/1",
+  "title": "FORGE authoring reuse report",
+  "description": "Closed report of deterministic reuse-candidate pointers for unresolved authoring sections. Each candidate names a captured source, an exact byte span, the source SHA-256 and a lexical score; the report carries no generated, rewritten or excerpted prose. Runtime validation additionally rejects decoded duplicate keys, null fields, unsupported versions, incoherent counts, inverted spans, and low-confidence flags that disagree with the score.",
+  "$comment": "Runtime enforces a 50 MiB encoded-report bound, depth 16, a 16 KiB UTF-8 string bound, at most 100000 sections, and at most 100 candidates per section. JSON Schema lengths count Unicode characters. Scores are deterministic lexical ranks, not quality or approval claims.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_key", "as_of", "corpus_sha256", "inputs", "sections", "counts"],
+  "properties": {
+    "schema_version": {
+      "const": "forge.authoring-reuse/1"
+    },
+    "project_key": {
+      "$ref": "#/$defs/single_line"
+    },
+    "as_of": {
+      "$ref": "#/$defs/single_line"
+    },
+    "corpus_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/input"
+      }
+    },
+    "sections": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/section"
+      }
+    },
+    "counts": {
+      "$ref": "#/$defs/counts"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "single_line": {
+      "type": "string",
+      "minLength": 1
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "reason": {
+      "enum": ["control-match", "topic-terms", "question-terms", "same-family"]
+    },
+    "state": {
+      "enum": ["planned", "blocked-context", "skeleton-ready"]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "sha256", "byte_length"],
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/single_line"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_key", "source_path", "source_sha256", "span", "score", "reasons", "low_confidence"],
+      "properties": {
+        "source_key": {
+          "$ref": "#/$defs/single_line"
+        },
+        "source_path": {
+          "$ref": "#/$defs/path"
+        },
+        "source_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "span": {
+          "$ref": "#/$defs/span"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reasons": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        },
+        "low_confidence": {
+          "type": "boolean"
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_key", "topic_key", "title", "state", "gap_ids", "control_ids", "candidates"],
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/single_line"
+        },
+        "topic_key": {
+          "$ref": "#/$defs/single_line"
+        },
+        "title": {
+          "$ref": "#/$defs/single_line"
+        },
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "gap_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/single_line"
+          }
+        },
+        "control_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/single_line"
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sections", "with_candidates", "low_confidence", "candidates"],
+      "properties": {
+        "sections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "with_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "low_confidence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidates": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

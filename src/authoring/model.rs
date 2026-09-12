@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::manifest::{
     AuthorProject, AuthoringPack, ControlAssignment, Deferral, FamilyAssignment, HumanClause,
@@ -128,7 +128,7 @@ pub struct QuestionEvaluation {
     pub expires_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum DraftState {
     Planned,
