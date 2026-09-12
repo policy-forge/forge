@@ -107,11 +107,11 @@ impl ProcessModelAdapter {
     /// Bind an adapter to an operator-supplied local executable.
     ///
     /// # Errors
-    /// Returns an authoring error when the executable is missing, is not a
-    /// regular file, is a symlink, or is larger than the fingerprint bound.
+    /// Returns an authoring error when the executable is missing, resolves to
+    /// something other than a regular file, or is larger than the fingerprint
+    /// bound. Symlinks are followed: ordinary installs are shims.
     pub fn new(executable: &Path, argv: &[String]) -> Result<Self, ForgeError> {
-        let bytes =
-            crate::io::read_bounded(executable, crate::suggest::prepare::MAX_ADAPTER_BYTES)?;
+        let bytes = read_executable(executable, crate::suggest::prepare::MAX_ADAPTER_BYTES)?;
         for argument in argv {
             if argument.len() > MAX_ARG_BYTES || argument.chars().any(char::is_control) {
                 return Err(shared::error(format!(
@@ -331,6 +331,18 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
+    fn a_process_adapter_may_be_reached_through_a_symlink() {
+        // The wiring, not just the helper: a shim is how most installs look.
+        let temp = tempfile::tempdir().unwrap();
+        let link = temp.path().join("shim");
+        std::os::unix::fs::symlink("/bin/sh", &link).unwrap();
+        let adapter = ProcessModelAdapter::new(&link, &["-c".into(), "cat".into()]).unwrap();
+        let output = adapter.invoke(b"through a shim", Duration::from_secs(10)).unwrap();
+        assert_eq!(output.stdout, b"through a shim");
+    }
+
+    #[cfg(unix)]
+    #[test]
     fn a_process_adapter_round_trips_the_payload_through_stdin_and_stdout() {
         let adapter =
             ProcessModelAdapter::new(Path::new("/bin/sh"), &["-c".into(), "cat".into()]).unwrap();
@@ -395,7 +407,11 @@ mod tests {
         std::fs::create_dir(&directory).unwrap();
         assert!(ProcessModelAdapter::new(&directory, &[]).is_err());
 
+        // An existing file, so the refusal is about the argument, not the path.
+        let executable = temp.path().join("adapter");
+        std::fs::write(&executable, b"#!/bin/sh\n").unwrap();
         let argument = vec!["x".repeat(MAX_ARG_BYTES + 1)];
-        assert!(ProcessModelAdapter::new(Path::new("/bin/sh"), &argument).is_err());
+        assert!(ProcessModelAdapter::new(&executable, &argument).is_err());
+        assert!(ProcessModelAdapter::new(&executable, &["ok".to_string()]).is_ok());
     }
 }

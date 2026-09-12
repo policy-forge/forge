@@ -1,5 +1,6 @@
 //! `forge author reuse` end-to-end contracts: closed report, exit codes, spans.
 
+#[cfg(unix)]
 use std::process::Command;
 
 use serde_json::{Value, json};
