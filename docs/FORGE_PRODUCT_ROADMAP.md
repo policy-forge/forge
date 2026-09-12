@@ -24,8 +24,8 @@ v1.1.0 is released, and the post-v1.1.0 roadmap is active.
 - Phase 3 Ecosystem & Community is complete.
 - v1.0.0 established the community-ready distribution baseline.
 - v1.1.0 (2026-06-09) added native PDF and DOCX ingestion and policy-derived SSP control implementations.
-- The next-wave registry contains 14 PRDs (055–068): 7 have technically complete
-  implementations merged into `main`, 2 are in progress, and 5 remain planned.
+- The next-wave registry contains 15 PRDs (055–069): 7 have technically complete
+  implementations merged into `main`, 2 are in progress, and 6 remain planned.
 - PRDs 055–060 and 063 are technically implemented. Their human release,
   pilot, adoption, or other PRD-level gates remain open where the PRDs say so.
 - PRD 061 Phase 1 merged in PR #144 and Phase 2 merged in PR #145; its human
@@ -187,6 +187,7 @@ gates in the corresponding PRD.
 | [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review; the retrieval-only Phase 0 tranche (`forge author reuse`) is under review on its branch and does not change this status |
 | [067](PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | No implementation merge | Requires stable project discovery, shared read-only queries, and a completed threat model |
 | [068](PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | No implementation merge | Requires a selected first review workflow and approved identity/quorum boundaries |
+| [069](PRD/069-prd-dependency-security-audit.md) | Dependency security audit | Planned | No implementation merge | Requires recorded criteria, an offline inventory and an owned-exception policy; the PRD-062 transport stack is the first tranche |
 
 ### Now / Next / Later
 
@@ -255,7 +256,7 @@ The completed v1.0.0 release gate required the following:
 
 | Initiatives Total | Technical Implementation Complete | In Progress | Planned / Not Started | Human Release Gates Pending |
 |------------------:|----------------------------------:|------------:|----------------------:|----------------------------:|
-| **14** | **7** | **2** | **5** | **7** |
+| **15** | **7** | **2** | **6** | **7** |
 
 ---
 

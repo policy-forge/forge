@@ -17,11 +17,11 @@ FORGE v1.0.0 is the community-ready release of the Markdown-to-OSCAL pipeline,
 and v1.1.0 adds native PDF/DOCX ingestion. The original roadmap remains
 complete: **50 of 50 work items are Done**.
 
-The post-v1.1.0 roadmap contains **14 PRDs**:
+The post-v1.1.0 roadmap contains **15 PRDs**:
 
 - **7 technically implemented:** PRDs 055–060 and 063. Their implementation is
   merged, while their PRD-level human release gates remain pending where noted.
-- **5 planned:** PRDs 064–068.
+- **6 planned:** PRDs 064–069.
 - **2 in progress:** PRD 061, whose Phase 1 and Phase 2 technical phases are merged
   (PR #144 and PR #145) with design-partner readiness satisfied and only pilot
   measurement and release approval pending, and PRD 062's local
@@ -151,6 +151,7 @@ design-partner validation, publication, or adoption gates are complete.
 | [066](docs/PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review |
 | [067](docs/PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | Requires stable project discovery, shared read-only queries, and a completed threat model |
 | [068](docs/PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | Requires a selected first review workflow and approved identity/quorum boundaries |
+| [069](docs/PRD/069-prd-dependency-security-audit.md) | Dependency security audit | Planned | Requires a recorded criteria, an inventory tool and an owned-exception policy; the PRD-062 transport stack and the existing exemptions are the first tranche |
 
 ### Now / Next / Later
 
