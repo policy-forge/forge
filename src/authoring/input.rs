@@ -203,6 +203,52 @@ impl CaptureSet {
 }
 
 impl PreparedProject {
+    /// Preserve the destination layout and exact transitive input bytes while
+    /// replacing only the project document in a fresh, private directory.
+    pub(super) fn validate_patch(
+        &self,
+        manifest_name: &Path,
+        patch: &[u8],
+        clauses: &[super::output::OutputArtifact],
+    ) -> Result<(), ForgeError> {
+        use std::io::Write as _;
+        let snapshot = tempfile::tempdir()
+            .map_err(|cause| error(format!("cannot create proposal snapshot: {cause}")))?;
+        let snapshot_root = snapshot
+            .path()
+            .canonicalize()
+            .map_err(|cause| error(format!("cannot resolve proposal snapshot: {cause}")))?;
+        for (path, captured) in &self.captures.files {
+            let target = snapshot_root.join(path);
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|cause| error(format!("cannot prepare proposal snapshot: {cause}")))?;
+            }
+            let bytes = if Path::new(path) == manifest_name { patch } else { &captured.bytes };
+            std::fs::write(target, bytes)
+                .map_err(|cause| error(format!("cannot capture proposal snapshot: {cause}")))?;
+        }
+        for clause in clauses {
+            let relative = Path::new(&clause.relative_path);
+            portable_label(relative)?;
+            let target = snapshot_root.join(relative);
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|cause| error(format!("cannot prepare clause snapshot: {cause}")))?;
+            }
+            // Never replace another input, even inside the private snapshot.
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(target)
+                .map_err(|cause| error(format!("cannot stage proposed clause: {cause}")))?;
+            file.write_all(&clause.bytes)
+                .map_err(|cause| error(format!("cannot stage proposed clause: {cause}")))?;
+        }
+        super::prepare_plan(&snapshot_root.join(manifest_name))?;
+        Ok(())
+    }
+
     pub(super) fn byte_count(&self) -> u64 {
         self.captures.byte_count
     }

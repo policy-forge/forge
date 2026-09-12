@@ -1,5 +1,12 @@
 # 066 suggestions pipeline: local-only prepare → run → validate → review → promote
 
+> Current scope after the PR #155 follow-up: recorded-response import only.
+> Process execution is disabled in both CLI and library until an OS boundary
+> provides filesystem/network confinement, verified-byte execution, and full
+> descendant ownership. The process design below is retained as future work,
+> not as an implemented or accepted guarantee. See the remediation section.
+
+
 Status: implementation plan for review. No implementation, release, or acceptance
 claim.
 Owner: Brian Luby. Author: coordinating agent, 2026-09-12.
@@ -486,13 +493,12 @@ Proposed 2026-09-12; owner agreement required before slice 1.
 ## PR #155 review remediation
 
 Three reviews landed on the pull request: Copilot (2 inline findings), CodeRabbit
-(25) and an owner adversarial review (10). Status is recorded here so a later
-session does not re-derive it. All 37 findings are dispositioned as of `95c4bd4`,
-with a reply on each review thread and an index comment on the pull request. This
-section records what changed and what deliberately did not; it is not an
-acceptance or quality claim.
+(25) and an adversarial review (10). Reinspection of `b5c2898` found 16 unresolved
+threads; prior replies and the 0.5 completion statement did not establish that
+all findings were remediated. The historical commit notes below describe those
+attempts, with the current corrections recorded afterward.
 
-### Fixed
+### Earlier remediation attempts
 
 Commit `121d216` — contract and CLI alignment:
 
@@ -529,9 +535,9 @@ Commit `934ef0a` — output and adapter boundaries:
   and is **not** sandboxed, instead of implying an egress guarantee FORGE cannot
   enforce for it
 
-### Fixed after that
+### Subsequent remediation attempts
 
-Commit `126359d` — promotion validity, in full:
+Commit `126359d` — promotion validity attempt:
 
 - the destination's pinned pack is read and digest-verified, and the proposal
   carries `answer_refs` for every required answer the destination has for the
@@ -565,21 +571,42 @@ Commit `6e5bf69` — remaining validate and provenance findings:
   no-replace directory rename, which is Linux/macOS only and fails closed
   elsewhere — the same gate the authoring publication tests use. The gate is
   about publication, not about the recorded-response mode.
-- **An adapter sandbox.** See the owner decision below.
 
-### Open owner decision (not mine to make)
+### Current follow-up remediation
 
-The owner's first P1 asks for the filesystem/network boundary `env_clear` cannot
-provide: a local adapter runs with the operator's privileges and can read, write
-or transmit anything they can. This tranche now *states* that instead of implying
-otherwise, and the recorded alternatives are (a) keep the trusted-adapter
-assumption as an explicit product decision, or (b) withhold process execution
-until an OS-level boundary exists and ship only the recorded-response workflow.
+- Process execution is withheld rather than adopting a trusted-adapter exception
+  to the original no-egress requirement. `ProcessModelAdapter::invoke` always
+  refuses and has no child-process implementation or opt-out. This also removes
+  the executable replacement/PATH execution race and descendant leak paths.
+  Recorded imports remain available; `GATE-SUGGEST-ADAPTER` is partial.
+- Section labels/titles and prompts are redacted before any request, payload or
+  preview serialization. Each unit/rule receipt is emitted once.
+- Credential detection includes `authToken`, `auth_token` and `auth-token`.
+  Response checks visit decoded strings, so JSON escapes, notes, headings and
+  nested lists cannot evade the detector by serialization alone.
+- Redaction retains one pending match per rule and checks both input and output
+  bounds before allocation/appending. Earlier replacement markers are never
+  scanned. The previous all-matches allocation has been removed.
+- Promotion validates a private snapshot of confined, pinned destination inputs,
+  with exact transitive layout and proposed clauses. It never stages files in
+  the destination and revalidates captures before publishing. Existing files
+  and symlinks remain untouched on both success and refusal.
+- The normalized destination spelling is reused in the proposal. Unavailable
+  answers report their evaluated state. Mapping candidates require explicit
+  control membership even when the supplied control list is empty.
+- `tests/pr155_adversarial_review.rs` retains the original reproductions and
+  adds escaped-secret, answer-state and staging-preservation regressions.
+  Existing suites verify required answer pins, effective edited coordinates,
+  unique clause paths, target membership and recorded-response provenance.
+
+The earlier completion claims are superseded by these corrections. No sandbox,
+corpus usefulness, release, merge or product acceptance is claimed here.
 
 ## Changelog
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.6 | 2026-09-12 | Codex | Rechecked incomplete review fixes; withheld process execution, bounded redaction before allocation, scanned decoded output, redacted titles, and moved promotion validation into a private captured snapshot |
 | 0.5 | 2026-09-12 | coordinating agent | Marked the review remediation complete: all 37 findings dispositioned with per-thread replies and an index comment on PR #155, and the plan changelog ordered newest-first |
 | 0.4 | 2026-09-12 | coordinating agent | Completed the review remediation: promotion validity through the destination's own authoring path with answer pins and effective-clause coordinates, unsupplied-target and duplicate-content refusal, run mode and receipt digest in the bundle, and the remaining test and roadmap findings |
 | 0.3 | 2026-09-12 | coordinating agent | Recorded the PR #155 review remediation: two commits of fixed findings, the designed-but-unimplemented promotion-validity work, the remaining findings, and the open owner decision on adapter sandboxing |

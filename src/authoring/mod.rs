@@ -85,6 +85,7 @@ pub(crate) struct SuggestSeed {
     pub(crate) plan: AuthoringPlan,
     pub(crate) prompts: BTreeMap<String, SeedPrompt>,
     pub(crate) answers: BTreeMap<String, SeedAnswer>,
+    pub(crate) unavailable_answers: BTreeMap<String, String>,
     pub(crate) captures: input::CaptureSet,
 }
 
@@ -107,6 +108,7 @@ pub(crate) fn suggest_seed(manifest: &Path) -> Result<SuggestSeed, ForgeError> {
     let evaluated: BTreeMap<&str, &model::QuestionEvaluation> =
         plan.questions.iter().map(|question| (question.question_key.as_str(), question)).collect();
     let mut answers = BTreeMap::new();
+    let mut unavailable_answers = BTreeMap::new();
     for answer in &prepared.loaded.project.answers {
         let Some(evaluation) = evaluated.get(answer.question_key.as_str()) else {
             continue;
@@ -114,6 +116,7 @@ pub(crate) fn suggest_seed(manifest: &Path) -> Result<SuggestSeed, ForgeError> {
         if evaluation.state != model::AnswerStatus::Available
             || evaluation.answer_key.as_deref() != Some(answer.key.as_str())
         {
+            unavailable_answers.insert(answer.key.clone(), evaluation.state.as_str().to_string());
             continue;
         }
         if let Some(serde_json::Value::String(value)) = &answer.value {
@@ -128,7 +131,30 @@ pub(crate) fn suggest_seed(manifest: &Path) -> Result<SuggestSeed, ForgeError> {
             );
         }
     }
-    Ok(SuggestSeed { root: prepared.root, plan, prompts, answers, captures: prepared.captures })
+    Ok(SuggestSeed {
+        root: prepared.root,
+        plan,
+        prompts,
+        answers,
+        unavailable_answers,
+        captures: prepared.captures,
+    })
+}
+
+/// Validate a proposed project using only captured destination inputs in a
+/// private snapshot. Return the captures for a final check before publication.
+pub(crate) fn validate_suggestion_patch(
+    destination: &Path,
+    expected_sha256: &str,
+    patch: &[u8],
+    clauses: &[output::OutputArtifact],
+) -> Result<input::CaptureSet, ForgeError> {
+    let prepared =
+        input::prepare_pinned(destination, manifest::MAX_TOTAL_BYTES, Some(expected_sha256))?;
+    let name = destination.file_name().ok_or_else(|| error("destination must name a file"))?;
+    prepared.validate_patch(Path::new(name), patch, clauses)?;
+    prepared.captures.verify()?;
+    Ok(prepared.captures)
 }
 
 /// Validate a complete project and return its deterministic drafting plan without writing.

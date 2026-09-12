@@ -225,62 +225,18 @@ fn a_missing_adapter_is_action_required_and_writes_nothing() {
 }
 
 #[test]
-fn adapter_diagnostics_never_contaminate_the_json_record() {
+fn process_execution_is_refused_without_side_effects_or_json_contamination() {
     let (_temp, root) = project();
-    prepared(
-        &root,
-        "#!/bin/sh\nprintf 'note' 1>&2; printf '{\"schema_version\":\"forge.suggest-response/1\"}';\n",
-    );
+    // If spawned, this adapter would create a descendant and an unrelated file.
+    prepared(&root, "#!/bin/sh\n(sleep 30) & printf leaked > escaped.txt; printf response\n");
     let output = invoke(&root, &["--format", "json"]);
-    assert_exit(&output, 0);
-    let record: Value =
-        serde_json::from_slice(&output.stdout).expect("stdout must stay a single JSON document");
-    assert_eq!(record["mode"], json!("process"));
-    assert!(String::from_utf8_lossy(&output.stderr).contains("note"));
-}
-
-#[test]
-fn a_failing_or_hanging_adapter_is_action_required_and_writes_nothing() {
-    let (_temp, root) = project();
-    prepared(&root, "#!/bin/sh\nexit 4\n");
-    let failing = invoke(&root, &[]);
-    assert_exit(&failing, 1);
-    assert!(String::from_utf8_lossy(&failing.stderr).contains("run refused"));
+    assert_exit(&output, 1);
+    assert!(output.stdout.is_empty());
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("process adapter execution is disabled")
+    );
+    assert!(!root.join("escaped.txt").exists());
     assert!(!root.join(RUN_DIR).exists());
-
-    let (_temp2, hanging) = project();
-    prepared(&hanging, "#!/bin/sh\nsleep 30\n");
-    let timed_out = invoke(&hanging, &["--timeout", "1"]);
-    assert_exit(&timed_out, 1);
-    assert!(String::from_utf8_lossy(&timed_out.stderr).contains("timed out"));
-    assert!(!hanging.join(RUN_DIR).exists());
-}
-
-#[cfg(unix)]
-#[test]
-fn a_process_adapter_receives_the_exact_payload_and_its_output_is_the_response() {
-    let (_temp, root) = project();
-    prepared(&root, "#!/bin/sh\ncat\n");
-    let output = invoke(&root, &[]);
-    assert_exit(&output, 0);
-    let payload = std::fs::read(root.join("prepared/payload.txt")).unwrap();
-    let raw = std::fs::read(root.join(RUN_DIR).join("response.raw")).unwrap();
-    assert_eq!(raw, payload, "the adapter must receive exactly the prepared bytes");
-    let record: Value =
-        serde_json::from_slice(&std::fs::read(root.join(RUN_DIR).join("run.json")).unwrap())
-            .unwrap();
-    assert_eq!(record["mode"], json!("process"));
-    assert_eq!(record["response_sha256"], json!(hash(&payload)));
-}
-
-#[cfg(unix)]
-#[test]
-fn the_adapter_environment_is_cleared_and_bounded() {
-    let (_temp, root) = project();
-    prepared(&root, "#!/bin/sh\nenv > /dev/null; printf 'ok'\n");
-    let output = invoke(&root, &[]);
-    assert_exit(&output, 0);
-    assert_eq!(std::fs::read(root.join(RUN_DIR).join("response.raw")).unwrap(), b"ok");
 }
 
 #[test]
@@ -304,4 +260,31 @@ fn an_out_of_range_timeout_is_refused_before_anything_runs() {
     let too_long = invoke(&root, &["--timeout", "3601", "--recorded-response", "recorded.json"]);
     assert_exit(&too_long, 2);
     assert!(!root.join(RUN_DIR).exists());
+}
+
+#[test]
+fn a_recorded_run_accepts_a_bare_request_filename() {
+    let (_temp, root) = project();
+    prepared(&root, "#!/bin/sh\ncat\n");
+    let prepared_root = root.join("prepared");
+    std::fs::write(prepared_root.join("recorded.json"), response_body()).unwrap();
+    let output = run(
+        &prepared_root,
+        &[
+            "suggest",
+            "run",
+            "--request",
+            "request.json",
+            "--consent",
+            "consent.json",
+            "--recorded-response",
+            "recorded.json",
+            "--output-dir",
+            "run-1",
+            "--format",
+            "json",
+        ],
+    );
+    assert_exit(&output, 0);
+    assert_eq!(std::fs::read(prepared_root.join("run-1/response.raw")).unwrap(), response_body());
 }

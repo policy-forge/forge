@@ -32,8 +32,6 @@ pub const PROMOTION_ARTIFACT: &str = "promotion.json";
 pub const PROPOSED_PATCH_ARTIFACT: &str = "promotion/proposed-project.json";
 /// Directory holding one proposed clause file per promoted suggestion.
 pub const ENTRY_DIRECTORY: &str = "promotion";
-/// Prefix of the staged candidate project used for the destination's own check.
-const CANDIDATE_PREFIX: &str = ".forge-suggest-candidate-";
 
 /// Arguments for one promote run.
 pub struct PromoteArgs<'a> {
@@ -89,36 +87,14 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
              deferred task selection on 2026-09-12, so only a policy-drafting bundle can be promoted",
         ));
     }
-    shared::relative_path("promote --destination", &portable(args.destination)?)?;
+    let destination_path = portable(args.destination)?;
+    shared::relative_path("promote --destination", &destination_path)?;
 
     let promoted = accepted(&bundle, &manifest);
     if promoted.is_empty() {
-        // Every other exit path honours the requested format; a JSON caller must
-        // not receive prose.
-        let outcome = serde_json::json!({
-            "schema_version": "forge.suggest-promotion-outcome/1",
-            "outcome": "nothing-to-promote",
-            "accepted": 0,
-        });
-        let message = match args.format {
-            AuthorReportFormat::Json => format!(
-                "{}\n",
-                serde_json::to_string(&outcome).map_err(|cause| shared::error(format!(
-                    "cannot encode the outcome: {cause}"
-                )))?
-            ),
-            AuthorReportFormat::Text => {
-                "forge suggest promote: no suggestion has an accept-as-is or \
-                 accept-edited disposition, so there is nothing to propose.\n"
-                    .to_string()
-            }
-        };
-        crate::cli::output::write_output(&message, None)
-            .map_err(|cause| shared::error(format!("cannot write the promote summary: {cause}")))?;
-        return Ok(true);
+        return nothing_to_promote(args.format);
     }
 
-    let destination_path = args.destination.to_string_lossy().into_owned();
     let destination_bytes = crate::io::read_bounded(args.destination, MAX_PATCH_BYTES)?;
     let mut project =
         crate::authoring::manifest::parse_project(&destination_bytes).map_err(|cause| {
@@ -148,7 +124,17 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
     })?;
     // The proposal must survive the destination's own authoring path before it is
     // published, so the recipient is not handed a patch that cannot be applied.
-    destination_accepts(&root, &patch_bytes, &artifacts)?;
+    let destination_captures = crate::authoring::validate_suggestion_patch(
+        args.destination,
+        &crate::hashing::sha256_hex(&destination_bytes),
+        &patch_bytes,
+        &artifacts,
+    )
+    .map_err(|cause| {
+        shared::error(format!(
+            "the destination's own authoring path rejects the proposed patch: {cause}"
+        ))
+    })?;
     artifacts.push(crate::authoring::output::OutputArtifact {
         relative_path: PROPOSED_PATCH_ARTIFACT.to_string(),
         bytes: patch_bytes.clone(),
@@ -171,6 +157,7 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
     });
 
     let root = shared::document_root(args.destination, "--destination")?;
+    destination_captures.verify()?;
     crate::authoring::output::publish(&root, args.output_dir, &artifacts)?;
 
     let stdout = match args.format {
@@ -181,6 +168,30 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
     crate::cli::output::write_output(&stdout, None)
         .map_err(|cause| shared::error(format!("cannot write the promote summary: {cause}")))?;
     Ok(false)
+}
+
+/// Report the action-required outcome using the requested stdout format.
+fn nothing_to_promote(format: AuthorReportFormat) -> Result<bool, ForgeError> {
+    // Every other exit path honours the requested format; a JSON caller must
+    // not receive prose.
+    let outcome = serde_json::json!({
+        "schema_version": "forge.suggest-promotion-outcome/1",
+        "outcome": "nothing-to-promote",
+        "accepted": 0,
+    });
+    let message = match format {
+        AuthorReportFormat::Json => format!(
+            "{}\n",
+            serde_json::to_string(&outcome)
+                .map_err(|cause| shared::error(format!("cannot encode the outcome: {cause}")))?
+        ),
+        AuthorReportFormat::Text => "forge suggest promote: no suggestion has an accept-as-is or \
+             accept-edited disposition, so there is nothing to propose.\n"
+            .to_string(),
+    };
+    crate::cli::output::write_output(&message, None)
+        .map_err(|cause| shared::error(format!("cannot write the promote summary: {cause}")))?;
+    Ok(true)
 }
 
 /// Accepted suggestions with the decision that accepted them, in bundle order.
@@ -315,7 +326,11 @@ fn assemble_proposal(
 /// Returns an authoring error when the pin is unreadable, its digest does not
 /// match, or it is not a closed pack contract.
 fn read_pinned_pack(root: &Path, project: &AuthorProject) -> Result<AuthoringPack, ForgeError> {
-    let bytes = crate::io::read_bounded(&root.join(&project.authoring_pack.path), MAX_PATCH_BYTES)?;
+    let (bytes, _) = crate::linkage::read_confined_local_file(
+        root,
+        &project.authoring_pack.path,
+        MAX_PATCH_BYTES,
+    )?;
     if crate::hashing::sha256_hex(&bytes) != project.authoring_pack.expected_sha256 {
         return Err(shared::error(format!(
             "the destination's pinned pack '{}' no longer matches its digest",
@@ -418,80 +433,6 @@ fn portable(path: &Path) -> Result<String, ForgeError> {
         .ok_or_else(|| shared::error("promote --destination must be UTF-8"))
 }
 
-/// Removes every file this check staged, on every exit path.
-struct StageGuard {
-    files: Vec<PathBuf>,
-    directories: Vec<PathBuf>,
-}
-
-impl Drop for StageGuard {
-    fn drop(&mut self) {
-        for file in self.files.iter().rev() {
-            let _ = std::fs::remove_file(file);
-        }
-        for directory in self.directories.iter().rev() {
-            // Only a directory this check created, and only while it is empty.
-            let _ = std::fs::remove_dir(directory);
-        }
-    }
-}
-
-/// Prove the proposal against the destination's own authoring path.
-///
-/// A shape check cannot promise that `forge author plan` accepts a patch: the
-/// real path also resolves pinned inputs, their transitive dependencies, the
-/// pack relationships and the clause grammar. The candidate project and its
-/// clause files are therefore staged **inside the destination's own directory**,
-/// so every relative input resolves exactly as it does for the real run, and the
-/// same entry point the authoring commands use is invoked on the candidate.
-/// Everything this check writes is removed before it returns.
-///
-/// # Errors
-/// Returns an authoring error when staging fails or when the destination's own
-/// validation rejects the proposal.
-fn destination_accepts(
-    root: &Path,
-    patch_bytes: &[u8],
-    clause_files: &[crate::authoring::output::OutputArtifact],
-) -> Result<(), ForgeError> {
-    let mut guard = StageGuard { files: Vec::new(), directories: Vec::new() };
-    let candidate = PathBuf::from(format!("{CANDIDATE_PREFIX}{}.json", std::process::id()));
-    stage_file(&mut guard, root, &candidate, patch_bytes)?;
-    for file in clause_files {
-        stage_file(&mut guard, root, Path::new(&file.relative_path), &file.bytes)?;
-    }
-    crate::authoring::prepare_plan(&root.join(&candidate)).map_err(|cause| {
-        shared::error(format!(
-            "the destination's own authoring path rejects the proposed patch: {cause}"
-        ))
-    })?;
-    Ok(())
-}
-
-/// Write one staged file, recording it and any directory created for cleanup.
-fn stage_file(
-    guard: &mut StageGuard,
-    root: &Path,
-    relative: &Path,
-    bytes: &[u8],
-) -> Result<(), ForgeError> {
-    let target = root.join(relative);
-    if let Some(parent) = target.parent()
-        && parent != root
-        && !parent.exists()
-    {
-        std::fs::create_dir_all(parent).map_err(|cause| {
-            shared::error(format!("cannot stage '{}': {cause}", relative.display()))
-        })?;
-        guard.directories.push(parent.to_path_buf());
-    }
-    std::fs::write(&target, bytes).map_err(|cause| {
-        shared::error(format!("cannot stage '{}': {cause}", relative.display()))
-    })?;
-    guard.files.push(target);
-    Ok(())
-}
-
 /// The text summary for one promotion.
 fn render_summary(proposal: &PromotionProposal, args: &PromoteArgs<'_>) -> String {
     use std::fmt::Write as _;
@@ -571,6 +512,33 @@ mod tests {
         assert_eq!(portable(Path::new("project.json")).unwrap(), "project.json");
         // Escaping is refused later by the contract validator, not here.
         assert_eq!(portable(Path::new("dir/../project.json")).unwrap(), "dir/../project.json");
+    }
+
+    #[test]
+    fn a_proposal_records_the_normalized_destination_spelling() {
+        let bundle_bytes =
+            serde_json::to_vec(&super::super::bundle::fixture_bundle_json()).unwrap();
+        let bundle = SuggestionsBundle::parse(&bundle_bytes).unwrap();
+        let (proposal, json) = assemble_proposal(
+            &ProposalContext {
+                bundle: &bundle,
+                bundle_bytes: &bundle_bytes,
+                dispositions_bytes: b"dispositions",
+                destination_path: portable(Path::new(r"dir\project.json")).unwrap(),
+                destination_bytes: b"project",
+                patch_bytes: b"patch",
+            },
+            vec![PromotionEntry {
+                suggestion_id: bundle.suggestions[0].suggestion_id.clone(),
+                contract: PROJECT_SCHEMA_VERSION.to_string(),
+                artifact: "promotion/entry.md".to_string(),
+                sha256: "a".repeat(64),
+                bytes: 1,
+            }],
+        )
+        .unwrap();
+        assert_eq!(proposal.destination.path, "dir/project.json");
+        assert_eq!(PromotionProposal::parse(&json).unwrap().destination.path, "dir/project.json");
     }
 
     #[test]

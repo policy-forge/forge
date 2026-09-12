@@ -6,7 +6,8 @@
 //! file; FORGE inserts one fixed marker and never invents replacement text. The
 //! rule text is hashed for the record and never written to the request.
 
-use std::collections::BTreeSet;
+use std::cmp::Reverse;
+use std::collections::{BTreeSet, BinaryHeap};
 use std::sync::LazyLock;
 
 use regex::Regex;
@@ -62,7 +63,7 @@ static SECRET_PATTERNS: LazyLock<[(&str, Regex); 6]> = LazyLock::new(|| {
             // Quoted JSON-style credentials and bare assignments alike.
             "assigned credential",
             Regex::new(
-                r#"(?i)"?(?:password|passphrase|secret|token|api[_-]?key|private[_-]?key|credential)"?\s*[:=]\s*"?[^\s"]{8,}"#,
+                r#"(?i)"?(?:password|passphrase|secret|auth[_-]?token|token|api[_-]?key|private[_-]?key|credential)"?\s*[:=]\s*"?[^\s"]{8,}"#,
             )
             .expect("valid pattern"),
         ),
@@ -134,46 +135,66 @@ pub fn apply<'a>(
     text: &str,
     rules: &'a [RedactionRule],
 ) -> Result<(String, Vec<&'a RedactionRule>), ForgeError> {
-    let mut matches: Vec<(usize, usize, &RedactionRule)> = Vec::new();
-    for rule in rules {
-        for (start, _) in text.match_indices(rule.literal.as_str()) {
-            matches.push((start, start + rule.literal.len(), rule));
+    if text.len() > MAX_REDACTED_UNIT_BYTES {
+        return Err(shared::error("redaction input exceeds the per-unit byte bound"));
+    }
+    // Keep only one pending original-text match per rule. Collecting every
+    // match could allocate millions of tuples before checking the output cap.
+    let mut iterators: Vec<_> =
+        rules.iter().map(|rule| text.match_indices(rule.literal.as_str())).collect();
+    let mut pending = BinaryHeap::new();
+    let mut applied = Vec::new();
+    for (index, matches) in iterators.iter_mut().enumerate() {
+        if let Some((start, literal)) = matches.next() {
+            pending.push(Reverse((
+                start,
+                Reverse(start + literal.len()),
+                rules[index].rule_id.as_str(),
+                index,
+            )));
+            applied.push(&rules[index]);
         }
     }
-    if matches.is_empty() {
-        return Ok((text.to_string(), Vec::new()));
-    }
-    matches.sort_by(|left, right| {
-        left.0.cmp(&right.0).then(right.1.cmp(&left.1)).then(left.2.rule_id.cmp(&right.2.rule_id))
-    });
-    // A rule "matched" when its literal appears in the original text, whether or
-    // not it wins an overlap; that keeps "matched nothing" honest.
-    let mut applied: Vec<&RedactionRule> = Vec::new();
-    for rule in rules {
-        if matches.iter().any(|(_, _, matched)| matched.rule_id == rule.rule_id)
-            && !applied.iter().any(|prior| prior.rule_id == rule.rule_id)
-        {
-            applied.push(rule);
-        }
-    }
-    let mut redacted = String::with_capacity(text.len());
+    let mut redacted = String::new();
     let mut cursor = 0;
-    for (start, end, _) in matches {
-        if start < cursor {
-            continue;
+    while let Some(Reverse((start, Reverse(end), _, index))) = pending.pop() {
+        if start >= cursor {
+            append_bounded(&mut redacted, &text[cursor..start])?;
+            append_bounded(&mut redacted, MARKER)?;
+            cursor = end;
         }
-        redacted.push_str(&text[cursor..start]);
-        redacted.push_str(MARKER);
-        cursor = end;
+        if let Some((next, literal)) = iterators[index].next() {
+            pending.push(Reverse((
+                next,
+                Reverse(next + literal.len()),
+                rules[index].rule_id.as_str(),
+                index,
+            )));
+        }
     }
-    redacted.push_str(&text[cursor..]);
-    if redacted.len() > MAX_REDACTED_UNIT_BYTES {
+    append_bounded(&mut redacted, &text[cursor..])?;
+    Ok((redacted, applied))
+}
+
+/// Check the output budget before each append and its allocation.
+fn append_bounded(output: &mut String, text: &str) -> Result<(), ForgeError> {
+    if text.len() > MAX_REDACTED_UNIT_BYTES.saturating_sub(output.len()) {
         return Err(shared::error(format!(
-            "redaction expands a unit past the {MAX_REDACTED_UNIT_BYTES} byte bound; \
-             use shorter literals or fewer rules"
+            "redaction expands a unit past the {MAX_REDACTED_UNIT_BYTES} byte bound"
         )));
     }
-    Ok((redacted, applied))
+    output.push_str(text);
+    Ok(())
+}
+
+/// Scan decoded strings so JSON escapes cannot hide secret-shaped text.
+pub(crate) fn refuse_json_strings(value: &serde_json::Value) -> Result<(), ForgeError> {
+    match value {
+        serde_json::Value::String(text) => refuse_secrets(text),
+        serde_json::Value::Array(values) => values.iter().try_for_each(refuse_json_strings),
+        serde_json::Value::Object(values) => values.values().try_for_each(refuse_json_strings),
+        _ => Ok(()),
+    }
 }
 
 /// The first declared rule that never matched any unit.
@@ -281,6 +302,9 @@ mod tests {
             "Authorization: Basic dXNlcjpzeW50aGV0aWMtcGFzc3dvcmQ=",
             "{\"token\": \"synthetic-review-secret\"}",
             "{\"password\":\"synthetic-review-secret\"}",
+            "{\"authToken\": \"synthetic-review-secret\"}",
+            "auth_token=synthetic-review-secret",
+            "auth-token: synthetic-review-secret",
         ] {
             let error = refuse_secrets(payload).unwrap_err().to_string();
             assert!(error.contains("secret pattern"), "{payload}: {error}");

@@ -115,15 +115,15 @@ alone.
 |---|---|---|
 | GATE-SUGGEST-CONTRACT | Engineering owner | **Implemented; owner disposition pending** — nine closed published contracts with runtime validation authoritative over JSON Schema, and schema/runtime agreement tests |
 | GATE-SUGGEST-CONTEXT | Engineering owner | **Implemented; owner disposition pending** — explicit allowlist, refusal-first redaction, byte-exact preview and consent bound to payload and adapter digests |
-| GATE-SUGGEST-ADAPTER | Engineering owner | **Implemented; owner disposition pending** — typed local invoke seam, cleared environment, capped streams, polled timeout, kill-and-reap; recorded-response mode for the offline workflow |
+| GATE-SUGGEST-ADAPTER | Engineering owner | **Partial; process execution withheld** — bounded recorded-response import is available; CLI and library process invocation fail closed until OS filesystem/network confinement, verified-byte execution and full descendant ownership exist |
 | GATE-SUGGEST-VALIDATION | Engineering owner | **Implemented; owner disposition pending** — closed decode, citation resolution, byte-exact quotes, computed evidence rating, whole-response rejection |
 | GATE-SUGGEST-DISPOSITION | Engineering owner | **Implemented; owner disposition pending** — operator-authored records bound to bundle, task and quarantined content digests; undecided suggestions keep the step at exit 1 |
-| GATE-SUGGEST-PROMOTION | Engineering owner | **Implemented; owner disposition pending** — proposed patch validated with the destination's own parser, published beside the destination and marked `proposed-unapproved` |
+| GATE-SUGGEST-PROMOTION | Engineering owner | **Implemented; owner disposition pending** — proposed patch validated through the full authoring path in a private snapshot of the destination's captured inputs, published beside the destination and marked `proposed-unapproved` |
 | GATE-SUGGEST-SAFETY | Engineering owner | **Implemented; owner disposition pending** — per-contract byte and count bounds, atomic no-replace publication, quarantine-isolation and provenance tests |
 | GATE-SUGGEST-USEFULNESS | Product owner | **Open** — no adjudicated corpus and no measured exercise; no usefulness or time-savings claim is made |
 | GATE-SUGGEST-RELEASE | Release maintainer | **Open** — the tranche is held out of any release alongside the rest of the authoring work |
 
 Phase 1 of the PRD is what this tranche implements (prepare/validate/review with
-recorded responses, plus a local adapter). Phase 2's mapping-candidate task,
+recorded responses; process execution remains withheld). Phase 2's mapping-candidate task,
 M-14/M-15 numeric thresholds, the adjudicated corpus and the prompt-injection
 corpus remain open; the first generation task stays deferred.

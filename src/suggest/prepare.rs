@@ -278,7 +278,11 @@ fn push_answers(
 ) -> Result<(), ForgeError> {
     for key in args.answers {
         let answer = seed.answers.get(key).ok_or_else(|| {
-            shared::error(format!("--answer '{key}' names no provided approved answer"))
+            if let Some(reason) = seed.unavailable_answers.get(key) {
+                shared::error(format!("--answer '{key}' is unavailable: {reason}"))
+            } else {
+                shared::error(format!("--answer '{key}' names no provided approved text answer"))
+            }
         })?;
         let sensitivity = declared(answer.sensitivity);
         if sensitivity.requires_acknowledgement() && !args.allow_sensitive {
@@ -371,11 +375,16 @@ fn assemble(
     // context units must carry the same redacted bytes, or a rule could be
     // satisfied in one and ignored in the other.
     let mut texts = Vec::with_capacity(drafts.len());
+    let mut labels = Vec::with_capacity(drafts.len());
     let mut redactions = Vec::new();
     let mut matched: BTreeSet<&str> = BTreeSet::new();
     for draft in drafts {
         let (text, applied) = redact::apply(&draft.text, rules)?;
-        for rule in &applied {
+        let (label, label_rules) = redact::apply(&draft.label, rules)?;
+        redact::refuse_secrets(&label)?;
+        let applied_ids: BTreeSet<_> =
+            applied.iter().chain(&label_rules).map(|rule| rule.rule_id.as_str()).collect();
+        for rule in rules.iter().filter(|rule| applied_ids.contains(rule.rule_id.as_str())) {
             matched.insert(rule.rule_id.as_str());
             redactions.push(RedactionRecord {
                 unit_id: draft.unit_id.clone(),
@@ -384,6 +393,7 @@ fn assemble(
             });
         }
         texts.push(text);
+        labels.push(label);
     }
     if let Some(unmatched) = redact::unmatched_rule(rules, &matched) {
         return Err(shared::error(format!(
@@ -396,7 +406,7 @@ fn assemble(
         kind: TaskKind::PolicyDrafting,
         schema_version: drafting::TASK_SCHEMA_VERSION.to_string(),
         mapping_subjects: Vec::new(),
-        drafting_sections: drafting_sections(drafts, &texts),
+        drafting_sections: drafting_sections(drafts, &texts, &labels),
     };
     let task_json = serde_json::to_string(&task)
         .map_err(|cause| shared::error(format!("cannot encode the task payload: {cause}")))?;
@@ -410,7 +420,7 @@ fn assemble(
     payload.push_str(CONTEXT_HEADER);
 
     let mut units = Vec::new();
-    for (draft, text) in drafts.iter().zip(&texts) {
+    for ((draft, text), label) in drafts.iter().zip(&texts).zip(&labels) {
         payload.push_str(&unit_header(draft));
         let start = payload.len();
         payload.push_str(text);
@@ -419,7 +429,7 @@ fn assemble(
         units.push(ContextUnit {
             unit_id: draft.unit_id.clone(),
             kind: draft.kind,
-            label: draft.label.clone(),
+            label: label.clone(),
             sensitivity: draft.sensitivity,
             source: draft.source.clone(),
             payload: PayloadSpan {
@@ -440,16 +450,21 @@ fn assemble(
 }
 
 /// One drafting section per plan-section unit, in unit order.
-fn drafting_sections(drafts: &[UnitDraft], texts: &[String]) -> Vec<drafting::DraftingSection> {
+fn drafting_sections(
+    drafts: &[UnitDraft],
+    texts: &[String],
+    labels: &[String],
+) -> Vec<drafting::DraftingSection> {
     drafts
         .iter()
         .zip(texts)
-        .filter_map(|(draft, text)| {
+        .zip(labels)
+        .filter_map(|((draft, text), label)| {
             draft.section.as_ref().map(|section| drafting::DraftingSection {
                 policy_key: section.policy_key.clone(),
                 topic_key: section.topic_key.clone(),
                 order: section.order,
-                title: draft.label.clone(),
+                title: label.clone(),
                 prompt: text.clone(),
                 gap_ids: section.gap_ids.clone(),
                 control_ids: section.control_ids.clone(),

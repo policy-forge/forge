@@ -1044,7 +1044,7 @@ pub enum SuggestCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
-    /// Invoke the local adapter once for a prepared, consented payload
+    /// Import a recorded response for a consented payload (process execution is disabled)
     Run {
         /// The prepared forge.suggest-request/1 document
         #[arg(long)]
@@ -1061,7 +1061,7 @@ pub enum SuggestCommand {
         /// Adapter timeout in seconds
         #[arg(long, default_value_t = crate::suggest::run::DEFAULT_TIMEOUT_SECS)]
         timeout: u64,
-        /// Replay a recorded response instead of invoking a process
+        /// Import a recorded response; required while process execution is disabled
         #[arg(long)]
         recorded_response: Option<PathBuf>,
         /// Print text or versioned JSON to stdout

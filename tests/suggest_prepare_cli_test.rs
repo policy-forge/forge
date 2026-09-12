@@ -14,8 +14,7 @@ use common::{assert_exit, corpus, project, run};
 
 const BODY: &str = "# Access drafting\n\nc-1 Approve access requests quarterly.\n";
 const PROMPT: &str = "Which role writes this draft?";
-const NOTICE: &str = "The payload below is the exact byte sequence this machine will hand to the local adapter. \
-                      FORGE opens no network connection and transmits nothing.";
+const NOTICE: &str = forge::suggest::request::DATA_HANDLING_NOTICE;
 
 /// Write a local adapter stand-in and return its path as an argument string.
 fn adapter(root: &Path) -> String {
@@ -160,7 +159,10 @@ fn the_preview_states_what_forge_does_and_does_not_control() {
     let (_, _, payload) =
         prepare_json(&root, &["--corpus", "corpus.json", "--include-document", "prior-access"]);
     let preview = std::fs::read_to_string(root.join("prepared/preview.txt")).unwrap();
-    assert!(preview.contains("does not sandbox it"), "the notice must name the adapter boundary");
+    assert!(
+        preview.contains("Process adapter execution is disabled"),
+        "the notice must name the adapter boundary"
+    );
     assert!(preview.contains(payload.as_str()));
 }
 
@@ -339,4 +341,21 @@ fn the_payload_carries_no_absolute_path_and_the_request_carries_no_system_clock(
     // Every date in the request is one of the supplied project's own; a fixed
     // "today" sentinel stops proving this once that date has passed.
     common::assert_only_supplied_dates(&request, &["2026-09-08"]);
+}
+
+#[test]
+fn section_titles_are_redacted_in_every_published_representation() {
+    let (_temp, root) = project();
+    let title = "Access drafting";
+    std::fs::write(root.join("rules.txt"), format!("section-title\t{title}\n")).unwrap();
+    let (output, request, _) =
+        prepare_json(&root, &["--redact-rules", "rules.txt", "--format", "json"]);
+    for artifact in ["request.json", "payload.txt", "preview.txt"] {
+        let text = std::fs::read_to_string(root.join("prepared").join(artifact)).unwrap();
+        assert!(!text.contains(title), "title leaked into {artifact}");
+    }
+    assert!(!String::from_utf8_lossy(&output.stdout).contains(title));
+    assert_eq!(request["task"]["drafting_sections"][0]["title"], "access-policy / [redacted]");
+    assert_eq!(request["context"]["units"][0]["label"], "access-policy / [redacted]");
+    assert_eq!(request["redactions"].as_array().unwrap().len(), 1);
 }

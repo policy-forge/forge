@@ -68,7 +68,9 @@ pub fn execute(args: &ValidateArgs<'_>) -> Result<bool, ForgeError> {
     }
     // Output-side refusal: the plan promises that model-emitted secret-shaped
     // text never reaches a bundle, retained or not.
-    redact::refuse_secrets(&String::from_utf8_lossy(&inputs.response))?;
+    let decoded_json = serde_json::to_value(&decoded)
+        .map_err(|cause| shared::error(format!("cannot inspect decoded response: {cause}")))?;
+    redact::refuse_json_strings(&decoded_json)?;
     let suggestions = build_suggestions(&decoded, &inputs)?;
     let counts = count(&suggestions);
 
@@ -236,8 +238,7 @@ fn require_section(
 
 /// A mapping candidate must address a supplied subject and one of its controls.
 ///
-/// A subject that declares no controls cannot be checked, so only the subject
-/// membership applies there.
+/// An empty control list admits no control; it is not a wildcard.
 ///
 /// # Errors
 /// Returns an authoring error naming the unsupplied subject or control.
@@ -258,9 +259,7 @@ fn require_subject(
                 candidate.policy_key, candidate.topic_key
             ))
         })?;
-    if !subject.control_ids.is_empty()
-        && !subject.control_ids.iter().any(|control| control == &candidate.control_id)
-    {
+    if !subject.control_ids.iter().any(|control| control == &candidate.control_id) {
         return Err(shared::error(format!(
             "the response proposes control '{}', which the supplied subject did not include",
             candidate.control_id
@@ -487,6 +486,24 @@ mod tests {
 
     fn body(clause: &super::super::task::drafting::DraftClause) -> SuggestionBody {
         SuggestionBody { mapping: None, drafting: Some(clause.clone()) }
+    }
+
+    #[test]
+    fn mapping_candidates_require_both_a_supplied_subject_and_control() {
+        let mut request = crate::suggest::request::fixture_request();
+        let subject =
+            serde_json::from_value(crate::suggest::task::mapping::fixture_subject_json()).unwrap();
+        request.task.mapping_subjects = vec![subject];
+        let mut candidate =
+            serde_json::from_value(crate::suggest::task::mapping::fixture_candidate_json())
+                .unwrap();
+        assert!(require_subject(&request, &candidate).is_ok());
+        candidate.control_id = "invented".to_string();
+        assert!(require_subject(&request, &candidate).is_err());
+        request.task.mapping_subjects[0].control_ids.clear();
+        assert!(require_subject(&request, &candidate).is_err());
+        candidate.policy_key = "invented".to_string();
+        assert!(require_subject(&request, &candidate).is_err());
     }
 
     #[test]

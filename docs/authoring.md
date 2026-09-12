@@ -267,20 +267,24 @@ and provider phases remain in [PRD-066](PRD/066-prd-ai-assisted-suggestions.md).
 
 `forge suggest` runs a five-step, local-only pipeline for quarantined model
 suggestions. Nothing leaves the machine: there is no provider, no [ai] network
-configuration and no outbound request. A model call is an operator-supplied
-local executable, or an operator-recorded response.
+configuration and no outbound request. This tranche imports operator-recorded
+responses. Process execution is disabled until FORGE can enforce OS filesystem
+and network confinement, execute verified bytes, and own the full process tree.
+`prepare --adapter` fingerprints the prospective adapter for consent and provenance;
+it does not run that executable. A recorded receipt identifies the import mode,
+not a model execution.
 
 | Step | Command | What it does |
 |---|---|---|
 | Prepare | `forge suggest prepare --manifest project.json --output-dir prepared --adapter ./local-model --model-id my-model [--corpus corpus.json --include-document KEY] [--answer KEY] [--redact-rules rules.txt] [--consent --operator-key KEY]` | Assembles the exact payload, the closed `forge.suggest-request/1` allowlist, the byte-exact preview, and — only with `--consent` — a token bound to the payload and adapter digests |
-| Run | `forge suggest run --request prepared/request.json --consent prepared/consent.json --output-dir run-1 [--recorded-response recorded.json]` | Invokes the local adapter once (bounded, timed, environment cleared) and publishes `response.raw` with a `forge.suggest-run/1` receipt |
+| Run | `forge suggest run --request prepared/request.json --consent prepared/consent.json --output-dir run-1 --recorded-response recorded.json` | Imports a bounded recorded response without starting an adapter and publishes `response.raw` with a `forge.suggest-run/1` receipt |
 | Validate | `forge suggest validate --request prepared/request.json --run prepared/run-1/run.json --output-dir bundle-1 [--retain-raw]` | Decodes the response against its closed task schema, resolves every citation against the allowlist and the payload, and publishes the `forge.suggestions/1` quarantine bundle |
 | Review | `forge suggest review --bundle prepared/bundle-1/suggestions.json --decisions decisions.json --output-dir review-1` | Binds your `forge.suggest-dispositions/1` document to exactly that bundle and publishes it unchanged |
 | Promote | `forge suggest promote --bundle … --request prepared/request.json --dispositions …/dispositions.json --destination project.json --output-dir promotion-1` | Proposes a `forge.author-project/1` patch that the destination's own validator accepts, and records it as `proposed-unapproved` |
 
 Exit codes: `0` complete, `1` the step succeeded but a human decision is still
 outstanding (no unresolved section to prepare, an empty response, an undecided
-suggestion, an adapter the environment could not run), `2` a refusal — invalid
+suggestion, process execution disabled or an adapter the environment could not read), `2` a refusal — invalid
 or unsafe input, a consent that does not authorise the payload, a citation that
 does not resolve, or an existing destination. A refusal publishes nothing.
 
@@ -293,9 +297,14 @@ Guarantees worth knowing before you rely on it:
   allowlisted units, and a quoted citation must match the payload bytes exactly.
 - Evidence ratings (`high`/`medium`/`low`) are computed from citations, never
   from a model's self-reported confidence, and no output claims approval.
-- Redaction is refusal-first: a secret-shaped payload stops the prepare unless
-  you declared a rule that removes it, and the rule is recorded by digest only.
-- Promotion is a proposal: review it, apply the clause files by hand, then use
+- Redaction covers section titles, prompts and labels, matches original text,
+  and bounds memory before appending output. Rules are recorded by digest only.
+- Secret-shaped input or decoded model text (including JSON escapes and notes)
+  is refused before the request or bundle is published. These pattern checks do
+  not certify that arbitrary text is free of sensitive information.
+- Promotion validates a private snapshot of the destination's captured inputs,
+  including answer pins and current pack/report relationships. Validation never
+  stages files inside the destination. Review it, apply the clause files by hand, then use
   the ordinary `forge author plan`/`build` path.
 
 Contracts and gates: [suggestions pipeline plan](plans/2026-09-12-066-suggestions-pipeline.md),

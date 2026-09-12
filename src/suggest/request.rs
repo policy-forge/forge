@@ -35,10 +35,11 @@ pub const MAX_MODEL_ID_BYTES: usize = 256;
 pub const MAX_UNIT_SPAN_BYTES: u64 = 1024 * 1024;
 
 /// Fixed notice written into every prepared preview.
-pub const DATA_HANDLING_NOTICE: &str = "The payload below is the exact byte sequence this machine will hand to the local adapter. \
-     FORGE opens no network connection and transmits nothing. The adapter is your own program: it runs with your user's \
-     privileges and FORGE does not sandbox it, so it can read, write and transmit whatever you have allowed it to. \
-     Choose an adapter you trust.";
+pub const DATA_HANDLING_NOTICE: &str = "The payload below is the exact prepared byte sequence. \
+    Process adapter execution is disabled until OS filesystem/network confinement is available. \
+    Use --recorded-response to import a separately reviewed response. FORGE starts no adapter and transmits nothing. \
+    The adapter fingerprint and model identifier record the operator's prospective selection, not evidence of execution. \
+    Review this payload and the recorded response before sharing either artifact.";
 
 const LIMITS: Limits = Limits { max_depth: 32, max_string_bytes: shared::MAX_STRING_BYTES };
 
