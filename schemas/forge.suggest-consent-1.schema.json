@@ -30,6 +30,15 @@
       "minLength": 1,
       "maxLength": 256
     },
+    "argv": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "maxLength": 1024
+      },
+      "$comment": "Arguments change what the adapter does with the same payload, so consent binds them; a run refuses arguments the token did not approve."
+    },
     "retention_notice": {
       "$ref": "#/$defs/single_line"
     },

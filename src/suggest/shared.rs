@@ -25,6 +25,23 @@ pub(super) fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::Authoring(message.into())
 }
 
+/// Resolve the directory a document lives in.
+///
+/// A bare filename has an empty parent, which is the working directory; the
+/// empty-parent fallback is what makes `--request request.json` work in both
+/// editions of the path handling.
+///
+/// # Errors
+/// Returns an authoring error when the directory cannot be resolved.
+pub(super) fn document_root(path: &Path, flag: &str) -> Result<std::path::PathBuf, ForgeError> {
+    let base = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    std::fs::canonicalize(base)
+        .map_err(|cause| error(format!("cannot resolve the {flag} directory: {cause}")))
+}
+
 /// Reject `null` anywhere in a decoded document: absence is omission.
 pub(super) fn reject_nulls(value: &Value, path: &str) -> Result<(), ForgeError> {
     match value {

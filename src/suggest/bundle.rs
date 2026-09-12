@@ -284,8 +284,13 @@ pub(in crate::suggest) fn content_sha256(body: &SuggestionBody) -> Result<String
 impl Provenance {
     fn validate(&self) -> Result<(), ForgeError> {
         shared::sha256("bundle.provenance.adapter_sha256", &self.adapter_sha256)?;
-        if self.model_id.is_empty() || self.model_id.len() > MAX_MODEL_ID_BYTES {
-            return Err(shared::error("bundle.provenance.model_id must be a bounded identifier"));
+        if self.model_id.is_empty()
+            || self.model_id.len() > MAX_MODEL_ID_BYTES
+            || self.model_id.chars().any(char::is_control)
+        {
+            return Err(shared::error(
+                "bundle.provenance.model_id must be a bounded identifier without control characters",
+            ));
         }
         if self.argv.len() > MAX_ARGV {
             return Err(shared::error(format!(

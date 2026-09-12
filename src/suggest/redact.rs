@@ -36,7 +36,7 @@ pub struct RedactionRule {
 /// Secret shapes that are refused even after redaction.
 ///
 /// The names are used in diagnostics; the matched bytes never are.
-static SECRET_PATTERNS: LazyLock<[(&str, Regex); 5]> = LazyLock::new(|| {
+static SECRET_PATTERNS: LazyLock<[(&str, Regex); 6]> = LazyLock::new(|| {
     [
         (
             "private-key block",
@@ -52,9 +52,15 @@ static SECRET_PATTERNS: LazyLock<[(&str, Regex); 5]> = LazyLock::new(|| {
         ),
         ("provider key", Regex::new(r"\bsk-[A-Za-z0-9]{20,}\b").expect("valid pattern")),
         (
+            "basic authorization",
+            Regex::new(r"(?i)\bauthorization\s*:\s*basic\s+[A-Za-z0-9+/=]{16,}")
+                .expect("valid pattern"),
+        ),
+        (
+            // Quoted JSON-style credentials and bare assignments alike.
             "assigned credential",
             Regex::new(
-                r"(?i)\b(?:password|passphrase|secret|token|api[_-]?key|private[_-]?key|credential)\b\s*[:=]\s*\S{8,}",
+                r#"(?i)"?(?:password|passphrase|secret|token|api[_-]?key|private[_-]?key|credential)"?\s*[:=]\s*"?[^\s"]{8,}"#,
             )
             .expect("valid pattern"),
         ),
@@ -70,6 +76,11 @@ static SECRET_PATTERNS: LazyLock<[(&str, Regex); 5]> = LazyLock::new(|| {
 /// [`MAX_RULES`] rules, a malformed line, a duplicate rule identifier, an
 /// invalid rule identifier, or an empty literal.
 pub fn parse_rules(bytes: &[u8]) -> Result<Vec<RedactionRule>, ForgeError> {
+    if bytes.len() as u64 > MAX_RULES_BYTES {
+        return Err(shared::error(format!(
+            "redaction rules exceed the {MAX_RULES_BYTES} byte limit"
+        )));
+    }
     let text = std::str::from_utf8(bytes)
         .map_err(|_| shared::error("redaction rules must be UTF-8 text"))?;
     let mut rules = Vec::new();
@@ -200,6 +211,12 @@ mod tests {
     }
 
     #[test]
+    fn rules_past_their_byte_bound_are_refused_before_decoding() {
+        let oversized = vec![b'a'; usize::try_from(MAX_RULES_BYTES).unwrap() + 1];
+        assert!(parse_rules(&oversized).is_err());
+    }
+
+    #[test]
     fn secret_shapes_are_refused_without_echoing_the_match() {
         for payload in [
             "-----BEGIN RSA PRIVATE KEY-----\nMIIE",
@@ -214,6 +231,19 @@ mod tests {
             assert!(!error.contains("hunter2-secret"), "must not echo the match");
         }
         assert!(refuse_secrets("ordinary supplied policy prose").is_ok());
+    }
+
+    #[test]
+    fn basic_authorization_and_quoted_credentials_are_refused() {
+        for payload in [
+            "Authorization: Basic dXNlcjpzeW50aGV0aWMtcGFzc3dvcmQ=",
+            "{\"token\": \"synthetic-review-secret\"}",
+            "{\"password\":\"synthetic-review-secret\"}",
+        ] {
+            let error = refuse_secrets(payload).unwrap_err().to_string();
+            assert!(error.contains("secret pattern"), "{payload}: {error}");
+            assert!(!error.contains("synthetic-review-secret"), "must not echo the match");
+        }
     }
 
     #[test]

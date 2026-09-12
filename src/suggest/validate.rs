@@ -134,13 +134,7 @@ fn load_inputs(args: &ValidateArgs<'_>) -> Result<Inputs, ForgeError> {
         super::run_record::MAX_RUN_RECORD_BYTES,
     )?)?;
 
-    let root = args
-        .request
-        .parent()
-        .map(std::fs::canonicalize)
-        .transpose()
-        .map_err(|cause| shared::error(format!("cannot resolve the request directory: {cause}")))?
-        .ok_or_else(|| shared::error("--request must name a file in a directory"))?;
+    let root = shared::document_root(args.request, "--request")?;
     let payload = crate::io::read_bounded(
         &root.join(&request.payload.artifact),
         super::request::MAX_PAYLOAD_BYTES,
@@ -152,13 +146,7 @@ fn load_inputs(args: &ValidateArgs<'_>) -> Result<Inputs, ForgeError> {
     let payload = String::from_utf8(payload)
         .map_err(|_| shared::error("the payload artifact is not UTF-8"))?;
 
-    let run_dir = args
-        .run
-        .parent()
-        .map(std::fs::canonicalize)
-        .transpose()
-        .map_err(|cause| shared::error(format!("cannot resolve the run directory: {cause}")))?
-        .ok_or_else(|| shared::error("--run must name a file in a directory"))?;
+    let run_dir = shared::document_root(args.run, "--run")?;
     let response =
         crate::io::read_bounded(&run_dir.join(&record.response_artifact), MAX_RESPONSE_BYTES)?;
     let request_sha256 = crate::hashing::sha256_hex(&request_bytes);

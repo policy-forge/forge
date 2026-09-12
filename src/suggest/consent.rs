@@ -34,6 +34,9 @@ pub struct ConsentToken {
     pub adapter_sha256: String,
     /// Operator-supplied model identifier the operator approved.
     pub model_id: String,
+    /// Adapter arguments the operator approved, in order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub argv: Vec<String>,
     /// Retention notice the operator accepted, recorded verbatim.
     pub retention_notice: String,
     /// Reviewer key of the operator granting consent.
@@ -81,6 +84,13 @@ impl ConsentToken {
                 )));
             }
         }
+        // Arguments change what the adapter does with the same payload, so they
+        // are part of what the operator approved.
+        if self.argv != request.adapter.argv {
+            return Err(shared::error(
+                "consent argv does not match the prepared request; re-run prepare and consent again",
+            ));
+        }
         Ok(())
     }
 
@@ -97,6 +107,22 @@ impl ConsentToken {
                 "consent.model_id must be a bounded operator-supplied identifier",
             ));
         }
+        if self.argv.len() > super::request::MAX_ARGV {
+            return Err(shared::error(format!(
+                "consent.argv exceeds {} entries",
+                super::request::MAX_ARGV
+            )));
+        }
+        for argument in &self.argv {
+            if argument.len() > super::request::MAX_ARG_BYTES
+                || argument.chars().any(char::is_control)
+            {
+                return Err(shared::error(format!(
+                    "consent.argv entries must be at most {} bytes",
+                    super::request::MAX_ARG_BYTES
+                )));
+            }
+        }
         shared::single_line("consent.retention_notice", &self.retention_notice)?;
         shared::key("consent.operator_key", &self.operator_key)?;
         shared::single_line("consent.as_of", &self.as_of)?;
@@ -112,6 +138,7 @@ pub(in crate::suggest) fn fixture_consent_json() -> serde_json::Value {
         "payload_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "adapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "model_id": "synthetic-model",
+        "argv": ["--task", "draft"],
         "retention_notice": "Operator retains local adapter output for this run only.",
         "operator_key": "brian-luby",
         "as_of": "2026-09-12T00:00:00Z"
@@ -179,6 +206,24 @@ mod tests {
     fn consent_past_its_byte_bound_is_refused_before_parsing() {
         let oversized = vec![b' '; usize::try_from(MAX_CONSENT_BYTES).unwrap() + 1];
         assert!(ConsentToken::parse(&oversized).is_err());
+    }
+
+    #[test]
+    fn arguments_the_operator_did_not_approve_are_refused() {
+        let request = fixture_request();
+        assert!(parse(&fixture_consent_json()).unwrap().authorises(&request).is_ok());
+
+        let mut swapped = fixture_consent_json();
+        swapped["argv"] = json!(["--task", "draft", "--extra"]);
+        assert!(parse(&swapped).unwrap().authorises(&request).is_err());
+
+        let mut missing = fixture_consent_json();
+        missing.as_object_mut().unwrap().remove("argv");
+        assert!(parse(&missing).unwrap().authorises(&request).is_err());
+
+        let mut unbounded = fixture_consent_json();
+        unbounded["argv"] = json!(["x".repeat(1025)]);
+        assert!(parse(&unbounded).is_err());
     }
 
     #[test]

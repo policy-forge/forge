@@ -170,7 +170,13 @@ impl DispositionRecord {
         match (self.status, &self.edited, &self.edited_sha256) {
             (DispositionStatus::AcceptEdited, Some(edited), Some(edited_sha256)) => {
                 shared::sha256(&format!("{name}.edited_sha256"), edited_sha256)?;
-                edited.validate(&format!("{name}.edited"), kind)
+                edited.validate(&format!("{name}.edited"), kind)?;
+                if *edited_sha256 != super::bundle::content_sha256(edited)? {
+                    return Err(shared::error(format!(
+                        "{name}.edited_sha256 must equal the canonical digest of the edited content"
+                    )));
+                }
+                Ok(())
             }
             (DispositionStatus::AcceptEdited, None, _) => {
                 Err(shared::error(format!("{name}.edited is required for an edited acceptance")))
@@ -250,8 +256,15 @@ mod tests {
         let mut edited = fixture_dispositions_json();
         edited["records"][0]["status"] = json!("accept-edited");
         edited["records"][0]["edited"] = edited_body();
-        edited["records"][0]["edited_sha256"] = json!(DIGEST);
+        // The digest must be the edited content's own, not a placeholder.
+        let body: crate::suggest::SuggestionBody = serde_json::from_value(edited_body()).unwrap();
+        edited["records"][0]["edited_sha256"] =
+            json!(crate::suggest::bundle::content_sha256(&body).unwrap());
         assert!(parse(&edited).is_ok());
+
+        let mut wrong_digest = edited.clone();
+        wrong_digest["records"][0]["edited_sha256"] = json!(DIGEST);
+        assert!(parse(&wrong_digest).is_err());
 
         let mut missing_content = fixture_dispositions_json();
         missing_content["records"][0]["status"] = json!("accept-edited");

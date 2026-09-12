@@ -12,9 +12,11 @@ use serde::{Deserialize, Serialize};
 
 use super::shared;
 
-/// Maximum suggestions, citations, assumptions or unresolved questions in one
-/// response or bundle.
+/// Maximum suggestions, assumptions or unresolved questions in one response or
+/// bundle.
 pub const MAX_SUGGESTIONS: usize = 1_000;
+/// Maximum citations per suggestion, matching the published task schemas.
+pub const MAX_CITATIONS: usize = 64;
 
 /// Which versioned task a request or response carries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -112,8 +114,8 @@ pub(in crate::suggest) fn citations(
     if values.is_empty() {
         return Err(shared::error(format!("{name} must cite at least one supplied unit")));
     }
-    if values.len() > MAX_SUGGESTIONS {
-        return Err(shared::error(format!("{name} exceeds {MAX_SUGGESTIONS} entries")));
+    if values.len() > MAX_CITATIONS {
+        return Err(shared::error(format!("{name} exceeds {MAX_CITATIONS} entries")));
     }
     let mut seen = std::collections::BTreeSet::new();
     for (index, citation) in values.iter().enumerate() {
@@ -176,6 +178,17 @@ mod tests {
 
     fn citation(unit_id: &str) -> Citation {
         Citation { unit_id: unit_id.to_string(), quote: None }
+    }
+
+    #[test]
+    fn citations_are_bounded_at_the_published_limit() {
+        let many = |count: usize| {
+            (0..count)
+                .map(|index| Citation { unit_id: format!("unit-{index:04}"), quote: None })
+                .collect::<Vec<_>>()
+        };
+        assert!(citations("citations", &many(MAX_CITATIONS)).is_ok());
+        assert!(citations("citations", &many(MAX_CITATIONS + 1)).is_err());
     }
 
     #[test]

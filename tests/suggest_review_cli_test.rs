@@ -174,7 +174,7 @@ fn an_edited_acceptance_keeps_both_the_original_and_the_edit() {
             "unresolved_questions": []
         }
     });
-    edited["edited_sha256"] = json!(hash(serde_json::to_vec(&body).unwrap().as_slice()));
+    edited["edited_sha256"] = json!(common::suggest_content_sha256(&body));
     edited["edited"] = body;
     std::fs::write(
         root.join("decisions.json"),

@@ -60,13 +60,7 @@ pub fn execute(args: &ReviewArgs<'_>) -> Result<bool, ForgeError> {
         .filter(|suggestion| !decided.contains(suggestion.suggestion_id.as_str()))
         .count();
 
-    let root = args
-        .bundle
-        .parent()
-        .map(std::fs::canonicalize)
-        .transpose()
-        .map_err(|cause| shared::error(format!("cannot resolve the bundle directory: {cause}")))?
-        .ok_or_else(|| shared::error("--bundle must name a file in a directory"))?;
+    let root = shared::document_root(args.bundle, "--bundle")?;
     let manifest_json = serde_json::to_vec_pretty(&manifest).map_err(|cause| {
         shared::error(format!("cannot encode the disposition manifest: {cause}"))
     })?;

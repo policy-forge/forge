@@ -390,6 +390,15 @@ pub fn suggest_response_json(items: &[Value], kind: &str, version: &str) -> Vec<
     bytes
 }
 
+/// The canonical digest a disposition must cite for a suggestion body.
+///
+/// Mirrors the runtime contract: the digest of the *decoded* body, not of the
+/// operator's JSON spelling.
+pub fn suggest_content_sha256(body: &Value) -> String {
+    let parsed: forge::suggest::SuggestionBody = serde_json::from_value(body.clone()).unwrap();
+    sha256_hex(&serde_json::to_vec(&parsed).unwrap())
+}
+
 /// One disposition record citing the quarantined content of one suggestion.
 pub fn suggest_disposition(bundle: &Value, index: usize, status: &str) -> Value {
     json!({

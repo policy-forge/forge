@@ -40,6 +40,15 @@ fn reviewed(root: &Path, decisions: &[(usize, &str)]) -> Value {
     bundle
 }
 
+/// The accepted suggestion's identifier, which its proposed path must carry.
+fn first_suggestion_id(root: &Path) -> String {
+    let bundle: Value = serde_json::from_slice(
+        &std::fs::read(root.join("prepared/bundle-1/suggestions.json")).unwrap(),
+    )
+    .unwrap();
+    bundle["suggestions"][0]["suggestion_id"].as_str().unwrap().to_string()
+}
+
 fn promote(root: &Path, destination: &str, extra: &[&str]) -> std::process::Output {
     let mut args = vec![
         "suggest",
@@ -75,11 +84,15 @@ fn an_accepted_clause_becomes_a_proposal_validated_by_the_destination() {
     assert_eq!(proposal["destination"]["expected_sha256"], json!(hash(&destination_before)));
     assert_eq!(proposal["entries"].as_array().unwrap().len(), 1);
     assert_eq!(proposal["entries"][0]["contract"], json!("forge.author-project/1"));
-    assert_eq!(proposal["entries"][0]["artifact"], json!("promotion/entry-0001.md"));
+    // The path carries the full suggestion identity, so an applied proposal
+    // cannot be aliased by a later one.
+    let artifact = proposal["entries"][0]["artifact"].as_str().unwrap();
+    assert!(artifact.starts_with("promotion/entry-"), "{artifact}");
+    assert_eq!(artifact, format!("promotion/entry-{}.md", first_suggestion_id(&root)));
     assert_eq!(proposal["patch"]["artifact"], json!("promotion/proposed-project.json"));
 
     // The proposed clause file is the quarantined text plus one newline.
-    let clause_file = std::fs::read(root.join("promotion-1/promotion/entry-0001.md")).unwrap();
+    let clause_file = std::fs::read(root.join("promotion-1").join(artifact)).unwrap();
     assert_eq!(clause_file, b"Access requests are approved quarterly.\n");
     assert_eq!(proposal["entries"][0]["sha256"], json!(hash(&clause_file)));
 
@@ -127,7 +140,7 @@ fn an_edited_acceptance_proposes_the_reviewers_text() {
             "unresolved_questions": []
         }
     });
-    edited["edited_sha256"] = json!(hash(serde_json::to_vec(&body).unwrap().as_slice()));
+    edited["edited_sha256"] = json!(common::suggest_content_sha256(&body));
     edited["edited"] = body;
     let reviewed = common::suggest_review(&root, &[edited], "review-2");
     assert_exit(&reviewed, 1);
@@ -152,8 +165,12 @@ fn an_edited_acceptance_proposes_the_reviewers_text() {
         ],
     );
     assert_exit(&output, 0);
+    let entry: Value =
+        serde_json::from_slice(&std::fs::read(root.join("promotion-2/promotion.json")).unwrap())
+            .unwrap();
+    let artifact = entry["entries"][0]["artifact"].as_str().unwrap();
     assert_eq!(
-        std::fs::read(root.join("promotion-2/promotion/entry-0001.md")).unwrap(),
+        std::fs::read(root.join("promotion-2").join(artifact)).unwrap(),
         b"Access requests are approved quarterly by the account owner.\n"
     );
 }
@@ -162,10 +179,18 @@ fn an_edited_acceptance_proposes_the_reviewers_text() {
 fn nothing_accepted_is_action_required_and_publishes_nothing() {
     let (_temp, root) = project();
     reviewed(&root, &[(0, "reject"), (1, "expired")]);
-    let output = promote(&root, "project.json", &[]);
-    assert_exit(&output, 1);
-    assert!(String::from_utf8_lossy(&output.stdout).contains("nothing to propose"));
+    let text = promote(&root, "project.json", &[]);
+    assert_exit(&text, 1);
+    assert!(String::from_utf8_lossy(&text.stdout).contains("nothing to propose"));
     assert!(!root.join("promotion-1").exists());
+
+    // A JSON caller receives a JSON outcome on this path too.
+    let json = promote(&root, "project.json", &["--format", "json"]);
+    assert_exit(&json, 1);
+    let outcome: Value =
+        serde_json::from_slice(&json.stdout).expect("stdout must be JSON for --format json");
+    assert_eq!(outcome["schema_version"], json!("forge.suggest-promotion-outcome/1"));
+    assert_eq!(outcome["outcome"], json!("nothing-to-promote"));
 }
 
 #[test]

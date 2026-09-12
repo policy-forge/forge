@@ -26,6 +26,9 @@ pub const DEFAULT_TIMEOUT_SECS: u64 = 60;
 /// Maximum adapter timeout in seconds.
 pub const MAX_TIMEOUT_SECS: u64 = 3_600;
 
+/// One selected adapter: the seam to invoke, and whether a process runs.
+type SelectedAdapter = (Box<dyn LocalModelInvoke>, RunMode);
+
 /// Arguments for one run.
 pub struct RunArgs<'a> {
     /// The prepared request document.
@@ -86,19 +89,8 @@ pub fn execute(args: &RunArgs<'_>) -> Result<bool, ForgeError> {
     }
 
     let timeout = std::time::Duration::from_secs(args.timeout_secs);
-    let (adapter, mode): (Box<dyn LocalModelInvoke>, RunMode) = if let Some(recorded) =
-        args.recorded_response
-    {
-        (Box::new(RecordedResponseAdapter::new(recorded)?), RunMode::RecordedResponse)
-    } else {
-        let executable = args.adapter.unwrap_or_else(|| Path::new(&request.adapter.executable));
-        let process = ProcessModelAdapter::new(executable, &request.adapter.argv)?;
-        if process.executable_sha256() != Some(request.adapter.executable_sha256.as_str()) {
-            return Err(shared::error(
-                "the adapter executable changed since consent; re-run prepare and consent again",
-            ));
-        }
-        (Box::new(process), RunMode::Process)
+    let Some((adapter, mode)) = select_adapter(args, &request)? else {
+        return Ok(true);
     };
 
     let output = match adapter.invoke(&payload, timeout) {
@@ -106,8 +98,7 @@ pub fn execute(args: &RunArgs<'_>) -> Result<bool, ForgeError> {
         Err(cause) => {
             // The request and consent were valid; the local environment could
             // not complete the run, so this is action-required, not invalid input.
-            crate::cli::output::write_output(&format!("run refused: {cause}\n"), None)
-                .map_err(|error| shared::error(format!("cannot write the run summary: {error}")))?;
+            crate::cli::output::write_diagnostic(&format!("run refused: {cause}\n"))?;
             return Ok(true);
         }
     };
@@ -151,12 +142,46 @@ pub fn execute(args: &RunArgs<'_>) -> Result<bool, ForgeError> {
     };
     crate::cli::output::write_output(&stdout, None)
         .map_err(|cause| shared::error(format!("cannot write the run summary: {cause}")))?;
-    if output.stderr.trim().is_empty() {
-        return Ok(false);
+    if !output.stderr.trim().is_empty() {
+        // Diagnostics never contaminate the requested output format.
+        crate::cli::output::write_diagnostic(&format!(
+            "adapter stderr: {}\n",
+            output.stderr.trim()
+        ))?;
     }
-    crate::cli::output::write_output(&format!("adapter stderr: {}\n", output.stderr.trim()), None)
-        .map_err(|cause| shared::error(format!("cannot write the adapter diagnostics: {cause}")))?;
     Ok(false)
+}
+
+/// Choose the adapter the operator approved.
+///
+/// An executable the environment cannot use is action-required (`Ok(None)`); an
+/// executable that is not the consented one is a contract violation (`Err`).
+///
+/// # Errors
+/// Returns an authoring error when the adapter is not the consented one, or when
+/// a recorded response cannot be read.
+fn select_adapter(
+    args: &RunArgs<'_>,
+    request: &SuggestRequest,
+) -> Result<Option<SelectedAdapter>, ForgeError> {
+    if let Some(recorded) = args.recorded_response {
+        let adapter = RecordedResponseAdapter::new(recorded)?;
+        return Ok(Some((Box::new(adapter), RunMode::RecordedResponse)));
+    }
+    let executable = args.adapter.unwrap_or_else(|| Path::new(&request.adapter.executable));
+    let process = match ProcessModelAdapter::new(executable, &request.adapter.argv) {
+        Ok(process) => process,
+        Err(cause) => {
+            crate::cli::output::write_diagnostic(&format!("run refused: {cause}\n"))?;
+            return Ok(None);
+        }
+    };
+    if process.executable_sha256() != Some(request.adapter.executable_sha256.as_str()) {
+        return Err(shared::error(
+            "the adapter executable changed since consent; re-run prepare and consent again",
+        ));
+    }
+    Ok(Some((Box::new(process), RunMode::Process)))
 }
 
 /// The text summary for one run.

@@ -172,6 +172,16 @@ impl RunRecord {
         if self.response_bytes != response.len() as u64 {
             return Err(shared::error("run record response_bytes does not match the response"));
         }
+        if self.argv != request.adapter.argv {
+            return Err(shared::error(
+                "run record argv does not match the arguments the request consented to",
+            ));
+        }
+        if self.redactions != request.redactions {
+            return Err(shared::error(
+                "run record redactions do not match the redactions the request recorded",
+            ));
+        }
         Ok(())
     }
 }
@@ -268,6 +278,39 @@ mod tests {
     fn a_record_past_its_byte_bound_is_refused_before_parsing() {
         let oversized = vec![b' '; usize::try_from(MAX_RUN_RECORD_BYTES).unwrap() + 1];
         assert!(RunRecord::parse(&oversized).is_err());
+    }
+
+    #[test]
+    fn a_record_that_changed_its_arguments_or_redactions_is_refused() {
+        let request = crate::suggest::request::fixture_request();
+        let response = b"{}";
+        let record = || {
+            let mut record = parse(&fixture_run_json()).unwrap();
+            record.response_bytes = response.len() as u64;
+            record.response_sha256 = crate::hashing::sha256_hex(response);
+            record.request_sha256 = "b".repeat(64);
+            record.payload_sha256 = "a".repeat(64);
+            record.adapter_executable_sha256 = request.adapter.executable_sha256.clone();
+            record.model_id = request.adapter.model_id.clone();
+            record
+        };
+        let authorised = |record: &RunRecord| {
+            record.authorises(&"b".repeat(64), &request, &"a".repeat(64), response)
+        };
+        let baseline = record();
+        assert!(authorised(&baseline).is_ok());
+
+        let mut argv = baseline.clone();
+        argv.argv = vec!["--tampered".to_string()];
+        assert!(authorised(&argv).is_err());
+
+        let mut redactions = baseline.clone();
+        redactions.redactions = vec![RedactionRecord {
+            unit_id: "unit-0001".to_string(),
+            rule_id: "account-id".to_string(),
+            rule_sha256: "c".repeat(64),
+        }];
+        assert!(authorised(&redactions).is_err());
     }
 
     #[test]

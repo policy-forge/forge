@@ -1035,7 +1035,7 @@ pub enum SuggestCommand {
         #[arg(long)]
         retention_notice: Option<String>,
         /// Write a consent token bound to this exact payload
-        #[arg(long)]
+        #[arg(long, requires = "operator_key")]
         consent: bool,
         /// Operator key granting consent; required with --consent
         #[arg(long, requires = "consent")]

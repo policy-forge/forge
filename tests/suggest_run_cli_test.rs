@@ -212,19 +212,47 @@ fn an_adapter_override_must_still_be_the_consented_one() {
 }
 
 #[test]
+fn a_missing_adapter_is_action_required_and_writes_nothing() {
+    let (_temp, root) = project();
+    prepared(&root, "#!/bin/sh\ncat\n");
+    std::fs::write(root.join("recorded.json"), response_body()).unwrap();
+    // The consented executable is gone by the time the run happens.
+    std::fs::remove_file(root.join("local-adapter")).unwrap();
+    let output = invoke(&root, &[]);
+    assert_exit(&output, 1);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("run refused"));
+    assert!(!root.join(RUN_DIR).exists());
+}
+
+#[test]
+fn adapter_diagnostics_never_contaminate_the_json_record() {
+    let (_temp, root) = project();
+    prepared(
+        &root,
+        "#!/bin/sh\nprintf 'note' 1>&2; printf '{\"schema_version\":\"forge.suggest-response/1\"}';\n",
+    );
+    let output = invoke(&root, &["--format", "json"]);
+    assert_exit(&output, 0);
+    let record: Value =
+        serde_json::from_slice(&output.stdout).expect("stdout must stay a single JSON document");
+    assert_eq!(record["mode"], json!("process"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("note"));
+}
+
+#[test]
 fn a_failing_or_hanging_adapter_is_action_required_and_writes_nothing() {
     let (_temp, root) = project();
     prepared(&root, "#!/bin/sh\nexit 4\n");
     let failing = invoke(&root, &[]);
     assert_exit(&failing, 1);
-    assert!(String::from_utf8_lossy(&failing.stdout).contains("run refused"));
+    assert!(String::from_utf8_lossy(&failing.stderr).contains("run refused"));
     assert!(!root.join(RUN_DIR).exists());
 
     let (_temp2, hanging) = project();
     prepared(&hanging, "#!/bin/sh\nsleep 30\n");
     let timed_out = invoke(&hanging, &["--timeout", "1"]);
     assert_exit(&timed_out, 1);
-    assert!(String::from_utf8_lossy(&timed_out.stdout).contains("timed out"));
+    assert!(String::from_utf8_lossy(&timed_out.stderr).contains("timed out"));
     assert!(!hanging.join(RUN_DIR).exists());
 }
 

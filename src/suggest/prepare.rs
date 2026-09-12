@@ -179,6 +179,7 @@ pub fn execute(args: &PrepareArgs<'_>) -> Result<bool, ForgeError> {
             payload_sha256,
             adapter_sha256: request.adapter.executable_sha256.clone(),
             model_id: request.adapter.model_id.clone(),
+            argv: request.adapter.argv.clone(),
             retention_notice: request.retention_notice.clone(),
             operator_key: operator_key.to_string(),
             as_of: seed.plan.as_of.clone(),

@@ -58,10 +58,11 @@ pub struct PromoteArgs<'a> {
 pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
     let bundle_bytes = crate::io::read_bounded(args.bundle, super::bundle::MAX_BUNDLE_BYTES)?;
     let bundle = SuggestionsBundle::parse(&bundle_bytes)?;
-    let manifest = DispositionManifest::parse(&crate::io::read_bounded(
-        args.dispositions,
-        super::disposition::MAX_DISPOSITIONS_BYTES,
-    )?)?;
+    // Read once: the bytes that `bind` authorises are the bytes the proposal
+    // cites, so a later read cannot disagree with what was validated.
+    let dispositions_bytes =
+        crate::io::read_bounded(args.dispositions, super::disposition::MAX_DISPOSITIONS_BYTES)?;
+    let manifest = DispositionManifest::parse(&dispositions_bytes)?;
     review::bind(&bundle, &manifest, &bundle_bytes)?;
 
     // The request supplies the gap references the destination requires. FORGE
@@ -85,12 +86,28 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
 
     let promoted = accepted(&bundle, &manifest);
     if promoted.is_empty() {
-        crate::cli::output::write_output(
-            "forge suggest promote: no suggestion has an accept-as-is or accept-edited disposition, so \
-             there is nothing to propose.\n",
-            None,
-        )
-        .map_err(|cause| shared::error(format!("cannot write the promote summary: {cause}")))?;
+        // Every other exit path honours the requested format; a JSON caller must
+        // not receive prose.
+        let outcome = serde_json::json!({
+            "schema_version": "forge.suggest-promotion-outcome/1",
+            "outcome": "nothing-to-promote",
+            "accepted": 0,
+        });
+        let message = match args.format {
+            AuthorReportFormat::Json => format!(
+                "{}\n",
+                serde_json::to_string(&outcome).map_err(|cause| shared::error(format!(
+                    "cannot encode the outcome: {cause}"
+                )))?
+            ),
+            AuthorReportFormat::Text => {
+                "forge suggest promote: no suggestion has an accept-as-is or \
+                 accept-edited disposition, so there is nothing to propose.\n"
+                    .to_string()
+            }
+        };
+        crate::cli::output::write_output(&message, None)
+            .map_err(|cause| shared::error(format!("cannot write the promote summary: {cause}")))?;
         return Ok(true);
     }
 
@@ -127,10 +144,7 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
         &ProposalContext {
             bundle: &bundle,
             bundle_bytes: &bundle_bytes,
-            dispositions_bytes: &crate::io::read_bounded(
-                args.dispositions,
-                super::disposition::MAX_DISPOSITIONS_BYTES,
-            )?,
+            dispositions_bytes: &dispositions_bytes,
             destination_path,
             destination_bytes: &destination_bytes,
             patch_bytes: &patch_bytes,
@@ -142,14 +156,7 @@ pub fn execute(args: &PromoteArgs<'_>) -> Result<bool, ForgeError> {
         bytes: proposal_json.clone(),
     });
 
-    let base = args
-        .destination
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    let root = std::fs::canonicalize(base).map_err(|cause| {
-        shared::error(format!("cannot resolve the destination directory: {cause}"))
-    })?;
+    let root = shared::document_root(args.destination, "--destination")?;
     crate::authoring::output::publish(&root, args.output_dir, &artifacts)?;
 
     let stdout = match args.format {
@@ -260,14 +267,16 @@ fn propose_entries(
 ) -> Result<(Vec<PromotionEntry>, Vec<crate::authoring::output::OutputArtifact>), ForgeError> {
     let mut entries = Vec::new();
     let mut artifacts = Vec::new();
-    for (index, (suggestion, record)) in promoted.iter().enumerate() {
+    for (suggestion, record) in promoted {
         let clause =
             suggestion.body.drafting.as_ref().ok_or_else(|| {
                 shared::error("a policy-drafting bundle must carry draft clauses")
             })?;
         let text = promoted_text(suggestion, record)?;
         let gap_ids = section_gaps(request, &clause.policy_key, &clause.topic_key)?;
-        let relative = format!("{ENTRY_DIRECTORY}/entry-{:04}.md", index + 1);
+        // Paths derive from the full suggestion identity, so a later promotion
+        // cannot reuse a path an earlier, applied proposal already pinned.
+        let relative = format!("{ENTRY_DIRECTORY}/entry-{}.md", suggestion.suggestion_id);
         let bytes = clause_file(&text);
         let bytes_len = u64::try_from(bytes.len()).map_err(|_| {
             shared::error("a proposed clause file length does not fit the contract")
@@ -327,14 +336,17 @@ fn section_gaps(
 
 /// A stable clause key derived from the suggestion identifier.
 fn clause_key(suggestion_id: &str) -> String {
-    let prefix = suggestion_id.split('-').next().unwrap_or("suggestion");
-    format!("suggested-{prefix}")
+    format!("suggested-{suggestion_id}")
 }
 
 /// The portable relative spelling of the destination document.
+///
+/// Windows operators write `dir\\project.json`; the contract is `/`-separated and
+/// rejects backslashes, so the supplied spelling is normalized before it is
+/// validated and recorded. Absolute paths and `..` are still refused.
 fn portable(path: &Path) -> Result<String, ForgeError> {
     path.to_str()
-        .map(str::to_string)
+        .map(|text| text.replace('\\', "/"))
         .ok_or_else(|| shared::error("promote --destination must be UTF-8"))
 }
 
@@ -382,12 +394,41 @@ mod tests {
 
     #[test]
     fn clause_keys_are_portable_and_derived_from_the_identifier() {
+        // The full identifier, so two suggestions cannot collide on a prefix.
         let key = clause_key("3f2b1a4c-5d6e-4f70-8a91-b2c3d4e5f607");
-        assert_eq!(key, "suggested-3f2b1a4c");
+        assert_eq!(key, "suggested-3f2b1a4c-5d6e-4f70-8a91-b2c3d4e5f607");
+        assert!(key.len() <= 64);
+        assert_ne!(key, clause_key("3f2b1a4c-0000-4000-8000-000000000000"));
         assert!(
             key.bytes()
                 .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
         );
+    }
+
+    #[test]
+    fn a_clause_must_map_to_a_requested_section_that_selected_a_gap() {
+        let request = crate::suggest::request::fixture_request();
+        // The fixture selects one gap, so its own section resolves.
+        assert_eq!(
+            section_gaps(&request, "access-policy", "access-control").unwrap(),
+            vec!["gap-0001".to_string()]
+        );
+        assert!(section_gaps(&request, "invented-policy", "invented-topic").is_err());
+
+        // A requested section that selected no gap cannot become a clause.
+        let mut gapless = crate::suggest::request::fixture_request_json();
+        gapless["task"]["drafting_sections"][0]["gap_ids"] = serde_json::json!([]);
+        let gapless =
+            crate::suggest::SuggestRequest::parse(&serde_json::to_vec(&gapless).unwrap()).unwrap();
+        assert!(section_gaps(&gapless, "access-policy", "access-control").is_err());
+    }
+
+    #[test]
+    fn the_destination_spelling_is_normalized_to_portable_separators() {
+        assert_eq!(portable(Path::new("dir\\project.json")).unwrap(), "dir/project.json");
+        assert_eq!(portable(Path::new("project.json")).unwrap(), "project.json");
+        // Escaping is refused later by the contract validator, not here.
+        assert_eq!(portable(Path::new("dir/../project.json")).unwrap(), "dir/../project.json");
     }
 
     #[test]
