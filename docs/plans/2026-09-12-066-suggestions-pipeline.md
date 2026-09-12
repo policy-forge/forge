@@ -476,9 +476,102 @@ Proposed 2026-09-12; owner agreement required before slice 1.
   context, adapter, validation, disposition, promotion, safety, docs, plus open
   usefulness and release gates.
 
+## PR #155 review remediation
+
+Three reviews landed on the pull request: Copilot (2 inline findings), CodeRabbit
+(25) and an owner adversarial review (10). Status is recorded here so a later
+session does not re-derive it. **This section is work in progress; it is not an
+acceptance claim.**
+
+### Fixed
+
+Commit `121d216` — contract and CLI alignment:
+
+- citations bound at the published 64 (`MAX_CITATIONS`) instead of 1000
+- `--consent` requires `--operator-key` at the clap layer
+- consent and the run receipt bind `adapter.argv` and the redaction records, so an
+  edited request cannot execute arguments that were never approved
+- the run receipt's `model_id` follows the adapter's control-character rule
+- `edited_sha256` must equal the canonical digest of the edited content
+- redaction rules enforce `MAX_RULES_BYTES`; Basic authorization and quoted
+  credentials are refused
+- adapter diagnostics go to stderr, so `--format json` stays one JSON document
+- an unusable adapter is action-required (exit 1); a non-consented one stays a
+  contract violation (exit 2)
+- `validate`/`review`/`promote` resolve a bare filename argument
+- `promote` normalizes Windows separators, cites the disposition bytes it bound,
+  emits JSON for `--format json` when nothing is accepted, and derives clause
+  paths and keys from the full suggestion identifier
+
+Commit `934ef0a` — output and adapter boundaries:
+
+- `validate` refuses secret-shaped model output before publishing (retained or not)
+- `prepare` redacts before the task document is built, so the text the adapter
+  receives is redacted in both places, and scans the task JSON too
+- redaction matches the original spans only, bounded, with deterministic overlap
+  resolution (a marker can no longer feed a later rule)
+- the adapter re-verifies the executable bytes immediately before spawning; reader
+  threads are awaited only within the caller's budget, so a descendant holding the
+  pipes is a refusal instead of a hang; on Unix a refusal kills the process group
+- a section inherits the strictest sensitivity of its questions, so confidential
+  or restricted prompts need `--allow-sensitive`
+- answers are offered only when the plan's evaluation says they are available
+- the preview and this plan state that the adapter is the operator's own program
+  and is **not** sandboxed, instead of implying an egress guarantee FORGE cannot
+  enforce for it
+
+### Next: promotion validity (designed, not implemented)
+
+The owner's two P1/P2 promotion findings need the destination's *own* authoring
+path, not a shape check:
+
+1. Read the destination's pinned pack (`project.authoring_pack`) with its digest
+   verified, and build the proposed clause from the **effective** clause (the
+   reviewer's edit when the disposition is `accept-edited`), for text, policy,
+   topic and gap ids alike.
+2. Emit `answer_refs` pins for every required question of the clause's topic that
+   has an answer record in the destination, hashing each record with
+   `authoring::manifest::answer_sha256` (`forge.authoring-answer/1`).
+3. Stage a candidate snapshot — the destination project, its three pinned inputs
+   copied at their relative paths, the candidate project and the proposed clause
+   files — in a transient directory beneath the destination, and run the ordinary
+   entry point `crate::authoring::prepare_plan` on it. That single call performs
+   the real path: pin verification, `validate_relationships` (answer pins, gap
+   assignment, dangling references) and clause grammar. Refuse, publishing
+   nothing, when it rejects the proposal. Remove the staging directory on every
+   path, including failure.
+4. Clause paths already carry the full suggestion identity; the staged check is
+   what proves they do not alias a destination input.
+
+### Remaining after that
+
+- `validate` must reject a clause whose policy/topic pair is not one of the
+  request's drafting sections, and must reject duplicate suggestion payloads (or
+  make their identifiers position-sensitive).
+- The bundle should carry the run **mode** (a recorded response is not an adapter
+  run) and a digest of the run record it came from.
+- `tests/suggest_isolation_test.rs` should include `local-adapter` in its
+  supplied-input digest check; the clock sentinels in the prepare and isolation
+  tests should compare against fixture-owned timestamps rather than one fixed date.
+- `ROADMAP.md`'s PRD-066 "later" row still reads as if the pipeline waits on the
+  corpora gate.
+- Document the `forge.suggest-promotion-outcome/1` object emitted for
+  `--format json` when nothing is accepted, and reply to each review thread with
+  the commit that addressed it.
+
+### Open owner decision (not mine to make)
+
+The owner's first P1 asks for the filesystem/network boundary `env_clear` cannot
+provide: a local adapter runs with the operator's privileges and can read, write
+or transmit anything they can. This tranche now *states* that instead of implying
+otherwise, and the recorded alternatives are (a) keep the trusted-adapter
+assumption as an explicit product decision, or (b) withhold process execution
+until an OS-level boundary exists and ship only the recorded-response workflow.
+
 ## Changelog
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-09-12 | coordinating agent | Initial plan: local-only offline pipeline, contracts, bounds, verification matrix, tester programme, owner decisions D1–D8 |
+| 0.3 | 2026-09-12 | coordinating agent | Recorded the PR #155 review remediation: two commits of fixed findings, the designed-but-unimplemented promotion-validity work, the remaining findings, and the open owner decision on adapter sandboxing |
 | 0.2 | 2026-09-12 | coordinating agent | Recorded the implemented tranche: nine published contracts (the run receipt was added for M-13), payload-span units instead of a second copy of the text, the mapping task withheld with the deferred task decision, and the hardening pass that found and fixed an unbounded patch and an admitted empty citation list |
