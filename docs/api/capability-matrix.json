@@ -274,7 +274,7 @@
     "action": "Enforce read-only launch mode",
     "golden_path_step": "cross-cutting",
     "user_stories": ["US-7"],
-    "operations": ["registerResource", "uploadResource", "preparePolicyConversion", "putApplicabilityDraft", "putMappingDraft", "analyzeApplicability", "buildMapping", "commitEffectPreview", "prepareReportExport"],
+    "operations": ["registerResource", "uploadResource", "preparePolicyConversion", "putApplicabilityDraft", "putMappingDraft", "analyzeApplicability", "buildMapping", "commitEffectPreview", "prepareReportExport", "initializeApplicabilityDraft", "initializeMappingDraft"],
     "authorization": "browser-write",
     "notes": "Every mutation returns the typed read-only-session error with no file change (AC-2), covering the permission-denied UX state; all read operations in CM-02, CM-06, CM-07, CM-11 through CM-13, CM-16 through CM-18, CM-20, CM-22 through CM-25, and CM-30 keep working."
   },
@@ -310,8 +310,26 @@
     "action": "Drive the complete workspace through the published API",
     "golden_path_step": "cross-cutting",
     "user_stories": ["US-13"],
-    "operations": ["analyzeApplicability", "buildMapping", "cancelOperation", "checkMapping", "commitEffectPreview", "downloadExport", "getApplicabilityDraft", "getApplicabilityReport", "getConversion", "getEffectPreview", "getMappingDraft", "getOperation", "getProjectConfigStatus", "getProjectSummary", "getProvenanceExcerpt", "getResource", "getResourceValidation", "getReviewQueueCounts", "getSession", "listApplicabilityControls", "listMappingSubjects", "listProvenanceEntries", "listResources", "listReviewQueueItems", "preparePolicyConversion", "prepareReportExport", "putApplicabilityDraft", "putMappingDraft", "registerResource", "runValidation", "shutdownSession", "unlockSession", "uploadResource", "validateApplicabilityDraft", "validateMappingDraft"],
+    "operations": ["analyzeApplicability", "buildMapping", "cancelOperation", "checkMapping", "commitEffectPreview", "downloadExport", "getApplicabilityDraft", "getApplicabilityReport", "getConversion", "getEffectPreview", "getMappingDraft", "getOperation", "getProjectConfigStatus", "getProjectSummary", "getProvenanceExcerpt", "getResource", "getResourceValidation", "getReviewQueueCounts", "getSession", "listApplicabilityControls", "listMappingSubjects", "listProvenanceEntries", "listResources", "listReviewQueueItems", "preparePolicyConversion", "prepareReportExport", "putApplicabilityDraft", "putMappingDraft", "registerResource", "runValidation", "shutdownSession", "unlockSession", "uploadResource", "validateApplicabilityDraft", "validateMappingDraft", "initializeApplicabilityDraft", "initializeMappingDraft"],
     "authorization": "browser-write",
     "notes": "US-13 completeness entry: a write-capable session (browser or machine) can perform the entire golden path with only these operations (AC-18). This entry intentionally lists every operationId as the exhaustive coverage denominator for CI."
+  },
+  {
+    "id": "CM-36",
+    "action": "Initialize an explicit applicability decision manifest",
+    "golden_path_step": 4,
+    "user_stories": ["US-2", "US-13"],
+    "operations": ["initializeApplicabilityDraft"],
+    "authorization": "browser-write",
+    "notes": "Explicit registered Catalog selection; current pins and inventory; no inferred scope decisions or reviewers. Preview and commit one new file, then register separately."
+  },
+  {
+    "id": "CM-37",
+    "action": "Initialize an explicit mapping decision manifest",
+    "golden_path_step": 5,
+    "user_stories": ["US-3", "US-13"],
+    "operations": ["initializeMappingDraft"],
+    "authorization": "browser-write",
+    "notes": "Explicit registered Catalog selection; current pins and inventory; no inferred relationships or decisions. Preview and commit one new file, then register separately. Mapping review metadata and at least one reviewed relationship are human supplied."
   }
 ]

@@ -1,0 +1,11 @@
+{
+  "schema_version": "forge.workspace-report/1",
+  "report_kind": "trace",
+  "inputs": [],
+  "summary": {
+    "total_elements": 0,
+    "asserted_trace_elements": 0,
+    "current_source_locations": 0,
+    "unresolved_elements": 0
+  }
+}

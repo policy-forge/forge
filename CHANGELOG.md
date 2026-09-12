@@ -32,6 +32,10 @@ inventory of all post-v1.1.0 changes.
   rename on Linux/macOS, failing closed on other platforms. Existing Phase 1
   inputs and default artifacts remain unchanged. Public Rust API migration/semver review and human acceptance,
   legal/content, design-partner, pilot and release gates remain pending.
+- PRD-062 draft: a loopback-only `forge workspace` command serves an embedded
+  offline review UI over the closed OpenAPI 1.1.0 contract, with explicit
+  single-file effects. This is a draft technical implementation; security,
+  accessibility, independent-review, supply-chain and release gates remain open.
 
 ### Changed
 
