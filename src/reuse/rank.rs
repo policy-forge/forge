@@ -146,7 +146,8 @@ pub struct RankOptions {
     pub include_draft: bool,
     /// Maximum candidates kept per section.
     pub max_candidates: usize,
-    /// Candidates below this inclusive score are dropped before truncation.
+    /// Candidates scoring below this value are dropped before truncation; a
+    /// candidate at exactly this score is kept.
     pub min_score: f64,
 }
 
@@ -168,6 +169,9 @@ pub fn rank_sections(
     queries: &[SectionQuery],
     options: &RankOptions,
 ) -> Result<Vec<Vec<Candidate>>, ForgeError> {
+    if options.max_candidates == 0 || options.max_candidates > MAX_CANDIDATE_LIMIT {
+        return Err(error(format!("candidate limit must be between 1 and {MAX_CANDIDATE_LIMIT}")));
+    }
     let index = Index::build(corpus, captured, options.include_draft)?;
     Ok(queries.iter().map(|query| index.rank(query, options)).collect())
 }
@@ -746,5 +750,21 @@ mod tests {
     fn tokenizer_is_unicode_alphanumeric_and_lowercase() {
         assert_eq!(tokens("Access-Control (AC-2) Café"), ["access", "control", "ac", "2", "café"]);
         assert_eq!(tokens("秘密"), ["秘密"]);
+    }
+
+    #[test]
+    fn rank_rejects_a_candidate_limit_above_the_maximum() {
+        let documents = vec![document("policy", "policy.md", approved(), &[], &[])];
+        let bodies: Vec<&[u8]> = vec![b"alpha\n"];
+        for max_candidates in [0, MAX_CANDIDATE_LIMIT + 1] {
+            let failure = rank_sections(
+                &corpus(documents.clone()),
+                &captured(&documents, &bodies),
+                &[query("topic", "alpha", &[])],
+                &RankOptions { max_candidates, ..RankOptions::default() },
+            )
+            .unwrap_err();
+            assert!(matches!(failure, ForgeError::Authoring(_)), "{max_candidates}");
+        }
     }
 }

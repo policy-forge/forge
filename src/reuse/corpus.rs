@@ -258,10 +258,13 @@ fn single_line(name: &str, value: &str) -> Result<(), ForgeError> {
 
 fn label(name: &str, value: &str) -> Result<(), ForgeError> {
     single_line(name, value)?;
-    if value.starts_with(['/', '\\'])
-        || value.starts_with("file:")
-        || value.as_bytes().get(1) == Some(&b':')
-    {
+    let bytes = value.as_bytes();
+    let rooted_drive = bytes.len() >= 3
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && matches!(bytes[2], b'/' | b'\\');
+    let file_uri = value.get(..5).is_some_and(|prefix| prefix.eq_ignore_ascii_case("file:"));
+    if value.starts_with(['/', '\\']) || file_uri || rooted_drive {
         return Err(error(format!("{name} must not be a rooted local path")));
     }
     Ok(())
@@ -393,6 +396,26 @@ mod tests {
             }
             cursor[*last] = replacement.clone();
             assert!(parse(&value).is_err(), "{pointer} = {replacement} must fail");
+        }
+    }
+
+    #[test]
+    fn labels_reject_rooted_paths_and_file_uris_but_allow_colons() {
+        for (value, valid) in [
+            ("Repository synthetic fixture", true),
+            ("Q: interview notes", true),
+            ("C: interview", true),
+            ("C:/input", false),
+            ("c:\\input", false),
+            ("/private/input", false),
+            ("\\server\\share", false),
+            ("file:/input", false),
+            ("FILE:/input", false),
+            ("File:input", false),
+        ] {
+            let mut candidate = manifest();
+            candidate["documents"][0]["rights_label"] = json!(value);
+            assert_eq!(parse(&candidate).is_ok(), valid, "label {value}");
         }
     }
 

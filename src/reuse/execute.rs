@@ -113,40 +113,38 @@ pub fn execute(
         sections,
     );
 
-    captured.verify()?;
     let json = report.render_json()?;
     let text = report.render_text();
-    if let Some(destination) = output_dir {
-        // The captured project snapshot and the corpus manifest must still
-        // match, so a source changed during ranking can never be published.
-        seed.captures.verify()?;
-        if read_manifest(&root, &manifest_name)? != corpus_bytes {
-            return Err(error("reuse corpus manifest changed after capture"));
-        }
-        let mut artifacts = vec![
-            crate::authoring::output::OutputArtifact {
-                relative_path: "reuse.json".to_owned(),
-                bytes: json.clone(),
-            },
-            crate::authoring::output::OutputArtifact {
-                relative_path: "reuse.txt".to_owned(),
-                bytes: text.clone().into_bytes(),
-            },
-        ];
-        if html {
-            artifacts.push(crate::authoring::output::OutputArtifact {
-                relative_path: "reuse.html".to_owned(),
-                bytes: crate::authoring::html::render_closed_bounded(
-                    "Authoring reuse",
-                    &json,
-                    super::report::REUSE_SCHEMA_VERSION,
-                    super::report::MAX_REPORT_BYTES,
-                )?,
-            });
-        }
-        crate::authoring::output::publish(&seed.root, destination, &artifacts)?;
-    } else if html {
+    if html && output_dir.is_none() {
         return Err(error("HTML output requires --output-dir"));
+    }
+    let mut artifacts = vec![
+        crate::authoring::output::OutputArtifact {
+            relative_path: "reuse.json".to_owned(),
+            bytes: json.clone(),
+        },
+        crate::authoring::output::OutputArtifact {
+            relative_path: "reuse.txt".to_owned(),
+            bytes: text.clone().into_bytes(),
+        },
+    ];
+    if html {
+        artifacts.push(crate::authoring::output::OutputArtifact {
+            relative_path: "reuse.html".to_owned(),
+            bytes: crate::authoring::html::render_closed_bounded(
+                "Authoring reuse",
+                &json,
+                super::report::REUSE_SCHEMA_VERSION,
+                super::report::MAX_REPORT_BYTES,
+            )?,
+        });
+    }
+    // Every captured input is revalidated after rendering and immediately
+    // before any output side effect — stdout and publication alike — so a
+    // source changed during rendering or ranking is never reported or written.
+    verify_sources(&seed.captures, &captured, &root, &manifest_name, &corpus_bytes)?;
+    if let Some(destination) = output_dir {
+        crate::authoring::output::publish(&seed.root, destination, &artifacts)?;
     }
     let stdout = match format {
         AuthorReportFormat::Text => text.as_str(),
@@ -156,6 +154,22 @@ pub fn execute(
     crate::cli::output::write_output(stdout, None)
         .map_err(|cause| error(format!("cannot write reuse report: {cause}")))?;
     Ok(report.action_required())
+}
+
+/// Revalidate the project snapshot, the corpus documents and the manifest.
+fn verify_sources(
+    project_captures: &crate::authoring::input::CaptureSet,
+    captured_corpus: &super::capture::CapturedCorpus,
+    root: &Path,
+    manifest_name: &Path,
+    corpus_bytes: &[u8],
+) -> Result<(), ForgeError> {
+    project_captures.verify()?;
+    captured_corpus.verify()?;
+    if read_manifest(root, manifest_name)? != corpus_bytes {
+        return Err(error("reuse corpus manifest changed after capture"));
+    }
+    Ok(())
 }
 
 /// Merge project pin fingerprints with captured corpus documents, path-sorted.
@@ -223,4 +237,54 @@ fn corpus_location(path: &Path) -> Result<(PathBuf, PathBuf), ForgeError> {
         .map(PathBuf::from)
         .ok_or_else(|| error("corpus manifest must name a file"))?;
     Ok((root, name))
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hashing::sha256_hex;
+
+    /// A changed source must be rejected by the shared verification step that
+    /// both the stdout and publication paths invoke after rendering.
+    #[test]
+    fn changed_sources_are_rejected_before_output() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let original = b"# A\n\nbody\n";
+        std::fs::write(root.join("doc.md"), original).unwrap();
+        std::fs::write(root.join("corpus.json"), b"{}").unwrap();
+        let mut project_captures = crate::authoring::input::CaptureSet::new(root.clone());
+        let bytes = project_captures
+            .read("reuse-document-doc", Path::new("doc.md"), Some(&sha256_hex(original)), 1024)
+            .unwrap();
+        let captured_corpus = super::super::capture::CapturedCorpus {
+            root: root.clone(),
+            documents: vec![super::super::capture::CapturedDocument {
+                key: "doc".to_owned(),
+                path: PathBuf::from("doc.md"),
+                sha256: sha256_hex(&bytes),
+                bytes,
+            }],
+        };
+        let manifest = Path::new("corpus.json");
+        assert!(
+            verify_sources(&project_captures, &captured_corpus, &root, manifest, b"{}").is_ok()
+        );
+
+        std::fs::write(root.join("doc.md"), b"# A\n\nchanged\n").unwrap();
+        assert!(
+            verify_sources(&project_captures, &captured_corpus, &root, manifest, b"{}").is_err()
+        );
+
+        std::fs::write(root.join("doc.md"), original).unwrap();
+        assert!(
+            verify_sources(
+                &project_captures,
+                &captured_corpus,
+                &root,
+                manifest,
+                b"{\"changed\":true}"
+            )
+            .is_err()
+        );
+    }
 }
