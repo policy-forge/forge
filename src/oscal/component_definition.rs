@@ -131,8 +131,18 @@ pub struct DocumentaryComponent {
 pub fn build_component_definition(
     document: &PolicyDocument,
     source_profile: Option<&str>,
+    trace_links: Option<&mut TraceLinkCollection>,
+    source_file: Option<&str>,
+) -> Result<ComponentDefinitionEnvelope, ForgeError> {
+    build_with_metadata(document, source_profile, trace_links, source_file, None)
+}
+
+pub(crate) fn build_with_metadata(
+    document: &PolicyDocument,
+    source_profile: Option<&str>,
     _trace_links: Option<&mut TraceLinkCollection>,
     source_file: Option<&str>,
+    metadata: Option<crate::oscal::metadata::MetadataOptions>,
 ) -> Result<ComponentDefinitionEnvelope, ForgeError> {
     // Step 1: Resolve title and version defaults
     let title = resolve_title(&document.metadata.title);
@@ -144,7 +154,7 @@ pub fn build_component_definition(
         version: version.clone(),
         ..document.metadata.clone()
     };
-    let assembled = assemble_metadata(&resolved_meta, None)?;
+    let assembled = assemble_metadata(&resolved_meta, metadata)?;
 
     // Step 3: Build control-implementations (WI-15) when source_profile is provided
     let control_implementations = match source_profile {

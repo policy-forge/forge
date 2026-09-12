@@ -1309,6 +1309,112 @@ fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::ApplicabilityAnalysis(message.into())
 }
 
+/// Parse a complete persisted report without accepting unknown fields or
+/// inconsistent denominators. This validates asserted historical data; callers
+/// must still compare against recomputation before describing it as current.
+pub(crate) fn parse_stored_report(bytes: &[u8]) -> Result<model::ApplicabilityReport, ForgeError> {
+    #[derive(serde::Deserialize, serde::Serialize)]
+    #[serde(deny_unknown_fields)]
+    struct Stored {
+        schema_version: String,
+        manifest_sha256: String,
+        framework: crate::mapping::inventory::ResourceEvidence,
+        mapping_collections: Vec<model::MappingEvidence>,
+        reviewers: Vec<crate::mapping::manifest::ReviewerManifest>,
+        counts: model::ClassificationCounts,
+        filters: model::ReportFilters,
+        matched_controls: usize,
+        controls: Vec<model::ControlResult>,
+        review_queue: Vec<model::ReviewQueueItem>,
+    }
+    let failure = || ForgeError::Validation("Invalid persisted applicability report".into());
+    if bytes.len() > 10 * 1024 * 1024 {
+        return Err(failure());
+    }
+    let value = crate::json_strict::parse_value(
+        bytes,
+        "applicability report",
+        crate::json_strict::Limits { max_depth: 64, max_string_bytes: 64 * 1024 },
+    )
+    .map_err(|_| failure())?;
+    let stored: Stored = serde_json::from_value(value.clone()).map_err(|_| failure())?;
+    if serde_json::to_value(&stored).map_err(|_| failure())? != value
+        || stored.schema_version != model::REPORT_SCHEMA_VERSION
+        || stored.matched_controls != stored.controls.len()
+        || stored.controls.len() > 10000
+        || stored.controls.len() > stored.counts.total
+        || stored.mapping_collections.len() > 100
+        || stored.review_queue.len() > 10000
+    {
+        return Err(failure());
+    }
+    // `counts` always describes the complete inventory, so its total must equal the sum of
+    // its classification counts; the visible controls are a subset of that denominator.
+    let c = &stored.counts;
+    if c.total
+        != c.applicable_mapped
+            + c.applicable_reviewed_no_relationship
+            + c.applicable_unmapped
+            + c.not_applicable
+            + c.deferred
+            + c.under_review
+    {
+        return Err(failure());
+    }
+    for hash in std::iter::once(&stored.manifest_sha256)
+        .chain(std::iter::once(&stored.framework.raw_sha256))
+        .chain(stored.framework.resolved_catalog_sha256.iter())
+        .chain(stored.mapping_collections.iter().flat_map(|m| {
+            std::iter::once(&m.raw_sha256).chain(m.source_resources.iter().flat_map(|resource| {
+                std::iter::once(&resource.raw_sha256).chain(resource.resolved_catalog_sha256.iter())
+            }))
+        }))
+    {
+        crate::json_strict::validate_lowercase_sha256("report hash", hash)
+            .map_err(|_| failure())?;
+    }
+    let mut observable = std::collections::BTreeMap::new();
+    let mut ids = std::collections::BTreeSet::new();
+    for control in &stored.controls {
+        if !ids.insert(&control.control_id) {
+            return Err(failure());
+        }
+        *observable.entry(control.classification.as_str()).or_insert(0_usize) += 1;
+    }
+    // An unfiltered report restates the whole inventory exactly; a filtered report only
+    // exposes a subset, so each visible classification may not exceed the declared count.
+    let unfiltered = stored.filters.group.is_none()
+        && stored.filters.control_prefix.is_none()
+        && stored.filters.state.is_none()
+        && stored.filters.reviewer.is_none()
+        && stored.filters.policy_source.is_none();
+    for (key, count) in [
+        ("applicable-mapped", c.applicable_mapped),
+        ("applicable-reviewed-no-relationship", c.applicable_reviewed_no_relationship),
+        ("applicable-unmapped", c.applicable_unmapped),
+        ("not-applicable", c.not_applicable),
+        ("deferred", c.deferred),
+        ("under-review", c.under_review),
+    ] {
+        let observed = observable.get(key).copied().unwrap_or_default();
+        if if unfiltered { observed != count } else { observed > count } {
+            return Err(failure());
+        }
+    }
+    Ok(model::ApplicabilityReport {
+        schema_version: model::REPORT_SCHEMA_VERSION,
+        manifest_sha256: stored.manifest_sha256,
+        framework: stored.framework,
+        mapping_collections: stored.mapping_collections,
+        reviewers: stored.reviewers,
+        counts: stored.counts,
+        filters: stored.filters,
+        matched_controls: stored.matched_controls,
+        controls: stored.controls,
+        review_queue: stored.review_queue,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1348,5 +1454,157 @@ mod tests {
         std::fs::write(&path, br#"{"value":"replacement"}"#).expect("replace input");
         let error = verify_input_fingerprints(&[fingerprint]).expect_err("replacement must fail");
         assert!(error.to_string().contains("changed after analysis preparation"));
+    }
+
+    /// One stored-report control carrying the fields the persisted contract requires.
+    fn stored_control(id: &str, classification: &str) -> serde_json::Value {
+        serde_json::json!({
+            "control_id": id,
+            "groups": ["group-1"],
+            "classification": classification,
+            "positive_mapping_count": 0,
+            "no_relationship_count": 0,
+            "policy_sources": [],
+        })
+    }
+
+    fn stored_report_json() -> serde_json::Value {
+        let controls = [
+            ("c1", "applicable-mapped"),
+            ("c2", "applicable-reviewed-no-relationship"),
+            ("c3", "applicable-unmapped"),
+            ("c4", "not-applicable"),
+            ("c5", "deferred"),
+            ("c6", "under-review"),
+        ];
+        serde_json::json!({
+            "schema_version": model::REPORT_SCHEMA_VERSION,
+            "manifest_sha256": "b".repeat(64),
+            "framework": {
+                "resource_type": "catalog",
+                "href": "framework.json",
+                "raw_sha256": "a".repeat(64),
+                "root_uuid": "22222222-2222-4222-8222-222222222222",
+                "document_version": "1.0.0",
+                "oscal_version": "1.2.3",
+            },
+            "mapping_collections": [{
+                "uuid": "060895b8-4b3d-5ca3-a1af-f9a7a9f04876",
+                "raw_sha256": "c".repeat(64),
+                "version": "1.0.0",
+                "oscal_version": "1.2.3",
+                "reviewed_at": "2026-08-25T08:00:00Z",
+                "reviewers": [],
+                "source_resources": [{
+                    "resource_type": "catalog",
+                    "href": "policy.json",
+                    "raw_sha256": "d".repeat(64),
+                    "root_uuid": "11111111-1111-4111-8111-111111111111",
+                    "document_version": "1.0.0",
+                    "oscal_version": "1.2.3",
+                }],
+            }],
+            "reviewers": [],
+            "counts": {
+                "total": 6,
+                "applicable_mapped": 1,
+                "applicable_reviewed_no_relationship": 1,
+                "applicable_unmapped": 1,
+                "not_applicable": 1,
+                "deferred": 1,
+                "under_review": 1,
+            },
+            "filters": {},
+            "matched_controls": 6,
+            "controls": controls
+                .iter()
+                .map(|(id, classification)| stored_control(id, classification))
+                .collect::<Vec<_>>(),
+            "review_queue": [],
+        })
+    }
+
+    fn parse_json_report(
+        report: &serde_json::Value,
+    ) -> Result<model::ApplicabilityReport, ForgeError> {
+        let bytes = serde_json::to_vec(report).expect("serialize stored report");
+        parse_stored_report(&bytes)
+    }
+
+    #[test]
+    fn persisted_report_accepts_unfiltered_denominators() {
+        let report = stored_report_json();
+        let parsed = parse_json_report(&report).expect("unfiltered report must parse");
+        assert_eq!(parsed.controls.len(), parsed.counts.total);
+    }
+
+    #[test]
+    fn persisted_report_accepts_a_filtered_subset() {
+        let mut report = stored_report_json();
+        report["filters"] = serde_json::json!({"state": "deferred"});
+        report["controls"] = serde_json::json!([stored_control("c5", "deferred")]);
+        report["matched_controls"] = serde_json::json!(1);
+        let parsed = parse_json_report(&report).expect("filtered report must parse");
+        assert_eq!(parsed.controls.len(), 1);
+        assert_eq!(parsed.counts.total, 6);
+    }
+
+    #[test]
+    fn persisted_report_unfiltered_equality_is_not_weakened() {
+        let mut report = stored_report_json();
+        // Drop one control while claiming the full denominator: only the strict unfiltered
+        // equality can catch this, since the subset bound would still hold.
+        report["controls"] = serde_json::json!([stored_control("c1", "applicable-mapped")]);
+        report["matched_controls"] = serde_json::json!(1);
+        assert!(parse_json_report(&report).is_err());
+    }
+
+    #[test]
+    fn persisted_report_rejects_classification_sum_mismatch() {
+        let mut report = stored_report_json();
+        report["counts"]["total"] = serde_json::json!(7);
+        assert!(parse_json_report(&report).is_err());
+    }
+
+    #[test]
+    fn persisted_report_rejects_filtered_controls_exceeding_declared_counts() {
+        let mut report = stored_report_json();
+        report["filters"] = serde_json::json!({"state": "deferred"});
+        report["controls"] =
+            serde_json::json!(
+                [stored_control("c5", "deferred"), stored_control("c6", "deferred"),]
+            );
+        report["matched_controls"] = serde_json::json!(2);
+        assert!(parse_json_report(&report).is_err());
+    }
+
+    #[test]
+    fn persisted_report_validates_nested_hashes() {
+        // Optional hashes may be absent ...
+        assert!(parse_json_report(&stored_report_json()).is_ok());
+
+        // ... and are accepted when present and well-formed.
+        let mut valid = stored_report_json();
+        valid["framework"]["resolved_catalog_sha256"] = serde_json::json!("e".repeat(64));
+        valid["mapping_collections"][0]["source_resources"][0]["resolved_catalog_sha256"] =
+            serde_json::json!("f".repeat(64));
+        assert!(parse_json_report(&valid).is_ok());
+
+        // The framework resolved-catalog hash is validated.
+        let mut bad_framework = stored_report_json();
+        bad_framework["framework"]["resolved_catalog_sha256"] = serde_json::json!("not-a-hash");
+        assert!(parse_json_report(&bad_framework).is_err());
+
+        // A source-resource raw hash is validated.
+        let mut bad_source = stored_report_json();
+        bad_source["mapping_collections"][0]["source_resources"][0]["raw_sha256"] =
+            serde_json::json!("Z".repeat(64));
+        assert!(parse_json_report(&bad_source).is_err());
+
+        // A source-resource resolved-catalog hash is validated.
+        let mut bad_source_resolved = stored_report_json();
+        bad_source_resolved["mapping_collections"][0]["source_resources"][0]["resolved_catalog_sha256"] =
+            serde_json::json!("x".repeat(63));
+        assert!(parse_json_report(&bad_source_resolved).is_err());
     }
 }

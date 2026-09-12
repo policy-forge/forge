@@ -128,3 +128,27 @@ maintained schemas are prohibited):
 - Compatibility checks fail when a contract change is non-additive within
   v1, when a fixture expectation flips without a contract rationale, or
   when the published `contract_version` does not match the document.
+
+## Unreleased contract 1.1.0
+
+Adds optional `provenance_ref` to `ControlInventoryItem` and `MappingSubject`.
+The opaque reference lets clients traverse provenance without guessing identity
+from display labels, including controls whose IDs exceed the anchor length bound.
+Existing 1.0.0 request documents, fixtures, and required response fields retain
+their meaning. No on-disk `/1` schema changes and no release are implied.
+
+The same unreleased revision adds `initializeApplicabilityDraft` and
+`initializeMappingDraft` for M-9/M-10 new-project onboarding. Both prepare a
+single-file preview; selected inputs are explicit and hash-pinned, scope starts
+with no decisions, initial mappings require at least one explicit reviewed relationship under the
+unchanged PRD-055 `/1` contract, and reviewer metadata must be supplied. Existing operations retain their semantics.
+
+`WorkspaceReportEnvelope` documents the separately versioned, canonical
+`forge.workspace-report/1` static export. The trace-report role now has an
+explicit accepted format; generic HTML and CLI text are rejected. This resolves
+an underspecified prerelease role, rather than migrating any released input.
+Historical applicability reports continue using the PRD-056 contract.
+The pre-initialization `listMappingSubjects` path requires both existing optional
+selectors (`resource_id`, `side`); with a selected manifest, the existing inventory
+and filter semantics remain unchanged. Existing closed response clients should
+negotiate the returned contract version when adopting optional provenance fields.

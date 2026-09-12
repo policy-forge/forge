@@ -29,7 +29,8 @@ v1.1.0 is released, and the post-v1.1.0 roadmap is active.
 - PRDs 055–060 and 063 are technically implemented. Their human release,
   pilot, adoption, or other PRD-level gates remain open where the PRDs say so.
 - PRD 061 Phase 1 merged in PR #144 and Phase 2 merged in PR #145; its human
-  gates remain pending. PRD 062 Slice 0 merged in PR #142; PRDs 064–068 remain planned.
+  gates remain pending. PRD 062 Slice 0 merged in PR #142 with the local-workspace
+  implementation on the feature branch (PR #146); PRDs 064–068 remain planned.
 
 This reconciliation supersedes stale counts such as “43/50 done,” “44/50 done,” “8/15 Phase 3 done,” and “7 remaining.”
 
@@ -179,11 +180,11 @@ gates in the corresponding PRD.
 | [059](PRD/059-prd-reusable-policy-components.md) | Reusable policy components | Technical implementation complete | Merge `09f1f37` | PRD release gates remain |
 | [060](PRD/060-prd-evidence-implementation-linking.md) | Evidence and implementation linkage | Technical implementation complete | Merge `a5d0aff` | PRD release gates remain |
 | [061](PRD/061-prd-framework-guided-policy-authoring.md) | Framework-guided policy authoring | Technical phases merged — pilot and release gates pending | Phase 1 merged in PR #144; Phase 2 merged in PR #145 (merge `3ac6815`); [gate register](authoring-gates.md), [evidence map](authoring-phase2-evidence.md), [API migration](authoring-api-migration.md) | API/semver (`2.0.0`), product, compliance, legal, engineering and design-partner-readiness gates satisfied by owner disposition 2026-09-11; measured pilots and release approval remain pending |
-| [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — Slice 0 technically complete | Slice 0 delivered in PR #142 | Contract, schema, matrix, fixtures, threat model, and ADRs delivered with CI drift checks; human review gates remain before UI code |
+| [062](PRD/062-prd-local-web-workspace.md) | API-first local web workspace | In Progress — local workspace implementation | Slice 0 delivered in PR #142; implementation on the feature branch (PR #146) | Local API, embedded UI, explicit single-file effects, headless/browser workflows and report provenance implemented; full platform, supply-chain, independent review and human gates remain |
 | [063](PRD/063-prd-oscal-assessment-results.md) | OSCAL Assessment Results | Technical implementation complete | Merge `34d9869` | PRD release gates remain |
 | [064](PRD/064-prd-oscal-poam-workflow.md) | OSCAL POA&M workflow | Planned | No implementation merge | PRD 063 is implemented; schema, status semantics, and editable source-of-truth decisions remain |
 | [065](PRD/065-prd-external-workflow-integrations.md) | External workflow integrations | Planned | No implementation merge | Requires a stable source-report contract and approved provider/auth boundary |
-| [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review |
+| [066](PRD/066-prd-ai-assisted-suggestions.md) | AI-assisted suggestions | Planned | No implementation merge | Requires stable PRD 055/061 schemas, an approved corpus, and privacy/security review; the retrieval-only Phase 0 tranche (`forge author reuse`) is under review on its branch and does not change this status |
 | [067](PRD/067-prd-read-only-mcp-governance-interface.md) | Read-only MCP governance interface | Planned | No implementation merge | Requires stable project discovery, shared read-only queries, and a completed threat model |
 | [068](PRD/068-prd-collaborative-review-queues.md) | Collaborative review queues | Planned | No implementation merge | Requires a selected first review workflow and approved identity/quorum boundaries |
 | [069](PRD/069-prd-dependency-security-audit.md) | Dependency security audit | Planned | No implementation merge | Requires recorded criteria, an offline inventory and an owned-exception policy; the PRD-062 transport stack is the first tranche |
@@ -194,10 +195,10 @@ This is a dependency-oriented sequence, not a date commitment.
 
 | Horizon | Initiative | Intended Outcome / Exit Gate |
 |---------|------------|--------------------------------|
-| **Now** | PRD 062 Slice 0 | Normative OpenAPI contract, capability matrix, project index schema, threat model, service/effect boundary, representative fixtures, ADRs, and CI drift checks — delivered and validating in CI; human API/security/accessibility approval remains before browser implementation |
+| **Now** | PRD 062 Slice 0 | Normative OpenAPI contract, capability matrix, project index schema, threat model, service/effect boundary, representative fixtures, ADRs, and CI drift checks — delivered and validating in CI; human API/security/accessibility approval remains before slice acceptance |
 | **Now** | PRDs 055–060 and 063 release-gate reconciliation | Complete or explicitly defer each remaining human, pilot, documentation, and release approval without overstating technical completion as product release |
 | **Now** | PRD 061 pilot and release gates | Run the measured partner exercises against the recorded protocol, then obtain release approval for the `2.0.0` tranche once the remaining in-flight PRDs finish |
-| **Next** | PRD 062 Slices 1–4 | Deliver read-only exploration, safe mutation, review workflows, and a local pilot as separately gated increments |
+| **Now** | PRD 062 implementation and verification | Local explorer, safe mutation and review workflow under technical verification (PR #146); [usage and limitations](local-workspace.md); pilot/release remain pending |
 | **Next** | PRD 064 Phase 1 | Build deterministic POA&M scaffolding and schedule reporting on the completed Assessment Results foundation |
 | **Later** | PRDs 065, 067, and 068 | Add external handoff, bounded read-only agent access, and asynchronous collaboration after project, query, identity, and review contracts stabilize |
 | **Later** | PRD 066 | Add quarantined AI suggestions after authoring schemas, evaluation data, and provider/privacy gates are approved |
@@ -205,11 +206,11 @@ This is a dependency-oriented sequence, not a date commitment.
 ### Active Risks and Dependencies
 
 - PRD 062 Slice 0 contract artifacts (OpenAPI 3.1 contract, capability
-  matrix, threat model, ADRs) are delivered on the Slice 0 branch with CI
+  matrix, threat model, ADRs) merged in PR #142 with CI
   drift checks executing, but its product boundary, golden path, API
   ownership, frontend/build approach, containment primitives, and
-  accessibility patterns still require human approval before implementation
-  advances past Slice 0.
+  accessibility patterns still require human approval for slice acceptance.
+  User-authorized implementation is proceeding without claiming those gates pass.
 - PRD 064 can proceed only after stable Assessment Results identity and POA&M
   schema/status/source-of-truth decisions are approved.
 - PRD 061 Phase 1 and Phase 2 are merged (PR #144, PR #145). The API/semver
@@ -298,7 +299,8 @@ unscheduled candidates are:
 | 1.3 | 2026-09-09 | Codex | Reconciled merged PRD-061 Phase 1 and PRD-062 Slice 0; recorded Phase 2 technical evidence and pending API/human/release gates; retired the resolved Phase 1 sequencing question. |
 | 1.4 | 2026-09-11 | Codex | Recorded the merged PRD-061 Phase 2 (PR #145, merge `3ac6815`), added the Phase 2 acceptance-evidence map and PRD-061 gate register, and noted the S-1 scaffold plus the S-4 disposition; all human/release gates remain pending. |
 | 1.5 | 2026-09-11 | Codex | Recorded owner dispositions satisfying the PRD-061 API/semver, product, compliance, legal, engineering and design-partner-readiness gates, with API migration guidance and the M-1…M-15 evidence map; retired the unmeasured 50% G-5 figure. Measured pilots and release approval remain open and the tranches stay out of release. |
-| 1.6 | 2026-09-11 | Codex | Added PRD 069 (dependency security audit) to the registry: inventory, recorded criteria, owned exceptions, differential audits and a CI gate; reconciled the registry counts to 15 initiatives. |
+| 1.6 | 2026-09-11 | Codex | Merged `main` into the PRD-062 workspace branch and reconciled the PRD-061 status/gate text with the PRD-062 implementation rows, so the merged owner dispositions are preserved while the local-workspace work is recorded as in progress on its feature branch. |
+| 1.7 | 2026-09-11 | Codex | Recorded the PRD-066 Phase 0 retrieval-only reuse tranche (`forge author reuse`, verbatim span-exact candidates, no model or network) as under review on its branch; PRD-066 stays Planned and its usefulness, rubric, privacy/legal and release gates stay open. |
 
 ---
 

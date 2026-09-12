@@ -6,7 +6,7 @@ mod generation;
 pub mod handoff;
 pub mod html;
 pub mod impact;
-mod input;
+pub(crate) mod input;
 
 pub use generation::{execute_extended, execute_handoff, execute_impact};
 mod scaffold;
@@ -18,7 +18,8 @@ pub mod plan;
 pub mod render;
 pub mod report;
 
-use std::path::Path;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
 use crate::ForgeError;
 use crate::cli::AuthorReportFormat;
@@ -26,6 +27,37 @@ use model::{AuthoringPlan, DraftState};
 
 pub(crate) fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::Authoring(message.into())
+}
+
+/// The drafting plan, project root and question prompts a reuse run needs.
+///
+/// The plan already carries every unresolved section; prompts are the one
+/// pack value it omits, so they are passed alongside instead of widening the
+/// frozen `/1` plan contract.
+pub(crate) struct ReuseSeed {
+    pub(crate) root: PathBuf,
+    pub(crate) plan: AuthoringPlan,
+    pub(crate) prompts: BTreeMap<String, String>,
+    /// Captured project inputs, retained so reuse can revalidate them before
+    /// publishing a generation.
+    pub(crate) captures: input::CaptureSet,
+}
+
+/// Validate a project and return the plan, root, prompts and captured inputs.
+///
+/// # Errors
+/// Returns an authoring error for invalid inputs, stale pins, or unsafe paths.
+pub(crate) fn reuse_seed(manifest: &Path) -> Result<ReuseSeed, ForgeError> {
+    let prepared = input::prepare(manifest)?;
+    let plan = plan::build_plan(&prepared.loaded)?;
+    let prompts = prepared
+        .loaded
+        .pack
+        .questions
+        .iter()
+        .map(|question| (question.key.clone(), question.prompt.clone()))
+        .collect();
+    Ok(ReuseSeed { root: prepared.root, plan, prompts, captures: prepared.captures })
 }
 
 /// Validate a complete project and return its deterministic drafting plan without writing.

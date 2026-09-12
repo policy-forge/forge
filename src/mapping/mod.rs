@@ -12,9 +12,9 @@ use crate::cli::{MappingFailOn, MappingReportFormat};
 use crate::hashing::sha256_hex;
 use crate::{ForgeError, io, validate};
 
-struct PreparedBuild {
-    artifact_json: String,
-    report: model::MappingReport,
+pub(crate) struct PreparedBuild {
+    pub(crate) artifact_json: String,
+    pub(crate) report: model::MappingReport,
     input_paths: Vec<PathBuf>,
 }
 
@@ -197,7 +197,7 @@ fn safe_file_label(path: &Path) -> String {
         .map_or_else(|| "resource.json".to_string(), |name| name.to_string_lossy().into_owned())
 }
 
-fn prepare(
+pub(crate) fn prepare(
     manifest_path: &Path,
     baseline_path: Option<&Path>,
     include_excerpts: bool,

@@ -348,7 +348,7 @@ fn check_read_size(path: &Path, bytes: &[u8]) -> Result<(), ForgeError> {
 
 /// Parse and validate config text. Returns the validated settings or a
 /// diagnostic message (without the file prefix).
-fn parse_and_validate(
+pub(crate) fn parse_and_validate(
     path: &Path,
     source: SourceKind,
     text: &str,

@@ -19,7 +19,14 @@ fn main() -> ExitCode {
     // A valid RUST_LOG filter overrides the flag-derived default for per-module control.
     let filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_filter));
-    tracing_subscriber::fmt().with_env_filter(filter).with_writer(std::io::stderr).init();
+    if matches!(&cli.command, cli::Commands::Workspace { .. }) {
+        // Workspace HTTP and domain data must never enter process logs, even
+        // with RUST_LOG=trace or --verbose. Bootstrap uses explicit safe output.
+        tracing::subscriber::set_global_default(tracing::subscriber::NoSubscriber::default())
+            .expect("workspace installs the process subscriber once");
+    } else {
+        tracing_subscriber::fmt().with_env_filter(filter).with_writer(std::io::stderr).init();
+    }
 
     match cli::execute(&cli) {
         Ok(()) => ExitCode::SUCCESS,
