@@ -13,6 +13,7 @@ use crate::json_strict::{self, Limits};
 
 use super::request::{MAX_ARG_BYTES, MAX_ARGV, MAX_MODEL_ID_BYTES, MAX_REDACTIONS};
 use super::response::MAX_RESPONSE_BYTES;
+use super::run_record::RunMode;
 use super::shared;
 use super::task::{self, SuggestionBody, TaskIdentity};
 
@@ -52,6 +53,10 @@ pub struct ResponseRef {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Provenance {
+    /// Digest of the run record this bundle was validated from.
+    pub run_record_sha256: String,
+    /// Whether a local process ran, or the operator recorded the response.
+    pub mode: RunMode,
     /// Digest of the adapter executable that ran.
     pub adapter_sha256: String,
     /// Operator-supplied model identifier, recorded as supplied.
@@ -283,6 +288,7 @@ pub(in crate::suggest) fn content_sha256(body: &SuggestionBody) -> Result<String
 
 impl Provenance {
     fn validate(&self) -> Result<(), ForgeError> {
+        shared::sha256("bundle.provenance.run_record_sha256", &self.run_record_sha256)?;
         shared::sha256("bundle.provenance.adapter_sha256", &self.adapter_sha256)?;
         if self.model_id.is_empty()
             || self.model_id.len() > MAX_MODEL_ID_BYTES
@@ -341,6 +347,8 @@ fn fixture_bundle_literal() -> serde_json::Value {
             "retained": false
         },
         "provenance": {
+            "run_record_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mode": "recorded-response",
             "adapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "model_id": "synthetic-model",
             "argv": ["--task", "draft"],

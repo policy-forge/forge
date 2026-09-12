@@ -97,6 +97,8 @@ pub fn execute(args: &ValidateArgs<'_>) -> Result<bool, ForgeError> {
             artifact: args.retain_raw.then(|| RETAINED_RESPONSE_ARTIFACT.to_string()),
         },
         provenance: Provenance {
+            run_record_sha256: inputs.record_sha256.clone(),
+            mode: inputs.record.mode,
             adapter_sha256: inputs.record.adapter_executable_sha256.clone(),
             model_id: inputs.record.model_id.clone(),
             argv: inputs.record.argv.clone(),
@@ -127,16 +129,15 @@ struct Inputs {
     payload: String,
     response: Vec<u8>,
     record: RunRecord,
+    record_sha256: String,
 }
 
 /// Read the request, run record, payload and response, and bind them together.
 fn load_inputs(args: &ValidateArgs<'_>) -> Result<Inputs, ForgeError> {
     let request_bytes = crate::io::read_bounded(args.request, super::request::MAX_REQUEST_BYTES)?;
     let request = SuggestRequest::parse(&request_bytes)?;
-    let record = RunRecord::parse(&crate::io::read_bounded(
-        args.run,
-        super::run_record::MAX_RUN_RECORD_BYTES,
-    )?)?;
+    let record_bytes = crate::io::read_bounded(args.run, super::run_record::MAX_RUN_RECORD_BYTES)?;
+    let record = RunRecord::parse(&record_bytes)?;
 
     let root = shared::document_root(args.request, "--request")?;
     let payload = crate::io::read_bounded(
@@ -155,7 +156,15 @@ fn load_inputs(args: &ValidateArgs<'_>) -> Result<Inputs, ForgeError> {
         crate::io::read_bounded(&run_dir.join(&record.response_artifact), MAX_RESPONSE_BYTES)?;
     let request_sha256 = crate::hashing::sha256_hex(&request_bytes);
     record.authorises(&request_sha256, &request, &payload_sha256, &response)?;
-    Ok(Inputs { root, request, request_sha256, payload, response, record })
+    Ok(Inputs {
+        root,
+        request,
+        request_sha256,
+        payload,
+        response,
+        record,
+        record_sha256: crate::hashing::sha256_hex(&record_bytes),
+    })
 }
 
 /// Check every citation of every suggestion against the allowlist and the payload.
@@ -166,7 +175,9 @@ fn build_suggestions(
     let units: BTreeMap<&str, &ContextUnit> =
         inputs.request.context.units.iter().map(|unit| (unit.unit_id.as_str(), unit)).collect();
     let mut suggestions = Vec::new();
+    let mut seen: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     for candidate in &decoded.task.mapping_candidates {
+        require_subject(&inputs.request, candidate)?;
         let body = SuggestionBody { mapping: Some(candidate.clone()), drafting: None };
         suggestions.push(checked_suggestion(
             &body,
@@ -178,6 +189,7 @@ fn build_suggestions(
         )?);
     }
     for clause in &decoded.task.draft_clauses {
+        require_section(&inputs.request, clause)?;
         let body = SuggestionBody { mapping: None, drafting: Some(clause.clone()) };
         suggestions.push(checked_suggestion(
             &body,
@@ -188,7 +200,73 @@ fn build_suggestions(
             TaskKind::PolicyDrafting,
         )?);
     }
+    for (index, suggestion) in suggestions.iter().enumerate() {
+        if !seen.insert(suggestion.content_sha256.clone()) {
+            return Err(shared::error(format!(
+                "suggestion {index} repeats content already quarantined from this response; \
+                 the adapter must return distinct suggestions"
+            )));
+        }
+    }
     Ok(suggestions)
+}
+
+/// A clause must address a section the request actually selected.
+///
+/// Kind and schema agreement do not establish that: a well-formed clause for an
+/// invented policy or topic used to be admitted with a high evidence rating and
+/// then could not be promoted from the supplied request.
+///
+/// # Errors
+/// Returns an authoring error naming the unsupplied target.
+fn require_section(
+    request: &SuggestRequest,
+    clause: &super::task::drafting::DraftClause,
+) -> Result<(), ForgeError> {
+    if request.task.drafting_sections.iter().any(|section| {
+        section.policy_key == clause.policy_key && section.topic_key == clause.topic_key
+    }) {
+        return Ok(());
+    }
+    Err(shared::error(format!(
+        "the response proposes a clause for '{}/{}', which the request did not supply",
+        clause.policy_key, clause.topic_key
+    )))
+}
+
+/// A mapping candidate must address a supplied subject and one of its controls.
+///
+/// A subject that declares no controls cannot be checked, so only the subject
+/// membership applies there.
+///
+/// # Errors
+/// Returns an authoring error naming the unsupplied subject or control.
+fn require_subject(
+    request: &SuggestRequest,
+    candidate: &super::task::mapping::MappingCandidate,
+) -> Result<(), ForgeError> {
+    let subject = request
+        .task
+        .mapping_subjects
+        .iter()
+        .find(|subject| {
+            subject.policy_key == candidate.policy_key && subject.topic_key == candidate.topic_key
+        })
+        .ok_or_else(|| {
+            shared::error(format!(
+                "the response proposes a relationship for '{}/{}', which the request did not supply",
+                candidate.policy_key, candidate.topic_key
+            ))
+        })?;
+    if !subject.control_ids.is_empty()
+        && !subject.control_ids.iter().any(|control| control == &candidate.control_id)
+    {
+        return Err(shared::error(format!(
+            "the response proposes control '{}', which the supplied subject did not include",
+            candidate.control_id
+        )));
+    }
+    Ok(())
 }
 
 /// Publish the validated bundle, and the raw response only when opted in.
@@ -324,6 +402,12 @@ fn render_summary(bundle: &SuggestionsBundle, args: &ValidateArgs<'_>) -> String
         summary,
         "evidence: high {} medium {} low {}",
         bundle.counts.high, bundle.counts.medium, bundle.counts.low
+    );
+    let _ = writeln!(
+        summary,
+        "run mode: {} (record {})",
+        bundle.provenance.mode.as_str(),
+        &bundle.provenance.run_record_sha256[..12.min(bundle.provenance.run_record_sha256.len())]
     );
     let _ = writeln!(summary, "raw response retained: {}", bundle.response.retained);
     let _ = writeln!(summary, "output: {}", args.output_dir.display());

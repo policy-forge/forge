@@ -44,6 +44,28 @@ fn validate(root: &Path, run_record: &str, bundle_dir: &str, extra: &[&str]) -> 
 }
 
 #[test]
+fn the_summary_and_the_bundle_name_the_run_mode() {
+    let (_temp, root) = project();
+    pipeline(&root);
+    record(
+        &root,
+        "run-1",
+        &response(&[clause("unit-0001", None)], "policy-drafting", "forge.suggest-task-drafting/1"),
+    );
+    let text = validate(&root, "prepared/run-1/run.json", "bundle-1", &[]);
+    assert_exit(&text, 0);
+    assert!(String::from_utf8_lossy(&text.stdout).contains("run mode: recorded-response"));
+
+    let run_record = std::fs::read(root.join("prepared/run-1/run.json")).unwrap();
+    let bundle: Value = serde_json::from_slice::<Value>(
+        &std::fs::read(root.join("prepared/bundle-1/suggestions.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(bundle["provenance"]["mode"], json!("recorded-response"));
+    assert_eq!(bundle["provenance"]["run_record_sha256"], json!(hash(&run_record)));
+}
+
+#[test]
 fn a_grounded_response_becomes_a_quarantine_bundle_with_rated_evidence() {
     let (_temp, root) = project();
     pipeline(&root);
@@ -247,6 +269,46 @@ fn a_response_that_carries_a_tool_call_or_an_omitted_field_is_refused() {
     record(&root, "run-2", &serde_json::to_vec_pretty(&omitted).unwrap());
     let missing = validate(&root, "prepared/run-2/run.json", "bundle-1", &[]);
     assert_exit(&missing, 2);
+    assert!(!root.join("prepared/bundle-1").exists());
+}
+
+#[test]
+fn a_clause_for_a_section_the_request_never_supplied_is_refused() {
+    let (_temp, root) = project();
+    pipeline(&root);
+    let mut invented = clause("unit-0002", Some(BODY));
+    invented["policy_key"] = json!("invented-policy");
+    invented["topic_key"] = json!("invented-topic");
+    record(
+        &root,
+        "run-1",
+        &response(&[invented], "policy-drafting", "forge.suggest-task-drafting/1"),
+    );
+    let output = validate(&root, "prepared/run-1/run.json", "bundle-1", &[]);
+    assert_exit(&output, 2);
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(stderr.contains("did not supply"), "{stderr}");
+    assert!(!root.join("prepared/bundle-1").exists());
+}
+
+#[test]
+fn repeated_suggestion_content_is_refused_rather_than_quarantined_twice() {
+    let (_temp, root) = project();
+    pipeline(&root);
+    let identical = clause("unit-0002", Some(BODY));
+    record(
+        &root,
+        "run-1",
+        &response(
+            &[identical.clone(), identical],
+            "policy-drafting",
+            "forge.suggest-task-drafting/1",
+        ),
+    );
+    let output = validate(&root, "prepared/run-1/run.json", "bundle-1", &[]);
+    assert_exit(&output, 2);
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(stderr.contains("repeats content"), "{stderr}");
     assert!(!root.join("prepared/bundle-1").exists());
 }
 

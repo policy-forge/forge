@@ -72,8 +72,16 @@
     "provenance": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["adapter_sha256", "model_id", "elapsed_ms", "exit_code"],
+      "required": ["run_record_sha256", "mode", "adapter_sha256", "model_id", "elapsed_ms", "exit_code"],
       "properties": {
+        "run_record_sha256": {
+          "$ref": "#/$defs/sha256",
+          "$comment": "Digest of the run receipt this bundle was validated from."
+        },
+        "mode": {
+          "enum": ["process", "recorded-response"],
+          "$comment": "A recorded response names a run where no adapter process executed."
+        },
         "adapter_sha256": {
           "$ref": "#/$defs/sha256"
         },

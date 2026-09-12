@@ -148,9 +148,23 @@ fn the_bundle_carries_what_the_run_measured_and_the_run_carries_the_digests() {
     // The bundle carries every field the provenance requirement names, and the
     // values are the run record's own.
     let provenance = &bundle["provenance"];
-    for key in ["adapter_sha256", "model_id", "elapsed_ms", "exit_code", "redactions"] {
+    for key in [
+        "run_record_sha256",
+        "mode",
+        "adapter_sha256",
+        "model_id",
+        "elapsed_ms",
+        "exit_code",
+        "redactions",
+    ] {
         assert!(!provenance[key].is_null(), "provenance.{key} is missing");
     }
+    // A recorded response is not an adapter run, and the bundle says so.
+    assert_eq!(provenance["mode"], json!("recorded-response"));
+    assert_eq!(
+        provenance["run_record_sha256"],
+        json!(hash(&std::fs::read(root.join("prepared/run-1/run.json")).unwrap()))
+    );
     assert_eq!(provenance["adapter_sha256"], record["adapter_executable_sha256"]);
     assert_eq!(provenance["model_id"], record["model_id"]);
     // An empty argument list is an absent key, in the bundle and the record alike.
