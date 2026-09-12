@@ -113,7 +113,14 @@ benches/             # Criterion benchmarks
 
 ## Dependencies
 
-Do not add new dependencies without checking for existing alternatives. Key crates already available:
+**New crate dependencies require approval before they are added.** Check for an
+existing alternative first, then record the approval where a reviewer can find
+it — in the PRD that mandates the dependency, or in the pull request that
+introduces it — naming the crate, the reason, and who approved it. An
+unapproved dependency must not be added; an approved one needs a supply-chain
+entry, and the audit/exception policy is [PRD 069](../docs/PRD/069-prd-dependency-security-audit.md).
+
+Crates already approved and in use:
 
 Version ranges mirror `Cargo.toml`; use `Cargo.lock` when an exact resolved
 version matters.
@@ -139,6 +146,23 @@ version matters.
 | DOCX ingestion | `zip 8` (deflate only) |
 | Snapshot testing | `insta 1` (json feature) |
 | Temp files | `tempfile 3` |
+
+Approved for the local workspace transport and session unlock (mandated by
+[PRD 062](../docs/PRD/062-prd-local-web-workspace.md) M-1, which requires a
+loopback HTTP/1.1 listener with an Argon2id unlock; audited under PRD 069):
+
+| Purpose | Crate |
+|---------|-------|
+| HTTP/1.1 server | `hyper 1` (server, http1) |
+| Hyper/Tokio glue | `hyper-util 0.1` (tokio) |
+| Body helpers | `http-body-util 0.1` |
+| Async runtime | `tokio 1` (rt-multi-thread, net, signal, time, sync) |
+| Password KDF | `argon2 0.5` (zeroize) |
+| Constant-time comparison | `subtle 2` |
+| Secret hygiene | `zeroize 1` |
+| CSPRNG for salts and tokens | `getrandom 0.4` |
+| No-echo passphrase prompt | `rpassword 7` |
+| Base64 envelope decoding | `base64 0.22` |
 
 ## Important Notes
 
