@@ -115,7 +115,7 @@ pub fn execute(args: &PrepareArgs<'_>) -> Result<bool, ForgeError> {
     let rules = read_rules(args.redact_rules)?;
     let mut drafts = Vec::new();
 
-    push_plan_sections(&mut drafts, &seed);
+    push_plan_sections(&mut drafts, &seed, args)?;
     push_answers(&mut drafts, &seed, args)?;
     let captured = push_source_spans(&mut drafts, args)?;
 
@@ -211,26 +211,50 @@ pub fn execute(args: &PrepareArgs<'_>) -> Result<bool, ForgeError> {
     Ok(false)
 }
 
+/// Map the authoring contracts' declared sensitivity onto the request contract's.
+fn declared(sensitivity: crate::authoring::manifest::Sensitivity) -> Sensitivity {
+    match sensitivity {
+        crate::authoring::manifest::Sensitivity::Public => Sensitivity::Public,
+        crate::authoring::manifest::Sensitivity::Internal => Sensitivity::Internal,
+        crate::authoring::manifest::Sensitivity::Confidential => Sensitivity::Confidential,
+        crate::authoring::manifest::Sensitivity::Restricted => Sensitivity::Restricted,
+    }
+}
+
 /// Append one unit per unresolved plan section, in plan order.
-fn push_plan_sections(drafts: &mut Vec<UnitDraft>, seed: &crate::authoring::SuggestSeed) {
+fn push_plan_sections(
+    drafts: &mut Vec<UnitDraft>,
+    seed: &crate::authoring::SuggestSeed,
+    args: &PrepareArgs<'_>,
+) -> Result<(), ForgeError> {
     for policy in &seed.plan.policies {
         for section in &policy.sections {
             if section.state == crate::authoring::model::DraftState::HumanDraftPresent {
                 continue;
             }
             let mut text = section.title.clone();
+            let mut sensitivity = Sensitivity::Internal;
             for question in &section.questions {
                 if let Some(prompt) = seed.prompts.get(&question.question_key) {
                     text.push('\n');
-                    text.push_str(prompt);
+                    text.push_str(&prompt.text);
+                    // A section is as sensitive as its most sensitive question.
+                    sensitivity = sensitivity.strictest(declared(prompt.sensitivity));
                 }
+            }
+            if sensitivity.requires_acknowledgement() && !args.allow_sensitive {
+                return Err(shared::error(format!(
+                    "section '{}' carries {sensitivity} material; pass --allow-sensitive to select it",
+                    section.topic_key,
+                    sensitivity = sensitivity.as_str()
+                )));
             }
             let unit_id = unit_id(drafts.len());
             drafts.push(UnitDraft {
                 unit_id,
                 kind: ContextKind::PlanSection,
                 label: format!("{} / {}", policy.policy_key, section.title),
-                sensitivity: Sensitivity::Internal,
+                sensitivity,
                 source: None,
                 text,
                 section: Some(SectionSeed {
@@ -243,6 +267,7 @@ fn push_plan_sections(drafts: &mut Vec<UnitDraft>, seed: &crate::authoring::Sugg
             });
         }
     }
+    Ok(())
 }
 
 /// Append one unit per selected approved answer, in the order requested.
@@ -255,12 +280,7 @@ fn push_answers(
         let answer = seed.answers.get(key).ok_or_else(|| {
             shared::error(format!("--answer '{key}' names no provided approved answer"))
         })?;
-        let sensitivity = match answer.sensitivity {
-            crate::authoring::manifest::Sensitivity::Public => Sensitivity::Public,
-            crate::authoring::manifest::Sensitivity::Internal => Sensitivity::Internal,
-            crate::authoring::manifest::Sensitivity::Confidential => Sensitivity::Confidential,
-            crate::authoring::manifest::Sensitivity::Restricted => Sensitivity::Restricted,
-        };
+        let sensitivity = declared(answer.sensitivity);
         if sensitivity.requires_acknowledgement() && !args.allow_sensitive {
             return Err(shared::error(format!(
                 "--answer '{key}' is {sensitivity} material; pass --allow-sensitive to select it",
@@ -347,26 +367,14 @@ fn assemble(
     drafts: &[UnitDraft],
     rules: &[RedactionRule],
 ) -> Result<(RequestTask, String, Vec<ContextUnit>, Vec<RedactionRecord>), ForgeError> {
-    let task = RequestTask {
-        kind: TaskKind::PolicyDrafting,
-        schema_version: drafting::TASK_SCHEMA_VERSION.to_string(),
-        mapping_subjects: Vec::new(),
-        drafting_sections: drafting_sections(drafts),
-    };
-    let task_json = serde_json::to_string(&task)
-        .map_err(|cause| shared::error(format!("cannot encode the task payload: {cause}")))?;
-
-    let mut payload = String::new();
-    payload.push_str(TASK_HEADER);
-    payload.push_str(&task_json);
-    payload.push('\n');
-    payload.push_str(CONTEXT_HEADER);
-
-    let mut units = Vec::new();
+    // Redact before anything else uses the text: the task document and the
+    // context units must carry the same redacted bytes, or a rule could be
+    // satisfied in one and ignored in the other.
+    let mut texts = Vec::with_capacity(drafts.len());
     let mut redactions = Vec::new();
     let mut matched: BTreeSet<&str> = BTreeSet::new();
     for draft in drafts {
-        let (text, applied) = redact::apply(&draft.text, rules);
+        let (text, applied) = redact::apply(&draft.text, rules)?;
         for rule in &applied {
             matched.insert(rule.rule_id.as_str());
             redactions.push(RedactionRecord {
@@ -375,9 +383,37 @@ fn assemble(
                 rule_sha256: rule.rule_sha256.clone(),
             });
         }
+        texts.push(text);
+    }
+    if let Some(unmatched) = redact::unmatched_rule(rules, &matched) {
+        return Err(shared::error(format!(
+            "redaction rule '{}' matched nothing in any selected unit; remove it or correct the literal",
+            unmatched.rule_id
+        )));
+    }
+
+    let task = RequestTask {
+        kind: TaskKind::PolicyDrafting,
+        schema_version: drafting::TASK_SCHEMA_VERSION.to_string(),
+        mapping_subjects: Vec::new(),
+        drafting_sections: drafting_sections(drafts, &texts),
+    };
+    let task_json = serde_json::to_string(&task)
+        .map_err(|cause| shared::error(format!("cannot encode the task payload: {cause}")))?;
+    // The task document reaches the adapter too, so it is scanned like the rest.
+    redact::refuse_secrets(&task_json)?;
+
+    let mut payload = String::new();
+    payload.push_str(TASK_HEADER);
+    payload.push_str(&task_json);
+    payload.push('\n');
+    payload.push_str(CONTEXT_HEADER);
+
+    let mut units = Vec::new();
+    for (draft, text) in drafts.iter().zip(&texts) {
         payload.push_str(&unit_header(draft));
         let start = payload.len();
-        payload.push_str(&text);
+        payload.push_str(text);
         let end = payload.len();
         payload.push_str(&unit_footer(&draft.unit_id));
         units.push(ContextUnit {
@@ -394,12 +430,6 @@ fn assemble(
             },
         });
     }
-    if let Some(unmatched) = redact::unmatched_rule(rules, &matched) {
-        return Err(shared::error(format!(
-            "redaction rule '{}' matched nothing in any selected unit; remove it or correct the literal",
-            unmatched.rule_id
-        )));
-    }
     if payload.len() as u64 > MAX_PAYLOAD_BYTES {
         return Err(shared::error(format!(
             "the selected context exceeds the {MAX_PAYLOAD_BYTES} byte payload limit; select fewer documents or answers"
@@ -410,16 +440,17 @@ fn assemble(
 }
 
 /// One drafting section per plan-section unit, in unit order.
-fn drafting_sections(drafts: &[UnitDraft]) -> Vec<drafting::DraftingSection> {
+fn drafting_sections(drafts: &[UnitDraft], texts: &[String]) -> Vec<drafting::DraftingSection> {
     drafts
         .iter()
-        .filter_map(|draft| {
+        .zip(texts)
+        .filter_map(|(draft, text)| {
             draft.section.as_ref().map(|section| drafting::DraftingSection {
                 policy_key: section.policy_key.clone(),
                 topic_key: section.topic_key.clone(),
                 order: section.order,
                 title: draft.label.clone(),
-                prompt: draft.text.clone(),
+                prompt: text.clone(),
                 gap_ids: section.gap_ids.clone(),
                 control_ids: section.control_ids.clone(),
             })

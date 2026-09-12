@@ -161,6 +161,25 @@ fn ungrounded_altered_and_unallowlisted_citations_are_refused_without_output() {
 }
 
 #[test]
+fn secret_shaped_model_output_is_refused_before_publication() {
+    let (_temp, root) = project();
+    pipeline(&root);
+    let mut secret = clause("unit-0002", Some(BODY));
+    secret["draft_text"] = json!("Set the value with password: synthetic-review-secret.");
+    record(
+        &root,
+        "run-1",
+        &response(&[secret], "policy-drafting", "forge.suggest-task-drafting/1"),
+    );
+    let output = validate(&root, "prepared/run-1/run.json", "bundle-1", &[]);
+    assert_exit(&output, 2);
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(stderr.contains("secret pattern"), "{stderr}");
+    assert!(!stderr.contains("synthetic-review-secret"), "must not echo the match");
+    assert!(!root.join("prepared/bundle-1").exists());
+}
+
+#[test]
 fn a_response_for_another_task_or_an_unknown_shape_is_refused() {
     let (_temp, root) = project();
     pipeline(&root);

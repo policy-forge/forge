@@ -130,6 +130,41 @@ fn prepare_writes_the_request_the_exact_payload_and_the_preview_without_a_token(
 }
 
 #[test]
+fn redaction_covers_the_task_document_the_adapter_also_receives() {
+    let (_temp, root) = project();
+    corpus(&root, BODY);
+    // A literal that appears in the supplied prompt, not in the corpus.
+    std::fs::write(root.join("rules.txt"), b"prompt\tWhich role writes this draft?\n").unwrap();
+    let (_, request, payload) = prepare_json(
+        &root,
+        &[
+            "--corpus",
+            "corpus.json",
+            "--include-document",
+            "prior-access",
+            "--redact-rules",
+            "rules.txt",
+        ],
+    );
+    let prompt = request["task"]["drafting_sections"][0]["prompt"].as_str().unwrap();
+    assert!(prompt.contains("[redacted]"), "{prompt}");
+    assert!(!payload.contains(PROMPT), "the payload must not carry the unredacted prompt");
+    let preview = std::fs::read_to_string(root.join("prepared/preview.txt")).unwrap();
+    assert!(!preview.contains(PROMPT));
+}
+
+#[test]
+fn the_preview_states_what_forge_does_and_does_not_control() {
+    let (_temp, root) = project();
+    corpus(&root, BODY);
+    let (_, _, payload) =
+        prepare_json(&root, &["--corpus", "corpus.json", "--include-document", "prior-access"]);
+    let preview = std::fs::read_to_string(root.join("prepared/preview.txt")).unwrap();
+    assert!(preview.contains("does not sandbox it"), "the notice must name the adapter boundary");
+    assert!(preview.contains(payload.as_str()));
+}
+
+#[test]
 fn consent_is_written_only_when_requested_and_binds_the_exact_payload() {
     let (_temp, root) = project();
     corpus(&root, BODY);

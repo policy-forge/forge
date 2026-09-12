@@ -60,6 +60,12 @@ pub(crate) fn reuse_seed(manifest: &Path) -> Result<ReuseSeed, ForgeError> {
     Ok(ReuseSeed { root: prepared.root, plan, prompts, captures: prepared.captures })
 }
 
+/// One question prompt and the sensitivity it was declared at.
+pub(crate) struct SeedPrompt {
+    pub(crate) text: String,
+    pub(crate) sensitivity: manifest::Sensitivity,
+}
+
 /// One approved answer a suggestion prepare run may select.
 pub(crate) struct SeedAnswer {
     pub(crate) key: String,
@@ -77,7 +83,7 @@ pub(crate) struct SeedAnswer {
 pub(crate) struct SuggestSeed {
     pub(crate) root: PathBuf,
     pub(crate) plan: AuthoringPlan,
-    pub(crate) prompts: BTreeMap<String, String>,
+    pub(crate) prompts: BTreeMap<String, SeedPrompt>,
     pub(crate) answers: BTreeMap<String, SeedAnswer>,
     pub(crate) captures: input::CaptureSet,
 }
@@ -89,16 +95,25 @@ pub(crate) struct SuggestSeed {
 pub(crate) fn suggest_seed(manifest: &Path) -> Result<SuggestSeed, ForgeError> {
     let prepared = input::prepare(manifest)?;
     let plan = plan::build_plan(&prepared.loaded)?;
-    let prompts = prepared
-        .loaded
-        .pack
-        .questions
-        .iter()
-        .map(|question| (question.key.clone(), question.prompt.clone()))
-        .collect();
+    // The plan's evaluation is what decides whether an answer is usable: a
+    // `provided` answer can still be stale, expired or invalid.
+    let mut prompts = BTreeMap::new();
+    for question in &prepared.loaded.pack.questions {
+        prompts.insert(
+            question.key.clone(),
+            SeedPrompt { text: question.prompt.clone(), sensitivity: question.sensitivity },
+        );
+    }
+    let evaluated: BTreeMap<&str, &model::QuestionEvaluation> =
+        plan.questions.iter().map(|question| (question.question_key.as_str(), question)).collect();
     let mut answers = BTreeMap::new();
     for answer in &prepared.loaded.project.answers {
-        if answer.state != manifest::AnswerState::Provided {
+        let Some(evaluation) = evaluated.get(answer.question_key.as_str()) else {
+            continue;
+        };
+        if evaluation.state != model::AnswerStatus::Available
+            || evaluation.answer_key.as_deref() != Some(answer.key.as_str())
+        {
             continue;
         }
         if let Some(serde_json::Value::String(value)) = &answer.value {

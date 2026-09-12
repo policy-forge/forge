@@ -36,7 +36,9 @@ pub const MAX_UNIT_SPAN_BYTES: u64 = 1024 * 1024;
 
 /// Fixed notice written into every prepared preview.
 pub const DATA_HANDLING_NOTICE: &str = "The payload below is the exact byte sequence this machine will hand to the local adapter. \
-     FORGE opens no network connection and transmits nothing.";
+     FORGE opens no network connection and transmits nothing. The adapter is your own program: it runs with your user's \
+     privileges and FORGE does not sandbox it, so it can read, write and transmit whatever you have allowed it to. \
+     Choose an adapter you trust.";
 
 const LIMITS: Limits = Limits { max_depth: 32, max_string_bytes: shared::MAX_STRING_BYTES };
 
@@ -261,6 +263,21 @@ pub enum Sensitivity {
 }
 
 impl Sensitivity {
+    /// The stricter of two declared sensitivities.
+    #[must_use]
+    pub const fn strictest(self, other: Self) -> Self {
+        if self.rank() >= other.rank() { self } else { other }
+    }
+
+    const fn rank(self) -> u8 {
+        match self {
+            Self::Public => 0,
+            Self::Internal => 1,
+            Self::Confidential => 2,
+            Self::Restricted => 3,
+        }
+    }
+
     /// Stable wire spelling.
     #[must_use]
     pub const fn as_str(self) -> &'static str {

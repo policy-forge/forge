@@ -21,6 +21,8 @@ pub const MAX_RULES_BYTES: u64 = 64 * 1024;
 pub const MAX_RULES: usize = 64;
 /// Fixed marker substituted for a redacted literal.
 pub const MARKER: &str = "[redacted]";
+/// Maximum size of one redacted unit, matching the per-unit payload bound.
+pub const MAX_REDACTED_UNIT_BYTES: usize = 1024 * 1024;
 
 /// One operator-declared redaction rule.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,19 +121,59 @@ pub fn parse_rules(bytes: &[u8]) -> Result<Vec<RedactionRule>, ForgeError> {
 /// Apply every rule that matches one unit's text, returning the redacted text
 /// and the rules that matched, in file order.
 ///
-/// A rule is matched per unit; the caller decides whether a rule that matched
-/// no unit at all is an error.
-#[must_use]
-pub fn apply<'a>(text: &str, rules: &'a [RedactionRule]) -> (String, Vec<&'a RedactionRule>) {
-    let mut redacted = text.to_string();
-    let mut applied = Vec::new();
+/// Every match is found in the **original** text, so an inserted marker is never
+/// re-scanned by a later rule: re-scanning let one rule's marker feed the next
+/// rule's literal and expanded a one-byte input into megabytes. Overlapping
+/// matches resolve deterministically by earliest start, then longest literal,
+/// then rule identifier.
+///
+/// # Errors
+/// Returns an authoring error when redaction would expand the unit past
+/// [`MAX_REDACTED_UNIT_BYTES`].
+pub fn apply<'a>(
+    text: &str,
+    rules: &'a [RedactionRule],
+) -> Result<(String, Vec<&'a RedactionRule>), ForgeError> {
+    let mut matches: Vec<(usize, usize, &RedactionRule)> = Vec::new();
     for rule in rules {
-        if redacted.contains(rule.literal.as_str()) {
-            redacted = redacted.replace(rule.literal.as_str(), MARKER);
+        for (start, _) in text.match_indices(rule.literal.as_str()) {
+            matches.push((start, start + rule.literal.len(), rule));
+        }
+    }
+    if matches.is_empty() {
+        return Ok((text.to_string(), Vec::new()));
+    }
+    matches.sort_by(|left, right| {
+        left.0.cmp(&right.0).then(right.1.cmp(&left.1)).then(left.2.rule_id.cmp(&right.2.rule_id))
+    });
+    // A rule "matched" when its literal appears in the original text, whether or
+    // not it wins an overlap; that keeps "matched nothing" honest.
+    let mut applied: Vec<&RedactionRule> = Vec::new();
+    for rule in rules {
+        if matches.iter().any(|(_, _, matched)| matched.rule_id == rule.rule_id)
+            && !applied.iter().any(|prior| prior.rule_id == rule.rule_id)
+        {
             applied.push(rule);
         }
     }
-    (redacted, applied)
+    let mut redacted = String::with_capacity(text.len());
+    let mut cursor = 0;
+    for (start, end, _) in matches {
+        if start < cursor {
+            continue;
+        }
+        redacted.push_str(&text[cursor..start]);
+        redacted.push_str(MARKER);
+        cursor = end;
+    }
+    redacted.push_str(&text[cursor..]);
+    if redacted.len() > MAX_REDACTED_UNIT_BYTES {
+        return Err(shared::error(format!(
+            "redaction expands a unit past the {MAX_REDACTED_UNIT_BYTES} byte bound; \
+             use shorter literals or fewer rules"
+        )));
+    }
+    Ok((redacted, applied))
 }
 
 /// The first declared rule that never matched any unit.
@@ -194,7 +236,7 @@ mod tests {
     #[test]
     fn applying_a_rule_replaces_every_occurrence_and_reports_it() {
         let rules = parse_rules(RULES).unwrap();
-        let (redacted, applied) = apply("call 123456789012 now", &rules);
+        let (redacted, applied) = apply("call 123456789012 now", &rules).unwrap();
         assert_eq!(redacted, "call [redacted] now");
         assert_eq!(applied.len(), 1);
         assert_eq!(applied[0].rule_id, "account-id");
@@ -203,7 +245,7 @@ mod tests {
     #[test]
     fn a_rule_that_matches_nothing_is_reported_as_unmatched() {
         let rules = parse_rules(RULES).unwrap();
-        let (redacted, applied) = apply("nothing to redact", &rules);
+        let (redacted, applied) = apply("nothing to redact", &rules).unwrap();
         assert_eq!(redacted, "nothing to redact");
         assert!(applied.is_empty());
         let matched: BTreeSet<&str> = applied.iter().map(|rule| rule.rule_id.as_str()).collect();
@@ -247,9 +289,43 @@ mod tests {
     }
 
     #[test]
+    fn a_marker_never_feeds_a_later_rule_and_expansion_is_bounded() {
+        // Twenty rules whose literal is one byte must not amplify the input:
+        // the marker contains `e`, and re-scanning it doubled the text each time.
+        let mut rules = String::new();
+        for index in 0..20 {
+            let _ = writeln!(rules, "rule-{index}\te");
+        }
+        let parsed = parse_rules(rules.as_bytes()).unwrap();
+        let (redacted, applied) = apply("e", &parsed).unwrap();
+        assert_eq!(redacted, MARKER);
+        assert_eq!(applied.len(), 20, "every declared rule matched the original");
+
+        // A unit whose redaction would exceed the unit bound is refused.
+        let big = "e".repeat(MAX_REDACTED_UNIT_BYTES);
+        assert!(apply(&big, &parsed).is_err());
+    }
+
+    #[test]
+    fn overlapping_matches_resolve_deterministically() {
+        let rules = parse_rules(b"short\tabc\nlong\tabcd\n").unwrap();
+        let (redacted, applied) = apply("abcd", &rules).unwrap();
+        // The longest literal at the same start wins the replacement, while both
+        // rules are reported as having matched.
+        assert_eq!(redacted, MARKER);
+        assert_eq!(
+            applied.iter().map(|rule| rule.rule_id.as_str()).collect::<Vec<_>>(),
+            vec!["short", "long"]
+        );
+
+        let (again, _) = apply("abcd", &rules).unwrap();
+        assert_eq!(again, redacted);
+    }
+
+    #[test]
     fn redaction_clears_a_secret_before_the_refusal_check() {
         let rules = parse_rules(b"example-key\tAKIAIOSFODNN7EXAMPLE\n").unwrap();
-        let (redacted, applied) = apply("key AKIAIOSFODNN7EXAMPLE", &rules);
+        let (redacted, applied) = apply("key AKIAIOSFODNN7EXAMPLE", &rules).unwrap();
         assert!(redacted.contains(MARKER));
         assert_eq!(applied.len(), 1);
         assert!(refuse_secrets(&redacted).is_ok());

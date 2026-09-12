@@ -135,6 +135,16 @@ impl ProcessModelAdapter {
 
 impl LocalModelInvoke for ProcessModelAdapter {
     fn invoke(&self, payload: &[u8], timeout: Duration) -> Result<AdapterOutput, ForgeError> {
+        // Bind execution to the bytes that were fingerprinted, immediately before
+        // use: a file or symlink swapped between construction and invocation is
+        // refused rather than executed. A residual window remains between this
+        // check and the spawn; closing it would need descriptor-bound exec.
+        let current = read_executable(&self.executable, super::prepare::MAX_ADAPTER_BYTES)?;
+        if crate::hashing::sha256_hex(&current) != self.executable_sha256 {
+            return Err(shared::error(
+                "the adapter executable changed after consent; re-run prepare and consent again",
+            ));
+        }
         let mut command = Command::new(&self.executable);
         command.args(&self.argv);
         let start = Instant::now();
@@ -151,44 +161,51 @@ impl LocalModelInvoke for ProcessModelAdapter {
             }
         });
         let out_flag = Arc::clone(&oversize);
-        let reader =
-            std::thread::spawn(move || read_capped(stdout, RESPONSE_STREAM_BYTES, &out_flag));
+        let (stdout_sender, stdout_receiver) = std::sync::mpsc::channel();
+        let _reader = std::thread::spawn(move || {
+            let _ = stdout_sender.send(read_capped(stdout, RESPONSE_STREAM_BYTES, &out_flag));
+        });
         let err_flag = Arc::clone(&oversize);
-        let drainer = std::thread::spawn(move || read_capped(stderr, MAX_STDERR_BYTES, &err_flag));
+        let (stderr_sender, stderr_receiver) = std::sync::mpsc::channel();
+        let _drainer = std::thread::spawn(move || {
+            let _ = stderr_sender.send(read_capped(stderr, MAX_STDERR_BYTES, &err_flag));
+        });
 
         let status = loop {
             match child.try_wait() {
                 Ok(Some(status)) => break Some(status),
                 Ok(None) if oversize.load(Ordering::SeqCst) => {
-                    reap(&mut child);
+                    terminate(&mut child);
                     break None;
                 }
                 Ok(None) if start.elapsed() >= timeout => {
-                    reap(&mut child);
+                    terminate(&mut child);
                     return Err(shared::error(format!(
                         "the local adapter timed out after {timeout:?}"
                     )));
                 }
                 Ok(None) => std::thread::sleep(POLL_INTERVAL),
                 Err(error) => {
-                    reap(&mut child);
+                    terminate(&mut child);
                     return Err(shared::error(format!(
                         "cannot wait for the local adapter: {error}"
                     )));
                 }
             }
         };
-        let _ = writer.join();
-        let stdout =
-            reader.join().map_err(|_| shared::error("the adapter output reader failed"))??;
-        let stderr =
-            drainer.join().map_err(|_| shared::error("the adapter error reader failed"))??;
-        let Some(status) = status else {
-            return Err(bound_error());
-        };
-        if oversize.load(Ordering::SeqCst) {
+        if status.is_none() || oversize.load(Ordering::SeqCst) {
+            // Terminated, or past a stream bound. Either way the readers are
+            // detached: a descendant may still hold the pipes open.
             return Err(bound_error());
         }
+        // The child exited, but a descendant it started can still hold the pipes
+        // open. Wait for the readers only within the caller's own budget, so a
+        // leaked pipe becomes a refusal instead of a hang.
+        let deadline = start + timeout;
+        let stdout = receive(&stdout_receiver, deadline)?;
+        let stderr = receive(&stderr_receiver, deadline)?;
+        let _ = writer.join();
+        let status = status.expect("checked above");
         let stderr = crate::sanitize::strip_control_chars(&String::from_utf8_lossy(&stderr));
         if !status.success() {
             return Err(shared::error(format!(
@@ -234,6 +251,13 @@ impl LocalModelInvoke for RecordedResponseAdapter {
 }
 
 fn spawn(command: &mut Command) -> Result<Child, ForgeError> {
+    // A local adapter is free to start its own children; its own process group is
+    // what lets a refusal reclaim the whole tree on Unix.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt as _;
+        command.process_group(0);
+    }
     command.stdin(Stdio::piped());
     command.stdout(Stdio::piped());
     command.stderr(Stdio::piped());
@@ -251,6 +275,23 @@ fn spawn(command: &mut Command) -> Result<Child, ForgeError> {
     })
 }
 
+/// Wait for one reader thread's result within the caller's remaining budget.
+///
+/// # Errors
+/// Returns an authoring error when the budget runs out, which means the adapter
+/// exited while something it started kept the stream open.
+fn receive(
+    receiver: &std::sync::mpsc::Receiver<Result<Vec<u8>, ForgeError>>,
+    deadline: Instant,
+) -> Result<Vec<u8>, ForgeError> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    receiver.recv_timeout(remaining).map_err(|_| {
+        shared::error(
+            "the local adapter exited while a descendant still held its output; refusing the response",
+        )
+    })?
+}
+
 /// One refusal for either stream past its bound.
 fn bound_error() -> ForgeError {
     shared::error(format!(
@@ -258,8 +299,27 @@ fn bound_error() -> ForgeError {
     ))
 }
 
-/// Kill and reap a child so no adapter outlives a refusal.
-fn reap(child: &mut Child) {
+/// Kill and reap the adapter, and on Unix every process in its group.
+///
+/// The direct child is always killed and waited for. On Unix the adapter runs in
+/// its own process group, so the group is signalled too: otherwise a descendant
+/// could keep running, and keep the pipes open, after the refusal.
+#[allow(unsafe_code)] // Reviewed single-signal process-group termination.
+fn terminate(child: &mut Child) {
+    #[cfg(unix)]
+    {
+        // SAFETY: `id()` is this live child's pid and the child was started with
+        // `process_group(0)`, so its group id equals its pid. `killpg` sends one
+        // signal to that group and cannot outlive it.
+        let Ok(group) = i32::try_from(child.id()) else {
+            let _ = child.kill();
+            let _ = child.wait();
+            return;
+        };
+        unsafe {
+            libc::killpg(group, libc::SIGKILL);
+        }
+    }
     let _ = child.kill();
     let _ = child.wait();
 }
@@ -394,6 +454,33 @@ mod tests {
         .unwrap();
         let error = stdout_flood.invoke(b"", Duration::from_secs(30)).unwrap_err().to_string();
         assert!(error.contains("bound"), "{error}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_executable_replaced_after_fingerprinting_is_refused() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("adapter");
+        std::fs::write(&path, b"#!/bin/sh\ncat\n").unwrap();
+        let adapter = ProcessModelAdapter::new(&path, &[]).unwrap();
+        std::fs::write(&path, b"#!/bin/sh\nprintf 'replaced'\n").unwrap();
+        let error = adapter.invoke(b"payload", Duration::from_secs(10)).unwrap_err().to_string();
+        assert!(error.contains("changed after consent"), "{error}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_descendant_holding_the_output_is_refused_rather_than_awaited() {
+        // The child exits at once, but the background sleep keeps stdout open.
+        let adapter = ProcessModelAdapter::new(
+            Path::new("/bin/sh"),
+            &["-c".into(), "sleep 20 & exit 0".into()],
+        )
+        .unwrap();
+        let start = Instant::now();
+        let error = adapter.invoke(b"", Duration::from_millis(600)).unwrap_err().to_string();
+        assert!(error.contains("descendant"), "{error}");
+        assert!(start.elapsed() < Duration::from_secs(10), "must not wait for the descendant");
     }
 
     #[test]

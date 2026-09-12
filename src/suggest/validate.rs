@@ -17,6 +17,7 @@ use super::bundle::{
     EvidenceSupport, Provenance, RequestRef, ResponseRef, SCHEMA_VERSION as BUNDLE_SCHEMA_VERSION,
     Suggestion, SuggestionCounts, SuggestionsBundle,
 };
+use super::redact;
 use super::request::{ContextKind, ContextUnit, SuggestRequest};
 use super::response::{MAX_RESPONSE_BYTES, SuggestResponse};
 use super::run_record::RunRecord;
@@ -65,6 +66,9 @@ pub fn execute(args: &ValidateArgs<'_>) -> Result<bool, ForgeError> {
     if decoded.task.schema_version != inputs.request.task.schema_version {
         return Err(shared::error("the response task schema version does not match the request"));
     }
+    // Output-side refusal: the plan promises that model-emitted secret-shaped
+    // text never reaches a bundle, retained or not.
+    redact::refuse_secrets(&String::from_utf8_lossy(&inputs.response))?;
     let suggestions = build_suggestions(&decoded, &inputs)?;
     let counts = count(&suggestions);
 
