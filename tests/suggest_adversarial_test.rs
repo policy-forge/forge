@@ -166,18 +166,22 @@ fn suggest_sources_contain_no_network_symbol() {
     collect_rs(&root, &mut files);
     assert!(!files.is_empty(), "src/suggest holds no Rust sources");
 
+    // The symbol list is a bounded local-only regression tripwire, not an
+    // exhaustive network-API analysis: any of these names in module code means
+    // the local boundary needs a fresh review.
+    let symbols = ["TcpStream", "UdpSocket", "std::net", "tokio::net", "reqwest", "ureq", "hyper"];
     let mut violations = Vec::new();
     for file in &files {
         let text = std::fs::read_to_string(file).unwrap();
         for (index, line) in text.lines().enumerate() {
-            for symbol in ["TcpStream", "std::net", "reqwest", "hyper"] {
+            for symbol in symbols {
                 if line.contains(symbol) {
                     violations.push(format!("{}:{}: {symbol}", file.display(), index + 1));
                 }
             }
             // Schema `$id` values are `https://` URIs by convention; any other
             // `http://` reference would be a network address in module code.
-            if line.contains("http://") {
+            if line.contains("http://") && !line.contains("$id") {
                 violations.push(format!("{}:{}: http://", file.display(), index + 1));
             }
         }
@@ -192,6 +196,11 @@ fn suggest_sources_contain_no_network_symbol() {
 fn collect_rs(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
     for entry in std::fs::read_dir(dir).unwrap() {
         let path = entry.unwrap().path();
+        // Never follow symlinks: the scan stays inside `src/suggest/` and
+        // cannot loop or wander onto unrelated filesystem paths.
+        if path.is_symlink() {
+            continue;
+        }
         if path.is_dir() {
             collect_rs(&path, out);
         } else if path.extension().is_some_and(|ext| ext == "rs") {

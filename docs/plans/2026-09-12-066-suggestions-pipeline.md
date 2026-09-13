@@ -382,7 +382,7 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 | M-3 allowlist | Request built from a project with unrelated files and sensitive answers contains none of them; confidential answer requires the explicit flag |
 | M-4 exact preview | Preview bytes equal the bytes written to the adapter's stdin, byte for byte, including after redaction; target/notice/estimates present |
 | M-5 consent | `run` without a token fails; token with wrong payload hash, wrong adapter hash, wrong model id or wrong retention notice fails; matching token runs |
-| M-6 local boundary | `env_clear` + allowlist asserted; adapter is a local path; `tests/suggest_adversarial_test.rs::suggest_sources_contain_no_network_symbol` scans `src/suggest/` for `TcpStream`, `std::net`, `reqwest`, `hyper` and `http://` outside schema `$id` values |
+| M-6 local boundary | `env_clear` + allowlist asserted; adapter is a local path; `tests/suggest_adversarial_test.rs::suggest_sources_contain_no_network_symbol` scans `src/suggest/` without following symlinks for `TcpStream`, `UdpSocket`, `std::net`, `tokio::net`, `reqwest`, `ureq`, `hyper` and `http://` outside schema `$id` values |
 | M-7 closed output | Unknown field, null, forward version, oversized string, oversized stdout, truncated JSON, tool-call shape and non-task shape each rejected |
 | M-8 citations | Missing, nonexistent source, out-of-range span, altered span bytes, and re-ordered citation rejected; valid citation admitted with exact bytes |
 | M-9 assumptions | Suggestion without assumptions/questions rejected; org fact without citation rejected; supplied-answer-backed fact admitted |
