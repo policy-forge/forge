@@ -102,8 +102,8 @@ implementation into a checkbox claim. The technical evidence for S-1…S-4 is in
 The offline suggestion pipeline (`forge suggest prepare|run|validate|review|promote`)
 implements the task-agnostic part of [PRD-066](PRD/066-prd-ai-assisted-suggestions.md)
 under the owner's 2026-09-12 decisions: no network, no provider, no new
-dependency, and nothing published outside a quarantine generation. It is
-implemented on `codex/066-suggestions-pipeline`, not merged, and creates no
+dependency, and nothing published outside a quarantine generation. It merged in
+PR #155 (merge `f09a299`) and creates no
 approval, lifecycle or compliance evidence: a suggestion is inert until a human
 dispositions it, and promotion proposes rather than applies.
 

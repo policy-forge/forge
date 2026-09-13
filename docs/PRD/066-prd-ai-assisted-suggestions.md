@@ -2,13 +2,13 @@
 
 > **Document Type:** Product Requirements Document
 > **Audience:** LLM agents, human reviewers
-> **Status:** Draft
+> **Status:** Phase 0 and the Phase 1 pipeline merged; task selection, corpora, thresholds and release gates open
 > **Last Updated:** 2026-08-24 <!-- @auto -->
 > **Owner:** Brian Luby <!-- @human-required -->
 
 **Feature Branch**: `066-ai-assisted-suggestions`
 **Created**: 2026-08-24
-**Status**: Draft
+**Status**: Phase 0 and the Phase 1 pipeline merged; task selection, corpora, thresholds and release gates open
 **Input**: Post-v1.3 product planning
 
 ---
@@ -243,6 +243,7 @@ that emits machine-authored text stays blocked on the open M-14/M-15 items.
 | 2026-09-12 | Nothing leaves the machine | No payload egress in any tranche. Outputs are verbatim operator-supplied content and hashes only. | External transmission behind payload preview and consent |
 | 2026-09-12 | One PR surfaces the whole PRD-066 work | PR #153 delivered only the Phase 0 retrieval tranche; the follow-on PR presents the full pipeline, contracts and gates so they are reviewable together. | Incremental PR per phase |
 | 2026-09-12 | The first generation task stays deferred | Mapping candidates and clause drafting share one task-agnostic pipeline; the task is chosen after the corpora exist. M-2 still requires both versioned task schemas. | Pick mapping candidates first |
+| 2026-09-12 | Post-merge reconciliation is docs plus executable cases | Merged docs go stale silently and the M-6/M-17 rows named no existing test | Reword without tests |
 
 ## Changelog :white_circle: `@auto`
 
@@ -250,5 +251,6 @@ that emits machine-authored text stays blocked on the open M-14/M-15 items.
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for citation-grounded, quarantined AI assistance |
 | 0.2 | 2026-09-11 | Codex | Carved out the retrieval-first Phase 0 tranche (`forge author reuse`, verbatim span-exact candidates, no model or network) and recorded that it needs no M-9 amendment |
-| 0.4 | 2026-09-12 | Codex | Recorded the implemented (unmerged) Phase 1 tranche: the offline `forge suggest prepare|run|validate|review|promote` pipeline, its nine closed contracts, and the GATE-SUGGEST rows; the mapping task, corpora, thresholds and release gates remain open |
+| 0.4 | 2026-09-12 | Codex | Recorded the implemented Phase 1 tranche (merged in PR #155, merge `f09a299`): the offline `forge suggest prepare|run|validate|review|promote` pipeline, its nine closed contracts, and the GATE-SUGGEST rows; the mapping task, corpora, thresholds and release gates remain open |
 | 0.3 | 2026-09-12 | Codex | Recorded the owner's 2026-09-12 decisions: local-only model boundary with no egress, corpus-first evaluation with no numeric claim, no content egress, one PR for the whole PRD-066 scope, and a deferred first generation task; resolved the provider/privacy and legal open questions and restated the Definition of Ready per tranche |
+| 0.5 | 2026-09-12 | Codex | Post-merge reconciliation: recorded the PR #155 merge in the status, roadmaps, gates and changelogs, and added `tests/suggest_adversarial_test.rs` proving injected source bytes are quoted verbatim or refused and `src/suggest/` carries no network symbol |

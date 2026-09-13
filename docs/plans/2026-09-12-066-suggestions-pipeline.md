@@ -1,13 +1,13 @@
 # 066 suggestions pipeline: local-only prepare → run → validate → review → promote
 
-> Current scope after the PR #155 follow-up: recorded-response import only.
+> Merged scope (PR #155, merge `f09a299`): recorded-response import only.
 > Process execution is disabled in both CLI and library until an OS boundary
 > provides filesystem/network confinement, verified-byte execution, and full
 > descendant ownership. The process design below is retained as future work,
 > not as an implemented or accepted guarantee. See the remediation section.
 
 
-Status: implementation plan for review. No implementation, release, or acceptance
+Status: merged in PR #155 (merge `f09a299`). No release, usefulness, or acceptance
 claim.
 Owner: Brian Luby. Author: coordinating agent, 2026-09-12.
 
@@ -382,7 +382,7 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 | M-3 allowlist | Request built from a project with unrelated files and sensitive answers contains none of them; confidential answer requires the explicit flag |
 | M-4 exact preview | Preview bytes equal the bytes written to the adapter's stdin, byte for byte, including after redaction; target/notice/estimates present |
 | M-5 consent | `run` without a token fails; token with wrong payload hash, wrong adapter hash, wrong model id or wrong retention notice fails; matching token runs |
-| M-6 local boundary | `env_clear` + allowlist asserted; adapter is a local path; test asserts no `http`/`https`/`TcpStream`/`Client` symbol is reachable from the adapter module |
+| M-6 local boundary | `env_clear` + allowlist asserted; adapter is a local path; `tests/suggest_adversarial_test.rs::suggest_sources_contain_no_network_symbol` scans `src/suggest/` for `TcpStream`, `std::net`, `reqwest`, `hyper` and `http://` outside schema `$id` values |
 | M-7 closed output | Unknown field, null, forward version, oversized string, oversized stdout, truncated JSON, tool-call shape and non-task shape each rejected |
 | M-8 citations | Missing, nonexistent source, out-of-range span, altered span bytes, and re-ordered citation rejected; valid citation admitted with exact bytes |
 | M-9 assumptions | Suggestion without assumptions/questions rejected; org fact without citation rejected; supplied-answer-backed fact admitted |
@@ -392,7 +392,7 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 | M-13 provenance | Bundle contains adapter/model hashes, request/response hashes, byte counts, exit status and redaction policy; no field reads a clock |
 | M-14/M-15 | Not claimed. The corpus runner harness is exercised with synthetic fixtures only; thresholds stay open |
 | M-16 | Asserted by absence: no telemetry symbol, no upload path, no training hook in the crate's adapter or bundle modules |
-| M-17 adversarial suite | Dedicated `tests/suggest_adversarial_test.rs`: prompt injection in supplied source text, fabricated/altered citations, exfiltration requests (absolute paths, env values, unrelated files), malformed/oversized output, adapter missing/hang/crash/stderr flood, seeded secrets, quarantine escape attempts, promotion validity |
+| M-17 adversarial suite | Dedicated `tests/suggest_adversarial_test.rs`: prompt injection in supplied source text (verbatim quote admitted with output unchanged, paraphrase refused) and a source scan for network symbols; fabricated/altered citations, exfiltration requests, malformed/oversized output, adapter failure and timeout, seeded secrets, quarantine escape and promotion validity are covered across `tests/pr155_adversarial_review.rs` and the `tests/suggest_*_cli_test.rs` suites |
 | Determinism | Repeated `validate` runs over copied inputs produce byte-identical bundles; `prepare` produces byte-identical payloads across directories; recorded-response runs are byte-identical |
 | Quarantine isolation | After the whole five-step pipeline every supplied input (project, pack, applicability, gap report, framework, clause, corpus) is byte-identical and every new path is inside a generation the command published |
 | Bounds | Each closed contract refuses input past its byte bound before parsing (`request`, `consent`, `response`, `run`, `suggestions`, `dispositions`, `promotion`, `promotion.patch`), and count bounds (`units`, `redactions`, arguments, subjects, sections, entries, suggestions) have explicit cases |
@@ -401,9 +401,8 @@ All bounds are runtime-checked and reported in the error path; the JSON Schema
 
 ## Phase slices
 
-One reviewable commit slice per row, tests alongside each. Slices 1–8 are
-implemented on `codex/066-suggestions-pipeline`; the changes are unmerged and no
-gate is satisfied by implementation alone.
+One reviewable commit slice per row, tests alongside each. Slices 1–8 merged
+in PR #155 (merge `f09a299`); no gate is satisfied by implementation alone.
 
 | # | Slice | Contents | Gate row |
 |---|---|---|---|
@@ -606,6 +605,7 @@ corpus usefulness, release, merge or product acceptance is claimed here.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.7 | 2026-09-12 | Codex | Post-merge reconciliation: recorded the PR #155 merge, added `tests/suggest_adversarial_test.rs` (prompt-injection and network-symbol cases), and corrected the M-6/M-17 verification rows; no gate is satisfied by implementation alone |
 | 0.6 | 2026-09-12 | Codex | Rechecked incomplete review fixes; withheld process execution, bounded redaction before allocation, scanned decoded output, redacted titles, and moved promotion validation into a private captured snapshot |
 | 0.5 | 2026-09-12 | coordinating agent | Marked the review remediation complete: all 37 findings dispositioned with per-thread replies and an index comment on PR #155, and the plan changelog ordered newest-first |
 | 0.4 | 2026-09-12 | coordinating agent | Completed the review remediation: promotion validity through the destination's own authoring path with answer pins and effective-clause coordinates, unsupplied-target and duplicate-content refusal, run mode and receipt digest in the bundle, and the remaining test and roadmap findings |
