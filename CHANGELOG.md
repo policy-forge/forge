@@ -32,7 +32,7 @@ inventory of all post-v1.1.0 changes.
   rename on Linux/macOS, failing closed on other platforms. Existing Phase 1
   inputs and default artifacts remain unchanged. Public Rust API migration/semver review and human acceptance,
   legal/content, design-partner, pilot and release gates remain pending.
-- PRD-066 Phase 1 (offline, local-only): a five-step `forge suggest`
+- PRD-066 Phase 1 (offline, local-only; merged in PR #155, merge `f09a299`): a five-step `forge suggest`
   pipeline — `prepare`, `run`, `validate`, `review`, `promote` — moves untrusted
   model output into a quarantine bundle and, at most, into an unapproved
   proposal. No network, no provider configuration, no new dependency: a model
