@@ -34,8 +34,9 @@ Things to try:
 - `--strategy component` needs a source profile:
   `forge convert policy.md --strategy component --source-profile profile.json`.
 - Omit `--output` to print the artifact to stdout instead of a file.
-- Key exit codes: `0` success, `1` input/IO, `2` parse/structure,
-  `3` validation/config (e.g. missing `--strategy`).
+- Key exit codes: `0` success, `1` input/IO, `2` parse/structure or missing
+  required arguments (verified: omitting `--strategy` exits 2),
+  `3` validation/config.
 
 ## 2. Validate, export, trace, diff
 
@@ -306,11 +307,13 @@ ls promotion-1 promotion-1/promotion
 `proposed-unapproved`. Applying it is a manual step, followed by
 `forge author plan`/`build` on the result.
 
-Exit-code summary for the whole pipeline: `0` complete, `1` action required
-(execution unavailable, undecided items, nothing promotable — generations are
-still published), `2` refusal, publishes nothing (consent mismatch, altered
-quote, unknown unit, secret-shaped output, destination drift, existing output
-directory — every `--output-dir` must be new).
+Exit-code summary for the whole pipeline: `0` complete, `1` action required,
+`2` refusal, publishes nothing (consent mismatch, altered quote, unknown unit,
+secret-shaped output, destination drift, existing output directory — every
+`--output-dir` must be new). On exit 1, `review` with undecided items still
+publishes the partial record, but `run` without an executable response and
+`promote` with nothing accepted publish no output directory — only a stdout
+message — so do not go looking for generated artifacts in those two cases.
 
 ## 6. If something looks wrong
 
