@@ -179,9 +179,11 @@ fn suggest_sources_contain_no_network_symbol() {
                     violations.push(format!("{}:{}: {symbol}", file.display(), index + 1));
                 }
             }
-            // Schema `$id` values are `https://` URIs by convention; any other
-            // `http://` reference would be a network address in module code.
-            if line.contains("http://") && !line.contains("$id") {
+            // Schema `$id` values are `https://` URIs by convention. An `http`
+            // occurrence is permitted only inside the quoted value of a
+            // `["$id"]` field; an unrelated `$id` mention on the same line
+            // cannot smuggle a URI past the scan.
+            if !http_only_in_schema_id(line) {
                 violations.push(format!("{}:{}: http://", file.display(), index + 1));
             }
         }
@@ -207,4 +209,44 @@ fn collect_rs(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
             out.push(path);
         }
     }
+}
+/// True when the line carries no `http://`, or every occurrence sits inside
+/// the quoted value of a `["$id"]` field — the only permitted form.
+fn http_only_in_schema_id(line: &str) -> bool {
+    const FIELD: &str = "[\"$id\"]";
+    let mut rest = line;
+    while let Some(hit) = rest.find("http://") {
+        let Some(field) = rest.find(FIELD) else { return false };
+        if field > hit {
+            return false;
+        }
+        let after = &rest[field + FIELD.len()..];
+        let Some(open) = after.find('"') else { return false };
+        let value_open = field + FIELD.len() + open;
+        if value_open > hit {
+            return false;
+        }
+        let value_rest = &after[open + 1..];
+        let Some(close) = value_rest.find('"') else { return false };
+        let value_close = value_open + 1 + close;
+        if hit > value_close {
+            return false;
+        }
+        rest = &rest[value_close + 1..];
+    }
+    true
+}
+
+#[test]
+fn only_schema_id_values_escape_the_http_scan() {
+    let field = r#"assert_eq!(schema["$id"], "https://example.invalid/s");"#;
+    assert!(http_only_in_schema_id(field));
+    let plain = "let endpoint = \"http://example.invalid\";";
+    assert!(!http_only_in_schema_id(plain));
+    // An unrelated `$id` mention cannot smuggle a URI past the scan: only an
+    // `http` inside the quoted value of a `["$id"]` field is permitted.
+    let smuggled = r#"// ["$id"] lookup; fetch http://example.invalid "x""#;
+    assert!(!http_only_in_schema_id(smuggled));
+    let http_id = r#"assert_eq!(schema["$id"], "http://example.invalid/s");"#;
+    assert!(http_only_in_schema_id(http_id));
 }
