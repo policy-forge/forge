@@ -60,3 +60,6 @@ Thumbs.db
 # === Local tooling ===
 .serena/
 .opencode/
+
+# === OSCAL catalogs (transient downloads via scripts/fetch-oscal-catalogs.sh) ===
+.oscal-catalogs/
