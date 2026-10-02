@@ -781,7 +781,7 @@ version: "1.0.0"
             actual["system-security-plan"]["control-implementation"]["implemented-requirements"]
                 .as_array()
                 .unwrap();
-        assert!(!implemented.is_empty());
+        assert_ne!(implemented.as_slice(), [] as [serde_json::Value; 0]);
     }
 
     #[test]
@@ -859,7 +859,7 @@ version: "1.0.0"
         let paths = secondary_output_paths(&[secondary], None)
             .unwrap_or_else(|error| panic!("unexpected secondary output failure: {error}"));
 
-        assert!(paths.is_empty());
+        assert_eq!(paths, [] as [std::path::PathBuf; 0]);
     }
 
     #[test]

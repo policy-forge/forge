@@ -1425,7 +1425,7 @@ mod tests {
         };
 
         let ids = collect_control_ids_from_catalog(&catalog);
-        assert!(ids.is_empty());
+        assert_eq!(ids, [] as [std::string::String; 0]);
     }
 
     // ── Task 7: nested groups on OscalGroup ────────────

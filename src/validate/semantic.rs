@@ -304,7 +304,7 @@ mod tests {
         .unwrap();
 
         let errors = check_orphaned_links(&json, OscalModelType::Catalog);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [crate::validate::error_types::ValidationError; 0]);
     }
 
     #[test]
@@ -359,7 +359,10 @@ mod tests {
             }
         });
 
-        assert!(check_orphaned_links(&json, OscalModelType::Mapping).is_empty());
+        assert_eq!(
+            check_orphaned_links(&json, OscalModelType::Mapping),
+            [] as [crate::validate::error_types::ValidationError; 0]
+        );
     }
 
     // ── F0784: profile back-matter links must resolve against the profile root ──
@@ -390,7 +393,10 @@ mod tests {
                 "links": [{"href": "#ABC-DEF"}]
             }
         });
-        assert!(check_orphaned_links(&valid, OscalModelType::Catalog).is_empty());
+        assert_eq!(
+            check_orphaned_links(&valid, OscalModelType::Catalog),
+            [] as [crate::validate::error_types::ValidationError; 0]
+        );
 
         let invalid = serde_json::json!({"catalog": {"links": [{"href": "#"}]}});
         let errors = check_orphaned_links(&invalid, OscalModelType::Catalog);
@@ -411,7 +417,7 @@ mod tests {
         .unwrap();
 
         let errors = check_orphaned_links(&json, OscalModelType::Catalog);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [crate::validate::error_types::ValidationError; 0]);
     }
 
     #[test]
@@ -433,7 +439,7 @@ mod tests {
 
         // External URLs should not produce errors
         let errors = check_orphaned_links(&json, OscalModelType::Catalog);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [crate::validate::error_types::ValidationError; 0]);
     }
 
     #[test]
@@ -505,7 +511,7 @@ mod tests {
         .unwrap();
 
         let errors = check_missing_references(&json, OscalModelType::ComponentDefinition);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [crate::validate::error_types::ValidationError; 0]);
     }
 
     #[test]
@@ -523,7 +529,7 @@ mod tests {
         .unwrap();
 
         let errors = check_missing_references(&json, OscalModelType::ComponentDefinition);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [crate::validate::error_types::ValidationError; 0]);
     }
 
     #[test]
@@ -532,7 +538,7 @@ mod tests {
             serde_json::from_str(r#"{ "catalog": { "metadata": { "title": "Test" } } }"#).unwrap();
 
         let errors = check_missing_references(&json, OscalModelType::Catalog);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [crate::validate::error_types::ValidationError; 0]);
     }
 
     #[test]

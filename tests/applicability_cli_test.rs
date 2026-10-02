@@ -202,7 +202,10 @@ fn init_scaffolds_omitted_controls_as_under_review_with_exact_framework_evidence
         manifest["framework"]["inventory"]["control_ids"],
         json!(["c1", "c2", "c3", "c4", "c5", "c6"])
     );
-    assert!(manifest["decisions"].as_array().expect("decisions").is_empty());
+    assert_eq!(
+        manifest["decisions"].as_array().expect("decisions").as_slice(),
+        [] as [serde_json::Value; 0]
+    );
     assert_eq!(manifest["framework"]["expected_sha256"].as_str().expect("fingerprint").len(), 64);
 }
 
@@ -551,7 +554,10 @@ fn large_init_scaffold_can_be_analyzed_without_manual_compaction() {
     assert!(init.status.success(), "{}", String::from_utf8_lossy(&init.stderr));
     assert!(init.stdout.len() > 2 * 1024 * 1024, "fixture must exceed the former limit");
     let scaffold: Value = serde_json::from_slice(&init.stdout).expect("large scaffold");
-    assert!(scaffold["decisions"].as_array().expect("decisions").is_empty());
+    assert_eq!(
+        scaffold["decisions"].as_array().expect("decisions").as_slice(),
+        [] as [serde_json::Value; 0]
+    );
     std::fs::write(dir.path().join("large-applicability.json"), &init.stdout)
         .expect("write large scaffold");
 
