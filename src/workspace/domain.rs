@@ -8,6 +8,7 @@ use std::path::Path;
 
 use super::contract::{Error, Result};
 use super::index::{Role, validate_path};
+use super::preparation::{NoopControl, ProgressUpdate, Stage, WorkControl, WorkError, WorkResult};
 use super::services::{Item, Snapshot};
 
 fn invalid() -> Error {
@@ -84,34 +85,82 @@ fn check_resource(
     Ok(())
 }
 
+/// Copy captured registrations for an ordinary query or direct effect without
+/// creating operation progress or reacquiring the shared operation-store lock.
 pub(crate) fn stage(snapshot: &Snapshot) -> Result<tempfile::TempDir> {
+    stage_with_control(snapshot, &mut NoopControl).map_err(WorkError::into_error)
+}
+
+/// Copy every captured registration into a private temporary directory, checking
+/// before allocation and before/after each file copy. An interrupted copy drops
+/// the directory; a write already in progress is not forcibly interrupted.
+pub(crate) fn stage_with_control(
+    snapshot: &Snapshot,
+    control: &mut dyn WorkControl,
+) -> WorkResult<tempfile::TempDir> {
+    control.checkpoint(Stage::CopyInputs, ProgressUpdate::Clear)?;
     let stage = tempfile::tempdir().map_err(|_| invalid())?;
+    copy_to_stage(snapshot, stage, control)
+}
+
+/// Consume temporary-directory ownership while copying captured bytes. Keeping
+/// ownership in this production helper ensures every error/interruption drops
+/// the partial stage, and the controlled engine receives only a complete stage.
+fn copy_to_stage(
+    snapshot: &Snapshot,
+    stage: tempfile::TempDir,
+    control: &mut dyn WorkControl,
+) -> WorkResult<tempfile::TempDir> {
     for item in &snapshot.items {
+        control.checkpoint(Stage::CopyInputs, ProgressUpdate::Unchanged)?;
         let path = stage.path().join(&item.registration.path);
         let parent = path.parent().ok_or_else(invalid)?;
-        std::fs::create_dir_all(parent).map_err(|_| invalid())?;
-        std::fs::write(path, &item.captured.bytes).map_err(|_| invalid())?;
+        let copied = (|| {
+            std::fs::create_dir_all(parent).map_err(|_| invalid())?;
+            std::fs::write(&path, &item.captured.bytes).map_err(|_| invalid())
+        })();
+        control.checkpoint(Stage::CopyInputs, ProgressUpdate::Unchanged)?;
+        copied?;
     }
     Ok(stage)
 }
 
+/// Analyze a captured snapshot for existing synchronous validation callers.
 pub(crate) fn analyze(
     snapshot: &Snapshot,
 ) -> Result<crate::applicability::model::ApplicabilityReport> {
-    let manifest = selected(snapshot, Role::ApplicabilityManifest)?;
+    analyze_with_control(snapshot, &mut NoopControl).map_err(WorkError::into_error)
+}
+
+/// Validate registered references, stage the complete capture and bracket the
+/// shared applicability engine. Internal interruptions remain distinct from a
+/// normal invalid manifest and cannot become best-effort snapshot invalidity.
+pub(crate) fn analyze_with_control(
+    snapshot: &Snapshot,
+    control: &mut dyn WorkControl,
+) -> WorkResult<crate::applicability::model::ApplicabilityReport> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    let manifest = selected(snapshot, Role::ApplicabilityManifest);
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let manifest = manifest?;
     let parsed =
-        crate::applicability::manifest::parse(&manifest.captured.bytes).map_err(|_| invalid())?;
+        crate::applicability::manifest::parse(&manifest.captured.bytes).map_err(|_| invalid());
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let parsed = parsed?;
     check_resource(snapshot, &manifest.registration.path, &parsed.framework)?;
     for reference in &parsed.mapping_collections {
         registered_reference(snapshot, &manifest.registration.path, reference)?;
     }
-    let stage = stage(snapshot)?;
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let stage = stage_with_control(snapshot, control)?;
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
     let prepared = crate::applicability::prepare_analysis(
         &stage.path().join(&manifest.registration.path),
         crate::applicability::model::ReportFilters::default(),
     )
-    .map_err(|_| invalid())?;
-    Ok(prepared.report)
+    .map_err(|_| invalid());
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    Ok(prepared?.report)
 }
 
 pub(crate) fn mapping_manifest(snapshot: &Snapshot) -> Result<&Item> {
@@ -126,14 +175,33 @@ pub(crate) fn mapping_manifest(snapshot: &Snapshot) -> Result<&Item> {
     Ok(selected)
 }
 
+/// Build mappings for current synchronous queries and draft validation.
 pub(crate) fn mapping(snapshot: &Snapshot) -> Result<crate::mapping::PreparedBuild> {
-    let item = mapping_manifest(snapshot)?;
-    let manifest = crate::mapping::manifest::parse(&item.captured.bytes).map_err(|_| invalid())?;
+    mapping_with_control(snapshot, &mut NoopControl).map_err(WorkError::into_error)
+}
+
+/// Build a mapping from checked captured references and a cooperatively copied
+/// stage. The existing engine is checked on entry and return, not preempted.
+pub(crate) fn mapping_with_control(
+    snapshot: &Snapshot,
+    control: &mut dyn WorkControl,
+) -> WorkResult<crate::mapping::PreparedBuild> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    let item = mapping_manifest(snapshot);
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let item = item?;
+    let manifest = crate::mapping::manifest::parse(&item.captured.bytes).map_err(|_| invalid());
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let manifest = manifest?;
     check_resource(snapshot, &item.registration.path, &manifest.mapping.source)?;
     check_resource(snapshot, &item.registration.path, &manifest.mapping.target)?;
-    let stage = stage(snapshot)?;
-    crate::mapping::prepare(&stage.path().join(&item.registration.path), None, false)
-        .map_err(|_| invalid())
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let stage = stage_with_control(snapshot, control)?;
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let built = crate::mapping::prepare(&stage.path().join(&item.registration.path), None, false)
+        .map_err(|_| invalid());
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    Ok(built?)
 }
 
 /// The single registered decision manifest for `role`. Absence is setup state:
@@ -228,21 +296,49 @@ pub(crate) struct SubjectInventory {
     pub truncated: Vec<(String, usize)>,
 }
 
+/// Compute subject rows for the existing synchronous inventory view.
 pub(crate) fn subject_inventory(snapshot: &Snapshot) -> Result<SubjectInventory> {
-    inventory(snapshot, None, None)
+    subject_inventory_with_control(snapshot, &mut NoopControl).map_err(WorkError::into_error)
 }
 
+/// Compute derived subject rows with controlled temporary copies and checks
+/// around each shared staged-input load, preserving internal interruption.
+pub(crate) fn subject_inventory_with_control(
+    snapshot: &Snapshot,
+    control: &mut dyn WorkControl,
+) -> WorkResult<SubjectInventory> {
+    inventory_with_control(snapshot, None, None, control)
+}
+
+/// Serve the existing explicit resource/side inventory selection synchronously.
 fn inventory(
     snapshot: &Snapshot,
     resource_id: Option<&str>,
     side: Option<&str>,
 ) -> Result<SubjectInventory> {
-    let stage = stage(snapshot)?;
+    inventory_with_control(snapshot, resource_id, side, &mut NoopControl)
+        .map_err(WorkError::into_error)
+}
+
+/// Stage only captured registrations, then compute a bounded subject inventory
+/// for either the registered mapping or an explicit existing view selection.
+fn inventory_with_control(
+    snapshot: &Snapshot,
+    resource_id: Option<&str>,
+    side: Option<&str>,
+    control: &mut dyn WorkControl,
+) -> WorkResult<SubjectInventory> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    let stage = stage_with_control(snapshot, control)?;
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
     let mut output = Vec::new();
     let mut truncated = Vec::new();
-    if let Ok(item) = mapping_manifest(snapshot) {
-        let manifest =
-            crate::mapping::manifest::parse(&item.captured.bytes).map_err(|_| invalid())?;
+    let declaration = mapping_manifest(snapshot);
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    if let Ok(item) = declaration {
+        let manifest = crate::mapping::manifest::parse(&item.captured.bytes).map_err(|_| invalid());
+        control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+        let manifest = manifest?;
         for (side, resource) in
             [("policy", &manifest.mapping.source), ("framework", &manifest.mapping.target)]
         {
@@ -261,12 +357,13 @@ fn inventory(
                 side,
                 resource,
                 registration,
+                control,
             )?;
         }
     } else {
         // An ambiguous or malformed existing manifest must not be bypassed.
         if snapshot.items.iter().any(|item| item.registration.role == Role::MappingCollection) {
-            return Err(invalid());
+            return Err(invalid().into());
         }
         let item = snapshot.item(resource_id.ok_or_else(invalid)?)?;
         let side =
@@ -274,7 +371,7 @@ fn inventory(
         if item.registration.role != Role::OscalCatalogArtifact
             || item.validation["state"] != "valid"
         {
-            return Err(invalid());
+            return Err(invalid().into());
         }
         let resource = crate::mapping::manifest::ResourceManifest {
             resource_type: crate::mapping::manifest::ResourceType::Catalog,
@@ -286,12 +383,16 @@ fn inventory(
             expected_resolved_catalog_sha256: None,
             inventory: None,
         };
-        append_subjects(&mut output, &mut truncated, stage.path(), side, &resource, item)?;
+        append_subjects(&mut output, &mut truncated, stage.path(), side, &resource, item, control)?;
     }
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
     output.sort_by(|a, b| a["subject_id"].as_str().cmp(&b["subject_id"].as_str()));
     Ok(SubjectInventory { rows: output, truncated })
 }
 
+/// Load one checked staged resource and append bounded subject identities.
+/// Checks surround the shared loader and each append; labels remain excluded
+/// from operation progress, and parser work is cooperative only on return.
 fn append_subjects(
     output: &mut Vec<serde_json::Value>,
     truncated: &mut Vec<(String, usize)>,
@@ -299,14 +400,19 @@ fn append_subjects(
     side: &str,
     resource: &crate::mapping::manifest::ResourceManifest,
     item: &Item,
-) -> Result<()> {
+    control: &mut dyn WorkControl,
+) -> WorkResult<()> {
     use crate::mapping::manifest::SubjectType;
-    let loaded = crate::mapping::inventory::load(parent, side, resource).map_err(|_| invalid())?;
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let loaded = crate::mapping::inventory::load(parent, side, resource).map_err(|_| invalid());
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let loaded = loaded?;
     for kind in [SubjectType::Control, SubjectType::Statement] {
         if output.len().saturating_add(loaded.inventory.count(kind)) > 10000 {
-            return Err(invalid());
+            return Err(invalid().into());
         }
         for id in loaded.inventory.ids_of_type(kind) {
+            control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
             let resource_id = super::services::resource_id(&item.registration);
             let (label, label_truncated) =
                 super::services::bounded_label(&id, super::services::SUBJECT_LABEL_MAX);
@@ -400,21 +506,29 @@ pub(crate) fn trace_counts(snapshot: &Snapshot) -> Result<serde_json::Value> {
     )
 }
 
-pub(crate) fn convert(
+/// Convert one captured policy source using the existing deterministic domain
+/// pipeline and suppressed source-bearing logger. Temporary copies and pipeline
+/// calls are cooperative boundaries; no parser preemption or publication occurs.
+pub(crate) fn convert_with_control(
     snapshot: &Snapshot,
     source: &Item,
     kind: &str,
-) -> Result<crate::pipeline::PipelineOutput> {
+    control: &mut dyn WorkControl,
+) -> WorkResult<crate::pipeline::PipelineOutput> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
     if source.registration.role != Role::PolicySource {
-        return Err(invalid());
+        return Err(invalid().into());
     }
-    let stage = stage(snapshot)?;
+    let stage = stage_with_control(snapshot, control)?;
     let input = stage.path().join(&source.registration.path);
     // Domain progress logs contain source labels. The local workspace never
     // forwards them to the process-wide logger, including under --verbose.
     tracing::subscriber::with_default(tracing::subscriber::NoSubscriber::default(), || {
-        let mut document =
-            crate::pipeline::prepare_document(&input, 10 * 1024 * 1024).map_err(|_| invalid())?;
+        control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+        let document =
+            crate::pipeline::prepare_document(&input, 10 * 1024 * 1024).map_err(|_| invalid());
+        control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+        let mut document = document?;
         document.metadata.source_path = std::path::PathBuf::from(&source.registration.path);
         let portable = std::path::Path::new(&source.registration.path);
         let metadata = Some(crate::oscal::metadata::MetadataOptions {
@@ -426,7 +540,8 @@ pub(crate) fn convert(
             // Reproducible generation epoch, never a review/approval timestamp.
             timestamp_override: Some(chrono::DateTime::UNIX_EPOCH),
         });
-        match kind {
+        control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+        let output = match kind {
             "oscal-catalog" => crate::pipeline::run_catalog_pipeline_with_metadata(
                 portable,
                 &document,
@@ -442,9 +557,11 @@ pub(crate) fn convert(
                 None,
                 metadata,
             ),
-            _ => return Err(invalid()),
+            _ => return Err(invalid().into()),
         }
-        .map_err(|_| invalid())
+        .map_err(|_| invalid());
+        control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+        Ok(output?)
     })
 }
 
@@ -554,6 +671,8 @@ mod tests {
         )
     }
 
+    /// Ordinary no-op inventory preserves exact long subject identities while
+    /// limiting display labels and emitting valid bounded view rows.
     #[test]
     fn over_long_subject_ids_are_bounded_without_losing_identity() {
         let dir = tempfile::tempdir().unwrap();
@@ -580,8 +699,16 @@ mod tests {
         };
         let mut output = Vec::new();
         let mut truncated = Vec::new();
-        append_subjects(&mut output, &mut truncated, dir.path(), "policy", &resource, &item)
-            .expect("an over-long id must not fail the inventory");
+        append_subjects(
+            &mut output,
+            &mut truncated,
+            dir.path(),
+            "policy",
+            &resource,
+            &item,
+            &mut NoopControl,
+        )
+        .expect("an over-long id must not fail the inventory");
         assert_eq!(output.len(), 1);
         assert_eq!(
             output[0]["label"].as_str().unwrap().chars().count(),
@@ -633,5 +760,121 @@ mod tests {
         let error = draft(&snapshot, false).unwrap_err();
         assert_eq!(error.code, "validation-failed");
         assert_ne!(error.code, "not-found");
+    }
+
+    /// Capture three real synthetic Markdown registrations in order, including
+    /// nested and unrelated inputs. Their bytes and identities come from Root.
+    fn staged_fixture() -> (tempfile::TempDir, Snapshot) {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join("inputs")).unwrap();
+        let paths = ["first.md", "inputs/source.md", "unrelated.md"];
+        let mut resources = Vec::new();
+        for (index, path) in paths.into_iter().enumerate() {
+            std::fs::write(
+                dir.path().join(path),
+                "# Synthetic policy\n\nStaff must review proposed changes.\n",
+            )
+            .unwrap();
+            resources.push(serde_json::json!({"key":format!("source-{index}"),"role":"policy-source","path":path}));
+        }
+        std::fs::write(dir.path().join(crate::workspace::index::INDEX_PATH), serde_json::to_vec(&serde_json::json!({"schema_version":"forge.workspace/1","label":"Synthetic staged inputs","resources":resources})).unwrap()).unwrap();
+        let snapshot =
+            Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
+        (dir, snapshot)
+    }
+
+    /// A later unrelated registration is still a staging boundary. Interrupting
+    /// before its copy drops the already partially copied private directory.
+    #[test]
+    fn controlled_staging_drops_partial_owned_directory() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let (dir, snapshot) = staged_fixture();
+        let stage = tempfile::tempdir().unwrap();
+        let stage_path = stage.path().to_owned();
+        let mut control = Recorder::at(Stage::CopyInputs, 5);
+        assert!(matches!(
+            copy_to_stage(&snapshot, stage, &mut control),
+            Err(WorkError::Interrupted(Interruption::CancelRequested))
+        ));
+        assert!(!stage_path.exists());
+        for item in &snapshot.items {
+            assert_eq!(
+                std::fs::read(dir.path().join(&item.registration.path)).unwrap(),
+                item.captured.bytes
+            );
+        }
+    }
+
+    /// No-op staging preserves all captured bytes; a genuine parent/file collision
+    /// remains an ordinary safe failure and drops partial temporary output.
+    #[test]
+    fn controlled_staging_preserves_success_and_ordinary_io_failure() {
+        let (dir, snapshot) = staged_fixture();
+        let stage = stage_with_control(&snapshot, &mut NoopControl).unwrap();
+        for item in &snapshot.items {
+            assert_eq!(
+                std::fs::read(stage.path().join(&item.registration.path)).unwrap(),
+                item.captured.bytes
+            );
+        }
+        let blocked = tempfile::tempdir().unwrap();
+        let blocked_path = blocked.path().to_owned();
+        std::fs::write(blocked.path().join("inputs"), "blocking file").unwrap();
+        let error = copy_to_stage(&snapshot, blocked, &mut NoopControl).err().unwrap();
+        assert!(matches!(error, WorkError::Failed(error) if error.code == "validation-failed"));
+        assert!(!blocked_path.exists());
+        assert_eq!(
+            std::fs::read(dir.path().join("inputs/source.md")).unwrap(),
+            snapshot.items[1].captured.bytes
+        );
+    }
+
+    /// Controlled conversion retains deterministic normal output, and interruption
+    /// after the existing input parser returns prevents later pipeline preparation.
+    #[test]
+    fn controlled_conversion_preserves_output_and_post_parser_stop() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let (dir, snapshot) = staged_fixture();
+        let source = &snapshot.items[1];
+        let first =
+            convert_with_control(&snapshot, source, "oscal-catalog", &mut NoopControl).unwrap();
+        let mut observed = Recorder::default();
+        let second =
+            convert_with_control(&snapshot, source, "oscal-catalog", &mut observed).unwrap();
+        assert_eq!(first.content, second.content);
+        let value: serde_json::Value = serde_json::from_str(&first.content).unwrap();
+        assert!(
+            crate::validate::run_full_validation(
+                "synthetic controlled conversion",
+                &value,
+                crate::validate::OscalModelType::Catalog
+            )
+            .unwrap()
+            .is_valid()
+        );
+        let mut stop = Recorder::at(Stage::PrepareDomain, 3);
+        assert!(matches!(
+            convert_with_control(&snapshot, source, "oscal-catalog", &mut stop),
+            Err(WorkError::Interrupted(Interruption::CancelRequested))
+        ));
+        assert!(!dir.path().join("converted.json").exists());
+    }
+
+    /// Missing domain declarations are ordinary validation failures under no-op
+    /// control. Controlled checkpoints remain distinct from those safe failures.
+    #[test]
+    fn controlled_domain_errors_remain_ordinary_validation_failures() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let dir = tempfile::tempdir().unwrap();
+        let snapshot =
+            Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
+        assert_eq!(analyze(&snapshot).err().unwrap().code, "validation-failed");
+        assert_eq!(mapping(&snapshot).err().unwrap().code, "validation-failed");
+        assert_eq!(subject_inventory(&snapshot).err().unwrap().code, "validation-failed");
+        let mut stop = Recorder::at(Stage::PrepareDomain, 2);
+        assert!(matches!(
+            mapping_with_control(&snapshot, &mut stop),
+            Err(WorkError::Interrupted(Interruption::CancelRequested))
+        ));
     }
 }

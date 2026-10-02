@@ -2745,6 +2745,13 @@ components:
           description: True once cancellation was requested (state may still
             be running).
         progress:
+          description: >-
+            Optional measured capture facts for background preparation. Counts
+            fully captured and classified registrations, including invalid
+            classifications, against the full registered set. Null or absent
+            means progress is unmeasured. Clears before domain/output work and
+            at termination; capture completion is not operation completion or
+            write approval. No source identities, percentage or ETA are exposed.
           oneOf:
             - type: 'null'
             - type: object
