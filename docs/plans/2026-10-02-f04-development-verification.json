@@ -1,0 +1,267 @@
+{
+  "schema_version": "forge.workspace-verification-development/1",
+  "scope": "f04-api-foundation-development-checks",
+  "python_version": "3.14.8",
+  "evidence_kind": "synthetic-fixtures-and-real-local-api-execution",
+  "base_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "documentation": {
+    "method": "AST docstring presence for authored functions/methods in two production scripts",
+    "documented_declarations": 19,
+    "function_declarations": 19,
+    "percent": 100.0,
+    "whole_repository_measured": false
+  },
+  "line_coverage": {
+    "method": "stdlib trace, main and spawned threads, compiler executable-line denominator; union of fixture/live-verifier/live-client/actual-CLI runs",
+    "branch_coverage_measured": false,
+    "covered_executable_lines": 474,
+    "executable_lines": 520,
+    "percent": 91.15,
+    "files": [
+      {
+        "file": "scripts/verify_workspace.py",
+        "source_sha256": "185a5e4d81ce622341f664edce654196365f77e8065dd73b44516e01e0c18cbb",
+        "documented_declarations": 15,
+        "function_declarations": 15,
+        "covered_executable_lines": 329,
+        "executable_lines": 366,
+        "line_percent": 89.89,
+        "uncovered_lines": [
+          54,
+          79,
+          86,
+          92,
+          118,
+          133,
+          141,
+          148,
+          161,
+          165,
+          167,
+          171,
+          181,
+          182,
+          192,
+          194,
+          195,
+          196,
+          197,
+          226,
+          227,
+          230,
+          231,
+          256,
+          269,
+          288,
+          293,
+          296,
+          309,
+          312,
+          358,
+          360,
+          440,
+          445,
+          446,
+          447,
+          453
+        ]
+      },
+      {
+        "file": "scripts/test_workspace_client.py",
+        "source_sha256": "201fb56c55094903e8ac9ad2e361f6e4e3387b7589a2c769c54e2cc73549bbe3",
+        "documented_declarations": 4,
+        "function_declarations": 4,
+        "covered_executable_lines": 145,
+        "executable_lines": 154,
+        "line_percent": 94.16,
+        "uncovered_lines": [
+          122,
+          134,
+          135,
+          136,
+          169,
+          170,
+          171,
+          172,
+          176
+        ]
+      }
+    ]
+  },
+  "unit_tests": {
+    "tests_run": 24,
+    "skipped": 0,
+    "success": true
+  },
+  "real_suites": {
+    "api-contract": {
+      "status": "passed",
+      "counts": {
+        "failed": 0,
+        "filtered_out": 0,
+        "ignored": 0,
+        "measured": 0,
+        "passed": 8
+      },
+      "execution": {
+        "binary_hash_measured": false,
+        "cargo_lock": {
+          "bytes": 74338,
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+        },
+        "cargo_manifest": {
+          "bytes": 2344,
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+        },
+        "cargo_profile": "test",
+        "executable_binding": "source-lock-tool-test-pins",
+        "executable_kind": "integration-test",
+        "source_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+        "test_source": {
+          "bytes": 35837,
+          "sha256": "021961bf43383398b43e819df16fce2b74a28b77c0448c6a45c2de519407c0b4"
+        },
+        "tools": {
+          "cargo": {
+            "commit": "797e8a9bc",
+            "commit_date": "2026-08-05",
+            "version": "1.98.1"
+          },
+          "rust_host": "aarch64-apple-darwin",
+          "rustc": {
+            "commit": "48a229cea",
+            "commit_date": "2026-09-01",
+            "version": "1.98.1"
+          }
+        }
+      }
+    },
+    "api-workflow": {
+      "status": "passed",
+      "counts": {
+        "failed": 0,
+        "filtered_out": 0,
+        "ignored": 0,
+        "measured": 0,
+        "passed": 11
+      },
+      "execution": {
+        "binary_hash_measured": false,
+        "cargo_lock": {
+          "bytes": 74338,
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+        },
+        "cargo_manifest": {
+          "bytes": 2344,
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+        },
+        "cargo_profile": "test",
+        "executable_binding": "source-lock-tool-test-pins",
+        "executable_kind": "integration-test-and-CARGO_BIN_EXE_forge",
+        "source_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+        "test_source": {
+          "bytes": 37627,
+          "sha256": "29c0b46bdb1c9a8374409d3691637e12c8a35e04e607ac36221ce5feb27e50a9"
+        },
+        "tools": {
+          "cargo": {
+            "commit": "797e8a9bc",
+            "commit_date": "2026-08-05",
+            "version": "1.98.1"
+          },
+          "rust_host": "aarch64-apple-darwin",
+          "rustc": {
+            "commit": "48a229cea",
+            "commit_date": "2026-09-01",
+            "version": "1.98.1"
+          }
+        }
+      }
+    },
+    "maintained-client": {
+      "status": "passed",
+      "counts": {
+        "declared_operations": 37,
+        "explicit_checks": 12,
+        "observed_operations": 21
+      },
+      "execution": {
+        "cargo_lock": {
+          "bytes": 74338,
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+        },
+        "cargo_manifest": {
+          "bytes": 2344,
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+        },
+        "cargo_profile": "release",
+        "client_sources": {
+          "scripts/test_workspace_client.py": {
+            "bytes": 12725,
+            "sha256": "201fb56c55094903e8ac9ad2e361f6e4e3387b7589a2c769c54e2cc73549bbe3"
+          },
+          "scripts/verify_workspace.py": {
+            "bytes": 24423,
+            "sha256": "185a5e4d81ce622341f664edce654196365f77e8065dd73b44516e01e0c18cbb"
+          },
+          "scripts/workspace_client.py": {
+            "bytes": 5790,
+            "sha256": "4aa2023ba3ad9d4f01335e2a3aa153a16b9a8113563d5e874cfe5bd595c54bad"
+          }
+        },
+        "executable_binding": "provided-release-bytes",
+        "provided_release_binary": {
+          "bytes": 16425136,
+          "sha256": "f2fa060e0ecad0e9121573b302fb03c60d31a972a2d4bc6741bf8afa095636be"
+        },
+        "source_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+        "tools": {
+          "python": "3.14.8"
+        }
+      }
+    }
+  },
+  "actual_runner_cli": {
+    "exit_code": 1,
+    "status": "incomplete",
+    "source_clean": false
+  },
+  "development_receipt_status": "incomplete",
+  "source_clean_at_measurement": false,
+  "raw_receipt_sha256": {
+    "forge-f04-unit-coverage-efficient.json": "f60fec366e50b98d1d2700ed85f4a7e1a17d0c442fbf30b5d406e3dbcdaa7da1",
+    "forge-f04-live-verifier-coverage.json": "5db94789430f961cdac08a69bf5be57bbaa76a261b768bf439af98819696a667",
+    "forge-f04-live-client-coverage.json": "661f6d2467792f029ffa97b5ab97629b1d22a4f14560f28aec04a6f73465e290",
+    "forge-f04-live-cli-coverage.json": "270a348327236dc3cb954691e49e4cf65dfe1d073f8ad92e3f6798a5cb9ebf63"
+  },
+  "provided_release_binary": {
+    "bytes": 16425136,
+    "sha256": "f2fa060e0ecad0e9121573b302fb03c60d31a972a2d4bc6741bf8afa095636be"
+  },
+  "toolchain": {
+    "cargo": {
+      "commit": "797e8a9bc",
+      "commit_date": "2026-08-05",
+      "version": "1.98.1"
+    },
+    "machine": "arm64",
+    "os": "Darwin",
+    "os_release": "27.0.0",
+    "python": "3.14.8",
+    "rust_host": "aarch64-apple-darwin",
+    "rustc": {
+      "commit": "48a229cea",
+      "commit_date": "2026-09-01",
+      "version": "1.98.1"
+    }
+  },
+  "acceptance": {
+    "complete_f04": false,
+    "browser_matrix": false,
+    "packaged_runtime_os_denial": false,
+    "independent_security": false,
+    "human_product_evaluation": false,
+    "hosted_ci": "not-run-before-pr",
+    "final_roadmap_documentation_review": "pending"
+  }
+}
