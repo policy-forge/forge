@@ -1,9 +1,11 @@
-//! Shared duplicate-key-safe, bounded JSON parsing utilities.
+//! Shared duplicate-key-safe JSON and JSON-compatible YAML parsing utilities.
 //!
 //! Limits apply to the decoded tree. Callers MUST still cap raw input bytes
 //! before parsing because wide, shallow JSON may allocate before its structural
 //! bounds can be inspected; `serde_json`'s own recursion limit can also reject a
-//! document before `Limits::max_depth` when configured higher.
+//! document before `Limits::max_depth` when configured higher. YAML bounds likewise apply
+//! after decoding; neither a raw-byte cap nor these bounds establishes confinement of
+//! allocations or alias expansion during the YAML decoder itself.
 
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
@@ -51,6 +53,29 @@ pub(crate) enum StrictJsonError {
     },
 }
 
+/// Preserve YAML decoder failures separately from decoded JSON-tree bounds.
+///
+/// Syntax, duplicate keys, unsupported scalar/container types, non-finite numbers,
+/// and multiple documents retain the original decoder error and its location. A
+/// bounds failure retains the same classification used by [`parse_value`].
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum StrictYamlError {
+    /// YAML cannot be represented as one duplicate-free JSON-compatible value.
+    #[error("invalid YAML: {source}")]
+    Decode {
+        /// Original YAML decoder error, including any available source location.
+        #[source]
+        source: serde_yaml::Error,
+    },
+    /// The decoded value exceeds a caller-supplied structural limit.
+    #[error("{source}")]
+    Bounds {
+        /// Shared decoded-tree bound failure with an escaped diagnostic path.
+        #[source]
+        source: StrictJsonError,
+    },
+}
+
 const DUPLICATE_KEY_PREFIX: &str = "forge-strict-json-duplicate-key:";
 
 /// Parse one complete JSON value without duplicate object keys and enforce structural bounds.
@@ -72,6 +97,31 @@ pub(crate) fn parse_value(
         .end()
         .map_err(|source| StrictJsonError::TrailingData { label: label.to_string(), source })?;
     enforce_bounds(&strict.0, &mut Vec::new(), 0, limits)?;
+    Ok(strict.0)
+}
+
+/// Decode exactly one YAML document as a duplicate-free JSON-compatible value.
+///
+/// Mapping keys must decode as strings. Scalar types and array order are
+/// preserved; supported ordinary aliases are expanded by the existing decoder.
+/// Non-finite numbers and custom local tags have no JSON representation and are
+/// rejected by the shared visitor. The decoder may erase nonlocal URI-form tags
+/// before invoking the visitor; preservation of those tags or other YAML
+/// presentation is not asserted. Callers must bound raw input separately.
+///
+/// The decoder has its own recursion/repetition limits; caller limits are checked
+/// only after decoding. This helper does not establish allocation or alias-memory
+/// confinement, even when the caller caps input bytes.
+///
+/// # Errors
+///
+/// Returns [`StrictYamlError::Decode`] with the original YAML error for decoder
+/// failures and [`StrictYamlError::Bounds`] for decoded depth/string violations.
+pub(crate) fn parse_yaml_value(content: &str, limits: Limits) -> Result<Value, StrictYamlError> {
+    let strict = StrictValue::deserialize(serde_yaml::Deserializer::from_str(content))
+        .map_err(|source| StrictYamlError::Decode { source })?;
+    enforce_bounds(&strict.0, &mut Vec::new(), 0, limits)
+        .map_err(|source| StrictYamlError::Bounds { source })?;
     Ok(strict.0)
 }
 
@@ -168,6 +218,44 @@ fn render_path(segments: &[PathSegment<'_>]) -> String {
     path
 }
 
+/// An object key whose decoded type must be a string in every input format.
+struct StrictObjectKey(String);
+
+impl<'de> Deserialize<'de> for StrictObjectKey {
+    /// Observe the decoded key type so YAML cannot coerce numbers into strings.
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(StrictObjectKeyVisitor)
+    }
+}
+
+/// Accept string map keys while rejecting non-string YAML scalar/container keys.
+struct StrictObjectKeyVisitor;
+
+impl Visitor<'_> for StrictObjectKeyVisitor {
+    type Value = StrictObjectKey;
+
+    /// Describe the JSON-compatible mapping-key contract in decoder diagnostics.
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("a string object key")
+    }
+
+    /// Retain a decoded borrowed string key without scalar coercion.
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictObjectKey(value.to_string()))
+    }
+
+    /// Retain a decoded owned string key without scalar coercion.
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
+        Ok(StrictObjectKey(value))
+    }
+}
+
 struct StrictValue(Value);
 
 impl<'de> Deserialize<'de> for StrictValue {
@@ -247,12 +335,15 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
         Ok(StrictValue(Value::Array(values)))
     }
 
+    /// Preserve string-keyed mappings and reject duplicates before inserting values.
     fn visit_map<A>(self, mut object: A) -> Result<Self::Value, A::Error>
     where
         A: MapAccess<'de>,
     {
         let mut values = Map::new();
-        while let Some((key, value)) = object.next_entry::<String, StrictValue>()? {
+        while let Some((StrictObjectKey(key), value)) =
+            object.next_entry::<StrictObjectKey, StrictValue>()?
+        {
             if values.contains_key(&key) {
                 return Err(de::Error::custom(format!("{DUPLICATE_KEY_PREFIX}{}", bounded(&key))));
             }
@@ -264,9 +355,167 @@ impl<'de> Visitor<'de> for StrictValueVisitor {
 
 #[cfg(test)]
 mod tests {
-    use super::{Limits, parse_value, validate_lowercase_sha256};
+    use super::{
+        Limits, StrictYamlError, parse_value, parse_yaml_value, validate_lowercase_sha256,
+    };
+    use serde_json::json;
 
     const LIMITS: Limits = Limits { max_depth: 2, max_string_bytes: 3 };
+
+    const YAML_LIMITS: Limits = Limits { max_depth: 16, max_string_bytes: 128 };
+
+    /// Root and nested duplicate keys retain a YAML decoder error with source context.
+    #[test]
+    fn yaml_rejects_duplicate_keys_at_every_mapping_depth() {
+        for content in [
+            "a: 1\na: 2\n",
+            "outer:\n  a: 1\n  a: 2\n",
+            "name: &key a\nmapping: {*key : 1, a: 2}\n",
+        ] {
+            let error = parse_yaml_value(content, YAML_LIMITS).unwrap_err();
+            let StrictYamlError::Decode { source } = error else {
+                panic!("duplicate must retain the YAML decoder error");
+            };
+            assert!(source.to_string().contains("duplicate-key:a"));
+            assert!(std::error::Error::source(&StrictYamlError::Decode { source }).is_some());
+        }
+    }
+
+    /// YAML values retain JSON scalar types, quoted strings, and sequence order.
+    #[test]
+    fn yaml_preserves_scalar_types_and_core_scalar_tags() {
+        let content = "null_value: null\nbool: true\nnegative: -7\npositive: 18446744073709551615\nfloat: 1.5\nquoted: 'true'\ntagged: !!str 12\nsequence: [false, null, 3, text]\n";
+        assert_eq!(
+            parse_yaml_value(content, YAML_LIMITS).unwrap(),
+            json!({
+                "null_value": null, "bool": true, "negative": -7,
+                "positive": u64::MAX, "float": 1.5, "quoted": "true",
+                "tagged": "12", "sequence": [false, null, 3, "text"]
+            })
+        );
+    }
+
+    /// Additional documents, including an empty successor, cannot be ignored.
+    #[test]
+    fn yaml_requires_one_complete_document() {
+        for content in ["a: 1\n---\na: 2\n", "---\na: 1\n...\n---\n", "a: [1] trailing\n"] {
+            assert!(matches!(
+                parse_yaml_value(content, YAML_LIMITS),
+                Err(StrictYamlError::Decode { .. })
+            ));
+        }
+        assert_eq!(parse_yaml_value("---\na: 1\n...\n", YAML_LIMITS).unwrap(), json!({"a": 1}));
+    }
+
+    /// Non-string keys are rejected rather than coerced into string identifiers.
+    #[test]
+    fn yaml_rejects_non_string_keys_and_preserves_quoted_keys() {
+        for content in [
+            "1: value\n",
+            "true: value\n",
+            "null: value\n",
+            "? [a, b]\n: value\n",
+            "!!int 1: value\n",
+        ] {
+            assert!(matches!(
+                parse_yaml_value(content, YAML_LIMITS),
+                Err(StrictYamlError::Decode { .. })
+            ));
+        }
+        assert_eq!(
+            parse_yaml_value("'1': value\n'null': value\n", YAML_LIMITS).unwrap(),
+            json!({"1": "value", "null": "value"})
+        );
+        assert_eq!(
+            parse_value(br#"{"1":1,"null":null}"#, "test", YAML_LIMITS).unwrap(),
+            json!({"1": 1, "null": null})
+        );
+    }
+
+    /// Decoded depth and UTF-8 byte bounds retain the shared typed classification.
+    #[test]
+    fn yaml_reports_decoded_depth_and_string_bounds() {
+        for content in ["a: {b: {c: null}}\n", "a: four\n", "a: éé\n", "long: 1\n"] {
+            assert!(matches!(
+                parse_yaml_value(content, LIMITS),
+                Err(StrictYamlError::Bounds {
+                    source: super::StrictJsonError::BoundsViolation { .. }
+                })
+            ));
+        }
+        assert_eq!(parse_yaml_value("a: {b: 1}\n", LIMITS).unwrap(), json!({"a": {"b": 1}}));
+        assert_eq!(parse_yaml_value("a: é\n", LIMITS).unwrap(), json!({"a": "é"}));
+    }
+
+    /// Ordinary mapping, sequence, scalar, and string-key aliases expand faithfully.
+    #[test]
+    fn yaml_preserves_ordinary_alias_expansion() {
+        let content = "original: &record {id: 7, flags: [true, false]}\ncopy: *record\nsequence: &items [1, two]\nsequence_copy: *items\nscalar: &name title\nscalar_copy: *name\nkey_map: {&key label: first}\nkey_copy: {*key : second}\n";
+        assert_eq!(
+            parse_yaml_value(content, YAML_LIMITS).unwrap(),
+            json!({
+                "original": {"id": 7, "flags": [true, false]},
+                "copy": {"id": 7, "flags": [true, false]},
+                "sequence": [1, "two"], "sequence_copy": [1, "two"],
+                "scalar": "title", "scalar_copy": "title",
+                "key_map": {"label": "first"}, "key_copy": {"label": "second"}
+            })
+        );
+    }
+
+    /// Expanded aliases remain subject to caller depth limits after decoding.
+    #[test]
+    fn yaml_aliases_are_checked_against_decoded_bounds() {
+        let content = "a: &leaf {b: 1}\nx: {y: *leaf}\n";
+        assert!(matches!(parse_yaml_value(content, LIMITS), Err(StrictYamlError::Bounds { .. })));
+    }
+
+    /// Decoder-erased URI-form tags limit the contract to the decoded JSON tree.
+    ///
+    /// This accepted example is a qualification of the existing dependency, not
+    /// proof that unsupported YAML tags are rejected or preserved. Ordinary
+    /// strings containing exclamation marks remain ordinary JSON strings.
+    #[test]
+    fn yaml_qualifies_erased_uri_tags_without_rejecting_ordinary_strings() {
+        assert_eq!(
+            parse_yaml_value("value: !<tag:example.invalid,2026:custom> 42\n", YAML_LIMITS,)
+                .unwrap(),
+            json!({"value": "42"})
+        );
+        assert_eq!(
+            parse_yaml_value(
+                "uri: https://example.invalid/!record\nprose: '!custom is quoted prose.'\n",
+                YAML_LIMITS,
+            )
+            .unwrap(),
+            json!({"uri": "https://example.invalid/!record", "prose": "!custom is quoted prose."})
+        );
+    }
+
+    /// Malformed syntax, non-finite numbers, and local tagged values fail decoding.
+    #[test]
+    fn yaml_rejects_malformed_nonfinite_and_local_tagged_values() {
+        for content in [
+            "a: [1\n",
+            "a: .nan\n",
+            "a: .inf\n",
+            "a: -.inf\n",
+            "a: !!float .inf\n",
+            "a: !custom value\n",
+            "a: !custom [1]\n",
+            "a: !custom {b: 1}\n",
+            "a: *missing\n",
+        ] {
+            assert!(
+                matches!(
+                    parse_yaml_value(content, YAML_LIMITS),
+                    Err(StrictYamlError::Decode { .. })
+                ),
+                "accepted {content:?}"
+            );
+        }
+        assert_eq!(parse_yaml_value("a: '.inf'\n", YAML_LIMITS).unwrap(), json!({"a": ".inf"}));
+    }
 
     #[test]
     fn classifies_duplicate_trailing_and_bound_violations_without_raw_keys() {

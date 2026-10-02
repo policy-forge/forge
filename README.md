@@ -47,9 +47,9 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 ## ✨ Features
 
 - **Markdown to OSCAL** — Convert policy documents into OSCAL Catalogs or Component Definitions
-- **Multi-format output** — JSON, XML, and YAML with round-trip fidelity between all three
+- **Multi-format output** — Generate Catalogs and Component Definitions in JSON, XML, and YAML
 - **Schema validation** — Validate supported OSCAL v1.2.0–v1.2.3 declarations against the pinned v1.2.3 JSON schemas with semantic checks
-- **Format conversion** — Export existing OSCAL artifacts between JSON, XML, and YAML
+- **Format conversion** — Export supported Catalog and Component Definition artifacts between JSON, XML, and YAML
 - **Requirement atomization** — Automatically split compound policy statements into individual controls
 - **Deterministic IDs** — UUID v5 generation ensures stable identifiers across re-conversions
 - **Citation extraction** — URLs and references extracted into OSCAL back-matter resources
@@ -105,17 +105,19 @@ forge convert large-policy.md --strategy catalog --format json --max-size 20
 ```
 ### Export
 
-Convert an existing OSCAL artifact between formats. Auto-detects the input format from the file extension.
+Export Catalog or Component Definition artifacts. The file extension selects the input format. JSON/YAML inputs exported to JSON/YAML retain the complete decoded native tree after schema and semantic validation, including authored fields, array order and version declarations. Formatting, object key order and YAML presentation are not preserved. XML inputs or targets use Forge's typed projection and may omit native fields.
+
+See [Native export verification](docs/native-export-verification.md) for the measured scope and YAML limits.
 
 ```bash
-# JSON to XML
+# JSON to YAML, retaining the complete decoded native tree
+forge export catalog.json --format yaml --output catalog.yaml
+
+# YAML back to JSON, retaining the same tree
+forge export catalog.yaml --format json --output returned-catalog.json
+
+# XML uses the typed projection; arbitrary native fields may be omitted
 forge export catalog.json --format xml
-
-# XML to YAML
-forge export catalog.xml --format yaml
-
-# YAML to JSON, written to a file
-forge export catalog.yaml --format json --output catalog.json
 ```
 
 ### Validate
