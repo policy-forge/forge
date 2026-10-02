@@ -14,6 +14,19 @@ import subprocess
 import tempfile
 import time
 
+def synthetic_framework_catalog():
+    """Keep the original review IDs and add 51 authored controls for a second page."""
+    controls=[{"id":"framework-a","title":"Synthetic A"},
+              {"id":"framework-b","title":"Synthetic B"}]
+    controls.extend({"id":f"framework-extra-{index:03}",
+                     "title":f"Synthetic pagination control {index}"}
+                    for index in range(1,52))
+    return {"catalog":{"uuid":"22222222-2222-4222-8222-222222222222",
+                       "metadata":{"title":"<img src=x onerror=alert(1)>",
+                                   "last-modified":"2026-09-10T00:00:00Z",
+                                   "version":"1","oscal-version":"1.2.3"},
+                       "controls":controls}}
+
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--forge",required=True)
 parser.add_argument("--node",default="node")
@@ -24,7 +37,7 @@ script=Path(__file__).resolve().parents[1]/"ui/tests/workspace.cjs"
 with tempfile.TemporaryDirectory(prefix="forge-browser-") as root:
     project=Path(root)
     (project/"policy.md").write_text("# Synthetic policy\n\n## Access\n\n- Operators must review the supplied clause.\n")
-    catalog={"catalog":{"uuid":"22222222-2222-4222-8222-222222222222","metadata":{"title":"<img src=x onerror=alert(1)>","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},"controls":[{"id":"framework-a","title":"Synthetic A"},{"id":"framework-b","title":"Synthetic B"}]}}
+    catalog=synthetic_framework_catalog()
     (project/"framework.json").write_text(json.dumps(catalog))
     if args.read_only:
         (project/"forge.workspace.json").write_text(json.dumps({"schema_version":"forge.workspace/1","label":"Synthetic read-only project <script>","resources":[{"key":"policy","role":"policy-source","path":"policy.md"},{"key":"framework","role":"oscal-catalog-artifact","path":"framework.json"}]}))

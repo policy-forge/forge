@@ -78,8 +78,14 @@ Reviewer labels are asserted provenance. Neither local unlock nor a mapping
 status authenticates a reviewer or approves a policy. Scope decisions and
 positive mapping participation remain separate facts. The Review Queue includes
 invalid/stale resources, explicit scope-review work, and unmapped subjects from
-validated mapping inputs. Filters and cursor pagination preserve full matching
-denominators and reject traversal against changed input versions.
+validated mapping inputs. Filters and cursor pagination show matching items and
+total inventory separately, together with the page number. A filtered count is
+shown only when its page and unfiltered total belong to the same input version.
+Next, Previous and Apply retain the previous rows during loading; a failed read
+labels them as previous results and offers Retry. A changed-input cursor offers
+Restart from first page. Successful page/filter actions focus their result list;
+failed reads focus the local error. The Overview review count also focuses its
+result list after the ordinary unsaved-edit decision.
 
 Rebuild the committed mapping collection or analyze committed scope decisions
 explicitly. A build/analysis prepares a report; confirming its receipt publishes
@@ -101,9 +107,22 @@ changed target, or failed confirmation.
 Operation results and idempotency keys remain queryable for the process's
 lifetime, within the documented session bounds. **Retry the same request**
 reuses its key; an identical commit retry returns the recorded result. A lost
-HTTP response does not authorize a new effect. Query the original operation
-before preparing another write. Background preparation can be cancelled;
-cancellation discards proposed results and never publishes files. Once a commit
+HTTP response does not authorize a new effect. Persistent operation rows remain
+available across views. They announce the reported preparation state and any
+supplied progress facts; missing or unreconciled counters remain indeterminate.
+No completion percentage or finish time is estimated. Cancel pending operation
+acknowledges a request separately from a terminal cancelled state. Cancellation
+discards proposed results and never publishes files.
+
+If the operation ID is known, Check operation status reads that same operation;
+it does not submit a new preparation. If the first response was lost before an ID
+was known, Retry the same request reuses the original key and body. Recovery and
+errors stay with their operation across navigation. Background completion offers
+Review prepared write; it does not open a preview in another view. Review uses
+the normal unsaved-edit decision. A failed preview read preserves the verified
+preparation for retry. Preparation success is not Saved: only confirmation of the
+exact receipt can publish the write. Stopping the workspace ends status recovery
+for that session. Once a commit
 has begun, it is not cancellable. An operation's deadline is checked before
 retaining prepared results; the shared CPU-bound domain engine is not forcibly
 interrupted mid-call.
@@ -204,9 +223,12 @@ Focused Inspect/Trace navigation uses the same unsaved-edit decision as ordinary
 navigation. Keep editing or Escape preserves values and returns focus to the
 connected enabled invoker; a failed provenance read preserves the form for retry.
 Successful destinations focus their heading, while failed navigation retains the
-error summary's focus. The [navigation verification record](workspace-navigation-verification.md)
-reports current source/docstring coverage and local macOS Chrome development runs.
-Those focused checks do not establish full accessibility acceptance.
+error summary's focus. The historical [navigation verification record](workspace-navigation-verification.md)
+and successor [live-state verification record](workspace-live-state-verification.md)
+report exact source/docstring scopes and local macOS Chrome development runs.
+The successor also exercises pagination, persistent operation recovery, rendered
+input borders and final-page reflow at 640 and 320 CSS pixels. Those focused checks
+do not establish full accessibility acceptance.
 
 Manual screen-reader/keyboard evaluation, WCAG 2.2 AA acceptance, the complete
 supported browser/platform matrix, security approval, five target-user studies,

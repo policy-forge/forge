@@ -1,7 +1,8 @@
 # Workspace navigation development verification
 
 This record covers the focused F05 navigation fix against baseline `aef0ab24`.
-It records applied-source development checks before PR drafting. It does not close
+It records historical applied-source development checks before PR drafting.
+The later [live-state record](workspace-live-state-verification.md) binds the successor assets. It does not close
 F05, PRD-062, a browser/platform acceptance gate, or the final documentation review.
 The [machine-readable receipt](workspace-navigation-verification.json) pins the
 source, both harnesses, API contract, development binary, logs and raw V8 output.
@@ -40,9 +41,11 @@ rtk proxy env NODE_V8_COVERAGE=/private/tmp/forge-f05-v8 node --test ui/tests/wo
 ## Actual browser runs
 
 Installed Google Chrome **154.0.8037.97**, driven by development-only Playwright
-**1.62.1** and its bundled Node **v22.22.3**, ran on macOS. Both POSIX wrappers exited
+**1.62.1** and browser-driver Node **v24.19.0**, ran on macOS.
+The historical JSON receipt already records that exact browser-driver runtime;
+Node **v22.22.3** above belongs to the separate actual-source suite. Both POSIX wrappers exited
 **0**. Writable mode completed **21** exact focus checks and read-only mode completed
-**2**. Both served JavaScript bodies matched the current source byte-for-byte with
+**2**. Both served JavaScript bodies matched that historical candidate byte-for-byte with
 SHA-256 `724368a21e2a500f9cb20417ba26a1ff4f079514a18c4cd6305581d6fd54bfdd`.
 The development debug binary checksum is recorded separately in the receipt.
 No browser/tool installation or new project dependency was needed.

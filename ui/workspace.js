@@ -9,6 +9,10 @@ let readOnly = true;
 let dirty = false;
 let nextRequestAt = 0;
 let viewFilters = {};
+// The server retains at most 256 operations per session.
+const operationRows = new Map();
+// Bound unacknowledged or direct-preview requests independently from server operations.
+const requestRows = new Map();
 const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports"];
 
 function node(tag, text, className) {
@@ -79,32 +83,98 @@ function table(caption, columns, rows) {
   grid.append(head, body); wrap.append(grid); return wrap;
 }
 
-async function pagedTable(path,caption,columns,filters=[]) {
-  const section=node("section");const form=node("form");const display=node("div");const controls=node("div");
-  const choices=filters.map(([key,label,values])=>{const select=fieldInput(form,label,"select",[["","All"],...values.map(value=>[value,value.replaceAll("-"," ")])]);select.required=false;if(viewFilters[key])select.value=viewFilters[key];return [key,select];});
-  let cursors=[null];let index=0;
-  const load=async()=>{
-    const query=new URLSearchParams({page_size:"50"});for(const [key,select] of choices)if(select.value)query.set(key,select.value);
-    if(cursors[index])query.set("cursor",cursors[index]);
-    const response=await api(`${path}?${query}`);const page=response.page;
-    display.replaceChildren(page.items.length?table(caption,columns,page.items):node("p","No matching items.","empty"),evidenceList(page.items));
-    controls.replaceChildren(node("p",`${page.total_matching} matching items · Page ${index+1}`));
-    if(index>0)controls.append(button("Previous page",async()=>{index--;await load();}));
-    if(page.next_cursor)controls.append(button("Next page",async()=>{cursors[index+1]=page.next_cursor;index++;await load();}));
-  };
-  form.addEventListener("submit",event=>event.preventDefault());
-  if(choices.length)form.append(button("Apply filters",async()=>{cursors=[null];index=0;await load();}));
-  section.append(form,display,controls);await load();return section;
+/** Validate bounded list metadata before publishing rows or a reconciled count. */
+function checkedPage(response, size) {
+  const page = response?.page;
+  if (typeof response?.resource_version !== "string" || response.resource_version.length < 8 || response.resource_version.length > 128 ||
+      !Array.isArray(page?.items) || page.items.length > size || !Number.isSafeInteger(page.total_matching) || page.total_matching < page.items.length ||
+      !(page.next_cursor === null || (typeof page.next_cursor === "string" && page.next_cursor.length > 0 && page.next_cursor.length <= 512)) ||
+      (page.next_cursor && !page.items.length)) throw new Error("The list returned unsupported page metadata. Retry this read.");
+  return page;
 }
 
-/** Return true only when this request installs the current destination view. */
+/** Keep table state, controls and live feedback until a current verified read succeeds. */
+async function pagedTable(path, caption, columns, filters = []) {
+  const owner = pending;
+  const section = node("section"); const form = node("form"); const display = node("div"); const controls = node("div");
+  display.tabIndex = -1; display.setAttribute("role", "region"); display.setAttribute("aria-label", caption); display.setAttribute("data-page-results", "");
+  const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-page-status", "");
+  const error = node("div"); error.hidden = true; error.tabIndex = -1; error.setAttribute("role", "alert"); error.setAttribute("data-page-error", "");
+  const choices = filters.map(([key, label, values]) => {
+    const select = fieldInput(form, label, "select", [["", "All"], ...values.map(value => [value, value.replaceAll("-", " ")])]);
+    select.required = false; if (viewFilters[key]) select.value = viewFilters[key]; return [key, select];
+  });
+  let cursors = [null]; let index = 0; let applied = Object.fromEntries(choices.map(([key, select]) => [key, select.value]));
+  let generation = 0; let busy = false; let summary = ""; let nextCursor = null; let lastRequest;
+  const actions = [];
+  /** Keep the initiating control focusable while preventing repeated pending reads. */
+  const pageAction = (label, action) => {
+    const control = node("button", label); control.type = "button"; actions.push(control);
+    control.setAttribute("aria-disabled", "false");
+    control.addEventListener("click", async () => { if (!busy && control.getAttribute("aria-disabled") !== "true") await action(); });
+    return control;
+  };
+  const previous = pageAction("Previous page", () => load(index - 1, cursors, applied, true)); previous.hidden = true;
+  const next = pageAction("Next page", () => { const staged = cursors.slice(); staged[index + 1] = nextCursor; return load(index + 1, staged, applied, true); }); next.hidden = true;
+  const retry = pageAction("Retry page", () => load(lastRequest.index, lastRequest.cursors, lastRequest.filters, true)); retry.hidden = true;
+  const restart = pageAction("Restart from first page", () => load(0, [null], lastRequest.filters, true)); restart.hidden = true;
+  /** Stage navigation, verify matching snapshot totals, then atomically publish this page. */
+  async function load(targetIndex, targetCursors, targetFilters, focusResults = false) {
+    const sequence = ++generation; const attached = section.isConnected;
+    /** Only this read in its original live view may publish results or focus. */
+    const current = () => !stopped && owner === pending && sequence === generation && (!attached || section.isConnected);
+    lastRequest = { index: targetIndex, cursors: targetCursors.slice(), filters: { ...targetFilters } };
+    busy = true; actions.forEach(control => control.setAttribute("aria-disabled", "true"));
+    display.setAttribute("aria-busy", "true"); error.hidden = true;
+    status.textContent = `${caption}: Loading results…${summary ? ` Previous results: ${summary}` : ""}`;
+    try {
+      const query = new URLSearchParams({ page_size: "50" });
+      for (const [key, value] of Object.entries(targetFilters)) if (value) query.set(key, value);
+      if (targetCursors[targetIndex]) query.set("cursor", targetCursors[targetIndex]);
+      const filtered = Object.values(targetFilters).some(Boolean);
+      const response = await api(`${path}?${query}`); const page = checkedPage(response, 50);
+      let total = page.total_matching;
+      if (filtered) {
+        const unfiltered = await api(`${path}?page_size=1`); const denominator = checkedPage(unfiltered, 1);
+        if (response.resource_version !== unfiltered.resource_version || denominator.total_matching < page.total_matching) {
+          const conflict = new Error("The list changed between filtered and total reads. Restart from its first page.");
+          conflict.details = { code: "version-conflict", retryable: true }; throw conflict;
+        }
+        total = denominator.total_matching;
+      }
+      if (!current()) return;
+      index = targetIndex; cursors = targetCursors.slice(); applied = { ...targetFilters }; nextCursor = page.next_cursor;
+      display.replaceChildren(page.items.length ? table(caption, columns, page.items) : node("p", "No matching items.", "empty"), evidenceList(page.items));
+      summary = `${page.total_matching} matching items of ${total} total · Page ${index + 1}.`;
+      status.textContent = summary; retry.hidden = true; restart.hidden = true;
+      if (focusResults && section.isConnected) display.focus();
+      previous.hidden = index === 0; next.hidden = !nextCursor;
+    } catch (failure) {
+      if (!current()) return;
+      error.textContent = `${failure instanceof Error ? failure.message : "The list could not be read."}${summary ? " Previous results are retained; they do not reflect this failed read." : " No results could be loaded."}`;
+      error.hidden = false; status.textContent = `${caption}: Results could not be loaded.${summary ? ` Previous results: ${summary}` : ""}`;
+      retry.hidden = false; restart.hidden = failure.details?.code !== "version-conflict";
+      if (section.isConnected) error.focus();
+    } finally {
+      if (current()) { busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false")); }
+    }
+  }
+  form.addEventListener("submit", event => event.preventDefault());
+  if (choices.length) form.append(pageAction("Apply filters", () => load(0, [null], Object.fromEntries(choices.map(([key, select]) => [key, select.value])), true)));
+  controls.append(previous, next, retry, restart); section.append(form, status, error, display, controls);
+  await load(0, cursors, applied); return section;
+}
+
+/** Install only the current live view; inline page failures retain their own error focus. */
 async function renderView() {
+  if (stopped) return false;
   const sequence = ++pending;
   element("error").hidden = true;
   element("status").textContent = "Loading project state…";
   element("refresh").disabled = true;
   element("view").inert = true;
   const fragment = document.createDocumentFragment();
+  let pageError;
   try {
     if (activeView === "Overview") {
       const summary = await api("/project/summary");
@@ -116,7 +186,7 @@ async function renderView() {
         ["Invalid inputs",summary.resource_counts.invalid,"Policies & Artifacts",{validation_state:"invalid"}],
         ["Stale inputs",summary.resource_counts.stale,"Policies & Artifacts",{stale:"true"}]
       ]) {
-        const card=button("",()=>navigate(destination,filters));card.className="card";
+        const card=button("",()=>navigate(destination,filters,destination === "Review Queue"));card.className="card";
         card.append(node("strong",count),node("span",label));cards.append(card);
       }
       fragment.append(cards);
@@ -151,13 +221,15 @@ async function renderView() {
       for (const resource of resources) fragment.append(button(`Trace ${resource.key}`, () => showProvenance(resource.resource_id)));
       if (!readOnly) fragment.append(exportForm());
     }
-    if (sequence !== pending) return false;
+    if (sequence !== pending || stopped) return false;
     element("view").replaceChildren(fragment);
     element("view-title").textContent = activeView;
-    element("status").textContent = "Project state loaded.";
-    return true;
-  } catch (error) { if (sequence === pending) { element("view").replaceChildren(); showError(error); element("status").textContent = "The view could not be loaded."; } return false; }
-  finally { if (sequence === pending) {element("refresh").disabled = false;element("view").inert = false;} }
+    pageError = element("view").querySelector("[data-page-error]");
+    if (pageError?.hidden) pageError = undefined;
+    element("status").textContent = pageError ? "The table could not be loaded." : "Project state loaded.";
+    return !pageError;
+  } catch (error) { if (sequence === pending && !stopped) { element("view").replaceChildren(); showError(error); element("status").textContent = "The view could not be loaded."; } return false; }
+  finally { if (sequence === pending && !stopped) {element("refresh").disabled = false;element("view").inert = false;pageError?.focus();} }
 }
 
 element("unlock-form").addEventListener("submit", async (event) => {
@@ -190,7 +262,10 @@ element("refresh").addEventListener("click", () => navigate(activeView,viewFilte
 element("stop").addEventListener("click", () => element("stop-dialog").showModal());
 element("keep-working").addEventListener("click", () => element("stop-dialog").close());
 element("confirm-stop").addEventListener("click", async () => {
-  try { await api("/session/shutdown", "POST", {}); stopped = true; capability = ""; element("stop-dialog").close(); element("workspace").hidden = true; element("stop").hidden = true; element("connection").textContent = "Stopped"; element("status").textContent = "Workspace stopped. Relaunch it from the terminal to continue."; element("main").focus(); }
+  try { await api("/session/shutdown", "POST", {}); stopped = true; pending++; capability = "";
+    for (const row of operationRows.values()) { row.generation++; row.status.textContent = "Workspace stopped. Operation status is no longer queryable in this session."; row.cancel.setAttribute("aria-disabled", "true"); row.check.setAttribute("aria-disabled", "true"); row.review.disabled = true; }
+    for (const row of requestRows.values()) { row.status.textContent = "Workspace stopped. The request cannot be recovered in this session."; row.retry.setAttribute("aria-disabled", "true"); row.review.setAttribute("aria-disabled", "true"); }
+    element("stop-dialog").close(); element("workspace").hidden = true; element("stop").hidden = true; element("connection").textContent = "Stopped"; element("status").textContent = "Workspace stopped. Relaunch it from the terminal to continue."; element("main").focus(); }
   catch (error) { element("stop-dialog").close(); showError(error); }
 });
 
@@ -207,14 +282,17 @@ function focusViewTitle() {
   heading.focus();
 }
 
-/** Return false only for cancellation, so a triggering action can restore its focus. */
-async function navigate(title, filters = {}) {
+/** Return false only for cancellation; count activation may request result-list focus. */
+async function navigate(title, filters = {}, focusResults = false) {
   if (!await allowViewChange()) return false;
   dirty = false; activeView = title; viewFilters = filters;
   for (const sibling of element("navigation").children) {
     if (sibling.textContent === title) sibling.setAttribute("aria-current", "page"); else sibling.removeAttribute("aria-current");
   }
-  if (await renderView()) focusViewTitle();
+  if (await renderView()) {
+    const results = focusResults && element("view").querySelector("[data-page-results]");
+    if (results) results.focus(); else focusViewTitle();
+  }
 }
 
 /** Native Escape/close keeps edits; only Discard edits permits a view replacement. */
@@ -259,32 +337,239 @@ function field(form, label, type = "text", options) {
   input.addEventListener("input", () => {dirty = true;});
   return input;
 }
-async function effect(path, method, request) {
-  const key = crypto.randomUUID();
-  const send = async () => {
-    let value = await api(path, method, request, key);
-    const operationId=value.operation_id;
-    if (value.operation_id && value.state) {
-      element("status").textContent = `Operation ${value.state}.`;
-      const cancel=button("Cancel pending operation",()=>api(`/operations/${encodeURIComponent(operationId)}/cancellation`,"POST",{}));
-      element("status").append(cancel);
-      try {
-        while (value.state === "pending" || value.state === "running") {
-          await new Promise(resolve => setTimeout(resolve,500));
-          value = await api(`/operations/${encodeURIComponent(operationId)}`);
-        element("connection").textContent=`Local · Operation ${value.state}`;
-        }
-      } finally {cancel.remove();}
-      if (value.state !== "succeeded") {const error=new Error(value.error?.message || `Operation ${value.state}.`);error.details=value.error||{retryable:false};throw error;}
-      value = value.result;
-    }
-    await preview(value.preview || value.report_preview,path === "/exports" ? operationId : undefined);
-  };
-  try {await send();} catch(error) {showError(error);if(error.details?.retryable!==false)element("error").append(button("Retry the same request",send));}
+/** Reuse one session-owned region outside the replaceable view and global status. */
+function operationRegion() {
+  let region = element("operation-region");
+  if (!region) { region = node("section"); region.id = "operation-region"; region.setAttribute("aria-label", "Workspace operations"); element("main").append(region); }
+  return region;
 }
-async function preview(proposed, exportOperation) {
+
+/** Keep bounded recovery for an unacknowledged request using its original replay key. */
+function pendingRequestRow(key, path, retry) {
+  if (requestRows.size >= 256) throw new Error("The supported request display bound was reached. Resolve pending requests or relaunch the workspace.");
+  const article = node("article"); article.hidden = true; article.setAttribute("data-pending-request-id", key);
+  const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-request-status", ""); status.tabIndex = -1; status.setAttribute("aria-label", `Preparation request ${path} status`);
+  const error = node("div"); error.hidden = true; error.setAttribute("role", "alert"); error.setAttribute("data-request-error", "");
+  const row = { key, path, article, status, error, busy: false, prepared: null };
+  /** Prevent duplicate activation while keeping the initiating native control focused. */
+  const requestAction = (label, action) => {
+    const control = node("button", label); control.type = "button"; control.setAttribute("aria-disabled", "false");
+    control.addEventListener("click", async () => {
+      if (stopped || row.busy || requestRows.get(key) !== row || control.getAttribute("aria-disabled") === "true") return;
+      row.busy = true; row.retry.setAttribute("aria-disabled", "true"); row.review.setAttribute("aria-disabled", "true");
+      try { await action(); } catch (failure) { if (!stopped && requestRows.get(key) === row) pendingRequestFailure(row, failure); }
+      finally { row.busy = false; if (!stopped && requestRows.get(key) === row) { row.retry.setAttribute("aria-disabled", "false"); row.review.setAttribute("aria-disabled", "false"); } }
+    }); return control;
+  };
+  row.retry = requestAction("Retry the same request", retry);
+  row.review = requestAction("Review prepared write", async () => {
+    if (!row.prepared || !await allowViewChange()) return;
+    const origin = pending;
+    const opened = await preview(row.prepared, undefined, () => !stopped && requestRows.get(key) === row && origin === pending && !document.querySelector("dialog[open]"));
+    if (opened && !stopped && requestRows.get(key) === row) { row.error.hidden = true; row.status.textContent = "Preparation is ready for review; no write has been confirmed."; }
+  }); row.review.hidden = true;
+  article.append(node("h2", `Preparation request: ${path}`), status, error, row.retry, row.review); operationRegion().append(article); requestRows.set(key, row); return row;
+}
+
+/** Announce local recovery without changing a newer destination's global error or focus. */
+function pendingRequestFailure(row, failure) {
+  row.article.hidden = false; row.error.hidden = false; row.error.textContent = failure instanceof Error ? failure.message : "The preparation could not be read.";
+  row.status.textContent = row.prepared ? "Preparation is ready. The prepared write could not be loaded; review it again before confirming." :
+    failure.details?.retryable === false ? "The request response is unsupported. Relaunch the workspace before preparing another write." :
+    "The request outcome is unknown. No operation ID was received. Retry the same request before preparing another write.";
+  row.retry.hidden = !!row.prepared || failure.details?.retryable === false; row.review.hidden = !row.prepared;
+}
+
+/** Release a request slot and transfer only the focus that belonged to that removed row. */
+function removePendingRequest(row, destination) {
+  const transferFocus = !stopped && row.article.contains(document.activeElement) && destination?.isConnected;
+  requestRows.delete(row.key); row.article.remove();
+  if (transferFocus) destination.focus();
+}
+
+/** Create bounded, session-owned operation rows that navigation cannot overwrite. */
+function operationRow(id, path, origin) {
+  if (operationRows.has(id)) return operationRows.get(id);
+  if (operationRows.size >= 256) throw new Error("The supported operation display bound was reached. Relaunch the workspace.");
+  const region = operationRegion();
+  const article = node("article"); article.setAttribute("data-operation-id", id);
+  const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-operation-status", ""); status.tabIndex = -1; status.setAttribute("aria-label", `Operation ${id} status`);
+  const error = node("div"); error.hidden = true; error.setAttribute("role", "alert"); error.setAttribute("data-operation-error", "");
+  const row = { id, path, origin, article, status, error, generation: 0, polling: false, unknown: false, terminal: false, cancelRequested: false, cancellationPending: false, reviewing: false, last: null };
+  /** Guard action activation without disabling a focused native control. */
+  const operationAction = (label, action) => {
+    const control = node("button", label); control.type = "button"; control.setAttribute("aria-disabled", "false");
+    control.addEventListener("click", async () => { if (operationCurrent(row) && control.getAttribute("aria-disabled") !== "true") await action(); });
+    return control;
+  };
+  row.cancel = operationAction("Cancel pending operation", async () => {
+    row.cancellationPending = true; row.generation++;
+    row.status.textContent = "Requesting cancellation; awaiting acknowledgment."; refreshOperationActions(row);
+    try {
+      const value = await api(`/operations/${encodeURIComponent(id)}/cancellation`, "POST", {});
+      if (!operationCurrent(row)) return;
+      if (value.cancel_requested !== true) throw new Error("Cancellation could not be verified. Check the operation status.");
+      row.cancelRequested = true; acceptOperation(row, value);
+    } catch (failure) { if (operationCurrent(row)) operationUnknown(row, failure); }
+    finally { row.cancellationPending = false; if (operationCurrent(row)) refreshOperationActions(row); }
+  });
+  row.check = operationAction("Check operation status", async () => { if (!row.polling) await pollOperation(row, true); }); row.check.hidden = true;
+  row.review = operationAction("Review prepared write", async () => {
+    if (!operationCurrent(row) || row.last?.state !== "succeeded" || row.polling || row.reviewing) return;
+    row.reviewing = true; refreshOperationActions(row);
+    try {
+      if (!await allowViewChange()) return;
+      const reviewOrigin = pending; const result = row.last.result;
+      const opened = await preview(result.preview || result.report_preview, path === "/exports" ? id : undefined, () => operationCurrent(row) && reviewOrigin === pending && !document.querySelector("dialog[open]"));
+      if (opened && operationCurrent(row)) { row.error.hidden = true; row.status.textContent = "Operation succeeded. Preparation is ready for review; no write has been confirmed."; }
+    } catch (failure) { if (operationCurrent(row)) operationPreviewFailure(row, failure); }
+    finally { row.reviewing = false; if (operationCurrent(row)) refreshOperationActions(row); }
+  }); row.review.hidden = true;
+  article.append(node("h2", `Operation ${id}`), status, error, row.cancel, row.check, row.review); region.append(article);
+  operationRows.set(id, row); return row;
+}
+
+/** Removed rows and stopped sessions cannot publish a response or open a preview. */
+function operationCurrent(row) {
+  return !stopped && row.article.isConnected && operationRows.get(row.id) === row;
+}
+
+/** Preserve a focused action while making unavailable operations inert to activation. */
+function refreshOperationActions(row) {
+  const unavailable = row.terminal || row.unknown || row.cancelRequested || row.cancellationPending || stopped;
+  row.cancel.setAttribute("aria-disabled", String(unavailable));
+  row.cancel.hidden = row.terminal && document.activeElement !== row.cancel;
+  row.check.setAttribute("aria-disabled", String(row.polling || row.terminal || stopped));
+  row.check.hidden = !row.unknown && document.activeElement !== row.check;
+  row.review.hidden = row.last?.state !== "succeeded";
+  row.review.setAttribute("aria-disabled", String(row.polling || row.reviewing || stopped));
+}
+
+/** Recover unverified work by GET; a late action error cannot erase verified terminal state. */
+function operationUnknown(row, failure) {
+  row.error.textContent = failure instanceof Error ? failure.message : "The operation could not be verified."; row.error.hidden = false;
+  if (!row.terminal) {
+    row.unknown = true;
+    row.status.textContent = `${row.cancelRequested ? "Cancellation was requested. " : ""}Operation outcome is unknown. Check operation status before retrying.`;
+  }
+  refreshOperationActions(row);
+}
+
+/** A preview-read failure cannot erase a verified successful preparation state. */
+function operationPreviewFailure(row, failure) {
+  row.unknown = false;
+  row.status.textContent = "Operation succeeded. The prepared write could not be loaded; review it again before confirming.";
+  row.error.textContent = failure instanceof Error ? failure.message : "The prepared write could not be read."; row.error.hidden = false;
+  refreshOperationActions(row);
+}
+
+/** Accept only declared operation states and supplied progress facts for this exact ID. */
+function acceptOperation(row, value) {
+  const expectedKind = { "/conversions": "conversion", "/applicability/analyses": "applicability-analysis", "/mapping/builds": "mapping-build", "/exports": "export" }[row.path];
+  if (value?.operation_id !== row.id || !expectedKind || value.kind !== expectedKind ||
+      !["pending", "running", "succeeded", "failed", "cancelled"].includes(value.state) || typeof value.cancel_requested !== "boolean" ||
+      !Number.isFinite(Date.parse(value.created_at)) || !Number.isFinite(Date.parse(value.updated_at))) throw new Error("The operation returned an unsupported state or identity. Check its status before continuing.");
+  if (row.terminal) return;
+  let progress = "Progress is indeterminate.";
+  if (value.progress !== undefined && value.progress !== null) {
+    if (!Number.isSafeInteger(value.progress.completed_items) || value.progress.completed_items < 0 || !Number.isSafeInteger(value.progress.total_items) || value.progress.total_items < 0) throw new Error("The operation returned unsupported progress facts. Check its status before continuing.");
+    progress = value.progress.completed_items > value.progress.total_items ? "Reported progress counters do not reconcile; completion is indeterminate." : `${value.progress.completed_items} of ${value.progress.total_items} items reported.`;
+  }
+  if (value.state === "succeeded" && !(value.result?.preview?.preview_id || value.result?.report_preview?.preview_id)) throw new Error("The operation succeeded without a verified prepared-write reference. Check its status before continuing.");
+  row.last = value; row.cancelRequested ||= value.cancel_requested; row.unknown = false; row.error.hidden = true;
+  row.terminal = !["pending", "running"].includes(value.state);
+  const text = value.state === "succeeded" ? "Operation succeeded. Preparation is ready for review; no write has been confirmed." :
+    value.state === "failed" ? `Operation failed. ${value.error?.message || "No prepared write is available."}` :
+    value.state === "cancelled" ? "Operation cancelled. No prepared write is available." :
+    `Operation ${value.state}. ${row.cancelRequested ? "Cancellation requested; awaiting terminal state. " : ""}${progress}`;
+  if (row.status.textContent !== text) row.status.textContent = text;
+  refreshOperationActions(row);
+}
+
+/** Read known work with bounded polling; response loss retains an explicit GET recovery path. */
+async function pollOperation(row, checkImmediately = false) {
+  if (!operationCurrent(row) || row.polling || row.terminal) return;
+  row.polling = true; refreshOperationActions(row);
+  try {
+    for (let attempts = 0; attempts < 120 && operationCurrent(row) && !row.terminal; attempts++) {
+      if (!checkImmediately || attempts > 0) await new Promise(resolve => setTimeout(resolve, 500));
+      if (!operationCurrent(row)) return;
+      const generation = row.generation;
+      let value;
+      try { value = await api(`/operations/${encodeURIComponent(row.id)}`); }
+      catch (failure) { if (!operationCurrent(row)) return; if (generation !== row.generation) continue; throw failure; }
+      if (!operationCurrent(row)) return;
+      if (generation !== row.generation) continue;
+      acceptOperation(row, value);
+    }
+    if (operationCurrent(row) && !row.terminal) operationUnknown(row, new Error("Polling reached its supported read bound. Check operation status to continue."));
+    if (operationCurrent(row) && row.last?.state === "succeeded" && row.origin === pending && !document.querySelector("dialog[open]")) {
+      await preview(row.last.result.preview || row.last.result.report_preview, row.path === "/exports" ? row.id : undefined, () => operationCurrent(row) && row.origin === pending && !document.querySelector("dialog[open]"));
+    }
+  } catch (failure) {
+    if (operationCurrent(row)) {
+      if (row.last?.state === "succeeded" && row.terminal) operationPreviewFailure(row, failure); else operationUnknown(row, failure);
+    }
+  }
+  finally { row.polling = false; if (operationCurrent(row)) refreshOperationActions(row); }
+}
+
+/** Preparation retries reuse one key until an ID is known; known work is recovered by GET. */
+async function effect(path, method, request) {
+  const key = crypto.randomUUID(); const origin = pending; let row; let recovery; let sending = false;
+  /** Replay only an unacknowledged request; once acknowledged, query its existing operation. */
+  const send = async () => {
+    if (stopped) return;
+    if (row) { await pollOperation(row, true); return; }
+    const value = await api(path, method, request, key);
+    if (stopped) return;
+    if (value?.operation_id !== undefined || value?.state !== undefined) {
+      if (typeof value.operation_id !== "string" || !/^op_[0-9a-z]{12,80}$/.test(value.operation_id)) {
+        const unsupported = new Error("The operation returned an unsupported identity. Relaunch the workspace before continuing."); unsupported.details = { retryable: false }; throw unsupported;
+      }
+      row = operationRow(value.operation_id, path, origin); removePendingRequest(recovery, row.status);
+      try {
+        acceptOperation(row, value);
+        if (!row.terminal) await pollOperation(row);
+        else if (row.last?.state === "succeeded" && origin === pending && !document.querySelector("dialog[open]")) await preview(row.last.result.preview || row.last.result.report_preview, path === "/exports" ? row.id : undefined, () => operationCurrent(row) && origin === pending && !document.querySelector("dialog[open]"));
+      } catch (failure) {
+        if (operationCurrent(row)) {
+          if (row.last?.state === "succeeded" && row.terminal) operationPreviewFailure(row, failure); else operationUnknown(row, failure);
+        }
+      }
+      return;
+    }
+    recovery.prepared = value.preview || value.report_preview;
+    if (!recovery.prepared?.preview_id) throw new Error("The operation did not return a prepared write.");
+    const transferFocus = document.activeElement === recovery.retry;
+    recovery.article.hidden = false; recovery.retry.hidden = true; recovery.review.hidden = false; recovery.error.hidden = true;
+    recovery.status.textContent = "Preparation is ready for review; no write has been confirmed.";
+    if (transferFocus && recovery.status.isConnected) recovery.status.focus();
+    const opened = await preview(recovery.prepared, undefined, () => !stopped && origin === pending && !document.querySelector("dialog[open]"));
+    if (opened) removePendingRequest(recovery);
+  };
+  /** Keep background failures local while preserving the original request's replay identity. */
+  const attempt = async () => {
+    if (sending || stopped) return;
+    sending = true;
+    try { await send(); } catch (failure) {
+      if (stopped) return;
+      pendingRequestFailure(recovery, failure);
+      if (origin === pending && !recovery.busy) {
+        showError(failure);
+        if (!row && !recovery.prepared && failure.details?.retryable !== false) element("error").append(button("Retry the same request", attempt));
+      }
+    } finally { sending = false; }
+  };
+  try { recovery = pendingRequestRow(key, path, attempt); } catch (failure) { if (!stopped) showError(failure); return; }
+  await attempt();
+}
+
+/** Resolve true only after opening the current prepared-write preview following its read. */
+async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
   if(!proposed?.preview_id)throw new Error("The operation did not return a prepared write.");
   const current = await api(`/effects/previews/${encodeURIComponent(proposed.preview_id)}`);
+  if (!isCurrent()) return false;
   const dialog = element("preview-dialog"); const content = element("preview-content");
   dialog.querySelector("[role=alert]")?.remove();
   content.replaceChildren(Object.assign(node("h2", "Review proposed write"),{id:"preview-title"}),node("p", `${current.target.status}: ${current.target.path}`),node("p", current.semantic_summary),
@@ -308,7 +593,7 @@ async function preview(proposed, exportOperation) {
       const url=URL.createObjectURL(blob);const link=node("a","Download report");link.href=url;link.download="forge-redacted-report.html";document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }));
   }));
-  dialog.showModal();content.querySelector("h2").tabIndex=-1;content.querySelector("h2").focus();
+  dialog.showModal();content.querySelector("h2").tabIndex=-1;content.querySelector("h2").focus();return true;
 }
 function resourceActions(resources) {
   const region = node("section");region.append(node("h2","Project files"));
