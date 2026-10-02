@@ -501,7 +501,7 @@ mod tests {
             requirements: vec![],
         };
 
-        assert!(section.requirements.is_empty());
+        assert_eq!(section.requirements, [] as [crate::model::PolicyRequirement; 0]);
         assert!(section.children.is_empty());
         assert!(section.body_text.is_none());
     }

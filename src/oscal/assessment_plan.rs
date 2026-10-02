@@ -572,7 +572,7 @@ mod tests {
         assert_eq!(ap.metadata.title, "Assessment Plan for Corp Policy");
         assert_eq!(ap.metadata.version, "1.0.0");
         assert_eq!(ap.metadata.oscal_version, crate::oscal::metadata::OSCAL_VERSION);
-        assert!(!ap.metadata.last_modified.is_empty());
+        assert_ne!(ap.metadata.last_modified, "");
     }
 
     // ─── T004: AC-4 — Reviewed controls with 10 IDs ────────────────────
@@ -840,7 +840,7 @@ mod tests {
 
         assert!(task.description.contains("No assessment guidance available"));
         assert_eq!(task.task_type, "action");
-        assert!(!task.uuid.is_empty());
+        assert_ne!(task.uuid, "");
         let activity = &task.associated_activities.as_ref().unwrap()[0];
         assert_eq!(activity.title, "Review: (empty requirement text)");
         assert!(activity.description.contains("No assessment activity guidance available"));
@@ -864,7 +864,7 @@ mod tests {
         let activities = tasks[0].associated_activities.as_ref().unwrap();
 
         assert_eq!(activities.len(), 1);
-        assert!(!activities[0].uuid.is_empty());
+        assert_ne!(activities[0].uuid, "");
         assert!(activities[0].title.starts_with("Review: "));
         assert!(activities[0].description.contains("Examine evidence"));
     }

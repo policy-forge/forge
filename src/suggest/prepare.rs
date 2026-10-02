@@ -607,7 +607,7 @@ mod tests {
         let (task, payload, units, redactions) =
             assemble(std::slice::from_ref(&draft), &[]).unwrap();
         assert_eq!(task.kind, TaskKind::PolicyDrafting);
-        assert!(redactions.is_empty());
+        assert_eq!(redactions, [] as [crate::suggest::request::RedactionRecord; 0]);
         let unit = &units[0];
         let start = usize::try_from(unit.payload.start).unwrap();
         let end = usize::try_from(unit.payload.end).unwrap();

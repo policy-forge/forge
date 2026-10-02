@@ -13,7 +13,7 @@ fn identical_policy_emits_complete_json_and_exits_zero() {
     let output = forge().args(["migrate", fixture, fixture, "--format", "json"]).output().unwrap();
 
     assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr, [] as [u8; 0]);
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["schema_version"], "forge.migration-report/1");
     assert_eq!(report["forge_version"], env!("CARGO_PKG_VERSION"));
@@ -34,7 +34,7 @@ fn substantive_change_report_is_written_before_exit_one() {
     let output = forge().args(["migrate", old, new, "--format", "json"]).output().unwrap();
 
     assert_eq!(output.status.code(), Some(1));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr, [] as [u8; 0]);
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["summary"]["substantive_change_candidates"], 1);
 }
@@ -47,7 +47,7 @@ fn analysis_failure_exits_two_without_partial_report() {
         .unwrap();
 
     assert_eq!(output.status.code(), Some(2));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
     assert!(String::from_utf8_lossy(&output.stderr).contains("Migration error"));
 }
 

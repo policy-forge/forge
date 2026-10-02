@@ -1,0 +1,1167 @@
+{
+  "base": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "files": [
+    {
+      "path": "src/authoring/handoff.rs",
+      "old_sha256": "5b36dfa3d23201406b9fbc6f064d5e5070d6e751f6d3232b26ee27fd08690001",
+      "new_sha256": "002fb37db55865eb5d4402ca96b30c8944e53e67de0bda073adb06050146253c",
+      "assertions": 2,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 2
+    },
+    {
+      "path": "src/authoring/impact.rs",
+      "old_sha256": "d15be0d1ab9729f9ae4ff0a9b8229a42516629f4d5cc641ab4d3942bcc0e9fc5",
+      "new_sha256": "8a8a0f99daabafddec7c8d779a82916ff1e2d974a8aa50e93651c24e70051d5d",
+      "assertions": 3,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 3
+    },
+    {
+      "path": "src/authoring/plan.rs",
+      "old_sha256": "593de8b5283eb23794bb1d44a7fd5ac1816913a2eb79cc58c4fd62395d916a8f",
+      "new_sha256": "d8f7b902ac1012cea314584168bc6adaf957a92da246dc8352cf50dd00f82e9e",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/authoring/scaffold.rs",
+      "old_sha256": "89751b281d18409ff4ac951ded419af5fa425f578419254f28caf57c40e8b6b1",
+      "new_sha256": "4313e891ae1b860fb2f2907dae09100437e9e3394e011443e68ce380307564f5",
+      "assertions": 6,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 6
+    },
+    {
+      "path": "src/citation.rs",
+      "old_sha256": "7ae805f9d4f8c4b106ccaa3f9bc95be7e459806c035edbcf3715c61f12f006b3",
+      "new_sha256": "bc74a27f8517adee3edfe9609a4e6276b987bc742dac145a5a6eb18b1f7f0bf0",
+      "assertions": 4,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 4
+    },
+    {
+      "path": "src/cli/convert.rs",
+      "old_sha256": "1db49e93f7ebc52714924fd95d5407be9da8ee6f68c6e0ccada15ab6dc09f8bf",
+      "new_sha256": "97d114cc0ae76454040dbf1c0f501ad9a039c58804b126ab9077fb578ab397a6",
+      "assertions": 2,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/diff/engine.rs",
+      "old_sha256": "419da9715826ee6bb4a3a6107cefd5fedb2456fd07448bfe9db8bfc0103587ab",
+      "new_sha256": "4150515b6a392c8dc4d72e6e713b8ccf1040b0184e5edc08a2d093f3986391dc",
+      "assertions": 3,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 2
+    },
+    {
+      "path": "src/diff/extractor.rs",
+      "old_sha256": "7ad2da79c254e823a00bd1ae7c4571b0348868e689770606fc4299b725e35103",
+      "new_sha256": "2f1f9352a881a28d65dbfc3c8bfe75712f47615969c52c76ddcd7e37334ce745",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/error.rs",
+      "old_sha256": "6e2f79f2c424092952d1d5795c9d7daa9ce418e6f8d82424a4b7eaa3c5f0543e",
+      "new_sha256": "274c392b0a08c1d56f25dd09abed1e060e69116ca486ffce876938d50e0b1cb0",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/export/xml_deserializer.rs",
+      "old_sha256": "be0f935cda5162ddd2d3caa6fe35671f3363c02224b6c2982dc2c95c53c95135",
+      "new_sha256": "8555b8f82f1b13a74f64b6ea66173d4029655f0e20c3af688f9c6f89023a948c",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/export/yaml.rs",
+      "old_sha256": "f5bf35cb707dac78c4207584ab73fbda119f135b0d2c122dd68d0d5ab7109ea0",
+      "new_sha256": "8268d34e84ddb062d3d47a3fbb7cf8db5b4adb020993b33a0cdc579e11207736",
+      "assertions": 1,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 0
+    },
+    {
+      "path": "src/model/mod.rs",
+      "old_sha256": "7e5b86d4dd43ad4c04c48beca434aca3089624d2c5e9432094bad1ffdc032073",
+      "new_sha256": "add883ecefc776866599896780e6177b6d0221e205a9492f9de9577df9c7b36c",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/oscal/assessment_plan.rs",
+      "old_sha256": "a238d433d360b80e4a4fd3d3a05b76332749d90dd0591abbc4cde1e2e4c6c6f8",
+      "new_sha256": "70dc54a617aa49872f96cfdae01f444ed49c0835814cdbfe3bc69cb29abb6cce",
+      "assertions": 3,
+      "nonempty": 3,
+      "production_unchanged": true,
+      "empty": 0
+    },
+    {
+      "path": "src/oscal/catalog.rs",
+      "old_sha256": "43a5176c410e1b727c77455a3829bc6f177c9ed6579a39a2b55881d4588fcf19",
+      "new_sha256": "7c05e0234780577f17e466afac58b41770d9c59df1c2652c576bc118d8c69d5d",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/oscal/component_definition.rs",
+      "old_sha256": "84c7c101ddaff250d869cd41979496ac65476817c8196d94d65febd996efe0f3",
+      "new_sha256": "e851cd4c8c03f10e37a636158f2105749da12577d8d0a54d4e729ec91d9dbb08",
+      "assertions": 3,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 2
+    },
+    {
+      "path": "src/oscal/parts.rs",
+      "old_sha256": "b611f90b0b00408227e09c147867c495dcb312bf40de0fa90c0d56f4d1ec6d9d",
+      "new_sha256": "4bf0407afd9f9a1be0de8766912cbf734f2c64521c448a7c277f90af420b6273",
+      "assertions": 2,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 2
+    },
+    {
+      "path": "src/oscal/ssp.rs",
+      "old_sha256": "10d54523a947d2ad01d5e476600c94e340f86990d71055bf45c5400a71592b61",
+      "new_sha256": "3f4b474c013ba8c6e5902ba9b1523622ae8ac30535435255f08be0dd4af49383",
+      "assertions": 2,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/oscal/trace_embedding.rs",
+      "old_sha256": "5b3e977c226c6e51e2e7b16995c086bd932c5c0acb6011f55b8ccce224fda729",
+      "new_sha256": "a1cf9eaa93cbc9ddc8c90cbc311f1e2cd75b17fc14201fb397157f690f4d4cce",
+      "assertions": 3,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 3
+    },
+    {
+      "path": "src/parameter/mod.rs",
+      "old_sha256": "ed28a9c63bc8f728ec8e20c3a22f2dbb26c362844634e6f8c786e835231815cf",
+      "new_sha256": "f851c8550a30e12c492f3629520de33ec5c8eeed939c48b38290946af517dce6",
+      "assertions": 6,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 5
+    },
+    {
+      "path": "src/parse/atomize.rs",
+      "old_sha256": "b0ac0f6e9652e7f1de9323042a2d1f750dc45e0c25f3f1984f764d07e69fec31",
+      "new_sha256": "ae54697f483a7650669ed5aa54a0517c555f1a818530d20b6fdfd99fb566f5a9",
+      "assertions": 3,
+      "nonempty": 3,
+      "production_unchanged": true,
+      "empty": 0
+    },
+    {
+      "path": "src/parse/mod.rs",
+      "old_sha256": "62d8fd7a1bb3652b5d1433ea8b8bbb19bc6e6c34c792fa67dc1a698992f34a4a",
+      "new_sha256": "5b667353181c7c90bf13acc993b1434a1bd3d65b9da1952883617314240ea407",
+      "assertions": 3,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 3
+    },
+    {
+      "path": "src/parse/modality.rs",
+      "old_sha256": "a5e9af9e80248aa1d91f03d708c55b3d8b90857dd155f7c8bbee6fe3f3dfea86",
+      "new_sha256": "ac6b9a3aeb2c021151662fad8177e59f4d0b7e856b7604d4b84bdfef596c4ba5",
+      "assertions": 1,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 0
+    },
+    {
+      "path": "src/policy/render.rs",
+      "old_sha256": "e123793ec351d1f03b091c9c4c2a586ccd60df04bd3ee9833353e8af71c82140",
+      "new_sha256": "03ee8c1924a3b4ceba3882a77b17b78ac1c9873854781692bc7f712e6dc993eb",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/reuse/blocks.rs",
+      "old_sha256": "6d06892b7f940680749142170affdd3305aa74cd74ad110de7447a1fd370bcdc",
+      "new_sha256": "2f79abfc591ef664a65361123df146fc4a8563323840d13b658d7d5ec96a7b5c",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/reuse/rank.rs",
+      "old_sha256": "211fc1e09185b8fdf2015585e556cb7826749dbcd158ccebb4a3f316cc4b94d5",
+      "new_sha256": "0c632fc4c384067756700425bddb3aa3c7485c8ba52a8d414f490ee7ea2a543f",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/round_trip/comparator.rs",
+      "old_sha256": "6e4179650ec7908383cdade0eb2501dd41cc4ba209313535ec4568bab830f6fa",
+      "new_sha256": "aa68513743c3293ff2913b19d111f2920437d4dd00c0c30bf92af342ebd13078",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/suggest/adapter.rs",
+      "old_sha256": "9f9c40cf99519e46a7227b8f78db910510910492d14b55eb57e46096c73b58b6",
+      "new_sha256": "0046a810fabffee068bce1fa8ce03e84698bb9933f7e4f6f472afad83134a626",
+      "assertions": 1,
+      "nonempty": 1,
+      "production_unchanged": true,
+      "empty": 0
+    },
+    {
+      "path": "src/suggest/prepare.rs",
+      "old_sha256": "990afe94163c379fb8536c4c4953b4ff4abcafa88789b9829bf20d47181b3680",
+      "new_sha256": "dccc5dd61a0922a2ae871396e0bb432ed36f5c54adfa986c99de05d165980ef1",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/suggest/redact.rs",
+      "old_sha256": "e85000e37b44f78589988af30de02b894f48aea0272ceb85d46eb6aadb756f5b",
+      "new_sha256": "52c2a9bb4116a51e2495778d819b149321b6fc3deade167058d22c1a49b56f8d",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/validate/error_types.rs",
+      "old_sha256": "6b52dbdf3fe23c46a731aa60c38cf5b5e4413ee6630c83a3f088a0ea9247a769",
+      "new_sha256": "f209122ae992d9ad26958c7265fcf4f6a9fb1ad6974dd4f52cb31332deb1a975",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/validate/formatter.rs",
+      "old_sha256": "62f739da2b201e7cd9ba0c0f481d3761945b752397945b1fdf3d90cbb3573674",
+      "new_sha256": "ff8665df789e55b402fa678399b2e6956769983704d410e6783785c349d9227b",
+      "assertions": 2,
+      "nonempty": 2,
+      "production_unchanged": true,
+      "empty": 0
+    },
+    {
+      "path": "src/validate/mod.rs",
+      "old_sha256": "093f4380b925c48cb2527b7980f703df03f6e82e3617bc2dd08f5987cb2b3da1",
+      "new_sha256": "148a3e946b3b0cd4a817a9564f9270627ac85cfe7a8b8aa20601365c62ff2ccc",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/validate/report.rs",
+      "old_sha256": "66d927705aceb2984d0655eadeed1b5137922db005b054ed1109193b38fd5e82",
+      "new_sha256": "cef8eecf7c82fb8a83ec8ffd3ac20b53475394f7e5103068c79648d913d7936a",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 1
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "old_sha256": "e778c667a932b9758e27c40ba3d6bbbf43dffca64aceae9a861d47e7a8a5d79a",
+      "new_sha256": "db7d40f05ff94ed8dbfde811c69b69666b54300b2171221395ea8c66e2c63a54",
+      "assertions": 8,
+      "nonempty": 0,
+      "production_unchanged": true,
+      "empty": 8
+    },
+    {
+      "path": "tests/applicability_cli_test.rs",
+      "old_sha256": "1a096a40f8ae10dbc14dc47050bf2798663984a88161fb61eb553cd300b4b4e5",
+      "new_sha256": "12107d5112140ef4907af19d5ba5131c412c99d0fe1975ff9ec4cc307ee6302b",
+      "assertions": 2,
+      "nonempty": 0,
+      "production_unchanged": false,
+      "empty": 2
+    },
+    {
+      "path": "tests/authoring_cli_test.rs",
+      "old_sha256": "160998c1bdfefcf93ff1af79526504228635db4629ecc66649dc826fd7144415",
+      "new_sha256": "90c586131af211e32f8a1a157d8c19036673754bebb0c2584af7f9afb99424f8",
+      "assertions": 9,
+      "nonempty": 2,
+      "production_unchanged": false,
+      "empty": 7
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "old_sha256": "a0fa1ee59b7f52c3c145195156357ec20e33fc68db976f9be368e1893fcd8c72",
+      "new_sha256": "2ba88628ab511f8f2861be4d313ff5a0950e6a70ed93adc3eac96a4dfe8bfa4f",
+      "assertions": 11,
+      "nonempty": 2,
+      "production_unchanged": false,
+      "empty": 9
+    },
+    {
+      "path": "tests/authoring_reuse_cli_test.rs",
+      "old_sha256": "014b4bd70912bbf8dd19b8a8eb14d8841d96125d8080219c8f048ee71952b4a6",
+      "new_sha256": "5e4e280020890fee59e59624b73fe08413d824674bd7cd615174fc75485c8e13",
+      "assertions": 3,
+      "nonempty": 1,
+      "production_unchanged": false,
+      "empty": 2
+    },
+    {
+      "path": "tests/drift_check_test.rs",
+      "old_sha256": "823b4f1a6a5447876bfd18a3aa3eefed63b712b87c489d3cd26f9eaab8ae2c7b",
+      "new_sha256": "3ede1766dc9e1bde35ca4802cde200b34290961e6e8492ce9288276c5b55e111",
+      "assertions": 5,
+      "nonempty": 0,
+      "production_unchanged": false,
+      "empty": 5
+    },
+    {
+      "path": "tests/framework_impact_filter_cli_test.rs",
+      "old_sha256": "c4cdc1ad16889aea2677d476fa1b48233f440b38e275434148d5adf944f9b086",
+      "new_sha256": "5369528f0d66914a2057afa28bd9116ef55b7bb32ba3a0d028b34a3ae3402b1a",
+      "assertions": 2,
+      "nonempty": 0,
+      "production_unchanged": false,
+      "empty": 2
+    },
+    {
+      "path": "tests/golden_file_tests.rs",
+      "old_sha256": "42663146f6f02aee30933b152b2678c22c1ee4d9f45440ddf22a590b98f8819c",
+      "new_sha256": "21bd6ae344be2da144639532e45e226fd5457d64ad2a7362a4fdeabe3b6005b7",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": false,
+      "empty": 1
+    },
+    {
+      "path": "tests/migration_cli_test.rs",
+      "old_sha256": "4296057270451ded6f56cf05c5f478bb9a670bb1255f64930616c12c1d6c5378",
+      "new_sha256": "ef334a4761cc28dd36fcf5254c1b946369d06ee32f515b42b78be069b793060b",
+      "assertions": 3,
+      "nonempty": 0,
+      "production_unchanged": false,
+      "empty": 3
+    },
+    {
+      "path": "tests/schema_provenance_test.rs",
+      "old_sha256": "00bc52414272424acd2acb055c3f9ee59f03c7d5ae71488bd68cd0f19c6ad3e5",
+      "new_sha256": "09cc77aff0a0c391af8a42c72a05edf2ec3316645ce77d71854fa21107405592",
+      "assertions": 1,
+      "nonempty": 1,
+      "production_unchanged": false,
+      "empty": 0
+    },
+    {
+      "path": "tests/suggest_run_cli_test.rs",
+      "old_sha256": "6b5249e3d0775af20cfbf7a6d32d1c5813c637615caa3d8dd43bc0524c806c17",
+      "new_sha256": "edac26b17a032845fab1081ec8348751fffe9c21056746f722160aa4e5039c04",
+      "assertions": 1,
+      "nonempty": 0,
+      "production_unchanged": false,
+      "empty": 1
+    }
+  ],
+  "rust_files": 44,
+  "assertions": 111,
+  "nonempty": 22,
+  "schema": "forge.current-workspace-clippy-source-audit/2",
+  "empty": 89,
+  "integration_base": "9d432bdd50876019ae328c4654c75bfc07cc3be0",
+  "prior_patch": "0c63550f845a19d3d8fdb57c8a867387c8fc7089",
+  "candidate_commit": null,
+  "recorded_utc": "2026-10-02T20:12:34.216901+00:00",
+  "scope": "Mechanical test assertion compatibility; no production behavior/dependency change",
+  "historical_receipt": {
+    "path": "docs/plans/2026-10-02-current-stable-clippy-audit.json",
+    "sha256": "8666100867333cbe2ae38dadb12d840e2018c2ce010ec0d2d63e459053053142",
+    "recorded_assertions": 110,
+    "byte_preserved": true
+  },
+  "counter_correction": {
+    "path": "src/authoring/impact.rs",
+    "historical_count": 2,
+    "actual_count": 3,
+    "reason": "Multiline gap_ids assertion was omitted from historical count"
+  },
+  "documentation": {
+    "whole_44_file_inventory": {
+      "named_functions": 1407,
+      "documented": 208,
+      "undocumented": 1199,
+      "ambiguous_conditional_documentation": 0,
+      "explicit_test_attribute": 866,
+      "body_definitions": 1406,
+      "declarations_without_body": 1
+    },
+    "corrected_enclosing_functions": {
+      "documented": 0,
+      "undocumented": 98,
+      "ambiguous_conditional_documentation": 0
+    },
+    "enclosure_classification": {
+      "explicit_test_functions": 95,
+      "test_helpers": 3
+    },
+    "new_functions_or_doc_comments": 0,
+    "signatures_attributes_docs_unchanged": true,
+    "limits": [
+      "Inventory is lexical and literal-source only; no macro expansion, cfg evaluation, name resolution or inherited trait Rustdoc is credited.",
+      "Documented means adjacent outer Rustdoc or a direct doc attribute, not a claim of documentation correctness/completeness.",
+      "Blank lines and ordinary comments between documentation/attributes and a declaration are ignored; inner module Rustdoc is not assigned to functions.",
+      "Raw strings, ordinary strings, character literals and nested block comments are skipped to avoid counting fn text in data.",
+      "Conditional doc attributes or macro-template function syntax are retained as ambiguities.",
+      "Function declaration lines and adjacent comments are unchanged in this mechanical assertion patch; existing documentation gaps remain existing gaps."
+    ]
+  },
+  "selected_test_candidates": [
+    {
+      "path": "src/authoring/handoff.rs",
+      "name": "authoring::handoff::tests::records_are_deterministic_drafts_with_exact_retained_sources_and_receipt",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/authoring/impact.rs",
+      "name": "authoring::impact::tests::unused_question_change_keeps_unrelated_content_and_bytes_unaffected",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/authoring/impact.rs",
+      "name": "authoring::impact::tests::component_extension_reformatting_is_global_provenance_with_unaffected_local_content",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/authoring/impact.rs",
+      "name": "authoring::impact::tests::explicit_control_topic_dependencies_remain_visible_without_current_gaps",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/authoring/plan.rs",
+      "name": "authoring::plan::tests::gaps_without_selected_policies_remain_unresolved_and_deferrals_are_explicit",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/authoring/scaffold.rs",
+      "name": "authoring::scaffold::tests::empty_pack_binds_the_project_baseline_and_creates_no_records",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/citation.rs",
+      "name": "citation::tests::us1_no_citations_text_unchanged",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/citation.rs",
+      "name": "citation::tests::no_citations_preserve_prose_byte_for_byte",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/citation.rs",
+      "name": "citation::tests::us5_integration_end_to_end",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/citation.rs",
+      "name": "citation::tests::us4_lowercase_section_not_matched",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/cli/convert.rs",
+      "name": "cli::convert::tests::to_ssp_includes_policy_derived_control_implementation",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/cli/convert.rs",
+      "name": "cli::convert::tests::assessment_plans_are_suppressed_when_primary_output_is_stdout",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/diff/engine.rs",
+      "name": "diff::engine::tests::test_identical_files_no_differences",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/diff/engine.rs",
+      "name": "diff::engine::tests::test_no_uuid_change_when_identical",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/diff/engine.rs",
+      "name": "diff::engine::tests::test_co_occurrence_uuid_and_field_changes",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/diff/extractor.rs",
+      "name": "diff::extractor::tests::extract_component_def_populated",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/error.rs",
+      "name": "error::tests::drift_detected_has_no_message_and_exit_code_one",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/export/xml_deserializer.rs",
+      "name": "export::xml_deserializer::tests::xml_round_trip_control_implementations",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/export/yaml.rs",
+      "name": "export::yaml::tests::deserialization_preserves_yaml_error_source",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/model/mod.rs",
+      "name": "model::tests::policy_section_empty_requirements_and_children",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/assessment_plan.rs",
+      "name": "oscal::assessment_plan::tests::ac2_metadata_fields_present_and_correct",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/assessment_plan.rs",
+      "name": "oscal::assessment_plan::tests::empty_requirement_text_gets_placeholder",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/assessment_plan.rs",
+      "name": "oscal::assessment_plan::tests::each_task_has_associated_activity",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/catalog.rs",
+      "name": "oscal::catalog::tests::collect_control_ids_empty_catalog",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/component_definition.rs",
+      "name": "oscal::component_definition::tests::test_metadata_consistency_with_catalog",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/component_definition.rs",
+      "name": "oscal::component_definition::tests::test_source_profile_without_source_file_omits_requirement_trace_data",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/component_definition.rs",
+      "name": "oscal::component_definition::tests::collect_control_ids_from_component_def_empty",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/parts.rs",
+      "name": "oscal::parts::tests::test_build_parts_statement_only",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/ssp.rs",
+      "name": "oscal::ssp::tests::ssp_metadata_fields_present",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/ssp.rs",
+      "name": "oscal::ssp::tests::ssp_users_do_not_reference_undefined_roles",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/trace_embedding.rs",
+      "name": "oscal::trace_embedding::tests::embed_trace_skips_controls_without_matching_trace_links",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/trace_embedding.rs",
+      "name": "oscal::trace_embedding::tests::embed_trace_skips_group_prop_when_no_traceable_children",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/oscal/trace_embedding.rs",
+      "name": "oscal::trace_embedding::tests::embed_trace_uses_control_fallback_without_inventing_group_section",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parameter/mod.rs",
+      "name": "parameter::tests::extract_empty_text_no_error",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parameter/mod.rs",
+      "name": "parameter::tests::document_extract_skips_requirements_without_stable_id",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parameter/mod.rs",
+      "name": "parameter::tests::ec1_no_params_text_unchanged",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parameter/mod.rs",
+      "name": "parameter::tests::ec7_no_less_than_minimum",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parameter/mod.rs",
+      "name": "parameter::tests::ec10_empty_text_no_error",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parameter/mod.rs",
+      "name": "parameter::tests::extraction_marks_requirements_without_matches_complete",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parse/atomize.rs",
+      "name": "parse::atomize::tests::all_requirements_have_nonempty_stable_id",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parse/atomize.rs",
+      "name": "parse::atomize::tests::unicode_zero_width_space_between_and_must",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parse/mod.rs",
+      "name": "parse::tests::single_h1_produces_one_root_node",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parse/mod.rs",
+      "name": "parse::tests::no_headings_returns_empty_vec",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parse/mod.rs",
+      "name": "parse::tests::single_heading_produces_single_node",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/parse/modality.rs",
+      "name": "parse::modality::tests::detect_modality_required_as_adjective",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/policy/render.rs",
+      "name": "policy::render::tests::byte_budget_errors_report_effective_limits_without_mutating_buffers",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/reuse/blocks.rs",
+      "name": "reuse::blocks::tests::leading_and_trailing_blank_lines_yield_no_empty_blocks",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/reuse/rank.rs",
+      "name": "reuse::rank::tests::min_score_drops_weak_candidates",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/round_trip/comparator.rs",
+      "name": "round_trip::comparator::tests::ignored_path_prefix_skips_nested_comparison",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/suggest/adapter.rs",
+      "name": "suggest::adapter::tests::an_executable_may_be_a_symlink_but_never_a_special_file",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/suggest/prepare.rs",
+      "name": "suggest::prepare::tests::payload_framing_is_fixed_and_spans_bracket_the_text_exactly",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/suggest/redact.rs",
+      "name": "suggest::redact::tests::a_rule_that_matches_nothing_is_reported_as_unmatched",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/error_types.rs",
+      "name": "validate::error_types::tests::report_new_empty_errors_is_valid",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/formatter.rs",
+      "name": "validate::formatter::tests::format_missing_required_field",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/mod.rs",
+      "name": "validate::tests::full_validation_valid_catalog",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/report.rs",
+      "name": "validate::report::tests::json_valid_report",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::valid_links_no_errors",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::mapping_back_matter_resource_satisfies_local_link",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::uuid_fragments_match_case_insensitively_and_bare_hash_is_invalid",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::no_links_no_errors",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::external_urls_not_followed",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::valid_control_ids_no_errors",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::no_implemented_requirements_no_errors",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "src/validate/semantic.rs",
+      "name": "validate::semantic::tests::catalog_skips_check_gracefully",
+      "binary": "library test binary (Cargo target name not inferred)",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/applicability_cli_test.rs",
+      "name": "init_scaffolds_omitted_controls_as_under_review_with_exact_framework_evidence",
+      "binary": "applicability_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/applicability_cli_test.rs",
+      "name": "large_init_scaffold_can_be_analyzed_without_manual_compaction",
+      "binary": "applicability_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_cli_test.rs",
+      "name": "exact_source_fingerprint_mismatches_fail_without_output",
+      "binary": "authoring_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_cli_test.rs",
+      "name": "windows_manifest_root_aliases_fail_before_input_reads",
+      "binary": "authoring_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_cli_test.rs",
+      "name": "noncanonical_baseline_dependencies_fail_even_with_a_real_matching_report",
+      "binary": "authoring_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_cli_test.rs",
+      "name": "canceled_symlink_dependency_is_rejected_even_when_the_external_bytes_match",
+      "binary": "authoring_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_cli_test.rs",
+      "name": "changed_clause_answer_pin_fails_plan_and_build_without_output",
+      "binary": "authoring_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_cli_test.rs",
+      "name": "invalid_pinned_clause_grammar_fails_plan_and_build_before_output",
+      "binary": "authoring_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "opt_in_components_html_exact_provenance_and_cross_directory_bytes",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "impact_noop_independent_directories_report_churn_and_unverified_inputs",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "handoff_is_explicit_exact_draft_only_self_contained_and_no_overwrite",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "component_extension_reformat_is_visible_and_drift_is_unverified",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "impact_html_is_deterministic_across_directories_and_keeps_answer_values_private",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "handoff_publishes_complete_drafts_with_exit_one_when_drafting_work_remains",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "outside_component_pins_are_classified_consistently_across_snapshot_locations",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_phase2_cli_test.rs",
+      "name": "failed_old_capture_does_not_refund_unknown_bytes_to_the_new_snapshot",
+      "binary": "authoring_phase2_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_reuse_cli_test.rs",
+      "name": "invalid_arguments_and_inputs_exit_two",
+      "binary": "authoring_reuse_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_reuse_cli_test.rs",
+      "name": "publishes_a_generation_and_refuses_an_existing_destination",
+      "binary": "authoring_reuse_cli_test",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/authoring_reuse_cli_test.rs",
+      "name": "report_holds_only_declared_metadata_and_verbatim_spans",
+      "binary": "authoring_reuse_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/drift_check_test.rs",
+      "name": "drift_json_reports_clean_for_only_volatile_metadata_changes",
+      "binary": "drift_check_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/drift_check_test.rs",
+      "name": "drift_rejects_mismatched_models_with_exit_two",
+      "binary": "drift_check_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/drift_check_test.rs",
+      "name": "drift_read_errors_do_not_disclose_absolute_runner_paths",
+      "binary": "drift_check_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/drift_check_test.rs",
+      "name": "drift_model_errors_do_not_disclose_absolute_runner_paths",
+      "binary": "drift_check_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/drift_check_test.rs",
+      "name": "drift_structure_errors_do_not_disclose_absolute_runner_paths",
+      "binary": "drift_check_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/framework_impact_filter_cli_test.rs",
+      "name": "filters_reject_ambiguous_groups_invalid_values_and_unsafe_policy_hrefs",
+      "binary": "framework_impact_filter_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/golden_file_tests.rs",
+      "name": "accuracy_tests::catalog_100_percent_accuracy",
+      "binary": "golden_file_tests",
+      "cfg_unevaluated": true,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/migration_cli_test.rs",
+      "name": "identical_policy_emits_complete_json_and_exits_zero",
+      "binary": "migration_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/migration_cli_test.rs",
+      "name": "substantive_change_report_is_written_before_exit_one",
+      "binary": "migration_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/migration_cli_test.rs",
+      "name": "analysis_failure_exits_two_without_partial_report",
+      "binary": "migration_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/schema_provenance_test.rs",
+      "name": "vendored_assets_match_release_sizes_and_sha256_digests",
+      "binary": "schema_provenance_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    },
+    {
+      "path": "tests/suggest_run_cli_test.rs",
+      "name": "process_execution_is_refused_without_side_effects_or_json_contamination",
+      "binary": "suggest_run_cli_test",
+      "cfg_unevaluated": false,
+      "execution": "pending resulting-source hook transcript reconciliation"
+    }
+  ],
+  "validation_snapshot": {
+    "strict_current_stable_all_targets_all_features": {
+      "exit_code": 0,
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "source_stable": true,
+      "rustc": "1.99.0 (b940084d7 2026-09-28)",
+      "cargo": "1.99.0 (5f94df478 2026-08-27)",
+      "log_sha256": "efccecb35bc071ed16837afbec75c7430cf09da6dd084cbdb8bdb99d2feb6bfe"
+    },
+    "format": {
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "mandatory_enabled_commit_hook": "pending at this pre-commit snapshot",
+    "resulting_commit_and_hosted_results": "pending at this pre-commit snapshot"
+  },
+  "coverage_limits": {
+    "new_production_executable_lines": 0,
+    "library_production_prefixes_unchanged": 34,
+    "direct_test_candidates": 95,
+    "shared_helpers_excluded": 3,
+    "numeric_line_or_branch_coverage": "unmeasured",
+    "runtime_regression_evidence": "required mandatory hook and separate hosted results"
+  },
+  "independent_packets": {
+    "source_lint_review_index_sha256": "421ec51da091b5c989c8cba333fef83ed9aee52d84fdfa7c1d69318bffe43788",
+    "rustdoc_enclosure_index_sha256": "5fc9a65bf322d0b0b2bdbf2ede9ac285d1b3f37e60397809781e4762a9cf4f14"
+  },
+  "acceptance_eligible": false,
+  "remaining_gates": [
+    "resulting-head hosted strict CI; existing cargo-vet approvals remain unresolved",
+    "Windows console and approved Chrome browser jobs are separate children",
+    "all remaining Must/Should, platform/offline/human/evaluation/release requirements",
+    "full integrated documentation review and update at the end of roadmap work"
+  ]
+}

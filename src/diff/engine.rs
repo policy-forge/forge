@@ -216,7 +216,7 @@ mod tests {
         let old = to_map(vec![snap("POL-AC-001", "", "Title", &["Prose"])]);
         let new = to_map(vec![snap("POL-AC-001", "", "Title", &["Prose"])]);
         let entries = compare_controls(&old, &new);
-        assert!(entries.is_empty());
+        assert_eq!(entries, [] as [crate::diff::types::DiffEntry; 0]);
     }
 
     #[test]
@@ -376,7 +376,7 @@ mod tests {
         let old = to_map(vec![snap("POL-AC-001", "same-uuid", "Title", &["Prose"])]);
         let new = to_map(vec![snap("POL-AC-001", "same-uuid", "Title", &["Prose"])]);
         let entries = compare_controls(&old, &new);
-        assert!(entries.is_empty());
+        assert_eq!(entries, [] as [crate::diff::types::DiffEntry; 0]);
     }
 
     // Co-occurrence: UUID and fields changed → Changed with a derived UUID change.
@@ -389,7 +389,7 @@ mod tests {
         assert_eq!(entries.len(), 1);
         if let DiffEntry::Changed { field_changes, .. } = &entries[0] {
             assert!(entries[0].uuid_changed());
-            assert!(!field_changes.is_empty());
+            assert_ne!(field_changes.as_slice(), []);
         } else {
             panic!("Expected Changed entry, not UuidChanged");
         }

@@ -986,7 +986,7 @@ mod tests {
         let ssp = &envelope.system_security_plan;
         assert!(ssp.metadata.title.contains("Test Policy"));
         assert_eq!(ssp.metadata.oscal_version, crate::oscal::metadata::OSCAL_VERSION);
-        assert!(!ssp.metadata.last_modified.is_empty());
+        assert_ne!(ssp.metadata.last_modified, "");
         assert_eq!(ssp.metadata.version, "1.0.0");
     }
 
@@ -1026,7 +1026,7 @@ mod tests {
         let envelope = build_ssp("Test Policy", "1.0.0").unwrap();
         let users = &envelope.system_security_plan.system_implementation.users;
         for user in users {
-            assert!(user.role_ids.is_empty());
+            assert_eq!(user.role_ids, [] as [std::string::String; 0]);
         }
 
         let json = serde_json::to_value(&envelope).unwrap();

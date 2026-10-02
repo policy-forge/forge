@@ -106,7 +106,7 @@ fn vendored_assets_match_release_sizes_and_sha256_digests() {
                 asset.name
             );
         }
-        assert!(!asset.model.trim().is_empty());
+        assert_ne!(asset.model.trim(), "");
 
         let bytes = std::fs::read(root.join(relative)).expect("manifest asset must exist");
         assert_eq!(bytes.len() as u64, asset.size, "{} size mismatch", asset.name);

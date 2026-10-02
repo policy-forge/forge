@@ -765,7 +765,7 @@ mod tests {
         assert_eq!(ir1.uuid, "aa0e8400-e29b-41d4-a716-446655440000");
         assert_eq!(ir1.control_id, "POL-AC-002");
         assert_eq!(ir1.description, "Passwords must be 12+ characters.");
-        assert!(ir1.props.is_empty());
+        assert_eq!(ir1.props, [] as [crate::oscal::parts::OscalProp; 0]);
         assert!(ir1.links.is_empty());
     }
 

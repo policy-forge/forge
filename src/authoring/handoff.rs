@@ -471,9 +471,12 @@ mod tests {
             assert_eq!(first[index].bytes, second[index].bytes);
             let record = record::parse(&first[index].bytes).unwrap();
             assert_eq!(record.state, LifecycleState::Draft);
-            assert!(record.history.is_empty());
+            assert_eq!(record.history, [] as [crate::lifecycle::record::TransitionEvent; 0]);
             assert!(record.replaced_by.is_none());
-            assert!(record.policy.generated_artifacts.is_empty());
+            assert_eq!(
+                record.policy.generated_artifacts,
+                [] as [crate::lifecycle::record::ArtifactFingerprint; 0]
+            );
             let source = rendered
                 .policies
                 .iter()

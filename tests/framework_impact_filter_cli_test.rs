@@ -286,7 +286,7 @@ fn filters_reject_ambiguous_groups_invalid_values_and_unsafe_policy_hrefs() {
     ]);
     assert_eq!(unsafe_filter.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&unsafe_filter.stderr).contains("absolute local path"));
-    assert!(unsafe_filter.stdout.is_empty());
+    assert_eq!(unsafe_filter.stdout, [] as [u8; 0]);
 
     let mut old: Value =
         serde_json::from_slice(&std::fs::read(directory.path().join("old.json")).unwrap()).unwrap();
@@ -335,7 +335,7 @@ fn filters_reject_ambiguous_groups_invalid_values_and_unsafe_policy_hrefs() {
         run(&["framework", "impact", "--manifest", manifest.to_str().unwrap(), "--format", "json"]);
     assert_eq!(unsafe_href.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&unsafe_href.stderr).contains("absolute local path"));
-    assert!(unsafe_href.stdout.is_empty());
+    assert_eq!(unsafe_href.stdout, [] as [u8; 0]);
 }
 
 #[test]

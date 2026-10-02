@@ -753,7 +753,7 @@ mod tests {
 
         let result = compare_oscal_json(&expected, &actual, "", &rules);
 
-        assert!(result.is_empty());
+        assert_eq!(result, [] as [crate::round_trip::divergence::Divergence; 0]);
     }
 
     #[test]

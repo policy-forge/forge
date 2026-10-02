@@ -311,7 +311,7 @@ mod tests {
         assert_eq!(snap.uuid.as_deref(), Some("uuid-1"));
         assert_eq!(snap.description.as_deref(), Some("Impl desc 1"));
         assert!(snap.title.is_none());
-        assert!(snap.parts_prose.is_empty());
+        assert_eq!(snap.parts_prose, [] as [std::string::String; 0]);
     }
 
     #[test]

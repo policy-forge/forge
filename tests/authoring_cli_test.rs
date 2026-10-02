@@ -123,7 +123,10 @@ impl Fixture {
     }
 
     fn refresh_baseline(&mut self, manifest_path: &str) {
-        assert!(self.project["answers"].as_array().unwrap().is_empty());
+        assert_eq!(
+            self.project["answers"].as_array().unwrap().as_slice(),
+            [] as [serde_json::Value; 0]
+        );
         let old_report_hash =
             self.project["baseline"]["report_sha256"].as_str().unwrap().to_owned();
         let old_report: Value =
@@ -376,7 +379,7 @@ fn exact_source_fingerprint_mismatches_fail_without_output() {
         std::fs::write(path, bytes).unwrap();
         let output = fixture.build("drafts");
         assert_exit(&output, 2);
-        assert!(output.stdout.is_empty());
+        assert_eq!(output.stdout, [] as [u8; 0]);
         assert!(!fixture.root.join("drafts").exists());
     }
 }
@@ -561,7 +564,7 @@ fn windows_manifest_root_aliases_fail_before_input_reads() {
             &["author", "plan", "--manifest", manifest.to_str().unwrap(), "--format", "json"],
         );
         assert_exit(&output, 2);
-        assert!(output.stdout.is_empty());
+        assert_eq!(output.stdout, [] as [u8; 0]);
         assert!(
             String::from_utf8_lossy(&output.stderr)
                 .contains("confined input root must be an absolute normalized directory")
@@ -586,7 +589,7 @@ fn noncanonical_baseline_dependencies_fail_even_with_a_real_matching_report() {
         fixture.refresh_baseline("applicability.json");
         for output in [fixture.plan(), fixture.build("drafts")] {
             assert_exit(&output, 2);
-            assert!(output.stdout.is_empty());
+            assert_eq!(output.stdout, [] as [u8; 0]);
             assert!(
                 String::from_utf8_lossy(&output.stderr).contains("non-canonical path spelling"),
                 "{artifact}: {}",
@@ -616,7 +619,7 @@ fn canceled_symlink_dependency_is_rejected_even_when_the_external_bytes_match() 
     fixture.refresh_baseline("applicability.json");
     for output in [fixture.plan(), fixture.build("drafts")] {
         assert_exit(&output, 2);
-        assert!(output.stdout.is_empty());
+        assert_eq!(output.stdout, [] as [u8; 0]);
         assert!(String::from_utf8_lossy(&output.stderr).contains("non-canonical path spelling"));
     }
     assert!(!fixture.root.join("drafts").exists());
@@ -846,7 +849,7 @@ fn changed_clause_answer_pin_fails_plan_and_build_without_output() {
     fixture.save();
     for output in [fixture.plan(), fixture.build("drafts")] {
         assert_exit(&output, 2);
-        assert!(output.stdout.is_empty());
+        assert_eq!(output.stdout, [] as [u8; 0]);
         assert!(String::from_utf8_lossy(&output.stderr).contains("answer pin"));
     }
     assert!(!fixture.root.join("drafts").exists());
@@ -867,7 +870,7 @@ fn invalid_pinned_clause_grammar_fails_plan_and_build_before_output() {
         fixture.save();
         for output in [fixture.plan(), fixture.build("drafts")] {
             assert_exit(&output, 2);
-            assert!(output.stdout.is_empty());
+            assert_eq!(output.stdout, [] as [u8; 0]);
             assert!(String::from_utf8_lossy(&output.stderr).contains("human clause"));
         }
         assert!(!fixture.root.join("drafts").exists());
@@ -917,7 +920,7 @@ mod provenance_contract {
             let bytes = std::fs::read(fixture.root.join(path)).unwrap();
             assert_eq!(input["sha256"], hash(&bytes));
             assert_eq!(input["byte_length"].as_u64().unwrap(), u64::try_from(bytes.len()).unwrap());
-            assert!(!input["role"].as_str().unwrap().is_empty());
+            assert_ne!(input["role"].as_str().unwrap(), "");
         }
         for (field, path) in [
             ("project_sha256", "project.json"),
@@ -1062,7 +1065,7 @@ mod provenance_contract {
                         assert!(included_clauses.insert(origin["clause_key"].as_str().unwrap()));
                     }
                     "generated-metadata" => {
-                        assert!(!origin["field"].as_str().unwrap().is_empty());
+                        assert_ne!(origin["field"].as_str().unwrap(), "");
                         assert!(origin["source"].is_null());
                     }
                     unknown => panic!("unknown provenance origin: {unknown}"),

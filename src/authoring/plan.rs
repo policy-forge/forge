@@ -644,7 +644,10 @@ mod tests {
         let plan = build_plan(&loaded).expect("unresolved plan");
         assert_eq!(plan.counts.unresolved, 1);
         assert_eq!(plan.questions.len(), 1);
-        assert!(plan.unresolved_questions.is_empty());
+        assert_eq!(
+            plan.unresolved_questions,
+            [] as [crate::authoring::model::QuestionEvaluation; 0]
+        );
         loaded.project.deferrals.push(Deferral {
             key: "postponed-drafting".to_string(),
             gap_id: plan.gaps[0].gap_id.clone(),

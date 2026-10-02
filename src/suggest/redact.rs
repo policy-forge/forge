@@ -268,7 +268,7 @@ mod tests {
         let rules = parse_rules(RULES).unwrap();
         let (redacted, applied) = apply("nothing to redact", &rules).unwrap();
         assert_eq!(redacted, "nothing to redact");
-        assert!(applied.is_empty());
+        assert_eq!(applied, [] as [&crate::suggest::redact::RedactionRule; 0]);
         let matched: BTreeSet<&str> = applied.iter().map(|rule| rule.rule_id.as_str()).collect();
         assert_eq!(unmatched_rule(&rules, &matched).unwrap().rule_id, "account-id");
     }
