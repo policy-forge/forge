@@ -6,7 +6,7 @@ const STAGES = Object.freeze([
   "navigation-recovery", "resource-authoring", "conversion-recovery",
   "framework-workflow", "decision-authoring", "trace-export", "metadata-preview",
   "metadata-long-label", "metadata-download", "metadata-file-selection",
-  "metadata-comparison", "metadata-duplicate", "metadata-refresh", "final-reflow",
+  "metadata-comparison", "metadata-duplicate", "metadata-refresh", "metadata-screenshot", "final-reflow",
   "storage-checks", "session-shutdown", "counter-correlation", "request-page-errors",
   "browser-cleanup",
 ]);
@@ -41,7 +41,7 @@ function failureRecord(stage, error, TimeoutError, awaitStep = null) {
     category = "unclassified";
     assertionOperator = null;
   }
-  return Object.freeze({schema_version: "forge.workspace-browser-failure/2", stage,
+  return Object.freeze({schema_version: "forge.workspace-browser-failure/3", stage,
     category, assertion_operator: assertionOperator, await_step: awaitStep});
 }
 
