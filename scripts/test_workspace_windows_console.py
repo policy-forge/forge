@@ -787,7 +787,7 @@ def worker_campaign(api, forge, fixture, checks):
         hpc = console.value
         reader = threading.Thread(target=read_terminal,args=(api,out_read,monitor),daemon=True)
         reader.start()
-        process = api.create(forge,['workspace',fixture,'--read-only','--no-open'],fixture,0x20016,hpc,c.sizeof(c.c_void_p))
+        process = api.create(forge,['workspace','--project',fixture,'--read-only','--no-open'],fixture,0x20016,hpc,c.sizeof(c.c_void_p))
         contain_before_resume(api,process,None)
         checks['console_job'] = True
         api.close(in_read); in_read = None

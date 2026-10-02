@@ -3,11 +3,13 @@
 This F04 child verifies Forge's browser-mode terminal launch, synthetic
 passphrase setup, locked and authenticated API session, and shutdown in an
 actual Windows x64 console. It adds a dedicated ordinary-PR job alongside the
-three-platform API verifier. Native execution is pending in this precommit
-snapshot; local controls do not establish Windows acceptance.
+three-platform API verifier. The first hosted native
+attempt failed; the corrected launch and successor coverage are recorded in
+[the launch correction](2026-10-02-windows-console-launch-correction.md).
+Local controls do not establish Windows acceptance.
 
 The source base is `a7fc14960027f2820805db838e2243588cd01765` (draft PR #183).
-Veans child #29 remains Doing under F04 #6 until draft delivery. No production
+Veans child #29 is In Review under F04 #6 with draft PR #184. No production
 Rust behavior, browser provisioning or new dependency is introduced.
 
 ## Run and interpret
@@ -90,7 +92,7 @@ Primary API references: [ConPTY creation](https://learn.microsoft.com/en-us/wind
 and [native architecture detection](https://learn.microsoft.com/en-us/windows/win32/api/wow64apiset/nf-wow64apiset-iswow64process2).
 The frozen design checked SDK enum values and the locked `rpassword` console path.
 
-## Coverage checked before drafting
+## Original precommit coverage snapshot
 
 [The precommit audit](2026-10-02-windows-console-control-audit-v1.json) retains
 every literal declaration and compiler-mapped physical line, including zeros.
@@ -114,8 +116,10 @@ and whole-repository numeric coverage are unmeasured.
 
 Independent frozen source review reproduced all 211 review pins and found the
 earlier cleanup-receipt defect fixed in v3. It found no additional concrete open
-defect within its static scope. Static review is not runtime or human acceptance.
-The required commit hook and final hosted result remain pending at this snapshot.
+defect within its static scope. Static review is not runtime or human acceptance. This original snapshot
+predates the successful enabled commit hook and failed first hosted attempt.
+It did not compare the process argv against the required CLI project option.
+The linked successor retains that scope gap, the correction and current counts.
 
 ## Remaining completion gates
 

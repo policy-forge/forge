@@ -485,6 +485,36 @@ class Controls(unittest.TestCase):
         self.assertEqual(b''.join(calls),b'first\rsecond\r');self.assertEqual(checks['input_writes'],2)
         self.assertIsNone(monitor.fault)
 
+    def test_worker_campaign_launch_uses_required_project_option(self):
+        """Reach the real launch adapter with fake pipes/threads and the declared long project option.
+
+        Forge's Workspace parser declares project with #[arg(long)]. This control
+        stops at api.create before product startup, console input or HTTP; fake
+        teardown observations carry no native Windows or cleanup credit.
+        """
+        api,library=native_api();pipes=iter(((10,11),(12,13)));api.pipe=lambda:next(pipes)
+        launches=[];forge=Path('/synthetic/forge.exe');fixture=Path('/synthetic/project with spaces')
+        def pseudo_console(_size,_input,_output,_flags,console):
+            """Provide an opaque synthetic ConPTY handle without invoking any Win32 export."""
+            console._obj.value=99;return 0
+        def launch(executable,arguments,directory,attribute,value,size):
+            """Capture actual worker argv then stop before creating or resuming a product process."""
+            launches.append((executable,arguments,directory,attribute,value,size))
+            raise smoke.SmokeFault('admission','native-api-failed')
+        def thread(*,target,args,daemon):
+            """Model completed drain/close threads without executing their native target functions."""
+            if target is smoke.read_terminal:args[2].eof=True
+            return types.SimpleNamespace(start=lambda:None,join=lambda **_kwargs:None,is_alive=lambda:False)
+        library.CreatePseudoConsole.implementation=pseudo_console;api.create=launch
+        checks=smoke.empty_checks()
+        with patch.object(smoke.threading,'Thread',side_effect=thread):
+            self.assert_fault('native-api-failed',lambda:smoke.worker_campaign(api,forge,fixture,checks),'admission')
+        self.assertEqual(len(launches),1)
+        self.assertEqual(launches[0][0:3],(forge,['workspace','--project',fixture,'--read-only','--no-open'],fixture))
+        self.assertEqual(launches[0][3:],(0x20016,99,ctypes.sizeof(ctypes.c_void_p)))
+        self.assertFalse(checks['console_job']);self.assertEqual(checks['prompts'],0)
+        self.assertEqual(checks['responses'],[])
+
     def test_controller_success_reconciles_worker_exit_and_actual_empty_job(self):
         """The real controller consumes a bounded result, checks exit0 and never forces a clean Job."""
         api,library=native_api();api.new_job=lambda:99
