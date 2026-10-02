@@ -18,7 +18,7 @@ import verify_workspace as shared
 from workspace_browser_fixtures import synthetic_framework_catalog, synthetic_long_project_label
 
 sys.dont_write_bytecode=True
-SCHEMA="forge.hosted-chrome-smoke/2"
+SCHEMA="forge.hosted-chrome-smoke/3"
 OUTPUT="hosted-chrome-smoke.json"
 CAMPAIGNS=("default-read-only","default-writable","long-read-only","long-writable")
 PASSPHRASE=b"synthetic browser verification passphrase 062"
@@ -26,33 +26,36 @@ MAX_OUTPUT=262144
 ROOT=Path(__file__).resolve().parents[1]
 
 # Failure protocol enums mirror the consumed pure CJS helper and are pinned/drift-checked by controls.
-BROWSER_FAILURE_SCHEMA="forge.workspace-browser-failure/1"
+BROWSER_FAILURE_SCHEMA="forge.workspace-browser-failure/2"
 BROWSER_FAILURE_STAGES=frozenset(("browser-setup","asset-binding","input-style-binding","unlock","navigation-recovery","resource-authoring","conversion-recovery","framework-workflow","decision-authoring","trace-export","metadata-preview","metadata-long-label","metadata-download","metadata-file-selection","metadata-comparison","metadata-duplicate","metadata-refresh","final-reflow","storage-checks","session-shutdown","counter-correlation","request-page-errors","browser-cleanup"))
+BROWSER_FAILURE_AWAIT_STEPS=frozenset(("prepare","activate","response","ready","acknowledgment","download-state","focus","dialog"))
 BROWSER_FAILURE_CATEGORIES=frozenset(("assertion","timeout","unclassified"))
 BROWSER_FAILURE_OPERATORS=frozenset(("strictEqual","deepStrictEqual","match","=="))
 CAPTURE_INPUTS=("ui/workspace.js","ui/workspace.css","ui/tests/workspace.cjs","ui/tests/workspace_failure.cjs","ui/tests/workspace_failure.test.cjs","scripts/test_workspace_hosted_chrome.py","scripts/workspace_browser_tool_probe.cjs","scripts/workspace_browser_fixtures.py")
 
 
 def validate_browser_failure(value):
-    """Validate closed safe failed-row facts; they cannot change the primary failure or qualify a pass."""
-    closed(value,("stage","category","assertion_operator","node_exit_code"))
+    """Validate closed failed-row facts and a nullable fixed refresh await; diagnostics never qualify a pass."""
+    closed(value,("stage","category","assertion_operator","node_exit_code","await_step"))
     if type(value["stage"]) is not str or value["stage"] not in BROWSER_FAILURE_STAGES:raise ValueError("browser-failure-stage")
     if type(value["category"]) is not str or value["category"] not in BROWSER_FAILURE_CATEGORIES:raise ValueError("browser-failure-category")
     operator=value["assertion_operator"]
     if operator is not None and (type(operator) is not str or operator not in BROWSER_FAILURE_OPERATORS):raise ValueError("browser-failure-operator")
     if value["category"]!="assertion" and operator is not None:raise ValueError("browser-failure-category")
+    step=value["await_step"]
+    if step is not None and (type(step) is not str or step not in BROWSER_FAILURE_AWAIT_STEPS or value["stage"]!="metadata-refresh"):raise ValueError("browser-failure-await-step")
     code=value["node_exit_code"]
     if type(code) is not int or code==0 or not -2147483648<=code<=2147483647:raise ValueError("browser-failure-exit")
     return value
 
 
 def decode_browser_failure(raw,node_exit_code):
-    """Decode one small complete CJS envelope and bind actual Popen status; malformed output stays unavailable."""
+    """Decode one complete fixed-step envelope and bind actual Popen status; malformed output stays unavailable."""
     try:
         value=strict_json(raw,maximum=1024)
-        closed(value,("schema_version","stage","category","assertion_operator"))
+        closed(value,("schema_version","stage","category","assertion_operator","await_step"))
         if value["schema_version"]!=BROWSER_FAILURE_SCHEMA:raise ValueError("browser-failure-version")
-        return validate_browser_failure({"stage":value["stage"],"category":value["category"],"assertion_operator":value["assertion_operator"],"node_exit_code":node_exit_code})
+        return validate_browser_failure({"stage":value["stage"],"category":value["category"],"assertion_operator":value["assertion_operator"],"node_exit_code":node_exit_code,"await_step":value["await_step"]})
     except Exception:return None
 
 

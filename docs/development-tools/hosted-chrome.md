@@ -1,6 +1,6 @@
 # Installed Google Chrome verification prerequisite
 
-This F04 slice adds a dedicated Linux hosted job for the maintained workspace browser suite, an explicitly approved development graph and a bounded producer/receipt wrapper. The first two hosted attempts failed before producer startup. The third ran all four campaigns: three passed; long writable failed without retaining its specific cause. [The browser failure diagnostic guide](../plans/2026-10-02-f04-hosted-chrome-browser-failure-diagnostics.md) records that immutable result and the current fixed stage/category diagnostic successor. [The dual-pipe guide](../plans/2026-10-02-f04-hosted-chrome-dualpipe.md) and [the startup diagnostic guide](../plans/2026-10-02-f04-hosted-chrome-diagnostics.md) preserve prior snapshots. The maintained API `/2` contract, POSIX launcher and embedded assets remain unchanged. Local controls do not qualify Linux/Chrome, accessibility or product acceptance.
+This F04 slice adds a dedicated Linux hosted job for the maintained workspace browser suite, an explicitly approved development graph and a bounded producer/receipt wrapper. The first two attempts failed before producer startup. The third and fourth ran all four campaigns: three passed and long writable failed. The fourth retained `metadata-refresh / unclassified / actual Node exit 1`; its cause remains unknown. [The await diagnostic guide](../plans/2026-10-02-f04-hosted-chrome-await-diagnostics.md) records that qualified result and the current fixed await-step successor. [The browser failure diagnostic guide](../plans/2026-10-02-f04-hosted-chrome-browser-failure-diagnostics.md), [the dual-pipe guide](../plans/2026-10-02-f04-hosted-chrome-dualpipe.md) and [the startup diagnostic guide](../plans/2026-10-02-f04-hosted-chrome-diagnostics.md) preserve prior snapshots. The maintained API `/2` contract, POSIX launcher and embedded assets retain their bytes. Local controls do not qualify Linux/Chrome, accessibility or product acceptance.
 
 The human user approved Playwright and playwright-core **1.62.1**, optional **fsevents 2.3.2** recorded in the lock but omitted from installation, **Node 24.19.0/npm 11.17.0**, and runner-installed named Google Chrome only. The introducing PR must name that approval, reason and exact graph. The [development-tool ledger](hosted-chrome.json) retains the approval receipt/proposal hashes, registry archive URLs and integrity, and the separate source-audit boundary. No browser, FFmpeg, Firefox or WebKit download is authorized by this approval.
 
@@ -18,11 +18,42 @@ The new producer bounds its full terminal stream to 65,536 bytes, tool/browser p
 
 Each observed owned descendant retains an instance-bound pidfd within the 128-slot process bound. Failure cleanup signals those verified instances even if later global process scanning fails; direct child owners retain actual wait statuses. Unknown/unobserved descendants or unavailable visibility cannot receive empty-tree proof. No forced cleanup, unknown status, failed/nonzero child, missing receipt, partial campaign prefix, changed input or skipped provision earns pass. The forked Forge child always exits immediately after failed setup/exec and cannot publish controller receipts.
 
-The producer publishes `hosted-chrome-smoke.json` (`forge.hosted-chrome-smoke/2`): passed/failed/incomplete exits **0/1/2**. Its wrapper publishes `workspace-hosted-chrome-verification.json` (`forge.workspace-hosted-chrome-verification/3`): passed/incomplete/failed exits **0/1/2**. Unsupported non-Linux execution is incomplete with no native tool/campaign observations. Missing or malformed tools, receipts, source identities and cleanup evidence fail closed. Atomic publication never replaces existing evidence; a publication exception returns nonzero even if a post-link cleanup error leaves a passed-looking file. The wrapper reconciles both receipt status and actual producer exit.
+The producer publishes `hosted-chrome-smoke.json` (`forge.hosted-chrome-smoke/3`): passed/failed/incomplete exits **0/1/2**. Its wrapper publishes `workspace-hosted-chrome-verification.json` (`forge.workspace-hosted-chrome-verification/4`): passed/incomplete/failed exits **0/1/2**. Unsupported non-Linux execution is incomplete with no native tool/campaign observations. Missing or malformed tools, receipts, source identities and cleanup evidence fail closed. Atomic publication never replaces existing evidence; a publication exception returns nonzero even if a post-link cleanup error leaves a passed-looking file. The wrapper reconciles both receipt status and actual producer exit.
 
 The original before-draft snapshot consisted of **30 stdlib mocked controls**, no failures/errors/skips, using synthetic native/tool outcomes and actual bounded temporary files. All **81/81** introduced named Python functions, **2/2** classes and **4/4** modules have docstrings. Primary-thread actual calls observed **76/81** named functions; physical compiler-mapped lines observed **571/840**, with all **269** zero entries retained. Five production functions were unobserved: `OwnedTree.__init__`, `OwnedTree.settle`, `command`, `file_limits`, and `campaign`. Imports precede tracing; background threads/subprocess/native paths are outside that metric. The seven named CJS probe helpers have adjacent JSDoc. The author checked syntax; root subsequently executed the exact source probe with approved Node against the managed approved install, returning 0 with both authentic package-tree hashes. No per-function call or V8 coverage metric is claimed. Source/call/physical-line dimensions are separate, with no branch or all-function-body assertion.
 
-The third immutable hosted receipt retains three passed campaigns and one failed campaign. A complete four-campaign pass and a fresh hosted result for the diagnostic successor remain required. This prerequisite does not close the full named browser/OS/architecture matrix, patched Playwright Firefox/WebKit versus named Firefox/Safari, accessibility-engine/manual keyboard/screen reader/zoom acceptance, IPv4/IPv6 OS external denial, capacity, human studies/security approval, dependency source audits, release or final integrated roadmap documentation gates. Page request blocking is page-level evidence and cannot establish OS network denial.
+The fourth qualified hosted receipt at `00ea61cfa5a697838527104dd873c4067a5beee2` retains three passed campaigns and one failed long-writable campaign. The fixed phase/category diagnostic narrows that failure to metadata refresh, without identifying its failing await or cause. A complete four-campaign pass and a fresh hosted result for the await-step successor remain required. This prerequisite does not close the full named browser/OS/architecture matrix, patched Playwright Firefox/WebKit versus named Firefox/Safari, accessibility-engine/manual keyboard/screen reader/zoom acceptance, IPv4/IPv6 OS external denial, capacity, human studies/security approval, dependency source audits, release or final integrated roadmap documentation gates. Page request blocking is page-level evidence and cannot establish OS network denial.
+
+## Current await diagnostic controls
+
+The fixed `forge.workspace-browser-failure/2` envelope adds nullable `await_step`.
+Only metadata refresh accepts the eight literal step labels in the linked guide;
+other stages require null. Main-stage changes clear stale steps, and the first
+fault retains its own immutable stage/step through later diagnostics and cleanup.
+The post-refresh private screenshot starts with a cleared step. Actual nonzero
+Node status supplies the public exit fact. Unknown, malformed or older envelopes
+retain the original failed campaign and null diagnostic. No raw error text, stack,
+DOM, inputs, URLs, paths or screenshots are added to uploaded receipts.
+
+The [v5 scoped audit](../plans/2026-10-02-f04-hosted-chrome-control-audit-v5.json)
+records 60 Python mocks, 134/134 named function docstrings and 132 named bodies
+called; all 15 changed/new named declarations have docs and actual calls. Root
+retains 1,003/1,240 compiler-mapped physical lines and all 237 zeros. The author
+inventoried four fewer zero docstring entries (1,003/1,236/233); positive line and
+called-name sets are identical. `OwnedTree.settle` and `file_limits` remain
+uncalled. Actual approved Node controls pass 22/22, with 35/35 selected named
+declarations documented and positive V8 primary ranges. All zero ranges remain
+retained. The maintained CJS has only three mocked startup executions here;
+the continuation control executes its actual post-refresh source fragment with
+fake metadata and screenshot adapters. These runs start no browser or Forge.
+
+All 136 browser assertion calls and all 404 await-expression ASTs and exact
+source bytes are preserved. The preceding 54 Python controls retain all 240
+assertion calls after disclosed expected-version/nullable-shape adapters; 49
+full bodies are identical and five use only those adapters. All 20 preceding
+named JavaScript declarations retain their ASTs after the same fixed envelope
+adapters. Historical control audits and native receipts remain separate. The
+full integrated documentation review/update at the end remains an open gate.
 
 ## Original applied integration and precommit evidence
 

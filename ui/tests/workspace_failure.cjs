@@ -10,6 +10,8 @@ const STAGES = Object.freeze([
   "storage-checks", "session-shutdown", "counter-correlation", "request-page-errors",
   "browser-cleanup",
 ]);
+const AWAIT_STEPS = Object.freeze(["prepare", "activate", "response", "ready",
+  "acknowledgment", "download-state", "focus", "dialog"]);
 const OPERATORS = Object.freeze(["strictEqual", "deepStrictEqual", "match", "=="]);
 
 /** Read an own data property without invoking an accessor or walking a private error prototype. */
@@ -20,8 +22,10 @@ function ownDataValue(object, key) {
 }
 
 /** Classify a branded error using fixed enums; unknown assertion operators stay null. */
-function failureRecord(stage, error, TimeoutError) {
+function failureRecord(stage, error, TimeoutError, awaitStep = null) {
   if (!STAGES.includes(stage)) throw new TypeError("Unsupported browser diagnostic stage");
+  if (awaitStep !== null && (stage !== "metadata-refresh" || !AWAIT_STEPS.includes(awaitStep)))
+    throw new TypeError("Unsupported browser diagnostic step");
   let category = "unclassified";
   let assertionOperator = null;
   try {
@@ -37,29 +41,37 @@ function failureRecord(stage, error, TimeoutError) {
     category = "unclassified";
     assertionOperator = null;
   }
-  return Object.freeze({schema_version: "forge.workspace-browser-failure/1", stage,
-    category, assertion_operator: assertionOperator});
+  return Object.freeze({schema_version: "forge.workspace-browser-failure/2", stage,
+    category, assertion_operator: assertionOperator, await_step: awaitStep});
 }
 
 /** Keep the first main fault and its stage when later diagnostics or cleanup also fail. */
 function createTracker(TimeoutError) {
   let stage = "browser-setup";
+  let awaitStep = null;
   let first = null;
   /** Change only a fixed main-flow stage; background observations supply no stage values. */
   function setStage(value) {
     if (!STAGES.includes(value)) throw new TypeError("Unsupported browser diagnostic stage");
     stage = value;
+    awaitStep = null;
+  }
+  /** Select only a fixed refresh await; changing stages clears any previous step. */
+  function setAwaitStep(value) {
+    if (stage !== "metadata-refresh" || !AWAIT_STEPS.includes(value))
+      throw new TypeError("Unsupported browser diagnostic step");
+    awaitStep = value;
   }
   /** Record only the first fault, ignoring later error objects without inspecting them. */
   function capture(error) {
-    if (first === null) first = failureRecord(stage, error, TimeoutError);
+    if (first === null) first = failureRecord(stage, error, TimeoutError, awaitStep);
     return first;
   }
   /** Return the immutable first diagnostic or null without exposing an error object. */
   function current() { return first; }
   /** Report whether success publication must be revoked. */
   function hasFailure() { return first !== null; }
-  return Object.freeze({setStage, capture, current, hasFailure});
+  return Object.freeze({setStage, setAwaitStep, capture, current, hasFailure});
 }
 
 /** Attempt both owned browser closes independently; a cleanup fault never replaces an earlier fault. */
@@ -80,4 +92,4 @@ function publishOutcome(tracker, observation, publish) {
   return !tracker.hasFailure();
 }
 
-module.exports = Object.freeze({STAGES, OPERATORS, ownDataValue, failureRecord, createTracker, reconcileCleanup, publishOutcome});
+module.exports = Object.freeze({STAGES, AWAIT_STEPS, OPERATORS, ownDataValue, failureRecord, createTracker, reconcileCleanup, publishOutcome});

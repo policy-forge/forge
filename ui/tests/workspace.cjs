@@ -521,10 +521,21 @@ let outcomePublished=false;
       assert.equal(await page.locator("#error").isVisible(),false);assert.equal(await page.locator("#status").textContent(),globalStatus);
       failureTracker.setStage("metadata-refresh");
       // A fresh actual preview revokes the earlier disclosure acknowledgment, even in read-only mode.
+      failureTracker.setAwaitStep("prepare");
       const refreshed=page.waitForResponse(response=>response.request().method()==="GET"&&new URL(response.url()).pathname==="/api/v1/project/bundle-preview"&&response.ok());
-      await activate(preview);await refreshed;
+      failureTracker.setAwaitStep("activate");
+      await activate(preview);
+      failureTracker.setAwaitStep("response");
+      await refreshed;
+      failureTracker.setAwaitStep("ready");
       await page.waitForFunction(node=>node.getAttribute("aria-disabled")==="false",await preview.elementHandle());
-      assert.equal(await acknowledgment.isChecked(),false);assert.equal(await downloadButton.getAttribute("aria-disabled"),"true");await focused(preview);
+      failureTracker.setAwaitStep("acknowledgment");
+      assert.equal(await acknowledgment.isChecked(),false);
+      failureTracker.setAwaitStep("download-state");
+      assert.equal(await downloadButton.getAttribute("aria-disabled"),"true");
+      failureTracker.setAwaitStep("focus");
+      await focused(preview);
+      failureTracker.setAwaitStep("dialog");
       assert.equal(await page.getByRole("dialog").count(),0);
       return {previewRegistrations:observed.bundle.pins.length,comparisonExpected:comparison.expected_resources,
         localDownloadBytes:bytes.length,localDownloadSha256:createHash("sha256").update(bytes).digest("hex"),rawEnvelopeBytes:raw.length,
@@ -534,6 +545,7 @@ let outcomePublished=false;
         scope:"actual GET/POST and local download; synthetic external File via native input; no OS chooser, writable import or full S6 acceptance"};
     }
     const metadataConsumerObservation=await verifyMetadataConsumer();
+    failureTracker.setStage("metadata-refresh");
    if(process.env.FORGE_TEST_SCREENSHOT)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT,fullPage:true});
    failureTracker.setStage("final-reflow");
    for(const width of [640,320]){
