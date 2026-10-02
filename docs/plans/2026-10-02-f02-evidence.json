@@ -1,0 +1,188 @@
+{
+  "base_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "branch": "codex/f02-dependency-inventory",
+  "checks": [
+    {
+      "command": "python3.11 -B scripts/test_dependency_inventory.py",
+      "outcome": "passed",
+      "tests": 44
+    },
+    {
+      "command": "actionlint .github/workflows/ci.yml",
+      "outcome": "passed"
+    },
+    {
+      "command": "RUSTC_WRAPPER= python3 -B scripts/dependency_graph.py check",
+      "exit_code": 0,
+      "outcome": "qualified"
+    },
+    {
+      "command": "python3 -B scripts/dependency_inventory.py inventory --as-of 2026-10-02",
+      "exit_code": 1,
+      "outcome": "review-required"
+    },
+    {
+      "command": "python3 -B scripts/dependency_inventory.py gate --as-of 2026-10-02",
+      "exit_code": 1,
+      "outcome": "review-required"
+    },
+    {
+      "command": "python3 -B scripts/dependency_inventory.py validate-store --as-of 2026-10-02",
+      "exit_code": 2,
+      "outcome": "319 unowned current/retired native exemptions invalid"
+    }
+  ],
+  "evaluation_date": "2026-10-02",
+  "evidence_kind": "local mechanical implementation checks, not human audits or acceptance",
+  "f01_hosted_baseline": {
+    "CodeQL": "all observed checks passed",
+    "acceptance": "not established",
+    "cargo_vet_unvetted": 20,
+    "head": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+    "platforms": {
+      "linux": "Lint failed",
+      "macos": "Lint failed",
+      "windows": "Lint failed"
+    },
+    "pr": "https://github.com/policy-forge/forge/pull/165",
+    "run": "https://github.com/policy-forge/forge/actions/runs/36980620021",
+    "rust_1_99_clippy_lib_test_diagnostics": 73
+  },
+  "format": "forge.f02-evidence/1",
+  "input_sha256": {
+    "Cargo.lock": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+    "Cargo.toml": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+    "supply-chain/audits.toml": "e6f7b215be404a1d7b9cb96ca6e50db85737c244fd29f4ab40753b0052f6a04f",
+    "supply-chain/config.toml": "4da940fdae60bf634124bdd82fa2e51427bcf97bee62ca8feffb9fee6e197e2f",
+    "supply-chain/dependency-exceptions.json": "39298ffa2588f8c56ba11e93e698fb2509cc1dcc01b6c6be2ed3fb20f337d815",
+    "supply-chain/dependency-graph.json": "4c3e80a2fa0419498063a95d208c06fd42a75c364fe1a4d17a1bb5451fdad48f",
+    "supply-chain/dependency-policy.json": "8f510954d12066c61f59fc35e6dec18d97dd42e34c13ec0ac3076ba7feae019f",
+    "supply-chain/dependency-reviews.json": "eee73e0056209a280799dc737946378a053be6346c2f3397cfb3a69ab1c7ac83",
+    "supply-chain/imports.lock": "5636a025a2fdf3d406060b5a99bddb3a1acdd92f39641a3a263b3e9ca1ef64fb",
+    "supply-chain/legacy-baseline.json": "aa07a839fc9167766087be973274619b75e93351ad75c4b086bdaaaff0e15339"
+  },
+  "inventory": {
+    "current_native_exemptions": 288,
+    "locked_packages": 312,
+    "new_unvetted_runtime": [
+      "[\"chacha20\",\"0.10.2\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"fancy-regex\",\"0.19.2\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"fraction\",\"0.17.0\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"hashbrown\",\"0.17.1\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"jsonschema\",\"0.57.0\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"jsonschema-regex\",\"0.57.0\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"jsonschema-value\",\"0.57.0\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"micromap\",\"0.3.0\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"num-bigint\",\"0.4.8\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"referencing\",\"0.57.0\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"regex\",\"1.13.1\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"regex-automata\",\"0.4.18\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"regex-syntax\",\"0.8.11\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"serde_json\",\"1.0.151\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"strum\",\"0.28.0\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"thiserror\",\"2.0.21\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"utf8parse\",\"0.2.2\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"uuid\",\"1.26.1\",\"registry+https://github.com/rust-lang/crates.io-index\"]",
+      "[\"zmij\",\"1.0.23\",\"registry+https://github.com/rust-lang/crates.io-index\"]"
+    ],
+    "retired_native_exemptions": 31,
+    "runtime_readiness": {
+      "accepted_reviews": 0,
+      "denominator": 212,
+      "fresh_owned_exceptions": 0,
+      "legacy_unowned": 193,
+      "missing": 212,
+      "ready": false
+    },
+    "trends": {
+      "accepted_review_count": 0,
+      "asserted_exception_count": 0,
+      "class_denominators": {
+        "safe-to-deploy": 213,
+        "safe-to-run": 99
+      },
+      "class_status_counts": [
+        {
+          "class": "safe-to-deploy",
+          "class_denominator": 213,
+          "count": 1,
+          "status": "first-party"
+        },
+        {
+          "class": "safe-to-deploy",
+          "class_denominator": 213,
+          "count": 193,
+          "status": "legacy-unowned"
+        },
+        {
+          "class": "safe-to-deploy",
+          "class_denominator": 213,
+          "count": 2,
+          "status": "pending-review"
+        },
+        {
+          "class": "safe-to-deploy",
+          "class_denominator": 213,
+          "count": 17,
+          "status": "unreviewed"
+        },
+        {
+          "class": "safe-to-run",
+          "class_denominator": 99,
+          "count": 95,
+          "status": "legacy-unowned"
+        },
+        {
+          "class": "safe-to-run",
+          "class_denominator": 99,
+          "count": 1,
+          "status": "pending-review"
+        },
+        {
+          "class": "safe-to-run",
+          "class_denominator": 99,
+          "count": 3,
+          "status": "unreviewed"
+        }
+      ],
+      "exception_age_days_median": null,
+      "exception_denominator": 0,
+      "fresh_owned_exception_count": 0,
+      "legacy_unowned_count": 288,
+      "locked_denominator": 312,
+      "stale_exception_count": 0
+    }
+  },
+  "proposed_policy": {
+    "D069": "pending actual owner disposition",
+    "generator_criterion": "pending; runtime denominator does not prove total release safety",
+    "human_reviews": 0,
+    "registered_exceptions": 0
+  },
+  "scope": {
+    "mechanisms": [
+      "069:M-1",
+      "069:M-2",
+      "069:M-5",
+      "069:M-6",
+      "069:M-7",
+      "069:M-8",
+      "069:M-9",
+      "069:M-10",
+      "069:M-12",
+      "069:M-13",
+      "069:M-14"
+    ],
+    "not_accepted": [
+      "D069",
+      "real runtime audits M-3/M-4 and AC-6",
+      "M-11 schema/release provenance",
+      "S-1 graph reduction decisions",
+      "S-2 per-release receipts",
+      "S-3 reminder beyond CI",
+      "S-4 release artifacts",
+      "hosted platform fixture and graph qualification results",
+      "F01/F02 merge authorization"
+    ]
+  }
+}
