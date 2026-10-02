@@ -176,8 +176,9 @@ Python cannot guarantee physical zeroization of immutable strings.
 
 The normative contract is [OpenAPI](api/forge-workspace-v1.openapi.yaml), with
 [compatibility policy](api/compatibility.md) and [capability matrix](api/capability-matrix.md).
-This change adds closed initialization operations and optional provenance
-references in unreleased contract 1.1.0. Domain `/1` meanings remain unchanged.
+The additive unreleased contract is 1.2.0. It includes closed initialization,
+optional provenance references and read-only index-bundle queries. Existing domain
+`/1` meanings remain unchanged.
 The public Rust `Commands::Workspace` variant extends an exhaustive enum and
 requires a release compatibility decision for downstream matches. No release
 compatibility or new release is asserted here.
@@ -191,6 +192,25 @@ session receipts/operations/idempotency results, 16 capabilities, 16 connections
 capability. Upload has a separate bounded base64 request envelope. API responses
 are at most 4 MiB. Reaching a session retention bound requires finishing work
 and restarting; results are not silently evicted.
+
+### Workspace index bundle inspection
+
+Unreleased API 1.2.0 adds `bundle_preview()` and `verify_bundle(bundle)` to the
+maintained Python client. They inspect the complete explicit index and compare
+expected fingerprints with currently registered captures in read-only sessions.
+Labels, keys, paths and stable hashes remain sensitive metadata. Supplying an
+unregistered path causes no read of that path, and matching fingerprints do not
+establish domain approval, import readiness or later byte stability.
+
+The preview preserves all registrations within the existing 1,000-entry and byte
+bounds; the 100-input prepared-effect limit does not apply. Verification separates
+missing versus explicitly empty indexes, expected-entry agreement, extra current
+keys, whole-index equality and observed valid/stale/invalid domain metadata. It
+creates no effect or replay receipt. The entire POST wrapper must fit 1 MiB,
+including its JSON overhead; retries compare a new capture. See
+[Workspace index bundles](workspace-index-bundles.md) for the maintained read-only
+example, normalized index hash versus original-resource hashes, limits and errors.
+Browser export, confirmed writable import and full S-6 acceptance remain open.
 
 ## Verification and remaining gates
 

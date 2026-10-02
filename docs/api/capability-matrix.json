@@ -310,7 +310,7 @@
     "action": "Drive the complete workspace through the published API",
     "golden_path_step": "cross-cutting",
     "user_stories": ["US-13"],
-    "operations": ["analyzeApplicability", "buildMapping", "cancelOperation", "checkMapping", "commitEffectPreview", "downloadExport", "getApplicabilityDraft", "getApplicabilityReport", "getConversion", "getEffectPreview", "getMappingDraft", "getOperation", "getProjectConfigStatus", "getProjectSummary", "getProvenanceExcerpt", "getResource", "getResourceValidation", "getReviewQueueCounts", "getSession", "listApplicabilityControls", "listMappingSubjects", "listProvenanceEntries", "listResources", "listReviewQueueItems", "preparePolicyConversion", "prepareReportExport", "putApplicabilityDraft", "putMappingDraft", "registerResource", "runValidation", "shutdownSession", "unlockSession", "uploadResource", "validateApplicabilityDraft", "validateMappingDraft", "initializeApplicabilityDraft", "initializeMappingDraft"],
+    "operations": ["analyzeApplicability", "buildMapping", "cancelOperation", "checkMapping", "commitEffectPreview", "downloadExport", "getApplicabilityDraft", "getApplicabilityReport", "getConversion", "getEffectPreview", "getMappingDraft", "getOperation", "getProjectConfigStatus", "getProjectSummary", "getProvenanceExcerpt", "getResource", "getResourceValidation", "getReviewQueueCounts", "getSession", "listApplicabilityControls", "listMappingSubjects", "listProvenanceEntries", "listResources", "listReviewQueueItems", "preparePolicyConversion", "prepareReportExport", "putApplicabilityDraft", "putMappingDraft", "registerResource", "runValidation", "shutdownSession", "unlockSession", "uploadResource", "validateApplicabilityDraft", "validateMappingDraft", "initializeApplicabilityDraft", "initializeMappingDraft", "getProjectBundlePreview", "verifyProjectBundle"],
     "authorization": "browser-write",
     "notes": "US-13 completeness entry: a write-capable session (browser or machine) can perform the entire golden path with only these operations (AC-18). This entry intentionally lists every operationId as the exhaustive coverage denominator for CI."
   },
@@ -331,5 +331,33 @@
     "operations": ["initializeMappingDraft"],
     "authorization": "browser-write",
     "notes": "Explicit registered Catalog selection; current pins and inventory; no inferred relationships or decisions. Preview and commit one new file, then register separately. Mapping review metadata and at least one reviewed relationship are human supplied."
+  },
+  {
+    "id": "CM-38",
+    "action": "Inspect complete workspace index metadata and exact-byte resource fingerprints",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-13"
+    ],
+    "operations": [
+      "getProjectBundlePreview"
+    ],
+    "authorization": "browser-read",
+    "notes": "API and maintained headless client only; no bundled UI action yet. Explicit index, every ordered registration, metadata sensitivity categories; no source content, effect, export file or approval. S-6 remains partial."
+  },
+  {
+    "id": "CM-39",
+    "action": "Compare a metadata bundle only with currently registered captures",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-13"
+    ],
+    "operations": [
+      "verifyProjectBundle"
+    ],
+    "authorization": "browser-read",
+    "notes": "API and maintained headless client only. Read-only POST, complete expected denominator up to1000; never opens supplied unregistered paths. Fingerprint match is separate from domain validation/staleness, whole-index equality and import readiness. No receipt, idempotent replay, hidden prefix or publication."
   }
 ]

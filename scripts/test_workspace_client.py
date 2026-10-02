@@ -3,6 +3,7 @@
 import argparse
 import base64
 import json
+import hashlib
 from pathlib import Path
 import tempfile
 import uuid
@@ -76,6 +77,31 @@ with tempfile.TemporaryDirectory(prefix="forge-client-") as directory:
     writer=client
     with Workspace(args.forge,root,read_only=True) as client:
         assert client.request("GET","/api/v1/project/summary")["resource_counts"]["total"]==6
+        before_bundle_queries={path.name:path.read_bytes() for path in root.iterdir() if path.is_file()}
+        bundle_preview=client.bundle_preview()
+        bundle=bundle_preview["bundle"]
+        assert bundle_preview["source_index_present"] is True
+        assert bundle_preview["source_content_included"] is False
+        assert bundle["schema_version"]=="forge.workspace-index-bundle/1"
+        assert bundle["content_profile"]=="index-and-hashes"
+        assert len(bundle["pins"])==len(bundle["index"]["resources"])==6
+        normalized_index={"schema_version":bundle["index"]["schema_version"],"label":bundle["index"]["label"],"resources":[{"key":item["key"],"role":item["role"],"path":item["path"]} for item in bundle["index"]["resources"]]}
+        normalized_bytes=(json.dumps(normalized_index,ensure_ascii=False,indent=2)+"\n").encode()
+        assert hashlib.sha256(normalized_bytes).hexdigest()==bundle["index_sha256"]
+        for registration,pin in zip(bundle["index"]["resources"],bundle["pins"]):
+            resource_bytes=(root/registration["path"]).read_bytes()
+            assert pin["key"]==registration["key"]
+            assert pin["sha256"]==hashlib.sha256(resource_bytes).hexdigest()
+            assert pin["size_bytes"]==len(resource_bytes)
+        verified=client.verify_bundle(bundle)
+        assert verified["scope"]=="registered-fingerprints-only" and verified["state"]=="matched"
+        assert verified["expected_resources"]==verified["matched_resources"]==6
+        assert verified["unregistered_resources"]==verified["mismatched_resources"]==0
+        assert verified["current_resources"]==6 and verified["current_only_resources"]==0
+        assert verified["expected_index_matches_current"] is True
+        assert [item["key"] for item in verified["items"]]==[item["key"] for item in bundle["index"]["resources"]]
+        assert verified["source_content_included"] is False
+        assert {path.name:path.read_bytes() for path in root.iterdir() if path.is_file()}==before_bundle_queries
         try:
             client.request("POST","/api/v1/resources/register",{"path":"report.html","role":"trace-report","key":"report"},idempotency_key=str(uuid.uuid4()))
         except WorkspaceError as error:
@@ -95,4 +121,4 @@ with tempfile.TemporaryDirectory(prefix="forge-client-") as directory:
         except WorkspaceError:
             raise AssertionError("The workspace answered after close()") from None
         raise AssertionError("The workspace answered after close()")
-print("Maintained headless client: upload, registration, conversion, mapping initialization/edit/build, scope decisions, analysis, trace export, idempotent commit, read-only and shutdown passed.")
+print("Maintained headless client: upload, registration, conversion, mapping initialization/edit/build, scope decisions, analysis, trace export, metadata bundle preview/registered comparison, idempotent commit, read-only and shutdown passed.")

@@ -826,3 +826,749 @@ fn assert_ambiguous_mapping_is_not_ready(server: &Server) {
     assert_eq!(status, 200, "{queue}");
     assert_eq!(queue["page"]["total_matching"], 2);
 }
+
+/// Ordered registration fields used to independently reproduce the documented index encoding.
+#[derive(serde::Serialize)]
+struct BundleFixtureResource<'a> {
+    /// Explicit authorial registration key, never inferred from the filename.
+    key: &'a str,
+    /// Existing closed workspace role spelling.
+    role: &'a str,
+    /// Portable project-relative registration path.
+    path: &'a str,
+}
+
+/// Index field order is part of the normalized pretty-JSON-plus-newline hash contract.
+#[derive(serde::Serialize)]
+struct BundleFixtureIndex<'a> {
+    /// Existing index schema, independent of the bundle family version.
+    schema_version: &'a str,
+    /// Author-supplied project label preserved as metadata.
+    label: &'a str,
+    /// Registrations remain in authorial array order.
+    resources: Vec<BundleFixtureResource<'a>>,
+}
+
+/// Hash supplied fixture bytes independently of the workspace's private digest helper.
+fn bundle_fixture_sha256(bytes: &[u8]) -> String {
+    use sha2::Digest as _;
+    let mut encoded = String::with_capacity(64);
+    for byte in sha2::Sha256::digest(bytes) {
+        write!(encoded, "{byte:02x}").expect("format synthetic SHA256");
+    }
+    encoded
+}
+
+/// Reproduce `Index::bytes` field order and final newline without calling private production code.
+fn bundle_fixture_index_bytes(index: &Value) -> Vec<u8> {
+    let resources = index["resources"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|resource| BundleFixtureResource {
+            key: resource["key"].as_str().unwrap(),
+            role: resource["role"].as_str().unwrap(),
+            path: resource["path"].as_str().unwrap(),
+        })
+        .collect();
+    let ordered = BundleFixtureIndex {
+        schema_version: index["schema_version"].as_str().unwrap(),
+        label: index["label"].as_str().unwrap(),
+        resources,
+    };
+    let mut bytes = serde_json::to_vec_pretty(&ordered).unwrap();
+    bytes.push(b'\n');
+    bytes
+}
+
+/// Construct a closed metadata-only bundle with one original-byte pin per authorial entry.
+fn bundle_fixture(index: &Value, source_bytes: &[&[u8]]) -> Value {
+    let registrations = index["resources"].as_array().unwrap();
+    assert_eq!(registrations.len(), source_bytes.len());
+    let pins: Vec<Value> = registrations
+        .iter()
+        .zip(source_bytes)
+        .map(|(registration, bytes)| {
+            json!({"key":registration["key"],"sha256":bundle_fixture_sha256(bytes),"size_bytes":bytes.len()})
+        })
+        .collect();
+    json!({
+        "schema_version":"forge.workspace-index-bundle/1",
+        "content_profile":"index-and-hashes",
+        "index":index,
+        "index_sha256":bundle_fixture_sha256(&bundle_fixture_index_bytes(index)),
+        "pins":pins,
+    })
+}
+
+/// Compare complete closed response fields, excluding effect, operation and receipt placeholders.
+fn bundle_assert_keys(value: &Value, expected: &[&str]) {
+    let mut actual: Vec<&str> = value.as_object().unwrap().keys().map(String::as_str).collect();
+    let mut expected = expected.to_vec();
+    actual.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(actual, expected, "unexpected fields: {value}");
+}
+
+/// Require a bounded safe typed error without reflecting source content, credentials or root paths.
+fn bundle_assert_error(server: &Server, value: &Value, code: &str) {
+    bundle_assert_keys(value, &["code", "message", "retryable"]);
+    assert_eq!(value["code"], code, "{value}");
+    let text = value.to_string();
+    for private in [
+        "PRIVATE UNREGISTERED CONTENT",
+        "PRIVATE BUNDLE SOURCE BYTES",
+        "PRIVATE REJECTED VALUE",
+        "PRIVATE-REJECTED-VALUE",
+        server.project.path().to_str().unwrap(),
+        server.capability.as_str(),
+    ] {
+        assert!(!text.contains(private), "private value reflected: {value}");
+    }
+}
+
+/// Fetch the actual authenticated preview and check the fixed metadata disclosure contract.
+fn bundle_preview(server: &Server) -> Value {
+    let (status, headers, bytes) =
+        server.request("GET", "/api/v1/project/bundle-preview", true, None, "", "");
+    assert_eq!(status, 200, "{}", String::from_utf8_lossy(&bytes));
+    assert!(headers.contains("cache-control: no-store"));
+    let value: Value = serde_json::from_slice(&bytes).unwrap();
+    bundle_assert_keys(
+        &value,
+        &[
+            "bundle",
+            "source_index_present",
+            "snapshot_version",
+            "included_metadata",
+            "source_content_included",
+        ],
+    );
+    assert_eq!(value["source_index_present"], true);
+    assert_eq!(value["source_content_included"], false);
+    assert_eq!(
+        value["included_metadata"],
+        json!([
+            "project-label",
+            "resource-keys",
+            "typed-roles",
+            "project-relative-paths",
+            "sha256-fingerprints",
+            "byte-lengths",
+        ])
+    );
+    assert_eq!(value["snapshot_version"].as_str().unwrap().len(), 64);
+    bundle_assert_keys(
+        &value["bundle"],
+        &["schema_version", "content_profile", "index", "index_sha256", "pins"],
+    );
+    for pin in value["bundle"]["pins"].as_array().unwrap() {
+        bundle_assert_keys(pin, &["key", "sha256", "size_bytes"]);
+    }
+    value
+}
+
+/// Verify through the actual read-only POST route and require a complete non-effect response.
+fn bundle_verify(server: &Server, bundle: &Value) -> Value {
+    let (status, value) = server.json(
+        "POST",
+        "/api/v1/project/bundle-verifications",
+        None,
+        &json!({"bundle":bundle}),
+    );
+    assert_eq!(status, 200, "{value}");
+    bundle_assert_keys(
+        &value,
+        &[
+            "scope",
+            "snapshot_version",
+            "source_index_present",
+            "state",
+            "current_resources",
+            "current_only_resources",
+            "expected_index_matches_current",
+            "expected_resources",
+            "matched_resources",
+            "unregistered_resources",
+            "mismatched_resources",
+            "items",
+            "source_content_included",
+        ],
+    );
+    assert_eq!(value["scope"], "registered-fingerprints-only");
+    assert_eq!(value["source_content_included"], false);
+    for row in value["items"].as_array().unwrap() {
+        bundle_assert_keys(
+            row,
+            &["key", "status", "reason_codes", "observed_resource_validation_state"],
+        );
+    }
+    value
+}
+
+/// Assert exact expected/observed denominators; extra registrations remain separately visible.
+fn bundle_assert_counts(value: &Value, counts: [usize; 6]) {
+    for (field, expected) in [
+        "expected_resources",
+        "matched_resources",
+        "unregistered_resources",
+        "mismatched_resources",
+        "current_resources",
+        "current_only_resources",
+    ]
+    .into_iter()
+    .zip(counts)
+    {
+        assert_eq!(value[field], json!(expected), "{field}: {value}");
+    }
+    assert_eq!(value["items"].as_array().unwrap().len(), counts[0]);
+    assert_eq!(counts[1] + counts[2] + counts[3], counts[0]);
+}
+
+/// Capture fixture files and top-level entries to detect query publication or source-byte changes.
+fn bundle_project_files(server: &Server) -> Vec<(String, Vec<u8>)> {
+    let mut files: Vec<_> = std::fs::read_dir(server.project.path())
+        .unwrap()
+        .map(|entry| {
+            let entry = entry.unwrap();
+            assert!(entry.file_type().unwrap().is_file());
+            (entry.file_name().into_string().unwrap(), std::fs::read(entry.path()).unwrap())
+        })
+        .collect();
+    files.sort_by(|left, right| left.0.cmp(&right.0));
+    files
+}
+
+/// Metadata preview and comparison use all registrations without publishing files or source excerpts.
+#[test]
+fn readonly_bundle_preview_and_verification_preserve_registered_bytes() {
+    let server = Server::launch_mode(false, true);
+    let first = b"# Private source\n\nPRIVATE BUNDLE SOURCE BYTES\n";
+    let second = b"# Other source\r\n\r\nA supplied test clause.\r\n";
+    let index = json!({"schema_version":"forge.workspace/1","label":"Authorial order","resources":[
+        {"key":"z-first","role":"policy-source","path":"first.md"},
+        {"key":"a-second","role":"policy-source","path":"second.md"},
+    ]});
+    std::fs::write(server.project.path().join("first.md"), first).unwrap();
+    std::fs::write(server.project.path().join("second.md"), second).unwrap();
+    let raw_index = serde_json::to_vec(&index).unwrap();
+    std::fs::write(server.project.path().join("forge.workspace.json"), &raw_index).unwrap();
+    let before = bundle_project_files(&server);
+    let preview = bundle_preview(&server);
+    assert_eq!(preview["bundle"], bundle_fixture(&index, &[first, second]));
+    assert_ne!(preview["bundle"]["index_sha256"], bundle_fixture_sha256(&raw_index));
+    assert!(!preview.to_string().contains("PRIVATE BUNDLE SOURCE BYTES"));
+    assert!(!preview.to_string().contains("PRIVATE UNREGISTERED CONTENT"));
+    let verification = bundle_verify(&server, &preview["bundle"]);
+    assert_eq!(verification["state"], "matched");
+    assert_eq!(verification["source_index_present"], true);
+    assert_eq!(verification["expected_index_matches_current"], true);
+    assert_eq!(verification["snapshot_version"], preview["snapshot_version"]);
+    bundle_assert_counts(&verification, [2, 2, 0, 0, 2, 0]);
+    assert_eq!(
+        verification["items"],
+        json!([
+            {"key":"z-first","status":"matched","reason_codes":[],"observed_resource_validation_state":"valid"},
+            {"key":"a-second","status":"matched","reason_codes":[],"observed_resource_validation_state":"valid"},
+        ])
+    );
+    assert!(!verification.to_string().contains("PRIVATE BUNDLE SOURCE BYTES"));
+    let mut reordered = preview["bundle"].clone();
+    reordered["index"]["resources"].as_array_mut().unwrap().swap(0, 1);
+    reordered["pins"].as_array_mut().unwrap().swap(0, 1);
+    reordered["index_sha256"] =
+        json!(bundle_fixture_sha256(&bundle_fixture_index_bytes(&reordered["index"])));
+    let order_only = bundle_verify(&server, &reordered);
+    assert_eq!(order_only["state"], "matched");
+    assert_eq!(order_only["expected_index_matches_current"], false);
+    bundle_assert_counts(&order_only, [2, 2, 0, 0, 2, 0]);
+    assert_eq!(order_only["items"][0]["key"], "a-second");
+    let mut relabeled = preview["bundle"].clone();
+    relabeled["index"]["label"] = json!("Different authorial label");
+    relabeled["index_sha256"] =
+        json!(bundle_fixture_sha256(&bundle_fixture_index_bytes(&relabeled["index"])));
+    let label_only = bundle_verify(&server, &relabeled);
+    assert_eq!(label_only["state"], "matched");
+    assert_eq!(label_only["expected_index_matches_current"], false);
+    bundle_assert_counts(&label_only, [2, 2, 0, 0, 2, 0]);
+    // A retry is another comparison, not an idempotent effect or persisted replay.
+    assert_eq!(bundle_verify(&server, &preview["bundle"]), verification);
+    assert_eq!(bundle_project_files(&server), before);
+}
+
+/// Absent setup never becomes an invented empty bundle; an authored empty index has a zero denominator.
+#[test]
+fn bundle_queries_distinguish_missing_and_explicit_empty_indexes() {
+    let server = Server::launch_mode(false, true);
+    let index =
+        json!({"schema_version":"forge.workspace/1","label":"Explicit empty","resources":[]});
+    let empty = bundle_fixture(&index, &[]);
+    let (status, error) = server.json("GET", "/api/v1/project/bundle-preview", None, &json!({}));
+    assert_eq!(status, 404, "{error}");
+    bundle_assert_error(&server, &error, "not-found");
+    let missing = bundle_verify(&server, &empty);
+    assert_eq!(missing["state"], "missing-index");
+    assert_eq!(missing["source_index_present"], false);
+    assert_eq!(missing["expected_index_matches_current"], false);
+    bundle_assert_counts(&missing, [0, 0, 0, 0, 0, 0]);
+    let nonempty_index = json!({"schema_version":"forge.workspace/1","label":"Expected only","resources":[
+        {"key":"not-registered","role":"policy-source","path":"unregistered.md"},
+    ]});
+    let missing_nonempty =
+        bundle_verify(&server, &bundle_fixture(&nonempty_index, &[b"Expected bytes"]));
+    assert_eq!(missing_nonempty["state"], "missing-index");
+    bundle_assert_counts(&missing_nonempty, [1, 0, 1, 0, 0, 0]);
+    assert_eq!(
+        missing_nonempty["items"],
+        json!([
+            {"key":"not-registered","status":"not-registered","reason_codes":["registration-not-found"],"observed_resource_validation_state":"not-registered"},
+        ])
+    );
+    assert!(!server.project.path().join("forge.workspace.json").exists());
+    std::fs::write(
+        server.project.path().join("forge.workspace.json"),
+        serde_json::to_vec(&index).unwrap(),
+    )
+    .unwrap();
+    let before = bundle_project_files(&server);
+    let preview = bundle_preview(&server);
+    assert_eq!(preview["bundle"], empty);
+    let matched = bundle_verify(&server, &empty);
+    assert_eq!(matched["state"], "matched");
+    assert_eq!(matched["source_index_present"], true);
+    assert_eq!(matched["expected_index_matches_current"], true);
+    bundle_assert_counts(&matched, [0, 0, 0, 0, 0, 0]);
+    assert_eq!(bundle_project_files(&server), before);
+}
+
+/// Every supplied row receives an ordered result; unknown directories are not opened as resources.
+#[test]
+fn bundle_verification_reconciles_mixed_rows_and_registration_conflicts() {
+    let server = Server::launch_mode(false, true);
+    let bytes = b"# Registered source\n\nA supplied clause.\n";
+    let current = json!({"schema_version":"forge.workspace/1","label":"Current label","resources":[
+        {"key":"first","role":"policy-source","path":"first.md"},
+        {"key":"second","role":"policy-source","path":"second.md"},
+        {"key":"conflict","role":"policy-source","path":"conflict.md"},
+        {"key":"extra","role":"policy-source","path":"extra.md"},
+    ]});
+    for path in ["first.md", "second.md", "conflict.md", "extra.md"] {
+        std::fs::write(server.project.path().join(path), bytes).unwrap();
+    }
+    std::fs::write(
+        server.project.path().join("forge.workspace.json"),
+        serde_json::to_vec(&current).unwrap(),
+    )
+    .unwrap();
+    let index_before = std::fs::read(server.project.path().join("forge.workspace.json")).unwrap();
+    let directory = server.project.path().join("private-directory.md");
+    std::fs::create_dir(&directory).unwrap();
+    let sentinel = directory.join("private.txt");
+    std::fs::write(&sentinel, b"PRIVATE BUNDLE SOURCE BYTES").unwrap();
+    let expected = json!({"schema_version":"forge.workspace/1","label":"Different expected label","resources":[
+        {"key":"second","role":"policy-source","path":"second.md"},
+        {"key":"directory","role":"policy-source","path":"private-directory.md"},
+        {"key":"first","role":"policy-source","path":"first.md"},
+        {"key":"conflict","role":"policy-source","path":"other.md"},
+        {"key":"sentinel","role":"policy-source","path":"unregistered.md"},
+    ]});
+    let mut bundle = bundle_fixture(&expected, &[bytes, bytes, bytes, bytes, bytes]);
+    bundle["pins"][0]["sha256"] = json!("0".repeat(64));
+    bundle["pins"][0]["size_bytes"] = json!(bytes.len() + 1);
+    let result = bundle_verify(&server, &bundle);
+    assert_eq!(result["state"], "mismatched");
+    assert_eq!(result["expected_index_matches_current"], false);
+    bundle_assert_counts(&result, [5, 1, 2, 2, 4, 1]);
+    assert_eq!(
+        result["items"],
+        json!([
+            {"key":"second","status":"mismatched","reason_codes":["sha256-mismatch","size-mismatch"],"observed_resource_validation_state":"valid"},
+            {"key":"directory","status":"not-registered","reason_codes":["registration-not-found"],"observed_resource_validation_state":"not-registered"},
+            {"key":"first","status":"matched","reason_codes":[],"observed_resource_validation_state":"valid"},
+            {"key":"conflict","status":"mismatched","reason_codes":["registration-conflict"],"observed_resource_validation_state":"valid"},
+            {"key":"sentinel","status":"not-registered","reason_codes":["registration-not-found"],"observed_resource_validation_state":"not-registered"},
+        ])
+    );
+    let mut hash_only = bundle.clone();
+    hash_only["pins"][0]["size_bytes"] = json!(bytes.len());
+    assert_eq!(
+        bundle_verify(&server, &hash_only)["items"][0]["reason_codes"],
+        json!(["sha256-mismatch"])
+    );
+    let mut size_only = bundle.clone();
+    size_only["pins"][0]["sha256"] = json!(bundle_fixture_sha256(bytes));
+    assert_eq!(
+        bundle_verify(&server, &size_only)["items"][0]["reason_codes"],
+        json!(["size-mismatch"])
+    );
+    let alias_index = json!({"schema_version":"forge.workspace/1","label":"Supplied key is not registered","resources":[
+        {"key":"unknown-alias","role":"policy-source","path":"first.md"},
+    ]});
+    let alias = bundle_verify(&server, &bundle_fixture(&alias_index, &[bytes]));
+    bundle_assert_counts(&alias, [1, 0, 1, 0, 4, 4]);
+    assert_eq!(alias["items"][0]["status"], "not-registered");
+    assert_eq!(alias["items"][0]["reason_codes"], json!(["registration-not-found"]));
+    let mut role_conflict = bundle.clone();
+    role_conflict["index"]["resources"][3]["path"] = json!("conflict.md");
+    role_conflict["index"]["resources"][3]["role"] = json!("oscal-catalog-artifact");
+    role_conflict["index_sha256"] =
+        json!(bundle_fixture_sha256(&bundle_fixture_index_bytes(&role_conflict["index"])));
+    let changed_role = bundle_verify(&server, &role_conflict);
+    assert_eq!(changed_role["items"][3], result["items"][3]);
+    let subset_index = json!({"schema_version":"forge.workspace/1","label":"Current label","resources":[
+        {"key":"first","role":"policy-source","path":"first.md"},
+    ]});
+    let subset = bundle_verify(&server, &bundle_fixture(&subset_index, &[bytes]));
+    assert_eq!(subset["state"], "matched");
+    assert_eq!(subset["expected_index_matches_current"], false);
+    bundle_assert_counts(&subset, [1, 1, 0, 0, 4, 3]);
+    assert_eq!(std::fs::read(&sentinel).unwrap(), b"PRIVATE BUNDLE SOURCE BYTES");
+    assert_eq!(
+        std::fs::read(server.project.path().join("unregistered.md")).unwrap(),
+        b"PRIVATE UNREGISTERED CONTENT"
+    );
+    assert_eq!(
+        std::fs::read(server.project.path().join("forge.workspace.json")).unwrap(),
+        index_before
+    );
+    for path in ["first.md", "second.md", "conflict.md", "extra.md"] {
+        assert_eq!(std::fs::read(server.project.path().join(path)).unwrap(), bytes);
+    }
+    assert!(!result.to_string().contains("PRIVATE BUNDLE SOURCE BYTES"));
+    assert!(!result.to_string().contains("PRIVATE UNREGISTERED CONTENT"));
+    // Successful verification of the directory row specifically rules out opening
+    // that unregistered nonregular path as a captured file; registered reads remain expected.
+}
+
+/// Byte agreement remains informational when current role validation is invalid or historical/stale.
+#[test]
+fn bundle_fingerprint_agreement_retains_invalid_and_stale_resource_states() {
+    let server = Server::launch_mode(false, true);
+    let invalid = b" \n\t ";
+    let historical = json!({
+        "schema_version":"forge.applicability-report/1","manifest_sha256":"a".repeat(64),
+        "framework":{"resource_type":"catalog","href":"framework.json","raw_sha256":"b".repeat(64),"root_uuid":"22222222-2222-4222-8222-222222222222","document_version":"1","oscal_version":"1.2.3"},
+        "mapping_collections":[],"reviewers":[],
+        "counts":{"total":0,"applicable_mapped":0,"applicable_reviewed_no_relationship":0,"applicable_unmapped":0,"not_applicable":0,"deferred":0,"under_review":0},
+        "filters":{},"matched_controls":0,"controls":[],"review_queue":[],
+    });
+    let report_bytes = serde_json::to_vec(&historical).unwrap();
+    let index = json!({"schema_version":"forge.workspace/1","label":"Validation remains separate","resources":[
+        {"key":"invalid","role":"policy-source","path":"invalid.md"},
+        {"key":"historical","role":"applicability-report","path":"historical.json"},
+    ]});
+    std::fs::write(server.project.path().join("invalid.md"), invalid).unwrap();
+    std::fs::write(server.project.path().join("historical.json"), &report_bytes).unwrap();
+    std::fs::write(
+        server.project.path().join("forge.workspace.json"),
+        serde_json::to_vec(&index).unwrap(),
+    )
+    .unwrap();
+    let before = bundle_project_files(&server);
+    let (status, resources) = server.json("GET", "/api/v1/resources", None, &json!({}));
+    assert_eq!(status, 200, "{resources}");
+    let observed = resources["page"]["items"].as_array().unwrap();
+    let invalid_row = observed.iter().find(|row| row["key"] == "invalid").unwrap();
+    let historical_row = observed.iter().find(|row| row["key"] == "historical").unwrap();
+    assert_eq!(invalid_row["validation_state"], "invalid");
+    assert_eq!(historical_row["validation_state"], "stale");
+    let preview = bundle_preview(&server);
+    assert_eq!(preview["bundle"], bundle_fixture(&index, &[invalid, &report_bytes]));
+    let result = bundle_verify(&server, &preview["bundle"]);
+    assert_eq!(result["state"], "matched");
+    bundle_assert_counts(&result, [2, 2, 0, 0, 2, 0]);
+    assert_eq!(
+        result["items"],
+        json!([
+            {"key":"invalid","status":"matched","reason_codes":[],"observed_resource_validation_state":"invalid"},
+            {"key":"historical","status":"matched","reason_codes":[],"observed_resource_validation_state":"stale"},
+        ])
+    );
+    assert_eq!(bundle_project_files(&server), before);
+}
+
+/// Exercise literal and decoded duplicate keys through the actual raw HTTP decoder.
+fn bundle_assert_raw_duplicates_rejected(server: &Server, valid: &Value, pin_hash: &str) {
+    let text = valid.to_string();
+    let hash_property = format!("\"sha256\":\"{pin_hash}\"");
+    let duplicate_pin =
+        text.replacen(&hash_property, &format!("{hash_property},\"sha256\":\"{pin_hash}\""), 1);
+    let decoded_pin = text.replacen(
+        &hash_property,
+        &format!("{hash_property},\"sha\\u003256\":\"{pin_hash}\""),
+        1,
+    );
+    assert_ne!(duplicate_pin, text);
+    assert_ne!(decoded_pin, text);
+    for body in [
+        format!("{{\"bundle\":{},\"bundle\":{}}}", valid["bundle"], valid["bundle"]),
+        format!("{{\"bundle\":{},\"bund\\u006ce\":{}}}", valid["bundle"], valid["bundle"]),
+        duplicate_pin,
+        decoded_pin,
+    ] {
+        let (status, _, response) = server.request(
+            "POST",
+            "/api/v1/project/bundle-verifications",
+            true,
+            None,
+            "Content-Type: application/json\r\n",
+            &body,
+        );
+        assert_eq!(status, 400, "{}", String::from_utf8_lossy(&response));
+        bundle_assert_error(server, &serde_json::from_slice(&response).unwrap(), "invalid-request");
+    }
+}
+
+/// Intrinsic corruption and duplicate decoded keys reject before any supplied path can become authority.
+#[test]
+fn bundle_verification_rejects_closed_contract_and_duplicate_encodings() {
+    let server = Server::launch_mode(false, true);
+    let bytes = b"# Source\n\nA supplied clause.\n";
+    let index = json!({"schema_version":"forge.workspace/1","label":"Closed fixture","resources":[
+        {"key":"alpha","role":"policy-source","path":"alpha.md"},
+        {"key":"beta","role":"policy-source","path":"beta.md"},
+    ]});
+    for path in ["alpha.md", "beta.md"] {
+        std::fs::write(server.project.path().join(path), bytes).unwrap();
+    }
+    std::fs::write(
+        server.project.path().join("forge.workspace.json"),
+        serde_json::to_vec(&index).unwrap(),
+    )
+    .unwrap();
+    let before = bundle_project_files(&server);
+    let bundle = bundle_fixture(&index, &[bytes, bytes]);
+    assert_eq!(bundle_preview(&server)["bundle"], bundle);
+    let valid = json!({"bundle":bundle});
+    let mut invalid = Vec::new();
+    for (pointer, replacement) in [
+        ("/content", json!("PRIVATE REJECTED VALUE")),
+        ("/bundle/content", json!("PRIVATE REJECTED VALUE")),
+        ("/bundle/approval", json!(true)),
+        ("/bundle/index/approval", json!(true)),
+        ("/bundle/index/resources/0/content", json!("PRIVATE REJECTED VALUE")),
+        ("/bundle/pins/0/path", json!("PRIVATE REJECTED VALUE")),
+        ("/bundle/schema_version", json!("forge.workspace-index-bundle/2")),
+        ("/bundle/content_profile", json!("source-inclusive")),
+        ("/bundle/index/schema_version", json!("forge.workspace/2")),
+        ("/bundle/index_sha256", json!("A".repeat(64))),
+        ("/bundle/index_sha256", json!("0".repeat(64))),
+        ("/bundle/pins/0/sha256", json!("not-a-hash")),
+        ("/bundle/pins/0/size_bytes", json!(-1)),
+        ("/bundle/pins/0/size_bytes", json!(10 * 1024 * 1024 + 1)),
+        ("/bundle/pins/0/size_bytes", json!(1.5)),
+        ("/bundle/pins/0/key", json!("other-key")),
+        ("/bundle/index/resources/0/path", json!("../PRIVATE-REJECTED-VALUE.md")),
+    ] {
+        let mut body = valid.clone();
+        let parts: Vec<&str> = pointer.trim_start_matches('/').split('/').collect();
+        let mut target = &mut body;
+        for part in &parts[..parts.len() - 1] {
+            target = if let Ok(index) = part.parse::<usize>() {
+                &mut target[index]
+            } else {
+                &mut target[*part]
+            };
+        }
+        target[parts[parts.len() - 1]] = replacement;
+        invalid.push((pointer.to_owned(), body));
+    }
+    let mut removed = valid.clone();
+    removed["bundle"]["pins"].as_array_mut().unwrap().pop();
+    invalid.push(("missing pin".into(), removed));
+    let mut swapped = valid.clone();
+    swapped["bundle"]["pins"].as_array_mut().unwrap().swap(0, 1);
+    invalid.push(("pin order".into(), swapped));
+    let mut duplicate = valid.clone();
+    duplicate["bundle"]["pins"][1] = duplicate["bundle"]["pins"][0].clone();
+    invalid.push(("duplicate pin key".into(), duplicate));
+    for (case, body) in invalid {
+        let (status, error) =
+            server.json("POST", "/api/v1/project/bundle-verifications", None, &body);
+        assert_eq!(status, 400, "{case}: {error}");
+        bundle_assert_error(&server, &error, "invalid-request");
+    }
+    bundle_assert_raw_duplicates_rejected(&server, &valid, &bundle_fixture_sha256(bytes));
+    assert_eq!(bundle_verify(&server, &valid["bundle"])["state"], "matched");
+    assert_eq!(bundle_project_files(&server), before);
+}
+
+/// The complete POST envelope keeps the existing byte ceiling and duplicate-safe decoded bounds.
+#[test]
+fn bundle_request_envelope_obeys_existing_raw_and_decoded_limits() {
+    let server = Server::launch(true);
+    let preview = bundle_preview(&server);
+    let body = json!({"bundle":preview["bundle"]}).to_string();
+    let limit = 1024 * 1024;
+    let padded = format!("{}{body}", " ".repeat(limit - body.len()));
+    assert_eq!(padded.len(), limit);
+    let (status, _, bytes) = server.request(
+        "POST",
+        "/api/v1/project/bundle-verifications",
+        true,
+        None,
+        "Content-Type: application/json\r\n",
+        &padded,
+    );
+    assert_eq!(status, 200, "{}", String::from_utf8_lossy(&bytes));
+    assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap()["state"], "matched");
+    // Send only the oversized declared headers: the server must reject before
+    // waiting for the absent body, rather than relying on a client write/reset race.
+    let mut stream = TcpStream::connect(&server.host).unwrap();
+    stream.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+    write!(stream, "POST /api/v1/project/bundle-verifications HTTP/1.1\r\nHost: {}\r\nAuthorization: Bearer {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", server.host, server.capability, limit + 1).unwrap();
+    stream.flush().unwrap();
+    let mut response = String::new();
+    stream.read_to_string(&mut response).unwrap();
+    let (headers, raw) = response.split_once("\r\n\r\n").unwrap();
+    assert_eq!(headers.split_whitespace().nth(1).unwrap(), "413");
+    bundle_assert_error(&server, &serde_json::from_str(raw).unwrap(), "payload-too-large");
+    for body in [
+        format!("{{\"bundle\":{{\"content\":\"{}\"}}}}", "x".repeat(64 * 1024 + 1)),
+        format!("{{\"bundle\":{}0{}}}", "[".repeat(65), "]".repeat(65)),
+    ] {
+        let (status, _, bytes) = server.request(
+            "POST",
+            "/api/v1/project/bundle-verifications",
+            true,
+            None,
+            "Content-Type: application/json\r\n",
+            &body,
+        );
+        assert_eq!(status, 400);
+        bundle_assert_error(&server, &serde_json::from_slice(&bytes).unwrap(), "invalid-request");
+    }
+}
+
+/// Only the exact verification POST is read-only; authentication and existing write guards stay active.
+#[test]
+fn bundle_queries_preserve_authentication_and_exact_readonly_post_exception() {
+    let server = Server::launch(true);
+    let preview = bundle_preview(&server);
+    let body = json!({"bundle":preview["bundle"]}).to_string();
+    let before = bundle_project_files(&server);
+    for (method, path, request_body) in [
+        ("GET", "/api/v1/project/bundle-preview", ""),
+        ("POST", "/api/v1/project/bundle-verifications", body.as_str()),
+    ] {
+        for (authorized, host, headers) in [
+            (false, None, "Content-Type: application/json\r\n"),
+            (
+                false,
+                None,
+                "Content-Type: application/json\r\nAuthorization: Bearer PRIVATE REJECTED VALUE\r\n",
+            ),
+            (true, Some("hostile.invalid:1234"), "Content-Type: application/json\r\n"),
+            (
+                true,
+                None,
+                "Content-Type: application/json\r\nOrigin: https://attacker.invalid\r\nSec-Fetch-Site: cross-site\r\n",
+            ),
+            (true, None, "Content-Type: application/json\r\nForwarded: host=attacker.invalid\r\n"),
+        ] {
+            let (status, _, bytes) =
+                server.request(method, path, authorized, host, headers, request_body);
+            assert_eq!(status, 401, "{}", String::from_utf8_lossy(&bytes));
+            bundle_assert_error(&server, &serde_json::from_slice(&bytes).unwrap(), "unauthorized");
+        }
+        for (suffix, headers) in [
+            ("?private=PRIVATE-REJECTED-VALUE", "Content-Type: application/json\r\n"),
+            ("", "Content-Type: application/json\r\nIdempotency-Key: bundle-query-0001\r\n"),
+        ] {
+            let (status, _, bytes) = server.request(
+                method,
+                &format!("{path}{suffix}"),
+                true,
+                None,
+                headers,
+                request_body,
+            );
+            assert_eq!(status, 400, "{}", String::from_utf8_lossy(&bytes));
+            bundle_assert_error(
+                &server,
+                &serde_json::from_slice(&bytes).unwrap(),
+                "invalid-request",
+            );
+        }
+    }
+    for headers in ["", "Content-Type: text/plain\r\n"] {
+        let (status, _, bytes) = server.request(
+            "POST",
+            "/api/v1/project/bundle-verifications",
+            true,
+            None,
+            headers,
+            &body,
+        );
+        assert_eq!(status, 415);
+        bundle_assert_error(
+            &server,
+            &serde_json::from_slice(&bytes).unwrap(),
+            "unsupported-media-type",
+        );
+    }
+    for (method, path) in [
+        ("POST", "/api/v1/project/bundle-preview"),
+        ("PUT", "/api/v1/project/bundle-verifications"),
+        ("PATCH", "/api/v1/project/bundle-verifications"),
+        ("DELETE", "/api/v1/project/bundle-verifications"),
+        ("POST", "/api/v1/resources/register"),
+    ] {
+        let (status, _, bytes) =
+            server.request(method, path, true, None, "Content-Type: application/json\r\n", &body);
+        assert_eq!(status, 403, "{method} {path}: {}", String::from_utf8_lossy(&bytes));
+        bundle_assert_error(&server, &serde_json::from_slice(&bytes).unwrap(), "read-only-session");
+    }
+    let (status, _, bytes) = server.request(
+        "POST",
+        "/api/v1/project/bundle-verifications",
+        true,
+        None,
+        "Content-Type: Application/JSON; charset=utf-8\r\n",
+        &body,
+    );
+    assert_eq!(status, 200, "{}", String::from_utf8_lossy(&bytes));
+    assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap()["state"], "matched");
+    assert_eq!(bundle_project_files(&server), before);
+}
+
+/// Full actual HTTP queries preserve 101 authorial entries beyond the unrelated 100-input effect cap.
+#[test]
+fn bundle_queries_cover_101_resources_without_effect_prefix_truncation() {
+    let server = Server::launch_mode(false, true);
+    let mut resources = Vec::new();
+    let mut sources = Vec::new();
+    for ordinal in (0..101).rev() {
+        let key = format!("source-{ordinal:04}");
+        let path = format!("{key}.md");
+        let bytes =
+            format!("# Source {ordinal}\n\nSupplied fixture clause {ordinal}.\n").into_bytes();
+        std::fs::write(server.project.path().join(&path), &bytes).unwrap();
+        resources.push(json!({"key":key,"role":"policy-source","path":path}));
+        sources.push(bytes);
+    }
+    let index = json!({"schema_version":"forge.workspace/1","label":"Complete 101 inventory","resources":resources});
+    std::fs::write(
+        server.project.path().join("forge.workspace.json"),
+        serde_json::to_vec(&index).unwrap(),
+    )
+    .unwrap();
+    let before = bundle_project_files(&server);
+    let refs: Vec<&[u8]> = sources.iter().map(Vec::as_slice).collect();
+    let preview = bundle_preview(&server);
+    assert_eq!(preview["bundle"], bundle_fixture(&index, &refs));
+    assert_eq!(preview["bundle"]["pins"].as_array().unwrap().len(), 101);
+    let result = bundle_verify(&server, &preview["bundle"]);
+    assert_eq!(result["state"], "matched");
+    assert_eq!(result["expected_index_matches_current"], true);
+    bundle_assert_counts(&result, [101, 101, 0, 0, 101, 0]);
+    for (row, registration) in
+        result["items"].as_array().unwrap().iter().zip(index["resources"].as_array().unwrap())
+    {
+        assert_eq!(row["key"], registration["key"]);
+        assert_eq!(row["status"], "matched");
+        assert_eq!(row["reason_codes"], json!([]));
+        assert_eq!(row["observed_resource_validation_state"], "valid");
+    }
+    assert_eq!(bundle_project_files(&server), before);
+}

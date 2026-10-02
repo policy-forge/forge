@@ -92,7 +92,8 @@ static VALIDATORS: LazyLock<std::collections::BTreeMap<String, jsonschema::Valid
             .collect()
     });
 
-pub(crate) const VERSION: &str = "1.1.0";
+/// Additive API revision, identical to the normative API document version.
+pub(crate) const VERSION: &str = "1.2.0";
 
 /// Resolve a possibly `$ref`-ed parameter against the embedded contract.
 fn resolve_parameter(definition: &Value) -> &Value {
