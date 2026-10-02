@@ -204,6 +204,12 @@ class FakeNode {
     this.listeners.set(type, listeners);
   }
 
+  /** Remove exactly one callback, including native-preview lifecycle listeners. */
+  removeEventListener(type, callback) {
+    const listeners = this.listeners.get(type) ?? [];
+    this.listeners.set(type, listeners.filter(listener => listener.callback !== callback));
+  }
+
   /** Dispatch synchronously; retain returned promises for explicit test waiting. */
   dispatchEvent(event) {
     event.currentTarget = this;
@@ -254,7 +260,10 @@ class FakeNode {
     this.open = false;
     this.ownerDocument.activeElement = this.ownerDocument.body;
     this.returnTarget?.focus();
-    setImmediate(() => this.dispatchEvent(eventFor("close", this)));
+    /** Dispatch this queued native close only when its controlled lifecycle is released. */
+    const emit = () => this.dispatchEvent(eventFor("close", this));
+    if (this.ownerDocument.holdCloseEvents) this.ownerDocument.closeEvents.push(emit);
+    else setImmediate(emit);
   }
 
   /** Escape emits cancel and uses native non-destructive dismissal unless prevented. */
@@ -274,6 +283,8 @@ class FakeDocument {
     this.body = new FakeNode(this, "body");
     this.activeElement = this.body;
     this.focusHistory = [];
+    this.holdCloseEvents = false;
+    this.closeEvents = [];
     const add = (parent, tag, id, text = "") => {
       const node = this.createElement(tag);
       node.id = id;
@@ -1611,5 +1622,461 @@ for (const fails of [false, true]) {
     assert.equal(app.byId("error").hidden, true);
     assert.equal(app.document.activeElement, app.byId("main"));
     assert.equal(app.document.focusHistory.length, focusCount);
+  });
+}
+
+
+/** Return a closed-contract synthetic unlock response without persisting a real credential. */
+function unlockedSession(readOnly = true) {
+  return { capability: "synthetic-test-capability-32-characters", session: {
+    session_id: "sess_synthetic001", mode: "browser", api_major: 1, read_only: readOnly,
+    contract_version: "1.0.0", project_label: "Synthetic project",
+  } };
+}
+
+/** Observe actual form submission; this fake DOM does not synthesize native Enter defaults. */
+function beginUnlock(app, trigger = "field") {
+  const field = app.byId("passphrase");
+  const form = app.byId("unlock-form");
+  const submit = form.querySelector("button");
+  field.value = "synthetic test passphrase";
+  (trigger === "field" ? field : submit).focus();
+  return { field, form, submit, action: form.fire("submit") };
+}
+
+const throttleMessage = "Too many attempts — retry available in 2 seconds. Wait, then retry. If repeated, stop and relaunch the workspace from the terminal.";
+const throttledReply = { status: 429, body: { code: "unlock-throttled", message: throttleMessage, retryable: true } };
+
+test("locked source initialization focuses and describes the passphrase field", () => {
+  const app = harness();
+  assert.equal(app.document.activeElement, app.byId("passphrase"));
+  assert.equal(app.byId("status").textContent, "Workspace locked — passphrase required.");
+  assert.equal(app.byId("passphrase").getAttribute("aria-describedby"), "status");
+  assert.equal(app.requests.length, 0);
+});
+
+for (const trigger of ["field", "submit"]) {
+  test("pending unlock retains the " + trigger + " trigger and rejects repeated submission", async () => {
+    const reply = deferred();
+    const app = harness({ "/session/unlock": () => reply.promise });
+    const attempt = beginUnlock(app, trigger);
+    await settle();
+    assert.equal(app.document.activeElement, trigger === "field" ? attempt.field : attempt.submit);
+    assert.equal(attempt.form.getAttribute("aria-busy"), "true");
+    assert.equal(attempt.submit.getAttribute("aria-disabled"), "true");
+    assert.equal(attempt.submit.disabled, false, "Native disabling must not drop the pending trigger's focus");
+    assert.equal(app.byId("status").textContent, "Unlocking workspace…");
+    await attempt.form.fire("submit");
+    assert.equal(app.requests.length, 1);
+    assert.equal(app.requests[0].options.method, "POST");
+    assert.deepEqual(JSON.parse(app.requests[0].options.body), { passphrase: "synthetic test passphrase" });
+    reply.resolve(unlockedSession());
+    await attempt.action;
+    assert.equal(attempt.field.value, "");
+    assert.equal(attempt.form.getAttribute("aria-busy"), "false");
+    assert.equal(attempt.submit.getAttribute("aria-disabled"), "false");
+    assert.equal(app.document.activeElement, app.byId("main"));
+    assert.equal(app.byId("status").textContent, "Project state loaded.");
+  });
+
+  test("typed throttle preserves the " + trigger + " owned field retry target and exact server message", async () => {
+    const reply = deferred();
+    const app = harness({ "/session/unlock": () => reply.promise });
+    const attempt = beginUnlock(app, trigger);
+    await settle();
+    reply.resolve(throttledReply);
+    await attempt.action;
+    assert.equal(app.document.activeElement, attempt.field);
+    assert.equal(app.byId("status").textContent, throttleMessage);
+    assert.equal(app.byId("error").hidden, true);
+    assert.equal(attempt.field.value, "", "Completed failures retain credential clearing");
+    assert.equal(attempt.form.getAttribute("aria-busy"), "false");
+    assert.equal(attempt.submit.getAttribute("aria-disabled"), "false");
+    assert.equal(app.run("capability"), "");
+    assert.equal(app.requests.filter(request => request.route === "/project/summary").length, 0);
+    app.routes["/session/unlock"] = () => unlockedSession();
+    const retry = beginUnlock(app);
+    await retry.action;
+    assert.equal(app.document.activeElement, app.byId("main"));
+    assert.equal(app.requests.filter(request => request.route === "/session/unlock").length, 2);
+  });
+}
+
+test("a late throttle cannot take focus from a newer connected control", async () => {
+  const reply = deferred();
+  const app = harness({ "/session/unlock": () => reply.promise });
+  const attempt = beginUnlock(app);
+  await settle();
+  const newer = app.byId("refresh"); newer.focus();
+  reply.resolve(throttledReply);
+  await attempt.action;
+  assert.equal(app.document.activeElement, newer);
+  assert.equal(app.byId("status").textContent, throttleMessage);
+  assert.equal(app.byId("error").hidden, true);
+});
+
+test("ordinary failed unlock clears the credential and focuses the safe summary", async () => {
+  const app = harness({ "/session/unlock": () => ({ status: 401, body: {
+    code: "unlock-failed", message: "The passphrase did not unlock this session.", retryable: true,
+  } }) });
+  const attempt = beginUnlock(app); await attempt.action;
+  assert.equal(attempt.field.value, "");
+  assert.equal(app.document.activeElement, app.byId("error"));
+  assert.match(app.byId("error").textContent, /unlock-failed.*did not unlock.*Retryable: true/);
+  assert.equal(app.byId("status").textContent, "Workspace locked — passphrase required.");
+  assert.equal(app.run("capability"), "");
+});
+
+test("invalid unlock length is rejected before transport and releases the pending guard", async () => {
+  const app = harness();
+  const field = app.byId("passphrase"); field.value = "short";
+  await app.byId("unlock-form").fire("submit");
+  assert.equal(app.requests.length, 0);
+  assert.equal(field.value, "");
+  assert.equal(app.document.activeElement, app.byId("error"));
+  assert.match(app.byId("error").textContent, /15–128/);
+  assert.equal(app.run("unlockPending"), false);
+});
+
+/** Provide the documented terminal commit result; these bytes are a synthetic transport fixture. */
+function committedWrite(target = "synthetic-output.json") {
+  return operation("succeeded", { kind: "commit", result: { write_committed: true,
+    committed_sha256: "a".repeat(64), target_path: target, new_version: "synthetic-version-2" } });
+}
+
+/** Render the actual preview and commit controls, using only synthetic API observations. */
+async function commitApp(overrides = {}, exported = false) {
+  const app = harness({
+    "/effects/previews/prev_synthetic000001": () => proposedWrite(),
+    "/effects/commits": () => operation("pending", { kind: "commit" }),
+    [operationRoute]: () => committedWrite(),
+    ...overrides,
+  });
+  app.run("readOnly = false;");
+  await app.run('navigate(' + JSON.stringify(exported ? "Trace & Reports" : "Policies & Artifacts") + ')');
+  const invoker = app.byButton(exported ? "Prepare export" : "Preview registration");
+  invoker.focus();
+  await app.run('preview(' + JSON.stringify(proposedWrite()) + (exported ? ',' + JSON.stringify(operationId) : '') + ')');
+  app.run("dirty = true;");
+  return { ...app, invoker, confirm: app.byButton("Confirm this exact write", app.byId("preview-dialog")) };
+}
+
+/** Assert the actual receipt confirmation/key and that UI recovery never resends a commit. */
+function oneExactCommit(app) {
+  const requests = app.requests.filter(request => request.route === "/effects/commits");
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].options.method, "POST");
+  assert.deepEqual(JSON.parse(requests[0].options.body), { receipt: "synthetic-receipt-opaque-token", observed_version: "synthetic-version-1", confirmed: true });
+  assert.match(requests[0].options.headers["Idempotency-Key"], /^[a-f0-9-]{36}$/);
+}
+
+for (const exported of [false, true]) {
+  test("verified " + (exported ? "export" : "registration") + " focuses the refreshed heading after queued native close", async () => {
+    const app = await commitApp({}, exported);
+    app.document.holdCloseEvents = true;
+    app.confirm.focus();
+    const action = app.confirm.fire("click"); await settle();
+    assert.equal(app.byId("preview-dialog").open, false);
+    assert.equal(app.invoker.isConnected, false, "Refreshed content replaces the dialog's original return target");
+    assert.equal(app.document.activeElement, app.document.body);
+    assert.equal(app.document.closeEvents.length, 1);
+    assert.doesNotMatch(app.byId("status").textContent, /^Saved /, "Saved focus publication must await native close");
+    app.document.closeEvents.shift()();
+    await action;
+    assert.equal(app.document.activeElement, app.byId("view-title"));
+    assert.equal(app.byId("status").textContent, "Saved synthetic-output.json.");
+    assert.equal(app.run("dirty"), false);
+    assert.equal(app.byId("view").inert, false);
+    if (exported) assert.equal(app.byButton("Download committed redacted report").isConnected, true);
+    else assert.equal(app.byId("view").querySelectorAll("button").some(node => node.textContent === "Download committed redacted report"), false);
+    oneExactCommit(app);
+  });
+}
+
+for (const inline of [false, true]) {
+  test("verified write with " + (inline ? "inline table" : "generic") + " refresh failure focuses saved-but-refresh-failed summary after close", async () => {
+    const app = await commitApp();
+    if (inline) {
+      app.run('activeView = "Review Queue";');
+      app.routes["/review-queue/items"] = () => ({ status: 500, body: { code: "internal-error", message: "Synthetic saved queue failure.", retryable: true } });
+    } else app.routes["/resources"] = () => ({ status: 500, body: { code: "internal-error", message: "Synthetic saved resources failure.", retryable: true } });
+    app.document.holdCloseEvents = true;
+    const action = app.confirm.fire("click"); await settle();
+    assert.equal(app.byId("preview-dialog").open, false);
+    assert.equal(app.document.closeEvents.length, 1);
+    app.document.closeEvents.shift()(); await action;
+    assert.equal(app.document.activeElement, app.byId("error"));
+    assert.match(app.byId("error").textContent, /write was saved, but the view could not be refreshed.*Synthetic saved/);
+    assert.equal(app.byId("status").textContent, "Saved synthetic-output.json.");
+    assert.equal(app.run("dirty"), false);
+    oneExactCommit(app);
+  });
+}
+
+test("rejected commit retains its preview and unsaved state with a focused modal error", async () => {
+  const app = await commitApp({ "/effects/commits": () => ({ status: 409, body: {
+    code: "receipt-expired", message: "Prepare a new preview.", retryable: false,
+  } }) });
+  await app.confirm.fire("click");
+  const dialog = app.byId("preview-dialog"); const error = dialog.querySelector("[role=alert]");
+  assert.equal(dialog.open, true);
+  assert.equal(app.document.activeElement, error);
+  assert.match(error.textContent, /receipt-expired.*Prepare a new preview/);
+  assert.equal(app.run("dirty"), true);
+  assert.equal(app.requests.filter(request => request.route === operationRoute).length, 0);
+  oneExactCommit(app);
+});
+
+for (const interruption of ["Escape", "navigation", "shutdown"]) {
+  test("late confirmed-write observation after " + interruption + " cannot publish Saved or steal newer focus", async () => {
+    const result = deferred();
+    const app = await commitApp({ [operationRoute]: () => result.promise,
+      "/session/shutdown": () => ({ state: "shutting-down" }) });
+    const action = app.confirm.fire("click"); await settle();
+    app.byId("preview-dialog").escape(); await settle();
+    if (interruption === "navigation") { app.run("dirty = false;"); await app.run('navigate("Overview")'); }
+    else if (interruption === "shutdown") { await app.byId("stop").fire("click"); await app.byId("confirm-stop").fire("click"); }
+    else app.byId("refresh").focus();
+    const destination = app.document.activeElement;
+    const status = app.byId("status").textContent;
+    result.resolve(committedWrite()); await action; await settle();
+    assert.equal(app.document.activeElement, destination);
+    assert.equal(app.byId("status").textContent, status);
+    assert.equal(app.byId("preview-dialog").open, false);
+    assert.equal(app.run("dirty"), interruption === "navigation" ? false : true);
+    oneExactCommit(app);
+  });
+}
+
+test("Escape while a verified commit refresh is pending suppresses later render and saved focus", async () => {
+  const app = await commitApp(); const refresh = deferred();
+  app.routes["/resources"] = () => refresh.promise;
+  const action = app.confirm.fire("click"); await settle();
+  app.byId("preview-dialog").escape(); await settle();
+  app.byId("main").focus();
+  const view = app.byId("view").children[0];
+  refresh.resolve({ resource_version: "synthetic-version-1", page: { items: [], total_matching: 0, next_cursor: null } });
+  await action;
+  assert.equal(app.byId("view").children[0], view);
+  assert.equal(app.document.activeElement, app.byId("main"));
+  assert.doesNotMatch(app.byId("status").textContent, /^Saved /);
+  assert.equal(app.run("dirty"), true);
+  assert.equal(app.byId("view").inert, false);
+  oneExactCommit(app);
+});
+
+
+for (const dismissal of ["Escape", "Keep editing"]) {
+  test("queued " + dismissal + " close cannot invalidate a successor preview or publish the old commit", async () => {
+    const oldResult = deferred(); let reads = 0;
+    const second = { ...proposedWrite(), preview_id: "prev_synthetic000002",
+      receipt: { token: "synthetic-successor-receipt-token", expires_at: "2026-10-02T01:00:00Z" } };
+    const app = await commitApp({
+      [operationRoute]: () => ++reads === 1 ? oldResult.promise : committedWrite(),
+      "/effects/previews/prev_synthetic000002": () => second,
+    });
+    const oldAction = app.confirm.fire("click"); await settle();
+    app.document.holdCloseEvents = true;
+    let dismissed;
+    if (dismissal === "Escape") app.byId("preview-dialog").escape();
+    else dismissed = app.byButton("Keep editing", app.byId("preview-dialog")).fire("click");
+    const successor = app.run('preview(' + JSON.stringify(second) + ')');
+    await settle();
+    assert.equal(app.byId("preview-dialog").open, false, "Successor must wait for old native close lifecycle");
+    assert.equal(app.document.closeEvents.length, 1);
+    app.document.closeEvents.shift()();
+    if (dismissed) await dismissed;
+    await successor;
+    const newTitle = app.byId("preview-title");
+    assert.equal(app.byId("preview-dialog").open, true);
+    assert.equal(app.document.activeElement, newTitle);
+    oldResult.resolve(committedWrite()); await oldAction;
+    assert.equal(app.byId("preview-dialog").open, true);
+    assert.equal(app.document.activeElement, newTitle);
+    assert.equal(app.run("dirty"), true);
+    assert.doesNotMatch(app.byId("status").textContent, /^Saved /);
+    app.document.holdCloseEvents = false;
+    await app.byButton("Confirm this exact write", app.byId("preview-dialog")).fire("click");
+    assert.equal(app.byId("preview-dialog").open, false);
+    assert.equal(app.document.activeElement, app.byId("view-title"));
+    const commits = app.requests.filter(request => request.route === "/effects/commits");
+    assert.equal(commits.length, 2, "Each explicitly confirmed receipt is sent once; no recovery replay");
+    assert.deepEqual(commits.map(request => JSON.parse(request.options.body).receipt), ["synthetic-receipt-opaque-token", "synthetic-successor-receipt-token"]);
+    assert.notEqual(commits[0].options.headers["Idempotency-Key"], commits[1].options.headers["Idempotency-Key"]);
+  });
+}
+
+test("ineligible late direct preparation cannot revoke the visible receipt's confirmation", async () => {
+  const direct = deferred();
+  const app = harness({ "/resources/register": () => direct.promise,
+    "/effects/previews/prev_synthetic000001": () => proposedWrite(),
+    "/effects/commits": () => operation("pending", { kind: "commit" }),
+    [operationRoute]: () => committedWrite(),
+  });
+  app.run("readOnly = false;"); await app.run('navigate("Policies & Artifacts")');
+  const background = app.run('effect("/resources/register", "POST", {role:"policy-source",path:"synthetic-policy.md",key:"fixture"})');
+  await settle();
+  await app.run('preview(' + JSON.stringify(proposedWrite()) + ')');
+  const title = app.byId("preview-title");
+  const reads = app.requests.filter(request => request.route.startsWith("/effects/previews/")).length;
+  direct.resolve({ preview: proposedWrite() }); await background;
+  assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.document.activeElement, title);
+  assert.equal(app.requests.filter(request => request.route.startsWith("/effects/previews/")).length, reads,
+    "Already-ineligible background preview must not fetch or reserve current preview ownership");
+  assert.equal(app.requests.filter(request => request.route === "/resources/register").length, 1);
+  await app.byButton("Confirm this exact write", app.byId("preview-dialog")).fire("click");
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.byId("status").textContent, "Saved synthetic-output.json.");
+  oneExactCommit(app);
+});
+
+test("navigation during the queued confirmed-close event retains its newer heading and status", async () => {
+  const app = await commitApp(); app.document.holdCloseEvents = true;
+  const action = app.confirm.fire("click"); await settle();
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.document.closeEvents.length, 1);
+  await app.run('navigate("Overview")');
+  const status = app.byId("status").textContent;
+  app.document.closeEvents.shift()(); await action;
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.byId("view-title").textContent, "Overview");
+  assert.equal(app.byId("status").textContent, status);
+  assert.doesNotMatch(status, /^Saved /);
+  oneExactCommit(app);
+});
+
+
+for (const fails of [false, true]) {
+  test("dismissed confirmed-refresh " + (fails ? "failure" : "success") + " preserves usable old pagination and filters", async () => {
+    const app = await queueApp({
+      "/effects/previews/prev_synthetic000001": () => proposedWrite(),
+      "/effects/commits": () => operation("pending", { kind: "commit" }),
+      [operationRoute]: () => committedWrite(),
+    });
+    const retained = pageParts(app); const rows = retained.results.textContent;
+    const next = app.byButton("Next page");
+    await app.run('preview(' + JSON.stringify(proposedWrite()) + ')');
+    app.run("dirty = true;");
+    const refresh = deferred(); app.routes["/review-queue/items"] = () => refresh.promise;
+    const action = app.byButton("Confirm this exact write", app.byId("preview-dialog")).fire("click");
+    await settle(); app.byId("preview-dialog").escape(); await settle();
+    app.byId("main").focus();
+    refresh.resolve(fails ? { status: 500, body: { code: "internal-error", message: "Obsolete confirmed-refresh failure.", retryable: true } }
+      : queuePage(new URL("http://local/?page_size=50")));
+    await action;
+    assert.equal(retained.results.isConnected, true);
+    assert.equal(retained.results.textContent, rows);
+    assert.equal(app.document.activeElement, app.byId("main"));
+    assert.equal(app.byId("view").inert, false);
+    assert.equal(app.byId("error").hidden, true);
+    assert.doesNotMatch(app.byId("status").textContent, /^Saved /);
+    app.routes["/review-queue/items"] = url => queuePage(url);
+    const reads = app.requests.filter(request => request.route === "/review-queue/items").length;
+    next.focus(); await next.fire("click");
+    assert.equal(app.requests.filter(request => request.route === "/review-queue/items").length, reads + 1,
+      "Retained Next handler must still own the visible page after discarded staging");
+    assert.match(retained.status.textContent, /Page 2/);
+    assert.equal(app.document.activeElement, retained.results);
+    app.byLabel("Reason").value = "scope-decision-required";
+    const apply = app.byButton("Apply filters"); apply.focus(); await apply.fire("click");
+    assert.equal(retained.status.textContent, "3 matching items of 53 total · Page 1.");
+    assert.equal(app.document.activeElement, retained.results);
+    oneExactCommit(app);
+  });
+}
+
+
+test("unsupported API major clears unlock data and focuses the compatibility error", async () => {
+  const app = harness({ "/session/unlock": () => {
+    const response = unlockedSession(); response.session.api_major = 2; return response;
+  } });
+  const attempt = beginUnlock(app); await attempt.action;
+  assert.equal(attempt.field.value, "");
+  assert.equal(app.run("capability"), "");
+  assert.equal(app.run("unlockPending"), false);
+  assert.equal(app.document.activeElement, app.byId("error"));
+  assert.match(app.byId("error").textContent, /requires API version 1.*matching workspace assets/);
+  assert.equal(app.requests.filter(request => request.route === "/project/summary").length, 0);
+});
+
+test("shutdown during queued confirmed close suppresses Saved and preserves stopped focus", async () => {
+  const app = await commitApp({ "/session/shutdown": () => ({ state: "shutting-down" }) });
+  app.document.holdCloseEvents = true;
+  const action = app.confirm.fire("click"); await settle();
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.document.closeEvents.length, 1);
+  await app.byId("stop").fire("click"); await app.byId("confirm-stop").fire("click");
+  const stopped = app.byId("status").textContent;
+  while (app.document.closeEvents.length) app.document.closeEvents.shift()();
+  await action;
+  assert.equal(app.document.activeElement, app.byId("main"));
+  assert.equal(app.byId("status").textContent, stopped);
+  assert.match(stopped, /Workspace stopped/);
+  assert.equal(app.run("capability"), "");
+  oneExactCommit(app);
+});
+
+test("committed export download failure uses its authenticated route and cannot replay the write", async () => {
+  const app = await commitApp({ ["/exports/" + operationId + "/download"]: () => ({ status: 409,
+    body: { code: "version-conflict", message: "Synthetic committed bytes changed.", retryable: false } }) }, true);
+  app.run('capability = "synthetic-download-capability";');
+  await app.confirm.fire("click");
+  await app.byButton("Download committed redacted report").fire("click");
+  const request = app.requests.find(request => request.route.endsWith("/download"));
+  assert.equal(request.route, "/exports/" + operationId + "/download");
+  assert.equal(request.options.headers.Authorization, "Bearer synthetic-download-capability");
+  assert.equal(request.options.credentials, "omit");
+  assert.equal(request.options.cache, "no-store");
+  assert.equal(app.document.activeElement, app.byId("error"));
+  assert.match(app.byId("error").textContent, /committed export is no longer available or its bytes changed/);
+  assert.equal(app.byId("status").textContent, "Saved synthetic-output.json.");
+  oneExactCommit(app);
+});
+
+
+for (const fails of [false, true]) {
+  test("obsolete page " + (fails ? "error" : "success") + " after a dismissed refresh cannot release or overwrite a newer page read", async () => {
+    const app = await queueApp({
+      "/effects/previews/prev_synthetic000001": () => proposedWrite(),
+      "/effects/commits": () => operation("pending", { kind: "commit" }),
+      [operationRoute]: () => committedWrite(),
+    });
+    const parts = pageParts(app); const rows = parts.results.textContent;
+    const oldPage = deferred(); app.routes["/review-queue/items"] = () => oldPage.promise;
+    const next = app.byButton("Next page"); next.focus();
+    const oldAction = next.fire("click"); await settle();
+    await app.run('preview(' + JSON.stringify(proposedWrite()) + ')');
+    const staged = deferred(); app.routes["/review-queue/items"] = () => staged.promise;
+    const commit = app.byButton("Confirm this exact write", app.byId("preview-dialog")).fire("click");
+    await settle(); app.byId("preview-dialog").escape(); await settle();
+    staged.resolve(queuePage(new URL("http://local/?page_size=50"))); await commit;
+    assert.equal(next.getAttribute("aria-disabled"), "false", "Discarded staging must leave visible page controls usable");
+    assert.equal(parts.results.textContent, rows);
+    const freshPage = deferred(); app.routes["/review-queue/items"] = () => freshPage.promise;
+    next.focus(); const freshAction = next.fire("click"); await settle();
+    const reads = app.requests.filter(request => request.route === "/review-queue/items").length;
+    assert.equal(next.getAttribute("aria-disabled"), "true");
+    assert.equal(parts.results.getAttribute("aria-busy"), "true");
+    const pendingStatus = parts.status.textContent;
+    oldPage.resolve(fails ? { status: 503, body: { code: "internal-error", message: "Obsolete page read.", retryable: true } }
+      : queuePage(new URL("http://local/?page_size=50&cursor=synthetic-page-2")));
+    await oldAction;
+    assert.equal(parts.results.textContent, rows);
+    assert.equal(parts.status.textContent, pendingStatus);
+    assert.equal(parts.error.hidden, true);
+    assert.equal(app.document.activeElement === next, true, "An obsolete response cannot seize newer request focus");
+    assert.equal(next.getAttribute("aria-disabled"), "true", "Old finally must not release the newer busy action");
+    assert.equal(parts.results.getAttribute("aria-busy"), "true");
+    await next.fire("click");
+    assert.equal(app.requests.filter(request => request.route === "/review-queue/items").length, reads, "New request keeps its duplicate-activation guard");
+    freshPage.resolve(queuePage(new URL("http://local/?page_size=50&cursor=synthetic-page-2"))); await freshAction;
+    assert.equal(parts.status.textContent, "53 matching items of 53 total · Page 2.");
+    assert.match(parts.results.textContent, /synthetic-51/);
+    assert.equal(app.document.activeElement === parts.results, true);
+    assert.equal(next.getAttribute("aria-disabled"), "false");
+    assert.equal(parts.results.getAttribute("aria-busy"), "false");
+    oneExactCommit(app);
   });
 }

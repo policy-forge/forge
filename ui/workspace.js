@@ -4,6 +4,9 @@ const element = (id) => document.getElementById(id);
 let capability = "";
 let activeView = "Overview";
 let stopped = false;
+let unlockPending = false;
+let previewGeneration = 0;
+let previewClosePending = null;
 let pending = 0;
 let readOnly = true;
 let dirty = false;
@@ -13,6 +16,8 @@ let viewFilters = {};
 const operationRows = new Map();
 // Bound unacknowledged or direct-preview requests independently from server operations.
 const requestRows = new Map();
+// Disconnected pagers cannot retain their view-resume callbacks.
+const retainedPagers = new WeakMap();
 const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports"];
 
 function node(tag, text, className) {
@@ -93,10 +98,11 @@ function checkedPage(response, size) {
   return page;
 }
 
-/** Keep table state, controls and live feedback until a current verified read succeeds. */
+/** Keep verified rows and allow a retained live pager to recover after a dismissed write refresh. */
 async function pagedTable(path, caption, columns, filters = []) {
-  const owner = pending;
+  let owner = pending;
   const section = node("section"); const form = node("form"); const display = node("div"); const controls = node("div");
+  section.setAttribute("data-paged-table", "");
   display.tabIndex = -1; display.setAttribute("role", "region"); display.setAttribute("aria-label", caption); display.setAttribute("data-page-results", "");
   const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-page-status", "");
   const error = node("div"); error.hidden = true; error.tabIndex = -1; error.setAttribute("role", "alert"); error.setAttribute("data-page-error", "");
@@ -107,6 +113,14 @@ async function pagedTable(path, caption, columns, filters = []) {
   let cursors = [null]; let index = 0; let applied = Object.fromEntries(choices.map(([key, select]) => [key, select.value]));
   let generation = 0; let busy = false; let summary = ""; let nextCursor = null; let lastRequest;
   const actions = [];
+  /** Rebind only a retained installed pager; older responses and their finally handlers stay obsolete. */
+  function resumePage() {
+    if (stopped || !section.isConnected || element("view").inert || owner === pending) return;
+    owner = pending; generation++; busy = false;
+    display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false"));
+    if (summary) status.textContent = `Previous results retained after the refresh was cancelled: ${summary}`;
+  }
+  retainedPagers.set(section, resumePage);
   /** Keep the initiating control focusable while preventing repeated pending reads. */
   const pageAction = (label, action) => {
     const control = node("button", label); control.type = "button"; actions.push(control);
@@ -118,10 +132,10 @@ async function pagedTable(path, caption, columns, filters = []) {
   const next = pageAction("Next page", () => { const staged = cursors.slice(); staged[index + 1] = nextCursor; return load(index + 1, staged, applied, true); }); next.hidden = true;
   const retry = pageAction("Retry page", () => load(lastRequest.index, lastRequest.cursors, lastRequest.filters, true)); retry.hidden = true;
   const restart = pageAction("Restart from first page", () => load(0, [null], lastRequest.filters, true)); restart.hidden = true;
-  /** Stage navigation, verify matching snapshot totals, then atomically publish this page. */
+  /** Stage verified pages; release only this latest local read even if its view fence became obsolete. */
   async function load(targetIndex, targetCursors, targetFilters, focusResults = false) {
     const sequence = ++generation; const attached = section.isConnected;
-    /** Only this read in its original live view may publish results or focus. */
+    /** Only the latest read under this pager's current view owner may publish results or focus. */
     const current = () => !stopped && owner === pending && sequence === generation && (!attached || section.isConnected);
     lastRequest = { index: targetIndex, cursors: targetCursors.slice(), filters: { ...targetFilters } };
     busy = true; actions.forEach(control => control.setAttribute("aria-disabled", "true"));
@@ -156,7 +170,7 @@ async function pagedTable(path, caption, columns, filters = []) {
       retry.hidden = false; restart.hidden = failure.details?.code !== "version-conflict";
       if (section.isConnected) error.focus();
     } finally {
-      if (current()) { busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false")); }
+      if (!stopped && sequence === generation) { busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false")); }
     }
   }
   form.addEventListener("submit", event => event.preventDefault());
@@ -165,9 +179,10 @@ async function pagedTable(path, caption, columns, filters = []) {
   await load(0, cursors, applied); return section;
 }
 
-/** Install only the current live view; inline page failures retain their own error focus. */
-async function renderView() {
-  if (stopped) return false;
+/** Install only an owned live view; dismissed write previews cannot publish a late refresh. */
+async function renderView(isCurrent = () => true) {
+  if (stopped || !isCurrent()) return false;
+  const previousStatus = element("status").textContent;
   const sequence = ++pending;
   element("error").hidden = true;
   element("status").textContent = "Loading project state…";
@@ -221,25 +236,47 @@ async function renderView() {
       for (const resource of resources) fragment.append(button(`Trace ${resource.key}`, () => showProvenance(resource.resource_id)));
       if (!readOnly) fragment.append(exportForm());
     }
-    if (sequence !== pending || stopped) return false;
+    if (sequence !== pending || stopped || !isCurrent()) return false;
     element("view").replaceChildren(fragment);
     element("view-title").textContent = activeView;
     pageError = element("view").querySelector("[data-page-error]");
     if (pageError?.hidden) pageError = undefined;
     element("status").textContent = pageError ? "The table could not be loaded." : "Project state loaded.";
     return !pageError;
-  } catch (error) { if (sequence === pending && !stopped) { element("view").replaceChildren(); showError(error); element("status").textContent = "The view could not be loaded."; } return false; }
-  finally { if (sequence === pending && !stopped) {element("refresh").disabled = false;element("view").inert = false;pageError?.focus();} }
+  } catch (error) { if (sequence === pending && !stopped && isCurrent()) { element("view").replaceChildren(); showError(error); element("status").textContent = "The view could not be loaded."; } return false; }
+  finally { if (sequence === pending && !stopped) {
+    element("refresh").disabled = false; element("view").inert = false;
+    if (isCurrent()) pageError?.focus();
+    else {
+      if (element("status").textContent === "Loading project state…") element("status").textContent = previousStatus;
+      for (const section of element("view").querySelectorAll("[data-paged-table]")) retainedPagers.get(section)?.();
+    }
+  } }
 }
 
-element("unlock-form").addEventListener("submit", async (event) => {
+/** Announce the locked state and place initial keyboard focus on the credential field. */
+function initializeUnlock() {
+  element("status").textContent = "Workspace locked — passphrase required.";
+  element("passphrase").setAttribute("aria-describedby", "status");
+  element("passphrase").focus();
+}
+
+/** Guard one pending unlock, retain trigger focus, and announce server throttle facts verbatim. */
+async function submitUnlock(event) {
   event.preventDefault();
-  const button = event.currentTarget.querySelector("button");
-  button.disabled = true;
+  if (unlockPending || stopped) return;
+  const form = event.currentTarget;
+  const submit = form.querySelector("button");
+  const field = element("passphrase");
+  const invoker = document.activeElement;
+  unlockPending = true; form.setAttribute("aria-busy", "true"); submit.setAttribute("aria-disabled", "true");
+  element("error").hidden = true;
+  element("status").textContent = "Unlocking workspace…";
   try {
-    if ([...element("passphrase").value].length < 15 || [...element("passphrase").value].length > 128) throw new Error("Use 15–128 characters.");
-    const response = await api("/session/unlock", "POST", {passphrase: element("passphrase").value});
-    element("passphrase").value = "";
+    if ([...field.value].length < 15 || [...field.value].length > 128) throw new Error("Use 15–128 characters.");
+    const response = await api("/session/unlock", "POST", {passphrase: field.value});
+    field.value = "";
+    if (stopped) return;
     if (response.session.api_major !== 1) throw new Error("This UI requires API version 1. Install matching workspace assets.");
     capability = response.capability;
     readOnly = response.session.read_only;
@@ -248,9 +285,17 @@ element("unlock-form").addEventListener("submit", async (event) => {
     element("stop").hidden = false;
     element("connection").textContent = response.session.read_only ? "Read-only · Local" : "Local session";
     if (await renderView()) element("main").focus();
-  } catch (error) { element("passphrase").value = ""; showError(error); }
-  finally { button.disabled = false; }
-});
+  } catch (error) {
+    field.value = "";
+    if (stopped) return;
+    if (error.details?.code === "unlock-throttled" && typeof error.details.message === "string") {
+      element("status").textContent = error.details.message;
+      if ((invoker === field || invoker === submit) && document.activeElement === invoker && field.isConnected && !element("unlock-panel").hidden) field.focus();
+    } else { element("status").textContent = "Workspace locked — passphrase required."; showError(error); }
+  } finally { unlockPending = false; form.setAttribute("aria-busy", "false"); submit.setAttribute("aria-disabled", "false"); }
+}
+element("unlock-form").addEventListener("submit", submitUnlock);
+initializeUnlock();
 
 for (const title of titles) {
   const button = node("button", title);
@@ -565,34 +610,95 @@ async function effect(path, method, request) {
   await attempt();
 }
 
-/** Resolve true only after opening the current prepared-write preview following its read. */
+/** Serialize native close processing before the shared preview dialog may be reused. */
+function previewCloseLifecycle(dialog, close = false) {
+  if (!previewClosePending) {
+    const waiting = new Promise(resolve => {
+      /** Release only this queued close's barrier before any successor preview is installed. */
+      function finishPreviewClose() {
+        if (previewClosePending === waiting) previewClosePending = null;
+        resolve();
+      }
+      dialog.addEventListener("close", finishPreviewClose, {once:true});
+    });
+    previewClosePending = waiting;
+  }
+  const waiting = previewClosePending;
+  if (close) dialog.close();
+  return waiting;
+}
+
+/** Open only the current receipt; confirmed writes own their refresh and native close focus. */
 async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
-  if(!proposed?.preview_id)throw new Error("The operation did not return a prepared write.");
-  const current = await api(`/effects/previews/${encodeURIComponent(proposed.preview_id)}`);
   if (!isCurrent()) return false;
+  if(!proposed?.preview_id)throw new Error("The operation did not return a prepared write.");
+  const sequence = ++previewGeneration;
+  const current = await api(`/effects/previews/${encodeURIComponent(proposed.preview_id)}`);
+  if (previewClosePending) await previewClosePending;
+  if (!isCurrent() || sequence !== previewGeneration) return false;
   const dialog = element("preview-dialog"); const content = element("preview-content");
+  let viewOwner = pending;
+  let closingConfirmed = false;
+  /** New previews, navigation, dismissal and shutdown revoke this receipt's UI ownership. */
+  const previewCurrent = (requireOpen = true) => !stopped && sequence === previewGeneration && viewOwner === pending &&
+    dialog.isConnected && (requireOpen ? dialog.open : !document.querySelector("dialog[open]"));
+  /** Native Escape invalidates immediately; queued close events belong to their original preview. */
+  function invalidatePreview(event) {
+    if (event.type === "cancel") previewCloseLifecycle(dialog);
+    if (event.type === "close" && dialog.open) return;
+    if (event.type === "close") { dialog.removeEventListener("cancel", invalidatePreview); dialog.removeEventListener("close", invalidatePreview); }
+    if (sequence === previewGeneration && (!closingConfirmed || event.type === "cancel")) previewGeneration++;
+  }
+  dialog.addEventListener("cancel", invalidatePreview);
+  dialog.addEventListener("close", invalidatePreview);
   dialog.querySelector("[role=alert]")?.remove();
   content.replaceChildren(Object.assign(node("h2", "Review proposed write"),{id:"preview-title"}),node("p", `${current.target.status}: ${current.target.path}`),node("p", current.semantic_summary),
     node("p", `Validation: ${current.validation.state}. Target version: ${current.target_version}`),node("p", `Current hash: ${current.base_sha256 || "new file"}`),node("p", `Proposed hash: ${current.exact_bytes_sha256}`),node("p", `Receipt expires: ${current.receipt.expires_at}`),
     table("Bound input hashes",[["Resource","resource_id"],["SHA-256","sha256"]],current.input_hashes),Object.assign(node("pre",current.diff_text),{tabIndex:0}));
   if(current.diff_truncated) content.append(node("p","The text diff reached its display bound. The hash binds the complete proposed bytes."));
   const key = crypto.randomUUID();
-  content.append(button("Keep editing", () => dialog.close()), button("Confirm this exact write", async () => {
+  /** Download only a confirmed export's bound bytes through the existing authenticated route. */
+  async function downloadCommittedExport() {
+    const response=await fetch(`/api/v1/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
+    if(!response.ok)throw new Error("The committed export is no longer available or its bytes changed.");
+    const blob=await response.blob();if(blob.size>4*1024*1024)throw new Error("The export exceeds the download bound.");
+    const url=URL.createObjectURL(blob);const link=node("a","Download report");link.href=url;link.download="forge-redacted-report.html";document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  /** Await native return-focus processing before selecting the still-owned saved result target. */
+  async function closeConfirmedPreview() {
+    closingConfirmed = true;
+    await previewCloseLifecycle(dialog, true);
+  }
+  /** Dismissal revokes the old write immediately and waits for its native return-focus lifecycle. */
+  function dismissPreview() {
+    if (sequence === previewGeneration) previewGeneration++;
+    return previewCloseLifecycle(dialog, true);
+  }
+  /** One receipt/key may publish saved UI only while its preview and destination remain current. */
+  async function confirmWrite() {
+    if (!previewCurrent()) return;
     dialog.querySelector("[role=alert]")?.remove();
-    const operation = await api("/effects/commits","POST",{receipt:current.receipt.token,observed_version:current.target_version,confirmed:true},key);
-    const observed = await api(`/operations/${encodeURIComponent(operation.operation_id)}`);
-    if(observed.state !== "succeeded") throw new Error(observed.error?.message || "The write has not completed.");
-    dirty = false;await renderView();
-    const refreshError=dialog.querySelector("[role=alert]")?.textContent;
-    dialog.close();element("status").textContent = `Saved ${observed.result.target_path}.`;
-    if(refreshError)showError(new Error(`The write was saved, but the view could not be refreshed. ${refreshError}`));
-    if(exportOperation) element("view").prepend(button("Download committed redacted report",async()=>{
-      const response=await fetch(`/api/v1/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
-      if(!response.ok)throw new Error("The committed export is no longer available or its bytes changed.");
-      const blob=await response.blob();if(blob.size>4*1024*1024)throw new Error("The export exceeds the download bound.");
-      const url=URL.createObjectURL(blob);const link=node("a","Download report");link.href=url;link.download="forge-redacted-report.html";document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    }));
-  }));
+    try {
+      const operation = await api("/effects/commits","POST",{receipt:current.receipt.token,observed_version:current.target_version,confirmed:true},key);
+      const observed = await api(`/operations/${encodeURIComponent(operation.operation_id)}`);
+      if (!previewCurrent()) return;
+      if(observed.state !== "succeeded") throw new Error(observed.error?.message || "The write has not completed.");
+      const refresh = renderView(() => !stopped && sequence === previewGeneration && dialog.open);
+      viewOwner = pending;
+      const refreshed = await refresh;
+      if (!previewCurrent()) return;
+      const pageError = element("view").querySelector("[data-page-error]");
+      const refreshError = dialog.querySelector("[role=alert]")?.textContent || (!pageError?.hidden && pageError?.textContent) || (!element("error").hidden && element("error").textContent) || "The view could not be loaded.";
+      if (exportOperation) element("view").prepend(button("Download committed redacted report", downloadCommittedExport));
+      dirty = false;
+      await closeConfirmedPreview();
+      if (!previewCurrent(false)) return;
+      element("status").textContent = `Saved ${observed.result.target_path}.`;
+      if (refreshed) focusViewTitle();
+      else showError(new Error(`The write was saved, but the view could not be refreshed. ${refreshError}`));
+    } catch (error) { if (previewCurrent()) showError(error); }
+  }
+  content.append(button("Keep editing", dismissPreview), button("Confirm this exact write", confirmWrite));
   dialog.showModal();content.querySelector("h2").tabIndex=-1;content.querySelector("h2").focus();return true;
 }
 function resourceActions(resources) {

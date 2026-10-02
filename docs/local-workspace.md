@@ -21,6 +21,16 @@ redirected standard input. Each successful unlock creates a distinct scoped
 capability retained in page memory. There are no cookies, local/session
 storage, service workers, accounts, or remote services.
 
+On page load, focus starts in **Workspace passphrase**. Unlocking shows
+“Unlocking workspace…”; repeated activation while that request is pending sends
+no second unlock request. The submitting field or **Unlock workspace** button
+keeps focus while waiting. Completed attempts clear the passphrase field. If the
+server throttles an attempt, the page shows its stated remaining wait and retry
+guidance verbatim. Re-enter the passphrase after that wait and retry. The browser
+has no countdown; repeated throttling directs you to stop and relaunch from the
+terminal. Moving focus elsewhere while waiting does not authorize a late
+throttling response to move it back.
+
 Use **Stop workspace** or Ctrl-C. Stopping discards unconfirmed work and
 invalidates session capabilities. Completed files remain saved. Reloading the
 page loses its capability and unsaved forms; unlock again. Restarting the
@@ -103,6 +113,16 @@ truncated; the hash still binds the complete bytes. No autosave occurs.
 Receipts expire after ten minutes and are single-use, including failed commit
 attempts. Re-preview after an expired receipt, stale version, changed input,
 changed target, or failed confirmation.
+
+For a current preview, a verified confirmed write refreshes its view and closes
+the preview before focus moves to the view heading. A failed refresh keeps the
+saved outcome and focuses an error explaining that the write was saved but the
+view could not be refreshed. A rejected commit keeps its preview and error open.
+Closing a preview after confirmation does not cancel an in-flight write. A late
+reply cannot replace a newer view, form or preview. When a post-write refresh is
+dismissed, retained tables label their previous results and remain usable;
+refresh to load the latest state. Confirmed exports keep their download action
+keyboard reachable.
 
 Operation results and idempotency keys remain queryable for the process's
 lifetime, within the documented session bounds. **Retry the same request**
@@ -224,11 +244,13 @@ navigation. Keep editing or Escape preserves values and returns focus to the
 connected enabled invoker; a failed provenance read preserves the form for retry.
 Successful destinations focus their heading, while failed navigation retains the
 error summary's focus. The historical [navigation verification record](workspace-navigation-verification.md)
-and successor [live-state verification record](workspace-live-state-verification.md)
+and historical [live-state verification record](workspace-live-state-verification.md)
 report exact source/docstring scopes and local macOS Chrome development runs.
-The successor also exercises pagination, persistent operation recovery, rendered
+The live-state slice also exercises pagination, persistent operation recovery, rendered
 input borders and final-page reflow at 640 and 320 CSS pixels. Those focused checks
-do not establish full accessibility acceptance.
+do not establish full accessibility acceptance. The separate
+[keyboard verification record](workspace-keyboard-verification.md) records unlock
+feedback, confirmation focus and retained-table recovery checks.
 
 Manual screen-reader/keyboard evaluation, WCAG 2.2 AA acceptance, the complete
 supported browser/platform matrix, security approval, five target-user studies,
