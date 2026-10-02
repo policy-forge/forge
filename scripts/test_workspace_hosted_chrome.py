@@ -236,20 +236,22 @@ class OwnedTree:
 
 
 def command(command_line,root,timeout,environment):
-    """Capture bounded private output and actual exit status; fixed lifecycle failures retain no raw output or exceptions."""
+    """Drain both owned pipes to EOF under one byte/deadline budget; return only stdout and discard private stderr."""
     tree=None;process=None;captured=bytearray();failure=None
     try:
         tree=OwnedTree()
-        process=subprocess.Popen(command_line,cwd=root,env=environment,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,start_new_session=True)
-        tree.track_process(process);os.set_blocking(process.stdout.fileno(),False);deadline=time.monotonic()+timeout;eof=False
-        while process.poll() is None or not eof:
+        process=subprocess.Popen(command_line,cwd=root,env=environment,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)
+        tree.track_process(process);streams=[process.stdout,process.stderr];deadline=time.monotonic()+timeout;observed=0
+        for stream in streams:os.set_blocking(stream.fileno(),False)
+        while process.poll() is None or streams:
             tree.observe()
             if time.monotonic()>=deadline:raise ValueError("command-timeout")
-            if select.select([process.stdout],[],[],.05)[0]:
-                block=os.read(process.stdout.fileno(),8192)
-                if not block:eof=True
-                captured.extend(block)
-                if len(captured)>MAX_OUTPUT:raise ValueError("output-bound")
+            for stream in select.select(streams,[],[],.05)[0]:
+                block=os.read(stream.fileno(),8192)
+                if not block:streams.remove(stream);continue
+                observed+=len(block)
+                if observed>MAX_OUTPUT:raise ValueError("output-bound")
+                if stream is process.stdout:captured.extend(block)
         if not tree.settle():raise ValueError("cleanup-unverified")
     except Exception as error:
         failure=command_failure(error)
@@ -263,8 +265,12 @@ def command(command_line,root,timeout,environment):
     finally:
         try:
             if tree is not None:tree.close()
-            if process is not None and process.stdout is not None:process.stdout.close()
         except Exception:failure="cleanup-unverified";captured.clear()
+        if process is not None:
+            for stream in (process.stdout,process.stderr):
+                try:
+                    if stream is not None:stream.close()
+                except Exception:failure="cleanup-unverified";captured.clear()
     return {"exit_code":None if process is None else process.returncode,"failure":failure,"output":bytes(captured)}
 
 

@@ -440,8 +440,8 @@ class HostedChromeControls(unittest.TestCase):
         for clean,close_failure in ((True,False),(False,False),(True,True)):
             tree=mock.Mock();tree.settle.return_value=clean
             if close_failure:tree.close.side_effect=OSError("PRIVATE path token")
-            process=mock.Mock(returncode=17);process.poll.return_value=17;process.stdout.fileno.return_value=10
-            with mock.patch.object(browser,"OwnedTree",return_value=tree),mock.patch.object(browser.subprocess,"Popen",return_value=process),mock.patch.object(browser.os,"set_blocking"),mock.patch.object(browser.select,"select",return_value=([process.stdout],[],[])),mock.patch.object(browser.os,"read",side_effect=[b"PRIVATE output",b""]):
+            process=mock.Mock(returncode=17);process.poll.return_value=17;process.stdout.fileno.return_value=10;process.stderr.fileno.return_value=11
+            with mock.patch.object(browser,"OwnedTree",return_value=tree),mock.patch.object(browser.subprocess,"Popen",return_value=process),mock.patch.object(browser.os,"set_blocking"),mock.patch.object(browser.select,"select",side_effect=[([process.stdout,process.stderr],[],[]),([process.stdout],[],[])]),mock.patch.object(browser.os,"read",side_effect=[b"PRIVATE output",b"",b""]):
                 row=browser.command(["PRIVATE"],self.root,1,{})
             self.assertEqual(row["exit_code"],17)
             if clean and not close_failure:self.assertEqual(row,{"exit_code":17,"failure":None,"output":b"PRIVATE output"})
@@ -466,6 +466,102 @@ class HostedChromeControls(unittest.TestCase):
         self.assertEqual(value["producer"]["status"],"passed");self.assertEqual(value["tool_stability"],"unverified")
         self.assertEqual(value["diagnostic"],{"phase":"browser-tool-capture","step":"chrome-pin","reason":"chrome-file-changed","exit_code":None})
         self.output=self.root/"ordinary-success";value,_=self.run_outer();self.assertIsNone(value["diagnostic"]);self.assertEqual(value["status"],"passed")
+
+
+    def drain_mocked_command(self,events,*,exit_code=0,poll_values=None,timeout=30,clock_step=.001,clean=True,close_failure=None,read_failure=None):
+        """Exercise the actual drain with two distinct fake pipes and an advancing clock; never create native processes."""
+        tree=mock.Mock();tree.settle.return_value=clean;tree.stop.return_value=True
+        process=mock.Mock();process.returncode=exit_code;process.stdout.fileno.return_value=10;process.stderr.fileno.return_value=11
+        if poll_values is None:process.poll.return_value=exit_code
+        else:process.poll.side_effect=poll_values
+        if close_failure=="tree":tree.close.side_effect=OSError("PRIVATE cleanup path")
+        elif close_failure is not None:getattr(process,close_failure).close.side_effect=OSError("PRIVATE cleanup path")
+        pending=list(events);clock=[-clock_step]
+        def monotonic():
+            """Advance one deterministic absolute budget; readiness and bytes never reset the deadline."""
+            clock[0]+=clock_step;return clock[0]
+        def ready(streams,_write,_error,_timeout):
+            """Return only a currently open fake pipe scheduled by the test, with empty readiness after its last event."""
+            if not pending:return [],[],[]
+            descriptor=pending[0][0];matching=[stream for stream in streams if stream.fileno()==descriptor]
+            self.assertEqual(len(matching),1);return matching,[],[]
+        def read(descriptor,maximum):
+            """Consume one real-sized scheduled block on its own descriptor; a mock cannot invent an oversized read."""
+            expected,block=pending.pop(0);self.assertEqual(descriptor,expected);self.assertEqual(maximum,8192)
+            self.assertLessEqual(len(block),maximum)
+            if read_failure is not None and descriptor==11:raise OSError("PRIVATE stderr path token")
+            return block
+        def waited(_timeout=None,**_kwargs):
+            """Observe a mock direct-child exit after failure; a running child becomes signal-terminated, never zero."""
+            if process.returncode is None:process.returncode=-9
+            return process.returncode
+        process.wait.side_effect=waited
+        with mock.patch.object(browser,"OwnedTree",return_value=tree),mock.patch.object(browser.subprocess,"Popen",return_value=process) as spawn,mock.patch.object(browser.os,"set_blocking") as blocking,mock.patch.object(browser.select,"select",side_effect=ready),mock.patch.object(browser.os,"read",side_effect=read) as reads,mock.patch.object(browser.time,"monotonic",side_effect=monotonic):
+            row=browser.command(["PRIVATE executable"],self.root,timeout,{"SYNTHETIC":"true"})
+        return row,tree,process,spawn.call_args.kwargs,blocking.call_args_list,reads.call_args_list
+
+    def bounded_pipe_events(self,descriptor,raw):
+        """Split synthetic bytes into blocks no larger than the production read size, then schedule that pipe's own EOF."""
+        return [(descriptor,raw[offset:offset+8192]) for offset in range(0,len(raw),8192)]+[(descriptor,b"")]
+
+    def test_dualpipe_warning_cannot_contaminate_version_stdout(self):
+        """Drain private stderr separately while the unchanged full-match product parser accepts only actual stdout."""
+        version=b"Google Chrome 150.1.2.3\n";warning=b"PRIVATE synthetic channel warning\n"
+        row,tree,process,spawn,blocking,reads=self.drain_mocked_command([(11,warning),(10,version),(11,b""),(10,b"")])
+        self.assertEqual(row,{"exit_code":0,"failure":None,"output":version});self.assertNotIn(warning,row["output"])
+        self.assertEqual(spawn["stdin"],browser.subprocess.DEVNULL);self.assertEqual(spawn["stdout"],browser.subprocess.PIPE);self.assertEqual(spawn["stderr"],browser.subprocess.PIPE);self.assertTrue(spawn["start_new_session"])
+        self.assertEqual(blocking,[mock.call(10,False),mock.call(11,False)]);self.assertEqual([call.args[0] for call in reads],[11,10,11,10])
+        tree.settle.assert_called_once();tree.stop.assert_not_called();process.stdout.close.assert_called_once();process.stderr.close.assert_called_once()
+        rows=self.tool_command_rows();rows[2]=row;self.assertEqual(self.capture_with_mocked_tools(rows),self.tools)
+
+    def test_google_only_on_stderr_cannot_spoof_stdout_brand(self):
+        """A zero-exit Chromium stdout stays rejected even when private stderr contains a valid Google product line."""
+        row,*_=self.drain_mocked_command([(10,b"Chromium 150.1.2.3\n"),(11,b"Google Chrome 150.1.2.3\n"),(10,b""),(11,b"")])
+        self.assertEqual(row["output"],b"Chromium 150.1.2.3\n");rows=self.tool_command_rows();rows[2]=row
+        with self.assertRaises(browser.ToolCaptureError) as caught:self.capture_with_mocked_tools(rows)
+        self.assertEqual(browser.tool_diagnostic(caught.exception),{"phase":"browser-tool-capture","step":"chrome-version","reason":"chrome-product","exit_code":0})
+
+    def test_aggregate_stdout_stderr_byte_limit_is_inclusive(self):
+        """Count discarded stderr toward the same exact byte budget; one extra byte clears all retained stdout."""
+        for extra in (0,1):
+            events=[(10,b"good")]+self.bounded_pipe_events(11,b"x"*(browser.MAX_OUTPUT-4+extra))+[(10,b"")]
+            row,tree,process,*_=self.drain_mocked_command(events)
+            self.assertEqual(row,{"exit_code":0,"failure":"output-bound" if extra else None,"output":b"" if extra else b"good"})
+            if extra:tree.stop.assert_called_once();process.wait.assert_called_once()
+            else:tree.settle.assert_called_once();tree.stop.assert_not_called()
+            process.stdout.close.assert_called_once();process.stderr.close.assert_called_once()
+
+    def test_each_pipe_requires_eof_even_after_zero_exit(self):
+        """A finished child and one pipe's EOF cannot grant pass while the other pipe remains open without data."""
+        for eof_descriptor,waiting in ((10,11),(11,10)):
+            row,tree,process,*_=self.drain_mocked_command([(10,b"PRIVATE captured"),(eof_descriptor,b"")],timeout=1,clock_step=.25)
+            self.assertEqual(row,{"exit_code":0,"failure":"command-timeout","output":b""});tree.settle.assert_not_called();tree.stop.assert_called_once()
+            process.stdout.close.assert_called_once();process.stderr.close.assert_called_once();self.assertIn(waiting,(10,11))
+
+    def test_both_eofs_do_not_infer_child_completion(self):
+        """A still-running child remains under the same deadline after both EOFs, and its forced signal exit is retained."""
+        row,tree,process,*_=self.drain_mocked_command([(10,b""),(11,b"")],exit_code=None,timeout=1,clock_step=.25)
+        self.assertEqual(row,{"exit_code":-9,"failure":"command-timeout","output":b""});tree.stop.assert_called_once();process.wait.assert_called_once();tree.settle.assert_not_called()
+
+    def test_stderr_activity_never_renews_absolute_deadline(self):
+        """Continuous small stderr readiness still reaches the original deadline and cannot extend a running command."""
+        row,tree,process,*_=self.drain_mocked_command([(11,b"PRIVATE")]*10,exit_code=None,timeout=1,clock_step=.25)
+        self.assertEqual(row,{"exit_code":-9,"failure":"command-timeout","output":b""});tree.stop.assert_called_once();process.wait.assert_called_once()
+
+    def test_dualpipe_cleanup_failure_clears_output_and_closes_both(self):
+        """Natural tree or any handle-close failure revokes output, while every owned pipe receives its independent close."""
+        for clean,close_failure in ((False,None),(True,"tree"),(True,"stdout"),(True,"stderr")):
+            row,tree,process,*_=self.drain_mocked_command([(11,b"PRIVATE stderr"),(10,b"PRIVATE stdout"),(10,b""),(11,b"")],clean=clean,close_failure=close_failure)
+            self.assertEqual(row,{"exit_code":0,"failure":"cleanup-unverified","output":b""});tree.close.assert_called_once()
+            process.stdout.close.assert_called_once();process.stderr.close.assert_called_once()
+            if not clean:tree.stop.assert_called_once();process.wait.assert_called_once()
+            else:tree.stop.assert_not_called()
+
+    def test_stderr_read_failure_is_redacted_and_cannot_pass(self):
+        """An unexpected second-pipe I/O exception discards already-read stdout and publishes no private exception text."""
+        row,tree,process,*_=self.drain_mocked_command([(10,b"PRIVATE stdout"),(11,b"PRIVATE stderr")],read_failure=True)
+        self.assertEqual(row,{"exit_code":0,"failure":"execution-unverified","output":b""});tree.stop.assert_called_once();process.wait.assert_called_once()
+        process.stdout.close.assert_called_once();process.stderr.close.assert_called_once()
 
 
 if __name__=="__main__":unittest.main()
