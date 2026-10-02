@@ -1,0 +1,49 @@
+# Installed Google Chrome verification prerequisite
+
+This F04 slice adds a dedicated Linux hosted job for the existing workspace browser suite. It introduces an explicitly approved development graph and a bounded producer/receipt wrapper. It leaves the maintained API `/2` verification contract, POSIX launcher, embedded assets and CJS browser suite unchanged. Native hosted browser execution is pending; local controls do not qualify Linux/Chrome, accessibility or product acceptance.
+
+The human user approved Playwright and playwright-core **1.62.1**, optional **fsevents 2.3.2** recorded in the lock but omitted from installation, **Node 24.19.0/npm 11.17.0**, and runner-installed named Google Chrome only. The introducing PR must name that approval, reason and exact graph. The [development-tool ledger](hosted-chrome.json) retains the approval receipt/proposal hashes, registry archive URLs and integrity, and the separate source-audit boundary. No browser, FFmpeg, Firefox or WebKit download is authorized by this approval.
+
+The original metadata-derived lock was subsequently accepted byte-for-byte by root's exact npm 11.17.0 `ci` qualification. Both installed package trees were independently compared with their authentic archives: Playwright 62 regular files/5,074,152 bytes and core 111/13,442,086 bytes. The current manifest changes only its historical proposal description; the lock and approved graph remain identical. A current advisory query reported zero vulnerabilities across its lock graph. This is a time-bound advisory database result, not an accepted source audit or human D069 disposition; npm's dependency category counts overlap.
+
+The job pins checkout/Rust/Python/Node/artifact actions, uses ordinary pull requests (including stacked bases), main pushes and manual dispatch with contents-read permissions, and disables checkout credential persistence. It provisions only the exact lock using fresh separate npm configurations/cache, omits optional modules and lifecycle scripts, fetches locked Cargo inputs, then builds release/default features with `--locked --offline`. Provisioning network access is distinct from runtime OS network denial. Build/install outcomes are explicit workflow assertions; a matching provided executable hash alone does not prove its startup-loaded bytes or reproducible build provenance.
+
+The producer requires Linux subreaper and pidfd support, exact Node/npm versions, empty global Node overrides, actual UI-local package entry resolution and complete installed package trees matching the qualified archive trees. It requires the canonical runner engine `/opt/google/chrome/chrome`, its ELF signature and actual `Google Chrome` product/version/bytes. There is no bundled Chromium, headless-shell, browser download or alternate executable fallback. Tool/source/release bytes and checkout head/base/ordered parents are captured before and after. Mutable runner Chrome updates are observed at execution time rather than asserted as a fixed version.
+
+The four fixed campaigns are `default-read-only`, `default-writable`, `long-read-only`, and `long-writable`. Fixtures preserve the exact two helper bodies from immutable `a7fc14960027f2820805db838e2243588cd01765`: 53 catalog controls and the literal 200-character long project label. Default writable starts without an index; long writable starts with an explicit empty index. Read-only starts with two registered resources. The unchanged real CJS suite performs its own workflow, source/style binding, request, keyboard focus, raw bundle verification and download assertions. Successful comparison denominators are two resources in read-only and six in writable; local download bytes plus the exact 11-byte raw envelope remain bounded. Default campaigns contain two final 640/320 width records; long campaigns contain four metadata measurements plus two final width records, in `[640,320]` order repeated three times. Zero captured-operation counters are retained as zero and prove no running-operation observation.
+
+The new fixture module deliberately copies those two exact helpers instead of importing the old unbounded launcher's side effects or changing it. Consolidation remains a later integrated documentation/refactor follow-through. This slice does not retroactively qualify the POSIX launcher as bounded.
+
+The new producer bounds its full terminal stream to 65,536 bytes, tool/browser pipe output to 262,144 bytes, startup to 30 seconds, each CJS campaign to 240 seconds and natural termination to five seconds. No-echo mode and complete credential writes are checked before both synthetic submissions; secret echo detection spans chunk boundaries. Linux child per-file writes are limited to 16 MiB. Private artifact totals are observed at polling fences with 128 MiB/10,000-entry bounds; this is not a kernel aggregate disk quota or general filesystem denial. Screenshots/downloads, Chrome temporary profiles and arbitrary stdout/stderr remain in private temporary storage and are not uploaded. Only allowlisted failure-phase codes, bounded numeric/hash facts and the canonical engine path are published.
+
+Each observed owned descendant retains an instance-bound pidfd within the 128-slot process bound. Failure cleanup signals those verified instances even if later global process scanning fails; direct child owners retain actual wait statuses. Unknown/unobserved descendants or unavailable visibility cannot receive empty-tree proof. No forced cleanup, unknown status, failed/nonzero child, missing receipt, partial campaign prefix, changed input or skipped provision earns pass. The forked Forge child always exits immediately after failed setup/exec and cannot publish controller receipts.
+
+The producer publishes `hosted-chrome-smoke.json` (`forge.hosted-chrome-smoke/1`): passed/failed/incomplete exits **0/1/2**. Its wrapper publishes `workspace-hosted-chrome-verification.json` (`forge.workspace-hosted-chrome-verification/1`): passed/incomplete/failed exits **0/1/2**. Unsupported non-Linux execution is incomplete with no native tool/campaign observations. Missing or malformed tools, receipts, source identities and cleanup evidence fail closed. Atomic publication never replaces existing evidence; a publication exception returns nonzero even if a post-link cleanup error leaves a passed-looking file. The wrapper reconciles both receipt status and actual producer exit.
+
+Before-draft local evidence consists of **30 stdlib mocked controls**, no failures/errors/skips, using synthetic native/tool outcomes and actual bounded temporary files. All **81/81** introduced named Python functions, **2/2** classes and **4/4** modules have docstrings. Primary-thread actual calls observed **76/81** named functions; physical compiler-mapped lines observed **571/840**, with all **269** zero entries retained. Five production functions were unobserved: `OwnedTree.__init__`, `OwnedTree.settle`, `command`, `file_limits`, and `campaign`. Imports precede tracing; background threads/subprocess/native paths are outside that metric. The seven named CJS probe helpers have adjacent JSDoc. The author checked syntax; root subsequently executed the exact source probe with approved Node against the managed approved install, returning 0 with both authentic package-tree hashes. No per-function call or V8 coverage metric is claimed. Source/call/physical-line dimensions are separate, with no branch or all-function-body assertion.
+
+Actual four-campaign Linux/Chrome receipts must be retained after hosted execution. This prerequisite does not close the full named browser/OS/architecture matrix, patched Playwright Firefox/WebKit versus named Firefox/Safari, accessibility-engine/manual keyboard/screen reader/zoom acceptance, IPv4/IPv6 OS external denial, capacity, human studies/security approval, dependency source audits, release or final integrated roadmap documentation gates. Page request blocking is page-level evidence and cannot establish OS network denial.
+
+## Applied integration and precommit evidence
+
+Root locally fast-forwarded the Chrome branch to corrected Windows prerequisite
+`19232d667e726b24701f5dc555149bd1ab92ef09`. It preserved the complete
+Windows/API workflow prefix and appended only the frozen installed-Chrome job.
+The frozen candidate's foundation remains `a7fc14960027f2820805db838e2243588cd01765`.
+No GitHub merge was performed. `/ui/node_modules/` is ignored so installed
+development packages stay out of the source commit.
+
+Root reproduced the 30 controls, 81/81 function docstrings, 76 named calls
+and 571/840 mapped lines against exact applied sources, with all 269 zeros
+retained. The exact managed npm 11.17 install left manifest/lock bytes unchanged,
+installed only Playwright/core, omitted fsevents and suppressed lifecycle scripts.
+All 173 installed package files match their authentic archive bytes; the actual
+source probe confirms the expected full tree digests. The unchanged embedded
+asset also passed 105 Node fake-DOM controls. These checks start no browser.
+
+[The applied precommit audit](../plans/2026-10-02-f04-hosted-chrome-control-audit-v1.json)
+retains exact sources, counts, raw checks and independent review identities.
+The mandatory enabled hook and actual Linux four-campaign hosted receipt remain
+pending at that snapshot. Task #31 is Doing under F04 #6 until draft delivery.
+The introducing PR will preserve the human user's explicit development-tool
+approval and distinguish hosted runtime evidence from these local checks.
