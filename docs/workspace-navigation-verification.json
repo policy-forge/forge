@@ -1,0 +1,1807 @@
+{
+  "schema_version": "forge.development-ui-verification/1",
+  "scope": "F05 navigation regression; actual-source VM probes and local macOS installed-Chrome workflows",
+  "acceptance_eligible": false,
+  "source": {
+    "path": "/Users/bluby/.codex/worktrees/f05-workspace-remediation/forge/ui/workspace.js",
+    "sha256": "724368a21e2a500f9cb20417ba26a1ff4f079514a18c4cd6305581d6fd54bfdd"
+  },
+  "source_pins": [
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-workspace-remediation/forge/ui/workspace.js",
+      "sha256": "724368a21e2a500f9cb20417ba26a1ff4f079514a18c4cd6305581d6fd54bfdd"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-workspace-remediation/forge/ui/tests/workspace-navigation.cjs",
+      "sha256": "7b30948962cd262bdf0978255df9a4fb0dfbfef9f00f495a44df05c936202855"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-workspace-remediation/forge/ui/tests/workspace.cjs",
+      "sha256": "e6af5669e57666dddb373772c2ed381dbbe9577e3d128ebb3368e5abe702d245"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-workspace-remediation/forge/scripts/test_workspace_browser.py",
+      "sha256": "3cb5414020985cbf9f498260fb9f5a1e39ec4b22d2e913e0ab2b4413d72c2e00"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-workspace-remediation/forge/docs/api/forge-workspace-v1.openapi.yaml",
+      "sha256": "ac8a2cf02a20c8428d1bca61fe17b93902b59e762cf02df26d42283766d585a5"
+    }
+  ],
+  "node_version": "v22.22.3",
+  "tests": {
+    "tests": 16,
+    "pass": 16,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "coverage_method": "Node V8; exact actual production file URI, complete asset executed by vm.Script; unique named/anonymous function roots and observed raw ranges merged by UTF-16 offsets",
+  "matching_script_instances": 1,
+  "functions": {
+    "covered": 28,
+    "total": 64
+  },
+  "raw_ranges": {
+    "covered": 88,
+    "total": 160
+  },
+  "changed_named_functions": [
+    {
+      "name": "renderView",
+      "start": 5228,
+      "end": 10197,
+      "count": 10,
+      "ranges": [
+        {
+          "start": 5228,
+          "end": 10197,
+          "count": 10
+        },
+        {
+          "start": 5549,
+          "end": 7028,
+          "count": 4
+        },
+        {
+          "start": 5603,
+          "end": 6167,
+          "count": 3
+        },
+        {
+          "start": 6167,
+          "end": 6344,
+          "count": 12
+        },
+        {
+          "start": 6344,
+          "end": 6544,
+          "count": 3
+        },
+        {
+          "start": 6532,
+          "end": 6543,
+          "count": 0
+        },
+        {
+          "start": 6545,
+          "end": 6560,
+          "count": 0
+        },
+        {
+          "start": 6611,
+          "end": 6745,
+          "count": 0
+        },
+        {
+          "start": 6745,
+          "end": 7028,
+          "count": 3
+        },
+        {
+          "start": 7028,
+          "end": 9681,
+          "count": 6
+        },
+        {
+          "start": 7077,
+          "end": 7949,
+          "count": 0
+        },
+        {
+          "start": 7990,
+          "end": 8374,
+          "count": 0
+        },
+        {
+          "start": 8418,
+          "end": 8951,
+          "count": 0
+        },
+        {
+          "start": 8988,
+          "end": 9313,
+          "count": 0
+        },
+        {
+          "start": 9376,
+          "end": 9530,
+          "count": 5
+        },
+        {
+          "start": 9530,
+          "end": 9623,
+          "count": 3
+        },
+        {
+          "start": 9623,
+          "end": 9645,
+          "count": 5
+        },
+        {
+          "start": 9645,
+          "end": 9675,
+          "count": 2
+        },
+        {
+          "start": 9681,
+          "end": 9712,
+          "count": 8
+        },
+        {
+          "start": 9712,
+          "end": 9725,
+          "count": 1
+        },
+        {
+          "start": 9725,
+          "end": 9907,
+          "count": 7
+        },
+        {
+          "start": 9907,
+          "end": 10086,
+          "count": 2
+        },
+        {
+          "start": 10086,
+          "end": 10089,
+          "count": 0
+        },
+        {
+          "start": 10125,
+          "end": 10193,
+          "count": 9
+        }
+      ]
+    },
+    {
+      "name": "allowViewChange",
+      "start": 12372,
+      "end": 12451,
+      "count": 17,
+      "ranges": [
+        {
+          "start": 12372,
+          "end": 12451,
+          "count": 17
+        },
+        {
+          "start": 12423,
+          "end": 12448,
+          "count": 6
+        }
+      ]
+    },
+    {
+      "name": "focusViewTitle",
+      "start": 12542,
+      "end": 12656,
+      "count": 10,
+      "ranges": [
+        {
+          "start": 12542,
+          "end": 12656,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "name": "navigate",
+      "start": 12747,
+      "end": 13138,
+      "count": 8,
+      "ranges": [
+        {
+          "start": 12747,
+          "end": 13138,
+          "count": 8
+        },
+        {
+          "start": 12826,
+          "end": 12839,
+          "count": 0
+        },
+        {
+          "start": 12956,
+          "end": 13092,
+          "count": 48
+        },
+        {
+          "start": 12997,
+          "end": 13042,
+          "count": 8
+        },
+        {
+          "start": 13042,
+          "end": 13088,
+          "count": 40
+        },
+        {
+          "start": 13119,
+          "end": 13136,
+          "count": 7
+        }
+      ]
+    },
+    {
+      "name": "confirmDiscard",
+      "start": 13227,
+      "end": 14055,
+      "count": 9,
+      "ranges": [
+        {
+          "start": 13227,
+          "end": 14055,
+          "count": 9
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "start": 14146,
+      "end": 14549,
+      "count": 51,
+      "ranges": [
+        {
+          "start": 14146,
+          "end": 14549,
+          "count": 51
+        }
+      ]
+    },
+    {
+      "name": "showProvenance",
+      "start": 32975,
+      "end": 35137,
+      "count": 9,
+      "ranges": [
+        {
+          "start": 32975,
+          "end": 35137,
+          "count": 9
+        },
+        {
+          "start": 33047,
+          "end": 33060,
+          "count": 3
+        },
+        {
+          "start": 33060,
+          "end": 33332,
+          "count": 6
+        },
+        {
+          "start": 33332,
+          "end": 33568,
+          "count": 4
+        },
+        {
+          "start": 33568,
+          "end": 34504,
+          "count": 0
+        },
+        {
+          "start": 34504,
+          "end": 34638,
+          "count": 4
+        },
+        {
+          "start": 34638,
+          "end": 34645,
+          "count": 1
+        },
+        {
+          "start": 34645,
+          "end": 34886,
+          "count": 3
+        },
+        {
+          "start": 34886,
+          "end": 35027,
+          "count": 2
+        },
+        {
+          "start": 34930,
+          "end": 35023,
+          "count": 1
+        },
+        {
+          "start": 35027,
+          "end": 35028,
+          "count": 4
+        },
+        {
+          "start": 35028,
+          "end": 35135,
+          "count": 6
+        },
+        {
+          "start": 35067,
+          "end": 35131,
+          "count": 4
+        }
+      ]
+    }
+  ],
+  "changed_named_function_docs": [
+    {
+      "name": "renderView",
+      "documented": true
+    },
+    {
+      "name": "allowViewChange",
+      "documented": true
+    },
+    {
+      "name": "focusViewTitle",
+      "documented": true
+    },
+    {
+      "name": "navigate",
+      "documented": true
+    },
+    {
+      "name": "confirmDiscard",
+      "documented": true
+    },
+    {
+      "name": "button",
+      "documented": true
+    },
+    {
+      "name": "showProvenance",
+      "documented": true
+    }
+  ],
+  "new_browser_helper_docs": [
+    {
+      "name": "activate",
+      "documented": true
+    },
+    {
+      "name": "focused",
+      "documented": true
+    },
+    {
+      "name": "navigate",
+      "documented": true
+    },
+    {
+      "name": "discard",
+      "documented": true
+    }
+  ],
+  "whole_asset_named_declaration_docs": {
+    "documented": 7,
+    "total": 27
+  },
+  "all_functions": [
+    {
+      "name": "",
+      "start": 0,
+      "end": 40446,
+      "count": 16,
+      "ranges": [
+        {
+          "start": 0,
+          "end": 40446,
+          "count": 16
+        },
+        {
+          "start": 11313,
+          "end": 11528,
+          "count": 96
+        },
+        {
+          "start": 11383,
+          "end": 11427,
+          "count": 16
+        }
+      ]
+    },
+    {
+      "name": "element",
+      "start": 110,
+      "end": 145,
+      "count": 331,
+      "ranges": [
+        {
+          "start": 110,
+          "end": 145,
+          "count": 331
+        }
+      ]
+    },
+    {
+      "name": "node",
+      "start": 440,
+      "end": 650,
+      "count": 404,
+      "ranges": [
+        {
+          "start": 440,
+          "end": 650,
+          "count": 404
+        },
+        {
+          "start": 550,
+          "end": 584,
+          "count": 338
+        },
+        {
+          "start": 602,
+          "end": 631,
+          "count": 9
+        }
+      ]
+    },
+    {
+      "name": "showError",
+      "start": 652,
+      "end": 1061,
+      "count": 3,
+      "ranges": [
+        {
+          "start": 652,
+          "end": 1061,
+          "count": 3
+        },
+        {
+          "start": 753,
+          "end": 768,
+          "count": 0
+        },
+        {
+          "start": 797,
+          "end": 804,
+          "count": 0
+        },
+        {
+          "start": 806,
+          "end": 892,
+          "count": 0
+        },
+        {
+          "start": 980,
+          "end": 1021,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "api",
+      "start": 1063,
+      "end": 2300,
+      "count": 20,
+      "ranges": [
+        {
+          "start": 1063,
+          "end": 2300,
+          "count": 20
+        },
+        {
+          "start": 1235,
+          "end": 1296,
+          "count": 0
+        },
+        {
+          "start": 1312,
+          "end": 1390,
+          "count": 0
+        },
+        {
+          "start": 1461,
+          "end": 1511,
+          "count": 1
+        },
+        {
+          "start": 1536,
+          "end": 1581,
+          "count": 1
+        },
+        {
+          "start": 1593,
+          "end": 1626,
+          "count": 0
+        },
+        {
+          "start": 1737,
+          "end": 1748,
+          "count": 19
+        },
+        {
+          "start": 1749,
+          "end": 1777,
+          "count": 1
+        },
+        {
+          "start": 1771,
+          "end": 1776,
+          "count": 0
+        },
+        {
+          "start": 1875,
+          "end": 1982,
+          "count": 0
+        },
+        {
+          "start": 2042,
+          "end": 2282,
+          "count": 4
+        },
+        {
+          "start": 2141,
+          "end": 2167,
+          "count": 0
+        },
+        {
+          "start": 2195,
+          "end": 2242,
+          "count": 0
+        },
+        {
+          "start": 2282,
+          "end": 2299,
+          "count": 16
+        }
+      ]
+    },
+    {
+      "name": "headers.Accept",
+      "start": 1253,
+      "end": 1294,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 1253,
+          "end": 1294,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "collection",
+      "start": 2302,
+      "end": 2975,
+      "count": 12,
+      "ranges": [
+        {
+          "start": 2302,
+          "end": 2975,
+          "count": 12
+        },
+        {
+          "start": 2456,
+          "end": 2461,
+          "count": 6
+        },
+        {
+          "start": 2462,
+          "end": 2467,
+          "count": 6
+        },
+        {
+          "start": 2490,
+          "end": 2531,
+          "count": 0
+        },
+        {
+          "start": 2540,
+          "end": 2667,
+          "count": 9
+        },
+        {
+          "start": 2667,
+          "end": 2719,
+          "count": 0
+        },
+        {
+          "start": 2719,
+          "end": 2751,
+          "count": 9
+        },
+        {
+          "start": 2751,
+          "end": 2842,
+          "count": 0
+        },
+        {
+          "start": 2846,
+          "end": 2894,
+          "count": 9
+        },
+        {
+          "start": 2894,
+          "end": 2956,
+          "count": 0
+        },
+        {
+          "start": 2956,
+          "end": 2974,
+          "count": 9
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 2685,
+      "end": 2717,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 2685,
+          "end": 2717,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "table",
+      "start": 2977,
+      "end": 3677,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 2977,
+          "end": 3677,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "pagedTable",
+      "start": 3679,
+      "end": 5145,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 3679,
+          "end": 5145,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "renderView",
+      "start": 5228,
+      "end": 10197,
+      "count": 10,
+      "ranges": [
+        {
+          "start": 5228,
+          "end": 10197,
+          "count": 10
+        },
+        {
+          "start": 5549,
+          "end": 7028,
+          "count": 4
+        },
+        {
+          "start": 5603,
+          "end": 6167,
+          "count": 3
+        },
+        {
+          "start": 6167,
+          "end": 6344,
+          "count": 12
+        },
+        {
+          "start": 6344,
+          "end": 6544,
+          "count": 3
+        },
+        {
+          "start": 6532,
+          "end": 6543,
+          "count": 0
+        },
+        {
+          "start": 6545,
+          "end": 6560,
+          "count": 0
+        },
+        {
+          "start": 6611,
+          "end": 6745,
+          "count": 0
+        },
+        {
+          "start": 6745,
+          "end": 7028,
+          "count": 3
+        },
+        {
+          "start": 7028,
+          "end": 9681,
+          "count": 6
+        },
+        {
+          "start": 7077,
+          "end": 7949,
+          "count": 0
+        },
+        {
+          "start": 7990,
+          "end": 8374,
+          "count": 0
+        },
+        {
+          "start": 8418,
+          "end": 8951,
+          "count": 0
+        },
+        {
+          "start": 8988,
+          "end": 9313,
+          "count": 0
+        },
+        {
+          "start": 9376,
+          "end": 9530,
+          "count": 5
+        },
+        {
+          "start": 9530,
+          "end": 9623,
+          "count": 3
+        },
+        {
+          "start": 9623,
+          "end": 9645,
+          "count": 5
+        },
+        {
+          "start": 9645,
+          "end": 9675,
+          "count": 2
+        },
+        {
+          "start": 9681,
+          "end": 9712,
+          "count": 8
+        },
+        {
+          "start": 9712,
+          "end": 9725,
+          "count": 1
+        },
+        {
+          "start": 9725,
+          "end": 9907,
+          "count": 7
+        },
+        {
+          "start": 9907,
+          "end": 10086,
+          "count": 2
+        },
+        {
+          "start": 10086,
+          "end": 10089,
+          "count": 0
+        },
+        {
+          "start": 10125,
+          "end": 10193,
+          "count": 9
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 6198,
+      "end": 6231,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 6198,
+          "end": 6231,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 7162,
+      "end": 7312,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 7162,
+          "end": 7312,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 7487,
+      "end": 7523,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 7487,
+          "end": 7523,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 7833,
+      "end": 7893,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 7833,
+          "end": 7893,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 9578,
+      "end": 9620,
+      "count": 3,
+      "ranges": [
+        {
+          "start": 9578,
+          "end": 9620,
+          "count": 3
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 10249,
+      "end": 11281,
+      "count": 1,
+      "ranges": [
+        {
+          "start": 10249,
+          "end": 11281,
+          "count": 1
+        },
+        {
+          "start": 10493,
+          "end": 10535,
+          "count": 0
+        },
+        {
+          "start": 10718,
+          "end": 10804,
+          "count": 0
+        },
+        {
+          "start": 11095,
+          "end": 11112,
+          "count": 0
+        },
+        {
+          "start": 11142,
+          "end": 11166,
+          "count": 0
+        },
+        {
+          "start": 11171,
+          "end": 11240,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 11463,
+      "end": 11484,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 11463,
+          "end": 11484,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 11574,
+      "end": 11612,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 11574,
+          "end": 11612,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 11657,
+      "end": 11697,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 11657,
+          "end": 11697,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 11750,
+      "end": 11786,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 11750,
+          "end": 11786,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 11839,
+      "end": 12279,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 11839,
+          "end": 12279,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "allowViewChange",
+      "start": 12372,
+      "end": 12451,
+      "count": 17,
+      "ranges": [
+        {
+          "start": 12372,
+          "end": 12451,
+          "count": 17
+        },
+        {
+          "start": 12423,
+          "end": 12448,
+          "count": 6
+        }
+      ]
+    },
+    {
+      "name": "focusViewTitle",
+      "start": 12542,
+      "end": 12656,
+      "count": 10,
+      "ranges": [
+        {
+          "start": 12542,
+          "end": 12656,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "name": "navigate",
+      "start": 12747,
+      "end": 13138,
+      "count": 8,
+      "ranges": [
+        {
+          "start": 12747,
+          "end": 13138,
+          "count": 8
+        },
+        {
+          "start": 12826,
+          "end": 12839,
+          "count": 0
+        },
+        {
+          "start": 12956,
+          "end": 13092,
+          "count": 48
+        },
+        {
+          "start": 12997,
+          "end": 13042,
+          "count": 8
+        },
+        {
+          "start": 13042,
+          "end": 13088,
+          "count": 40
+        },
+        {
+          "start": 13119,
+          "end": 13136,
+          "count": 7
+        }
+      ]
+    },
+    {
+      "name": "confirmDiscard",
+      "start": 13227,
+      "end": 14055,
+      "count": 9,
+      "ranges": [
+        {
+          "start": 13227,
+          "end": 14055,
+          "count": 9
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 13637,
+      "end": 14051,
+      "count": 9,
+      "ranges": [
+        {
+          "start": 13637,
+          "end": 14051,
+          "count": 9
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 13708,
+      "end": 13726,
+      "count": 2,
+      "ranges": [
+        {
+          "start": 13708,
+          "end": 13726,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 13751,
+      "end": 13787,
+      "count": 3,
+      "ranges": [
+        {
+          "start": 13751,
+          "end": 13787,
+          "count": 3
+        }
+      ]
+    },
+    {
+      "name": "dialog.addEventListener.once",
+      "start": 13827,
+      "end": 13969,
+      "count": 9,
+      "ranges": [
+        {
+          "start": 13827,
+          "end": 13969,
+          "count": 9
+        },
+        {
+          "start": 13876,
+          "end": 13899,
+          "count": 6
+        },
+        {
+          "start": 13900,
+          "end": 13920,
+          "count": 5
+        },
+        {
+          "start": 13921,
+          "end": 13937,
+          "count": 4
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "start": 14146,
+      "end": 14549,
+      "count": 51,
+      "ranges": [
+        {
+          "start": 14146,
+          "end": 14549,
+          "count": 51
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 14281,
+      "end": 14527,
+      "count": 12,
+      "ranges": [
+        {
+          "start": 14281,
+          "end": 14527,
+          "count": 12
+        },
+        {
+          "start": 14386,
+          "end": 14399,
+          "count": 11
+        },
+        {
+          "start": 14399,
+          "end": 14431,
+          "count": 1
+        },
+        {
+          "start": 14483,
+          "end": 14505,
+          "count": 3
+        },
+        {
+          "start": 14506,
+          "end": 14522,
+          "count": 3
+        }
+      ]
+    },
+    {
+      "name": "fieldInput",
+      "start": 14550,
+      "end": 15170,
+      "count": 28,
+      "ranges": [
+        {
+          "start": 14550,
+          "end": 15170,
+          "count": 28
+        },
+        {
+          "start": 14755,
+          "end": 14765,
+          "count": 10
+        },
+        {
+          "start": 14766,
+          "end": 14810,
+          "count": 18
+        },
+        {
+          "start": 14788,
+          "end": 14800,
+          "count": 0
+        },
+        {
+          "start": 14877,
+          "end": 14899,
+          "count": 18
+        },
+        {
+          "start": 14901,
+          "end": 14919,
+          "count": 18
+        },
+        {
+          "start": 14947,
+          "end": 14991,
+          "count": 0
+        },
+        {
+          "start": 15007,
+          "end": 15124,
+          "count": 10
+        },
+        {
+          "start": 15044,
+          "end": 15124,
+          "count": 62
+        }
+      ]
+    },
+    {
+      "name": "field",
+      "start": 15171,
+      "end": 15356,
+      "count": 28,
+      "ranges": [
+        {
+          "start": 15171,
+          "end": 15356,
+          "count": 28
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 15315,
+      "end": 15336,
+      "count": 10,
+      "ranges": [
+        {
+          "start": 15315,
+          "end": 15336,
+          "count": 10
+        }
+      ]
+    },
+    {
+      "name": "effect",
+      "start": 15357,
+      "end": 16677,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 15357,
+          "end": 16677,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "preview",
+      "start": 16678,
+      "end": 19642,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 16678,
+          "end": 19642,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "resourceActions",
+      "start": 19643,
+      "end": 22706,
+      "count": 4,
+      "ranges": [
+        {
+          "start": 19643,
+          "end": 22706,
+          "count": 4
+        },
+        {
+          "start": 20006,
+          "end": 20076,
+          "count": 0
+        },
+        {
+          "start": 21963,
+          "end": 22480,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 19812,
+      "end": 19987,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 19812,
+          "end": 19987,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 20251,
+      "end": 20291,
+      "count": 28,
+      "ranges": [
+        {
+          "start": 20251,
+          "end": 20291,
+          "count": 28
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 20616,
+      "end": 20758,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 20616,
+          "end": 20758,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 20799,
+      "end": 20828,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 20799,
+          "end": 20828,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 21140,
+      "end": 21601,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 21140,
+          "end": 21601,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 21743,
+      "end": 21772,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 21743,
+          "end": 21772,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 21911,
+      "end": 21938,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 21911,
+          "end": 21938,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 22032,
+      "end": 22056,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 22032,
+          "end": 22056,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 22316,
+      "end": 22476,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 22316,
+          "end": 22476,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 22617,
+      "end": 22646,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 22617,
+          "end": 22646,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "draftEditor",
+      "start": 22707,
+      "end": 24435,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 22707,
+          "end": 24435,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "applicabilityDecisionForm",
+      "start": 24436,
+      "end": 26515,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 24436,
+          "end": 26515,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "mappingDecisionForm",
+      "start": 26517,
+      "end": 28745,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 26517,
+          "end": 28745,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "mappingCreationForm",
+      "start": 28747,
+      "end": 30836,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 28747,
+          "end": 30836,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "relativeProjectReference",
+      "start": 30837,
+      "end": 31170,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 30837,
+          "end": 31170,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "applicabilityMappingForm",
+      "start": 31171,
+      "end": 32551,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 31171,
+          "end": 32551,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "evidenceList",
+      "start": 32553,
+      "end": 32884,
+      "count": 4,
+      "ranges": [
+        {
+          "start": 32553,
+          "end": 32884,
+          "count": 4
+        },
+        {
+          "start": 32758,
+          "end": 32761,
+          "count": 0
+        },
+        {
+          "start": 32818,
+          "end": 32835,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 32838,
+      "end": 32864,
+      "count": 4,
+      "ranges": [
+        {
+          "start": 32838,
+          "end": 32864,
+          "count": 4
+        }
+      ]
+    },
+    {
+      "name": "showProvenance",
+      "start": 32975,
+      "end": 35137,
+      "count": 9,
+      "ranges": [
+        {
+          "start": 32975,
+          "end": 35137,
+          "count": 9
+        },
+        {
+          "start": 33047,
+          "end": 33060,
+          "count": 3
+        },
+        {
+          "start": 33060,
+          "end": 33332,
+          "count": 6
+        },
+        {
+          "start": 33332,
+          "end": 33568,
+          "count": 4
+        },
+        {
+          "start": 33568,
+          "end": 34504,
+          "count": 0
+        },
+        {
+          "start": 34504,
+          "end": 34638,
+          "count": 4
+        },
+        {
+          "start": 34638,
+          "end": 34645,
+          "count": 1
+        },
+        {
+          "start": 34645,
+          "end": 34886,
+          "count": 3
+        },
+        {
+          "start": 34886,
+          "end": 35027,
+          "count": 2
+        },
+        {
+          "start": 34930,
+          "end": 35023,
+          "count": 1
+        },
+        {
+          "start": 35027,
+          "end": 35028,
+          "count": 4
+        },
+        {
+          "start": 35028,
+          "end": 35135,
+          "count": 6
+        },
+        {
+          "start": 35067,
+          "end": 35131,
+          "count": 4
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 33779,
+      "end": 33811,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 33779,
+          "end": 33811,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 33919,
+      "end": 34443,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 33919,
+          "end": 34443,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "exportForm",
+      "start": 35138,
+      "end": 35730,
+      "count": 2,
+      "ranges": [
+        {
+          "start": 35138,
+          "end": 35730,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 35513,
+      "end": 35648,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 35513,
+          "end": 35648,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 35685,
+      "end": 35714,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 35685,
+          "end": 35714,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "",
+      "start": 35770,
+      "end": 35834,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 35770,
+          "end": 35834,
+          "count": 0
+        }
+      ]
+    },
+    {
+      "name": "initializeForm",
+      "start": 35838,
+      "end": 40445,
+      "count": 0,
+      "ranges": [
+        {
+          "start": 35838,
+          "end": 40445,
+          "count": 0
+        }
+      ]
+    }
+  ],
+  "raw_coverage_pins": [
+    {
+      "path": "/private/tmp/forge-f05-v8-final/coverage-63898-1790937037873-0.json",
+      "sha256": "7f56031f728969af1a18c65c3e1ea8612730d385cf5bc299f2497b3958f4abfa"
+    }
+  ],
+  "node_log": {
+    "path": "/private/tmp/forge-f05-navigation-final.log",
+    "sha256": "4ab9c925a0bf18887acc102b5a51162700bb0c1b9883913b49886fa102f66b36"
+  },
+  "browser_tool": {
+    "name": "Playwright",
+    "version": "1.62.1",
+    "development_only": true,
+    "node_path": "/Users/bluby/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+    "node_version": "v24.19.0",
+    "browser_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "binary": {
+    "path": "/private/tmp/forge-f05-target-1.98.1/debug/forge",
+    "sha256": "ff1f138edfc66de784ee77462741fc94cee5cc78fce2cc097fea2970440823fc",
+    "kind": "local development debug build",
+    "exact_asset_embedded": true
+  },
+  "browsers": [
+    {
+      "mode": "writable",
+      "browserVersion": "154.0.8037.97",
+      "embeddedAssetSha256": "724368a21e2a500f9cb20417ba26a1ff4f079514a18c4cd6305581d6fd54bfdd",
+      "focusChecks": 21,
+      "documentedRequests": [
+        "GET /api/v1/applicability/controls",
+        "GET /api/v1/applicability/draft",
+        "GET /api/v1/effects/previews/{id}",
+        "GET /api/v1/exports/{id}/download",
+        "GET /api/v1/mapping/draft",
+        "GET /api/v1/mapping/subjects",
+        "GET /api/v1/operations/{id}",
+        "GET /api/v1/project/config-status",
+        "GET /api/v1/project/summary",
+        "GET /api/v1/provenance/entries",
+        "GET /api/v1/resources",
+        "POST /api/v1/applicability/analyses",
+        "POST /api/v1/applicability/initializations",
+        "POST /api/v1/conversions",
+        "POST /api/v1/effects/commits",
+        "POST /api/v1/exports",
+        "POST /api/v1/mapping/builds",
+        "POST /api/v1/mapping/draft/validation",
+        "POST /api/v1/mapping/initializations",
+        "POST /api/v1/resources/register",
+        "POST /api/v1/session/shutdown",
+        "POST /api/v1/session/unlock",
+        "PUT /api/v1/applicability/draft",
+        "PUT /api/v1/mapping/draft"
+      ],
+      "nonLoopbackRequests": 0,
+      "pageErrors": 0,
+      "exit_code": 0,
+      "log": {
+        "path": "/private/tmp/forge-f05-chrome-writable-verified.log",
+        "sha256": "aa0c36498b9fca3834adf3cd9bb7a88350624a27bb2cc09cf0204adb04cd60c8"
+      }
+    },
+    {
+      "mode": "read-only",
+      "browserVersion": "154.0.8037.97",
+      "embeddedAssetSha256": "724368a21e2a500f9cb20417ba26a1ff4f079514a18c4cd6305581d6fd54bfdd",
+      "focusChecks": 2,
+      "documentedRequests": [
+        "GET /api/v1/project/config-status",
+        "GET /api/v1/project/summary",
+        "GET /api/v1/resources",
+        "POST /api/v1/session/shutdown",
+        "POST /api/v1/session/unlock"
+      ],
+      "nonLoopbackRequests": 0,
+      "pageErrors": 0,
+      "exit_code": 0,
+      "log": {
+        "path": "/private/tmp/forge-f05-chrome-read-only-verified.log",
+        "sha256": "a8102569b34cb0cf4f877005710ab4f833eb4dd6221718e9a91e72cbe39f5b8c"
+      }
+    }
+  ],
+  "limits": [
+    "V8 raw ranges are not line, branch or condition coverage.",
+    "Coverage excludes real browser runs; their observations are separate.",
+    "VM DOM dispatches dialog close synchronously; native browser tests wait for queued completion.",
+    "Page request interception does not prove OS-enforced offline execution.",
+    "macOS Chrome only; no full supported-platform/browser, manual AT or WCAG acceptance.",
+    "Full final documentation review remains required."
+  ]
+}
