@@ -1,16 +1,25 @@
-// Coverage follows the complete workspace.js asset beside this harness.
-// In the temporary proposal layout it identifies proposed-copy execution only;
-// after applying to a worktree it identifies that worktree's actual asset.
-// Source-level navigation regressions. This fake DOM is not browser or AT evidence.
+// Execute the entire real source asset, never extracted or rewritten functions.
+// FORGE_TEST_WORKSPACE_JS selects an actual proposal path for development only;
+// absent that override, this tests the deployed asset beside the checked-in file.
+// V8 filenames and the diagnostic identify that exact file and SHA-256.
+// This fake DOM is source-level evidence, not browser, layout, keyboard or AT evidence.
+// Native close events are queued; controlled timers model polling without real sleep.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
-const { randomUUID } = require("node:crypto");
+const { randomUUID, createHash } = require("node:crypto");
 
-const productionPath = path.resolve(__dirname, "../workspace.js");
+const productionPath = process.env.FORGE_TEST_WORKSPACE_JS
+  ? path.resolve(process.env.FORGE_TEST_WORKSPACE_JS) : path.resolve(__dirname, "../workspace.js");
 const productionSource = fs.readFileSync(productionPath, "utf8");
+const sourceSha256 = createHash("sha256").update(productionSource).digest("hex");
+test("source receipt binds complete executed file", context => {
+  context.diagnostic(JSON.stringify({source_path: productionPath, source_sha256: sourceSha256,
+    source_scope: process.env.FORGE_TEST_WORKSPACE_JS ? "explicit-source-path" : "adjacent-worktree-asset"}));
+  assert(productionSource.startsWith("// @ts-check"));
+});
 
 /** Construct a cancellable DOM event for the narrow interaction harness. */
 function eventFor(type, target) {
@@ -33,11 +42,12 @@ class FakeNode {
     this.id = "";
     this.className = "";
     this.value = "";
-    this.hidden = false;
+    this._hidden = false;
     this.open = false;
     this.required = false;
     this.tabIndex = undefined;
     this._text = "";
+    this.textWrites = [];
     this._disabled = false;
     this._inert = false;
   }
@@ -47,6 +57,17 @@ class FakeNode {
     let current = this;
     while (current.parentNode) current = current.parentNode;
     return current === this.ownerDocument.body;
+  }
+
+  /** Expose display removal used by persistent recovery and shutdown transitions. */
+  get hidden() { return this._hidden; }
+
+  /** Hiding a focused subtree drops focus; invisible recovery targets cannot remain active. */
+  set hidden(value) {
+    this._hidden = Boolean(value);
+    if (this._hidden && this.contains(this.ownerDocument.activeElement)) {
+      this.ownerDocument.activeElement = this.ownerDocument.body;
+    }
   }
 
   /** Expose the disabled state used by production cancellation recovery. */
@@ -76,10 +97,11 @@ class FakeNode {
     return this._text + this.children.map(child => child.textContent).join("");
   }
 
-  /** Setting text replaces descendants, including any focused child. */
+  /** Replace descendants and record each live-region write, including repeated announcements. */
   set textContent(value) {
     this.replaceChildren();
     this._text = String(value);
+    this.textWrites.push(this._text);
   }
 
   /** Append nodes and flatten document fragments as the DOM does. */
@@ -226,13 +248,13 @@ class FakeNode {
     this.ownerDocument.activeElement = this;
   }
 
-  /** Close a modal, attempt native restoration, and fire production close handlers. */
+  /** Queue the native close event after restoration; close listeners are not synchronous. */
   close() {
     if (!this.open) return;
     this.open = false;
     this.ownerDocument.activeElement = this.ownerDocument.body;
     this.returnTarget?.focus();
-    this.dispatchEvent(eventFor("close", this));
+    setImmediate(() => this.dispatchEvent(eventFor("close", this)));
   }
 
   /** Escape emits cancel and uses native non-destructive dismissal unless prevented. */
@@ -308,28 +330,34 @@ class FakeDocument {
   querySelector(selector) { return this.body.querySelector(selector); }
 }
 
-/** Create one isolated realm and execute the entire unchanged production asset. */
+/** Execute the entire selected source file in an isolated realm without transformation. */
 function harness(overrides = {}) {
   const document = new FakeDocument();
   const requests = [];
   const routes = {
     "/project/summary": () => ({
+      version: "synthetic-version-1", health: "ready",
       project_label: "Synthetic project", workspace_index_present: true,
-      resource_counts: { total: 1, invalid: 0, stale: 0 },
+      resource_counts: { total: 1, valid: 1, invalid: 0, stale: 0, not_validated: 0 },
       review_counts: { total_open: 0 }, next_action: "review-scope",
     }),
     "/project/config-status": () => ({ present: true, valid: true }),
-    "/resources": () => ({ page: { items: [], total_matching: 0, next_cursor: null } }),
-    "/provenance/entries": () => ({ page: { items: [], total_matching: 0, next_cursor: null } }),
+    "/resources": () => ({ resource_version: "synthetic-version-1", page: { items: [], total_matching: 0, next_cursor: null } }),
+    "/provenance/entries": () => ({ resource_version: "synthetic-version-1", page: { items: [], total_matching: 0, next_cursor: null } }),
     ...overrides,
   };
   let clock = 0;
+  const timers = [];
   const context = vm.createContext({
     document,
     window: { addEventListener() {} },
     crypto: { randomUUID },
     performance: { now: () => (clock += 100) },
-    setTimeout: callback => { queueMicrotask(callback); return 0; },
+    setTimeout: (callback, milliseconds = 0) => {
+      if (milliseconds >= 500) timers.push(callback);
+      else queueMicrotask(callback);
+      return timers.length;
+    },
     URLSearchParams, URL, console,
     fetch: async (url, options) => {
       const parsed = new URL(url, "http://127.0.0.1:1");
@@ -354,7 +382,13 @@ function harness(overrides = {}) {
     assert(caption, "Missing label: " + label);
     return byId(caption.htmlFor);
   };
-  return { document, requests, routes, run, byId, byButton, byLabel };
+  /** Advance one real production polling delay, retaining control over in-flight reads. */
+  const poll = async () => {
+    assert(timers.length, "No pending polling delay");
+    timers.shift()();
+    await settle();
+  };
+  return { document, requests, routes, run, byId, byButton, byLabel, poll, timers };
 }
 
 /** Let event callbacks reach their first awaited boundary without wall-clock sleeps. */
@@ -369,7 +403,7 @@ function deferred() {
 
 /** Install actual registration and evidence controls and mark actual fields dirty. */
 async function unsavedForm(app) {
-  app.run('readOnly = false; element("view").replaceChildren(evidenceList([{label:"Fixture policy",provenance_ref:"prov_fixture"}]),resourceActions([]));');
+  app.run('readOnly = false; element("view").replaceChildren(evidenceList([{label:"Fixture policy",provenance_ref:"prov_synthetic000001"}]),resourceActions([]));');
   const input = app.byLabel("Project-relative file path");
   input.value = "unsaved-policy.md";
   await input.fire("input");
@@ -482,14 +516,14 @@ test("direct discard dismissal restores its enabled invoking control", async () 
 
 test("Trace view's actual button loads provenance and focuses its destination", async () => {
   const app = harness({ "/resources": () => ({ page: {
-    items: [{ resource_id: "res_fixture", key: "fixture-policy", role: "policy-source" }],
+    items: [{ resource_id: "res_synthetic000001", key: "fixture-policy", role: "policy-source", path: "synthetic-policy.md", sha256: "a".repeat(64), size_bytes: 1, validation_state: "valid", stale: false, version: "synthetic-version-1" }],
     total_matching: 1, next_cursor: null,
   } }) });
   await app.run('navigate("Trace & Reports")');
   await app.byButton("Trace fixture-policy").fire("click");
   assert.equal(app.byId("view-title").textContent, "Provenance");
   assert.equal(app.document.activeElement, app.byId("view-title"));
-  assert.match(app.requests.at(-1).url, /anchor=res_fixture/);
+  assert.match(app.requests.at(-1).url, /anchor=res_synthetic000001/);
 });
 
 test("a superseded render returns false and cannot steal destination focus", async () => {
@@ -513,7 +547,7 @@ test("pending provenance makes old inputs inert and ignores a superseded result"
   const app = harness({ "/provenance/entries": () => response.promise });
   const input = app.document.createElement("input");
   app.byId("view").append(input);
-  const stale = app.run('showProvenance("prov_fixture")');
+  const stale = app.run('showProvenance("prov_synthetic000001")');
   await settle();
   assert.equal(app.byId("view").inert, true);
   input.focus();
@@ -531,7 +565,7 @@ test("pending provenance makes old inputs inert and ignores a superseded result"
 test("a superseded provenance failure cannot announce an obsolete error", async () => {
   const response = deferred();
   const app = harness({ "/provenance/entries": () => response.promise });
-  const stale = app.run('showProvenance("prov_fixture")');
+  const stale = app.run('showProvenance("prov_synthetic000001")');
   await settle();
   assert.equal(app.byId("view").inert, true);
   assert.equal(app.byId("refresh").disabled, true);
@@ -568,8 +602,8 @@ for (const unavailable of ["removed", "disabled"]) {
 test("initial unlock preserves a project-load failure's error-summary focus", async () => {
   const app = harness({
     "/session/unlock": () => ({
-      capability: "synthetic-test-capability",
-      session: { api_major: 1, read_only: true },
+      capability: "synthetic-test-capability-32-characters",
+      session: { session_id: "sess_synthetic001", mode: "browser", api_major: 1, read_only: true, contract_version: "1.0.0", project_label: "Synthetic project" },
     }),
     "/project/summary": () => ({ status: 500, body: {
       code: "internal-error", message: "Synthetic initial-load failure.", retryable: true,
@@ -599,7 +633,7 @@ async function dirtyTraceForm(app) {
 for (const discard of [false, true]) {
   test("dirty Trace callback " + (discard ? "discards explicitly" : "preserves export values on cancellation"), async () => {
     const app = harness({ "/resources": () => ({ page: {
-      items: [{ resource_id: "res_fixture", key: "fixture-policy", role: "policy-source" }],
+      items: [{ resource_id: "res_synthetic000001", key: "fixture-policy", role: "policy-source", path: "synthetic-policy.md", sha256: "a".repeat(64), size_bytes: 1, validation_state: "valid", stale: false, version: "synthetic-version-1" }],
       total_matching: 1, next_cursor: null,
     } }) });
     const fields = await dirtyTraceForm(app);
@@ -623,5 +657,959 @@ for (const discard of [false, true]) {
       assert.equal(app.document.activeElement, fields.trace);
       assert.equal(reads.length, 0);
     }
+  });
+}
+
+
+/** Create 53 wholly synthetic queue rows, enough to cross the 50-row display boundary. */
+function queueRows() {
+  return Array.from({ length: 53 }, (_, index) => ({
+    item_id: `qi_synthetic${String(index + 1).padStart(4, "0")}`,
+    control_id: `synthetic-${String(index + 1).padStart(2, "0")}`,
+    reason_code: index < 3 ? "scope-decision-required" : "no-reviewed-mapping",
+    summary: "Synthetic development fixture; no authentic review finding.",
+  }));
+}
+
+/** Return a strong-version-bound API page with real filter and cursor semantics. */
+function queuePage(url, version = "synthetic-version-1") {
+  const all = queueRows();
+  const reason = url.searchParams.get("reason_code");
+  const matching = reason ? all.filter(row => row.reason_code === reason) : all;
+  const size = Number(url.searchParams.get("page_size"));
+  const offset = url.searchParams.get("cursor") === "synthetic-page-2" ? 50 : 0;
+  return { resource_version: version, page: {
+    items: matching.slice(offset, offset + size), total_matching: matching.length,
+    next_cursor: offset + size < matching.length ? "synthetic-page-2" : null,
+  } };
+}
+
+/** Find the committed pagination shell without relying on production private state. */
+function pageParts(app) {
+  const results = app.byId("view").querySelector("[data-page-results]");
+  const status = app.byId("view").querySelector("[data-page-status]");
+  const error = app.byId("view").querySelector("[data-page-error]");
+  assert(results, "Missing persistent results region");
+  assert(status, "Missing pagination status");
+  assert(error, "Missing inline pagination error");
+  return { results, status, error };
+}
+
+/** Open the actual Review Queue with synthetic responses and its real controls. */
+async function queueApp(overrides = {}) {
+  const app = harness({ "/review-queue/items": url => queuePage(url), ...overrides });
+  await app.run('navigate("Review Queue")');
+  return app;
+}
+
+test("forward/back pages and filter success focus the persistent result region", async () => {
+  const app = await queueApp();
+  const initial = pageParts(app);
+  assert.equal(initial.status.getAttribute("role"), "status");
+  assert.equal(initial.status.getAttribute("aria-live"), "polite");
+  assert.match(initial.status.textContent, /53 matching items of 53 total.*Page 1/);
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  const next = app.byButton("Next page");
+  next.focus();
+  await next.fire("click");
+  assert.equal(pageParts(app).results, initial.results, "Results focus target must remain connected");
+  assert.equal(app.document.activeElement, initial.results);
+  assert.match(initial.results.textContent, /synthetic-51/);
+  assert.doesNotMatch(initial.results.textContent, /synthetic-01/);
+  assert.match(initial.status.textContent, /Page 2/);
+  const previous = app.byButton("Previous page");
+  previous.focus();
+  await previous.fire("click");
+  assert.equal(app.document.activeElement, initial.results);
+  assert.match(initial.results.textContent, /synthetic-01/);
+  assert.match(initial.status.textContent, /Page 1/);
+  app.byLabel("Reason").value = "scope-decision-required";
+  const apply = app.byButton("Apply filters");
+  apply.focus();
+  await apply.fire("click");
+  assert.equal(app.document.activeElement, initial.results);
+  assert.match(initial.status.textContent, /3 matching items of 53 total.*Page 1/);
+  assert.match(initial.results.textContent, /synthetic-03/);
+  assert.doesNotMatch(initial.results.textContent, /synthetic-04/);
+  const unfiltered = app.requests.filter(request => request.route === "/review-queue/items"
+    && new URL(request.url, "http://local").searchParams.get("page_size") === "1");
+  assert(unfiltered.length > 0, "Filtered denominator must be independently requested at the same endpoint");
+  assert(unfiltered.every(request => !new URL(request.url, "http://local").searchParams.has("reason_code")));
+});
+
+test("Overview open-review card focuses results while ordinary navigation focuses the heading", async () => {
+  const app = harness({ "/review-queue/items": url => queuePage(url) });
+  await app.run('navigate("Overview")');
+  const card = app.byId("view").querySelectorAll("button").find(node => node.textContent.includes("Open review items"));
+  assert(card);
+  card.focus();
+  await card.fire("click");
+  assert.equal(app.document.activeElement, pageParts(app).results);
+  await app.run('navigate("Overview")');
+  await app.byButton("Review Queue", app.byId("navigation")).fire("click");
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+});
+
+test("empty filtered results retain a focusable region and exact zero-of-total count", async () => {
+  const app = await queueApp();
+  app.byLabel("Reason").value = "external-conflict";
+  await app.byButton("Apply filters").fire("click");
+  const parts = pageParts(app);
+  assert.equal(app.document.activeElement, parts.results);
+  assert.match(parts.results.textContent, /No matching items/);
+  assert.match(parts.status.textContent, /0 matching items of 53 total.*Page 1/);
+  assert.equal(app.byButton("Next page").hidden, true);
+});
+
+test("failed next-page fetch preserves rows/count/cursor and retries the exact staged page", async () => {
+  let fail = true;
+  const app = await queueApp({ "/review-queue/items": url => {
+    if (url.searchParams.has("cursor") && fail) return { status: 500, body: {
+      code: "internal-error", message: "Synthetic second-page failure.", retryable: true,
+    } };
+    return queuePage(url);
+  } });
+  const parts = pageParts(app);
+  const rows = parts.results.textContent;
+  const count = parts.status.textContent;
+  await app.byButton("Next page").fire("click");
+  assert.equal(parts.results.textContent, rows);
+  assert(parts.status.textContent.includes(count), "Failed read must retain the previous exact count with its qualification");
+  assert.match(parts.status.textContent, /Previous results/);
+  assert.equal(app.document.activeElement, parts.error);
+  assert.match(parts.error.textContent, /Synthetic second-page failure/);
+  fail = false;
+  await app.byButton("Retry page").fire("click");
+  const cursorRequests = app.requests.filter(request => new URL(request.url, "http://local").searchParams.has("cursor"));
+  assert.equal(cursorRequests.length, 2);
+  assert(cursorRequests.every(request => new URL(request.url, "http://local").searchParams.get("cursor") === "synthetic-page-2"));
+  assert.match(parts.status.textContent, /Page 2/);
+  assert.equal(app.document.activeElement, parts.results);
+  await app.byButton("Previous page").fire("click");
+  assert.match(parts.status.textContent, /Page 1/);
+});
+
+test("filtered denominator from a different resource version cannot qualify or replace old rows", async () => {
+  const app = await queueApp({ "/review-queue/items": url => {
+    const version = url.searchParams.get("page_size") === "1" ? "synthetic-version-2" : "synthetic-version-1";
+    return queuePage(url, version);
+  } });
+  const parts = pageParts(app);
+  const rows = parts.results.textContent;
+  const count = parts.status.textContent;
+  app.byLabel("Reason").value = "scope-decision-required";
+  await app.byButton("Apply filters").fire("click");
+  assert.equal(parts.results.textContent, rows);
+  assert(parts.status.textContent.includes(count), "Failed read must retain the previous exact count with its qualification");
+  assert.match(parts.status.textContent, /Previous results/);
+  assert.equal(parts.error.hidden, false);
+  assert.equal(app.document.activeElement, parts.error);
+  assert.match(parts.error.textContent, /changed|version|same snapshot|refresh/i);
+});
+
+test("version-conflict page failure preserves the first page and exposes exact API recovery", async () => {
+  const app = await queueApp({ "/review-queue/items": url => url.searchParams.has("cursor")
+    ? { status: 409, body: { code: "version-conflict", message: "The collection changed. Restart from its first page.",
+      retryable: true, resource_version: "synthetic-version-2" } } : queuePage(url) });
+  const parts = pageParts(app);
+  const rows = parts.results.textContent;
+  const count = parts.status.textContent;
+  await app.byButton("Next page").fire("click");
+  assert.equal(parts.results.textContent, rows);
+  assert(parts.status.textContent.includes(count), "Failed read must retain the previous exact count with its qualification");
+  assert.match(parts.status.textContent, /Previous results/);
+  assert.equal(app.document.activeElement, parts.error);
+  assert.match(parts.error.textContent, /version-conflict/);
+  assert.match(parts.error.textContent, /synthetic-version-2/);
+});
+
+for (const fails of [false, true]) {
+  test("late page " + (fails ? "failure" : "success") + " cannot replace or refocus a newer view", async () => {
+    const response = deferred();
+    const app = await queueApp({ "/review-queue/items": url => url.searchParams.has("cursor") ? response.promise : queuePage(url) });
+    const parts = pageParts(app);
+    const action = app.byButton("Next page").fire("click");
+    await settle();
+    const guarded = app.byButton("Next page");
+    assert.equal(guarded.isConnected, true);
+    assert.equal(guarded.disabled, false, "Busy guard must not use native disable and lose focus");
+    assert.equal(guarded.getAttribute("aria-disabled"), "true");
+    await app.run('navigate("Overview")');
+    const status = app.byId("status").textContent;
+    const focusCount = app.document.focusHistory.length;
+    response.resolve(fails ? { status: 500, body: { code: "internal-error", message: "Obsolete page failure.", retryable: true } }
+      : queuePage(new URL("http://local/?page_size=50&cursor=synthetic-page-2")));
+    await action;
+    assert.equal(parts.results.isConnected, false);
+    assert.equal(app.byId("view-title").textContent, "Overview");
+    assert.equal(app.byId("status").textContent, status);
+    assert.equal(app.byId("error").hidden, true);
+    assert.equal(app.document.activeElement, app.byId("view-title"));
+    assert.equal(app.document.focusHistory.length, focusCount);
+  });
+}
+
+test("initial paged-view failure installs an inline alert and preserves its focus after inert cleanup", async () => {
+  const app = await queueApp({ "/review-queue/items": () => ({ status: 500,
+    body: { code: "internal-error", message: "Initial queue unavailable.", retryable: true } }) });
+  const parts = pageParts(app);
+  assert.equal(parts.error.hidden, false);
+  assert.equal(app.byId("view").inert, false);
+  assert.equal(app.document.activeElement, parts.error);
+  assert.match(parts.error.textContent, /Initial queue unavailable/);
+  assert.doesNotMatch(parts.status.textContent, /0 matching items of 0 total/, "Failure must not become an authoritative empty inventory");
+});
+
+const operationId = "op_synthetic000001";
+const operationRoute = "/operations/" + operationId;
+
+/** Construct an OpenAPI-shaped synthetic operation; progress facts stay explicitly supplied. */
+function operation(state, extra = {}) {
+  return { operation_id: operationId, kind: "conversion", state,
+    created_at: "2026-10-02T00:00:00Z", updated_at: "2026-10-02T00:00:01Z",
+    cancel_requested: false, ...extra };
+}
+
+/** Provide a prepared receipt for UI rendering without claiming a real write or valid domain fixture. */
+function proposedWrite() {
+  return { preview_id: "prev_synthetic000001", operation_type: "policy-conversion", target: { status: "create", path: "synthetic-output.json" },
+    semantic_summary: "Synthetic prepared conversion; no authoritative write.",
+    validation: { state: "valid", error_count: 0, warning_count: 0, diagnostics: [] }, target_version: "synthetic-version-1", base_sha256: null,
+    exact_bytes_sha256: "a".repeat(64), input_hashes: [], diff_text: "Synthetic diff", diff_truncated: false,
+    receipt: { token: "synthetic-receipt-opaque-token", expires_at: "2026-10-02T01:00:00Z" } };
+}
+
+/** Supply a complete succeeded-conversion result with a synthetic prepared receipt. */
+function conversionResult() {
+  return { operation_id: operationId, products: [{ kind: "oscal-catalog", statement_count: 0 }],
+    validation: { state: "valid", error_count: 0, warning_count: 0, diagnostics: [] }, preview: proposedWrite() };
+}
+
+/** Launch the actual conversion control; the fake transport substitutes API observations only. */
+async function conversionApp(overrides = {}) {
+  const app = harness({
+    "/resources": () => ({ resource_version: "synthetic-version-1", page: { items: [{ resource_id: "res_synthetic000001", key: "synthetic-policy",
+      role: "policy-source", path: "synthetic-policy.md", validation_state: "valid", sha256: "a".repeat(64), size_bytes: 1, stale: false, version: "synthetic-version-1" }], total_matching: 1, next_cursor: null } }),
+    "/conversions": () => operation("pending"),
+    [operationRoute]: () => operation("cancelled"),
+    "/effects/previews/prev_synthetic000001": () => proposedWrite(),
+    ...overrides,
+  });
+  app.run("readOnly = false;");
+  await app.run('navigate("Policies & Artifacts")');
+  app.byLabel("Policy source").value = "res_synthetic000001";
+  app.byLabel("Output model").value = "oscal-catalog";
+  app.byLabel("Output project-relative path").value = "synthetic-output.json";
+  const prepare = app.byButton("Prepare conversion");
+  prepare.focus();
+  const activation = prepare.fire("click");
+  await settle();
+  return { ...app, prepare, activation };
+}
+
+/** Resolve the stable observed-operation row and its live status from actual rendered DOM. */
+function operationParts(app) {
+  const region = app.byId("operation-region");
+  assert(region, "Missing persistent operation region");
+  const row = region.querySelector('[data-operation-id="' + operationId + '"]');
+  assert(row, "Missing observed operation ID row");
+  const status = row.querySelector("[data-operation-status]");
+  assert(status, "Missing stable operation live status");
+  return { region, row, status };
+}
+
+test("supplied operation facts update stable live status once; absent facts stay indeterminate", async () => {
+  let poll = 0;
+  const responses = [operation("running", { progress: { completed_items: 2, total_items: 5 } }),
+    operation("running", { progress: { completed_items: 2, total_items: 5 } }),
+    operation("running", { progress: null }), operation("cancelled")];
+  const app = await conversionApp({ [operationRoute]: () => responses[poll++] });
+  const initial = operationParts(app);
+  assert.equal(initial.status.getAttribute("role"), "status");
+  assert.equal(initial.status.getAttribute("aria-live"), "polite");
+  assert.equal(initial.status.getAttribute("aria-atomic"), "true");
+  assert.match(initial.status.textContent, /pending/i);
+  assert.match(initial.status.textContent, /indeterminate/i);
+  const focusCount = app.document.focusHistory.length;
+  await app.poll();
+  assert.match(initial.status.textContent, /running/i);
+  assert.match(initial.status.textContent, /2 of 5 items reported/);
+  assert.doesNotMatch(initial.status.textContent, /%|ETA|seconds|minutes/i);
+  const writes = initial.status.textWrites.length;
+  await app.poll();
+  assert.equal(operationParts(app).status, initial.status);
+  assert.equal(initial.status.textWrites.length, writes, "Repeated state/progress must not repeat the same live announcement");
+  await app.poll();
+  assert.match(initial.status.textContent, /indeterminate/i);
+  assert.doesNotMatch(initial.status.textContent, /2 of 5/);
+  await app.poll();
+  await app.activation;
+  assert.match(initial.status.textContent, /cancelled/i);
+  assert.equal(app.document.focusHistory.length, focusCount, "Routine state changes must not steal focus");
+  assert.equal(app.byId("preview-dialog").open, false);
+});
+
+test("cancellation keeps its connected focused button and acknowledgement survives an older poll", async () => {
+  const cancellation = deferred();
+  let poll = 0;
+  const app = await conversionApp({
+    [operationRoute]: () => ++poll === 1 ? operation("running") : operation("cancelled", { cancel_requested: true }),
+    [operationRoute + "/cancellation"]: () => cancellation.promise,
+  });
+  const parts = operationParts(app);
+  const cancel = app.byButton("Cancel pending operation", parts.row);
+  cancel.focus();
+  const activation = cancel.fire("click");
+  await settle();
+  assert.equal(cancel.isConnected, true);
+  assert.equal(cancel.disabled, false);
+  assert.equal(cancel.getAttribute("aria-disabled"), "true");
+  assert.equal(app.document.activeElement, cancel);
+  await cancel.fire("click");
+  assert.equal(app.requests.filter(request => request.route.endsWith("/cancellation")).length, 1);
+  cancellation.resolve(operation("running", { cancel_requested: true }));
+  await activation;
+  assert.match(parts.status.textContent, /Cancellation requested; awaiting terminal state/);
+  await app.poll();
+  assert.equal(app.byButton("Cancel pending operation", parts.row), cancel);
+  assert.equal(cancel.isConnected, true);
+  assert.match(parts.status.textContent, /Cancellation requested; awaiting terminal state/);
+  assert.equal(cancel.getAttribute("aria-disabled"), "true");
+  assert.equal(app.document.activeElement, cancel);
+  await app.poll();
+  await app.activation;
+  assert.match(parts.status.textContent, /cancelled/i);
+  assert.equal(app.byId("preview-dialog").open, false);
+});
+
+test("failed known-ID poll recovers by GET without repeating the preparation POST", async () => {
+  let reads = 0;
+  const app = await conversionApp({ [operationRoute]: () => ++reads === 1
+    ? { status: 503, body: { code: "internal-error", message: "Synthetic polling interruption.", retryable: true } }
+    : operation("cancelled") });
+  const parts = operationParts(app);
+  await app.poll();
+  await app.activation;
+  assert.equal(parts.row.isConnected, true);
+  assert.match(parts.status.textContent, /unknown|unverified|could not|unavailable|interrupted|check/i);
+  const recover = app.byButton("Check operation status", parts.row);
+  recover.focus();
+  await recover.fire("click");
+  const preparations = app.requests.filter(request => request.route === "/conversions");
+  assert.equal(preparations.length, 1);
+  assert.equal(preparations[0].options.method, "POST");
+  const polls = app.requests.filter(request => request.route === operationRoute);
+  assert.equal(polls.length, 2);
+  assert(polls.every(request => request.options.method === "GET"));
+  assert.match(parts.status.textContent, /cancelled/i);
+  assert.equal(app.byId("preview-dialog").open, false);
+});
+
+test("navigation during polling preserves its own status/focus and offers explicit prepared-write review", async () => {
+  const app = await conversionApp({ [operationRoute]: () => operation("succeeded", { result: conversionResult() }) });
+  const parts = operationParts(app);
+  await app.run('navigate("Overview")');
+  const status = app.byId("status").textContent;
+  const focusCount = app.document.focusHistory.length;
+  await app.poll();
+  await app.activation;
+  assert.equal(parts.row.isConnected, true);
+  assert.equal(app.byId("view-title").textContent, "Overview");
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.document.focusHistory.length, focusCount);
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.match(parts.status.textContent, /succeeded/i);
+  assert.doesNotMatch(parts.status.textContent, /saved|committed/i);
+  const review = app.byButton("Review prepared write", parts.row);
+  await review.fire("click");
+  assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.document.activeElement, app.byId("preview-title"));
+  await app.byButton("Keep editing", app.byId("preview-dialog")).fire("click");
+  await settle();
+  assert.equal(app.byId("preview-dialog").open, false);
+});
+
+test("terminal preparation success reviews its receipt while a terminal failure never opens preview", async () => {
+  const app = await conversionApp({ [operationRoute]: () => operation("succeeded", { result: conversionResult() }) });
+  await app.poll();
+  await app.activation;
+  assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.document.activeElement, app.byId("preview-title"));
+  assert.match(operationParts(app).status.textContent, /succeeded/i);
+  assert.doesNotMatch(operationParts(app).status.textContent, /saved|committed/i);
+  assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+  await app.byButton("Keep editing", app.byId("preview-dialog")).fire("click");
+  await settle();
+  const failed = await conversionApp({ [operationRoute]: () => operation("failed", {
+    error: { code: "validation-failed", message: "Synthetic terminal failure.", retryable: false },
+  }) });
+  await failed.poll();
+  await failed.activation;
+  assert.match(operationParts(failed).status.textContent, /failed/i);
+  assert.match(operationParts(failed).status.textContent, /Synthetic terminal failure/);
+  assert.equal(failed.byId("preview-dialog").open, false);
+  assert.equal(failed.requests.some(request => request.route.startsWith("/effects/previews/")), false);
+});
+
+for (const invalid of [
+  operation("unrecognized"),
+  operation("running", { progress: { completed_items: -1, total_items: 5 } }),
+  operation("running", { operation_id: "op_wrong000000001" }),
+]) {
+  test("unverified operation observation cannot become progress or a prepared-write success: " + JSON.stringify(invalid), async () => {
+    const app = await conversionApp({ [operationRoute]: () => invalid });
+    await app.poll();
+    await app.activation;
+    const parts = operationParts(app);
+    assert.match(parts.status.textContent, /unverified|unknown|invalid|could not/i);
+    assert.doesNotMatch(parts.status.textContent, /-1 of 5|succeeded|saved/i);
+    assert.equal(app.byId("preview-dialog").open, false);
+    assert(app.byButton("Check operation status", parts.row));
+    assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+  });
+}
+
+test("shutdown suppresses a late successful poll, closes preview and stops all further requests", async () => {
+  const response = deferred();
+  const app = await conversionApp({ [operationRoute]: () => response.promise,
+    "/session/shutdown": () => ({ state: "shutting-down" }) });
+  const pendingPoll = app.poll();
+  await settle();
+  await app.byId("stop").fire("click");
+  await app.byId("confirm-stop").fire("click");
+  await settle();
+  const count = app.requests.length;
+  const status = app.byId("status").textContent;
+  assert.equal(app.byId("workspace").hidden, true);
+  assert.equal(app.byId("connection").textContent, "Stopped");
+  assert.equal(app.document.activeElement, app.byId("main"));
+  response.resolve(operation("succeeded", { result: conversionResult() }));
+  await pendingPoll;
+  await app.activation;
+  await settle();
+  assert.equal(app.requests.length, count);
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(app.document.activeElement, app.byId("main"));
+  assert.equal(app.run("capability"), "");
+  const actions = app.byId("operation-region")?.querySelectorAll("button") ?? [];
+  assert(actions.every(control => control.disabled || control.getAttribute("aria-disabled") === "true"),
+    "Stopped rows must not expose activatable operation actions");
+  for (const control of actions) await control.fire("click");
+  assert.equal(app.requests.length, count);
+  assert.equal(app.byId("status").textContent, status);
+});
+
+
+/** Test cancellation against an actually in-flight, older terminal poll response. */
+test("cancellation invalidates an in-flight older poll before it can report success or open preview", async () => {
+  const oldPoll = deferred();
+  let reads = 0;
+  const app = await conversionApp({
+    [operationRoute]: () => ++reads === 1 ? oldPoll.promise : operation("cancelled", { cancel_requested: true }),
+    [operationRoute + "/cancellation"]: () => operation("running", { cancel_requested: true }),
+  });
+  const parts = operationParts(app);
+  await app.poll();
+  const cancel = app.byButton("Cancel pending operation", parts.row);
+  cancel.focus();
+  await cancel.fire("click");
+  assert.match(parts.status.textContent, /Cancellation requested; awaiting terminal state/);
+  oldPoll.resolve(operation("succeeded", { result: conversionResult() }));
+  await settle();
+  assert.match(parts.status.textContent, /Cancellation requested; awaiting terminal state/);
+  assert.doesNotMatch(parts.status.textContent, /succeeded/);
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.document.activeElement, cancel);
+  assert.equal(app.requests.some(request => request.route.startsWith("/effects/previews/")), false);
+  await app.poll();
+  await app.activation;
+  assert.match(parts.status.textContent, /cancelled/i);
+});
+
+test("inconsistent supplied nonnegative progress stays indeterminate without an invented completion fraction", async () => {
+  let reads = 0;
+  const app = await conversionApp({ [operationRoute]: () => ++reads === 1
+    ? operation("running", { progress: { completed_items: 6, total_items: 5 } }) : operation("cancelled") });
+  await app.poll();
+  const parts = operationParts(app);
+  assert.match(parts.status.textContent, /running/i);
+  assert.match(parts.status.textContent, /indeterminate|do not reconcile/i);
+  assert.doesNotMatch(parts.status.textContent, /6 of 5|%|succeeded|saved/i);
+  await app.poll();
+  await app.activation;
+});
+
+test("shutdown while a prepared receipt is being read cannot open a late dialog or overwrite stopped focus", async () => {
+  const receipt = deferred();
+  const app = await conversionApp({
+    [operationRoute]: () => operation("succeeded", { result: conversionResult() }),
+    "/effects/previews/prev_synthetic000001": () => receipt.promise,
+    "/session/shutdown": () => ({ state: "shutting-down" }),
+  });
+  await app.poll();
+  assert.equal(app.requests.filter(request => request.route.startsWith("/effects/previews/")).length, 1);
+  await app.byId("stop").fire("click");
+  await app.byId("confirm-stop").fire("click");
+  await settle();
+  const requests = app.requests.length;
+  const status = app.byId("status").textContent;
+  const focusCount = app.document.focusHistory.length;
+  receipt.resolve(proposedWrite());
+  await app.activation;
+  assert.equal(app.requests.length, requests);
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(app.document.activeElement, app.byId("main"));
+  assert.equal(app.document.focusHistory.length, focusCount);
+});
+
+test("polling read bound retains the exact known operation and resumes with GET only", async () => {
+  let terminal = false;
+  const app = await conversionApp({ [operationRoute]: () => operation(terminal ? "cancelled" : "running") });
+  for (let read = 0; read < 120; read++) await app.poll();
+  await app.activation;
+  const parts = operationParts(app);
+  assert.match(parts.status.textContent, /unknown/i);
+  assert.match(parts.row.textContent, /read bound/i);
+  assert.equal(app.requests.filter(request => request.route === operationRoute).length, 120);
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+  terminal = true;
+  await app.byButton("Check operation status", parts.row).fire("click");
+  assert.equal(app.requests.filter(request => request.route === operationRoute).length, 121);
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+  assert.match(parts.status.textContent, /cancelled/i);
+});
+
+
+test("supplied zero-of-zero progress remains reported facts without a completion percentage", async () => {
+  let reads = 0;
+  const app = await conversionApp({ [operationRoute]: () => ++reads === 1
+    ? operation("running", { progress: { completed_items: 0, total_items: 0 } }) : operation("cancelled") });
+  await app.poll();
+  const parts = operationParts(app);
+  assert.match(parts.status.textContent, /running/i);
+  assert.match(parts.status.textContent, /0 of 0 items reported/);
+  assert.doesNotMatch(parts.status.textContent, /%|succeeded|saved|100/);
+  await app.poll();
+  await app.activation;
+});
+
+test("retrying a failed filter uses its captured criteria even after the form selection changes", async () => {
+  let fail = true;
+  const app = await queueApp({ "/review-queue/items": url => {
+    if (fail && url.searchParams.get("reason_code") === "scope-decision-required") return { status: 500,
+      body: { code: "internal-error", message: "Synthetic filtered read failure.", retryable: true } };
+    return queuePage(url);
+  } });
+  const parts = pageParts(app);
+  const prior = parts.results.textContent;
+  app.byLabel("Reason").value = "scope-decision-required";
+  await app.byButton("Apply filters").fire("click");
+  assert.equal(parts.results.textContent, prior);
+  assert.match(parts.status.textContent, /Previous results: 53 matching items of 53 total/);
+  app.byLabel("Reason").value = "external-conflict";
+  fail = false;
+  await app.byButton("Retry page").fire("click");
+  assert.match(parts.status.textContent, /3 matching items of 53 total/);
+  const retried = app.requests.filter(request => new URL(request.url, "http://local").searchParams.has("reason_code")).at(-1);
+  assert.equal(new URL(retried.url, "http://local").searchParams.get("reason_code"), "scope-decision-required");
+  assert.equal(app.document.activeElement, parts.results);
+});
+
+
+for (const initialSuccess of [false, true]) {
+  test("verified " + (initialSuccess ? "initial" : "polled") + " success survives receipt-read failure and retries the preview by GET", async () => {
+    let previews = 0;
+    const app = await conversionApp({
+      "/conversions": () => initialSuccess ? operation("succeeded", { result: conversionResult() }) : operation("pending"),
+      [operationRoute]: () => operation("succeeded", { result: conversionResult() }),
+      "/effects/previews/prev_synthetic000001": () => ++previews === 1 ? { status: 503,
+        body: { code: "internal-error", message: "Synthetic prepared-receipt read failure.", retryable: true } } : proposedWrite(),
+    });
+    if (!initialSuccess) await app.poll();
+    await app.activation;
+    const parts = operationParts(app);
+    assert.match(parts.status.textContent, /Operation succeeded.*prepared write could not be loaded/i);
+    assert.doesNotMatch(parts.status.textContent, /unknown|saved|committed/i);
+    assert.match(parts.row.textContent, /Synthetic prepared-receipt read failure/);
+    assert.equal(app.byButton("Check operation status", parts.row).hidden, true);
+    assert.equal(app.byId("preview-dialog").open, false);
+    await app.byButton("Review prepared write", parts.row).fire("click");
+    assert.equal(app.byId("preview-dialog").open, true);
+    assert.equal(app.document.activeElement, app.byId("preview-title"));
+    assert.equal(parts.row.querySelector("[data-operation-error]").hidden, true,
+      "A successful explicit review must clear its stale receipt-read error");
+    assert.equal(parts.status.textContent, "Operation succeeded. Preparation is ready for review; no write has been confirmed.");
+    assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+    assert.equal(app.requests.filter(request => request.route.startsWith("/effects/previews/")).length, 2);
+    assert.equal(app.requests.filter(request => request.route === operationRoute).length, initialSuccess ? 0 : 1);
+    assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+  });
+}
+
+test("malformed initial operation identity cannot offer a replay of the unverified preparation", async () => {
+  const app = await conversionApp({ "/conversions": () => operation("pending", { operation_id: "op_bad!" }) });
+  await app.activation;
+  assert.equal(app.byId("error").hidden, false);
+  assert.match(app.byId("error").textContent, /unsupported identity/i);
+  assert.equal(app.byId("operation-region")?.querySelectorAll("[data-operation-id]").length ?? 0, 0);
+  const retries = app.document.body.querySelectorAll("button").filter(control => control.textContent === "Retry the same request");
+  assert(retries.every(control => control.hidden || control.disabled || control.getAttribute("aria-disabled") === "true"));
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+  assert.equal(app.requests.some(request => request.route.startsWith("/operations/")), false);
+  assert.equal(app.byId("preview-dialog").open, false);
+});
+
+
+for (const terminalState of ["succeeded", "failed"]) {
+  test("late cancellation failure retains the newer verified " + terminalState + " outcome", async () => {
+    const cancellation = deferred();
+    const terminal = terminalState === "succeeded"
+      ? operation("succeeded", { result: conversionResult() })
+      : operation("failed", { error: { code: "validation-failed", message: "Synthetic verified terminal failure.", retryable: false } });
+    const app = await conversionApp({ [operationRoute]: () => terminal,
+      [operationRoute + "/cancellation"]: () => cancellation.promise });
+    const parts = operationParts(app);
+    const cancel = app.byButton("Cancel pending operation", parts.row);
+    cancel.focus();
+    const attempt = cancel.fire("click");
+    await settle();
+    await app.poll();
+    await app.activation;
+    const verifiedStatus = parts.status.textContent;
+    assert.match(verifiedStatus, new RegExp("Operation " + terminalState));
+    cancellation.resolve({ status: 503, body: { code: "internal-error",
+      message: "Synthetic delayed cancellation failure.", retryable: true } });
+    await attempt;
+    assert.equal(parts.status.textContent, verifiedStatus);
+    assert.doesNotMatch(parts.status.textContent, /unknown/i);
+    assert.match(parts.row.textContent, /Synthetic delayed cancellation failure/);
+    assert.equal(app.byButton("Check operation status", parts.row).hidden, true);
+    assert.equal(app.byButton("Cancel pending operation", parts.row).getAttribute("aria-disabled"), "true");
+    assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+    assert.equal(app.requests.filter(request => request.route === operationRoute).length, 1);
+    assert.equal(app.requests.filter(request => request.route.endsWith("/cancellation")).length, 1);
+    assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+  });
+}
+
+
+/** Resolve the persistent unacknowledged preparation without reading its private key/state. */
+function requestParts(app) {
+  const region = app.byId("operation-region");
+  assert(region, "Missing persistent request recovery region");
+  const row = region.querySelector("[data-pending-request-id]");
+  assert(row, "Missing unacknowledged preparation row");
+  const status = row.querySelector("[data-request-status]");
+  const error = row.querySelector("[data-request-error]");
+  assert(status && error, "Missing request live status/error");
+  return { region, row, status, error };
+}
+
+test("late initial POST failure preserves destination focus and recovers the exact request/key in a session row", async () => {
+  const response = deferred();
+  let sends = 0;
+  const app = await conversionApp({ "/conversions": () => ++sends === 1 ? response.promise : operation("cancelled") });
+  const original = app.requests.find(request => request.route === "/conversions");
+  assert(original && original.options.headers["Idempotency-Key"]);
+  await app.run('navigate("Overview")');
+  const status = app.byId("status").textContent;
+  const focusCount = app.document.focusHistory.length;
+  response.resolve({ status: 503, body: { code: "internal-error", message: "Synthetic delayed preparation failure.", retryable: true } });
+  await app.activation;
+  const parts = requestParts(app);
+  assert.equal(parts.row.hidden, false);
+  assert.match(parts.status.textContent, /unknown|unacknowledged|could not/i);
+  assert.match(parts.error.textContent, /Synthetic delayed preparation failure/);
+  assert.equal(parts.status.getAttribute("role"), "status");
+  assert.equal(app.byId("error").hidden, true);
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.document.focusHistory.length, focusCount);
+  assert.equal(app.byId("preview-dialog").open, false);
+  const retry = app.byButton("Retry the same request", parts.row);
+  retry.focus();
+  await retry.fire("click");
+  const posts = app.requests.filter(request => request.route === "/conversions");
+  assert.equal(posts.length, 2);
+  assert.equal(posts[1].options.headers["Idempotency-Key"], original.options.headers["Idempotency-Key"]);
+  assert.equal(posts[1].options.body, original.options.body);
+  assert.equal(parts.row.isConnected, false, "Acknowledgement must transfer recovery to the exact observed operation ID");
+  const acknowledged = operationParts(app);
+  assert.match(acknowledged.status.textContent, /cancelled/i);
+  assert.equal(app.document.activeElement, acknowledged.status,
+    "Explicit Retry must transfer focus from its removed row to this exact operation");
+  assert.equal(acknowledged.status.tabIndex, -1);
+  assert(acknowledged.status.getAttribute("aria-label").includes(operationId));
+  assert.equal(app.byId("view-title").textContent, "Overview");
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+});
+
+test("explicit operation Review failure stays local and its successful retry clears only that stale receipt error", async () => {
+  let reads = 0;
+  const app = await conversionApp({ [operationRoute]: () => operation("succeeded", { result: conversionResult() }),
+    "/effects/previews/prev_synthetic000001": () => ++reads === 1 ? { status: 503,
+      body: { code: "internal-error", message: "Synthetic explicit review failure.", retryable: true } } : proposedWrite() });
+  await app.run('navigate("Overview")');
+  await app.poll();
+  await app.activation;
+  const parts = operationParts(app);
+  const status = app.byId("status").textContent;
+  const review = app.byButton("Review prepared write", parts.row);
+  review.focus();
+  await review.fire("click");
+  assert.equal(review.isConnected, true);
+  assert.equal(review.disabled, false);
+  assert.equal(app.document.activeElement, review, "A failed read must retain the eligible initiating control");
+  assert.equal(app.byId("error").hidden, true);
+  assert.equal(app.byId("status").textContent, status);
+  assert.match(parts.status.textContent, /Operation succeeded.*prepared write could not be loaded/i);
+  assert.match(parts.row.querySelector("[data-operation-error]").textContent, /Synthetic explicit review failure/);
+  assert.equal(app.byId("preview-dialog").open, false);
+  await review.fire("click");
+  assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.document.activeElement, app.byId("preview-title"));
+  assert.equal(parts.row.querySelector("[data-operation-error]").hidden, true);
+  assert.equal(parts.status.textContent, "Operation succeeded. Preparation is ready for review; no write has been confirmed.");
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+  assert.equal(app.requests.filter(request => request.route.startsWith("/effects/previews/")).length, 2);
+});
+
+test("late explicit operation Review error cannot steal a newer view's focus or announce a global failure", async () => {
+  const receipt = deferred();
+  const app = await conversionApp({ [operationRoute]: () => operation("succeeded", { result: conversionResult() }),
+    "/effects/previews/prev_synthetic000001": () => receipt.promise });
+  await app.run('navigate("Overview")');
+  await app.poll();
+  await app.activation;
+  const parts = operationParts(app);
+  const review = app.byButton("Review prepared write", parts.row);
+  review.focus();
+  const read = review.fire("click");
+  await settle();
+  assert.equal(review.disabled, false);
+  await app.run('navigate("Trace & Reports")');
+  const status = app.byId("status").textContent;
+  const focusCount = app.document.focusHistory.length;
+  receipt.resolve({ status: 503, body: { code: "internal-error", message: "Synthetic obsolete explicit review failure.", retryable: true } });
+  await read;
+  assert.equal(app.byId("view-title").textContent, "Trace & Reports");
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(app.byId("error").hidden, true);
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.document.focusHistory.length, focusCount);
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.match(parts.status.textContent, /succeeded/i);
+});
+
+
+test("late direct registration preview offers local Review without replay or an unsolicited modal", async () => {
+  const response = deferred();
+  const preview = { ...proposedWrite(), operation_type: "workspace-index-update",
+    target: { status: "create", path: "forge.workspace.json" }, semantic_summary: "Synthetic registration preparation." };
+  const app = harness({ "/resources/register": () => response.promise,
+    "/effects/previews/prev_synthetic000001": () => preview });
+  app.run("readOnly = false;");
+  await app.run('navigate("Policies & Artifacts")');
+  app.byLabel("Resource role").value = "policy-source";
+  app.byLabel("Project-relative file path").value = "synthetic-policy.md";
+  app.byLabel("Stable resource key").value = "synthetic-policy";
+  const preparation = app.byButton("Preview registration").fire("click");
+  await settle();
+  await app.run('navigate("Overview")');
+  const status = app.byId("status").textContent;
+  const focusCount = app.document.focusHistory.length;
+  response.resolve({ validation: { state: "valid", error_count: 0, warning_count: 0, diagnostics: [] }, preview });
+  await preparation;
+  const parts = requestParts(app);
+  assert.match(parts.status.textContent, /Preparation is ready for review/);
+  assert.equal(app.byButton("Retry the same request", parts.row).hidden, true);
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.byId("error").hidden, true);
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.document.focusHistory.length, focusCount);
+  const review = app.byButton("Review prepared write", parts.row);
+  await review.fire("click");
+  assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.document.activeElement, app.byId("preview-title"));
+  assert.equal(app.requests.filter(request => request.route === "/resources/register").length, 1);
+  assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+});
+
+test("global and persistent Retry share one in-flight replay guard and the original idempotency key", async () => {
+  const replay = deferred();
+  let sends = 0;
+  const app = await conversionApp({ "/conversions": () => ++sends === 1 ? { status: 503,
+    body: { code: "internal-error", message: "Synthetic initial response loss.", retryable: true } } : replay.promise });
+  await app.activation;
+  const parts = requestParts(app);
+  const globalRetry = app.byButton("Retry the same request", app.byId("error"));
+  const sessionRetry = app.byButton("Retry the same request", parts.row);
+  const retry = globalRetry.fire("click");
+  await settle();
+  await sessionRetry.fire("click");
+  const inFlight = app.requests.filter(request => request.route === "/conversions");
+  assert.equal(inFlight.length, 2, "A second recovery control must not start a concurrent preparation POST");
+  assert.equal(inFlight[0].options.headers["Idempotency-Key"], inFlight[1].options.headers["Idempotency-Key"]);
+  assert.equal(inFlight[0].options.body, inFlight[1].options.body);
+  replay.resolve(operation("cancelled"));
+  await retry;
+  assert.equal(parts.row.isConnected, false);
+  assert.match(operationParts(app).status.textContent, /cancelled/);
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 2);
+});
+
+
+test("old poll rejection after cancellation acknowledgement cannot erase sticky state or stop fresh polling", async () => {
+  const obsoleteRead = deferred();
+  let reads = 0;
+  const app = await conversionApp({
+    [operationRoute]: () => ++reads === 1 ? obsoleteRead.promise : operation("cancelled", { cancel_requested: true }),
+    [operationRoute + "/cancellation"]: () => operation("running", { cancel_requested: true }),
+  });
+  const parts = operationParts(app);
+  await app.poll();
+  const cancel = app.byButton("Cancel pending operation", parts.row);
+  cancel.focus();
+  await cancel.fire("click");
+  const acknowledged = parts.status.textContent;
+  assert.match(acknowledged, /Cancellation requested; awaiting terminal state/);
+  obsoleteRead.resolve({ status: 503, body: { code: "internal-error", message: "Synthetic obsolete polling failure.", retryable: true } });
+  await settle();
+  assert.equal(parts.status.textContent, acknowledged);
+  assert.doesNotMatch(parts.status.textContent, /unknown/i);
+  assert.equal(parts.row.querySelector("[data-operation-error]").hidden, true);
+  assert.equal(app.document.activeElement, cancel);
+  await app.poll();
+  await app.activation;
+  assert.match(parts.status.textContent, /cancelled/i);
+  assert.equal(app.requests.filter(request => request.route === operationRoute).length, 2);
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 1);
+});
+
+test("a background initial POST acknowledgement does not focus its new operation row over a newer destination", async () => {
+  const response = deferred();
+  const app = await conversionApp({ "/conversions": () => response.promise });
+  await app.run('navigate("Overview")');
+  const status = app.byId("status").textContent;
+  const focusCount = app.document.focusHistory.length;
+  response.resolve(operation("pending"));
+  await settle();
+  const parts = operationParts(app);
+  assert.equal(parts.row.isConnected, true);
+  assert.equal(app.byId("view-title").textContent, "Overview");
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.document.focusHistory.length, focusCount);
+  assert.equal(app.byId("operation-region").querySelectorAll("[data-pending-request-id]").length, 0);
+  await app.poll();
+  await app.activation;
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.document.focusHistory.length, focusCount);
+  assert.equal(app.byId("preview-dialog").open, false);
+});
+
+
+test("request display bound prevents the 257th new preparation POST before transport", async () => {
+  const app = await conversionApp({ "/conversions": () => ({ status: 503,
+    body: { code: "internal-error", message: "Synthetic unacknowledged preparation.", retryable: true } }) });
+  await app.activation;
+  for (let attempt = 1; attempt < 256; attempt++) await app.prepare.fire("click");
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 256);
+  assert.equal(app.byId("operation-region").querySelectorAll("[data-pending-request-id]").length, 256);
+  await app.prepare.fire("click");
+  assert.equal(app.requests.filter(request => request.route === "/conversions").length, 256);
+  assert.equal(app.byId("operation-region").querySelectorAll("[data-pending-request-id]").length, 256);
+  assert.match(app.byId("error").textContent, /request display bound/i);
+});
+
+test("shutdown during pending request Retry suppresses a late acknowledgement and leaves no actionable recovery", async () => {
+  const replay = deferred();
+  let sends = 0;
+  const app = await conversionApp({ "/conversions": () => ++sends === 1 ? { status: 503,
+    body: { code: "internal-error", message: "Synthetic initial response loss.", retryable: true } } : replay.promise,
+    "/session/shutdown": () => ({ state: "shutting-down" }) });
+  await app.activation;
+  const parts = requestParts(app);
+  const retry = app.byButton("Retry the same request", parts.row).fire("click");
+  await settle();
+  await app.byId("stop").fire("click");
+  await app.byId("confirm-stop").fire("click");
+  await settle();
+  const count = app.requests.length;
+  const status = app.byId("status").textContent;
+  const rowStatus = parts.status.textContent;
+  replay.resolve(operation("pending"));
+  await retry;
+  assert.equal(app.requests.length, count);
+  assert.equal(app.byId("operation-region").querySelectorAll("[data-operation-id]").length, 0);
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.byId("status").textContent, status);
+  assert.equal(parts.status.textContent, rowStatus);
+  assert.equal(app.document.activeElement, app.byId("main"));
+  assert(parts.row.querySelectorAll("button").every(control => control.getAttribute("aria-disabled") === "true" || control.disabled));
+});
+
+test("background direct-preview Retry transfers its hidden invoker focus to the named prepared status", async () => {
+  const failure = deferred();
+  let sends = 0;
+  const preview = { ...proposedWrite(), operation_type: "workspace-index-update",
+    target: { status: "create", path: "forge.workspace.json" }, semantic_summary: "Synthetic registration preparation." };
+  const app = harness({ "/resources/register": () => ++sends === 1 ? failure.promise
+    : { validation: { state: "valid", error_count: 0, warning_count: 0, diagnostics: [] }, preview },
+    "/effects/previews/prev_synthetic000001": () => preview });
+  app.run("readOnly = false;");
+  await app.run('navigate("Policies & Artifacts")');
+  app.byLabel("Resource role").value = "policy-source";
+  app.byLabel("Project-relative file path").value = "synthetic-policy.md";
+  app.byLabel("Stable resource key").value = "synthetic-policy";
+  const initial = app.byButton("Preview registration").fire("click");
+  await settle();
+  await app.run('navigate("Overview")');
+  failure.resolve({ status: 503, body: { code: "internal-error", message: "Synthetic delayed registration failure.", retryable: true } });
+  await initial;
+  const parts = requestParts(app);
+  const retry = app.byButton("Retry the same request", parts.row);
+  retry.focus();
+  await retry.fire("click");
+  assert.equal(retry.hidden, true);
+  assert.equal(app.document.activeElement, parts.status,
+    "Hiding the selected Retry must preserve focus on this exact prepared request");
+  assert.equal(parts.status.tabIndex, -1);
+  assert(parts.status.getAttribute("aria-label"));
+  assert.equal(app.byId("view-title").textContent, "Overview");
+  assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(app.requests.filter(request => request.route === "/resources/register").length, 2);
+  assert.equal(app.byButton("Review prepared write", parts.row).hidden, false);
+});
+
+for (const fails of [false, true]) {
+  test("shutdown suppresses an initial paged render's late " + (fails ? "failure" : "success"), async () => {
+    const response = deferred();
+    const app = harness({ "/review-queue/items": () => response.promise,
+      "/session/shutdown": () => ({ state: "shutting-down" }) });
+    const loading = app.run('navigate("Review Queue")');
+    await settle();
+    await app.byId("stop").fire("click");
+    await app.byId("confirm-stop").fire("click");
+    await settle();
+    const title = app.byId("view-title").textContent;
+    const view = app.byId("view").textContent;
+    const status = app.byId("status").textContent;
+    const focusCount = app.document.focusHistory.length;
+    response.resolve(fails ? { status: 503, body: { code: "internal-error", message: "Synthetic stopped list failure.", retryable: true } }
+      : queuePage(new URL("http://local/?page_size=50")));
+    await loading;
+    assert.equal(app.byId("view-title").textContent, title);
+    assert.equal(app.byId("view").textContent, view);
+    assert.equal(app.byId("status").textContent, status);
+    assert.match(status, /Workspace stopped/);
+    assert.equal(app.byId("error").hidden, true);
+    assert.equal(app.document.activeElement, app.byId("main"));
+    assert.equal(app.document.focusHistory.length, focusCount);
   });
 }
