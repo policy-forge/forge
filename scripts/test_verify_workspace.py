@@ -292,7 +292,9 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(previous.read_bytes(), b"immutable historical evidence\n")
 
     def test_process_capture_is_bounded_and_timeout_is_explicit(self):
-        success = verifier.run_command([sys.executable, "-c", "print('synthetic tool output')"], ROOT, 5)
+        success = verifier.run_command(
+            [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'synthetic tool output\\n')"], ROOT, 5
+        )
         self.assertEqual(success["exit_code"], 0)
         self.assertEqual(success["output"], b"synthetic tool output\n")
         with mock.patch.object(verifier, "MAX_CAPTURE", 1024):
