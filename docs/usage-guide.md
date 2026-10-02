@@ -544,7 +544,13 @@ does not implicitly classify the statement's parent control as mapped or
 reviewed-no-relationship. Authors must map the control explicitly when that is
 the reviewed conclusion.
 
-Detail filters never change framework-wide totals:
+Detail filters never change framework-wide totals. Persisted applicability
+reports must reconcile the six classification counts with the inventory total;
+invalid or overflowing sums are rejected. Unfiltered category counts match the
+visible inventory exactly, while filtered details may be a subset. Workspace
+currentness additionally requires comparison with recomputed analysis.
+
+For example, select a subset without changing the complete denominator:
 
 ```bash
 forge applicability analyze --manifest applicability.json --format json \
