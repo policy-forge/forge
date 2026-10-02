@@ -200,8 +200,20 @@ blocked non-loopback page traffic, storage absence, workflow behavior, and
 narrow-viewport reflow. This is not proof that all browser background traffic or
 all OS processes are network-denied.
 
+Focused Inspect/Trace navigation uses the same unsaved-edit decision as ordinary
+navigation. Keep editing or Escape preserves values and returns focus to the
+connected enabled invoker; a failed provenance read preserves the form for retry.
+Successful destinations focus their heading, while failed navigation retains the
+error summary's focus. The [navigation verification record](workspace-navigation-verification.md)
+reports current source/docstring coverage and local macOS Chrome development runs.
+Those focused checks do not establish full accessibility acceptance.
+
 Manual screen-reader/keyboard evaluation, WCAG 2.2 AA acceptance, the complete
 supported browser/platform matrix, security approval, five target-user studies,
 pilot metrics, packaging/release approval, and PRD-062 overall completion remain
 pending. See [accessibility requirements](accessibility/062-accessibility-requirements.md)
 and [the security record](SEC/062-sec-local-web-workspace.md).
+
+After the remaining roadmap work, a full documentation review must reconcile the
+integrated CLI/API, examples, architecture, schemas, dependency/provenance claims,
+platform support, verification instructions, requirements and acceptance status.

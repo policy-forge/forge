@@ -97,6 +97,7 @@ async function pagedTable(path,caption,columns,filters=[]) {
   section.append(form,display,controls);await load();return section;
 }
 
+/** Return true only when this request installs the current destination view. */
 async function renderView() {
   const sequence = ++pending;
   element("error").hidden = true;
@@ -150,11 +151,12 @@ async function renderView() {
       for (const resource of resources) fragment.append(button(`Trace ${resource.key}`, () => showProvenance(resource.resource_id)));
       if (!readOnly) fragment.append(exportForm());
     }
-    if (sequence !== pending) return;
+    if (sequence !== pending) return false;
     element("view").replaceChildren(fragment);
     element("view-title").textContent = activeView;
     element("status").textContent = "Project state loaded.";
-  } catch (error) { if (sequence === pending) { element("view").replaceChildren(); showError(error); element("status").textContent = "The view could not be loaded."; } }
+    return true;
+  } catch (error) { if (sequence === pending) { element("view").replaceChildren(); showError(error); element("status").textContent = "The view could not be loaded."; } return false; }
   finally { if (sequence === pending) {element("refresh").disabled = false;element("view").inert = false;} }
 }
 
@@ -173,7 +175,7 @@ element("unlock-form").addEventListener("submit", async (event) => {
     element("workspace").hidden = false;
     element("stop").hidden = false;
     element("connection").textContent = response.session.read_only ? "Read-only · Local" : "Local session";
-    await renderView(); element("main").focus();
+    if (await renderView()) element("main").focus();
   } catch (error) { element("passphrase").value = ""; showError(error); }
   finally { button.disabled = false; }
 });
@@ -193,26 +195,53 @@ element("confirm-stop").addEventListener("click", async () => {
 });
 
 
+/** Require an explicit discard decision before replacing a form with unsaved edits. */
+async function allowViewChange() {
+  return !dirty || await confirmDiscard();
+}
+
+/** Put successful destination focus on its heading; failures keep their error focus. */
+function focusViewTitle() {
+  const heading = element("view-title");
+  heading.tabIndex = -1;
+  heading.focus();
+}
+
+/** Return false only for cancellation, so a triggering action can restore its focus. */
 async function navigate(title, filters = {}) {
-  if (dirty && !await confirmDiscard()) return;
+  if (!await allowViewChange()) return false;
   dirty = false; activeView = title; viewFilters = filters;
   for (const sibling of element("navigation").children) {
     if (sibling.textContent === title) sibling.setAttribute("aria-current", "page"); else sibling.removeAttribute("aria-current");
   }
-  await renderView();element("view-title").tabIndex=-1;element("view-title").focus();
+  if (await renderView()) focusViewTitle();
 }
+
+/** Native Escape/close keeps edits; only Discard edits permits a view replacement. */
 function confirmDiscard() {
+  const invoker = document.activeElement;
   const dialog=node("dialog");dialog.setAttribute("aria-labelledby","discard-title");
-  const heading=node("h2","Discard unconfirmed edits?");heading.id="discard-title";
+  const heading=node("h2","Discard unconfirmed edits?");heading.id="discard-title";heading.tabIndex=-1;
   dialog.append(heading,node("p","Only this page's unconfirmed form changes will be discarded. Saved files remain unchanged."));
   return new Promise(resolve=>{
     let confirmed=false;dialog.append(button("Keep editing",()=>dialog.close()),button("Discard edits",()=>{confirmed=true;dialog.close();}));
-    dialog.addEventListener("close",()=>{dialog.remove();resolve(confirmed);},{once:true});document.body.append(dialog);dialog.showModal();
+    dialog.addEventListener("close",()=>{
+      dialog.remove();
+      if(!confirmed && invoker?.isConnected && !invoker.disabled)invoker.focus();
+      resolve(confirmed);
+    },{once:true});document.body.append(dialog);dialog.showModal();heading.focus();
   });
 }
+
+/** An action returning false cancelled navigation: reenable and refocus its invoker. */
 function button(label, action) {
   const control = node("button", label); control.type = "button";
-  control.addEventListener("click", async () => { control.disabled = true; try {await action();} catch(error) {showError(error);} finally {control.disabled = false;} });
+  control.addEventListener("click", async () => {
+    control.disabled = true;
+    let cancelled = false;
+    try {cancelled = await action() === false;} catch(error) {showError(error);}
+    finally {control.disabled = false;if(cancelled && control.isConnected)control.focus();}
+  });
   return control;
 }
 function fieldInput(form, label, type = "text", options) {
@@ -407,24 +436,41 @@ function evidenceList(rows) {
   for(const row of rows)for(const anchor of row.evidence_refs||(row.provenance_ref?[row.provenance_ref]:[]))list.append(button(`Inspect ${row.control_id||row.label||row.reason_code}`,()=>showProvenance(anchor)));
   return list;
 }
+/** Inspect/Trace use the same discard gate; failed or superseded reads keep the form. */
 async function showProvenance(anchor) {
-  const entries=await collection(`/provenance/entries?anchor=${encodeURIComponent(anchor)}`);
-  const region=node("section");region.append(node("h2","Provenance references"),node("p","References describe supplied records. They do not authenticate the person or establish independent review."));
-  for(const entry of entries) {
-    const item=node("article");item.append(node("h3",entry.label),node("p",`${entry.kind} · ${entry.fingerprint||""}`));
-    for(const reference of entry.refs)item.append(button(`Follow ${reference.kind}`,()=>showProvenance(reference.id)));
-    for(const id of entry.excerpt_refs||[]) {
-      const open=button("Read bounded source excerpt",async()=>{
-        const excerpt=await api(`/provenance/excerpts/${encodeURIComponent(id)}`);
-        const region=node("section");const heading=node("h4",`Source lines ${excerpt.start_line}–${excerpt.end_line}`);heading.tabIndex=-1;
-        region.append(heading,node("p",`SHA-256 ${excerpt.sha256}${excerpt.truncated?" · Truncated":""}`),Object.assign(node("pre",excerpt.text),{tabIndex:0}),button("Close source excerpt",()=>{region.remove();open.focus();}));
-        item.append(region);heading.focus();
-      });item.append(open);
+  if (!await allowViewChange()) return false;
+  const sequence = ++pending;
+  element("view").inert = true;
+  element("refresh").disabled = true;
+  element("status").textContent = "Loading provenance references…";
+  try {
+    const entries=await collection(`/provenance/entries?anchor=${encodeURIComponent(anchor)}`);
+    const region=node("section");region.append(node("h2","Provenance references"),node("p","References describe supplied records. They do not authenticate the person or establish independent review."));
+    for(const entry of entries) {
+      const item=node("article");item.append(node("h3",entry.label),node("p",`${entry.kind} · ${entry.fingerprint||""}`));
+      for(const reference of entry.refs)item.append(button(`Follow ${reference.kind}`,()=>showProvenance(reference.id)));
+      for(const id of entry.excerpt_refs||[]) {
+        const open=button("Read bounded source excerpt",async()=>{
+          const excerpt=await api(`/provenance/excerpts/${encodeURIComponent(id)}`);
+          const region=node("section");const heading=node("h4",`Source lines ${excerpt.start_line}–${excerpt.end_line}`);heading.tabIndex=-1;
+          region.append(heading,node("p",`SHA-256 ${excerpt.sha256}${excerpt.truncated?" · Truncated":""}`),Object.assign(node("pre",excerpt.text),{tabIndex:0}),button("Close source excerpt",()=>{region.remove();open.focus();}));
+          item.append(region);heading.focus();
+        });item.append(open);
+      }
+      region.append(item);
     }
-    region.append(item);
+    if(!entries.length)region.append(node("p","No verified references are available for this anchor."));
+    if(sequence !== pending)return;
+    dirty = false;
+    element("error").hidden = true;
+    element("view").replaceChildren(region);element("view-title").textContent="Provenance";
+    element("status").textContent="Provenance references loaded.";
+    focusViewTitle();
+  } catch(error) {
+    if(sequence === pending) {element("status").textContent="The provenance references could not be loaded.";throw error;}
+  } finally {
+    if(sequence === pending) {element("view").inert=false;element("refresh").disabled=false;}
   }
-  if(!entries.length)region.append(node("p","No verified references are available for this anchor."));
-  element("view").replaceChildren(region);element("view-title").textContent="Provenance";element("main").focus();
 }
 function exportForm() {
   const form=node("form");form.append(node("h2","Export a redacted static report"));

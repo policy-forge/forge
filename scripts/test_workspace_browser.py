@@ -50,6 +50,8 @@ with tempfile.TemporaryDirectory(prefix="forge-browser-") as root:
         result=subprocess.run([args.node,str(script),url,"read-only" if args.read_only else "writable"],timeout=240,check=False)
         if result.returncode:raise SystemExit(result.returncode)
     finally:
+        # Release the PTY before reaping: macOS can wait for its master during exit.
+        os.close(terminal)
         try:os.kill(pid,signal.SIGTERM)
         except ProcessLookupError:pass
         deadline=time.monotonic()+3
@@ -62,4 +64,3 @@ with tempfile.TemporaryDirectory(prefix="forge-browser-") as root:
                 except ProcessLookupError:pass
                 os.waitpid(pid,0);break
             time.sleep(0.05)
-        os.close(terminal)
