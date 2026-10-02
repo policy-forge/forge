@@ -1,0 +1,553 @@
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/CHANGELOG.md
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/CHANGELOG.md
+@@ -4,6 +4,18 @@
+ 
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
++
++## 0.3.0 (2026-02-04)
++### Added
++- `x86` support for: `sha512`, `sm3`, `sm4` ([#1181])
++- `InitToken::{init, init_get}` ([#1435])
++
++### Changed
++- Edition changed to 2024 and MSRV bumped to 1.85 ([#1149])
++
++[#1149]: https://github.com/RustCrypto/utils/pull/1149
++[#1181]: https://github.com/RustCrypto/utils/pull/1181
++[#1435]: https://github.com/RustCrypto/utils/pull/1435
+ 
+ ## 0.2.17 (2025-01-24)
+ ### Fixed
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/Cargo.toml
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/Cargo.toml
+@@ -10,9 +10,10 @@
+ # See Cargo.toml.orig for the original contents.
+ 
+ [package]
+-edition = "2018"
++edition = "2024"
++rust-version = "1.85"
+ name = "cpufeatures"
+-version = "0.2.17"
++version = "0.3.0"
+ authors = ["RustCrypto Developers"]
+ build = false
+ autolib = false
+@@ -21,7 +22,7 @@
+ autotests = false
+ autobenches = false
+ description = """
+-Lightweight runtime CPU feature detection for aarch64, loongarch64, and x86/x86_64 targets, 
++Lightweight runtime CPU feature detection for aarch64, loongarch64, and x86/x86_64 targets,
+ with no_std support and support for mobile targets including Android and iOS
+ """
+ documentation = "https://docs.rs/cpufeatures"
+@@ -36,7 +37,6 @@
+ ]
+ license = "MIT OR Apache-2.0"
+ repository = "https://github.com/RustCrypto/utils"
+-resolver = "2"
+ 
+ [lib]
+ name = "cpufeatures"
+@@ -54,7 +54,7 @@
+ name = "x86"
+ path = "tests/x86.rs"
+ 
+-[target.aarch64-linux-android.dependencies.libc]
++[target.'cfg(all(target_arch = "aarch64", target_os = "android"))'.dependencies.libc]
+ version = "0.2.155"
+ default-features = false
+ 
+@@ -69,3 +69,43 @@
+ [target.'cfg(all(target_arch = "loongarch64", target_os = "linux"))'.dependencies.libc]
+ version = "0.2.155"
+ default-features = false
++
++[lints.clippy]
++borrow_as_ptr = "warn"
++cast_lossless = "warn"
++cast_possible_truncation = "warn"
++cast_possible_wrap = "warn"
++cast_precision_loss = "warn"
++cast_sign_loss = "warn"
++checked_conversions = "warn"
++doc_markdown = "warn"
++from_iter_instead_of_collect = "warn"
++implicit_saturating_sub = "warn"
++manual_assert = "warn"
++map_unwrap_or = "warn"
++missing_errors_doc = "warn"
++missing_panics_doc = "warn"
++mod_module_files = "warn"
++must_use_candidate = "warn"
++needless_range_loop = "allow"
++ptr_as_ptr = "warn"
++redundant_closure_for_method_calls = "warn"
++ref_as_ptr = "warn"
++return_self_not_must_use = "warn"
++semicolon_if_nothing_returned = "warn"
++std_instead_of_alloc = "warn"
++std_instead_of_core = "warn"
++trivially_copy_pass_by_ref = "warn"
++undocumented_unsafe_blocks = "warn"
++unnecessary_safety_comment = "warn"
++unwrap_in_result = "warn"
++unwrap_used = "warn"
++
++[lints.rust]
++missing_copy_implementations = "warn"
++missing_debug_implementations = "warn"
++missing_docs = "warn"
++trivial_casts = "warn"
++trivial_numeric_casts = "warn"
++unused_lifetimes = "warn"
++unused_qualifications = "warn"
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/Cargo.toml.orig
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/Cargo.toml.orig
+@@ -1,18 +1,19 @@
+ [package]
+ name = "cpufeatures"
+-version = "0.2.17"
++version = "0.3.0"
++authors = ["RustCrypto Developers"]
++edition = "2024"
++rust-version = "1.85"
++documentation = "https://docs.rs/cpufeatures"
++readme = "README.md"
++repository = "https://github.com/RustCrypto/utils"
++license = "MIT OR Apache-2.0"
++keywords = ["cpuid", "target-feature"]
++categories = ["hardware-support", "no-std"]
+ description = """
+-Lightweight runtime CPU feature detection for aarch64, loongarch64, and x86/x86_64 targets, 
++Lightweight runtime CPU feature detection for aarch64, loongarch64, and x86/x86_64 targets,
+ with no_std support and support for mobile targets including Android and iOS
+ """
+-authors = ["RustCrypto Developers"]
+-license = "MIT OR Apache-2.0"
+-documentation = "https://docs.rs/cpufeatures"
+-repository = "https://github.com/RustCrypto/utils"
+-keywords = ["cpuid", "target-feature"]
+-categories = ["hardware-support", "no-std"]
+-edition = "2018"
+-readme = "README.md"
+ 
+ [target.'cfg(all(target_arch = "aarch64", target_vendor = "apple"))'.dependencies]
+ libc = { version = "0.2.155", default-features = false }
+@@ -23,5 +24,8 @@
+ [target.'cfg(all(target_arch = "loongarch64", target_os = "linux"))'.dependencies]
+ libc = { version = "0.2.155", default-features = false }
+ 
+-[target.aarch64-linux-android.dependencies]
++[target.'cfg(all(target_arch = "aarch64", target_os = "android"))'.dependencies]
+ libc = { version = "0.2.155", default-features = false }
++
++[lints]
++workspace = true
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/src/aarch64.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/src/aarch64.rs
+@@ -131,7 +131,13 @@
+ }
+ 
+ /// Apple helper function for calling `sysctlbyname`.
++///
++/// <https://developer.apple.com/documentation/kernel/1387446-sysctlbyname>
++///
++/// # Panics
++/// If `name` is not NUL terminated
+ #[cfg(target_vendor = "apple")]
++#[must_use]
+ pub unsafe fn sysctlbyname(name: &[u8]) -> bool {
+     assert_eq!(
+         name.last().cloned(),
+@@ -141,15 +147,25 @@
+     );
+ 
+     let mut value: u32 = 0;
+-    let mut size = core::mem::size_of::<u32>();
++    let mut size = size_of::<u32>();
+ 
+-    let rc = libc::sysctlbyname(
+-        name.as_ptr() as *const i8,
+-        &mut value as *mut _ as *mut libc::c_void,
+-        &mut size,
+-        core::ptr::null_mut(),
+-        0,
+-    );
++    // SAFETY:
++    // - `name` is being cast from a valid byte slice we asserted was NUL terminated above.
++    // - `value` is a properly-aligned, writable integer.
++    // - `size` is initialized to the size of `value` (4-bytes).
++    // - The last two arguments,`newp` and `newlen`, are for setting system parameters, which we
++    //   aren't doing here (and requires root privileges). The docs say the following:
++    //   - `newp`: "Specify NULL if you don’t want to set the attribute’s value"
++    //   - `newlen`: "Specify 0 if you don’t want to set the attribute’s value"
++    let rc = unsafe {
++        libc::sysctlbyname(
++            name.as_ptr().cast::<i8>(),
++            (&raw mut value).cast::<libc::c_void>(),
++            &raw mut size,
++            core::ptr::null_mut(),
++            0,
++        )
++    };
+ 
+     assert_eq!(size, 4, "unexpected sysctlbyname(3) result size");
+     assert_eq!(rc, 0, "sysctlbyname returned error code: {}", rc);
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/src/lib.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/src/lib.rs
+@@ -1,126 +1,5 @@
+-//! This crate provides macros for runtime CPU feature detection. It's intended
+-//! as a stopgap until Rust [RFC 2725] adding first-class target feature detection
+-//! macros to `libcore` is implemented.
+-//!
+-//! # Supported target architectures
+-//!
+-//! *NOTE: target features with an asterisk are unstable (nightly-only) and
+-//! subject to change to match upstream name changes in the Rust standard
+-//! library.
+-//!
+-//! ## `aarch64`
+-//!
+-//! Linux, iOS, and macOS/ARM only (ARM64 does not support OS-independent feature detection)
+-//!
+-//! Target features:
+-//!
+-//! - `aes`*
+-//! - `sha2`*
+-//! - `sha3`*
+-//!
+-//! Linux only
+-//!
+-//! - `sm4`*
+-//!
+-//! ## `loongarch64`
+-//!
+-//! Linux only (LoongArch64 does not support OS-independent feature detection)
+-//!
+-//! Target features:
+-//!
+-//! - `lam`*
+-//! - `ual`*
+-//! - `fpu`*
+-//! - `lsx`*
+-//! - `lasx`*
+-//! - `crc32`*
+-//! - `complex`*
+-//! - `crypto`*
+-//! - `lvz`*
+-//! - `lbt.x86`*
+-//! - `lbt.arm`*
+-//! - `lbt.mips`*
+-//! - `ptw`*
+-//!
+-//! ## `x86`/`x86_64`
+-//!
+-//! OS independent and `no_std`-friendly
+-//!
+-//! Target features:
+-//!
+-//! - `adx`
+-//! - `aes`
+-//! - `avx`
+-//! - `avx2`
+-//! - `avx512bw`*
+-//! - `avx512cd`*
+-//! - `avx512dq`*
+-//! - `avx512er`*
+-//! - `avx512f`*
+-//! - `avx512ifma`*
+-//! - `avx512pf`*
+-//! - `avx512vl`*
+-//! - `bmi1`
+-//! - `bmi2`
+-//! - `fma`,
+-//! - `mmx`
+-//! - `pclmulqdq`
+-//! - `popcnt`
+-//! - `rdrand`
+-//! - `rdseed`
+-//! - `sgx`
+-//! - `sha`
+-//! - `sse`
+-//! - `sse2`
+-//! - `sse3`
+-//! - `sse4.1`
+-//! - `sse4.2`
+-//! - `ssse3`
+-//!
+-//! If you would like detection support for a target feature which is not on
+-//! this list, please [open a GitHub issue][gh].
+-//!
+-//! # Example
+-//! ```
+-//! # #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+-//! # {
+-//! // This macro creates `cpuid_aes_sha` module
+-//! cpufeatures::new!(cpuid_aes_sha, "aes", "sha");
+-//!
+-//! // `token` is a Zero Sized Type (ZST) value, which guarantees
+-//! // that underlying static storage got properly initialized,
+-//! // which allows to omit initialization branch
+-//! let token: cpuid_aes_sha::InitToken = cpuid_aes_sha::init();
+-//!
+-//! if token.get() {
+-//!     println!("CPU supports both SHA and AES extensions");
+-//! } else {
+-//!     println!("SHA and AES extensions are not supported");
+-//! }
+-//!
+-//! // If stored value needed only once you can get stored value
+-//! // omitting the token
+-//! let val = cpuid_aes_sha::get();
+-//! assert_eq!(val, token.get());
+-//!
+-//! // Additionally you can get both token and value
+-//! let (token, val) = cpuid_aes_sha::init_get();
+-//! assert_eq!(val, token.get());
+-//! # }
+-//! ```
+-//!
+-//! Note that if all tested target features are enabled via compiler options
+-//! (e.g. by using `RUSTFLAGS`), the `get` method will always return `true`
+-//! and `init` will not use CPUID instruction. Such behavior allows
+-//! compiler to completely eliminate fallback code.
+-//!
+-//! After first call macro caches result and returns it in subsequent
+-//! calls, thus runtime overhead for them is minimal.
+-//!
+-//! [RFC 2725]: https://github.com/rust-lang/rfcs/pull/2725
+-//! [gh]: https://github.com/RustCrypto/utils/issues/new?title=cpufeatures:%20requesting%20support%20for%20CHANGEME%20target%20feature
+-
+ #![no_std]
++#![doc = include_str!("../README.md")]
+ #![doc(
+     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
+     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
+@@ -166,7 +45,17 @@
+             pub struct InitToken(());
+ 
+             impl InitToken {
+-                /// Get initialized value
++                /// Initialize token, performing CPU feature detection.
++                pub fn init() -> Self {
++                    init()
++                }
++
++                /// Initialize token and return a `bool` indicating if the feature is supported.
++                pub fn init_get() -> (Self, bool) {
++                    init_get()
++                }
++
++                /// Get initialized value.
+                 #[inline(always)]
+                 pub fn get(&self) -> bool {
+                     $crate::__unless_target_features! {
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/src/loongarch64.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/src/loongarch64.rs
+@@ -24,8 +24,22 @@
+ #[doc(hidden)]
+ macro_rules! __detect_target_features {
+     ($($tf:tt),+) => {{
++        let cpucfg1: usize;
++        let cpucfg2: usize;
++        let cpucfg3: usize;
++        unsafe {
++            std::arch::asm!(
++                "cpucfg {}, {}",
++                "cpucfg {}, {}",
++                "cpucfg {}, {}",
++                out(reg) cpucfg1, in(reg) 1,
++                out(reg) cpucfg2, in(reg) 2,
++                out(reg) cpucfg3, in(reg) 3,
++                options(pure, nomem, preserves_flags, nostack)
++            );
++        }
+         let hwcaps = $crate::loongarch64::getauxval_hwcap();
+-        $($crate::check!(hwcaps, $tf) & )+ true
++        $($crate::check!(cpucfg1, cpucfg2, cpucfg3, hwcaps, $tf) & )+ true
+     }};
+ }
+ 
+@@ -35,39 +49,53 @@
+     unsafe { libc::getauxval(libc::AT_HWCAP) }
+ }
+ 
+-// Linux `expand_check_macro`
+-#[cfg(target_os = "linux")]
+-macro_rules! __expand_check_macro {
+-    ($(($name:tt, $hwcap:ident)),* $(,)?) => {
+-        #[macro_export]
+-        #[doc(hidden)]
+-        macro_rules! check {
+-            $(
+-                ($hwcaps:expr, $name) => {
+-                    (($hwcaps & $crate::loongarch64::hwcaps::$hwcap) != 0)
+-                };
+-            )*
+-        }
++#[macro_export]
++#[doc(hidden)]
++macro_rules! check {
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "32s") => {
++        (($cpucfg1 & 1) != 0 || ($cpucfg1 & 2) != 0)
+     };
+-}
+-
+-// Linux `expand_check_macro`
+-#[cfg(target_os = "linux")]
+-__expand_check_macro! {
+-    ("cpucfg",   CPUCFG),   // Enable CPUCFG support.
+-    ("lam",      LAM),      // Enable LAM support.
+-    ("ual",      UAL),      // Enable UAL support.
+-    ("fpu",      FPU),      // Enable FPU support.
+-    ("lsx",      LSX),      // Enable LSX support.
+-    ("lasx",     LASX),     // Enable LASX support.
+-    ("crc32",    CRC32),    // Enable CRC32 support.
+-    ("complex",  COMPLEX),  // Enable COMPLEX support.
+-    ("crypto",   CRYPTO),   // Enable CRYPTO support.
+-    ("lvz",      LVZ),      // Enable LVZ support.
+-    ("lbt.x86",  LBT_X86),  // Enable LBT_X86 support.
+-    ("lbt.arm",  LBT_ARM),  // Enable LBT_ARM support.
+-    ("lbt.mips", LBT_MIPS), // Enable LBT_MIPS support.
+-    ("ptw",      PTW),      // Enable PTW support.
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "f") => {
++        (($cpucfg2 & 2) != 0 && ($hwcaps & $crate::loongarch64::hwcaps::FPU) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "d") => {
++        (($cpucfg2 & 4) != 0 && ($hwcaps & $crate::loongarch64::hwcaps::FPU) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "frecipe") => {
++        (($cpucfg2 & (1 << 25)) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "div32") => {
++        (($cpucfg2 & (1 << 26)) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "lsx") => {
++        (($hwcaps & $crate::loongarch64::hwcaps::LSX) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "lasx") => {
++        (($hwcaps & $crate::loongarch64::hwcaps::LASX) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "lam-bh") => {
++        (($cpucfg2 & (1 << 27)) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "lamcas") => {
++        (($cpucfg2 & (1 << 28)) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "ld-seq-sa") => {
++        (($cpucfg3 & (1 << 23)) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "scq") => {
++        (($cpucfg2 & (1 << 30)) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "lbt") => {
++        (($hwcaps & $crate::loongarch64::hwcaps::LBT_X86) != 0
++            && ($hwcaps & $crate::loongarch64::hwcaps::LBT_ARM) != 0
++            && ($hwcaps & $crate::loongarch64::hwcaps::LBT_MIPS) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "lvz") => {
++        (($hwcaps & $crate::loongarch64::hwcaps::LVZ) != 0)
++    };
++    ($cpucfg1:expr, $cpucfg2:expr, $cpucfg3:expr, $hwcaps:expr, "ual") => {
++        (($hwcaps & $crate::loongarch64::hwcaps::UAL) != 0)
++    };
+ }
+ 
+ /// Linux hardware capabilities mapped to target features.
+@@ -79,20 +107,14 @@
+ pub mod hwcaps {
+     use libc::c_ulong;
+ 
+-    pub const CPUCFG: c_ulong = libc::HWCAP_LOONGARCH_CPUCFG;
+-    pub const LAM: c_ulong = libc::HWCAP_LOONGARCH_LAM;
+     pub const UAL: c_ulong = libc::HWCAP_LOONGARCH_UAL;
+     pub const FPU: c_ulong = libc::HWCAP_LOONGARCH_FPU;
+     pub const LSX: c_ulong = libc::HWCAP_LOONGARCH_LSX;
+     pub const LASX: c_ulong = libc::HWCAP_LOONGARCH_LASX;
+-    pub const CRC32: c_ulong = libc::HWCAP_LOONGARCH_CRC32;
+-    pub const COMPLEX: c_ulong = libc::HWCAP_LOONGARCH_COMPLEX;
+-    pub const CRYPTO: c_ulong = libc::HWCAP_LOONGARCH_CRYPTO;
+     pub const LVZ: c_ulong = libc::HWCAP_LOONGARCH_LVZ;
+     pub const LBT_X86: c_ulong = libc::HWCAP_LOONGARCH_LBT_X86;
+     pub const LBT_ARM: c_ulong = libc::HWCAP_LOONGARCH_LBT_ARM;
+     pub const LBT_MIPS: c_ulong = libc::HWCAP_LOONGARCH_LBT_MIPS;
+-    pub const PTW: c_ulong = libc::HWCAP_LOONGARCH_PTW;
+ }
+ 
+ // On other targets, runtime CPU feature detection is unavailable
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/src/x86.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/src/x86.rs
+@@ -38,23 +38,16 @@
+         #[cfg(target_arch = "x86_64")]
+         use core::arch::x86_64::{__cpuid, __cpuid_count, CpuidResult};
+ 
+-        // These wrappers are workarounds around
+-        // https://github.com/rust-lang/rust/issues/101346
+-        //
+-        // DO NOT remove it until MSRV is bumped to a version
+-        // with the issue fix (at least 1.64).
+-        #[inline(never)]
+         unsafe fn cpuid(leaf: u32) -> CpuidResult {
+             __cpuid(leaf)
+         }
+ 
+-        #[inline(never)]
+         unsafe fn cpuid_count(leaf: u32, sub_leaf: u32) -> CpuidResult {
+             __cpuid_count(leaf, sub_leaf)
+         }
+ 
+         let cr = unsafe {
+-            [cpuid(1), cpuid_count(7, 0)]
++            [cpuid(1), cpuid_count(7, 0), cpuid_count(7, 1)]
+         };
+ 
+         $($crate::check!(cr, $tf) & )+ true
+@@ -149,4 +142,8 @@
+     ("vpclmulqdq", "zmm", 1, ecx, 10),
+     ("avx512bitalg", "zmm", 1, ecx, 12),
+     ("avx512vpopcntdq", "zmm", 1, ecx, 14),
++
++    ("sha512", "ymm", 2, eax, 0),
++    ("sm3", "xmm", 2, eax, 1),
++    ("sm4", "ymm", 2, eax, 2),
+ }
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/tests/loongarch64.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/tests/loongarch64.rs
+@@ -1,10 +1,23 @@
+-//! LoongArch64 tests
++//! `loongarch64` tests
+ 
+ #![cfg(target_arch = "loongarch64")]
+ 
+ cpufeatures::new!(
+-    lacaps, "cpucfg", "lam", "ual", "fpu", "lsx", "lasx", "crc32", "complex", "crypto", "lvz",
+-    "lbt.x86", "lbt.arm", "lbt.mips", "ptw"
++    lacaps,
++    "32s",
++    "f",
++    "d",
++    "frecipe",
++    "div32",
++    "lsx",
++    "lasx",
++    "lam-bh",
++    "lamcas",
++    "ld-seq-sa",
++    "scq",
++    "lbt",
++    "lvz",
++    "ual"
+ );
+ 
+ #[test]
+--- /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.2.17/tests/x86.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/cpufeatures-0.3.0/tests/x86.rs
+@@ -1,4 +1,4 @@
+-//! x86/x86_64 tests
++//! `x86`/`x86_64` tests
+ 
+ #![cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+ 

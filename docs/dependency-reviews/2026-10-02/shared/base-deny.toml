@@ -1,0 +1,29 @@
+[advisories]
+version = 2
+ignore = [
+    # ttf-parser 0.25.x is unmaintained but still pulled transitively by lopdf 0.42 (via pdf-extract).
+    # REVIEW-BY 2026-12-31 (owner: deps-rotation): remove after lopdf drops ttf-parser 0.25.x.
+    { id = "RUSTSEC-2026-0192", reason = "Transitive informational unmaintained warning; tracked by deps-rotation." },
+]
+
+[licenses]
+version = 2
+# Add licenses only after reviewing `cargo deny check licenses` output in a PR that cites each crate.
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "Zlib",
+    "Unicode-3.0",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
