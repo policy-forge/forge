@@ -21,6 +21,16 @@ redirected standard input. Each successful unlock creates a distinct scoped
 capability retained in page memory. There are no cookies, local/session
 storage, service workers, accounts, or remote services.
 
+On page load, focus starts in **Workspace passphrase**. Unlocking shows
+“Unlocking workspace…”; repeated activation while that request is pending sends
+no second unlock request. The submitting field or **Unlock workspace** button
+keeps focus while waiting. Completed attempts clear the passphrase field. If the
+server throttles an attempt, the page shows its stated remaining wait and retry
+guidance verbatim. Re-enter the passphrase after that wait and retry. The browser
+has no countdown; repeated throttling directs you to stop and relaunch from the
+terminal. Moving focus elsewhere while waiting does not authorize a late
+throttling response to move it back.
+
 Use **Stop workspace** or Ctrl-C. Stopping discards unconfirmed work and
 invalidates session capabilities. Completed files remain saved. Reloading the
 page loses its capability and unsaved forms; unlock again. Restarting the
@@ -78,8 +88,14 @@ Reviewer labels are asserted provenance. Neither local unlock nor a mapping
 status authenticates a reviewer or approves a policy. Scope decisions and
 positive mapping participation remain separate facts. The Review Queue includes
 invalid/stale resources, explicit scope-review work, and unmapped subjects from
-validated mapping inputs. Filters and cursor pagination preserve full matching
-denominators and reject traversal against changed input versions.
+validated mapping inputs. Filters and cursor pagination show matching items and
+total inventory separately, together with the page number. A filtered count is
+shown only when its page and unfiltered total belong to the same input version.
+Next, Previous and Apply retain the previous rows during loading; a failed read
+labels them as previous results and offers Retry. A changed-input cursor offers
+Restart from first page. Successful page/filter actions focus their result list;
+failed reads focus the local error. The Overview review count also focuses its
+result list after the ordinary unsaved-edit decision.
 
 Rebuild the committed mapping collection or analyze committed scope decisions
 explicitly. A build/analysis prepares a report; confirming its receipt publishes
@@ -98,22 +114,48 @@ Receipts expire after ten minutes and are single-use, including failed commit
 attempts. Re-preview after an expired receipt, stale version, changed input,
 changed target, or failed confirmation.
 
+For a current preview, a verified confirmed write refreshes its view and closes
+the preview before focus moves to the view heading. A failed refresh keeps the
+saved outcome and focuses an error explaining that the write was saved but the
+view could not be refreshed. A rejected commit keeps its preview and error open.
+Closing a preview after confirmation does not cancel an in-flight write. A late
+reply cannot replace a newer view, form or preview. When a post-write refresh is
+dismissed, retained tables label their previous results and remain usable;
+refresh to load the latest state. Confirmed exports keep their download action
+keyboard reachable.
+
 Operation results and idempotency keys remain queryable for the process's
 lifetime, within the documented session bounds. **Retry the same request**
 reuses its key; an identical commit retry returns the recorded result. A lost
-HTTP response does not authorize a new effect. Query the original operation
-before preparing another write. Background preparation can be cancelled;
-cancellation discards proposed results and never publishes files. Once a commit
-has begun, it is not cancellable. Background preparation uses one 30-second
-monotonic budget from acceptance, including time waiting for its worker. Equality
-with the deadline exhausts that budget. Cooperative checks run around registered
-reads, classification, temporary staging copies, domain calls and preview
-retention. A blocking read, parser or domain call finishes before its next check;
-the deadline is not a hard process timeout.
+HTTP response does not authorize a new effect. Persistent operation rows remain
+available across views. They announce the reported preparation state and supplied
+progress facts; missing, null or unreconciled counters remain indeterminate. No
+completion percentage or finish time is estimated. Cancel pending operation
+acknowledges a request separately from a terminal cancelled state. Cancellation
+discards proposed results and never publishes files.
 
-While capture is measured, `progress` counts complete captured and classified
+If the operation ID is known, Check operation status reads that same operation;
+it does not submit a new preparation. If the first response was lost before an ID
+was known, Retry the same request reuses the original key and body. Recovery and
+errors stay with their operation across navigation. Background completion offers
+Review prepared write; it does not open a preview in another view. Review uses
+the normal unsaved-edit decision. A failed preview read preserves the verified
+preparation for retry. Preparation success is not Saved: only confirmation of the
+exact receipt can publish the write. Stopping the workspace ends status recovery
+for that session. Once a commit has begun, it is not cancellable.
+
+Background preparation uses one 30-second monotonic budget from acceptance,
+including time waiting for its worker. Equality with the deadline exhausts that
+budget. Cooperative checks run around registered reads, classification,
+temporary staging copies, domain calls and preview retention. A blocking read,
+parser or domain call finishes before its next check; the deadline is not a hard
+process timeout.
+
+While capture is measured, the browser reports "Captured registrations: X of Y
+reported." The `progress` pair counts complete captured and classified
 registrations against the full registered set (up to 1,000), including inputs
-classified as invalid. It clears before unmeasured work and at termination.
+classified as invalid. These units differ from the 100 consumed-input limit for
+a prepared effect. Progress clears before unmeasured work and at termination.
 Capture completion does not mean preparation or publication succeeded. A cancel
 acknowledgment may still show pending/running; poll the original operation for its
 terminal state. See [workspace operations](workspace-operations.md) for recovery
@@ -235,8 +277,31 @@ blocked non-loopback page traffic, storage absence, workflow behavior, and
 narrow-viewport reflow. This is not proof that all browser background traffic or
 all OS processes are network-denied.
 
+Focused Inspect/Trace navigation uses the same unsaved-edit decision as ordinary
+navigation. Keep editing or Escape preserves values and returns focus to the
+connected enabled invoker; a failed provenance read preserves the form for retry.
+Successful destinations focus their heading, while failed navigation retains the
+error summary's focus. The historical [navigation verification record](workspace-navigation-verification.md)
+and historical [live-state verification record](workspace-live-state-verification.md)
+report exact source/docstring scopes and local macOS Chrome development runs.
+The live-state slice also exercises pagination, persistent operation recovery, rendered
+input borders and final-page reflow at 640 and 320 CSS pixels. Those focused checks
+do not establish full accessibility acceptance. The separate
+[keyboard verification record](workspace-keyboard-verification.md) records unlock
+feedback, confirmation focus and retained-table recovery checks.
+
+The current [operation browser verification](workspace-operation-browser-verification.md)
+records fresh integrated source, docstring and test coverage checks, both native
+modes and a bounded actual capture/cancellation probe. It preserves the earlier
+incomplete probe and all zero/unmapped coverage dimensions. These observations
+remain scoped development evidence.
+
 Manual screen-reader/keyboard evaluation, WCAG 2.2 AA acceptance, the complete
 supported browser/platform matrix, security approval, five target-user studies,
 pilot metrics, packaging/release approval, and PRD-062 overall completion remain
 pending. See [accessibility requirements](accessibility/062-accessibility-requirements.md)
 and [the security record](SEC/062-sec-local-web-workspace.md).
+
+After the remaining roadmap work, a full documentation review must reconcile the
+integrated CLI/API, examples, architecture, schemas, dependency/provenance claims,
+platform support, verification instructions, requirements and acceptance status.

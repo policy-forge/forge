@@ -1,0 +1,5092 @@
+{
+  "schema_version": "forge.development-ui-verification/2",
+  "scope": "F05 applied pagination, persistent operation status/recovery and authored control borders; source VM and local installed Chrome",
+  "acceptance_eligible": false,
+  "observed_at": "2026-10-02T11:39:02.467566+00:00",
+  "baseline_head": "01251ab5963d00ca3d8dbfb4132d57cdbb8f2de8",
+  "source_pins": [
+    {
+      "path": "ui/workspace.js",
+      "sha256": "c61cb6a87ee9473e254e320402ac38c46f244af7797d004696b362755f753f9d",
+      "bytes": 62622
+    },
+    {
+      "path": "ui/workspace.css",
+      "sha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+      "bytes": 4759
+    },
+    {
+      "path": "ui/tests/workspace.cjs",
+      "sha256": "d510ebffb9c6861f28a352406f53bebe090cb073bad8f12ffaeac720a9e4fb81",
+      "bytes": 34340
+    },
+    {
+      "path": "ui/tests/workspace-navigation.cjs",
+      "sha256": "f32726533a0c037d53a1e807e785ef68ff35aa01fb6e4745c5f49daf54c14077",
+      "bytes": 79858
+    },
+    {
+      "path": "scripts/test_workspace_browser.py",
+      "sha256": "efce8ee8980be499d72be6edb38ab2fa9a8f51fe410c72068e7bae690859882b",
+      "bytes": 3989
+    },
+    {
+      "path": "docs/api/forge-workspace-v1.openapi.yaml",
+      "sha256": "ac8a2cf02a20c8428d1bca61fe17b93902b59e762cf02df26d42283766d585a5",
+      "bytes": 105794
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+      "bytes": 2344
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+      "bytes": 74338
+    }
+  ],
+  "source_test": {
+    "node_executable": "/Users/bluby/.hermes/node/bin/node",
+    "node_version": "v22.22.3",
+    "tests": {
+      "tests": 58,
+      "pass": 58,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "log": {
+      "path": "/private/tmp/forge-f05-live-state-node-applied.log",
+      "sha256": "46384b037a4f83a29296a9972c44a3f343062b4fd2621bbef959016a3f9db863",
+      "bytes": 14849
+    }
+  },
+  "coverage": {
+    "schema_version": "forge.f05-applied-source-coverage/1",
+    "source_path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.js",
+    "source_sha256": "c61cb6a87ee9473e254e320402ac38c46f244af7797d004696b362755f753f9d",
+    "harness_sha256": "f32726533a0c037d53a1e807e785ef68ff35aa01fb6e4745c5f49daf54c14077",
+    "node_version": "v22.22.3",
+    "tests": 58,
+    "passed": 58,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "function_entries_positive": 84,
+    "function_entries_total": 111,
+    "raw_ranges_positive": 335,
+    "raw_ranges_total": 440,
+    "changed_named": [
+      {
+        "name": "checkedPage",
+        "documented": true,
+        "executed": true,
+        "line": 87
+      },
+      {
+        "name": "pagedTable",
+        "documented": true,
+        "executed": true,
+        "line": 97
+      },
+      {
+        "name": "pageAction",
+        "documented": true,
+        "executed": true,
+        "line": 111
+      },
+      {
+        "name": "load",
+        "documented": true,
+        "executed": true,
+        "line": 122
+      },
+      {
+        "name": "current",
+        "documented": true,
+        "executed": true,
+        "line": 125
+      },
+      {
+        "name": "renderView",
+        "documented": true,
+        "executed": true,
+        "line": 169
+      },
+      {
+        "name": "navigate",
+        "documented": true,
+        "executed": true,
+        "line": 286
+      },
+      {
+        "name": "operationRegion",
+        "documented": true,
+        "executed": true,
+        "line": 341
+      },
+      {
+        "name": "pendingRequestRow",
+        "documented": true,
+        "executed": true,
+        "line": 348
+      },
+      {
+        "name": "requestAction",
+        "documented": true,
+        "executed": true,
+        "line": 355
+      },
+      {
+        "name": "pendingRequestFailure",
+        "documented": true,
+        "executed": true,
+        "line": 375
+      },
+      {
+        "name": "removePendingRequest",
+        "documented": true,
+        "executed": true,
+        "line": 384
+      },
+      {
+        "name": "operationRow",
+        "documented": true,
+        "executed": true,
+        "line": 391
+      },
+      {
+        "name": "operationAction",
+        "documented": true,
+        "executed": true,
+        "line": 400
+      },
+      {
+        "name": "operationCurrent",
+        "documented": true,
+        "executed": true,
+        "line": 433
+      },
+      {
+        "name": "refreshOperationActions",
+        "documented": true,
+        "executed": true,
+        "line": 438
+      },
+      {
+        "name": "operationUnknown",
+        "documented": true,
+        "executed": true,
+        "line": 449
+      },
+      {
+        "name": "operationPreviewFailure",
+        "documented": true,
+        "executed": true,
+        "line": 459
+      },
+      {
+        "name": "acceptOperation",
+        "documented": true,
+        "executed": true,
+        "line": 467
+      },
+      {
+        "name": "pollOperation",
+        "documented": true,
+        "executed": true,
+        "line": 490
+      },
+      {
+        "name": "effect",
+        "documented": true,
+        "executed": true,
+        "line": 518
+      },
+      {
+        "name": "send",
+        "documented": true,
+        "executed": true,
+        "line": 521
+      },
+      {
+        "name": "attempt",
+        "documented": true,
+        "executed": true,
+        "line": 552
+      },
+      {
+        "name": "preview",
+        "documented": true,
+        "executed": true,
+        "line": 569
+      }
+    ],
+    "functions": [
+      {
+        "name": "",
+        "startOffset": 0,
+        "endOffset": 62604,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 0,
+            "endOffset": 62604,
+            "count": 58
+          },
+          {
+            "startOffset": 17045,
+            "endOffset": 17260,
+            "count": 348
+          },
+          {
+            "startOffset": 17115,
+            "endOffset": 17159,
+            "count": 58
+          }
+        ]
+      },
+      {
+        "name": "element",
+        "startOffset": 110,
+        "endOffset": 145,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 110,
+            "endOffset": 145,
+            "count": 2352
+          }
+        ]
+      },
+      {
+        "name": "node",
+        "startOffset": 651,
+        "endOffset": 861,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 651,
+            "endOffset": 861,
+            "count": 7986
+          },
+          {
+            "startOffset": 761,
+            "endOffset": 795,
+            "count": 5529
+          },
+          {
+            "startOffset": 813,
+            "endOffset": 842,
+            "count": 96
+          }
+        ]
+      },
+      {
+        "name": "showError",
+        "startOffset": 863,
+        "endOffset": 1272,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 863,
+            "endOffset": 1272,
+            "count": 263
+          },
+          {
+            "startOffset": 964,
+            "endOffset": 979,
+            "count": 0
+          },
+          {
+            "startOffset": 1008,
+            "endOffset": 1015,
+            "count": 0
+          },
+          {
+            "startOffset": 1017,
+            "endOffset": 1103,
+            "count": 0
+          },
+          {
+            "startOffset": 1191,
+            "endOffset": 1232,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "api",
+        "startOffset": 1274,
+        "endOffset": 2511,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 1274,
+            "endOffset": 2511,
+            "count": 567
+          },
+          {
+            "startOffset": 1446,
+            "endOffset": 1507,
+            "count": 0
+          },
+          {
+            "startOffset": 1523,
+            "endOffset": 1601,
+            "count": 0
+          },
+          {
+            "startOffset": 1672,
+            "endOffset": 1722,
+            "count": 1
+          },
+          {
+            "startOffset": 1747,
+            "endOffset": 1792,
+            "count": 300
+          },
+          {
+            "startOffset": 1804,
+            "endOffset": 1837,
+            "count": 289
+          },
+          {
+            "startOffset": 1948,
+            "endOffset": 1959,
+            "count": 267
+          },
+          {
+            "startOffset": 1960,
+            "endOffset": 1988,
+            "count": 300
+          },
+          {
+            "startOffset": 1982,
+            "endOffset": 1987,
+            "count": 0
+          },
+          {
+            "startOffset": 2086,
+            "endOffset": 2193,
+            "count": 0
+          },
+          {
+            "startOffset": 2253,
+            "endOffset": 2493,
+            "count": 278
+          },
+          {
+            "startOffset": 2352,
+            "endOffset": 2378,
+            "count": 0
+          },
+          {
+            "startOffset": 2406,
+            "endOffset": 2453,
+            "count": 1
+          },
+          {
+            "startOffset": 2453,
+            "endOffset": 2456,
+            "count": 277
+          },
+          {
+            "startOffset": 2493,
+            "endOffset": 2510,
+            "count": 289
+          }
+        ]
+      },
+      {
+        "name": "headers.Accept",
+        "startOffset": 1464,
+        "endOffset": 1505,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 1464,
+            "endOffset": 1505,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "collection",
+        "startOffset": 2513,
+        "endOffset": 3186,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 2513,
+            "endOffset": 3186,
+            "count": 43
+          },
+          {
+            "startOffset": 2667,
+            "endOffset": 2672,
+            "count": 6
+          },
+          {
+            "startOffset": 2673,
+            "endOffset": 2678,
+            "count": 37
+          },
+          {
+            "startOffset": 2701,
+            "endOffset": 2742,
+            "count": 0
+          },
+          {
+            "startOffset": 2751,
+            "endOffset": 2878,
+            "count": 40
+          },
+          {
+            "startOffset": 2878,
+            "endOffset": 2930,
+            "count": 0
+          },
+          {
+            "startOffset": 2930,
+            "endOffset": 2962,
+            "count": 40
+          },
+          {
+            "startOffset": 2962,
+            "endOffset": 3053,
+            "count": 0
+          },
+          {
+            "startOffset": 3057,
+            "endOffset": 3105,
+            "count": 40
+          },
+          {
+            "startOffset": 3105,
+            "endOffset": 3167,
+            "count": 0
+          },
+          {
+            "startOffset": 3167,
+            "endOffset": 3185,
+            "count": 40
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 2896,
+        "endOffset": 2928,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 2896,
+            "endOffset": 2928,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "table",
+        "startOffset": 3188,
+        "endOffset": 3888,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 3188,
+            "endOffset": 3888,
+            "count": 51
+          },
+          {
+            "startOffset": 3550,
+            "endOffset": 3627,
+            "count": 174
+          },
+          {
+            "startOffset": 3708,
+            "endOffset": 3827,
+            "count": 640
+          },
+          {
+            "startOffset": 3765,
+            "endOffset": 3806,
+            "count": 1948
+          },
+          {
+            "startOffset": 3797,
+            "endOffset": 3803,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "checkedPage",
+        "startOffset": 3974,
+        "endOffset": 4627,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 3974,
+            "endOffset": 4627,
+            "count": 24
+          },
+          {
+            "startOffset": 4370,
+            "endOffset": 4476,
+            "count": 17
+          },
+          {
+            "startOffset": 4505,
+            "endOffset": 4526,
+            "count": 17
+          },
+          {
+            "startOffset": 4529,
+            "endOffset": 4610,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "pagedTable",
+        "startOffset": 4721,
+        "endOffset": 10562,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 4721,
+            "endOffset": 10562,
+            "count": 13
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 5471,
+        "endOffset": 5738,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 5471,
+            "endOffset": 5738,
+            "count": 13
+          },
+          {
+            "startOffset": 5680,
+            "endOffset": 5712,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 5580,
+        "endOffset": 5624,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 5580,
+            "endOffset": 5624,
+            "count": 91
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 5825,
+        "endOffset": 5863,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 5825,
+            "endOffset": 5863,
+            "count": 13
+          }
+        ]
+      },
+      {
+        "name": "pageAction",
+        "startOffset": 6096,
+        "endOffset": 6418,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 6096,
+            "endOffset": 6418,
+            "count": 65
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 6298,
+        "endOffset": 6392,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 6298,
+            "endOffset": 6392,
+            "count": 13
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 6467,
+        "endOffset": 6512,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 6467,
+            "endOffset": 6512,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 6578,
+        "endOffset": 6698,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 6578,
+            "endOffset": 6698,
+            "count": 5
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 6762,
+        "endOffset": 6839,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 6762,
+            "endOffset": 6839,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 6919,
+        "endOffset": 6967,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 6919,
+            "endOffset": 6967,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "load",
+        "startOffset": 7090,
+        "endOffset": 10168,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 7090,
+            "endOffset": 10168,
+            "count": 26
+          },
+          {
+            "startOffset": 7783,
+            "endOffset": 7816,
+            "count": 13
+          },
+          {
+            "startOffset": 7817,
+            "endOffset": 7821,
+            "count": 13
+          },
+          {
+            "startOffset": 7972,
+            "endOffset": 7994,
+            "count": 5
+          },
+          {
+            "startOffset": 8033,
+            "endOffset": 8081,
+            "count": 6
+          },
+          {
+            "startOffset": 8202,
+            "endOffset": 8302,
+            "count": 20
+          },
+          {
+            "startOffset": 8302,
+            "endOffset": 8812,
+            "count": 4
+          },
+          {
+            "startOffset": 8483,
+            "endOffset": 8534,
+            "count": 3
+          },
+          {
+            "startOffset": 8536,
+            "endOffset": 8760,
+            "count": 1
+          },
+          {
+            "startOffset": 8760,
+            "endOffset": 8812,
+            "count": 3
+          },
+          {
+            "startOffset": 8812,
+            "endOffset": 8835,
+            "count": 19
+          },
+          {
+            "startOffset": 8835,
+            "endOffset": 8842,
+            "count": 2
+          },
+          {
+            "startOffset": 8842,
+            "endOffset": 9014,
+            "count": 17
+          },
+          {
+            "startOffset": 9014,
+            "endOffset": 9051,
+            "count": 16
+          },
+          {
+            "startOffset": 9052,
+            "endOffset": 9094,
+            "count": 1
+          },
+          {
+            "startOffset": 9322,
+            "endOffset": 9344,
+            "count": 7
+          },
+          {
+            "startOffset": 9346,
+            "endOffset": 9362,
+            "count": 7
+          },
+          {
+            "startOffset": 9362,
+            "endOffset": 9433,
+            "count": 17
+          },
+          {
+            "startOffset": 9433,
+            "endOffset": 9989,
+            "count": 7
+          },
+          {
+            "startOffset": 9473,
+            "endOffset": 9480,
+            "count": 2
+          },
+          {
+            "startOffset": 9480,
+            "endOffset": 9552,
+            "count": 5
+          },
+          {
+            "startOffset": 9553,
+            "endOffset": 9584,
+            "count": 0
+          },
+          {
+            "startOffset": 9595,
+            "endOffset": 9668,
+            "count": 4
+          },
+          {
+            "startOffset": 9669,
+            "endOffset": 9701,
+            "count": 1
+          },
+          {
+            "startOffset": 9805,
+            "endOffset": 9838,
+            "count": 4
+          },
+          {
+            "startOffset": 9839,
+            "endOffset": 9843,
+            "count": 1
+          },
+          {
+            "startOffset": 9907,
+            "endOffset": 9913,
+            "count": 5
+          },
+          {
+            "startOffset": 9969,
+            "endOffset": 9983,
+            "count": 4
+          },
+          {
+            "startOffset": 9989,
+            "endOffset": 9990,
+            "count": 22
+          },
+          {
+            "startOffset": 10021,
+            "endOffset": 10158,
+            "count": 22
+          }
+        ]
+      },
+      {
+        "name": "current",
+        "startOffset": 7352,
+        "endOffset": 7452,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 7352,
+            "endOffset": 7452,
+            "count": 52
+          },
+          {
+            "startOffset": 7367,
+            "endOffset": 7387,
+            "count": 48
+          },
+          {
+            "startOffset": 7388,
+            "endOffset": 7414,
+            "count": 44
+          },
+          {
+            "startOffset": 7415,
+            "endOffset": 7452,
+            "count": 44
+          },
+          {
+            "startOffset": 7429,
+            "endOffset": 7451,
+            "count": 22
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 7592,
+        "endOffset": 7648,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 7592,
+            "endOffset": 7648,
+            "count": 130
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 10097,
+        "endOffset": 10154,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 10097,
+            "endOffset": 10154,
+            "count": 110
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 10203,
+        "endOffset": 10234,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 10203,
+            "endOffset": 10234,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 10299,
+        "endOffset": 10399,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 10299,
+            "endOffset": 10399,
+            "count": 4
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 10352,
+        "endOffset": 10390,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 10352,
+            "endOffset": 10390,
+            "count": 4
+          }
+        ]
+      },
+      {
+        "name": "renderView",
+        "startOffset": 10658,
+        "endOffset": 15929,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 10658,
+            "endOffset": 15929,
+            "count": 65
+          },
+          {
+            "startOffset": 10703,
+            "endOffset": 10716,
+            "count": 0
+          },
+          {
+            "startOffset": 11025,
+            "endOffset": 12535,
+            "count": 15
+          },
+          {
+            "startOffset": 11079,
+            "endOffset": 11643,
+            "count": 14
+          },
+          {
+            "startOffset": 11643,
+            "endOffset": 11851,
+            "count": 56
+          },
+          {
+            "startOffset": 11851,
+            "endOffset": 12051,
+            "count": 14
+          },
+          {
+            "startOffset": 12039,
+            "endOffset": 12050,
+            "count": 0
+          },
+          {
+            "startOffset": 12052,
+            "endOffset": 12067,
+            "count": 0
+          },
+          {
+            "startOffset": 12118,
+            "endOffset": 12252,
+            "count": 0
+          },
+          {
+            "startOffset": 12252,
+            "endOffset": 12535,
+            "count": 14
+          },
+          {
+            "startOffset": 12535,
+            "endOffset": 15188,
+            "count": 50
+          },
+          {
+            "startOffset": 12584,
+            "endOffset": 13456,
+            "count": 30
+          },
+          {
+            "startOffset": 12863,
+            "endOffset": 13033,
+            "count": 0
+          },
+          {
+            "startOffset": 13071,
+            "endOffset": 13198,
+            "count": 28
+          },
+          {
+            "startOffset": 13199,
+            "endOffset": 13290,
+            "count": 2
+          },
+          {
+            "startOffset": 13456,
+            "endOffset": 15188,
+            "count": 20
+          },
+          {
+            "startOffset": 13497,
+            "endOffset": 13881,
+            "count": 13
+          },
+          {
+            "startOffset": 13881,
+            "endOffset": 15188,
+            "count": 7
+          },
+          {
+            "startOffset": 13925,
+            "endOffset": 14458,
+            "count": 0
+          },
+          {
+            "startOffset": 14495,
+            "endOffset": 14820,
+            "count": 0
+          },
+          {
+            "startOffset": 14883,
+            "endOffset": 15037,
+            "count": 6
+          },
+          {
+            "startOffset": 15037,
+            "endOffset": 15130,
+            "count": 4
+          },
+          {
+            "startOffset": 15130,
+            "endOffset": 15152,
+            "count": 6
+          },
+          {
+            "startOffset": 15152,
+            "endOffset": 15182,
+            "count": 3
+          },
+          {
+            "startOffset": 15188,
+            "endOffset": 15218,
+            "count": 63
+          },
+          {
+            "startOffset": 15218,
+            "endOffset": 15228,
+            "count": 60
+          },
+          {
+            "startOffset": 15230,
+            "endOffset": 15243,
+            "count": 3
+          },
+          {
+            "startOffset": 15243,
+            "endOffset": 15428,
+            "count": 60
+          },
+          {
+            "startOffset": 15428,
+            "endOffset": 15436,
+            "count": 11
+          },
+          {
+            "startOffset": 15438,
+            "endOffset": 15460,
+            "count": 10
+          },
+          {
+            "startOffset": 15460,
+            "endOffset": 15507,
+            "count": 60
+          },
+          {
+            "startOffset": 15507,
+            "endOffset": 15541,
+            "count": 1
+          },
+          {
+            "startOffset": 15542,
+            "endOffset": 15567,
+            "count": 59
+          },
+          {
+            "startOffset": 15596,
+            "endOffset": 15787,
+            "count": 2
+          },
+          {
+            "startOffset": 15787,
+            "endOffset": 15790,
+            "count": 0
+          },
+          {
+            "startOffset": 15825,
+            "endOffset": 15836,
+            "count": 62
+          },
+          {
+            "startOffset": 15838,
+            "endOffset": 15925,
+            "count": 62
+          },
+          {
+            "startOffset": 15914,
+            "endOffset": 15921,
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 11674,
+        "endOffset": 11738,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 11674,
+            "endOffset": 11738,
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 12669,
+        "endOffset": 12819,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 12669,
+            "endOffset": 12819,
+            "count": 28
+          },
+          {
+            "startOffset": 12704,
+            "endOffset": 12757,
+            "count": 0
+          },
+          {
+            "startOffset": 12779,
+            "endOffset": 12818,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 12994,
+        "endOffset": 13030,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 12994,
+            "endOffset": 13030,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 13340,
+        "endOffset": 13400,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 13340,
+            "endOffset": 13400,
+            "count": 28
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 15085,
+        "endOffset": 15127,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 15085,
+            "endOffset": 15127,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 15981,
+        "endOffset": 17013,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 15981,
+            "endOffset": 17013,
+            "count": 1
+          },
+          {
+            "startOffset": 16225,
+            "endOffset": 16267,
+            "count": 0
+          },
+          {
+            "startOffset": 16450,
+            "endOffset": 16536,
+            "count": 0
+          },
+          {
+            "startOffset": 16827,
+            "endOffset": 16844,
+            "count": 0
+          },
+          {
+            "startOffset": 16874,
+            "endOffset": 16898,
+            "count": 0
+          },
+          {
+            "startOffset": 16903,
+            "endOffset": 16972,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 17195,
+        "endOffset": 17216,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 17195,
+            "endOffset": 17216,
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 17306,
+        "endOffset": 17344,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 17306,
+            "endOffset": 17344,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 17389,
+        "endOffset": 17429,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 17389,
+            "endOffset": 17429,
+            "count": 5
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 17482,
+        "endOffset": 17518,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 17482,
+            "endOffset": 17518,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 17571,
+        "endOffset": 18568,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 17571,
+            "endOffset": 18568,
+            "count": 5
+          },
+          {
+            "startOffset": 17727,
+            "endOffset": 17979,
+            "count": 2
+          },
+          {
+            "startOffset": 18024,
+            "endOffset": 18222,
+            "count": 1
+          },
+          {
+            "startOffset": 18499,
+            "endOffset": 18566,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "allowViewChange",
+        "startOffset": 18661,
+        "endOffset": 18740,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 18661,
+            "endOffset": 18740,
+            "count": 79
+          },
+          {
+            "startOffset": 18712,
+            "endOffset": 18737,
+            "count": 6
+          }
+        ]
+      },
+      {
+        "name": "focusViewTitle",
+        "startOffset": 18831,
+        "endOffset": 18945,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 18831,
+            "endOffset": 18945,
+            "count": 61
+          }
+        ]
+      },
+      {
+        "name": "navigate",
+        "startOffset": 19038,
+        "endOffset": 19586,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 19038,
+            "endOffset": 19586,
+            "count": 63
+          },
+          {
+            "startOffset": 19139,
+            "endOffset": 19152,
+            "count": 0
+          },
+          {
+            "startOffset": 19269,
+            "endOffset": 19405,
+            "count": 378
+          },
+          {
+            "startOffset": 19310,
+            "endOffset": 19355,
+            "count": 63
+          },
+          {
+            "startOffset": 19355,
+            "endOffset": 19401,
+            "count": 315
+          },
+          {
+            "startOffset": 19432,
+            "endOffset": 19584,
+            "count": 59
+          },
+          {
+            "startOffset": 19467,
+            "endOffset": 19522,
+            "count": 1
+          },
+          {
+            "startOffset": 19541,
+            "endOffset": 19557,
+            "count": 1
+          },
+          {
+            "startOffset": 19557,
+            "endOffset": 19580,
+            "count": 58
+          }
+        ]
+      },
+      {
+        "name": "confirmDiscard",
+        "startOffset": 19675,
+        "endOffset": 20503,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 19675,
+            "endOffset": 20503,
+            "count": 9
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 20085,
+        "endOffset": 20499,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 20085,
+            "endOffset": 20499,
+            "count": 9
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 20156,
+        "endOffset": 20174,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 20156,
+            "endOffset": 20174,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 20199,
+        "endOffset": 20235,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 20199,
+            "endOffset": 20235,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "dialog.addEventListener.once",
+        "startOffset": 20275,
+        "endOffset": 20417,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 20275,
+            "endOffset": 20417,
+            "count": 9
+          },
+          {
+            "startOffset": 20324,
+            "endOffset": 20347,
+            "count": 6
+          },
+          {
+            "startOffset": 20348,
+            "endOffset": 20368,
+            "count": 5
+          },
+          {
+            "startOffset": 20369,
+            "endOffset": 20385,
+            "count": 4
+          }
+        ]
+      },
+      {
+        "name": "button",
+        "startOffset": 20594,
+        "endOffset": 20997,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 20594,
+            "endOffset": 20997,
+            "count": 515
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 20729,
+        "endOffset": 20975,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 20729,
+            "endOffset": 20975,
+            "count": 302
+          },
+          {
+            "startOffset": 20834,
+            "endOffset": 20847,
+            "count": 301
+          },
+          {
+            "startOffset": 20847,
+            "endOffset": 20879,
+            "count": 1
+          },
+          {
+            "startOffset": 20931,
+            "endOffset": 20953,
+            "count": 3
+          },
+          {
+            "startOffset": 20954,
+            "endOffset": 20970,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "fieldInput",
+        "startOffset": 20998,
+        "endOffset": 21618,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 20998,
+            "endOffset": 21618,
+            "count": 307
+          },
+          {
+            "startOffset": 21203,
+            "endOffset": 21213,
+            "count": 140
+          },
+          {
+            "startOffset": 21214,
+            "endOffset": 21258,
+            "count": 167
+          },
+          {
+            "startOffset": 21236,
+            "endOffset": 21248,
+            "count": 0
+          },
+          {
+            "startOffset": 21325,
+            "endOffset": 21347,
+            "count": 167
+          },
+          {
+            "startOffset": 21349,
+            "endOffset": 21367,
+            "count": 167
+          },
+          {
+            "startOffset": 21395,
+            "endOffset": 21439,
+            "count": 0
+          },
+          {
+            "startOffset": 21455,
+            "endOffset": 21572,
+            "count": 140
+          },
+          {
+            "startOffset": 21492,
+            "endOffset": 21572,
+            "count": 673
+          }
+        ]
+      },
+      {
+        "name": "field",
+        "startOffset": 21619,
+        "endOffset": 21804,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 21619,
+            "endOffset": 21804,
+            "count": 294
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 21763,
+        "endOffset": 21784,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 21763,
+            "endOffset": 21784,
+            "count": 10
+          }
+        ]
+      },
+      {
+        "name": "operationRegion",
+        "startOffset": 21891,
+        "endOffset": 22150,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 21891,
+            "endOffset": 22150,
+            "count": 310
+          },
+          {
+            "startOffset": 21979,
+            "endOffset": 22131,
+            "count": 30
+          }
+        ]
+      },
+      {
+        "name": "pendingRequestRow",
+        "startOffset": 22242,
+        "endOffset": 24739,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 22242,
+            "endOffset": 24739,
+            "count": 286
+          },
+          {
+            "startOffset": 22320,
+            "endOffset": 22440,
+            "count": 1
+          },
+          {
+            "startOffset": 22440,
+            "endOffset": 24738,
+            "count": 285
+          }
+        ]
+      },
+      {
+        "name": "requestAction",
+        "startOffset": 23181,
+        "endOffset": 23962,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 23181,
+            "endOffset": 23962,
+            "count": 570
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 23356,
+        "endOffset": 23940,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 23356,
+            "endOffset": 23940,
+            "count": 5
+          },
+          {
+            "startOffset": 23485,
+            "endOffset": 23492,
+            "count": 0
+          },
+          {
+            "startOffset": 23645,
+            "endOffset": 23747,
+            "count": 0
+          },
+          {
+            "startOffset": 23795,
+            "endOffset": 23826,
+            "count": 4
+          },
+          {
+            "startOffset": 23828,
+            "endOffset": 23932,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 24080,
+        "endOffset": 24535,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 24080,
+            "endOffset": 24535,
+            "count": 1
+          },
+          {
+            "startOffset": 24145,
+            "endOffset": 24152,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 24239,
+        "endOffset": 24350,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 24239,
+            "endOffset": 24350,
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "pendingRequestFailure",
+        "startOffset": 24834,
+        "endOffset": 25563,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 24834,
+            "endOffset": 25563,
+            "count": 261
+          },
+          {
+            "startOffset": 25004,
+            "endOffset": 25042,
+            "count": 0
+          },
+          {
+            "startOffset": 25084,
+            "endOffset": 25184,
+            "count": 0
+          },
+          {
+            "startOffset": 25228,
+            "endOffset": 25323,
+            "count": 1
+          },
+          {
+            "startOffset": 25324,
+            "endOffset": 25448,
+            "count": 260
+          }
+        ]
+      },
+      {
+        "name": "removePendingRequest",
+        "startOffset": 25658,
+        "endOffset": 25914,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 25658,
+            "endOffset": 25914,
+            "count": 25
+          },
+          {
+            "startOffset": 25789,
+            "endOffset": 25816,
+            "count": 1
+          },
+          {
+            "startOffset": 25892,
+            "endOffset": 25912,
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "operationRow",
+        "startOffset": 26002,
+        "endOffset": 29457,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 26002,
+            "endOffset": 29457,
+            "count": 25
+          },
+          {
+            "startOffset": 26073,
+            "endOffset": 26102,
+            "count": 0
+          },
+          {
+            "startOffset": 26136,
+            "endOffset": 26230,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "operationAction",
+        "startOffset": 27081,
+        "endOffset": 27392,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 27081,
+            "endOffset": 27392,
+            "count": 75
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 27256,
+        "endOffset": 27366,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 27256,
+            "endOffset": 27366,
+            "count": 17
+          },
+          {
+            "startOffset": 27296,
+            "endOffset": 27347,
+            "count": 14
+          },
+          {
+            "startOffset": 27349,
+            "endOffset": 27364,
+            "count": 13
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 27453,
+        "endOffset": 28166,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 27453,
+            "endOffset": 28166,
+            "count": 5
+          },
+          {
+            "startOffset": 27739,
+            "endOffset": 27774,
+            "count": 3
+          },
+          {
+            "startOffset": 27774,
+            "endOffset": 27781,
+            "count": 0
+          },
+          {
+            "startOffset": 27781,
+            "endOffset": 27825,
+            "count": 3
+          },
+          {
+            "startOffset": 27825,
+            "endOffset": 27908,
+            "count": 0
+          },
+          {
+            "startOffset": 27908,
+            "endOffset": 27978,
+            "count": 3
+          },
+          {
+            "startOffset": 27978,
+            "endOffset": 28056,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 28225,
+        "endOffset": 28290,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 28225,
+            "endOffset": 28290,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 28374,
+        "endOffset": 29262,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 28374,
+            "endOffset": 29262,
+            "count": 6
+          },
+          {
+            "startOffset": 28487,
+            "endOffset": 28494,
+            "count": 0
+          },
+          {
+            "startOffset": 28597,
+            "endOffset": 28604,
+            "count": 0
+          },
+          {
+            "startOffset": 28723,
+            "endOffset": 28747,
+            "count": 0
+          },
+          {
+            "startOffset": 28769,
+            "endOffset": 28773,
+            "count": 0
+          },
+          {
+            "startOffset": 28887,
+            "endOffset": 28929,
+            "count": 4
+          },
+          {
+            "startOffset": 28931,
+            "endOffset": 29070,
+            "count": 4
+          },
+          {
+            "startOffset": 29077,
+            "endOffset": 29162,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 28787,
+        "endOffset": 28885,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 28787,
+            "endOffset": 28885,
+            "count": 4
+          }
+        ]
+      },
+      {
+        "name": "operationCurrent",
+        "startOffset": 29545,
+        "endOffset": 29662,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 29545,
+            "endOffset": 29662,
+            "count": 615
+          },
+          {
+            "startOffset": 29596,
+            "endOffset": 29622,
+            "count": 608
+          },
+          {
+            "startOffset": 29623,
+            "endOffset": 29659,
+            "count": 608
+          }
+        ]
+      },
+      {
+        "name": "refreshOperationActions",
+        "startOffset": 29754,
+        "endOffset": 30363,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 29754,
+            "endOffset": 30363,
+            "count": 251
+          },
+          {
+            "startOffset": 29829,
+            "endOffset": 29843,
+            "count": 193
+          },
+          {
+            "startOffset": 29844,
+            "endOffset": 29866,
+            "count": 181
+          },
+          {
+            "startOffset": 29867,
+            "endOffset": 29893,
+            "count": 174
+          },
+          {
+            "startOffset": 29894,
+            "endOffset": 29904,
+            "count": 169
+          },
+          {
+            "startOffset": 30006,
+            "endOffset": 30046,
+            "count": 58
+          },
+          {
+            "startOffset": 30109,
+            "endOffset": 30124,
+            "count": 66
+          },
+          {
+            "startOffset": 30125,
+            "endOffset": 30135,
+            "count": 27
+          },
+          {
+            "startOffset": 30173,
+            "endOffset": 30212,
+            "count": 239
+          },
+          {
+            "startOffset": 30331,
+            "endOffset": 30347,
+            "count": 66
+          },
+          {
+            "startOffset": 30348,
+            "endOffset": 30358,
+            "count": 58
+          }
+        ]
+      },
+      {
+        "name": "operationUnknown",
+        "startOffset": 30462,
+        "endOffset": 30887,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 30462,
+            "endOffset": 30887,
+            "count": 7
+          },
+          {
+            "startOffset": 30573,
+            "endOffset": 30613,
+            "count": 0
+          },
+          {
+            "startOffset": 30662,
+            "endOffset": 30853,
+            "count": 5
+          },
+          {
+            "startOffset": 30740,
+            "endOffset": 30772,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "operationPreviewFailure",
+        "startOffset": 30973,
+        "endOffset": 31342,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 30973,
+            "endOffset": 31342,
+            "count": 4
+          },
+          {
+            "startOffset": 31240,
+            "endOffset": 31281,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "acceptOperation",
+        "startOffset": 31436,
+        "endOffset": 33764,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 31436,
+            "endOffset": 33764,
+            "count": 175
+          },
+          {
+            "startOffset": 31690,
+            "endOffset": 31706,
+            "count": 174
+          },
+          {
+            "startOffset": 31707,
+            "endOffset": 31737,
+            "count": 174
+          },
+          {
+            "startOffset": 31738,
+            "endOffset": 31828,
+            "count": 174
+          },
+          {
+            "startOffset": 31829,
+            "endOffset": 31875,
+            "count": 173
+          },
+          {
+            "startOffset": 31876,
+            "endOffset": 31931,
+            "count": 173
+          },
+          {
+            "startOffset": 31932,
+            "endOffset": 31981,
+            "count": 173
+          },
+          {
+            "startOffset": 31983,
+            "endOffset": 32095,
+            "count": 2
+          },
+          {
+            "startOffset": 32095,
+            "endOffset": 32116,
+            "count": 173
+          },
+          {
+            "startOffset": 32116,
+            "endOffset": 32123,
+            "count": 0
+          },
+          {
+            "startOffset": 32123,
+            "endOffset": 32206,
+            "count": 173
+          },
+          {
+            "startOffset": 32206,
+            "endOffset": 32232,
+            "count": 6
+          },
+          {
+            "startOffset": 32234,
+            "endOffset": 32775,
+            "count": 5
+          },
+          {
+            "startOffset": 32336,
+            "endOffset": 32388,
+            "count": 4
+          },
+          {
+            "startOffset": 32389,
+            "endOffset": 32422,
+            "count": 4
+          },
+          {
+            "startOffset": 32424,
+            "endOffset": 32530,
+            "count": 1
+          },
+          {
+            "startOffset": 32530,
+            "endOffset": 32606,
+            "count": 4
+          },
+          {
+            "startOffset": 32606,
+            "endOffset": 32683,
+            "count": 1
+          },
+          {
+            "startOffset": 32684,
+            "endOffset": 32770,
+            "count": 3
+          },
+          {
+            "startOffset": 32775,
+            "endOffset": 32810,
+            "count": 172
+          },
+          {
+            "startOffset": 32810,
+            "endOffset": 32893,
+            "count": 8
+          },
+          {
+            "startOffset": 32849,
+            "endOffset": 32892,
+            "count": 0
+          },
+          {
+            "startOffset": 32895,
+            "endOffset": 33019,
+            "count": 0
+          },
+          {
+            "startOffset": 33019,
+            "endOffset": 33241,
+            "count": 172
+          },
+          {
+            "startOffset": 33241,
+            "endOffset": 33327,
+            "count": 8
+          },
+          {
+            "startOffset": 33328,
+            "endOffset": 33659,
+            "count": 164
+          },
+          {
+            "startOffset": 33359,
+            "endOffset": 33441,
+            "count": 2
+          },
+          {
+            "startOffset": 33403,
+            "endOffset": 33439,
+            "count": 0
+          },
+          {
+            "startOffset": 33442,
+            "endOffset": 33659,
+            "count": 162
+          },
+          {
+            "startOffset": 33476,
+            "endOffset": 33532,
+            "count": 11
+          },
+          {
+            "startOffset": 33533,
+            "endOffset": 33659,
+            "count": 151
+          },
+          {
+            "startOffset": 33588,
+            "endOffset": 33641,
+            "count": 4
+          },
+          {
+            "startOffset": 33642,
+            "endOffset": 33646,
+            "count": 147
+          },
+          {
+            "startOffset": 33700,
+            "endOffset": 33730,
+            "count": 51
+          },
+          {
+            "startOffset": 33730,
+            "endOffset": 33763,
+            "count": 172
+          }
+        ]
+      },
+      {
+        "name": "pollOperation",
+        "startOffset": 33864,
+        "endOffset": 35512,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 33864,
+            "endOffset": 35512,
+            "count": 24
+          },
+          {
+            "startOffset": 33987,
+            "endOffset": 33994,
+            "count": 0
+          },
+          {
+            "startOffset": 34097,
+            "endOffset": 34121,
+            "count": 169
+          },
+          {
+            "startOffset": 34122,
+            "endOffset": 34138,
+            "count": 169
+          },
+          {
+            "startOffset": 34152,
+            "endOffset": 34688,
+            "count": 151
+          },
+          {
+            "startOffset": 34182,
+            "endOffset": 34197,
+            "count": 2
+          },
+          {
+            "startOffset": 34199,
+            "endOffset": 34254,
+            "count": 149
+          },
+          {
+            "startOffset": 34289,
+            "endOffset": 34296,
+            "count": 0
+          },
+          {
+            "startOffset": 34430,
+            "endOffset": 34439,
+            "count": 149
+          },
+          {
+            "startOffset": 34439,
+            "endOffset": 34554,
+            "count": 2
+          },
+          {
+            "startOffset": 34485,
+            "endOffset": 34492,
+            "count": 0
+          },
+          {
+            "startOffset": 34528,
+            "endOffset": 34554,
+            "count": 1
+          },
+          {
+            "startOffset": 34554,
+            "endOffset": 34589,
+            "count": 149
+          },
+          {
+            "startOffset": 34589,
+            "endOffset": 34596,
+            "count": 1
+          },
+          {
+            "startOffset": 34596,
+            "endOffset": 34638,
+            "count": 148
+          },
+          {
+            "startOffset": 34638,
+            "endOffset": 34647,
+            "count": 1
+          },
+          {
+            "startOffset": 34647,
+            "endOffset": 34688,
+            "count": 147
+          },
+          {
+            "startOffset": 34688,
+            "endOffset": 34719,
+            "count": 146
+          },
+          {
+            "startOffset": 34719,
+            "endOffset": 34735,
+            "count": 19
+          },
+          {
+            "startOffset": 34737,
+            "endOffset": 34851,
+            "count": 1
+          },
+          {
+            "startOffset": 34851,
+            "endOffset": 34916,
+            "count": 19
+          },
+          {
+            "startOffset": 34917,
+            "endOffset": 34942,
+            "count": 7
+          },
+          {
+            "startOffset": 34943,
+            "endOffset": 34985,
+            "count": 4
+          },
+          {
+            "startOffset": 34987,
+            "endOffset": 35218,
+            "count": 4
+          },
+          {
+            "startOffset": 35033,
+            "endOffset": 35066,
+            "count": 0
+          },
+          {
+            "startOffset": 35092,
+            "endOffset": 35100,
+            "count": 0
+          },
+          {
+            "startOffset": 35212,
+            "endOffset": 35218,
+            "count": 3
+          },
+          {
+            "startOffset": 35223,
+            "endOffset": 35418,
+            "count": 5
+          },
+          {
+            "startOffset": 35316,
+            "endOffset": 35331,
+            "count": 1
+          },
+          {
+            "startOffset": 35333,
+            "endOffset": 35371,
+            "count": 1
+          },
+          {
+            "startOffset": 35371,
+            "endOffset": 35408,
+            "count": 4
+          },
+          {
+            "startOffset": 35418,
+            "endOffset": 35421,
+            "count": 23
+          },
+          {
+            "startOffset": 35479,
+            "endOffset": 35508,
+            "count": 22
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 34217,
+        "endOffset": 34252,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 34217,
+            "endOffset": 34252,
+            "count": 149
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 35114,
+        "endOffset": 35210,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 35114,
+            "endOffset": 35210,
+            "count": 3
+          },
+          {
+            "startOffset": 35142,
+            "endOffset": 35167,
+            "count": 2
+          },
+          {
+            "startOffset": 35168,
+            "endOffset": 35210,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "effect",
+        "startOffset": 35609,
+        "endOffset": 38666,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 35609,
+            "endOffset": 38666,
+            "count": 286
+          },
+          {
+            "startOffset": 38584,
+            "endOffset": 38645,
+            "count": 1
+          },
+          {
+            "startOffset": 38645,
+            "endOffset": 38665,
+            "count": 285
+          }
+        ]
+      },
+      {
+        "name": "send",
+        "startOffset": 35871,
+        "endOffset": 37944,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 35871,
+            "endOffset": 37944,
+            "count": 289
+          },
+          {
+            "startOffset": 35902,
+            "endOffset": 35909,
+            "count": 0
+          },
+          {
+            "startOffset": 35923,
+            "endOffset": 35966,
+            "count": 0
+          },
+          {
+            "startOffset": 36023,
+            "endOffset": 36041,
+            "count": 29
+          },
+          {
+            "startOffset": 36041,
+            "endOffset": 36048,
+            "count": 1
+          },
+          {
+            "startOffset": 36048,
+            "endOffset": 36076,
+            "count": 28
+          },
+          {
+            "startOffset": 36091,
+            "endOffset": 36120,
+            "count": 2
+          },
+          {
+            "startOffset": 36122,
+            "endOffset": 37201,
+            "count": 26
+          },
+          {
+            "startOffset": 36226,
+            "endOffset": 36430,
+            "count": 1
+          },
+          {
+            "startOffset": 36430,
+            "endOffset": 36611,
+            "count": 25
+          },
+          {
+            "startOffset": 36611,
+            "endOffset": 36636,
+            "count": 22
+          },
+          {
+            "startOffset": 36636,
+            "endOffset": 36961,
+            "count": 3
+          },
+          {
+            "startOffset": 36686,
+            "endOffset": 36707,
+            "count": 1
+          },
+          {
+            "startOffset": 36708,
+            "endOffset": 36750,
+            "count": 1
+          },
+          {
+            "startOffset": 36752,
+            "endOffset": 36961,
+            "count": 1
+          },
+          {
+            "startOffset": 36790,
+            "endOffset": 36823,
+            "count": 0
+          },
+          {
+            "startOffset": 36845,
+            "endOffset": 36853,
+            "count": 0
+          },
+          {
+            "startOffset": 36970,
+            "endOffset": 37181,
+            "count": 1
+          },
+          {
+            "startOffset": 37126,
+            "endOffset": 37163,
+            "count": 0
+          },
+          {
+            "startOffset": 37181,
+            "endOffset": 37201,
+            "count": 25
+          },
+          {
+            "startOffset": 37201,
+            "endOffset": 37240,
+            "count": 2
+          },
+          {
+            "startOffset": 37240,
+            "endOffset": 37263,
+            "count": 0
+          },
+          {
+            "startOffset": 37291,
+            "endOffset": 37303,
+            "count": 2
+          },
+          {
+            "startOffset": 37305,
+            "endOffset": 37371,
+            "count": 0
+          },
+          {
+            "startOffset": 37371,
+            "endOffset": 37691,
+            "count": 2
+          },
+          {
+            "startOffset": 37691,
+            "endOffset": 37721,
+            "count": 1
+          },
+          {
+            "startOffset": 37723,
+            "endOffset": 37747,
+            "count": 1
+          },
+          {
+            "startOffset": 37747,
+            "endOffset": 37909,
+            "count": 2
+          },
+          {
+            "startOffset": 37909,
+            "endOffset": 37940,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 36867,
+        "endOffset": 36959,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 36867,
+            "endOffset": 36959,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 37811,
+        "endOffset": 37890,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 37811,
+            "endOffset": 37890,
+            "count": 2
+          },
+          {
+            "startOffset": 37848,
+            "endOffset": 37890,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "attempt",
+        "startOffset": 38061,
+        "endOffset": 38522,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 38061,
+            "endOffset": 38522,
+            "count": 290
+          },
+          {
+            "startOffset": 38091,
+            "endOffset": 38101,
+            "count": 289
+          },
+          {
+            "startOffset": 38103,
+            "endOffset": 38110,
+            "count": 1
+          },
+          {
+            "startOffset": 38110,
+            "endOffset": 38154,
+            "count": 289
+          },
+          {
+            "startOffset": 38154,
+            "endOffset": 38157,
+            "count": 28
+          },
+          {
+            "startOffset": 38157,
+            "endOffset": 38489,
+            "count": 261
+          },
+          {
+            "startOffset": 38194,
+            "endOffset": 38201,
+            "count": 0
+          },
+          {
+            "startOffset": 38279,
+            "endOffset": 38296,
+            "count": 259
+          },
+          {
+            "startOffset": 38298,
+            "endOffset": 38483,
+            "count": 259
+          },
+          {
+            "startOffset": 38408,
+            "endOffset": 38475,
+            "count": 258
+          },
+          {
+            "startOffset": 38489,
+            "endOffset": 38518,
+            "count": 289
+          }
+        ]
+      },
+      {
+        "name": "preview",
+        "startOffset": 38762,
+        "endOffset": 41800,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 38762,
+            "endOffset": 41800,
+            "count": 14
+          },
+          {
+            "startOffset": 38869,
+            "endOffset": 38935,
+            "count": 0
+          },
+          {
+            "startOffset": 39028,
+            "endOffset": 39049,
+            "count": 10
+          },
+          {
+            "startOffset": 39049,
+            "endOffset": 39062,
+            "count": 3
+          },
+          {
+            "startOffset": 39062,
+            "endOffset": 39189,
+            "count": 7
+          },
+          {
+            "startOffset": 39189,
+            "endOffset": 39197,
+            "count": 0
+          },
+          {
+            "startOffset": 39545,
+            "endOffset": 39558,
+            "count": 7
+          },
+          {
+            "startOffset": 39873,
+            "endOffset": 39986,
+            "count": 0
+          },
+          {
+            "startOffset": 39986,
+            "endOffset": 41799,
+            "count": 7
+          }
+        ]
+      },
+      {
+        "name": "isCurrent",
+        "startOffset": 38824,
+        "endOffset": 38838,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 38824,
+            "endOffset": 38838,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 40062,
+        "endOffset": 40082,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 40062,
+            "endOffset": 40082,
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 40120,
+        "endOffset": 41685,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 40120,
+            "endOffset": 41685,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "resourceActions",
+        "startOffset": 41801,
+        "endOffset": 44864,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 41801,
+            "endOffset": 44864,
+            "count": 34
+          },
+          {
+            "startOffset": 42164,
+            "endOffset": 42234,
+            "count": 0
+          },
+          {
+            "startOffset": 44121,
+            "endOffset": 44638,
+            "count": 28
+          },
+          {
+            "startOffset": 44638,
+            "endOffset": 44735,
+            "count": 6
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 41970,
+        "endOffset": 42145,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 41970,
+            "endOffset": 42145,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 42409,
+        "endOffset": 42449,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 42409,
+            "endOffset": 42449,
+            "count": 238
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 42774,
+        "endOffset": 42916,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 42774,
+            "endOffset": 42916,
+            "count": 2
+          },
+          {
+            "startOffset": 42817,
+            "endOffset": 42824,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 42957,
+        "endOffset": 42986,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 42957,
+            "endOffset": 42986,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 43298,
+        "endOffset": 43759,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 43298,
+            "endOffset": 43759,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 43901,
+        "endOffset": 43930,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 43901,
+            "endOffset": 43930,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 44069,
+        "endOffset": 44096,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 44069,
+            "endOffset": 44096,
+            "count": 28
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 44190,
+        "endOffset": 44214,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 44190,
+            "endOffset": 44214,
+            "count": 28
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 44474,
+        "endOffset": 44634,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 44474,
+            "endOffset": 44634,
+            "count": 284
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 44775,
+        "endOffset": 44804,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 44775,
+            "endOffset": 44804,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "draftEditor",
+        "startOffset": 44865,
+        "endOffset": 46593,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 44865,
+            "endOffset": 46593,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "applicabilityDecisionForm",
+        "startOffset": 46594,
+        "endOffset": 48673,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 46594,
+            "endOffset": 48673,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "mappingDecisionForm",
+        "startOffset": 48675,
+        "endOffset": 50903,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 48675,
+            "endOffset": 50903,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "mappingCreationForm",
+        "startOffset": 50905,
+        "endOffset": 52994,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 50905,
+            "endOffset": 52994,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "relativeProjectReference",
+        "startOffset": 52995,
+        "endOffset": 53328,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 52995,
+            "endOffset": 53328,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "applicabilityMappingForm",
+        "startOffset": 53329,
+        "endOffset": 54709,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 53329,
+            "endOffset": 54709,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "evidenceList",
+        "startOffset": 54711,
+        "endOffset": 55042,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 54711,
+            "endOffset": 55042,
+            "count": 51
+          },
+          {
+            "startOffset": 54837,
+            "endOffset": 55025,
+            "count": 644
+          },
+          {
+            "startOffset": 54895,
+            "endOffset": 54916,
+            "count": 32
+          },
+          {
+            "startOffset": 54916,
+            "endOffset": 54919,
+            "count": 612
+          },
+          {
+            "startOffset": 54921,
+            "endOffset": 55025,
+            "count": 32
+          },
+          {
+            "startOffset": 54976,
+            "endOffset": 54993,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 54996,
+        "endOffset": 55022,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 54996,
+            "endOffset": 55022,
+            "count": 4
+          }
+        ]
+      },
+      {
+        "name": "showProvenance",
+        "startOffset": 55133,
+        "endOffset": 57295,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 55133,
+            "endOffset": 57295,
+            "count": 9
+          },
+          {
+            "startOffset": 55205,
+            "endOffset": 55218,
+            "count": 3
+          },
+          {
+            "startOffset": 55218,
+            "endOffset": 55490,
+            "count": 6
+          },
+          {
+            "startOffset": 55490,
+            "endOffset": 55726,
+            "count": 4
+          },
+          {
+            "startOffset": 55726,
+            "endOffset": 56662,
+            "count": 0
+          },
+          {
+            "startOffset": 56662,
+            "endOffset": 56796,
+            "count": 4
+          },
+          {
+            "startOffset": 56796,
+            "endOffset": 56803,
+            "count": 1
+          },
+          {
+            "startOffset": 56803,
+            "endOffset": 57044,
+            "count": 3
+          },
+          {
+            "startOffset": 57044,
+            "endOffset": 57185,
+            "count": 2
+          },
+          {
+            "startOffset": 57088,
+            "endOffset": 57181,
+            "count": 1
+          },
+          {
+            "startOffset": 57185,
+            "endOffset": 57186,
+            "count": 4
+          },
+          {
+            "startOffset": 57186,
+            "endOffset": 57293,
+            "count": 6
+          },
+          {
+            "startOffset": 57225,
+            "endOffset": 57289,
+            "count": 4
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 55937,
+        "endOffset": 55969,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 55937,
+            "endOffset": 55969,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 56077,
+        "endOffset": 56601,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 56077,
+            "endOffset": 56601,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "exportForm",
+        "startOffset": 57296,
+        "endOffset": 57888,
+        "executed": true,
+        "ranges": [
+          {
+            "startOffset": 57296,
+            "endOffset": 57888,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 57671,
+        "endOffset": 57806,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 57671,
+            "endOffset": 57806,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 57843,
+        "endOffset": 57872,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 57843,
+            "endOffset": 57872,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "",
+        "startOffset": 57928,
+        "endOffset": 57992,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 57928,
+            "endOffset": 57992,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "name": "initializeForm",
+        "startOffset": 57996,
+        "endOffset": 62603,
+        "executed": false,
+        "ranges": [
+          {
+            "startOffset": 57996,
+            "endOffset": 62603,
+            "count": 0
+          }
+        ]
+      }
+    ],
+    "raw_files": [
+      {
+        "path": "/private/tmp/forge-f05-live-state-v8-applied/coverage-21468-1790939336939-0.json",
+        "sha256": "0fb09656e4ff4cad962ec8e40a7276ef89b4eaf5fda8102f7b72a2b48b150b82"
+      }
+    ],
+    "limitations": [
+      "Complete applied production source executed through VM with fake DOM/timers.",
+      "Function and range identities use name and UTF-16 start/end offsets, summed over exact source file URI only.",
+      "Raw V8 observations are not line, statement, branch, condition or native-browser coverage.",
+      "All changed named functions execute; this does not establish every path is covered.",
+      "No native browser or human accessibility acceptance is inferred."
+    ]
+  },
+  "whole_asset_named_declaration_docs": {
+    "scope": "named function declarations only, including nested load; const arrow declarations and anonymous callbacks excluded",
+    "total": 40,
+    "documented": 23,
+    "items": [
+      {
+        "name": "node",
+        "line": 18,
+        "documented": false
+      },
+      {
+        "name": "showError",
+        "line": 25,
+        "documented": false
+      },
+      {
+        "name": "api",
+        "line": 35,
+        "documented": false
+      },
+      {
+        "name": "collection",
+        "line": 54,
+        "documented": false
+      },
+      {
+        "name": "table",
+        "line": 70,
+        "documented": false
+      },
+      {
+        "name": "checkedPage",
+        "line": 87,
+        "documented": true
+      },
+      {
+        "name": "pagedTable",
+        "line": 97,
+        "documented": true
+      },
+      {
+        "name": "load",
+        "line": 122,
+        "documented": true
+      },
+      {
+        "name": "renderView",
+        "line": 169,
+        "documented": true
+      },
+      {
+        "name": "allowViewChange",
+        "line": 274,
+        "documented": true
+      },
+      {
+        "name": "focusViewTitle",
+        "line": 279,
+        "documented": true
+      },
+      {
+        "name": "navigate",
+        "line": 286,
+        "documented": true
+      },
+      {
+        "name": "confirmDiscard",
+        "line": 299,
+        "documented": true
+      },
+      {
+        "name": "button",
+        "line": 315,
+        "documented": true
+      },
+      {
+        "name": "fieldInput",
+        "line": 325,
+        "documented": false
+      },
+      {
+        "name": "field",
+        "line": 335,
+        "documented": false
+      },
+      {
+        "name": "operationRegion",
+        "line": 341,
+        "documented": true
+      },
+      {
+        "name": "pendingRequestRow",
+        "line": 348,
+        "documented": true
+      },
+      {
+        "name": "pendingRequestFailure",
+        "line": 375,
+        "documented": true
+      },
+      {
+        "name": "removePendingRequest",
+        "line": 384,
+        "documented": true
+      },
+      {
+        "name": "operationRow",
+        "line": 391,
+        "documented": true
+      },
+      {
+        "name": "operationCurrent",
+        "line": 433,
+        "documented": true
+      },
+      {
+        "name": "refreshOperationActions",
+        "line": 438,
+        "documented": true
+      },
+      {
+        "name": "operationUnknown",
+        "line": 449,
+        "documented": true
+      },
+      {
+        "name": "operationPreviewFailure",
+        "line": 459,
+        "documented": true
+      },
+      {
+        "name": "acceptOperation",
+        "line": 467,
+        "documented": true
+      },
+      {
+        "name": "pollOperation",
+        "line": 490,
+        "documented": true
+      },
+      {
+        "name": "effect",
+        "line": 518,
+        "documented": true
+      },
+      {
+        "name": "preview",
+        "line": 569,
+        "documented": true
+      },
+      {
+        "name": "resourceActions",
+        "line": 598,
+        "documented": false
+      },
+      {
+        "name": "draftEditor",
+        "line": 619,
+        "documented": false
+      },
+      {
+        "name": "applicabilityDecisionForm",
+        "line": 638,
+        "documented": false
+      },
+      {
+        "name": "mappingDecisionForm",
+        "line": 658,
+        "documented": false
+      },
+      {
+        "name": "mappingCreationForm",
+        "line": 681,
+        "documented": false
+      },
+      {
+        "name": "relativeProjectReference",
+        "line": 699,
+        "documented": false
+      },
+      {
+        "name": "applicabilityMappingForm",
+        "line": 704,
+        "documented": false
+      },
+      {
+        "name": "evidenceList",
+        "line": 719,
+        "documented": false
+      },
+      {
+        "name": "showProvenance",
+        "line": 725,
+        "documented": true
+      },
+      {
+        "name": "exportForm",
+        "line": 760,
+        "documented": false
+      },
+      {
+        "name": "initializeForm",
+        "line": 769,
+        "documented": false
+      }
+    ]
+  },
+  "changed_production_docs": {
+    "source": "ui/workspace.js",
+    "source_sha256": "c61cb6a87ee9473e254e320402ac38c46f244af7797d004696b362755f753f9d",
+    "count": 24,
+    "top_level_count": 17,
+    "nested_named_count": 7,
+    "method": "Exact changed declaration names reviewed against baseline; adjacent JSDoc verified by bounded text assertions. Documentation evidence, not execution coverage.",
+    "items": [
+      {
+        "name": "checkedPage",
+        "line": 87,
+        "docstring": "/** Validate bounded list metadata before publishing rows or a reconciled count. */"
+      },
+      {
+        "name": "pagedTable",
+        "line": 97,
+        "docstring": "/** Keep table state, controls and live feedback until a current verified read succeeds. */"
+      },
+      {
+        "name": "pageAction",
+        "line": 111,
+        "docstring": "/** Keep the initiating control focusable while preventing repeated pending reads. */"
+      },
+      {
+        "name": "load",
+        "line": 122,
+        "docstring": "/** Stage navigation, verify matching snapshot totals, then atomically publish this page. */"
+      },
+      {
+        "name": "current",
+        "line": 125,
+        "docstring": "/** Only this read in its original live view may publish results or focus. */"
+      },
+      {
+        "name": "renderView",
+        "line": 169,
+        "docstring": "/** Install only the current live view; inline page failures retain their own error focus. */"
+      },
+      {
+        "name": "navigate",
+        "line": 286,
+        "docstring": "/** Return false only for cancellation; count activation may request result-list focus. */"
+      },
+      {
+        "name": "operationRegion",
+        "line": 341,
+        "docstring": "/** Reuse one session-owned region outside the replaceable view and global status. */"
+      },
+      {
+        "name": "pendingRequestRow",
+        "line": 348,
+        "docstring": "/** Keep bounded recovery for an unacknowledged request using its original replay key. */"
+      },
+      {
+        "name": "requestAction",
+        "line": 355,
+        "docstring": "/** Prevent duplicate activation while keeping the initiating native control focused. */"
+      },
+      {
+        "name": "pendingRequestFailure",
+        "line": 375,
+        "docstring": "/** Announce local recovery without changing a newer destination's global error or focus. */"
+      },
+      {
+        "name": "removePendingRequest",
+        "line": 384,
+        "docstring": "/** Release a request slot and transfer only the focus that belonged to that removed row. */"
+      },
+      {
+        "name": "operationRow",
+        "line": 391,
+        "docstring": "/** Create bounded, session-owned operation rows that navigation cannot overwrite. */"
+      },
+      {
+        "name": "operationAction",
+        "line": 400,
+        "docstring": "/** Guard action activation without disabling a focused native control. */"
+      },
+      {
+        "name": "operationCurrent",
+        "line": 433,
+        "docstring": "/** Removed rows and stopped sessions cannot publish a response or open a preview. */"
+      },
+      {
+        "name": "refreshOperationActions",
+        "line": 438,
+        "docstring": "/** Preserve a focused action while making unavailable operations inert to activation. */"
+      },
+      {
+        "name": "operationUnknown",
+        "line": 449,
+        "docstring": "/** Recover unverified work by GET; a late action error cannot erase verified terminal state. */"
+      },
+      {
+        "name": "operationPreviewFailure",
+        "line": 459,
+        "docstring": "/** A preview-read failure cannot erase a verified successful preparation state. */"
+      },
+      {
+        "name": "acceptOperation",
+        "line": 467,
+        "docstring": "/** Accept only declared operation states and supplied progress facts for this exact ID. */"
+      },
+      {
+        "name": "pollOperation",
+        "line": 490,
+        "docstring": "/** Read known work with bounded polling; response loss retains an explicit GET recovery path. */"
+      },
+      {
+        "name": "effect",
+        "line": 518,
+        "docstring": "/** Preparation retries reuse one key until an ID is known; known work is recovered by GET. */"
+      },
+      {
+        "name": "send",
+        "line": 521,
+        "docstring": "/** Replay only an unacknowledged request; once acknowledged, query its existing operation. */"
+      },
+      {
+        "name": "attempt",
+        "line": 552,
+        "docstring": "/** Keep background failures local while preserving the original request's replay identity. */"
+      },
+      {
+        "name": "preview",
+        "line": 569,
+        "docstring": "/** Resolve true only after opening the current prepared-write preview following its read. */"
+      }
+    ]
+  },
+  "changed_test_helper_docs": {
+    "schema_version": "forge.f05-test-helper-documentation-audit/2",
+    "truth_state": "agent-assisted-static-documentation-review",
+    "observed_at_utc": "2026-10-02T11:31:19.948893+00:00",
+    "base_oid": "01251ab5963d00ca3d8dbfb4132d57cdbb8f2de8",
+    "worktree": "/Users/bluby/.codex/worktrees/f05-live-state/forge",
+    "denominator": 29,
+    "documented": 29,
+    "count_breakdown": {
+      "node": 18,
+      "browser": 10,
+      "python": 1
+    },
+    "scope": "Changed/new named function declarations, direct const arrow-function bindings, class constructors/methods/getters/setters, and Python function definitions in exactly the three listed test files. Compared lexical callable extent against baseline; reviewed actual Git diff for additional named declaration forms.",
+    "scope_exclusions": [
+      "Unchanged named helpers/methods, including browser activate/focused/discard/confirm/register",
+      "Anonymous test/event/routing/timer/response callbacks, including anonymous object-property mock callbacks",
+      "Module IIFE and top-level Python script/module docstring",
+      "Producer-source functions and runtime behavior/coverage/acceptance"
+    ],
+    "inventory_method": "Bounded JavaScript declaration inventory with literal/comment-aware delimiter scanning plus manual changed-hunk review; Python AST. This is not a general ECMAScript parser or a claim about every callable expression. All changed named declaration forms observed in the reviewed files are included. Offsets are zero-based UTF-8 byte ranges; lines are one-based.",
+    "files": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/tests/workspace-navigation.cjs",
+        "repository_path": "ui/tests/workspace-navigation.cjs",
+        "sha256_before": "f32726533a0c037d53a1e807e785ef68ff35aa01fb6e4745c5f49daf54c14077",
+        "sha256_after": "f32726533a0c037d53a1e807e785ef68ff35aa01fb6e4745c5f49daf54c14077",
+        "bytes": 79858,
+        "baseline_sha256": "7b30948962cd262bdf0978255df9a4fb0dfbfef9f00f495a44df05c936202855",
+        "baseline_bytes": 25332,
+        "all_named_declaration_inventory": 59,
+        "denominator": 18,
+        "documented": 18,
+        "entries": [
+          {
+            "name": "FakeNode.constructor",
+            "kind": "class-method",
+            "change": "changed",
+            "line": 35,
+            "declaration_utf8_byte_range": {
+              "start": 1787,
+              "end_exclusive": 2288
+            },
+            "declaration_sha256": "8982821d00997731efcdb6a1ede001f2e451a660d0a79ac5c5f089ad5567109c",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 34,
+              "text": "/** Create a node owned by one isolated fake document. */",
+              "utf8_byte_range": {
+                "start": 1727,
+                "end_exclusive": 1784
+              },
+              "sha256": "c30f416662993f6406d5685da36541f32bead49e78856628c0a830966dd2aa31",
+              "adjacent": true
+            },
+            "documented": true,
+            "baseline_declaration": {
+              "line": 26,
+              "utf8_byte_range": {
+                "start": 1091,
+                "end_exclusive": 1565
+              },
+              "sha256": "59d76a96c70c6ec083fc0b7a81731145108b4991bb493c7456c04a95a550666a"
+            }
+          },
+          {
+            "name": "FakeNode.hidden.getter",
+            "kind": "class-method",
+            "change": "new",
+            "line": 63,
+            "declaration_utf8_byte_range": {
+              "start": 2620,
+              "end_exclusive": 2657
+            },
+            "declaration_sha256": "25d8b79b7c5023c5a978916961922380ea2ae0c28b2e5eac4c13adfdd293fd16",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 62,
+              "text": "/** Expose display removal used by persistent recovery and shutdown transitions. */",
+              "utf8_byte_range": {
+                "start": 2534,
+                "end_exclusive": 2617
+              },
+              "sha256": "d8ec347a6cd4575c41bf1e56b7c9373872cd3d94b0a47d70c57dc84ffd182968",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "FakeNode.hidden.setter",
+            "kind": "class-method",
+            "change": "new",
+            "line": 66,
+            "declaration_utf8_byte_range": {
+              "start": 2757,
+              "end_exclusive": 2962
+            },
+            "declaration_sha256": "ff2361e038dc8b3050dde6543d6199222c5970beb970a1b6f946c5b7b469dafe",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 65,
+              "text": "/** Hiding a focused subtree drops focus; invisible recovery targets cannot remain active. */",
+              "utf8_byte_range": {
+                "start": 2661,
+                "end_exclusive": 2754
+              },
+              "sha256": "638b58ecaee62780cebdca58c76a5725af3c6620b7188facc9f7509a18f23ae6",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "FakeNode.textContent.setter",
+            "kind": "class-method",
+            "change": "changed",
+            "line": 101,
+            "declaration_utf8_byte_range": {
+              "start": 4026,
+              "end_exclusive": 4152
+            },
+            "declaration_sha256": "ccf5175dad5c3680ddab5930b124b06443c334f370a17665473eabac0eb1b06a",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 100,
+              "text": "/** Replace descendants and record each live-region write, including repeated announcements. */",
+              "utf8_byte_range": {
+                "start": 3928,
+                "end_exclusive": 4023
+              },
+              "sha256": "9aa1b87d90fa4a7a5a40a1c1556331955b87a3d87d765d0e1bf5d8fe8f5699b1",
+              "adjacent": true
+            },
+            "documented": true,
+            "baseline_declaration": {
+              "line": 80,
+              "utf8_byte_range": {
+                "start": 2846,
+                "end_exclusive": 2934
+              },
+              "sha256": "3ba1ad836931c10f6233c71e9abb94898fe8070e9b58c0deea8255d2155e0673"
+            }
+          },
+          {
+            "name": "FakeNode.close",
+            "kind": "class-method",
+            "change": "changed",
+            "line": 252,
+            "declaration_utf8_byte_range": {
+              "start": 9425,
+              "end_exclusive": 9654
+            },
+            "declaration_sha256": "4e2e6053265f1cec3d06264d7e22d9354578e77d5931a500011a9fcb7d8f61bc",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 251,
+              "text": "/** Queue the native close event after restoration; close listeners are not synchronous. */",
+              "utf8_byte_range": {
+                "start": 9331,
+                "end_exclusive": 9422
+              },
+              "sha256": "1d133cb8e70af7f8e5bc4dfc5f0391a9ad83e7f4cb8d7592034dace3bae5f40a",
+              "adjacent": true
+            },
+            "documented": true,
+            "baseline_declaration": {
+              "line": 230,
+              "utf8_byte_range": {
+                "start": 8201,
+                "end_exclusive": 8410
+              },
+              "sha256": "f7c4a05a47bd7fecf91397f706f87ff1d325c5c63e37c67c419129108d6d6a36"
+            }
+          },
+          {
+            "name": "harness",
+            "kind": "function-declaration",
+            "change": "changed",
+            "line": 334,
+            "declaration_utf8_byte_range": {
+              "start": 12490,
+              "end_exclusive": 15147
+            },
+            "declaration_sha256": "175c58384274850ff99287454b38d86cb73d9ccf9184aa59e045ce771577fd0c",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 333,
+              "text": "/** Execute the entire selected source file in an isolated realm without transformation. */",
+              "utf8_byte_range": {
+                "start": 12398,
+                "end_exclusive": 12489
+              },
+              "sha256": "cd852ac3edc83fc34d284acd714802aba68cb807ae9680e4da9a1b9f26bc3df4",
+              "adjacent": true
+            },
+            "documented": true,
+            "baseline_declaration": {
+              "line": 312,
+              "utf8_byte_range": {
+                "start": 11238,
+                "end_exclusive": 13365
+              },
+              "sha256": "96213006230c0f38e09d4dc8134a1efdbe8d27a6285438aa196eae1d3c69e5e5"
+            }
+          },
+          {
+            "name": "harness.poll",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 386,
+            "declaration_utf8_byte_range": {
+              "start": 14932,
+              "end_exclusive": 15059
+            },
+            "declaration_sha256": "d58f198fbff57e3b4092c6d22114641846347786e3b4ac5661a25933a5d26e81",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 385,
+              "text": "/** Advance one real production polling delay, retaining control over in-flight reads. */",
+              "utf8_byte_range": {
+                "start": 14840,
+                "end_exclusive": 14929
+              },
+              "sha256": "0cdba08050b5761412bcc184d5b3d73a037b193e91498d596764d2fb67db0f03",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "unsavedForm",
+            "kind": "function-declaration",
+            "change": "changed",
+            "line": 405,
+            "declaration_utf8_byte_range": {
+              "start": 15614,
+              "end_exclusive": 16159
+            },
+            "declaration_sha256": "051706bcb9a00837b1b4d4b1aa6a598787fc48fa9a64978406ad2f26f9b4d5b5",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 404,
+              "text": "/** Install actual registration and evidence controls and mark actual fields dirty. */",
+              "utf8_byte_range": {
+                "start": 15527,
+                "end_exclusive": 15613
+              },
+              "sha256": "67bd0ab8bfae9be96cf80417b3db98b2f5777d3391b38a75ad9856237e303f7d",
+              "adjacent": true
+            },
+            "documented": true,
+            "baseline_declaration": {
+              "line": 371,
+              "utf8_byte_range": {
+                "start": 13832,
+                "end_exclusive": 14369
+              },
+              "sha256": "95adfacd799cd88e7f3704ad9c9cfee0d3815575765b279335f053c1a31a76c8"
+            },
+            "change_detail": "Only provenance fixture literal changes from prov_fixture to prov_synthetic000001; existing useful JSDoc retained."
+          },
+          {
+            "name": "queueRows",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 665,
+            "declaration_utf8_byte_range": {
+              "start": 27664,
+              "end_exclusive": 28037
+            },
+            "declaration_sha256": "dc0aa2ed8f4b028338c729f7e443722b3502960fe53523a1c3a0ce119564999c",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 664,
+              "text": "/** Create 53 wholly synthetic queue rows, enough to cross the 50-row display boundary. */",
+              "utf8_byte_range": {
+                "start": 27573,
+                "end_exclusive": 27663
+              },
+              "sha256": "eb693bbddddb2593f78bff0c4a292a6df5d3f9c7e7bb4400a3409cbafca65403",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "queuePage",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 675,
+            "declaration_utf8_byte_range": {
+              "start": 28124,
+              "end_exclusive": 28699
+            },
+            "declaration_sha256": "ed72d077866e0de3f9250920fabcc0a4a9c2a43c6721e648f5b8fbe580ce607f",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 674,
+              "text": "/** Return a strong-version-bound API page with real filter and cursor semantics. */",
+              "utf8_byte_range": {
+                "start": 28039,
+                "end_exclusive": 28123
+              },
+              "sha256": "54ca0583dec509cc629d4055daceb28faa48a03527eac34b26d184bdb30d4d7f",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "pageParts",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 688,
+            "declaration_utf8_byte_range": {
+              "start": 28789,
+              "end_exclusive": 29221
+            },
+            "declaration_sha256": "0009a7632765dec5899055d22508cecd3654d64b66b603256cf1092ee857da12",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 687,
+              "text": "/** Find the committed pagination shell without relying on production private state. */",
+              "utf8_byte_range": {
+                "start": 28701,
+                "end_exclusive": 28788
+              },
+              "sha256": "a5f31647b2d66f9ad3ec815143b877366b16a76faac4a4edf08e52dc042026d0",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "queueApp",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 699,
+            "declaration_utf8_byte_range": {
+              "start": 29307,
+              "end_exclusive": 29496
+            },
+            "declaration_sha256": "01820ebaeef42fb2f1e9f433950c1ec8c05d7ef49d0c4ad8ccc08e781b0ee734",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 698,
+              "text": "/** Open the actual Review Queue with synthetic responses and its real controls. */",
+              "utf8_byte_range": {
+                "start": 29223,
+                "end_exclusive": 29306
+              },
+              "sha256": "283e150d4be0473df93a58a29b79358ab4d1328a236e908b602ff9bc35f9a301",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "operation",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 867,
+            "declaration_utf8_byte_range": {
+              "start": 38501,
+              "end_exclusive": 38724
+            },
+            "declaration_sha256": "f4bd18fe523787cbac9088bed0ca9e27de716cdc58454a38f5bd3c9058a98885",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 866,
+              "text": "/** Construct an OpenAPI-shaped synthetic operation; progress facts stay explicitly supplied. */",
+              "utf8_byte_range": {
+                "start": 38404,
+                "end_exclusive": 38500
+              },
+              "sha256": "20a9e20c81ab23633af17486947e1e3076bc5cbae3e162cb2d2296061c49c69d",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "proposedWrite",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 874,
+            "declaration_utf8_byte_range": {
+              "start": 38832,
+              "end_exclusive": 39436
+            },
+            "declaration_sha256": "394f3e1dc53078424bde85f427fe77fc4a434503769a0bdc3e9a38260836a8e2",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 873,
+              "text": "/** Provide a prepared receipt for UI rendering without claiming a real write or valid domain fixture. */",
+              "utf8_byte_range": {
+                "start": 38726,
+                "end_exclusive": 38831
+              },
+              "sha256": "036fa8166174f55eadce6dbd1320bbbe6bc7fc7a3a153433fcf987cc834544a2",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "conversionResult",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 883,
+            "declaration_utf8_byte_range": {
+              "start": 39526,
+              "end_exclusive": 39769
+            },
+            "declaration_sha256": "2d834793bd258c0568a31c4b8ebb49b247e43b03a671f8207ab364fd6b82e773",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 882,
+              "text": "/** Supply a complete succeeded-conversion result with a synthetic prepared receipt. */",
+              "utf8_byte_range": {
+                "start": 39438,
+                "end_exclusive": 39525
+              },
+              "sha256": "dbcd51f8966d6fbfaca1f4d6a9c693c7a34da0b3a0a3ebc847e98e88a37c8e2e",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "conversionApp",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 889,
+            "declaration_utf8_byte_range": {
+              "start": 39870,
+              "end_exclusive": 40956
+            },
+            "declaration_sha256": "1390937be0ebe35214b6350085a3bab1df4520963ea192fe6544dce11ad3ba22",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 888,
+              "text": "/** Launch the actual conversion control; the fake transport substitutes API observations only. */",
+              "utf8_byte_range": {
+                "start": 39771,
+                "end_exclusive": 39869
+              },
+              "sha256": "0fe03ef37f9888f0f4fab8d5aa21d86b5657c8e30a286372e4eb44a4e22ca019",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "operationParts",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 911,
+            "declaration_utf8_byte_range": {
+              "start": 41053,
+              "end_exclusive": 41477
+            },
+            "declaration_sha256": "25aae188c144e5bdb286ed55376e34af74c11a2ef0f1e619c6204c443463ffca",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 910,
+              "text": "/** Resolve the stable observed-operation row and its live status from actual rendered DOM. */",
+              "utf8_byte_range": {
+                "start": 40958,
+                "end_exclusive": 41052
+              },
+              "sha256": "2396e123d931c9aaf1f6aca001ab34e22ec886c176304c80a978fc4872470e3f",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "requestParts",
+            "kind": "function-declaration",
+            "change": "new",
+            "line": 1300,
+            "declaration_utf8_byte_range": {
+              "start": 62157,
+              "end_exclusive": 62645
+            },
+            "declaration_sha256": "a68d9b96ccbbb54cc7534b64618ebdc146e893bc4b4958a927889bc625df35ff",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 1299,
+              "text": "/** Resolve the persistent unacknowledged preparation without reading its private key/state. */",
+              "utf8_byte_range": {
+                "start": 62061,
+                "end_exclusive": 62156
+              },
+              "sha256": "98bcc5b191145d66d9f25950a7c4abc3eb57b42ebadbedb378ec0c457c712d80",
+              "adjacent": true
+            },
+            "documented": true
+          }
+        ],
+        "excluded_unchanged_named_declarations": [
+          "eventFor",
+          "FakeNode.isConnected.getter",
+          "FakeNode.disabled.getter",
+          "FakeNode.disabled.setter",
+          "FakeNode.inert.getter",
+          "FakeNode.inert.setter",
+          "FakeNode.textContent.getter",
+          "FakeNode.append",
+          "FakeNode.prepend",
+          "FakeNode.replaceChildren",
+          "FakeNode.remove",
+          "FakeNode.contains",
+          "FakeNode.setAttribute",
+          "FakeNode.getAttribute",
+          "FakeNode.removeAttribute",
+          "FakeNode.matches",
+          "FakeNode.querySelectorAll",
+          "FakeNode.querySelectorAll.visit",
+          "FakeNode.querySelector",
+          "FakeNode.addEventListener",
+          "FakeNode.dispatchEvent",
+          "FakeNode.fire",
+          "FakeNode.focus",
+          "FakeNode.showModal",
+          "FakeNode.escape",
+          "FakeNode.reportValidity",
+          "FakeDocument.constructor",
+          "FakeDocument.constructor.add",
+          "FakeDocument.createElement",
+          "FakeDocument.createDocumentFragment",
+          "FakeDocument.getElementById",
+          "FakeDocument.getElementById.visit",
+          "FakeDocument.querySelector",
+          "harness.run",
+          "harness.byId",
+          "harness.byButton",
+          "harness.byLabel",
+          "settle",
+          "deferred",
+          "retained",
+          "dirtyTraceForm"
+        ]
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/tests/workspace.cjs",
+        "repository_path": "ui/tests/workspace.cjs",
+        "sha256_before": "d510ebffb9c6861f28a352406f53bebe090cb073bad8f12ffaeac720a9e4fb81",
+        "sha256_after": "d510ebffb9c6861f28a352406f53bebe090cb073bad8f12ffaeac720a9e4fb81",
+        "bytes": 34340,
+        "baseline_sha256": "e6af5669e57666dddb373772c2ed381dbbe9577e3d128ebb3368e5abe702d245",
+        "baseline_bytes": 19123,
+        "all_named_declaration_inventory": 15,
+        "denominator": 10,
+        "documented": 10,
+        "entries": [
+          {
+            "name": "luminance",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 61,
+            "declaration_utf8_byte_range": {
+              "start": 4116,
+              "end_exclusive": 4499
+            },
+            "declaration_sha256": "9f94e91ca97916bf9173086ce2775726f0159b37e38716c4a42d9703295d3fc0",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 60,
+              "text": "/** Calculate relative luminance of an opaque computed CSS RGB color. */",
+              "utf8_byte_range": {
+                "start": 4040,
+                "end_exclusive": 4112
+              },
+              "sha256": "7b085bde0bd3566e963a2255dcae84d4ee31643a8d973ea1b3ac8b1195e4b652",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "contrast",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 68,
+            "declaration_utf8_byte_range": {
+              "start": 4587,
+              "end_exclusive": 4762
+            },
+            "declaration_sha256": "d374a895bba26b08e2938a187162b10087d40ad3b3d02de52fd99e4d49b710c2",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 67,
+              "text": "/** Compare an actual border color with its actual adjacent fixture surface. */",
+              "utf8_byte_range": {
+                "start": 4504,
+                "end_exclusive": 4583
+              },
+              "sha256": "c5e14da0c1694047f628769fd30158ddfda5bdddabdeef02f43c864191200542",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "navigate",
+            "kind": "arrow-binding",
+            "change": "changed",
+            "line": 88,
+            "declaration_utf8_byte_range": {
+              "start": 6417,
+              "end_exclusive": 7076
+            },
+            "declaration_sha256": "b4512a2ed98029b9bbd082c003bd5a0bd208781d7aba873feaa1e3dd306226b3",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 87,
+              "text": "/** Verify heading focus or the declared prerequisite error before a manifest exists. */",
+              "utf8_byte_range": {
+                "start": 6325,
+                "end_exclusive": 6413
+              },
+              "sha256": "b590ef0be255b1899132bd9380f2dc5202b4b31d8324997819a3f1d8e3b01640",
+              "adjacent": true
+            },
+            "documented": true,
+            "baseline_declaration": {
+              "line": 50,
+              "utf8_byte_range": {
+                "start": 3700,
+                "end_exclusive": 3915
+              },
+              "sha256": "b38215a1ad111cafe2c152270c1a07144bd00cecca987745c3a618641a823eb5"
+            },
+            "change_detail": "Adds exact expected missing-manifest prerequisite error and error-focus branch while preserving ordinary destination-heading focus assertion."
+          },
+          {
+            "name": "controlResults",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 101,
+            "declaration_utf8_byte_range": {
+              "start": 7438,
+              "end_exclusive": 7541
+            },
+            "declaration_sha256": "f56193952cfedf1df09a931a7c6f4438f9fe2fb6c47a1e94603aa69dc34b49a7",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 100,
+              "text": "/** Locate the persistent framework results region rather than a replaceable table. */",
+              "utf8_byte_range": {
+                "start": 7348,
+                "end_exclusive": 7434
+              },
+              "sha256": "0f34c2f47aa85f2c0f9a475577271b135278ff2885bb8d5397bb70621c944681",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "controlSection",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 103,
+            "declaration_utf8_byte_range": {
+              "start": 7637,
+              "end_exclusive": 7725
+            },
+            "declaration_sha256": "e6b0cde649e885f0f48f03adb6adbce16f3928c2d9fc81ae647b53ba7eee4cda",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 102,
+              "text": "/** Scope status, controls and recoverable errors to the framework inventory section. */",
+              "utf8_byte_range": {
+                "start": 7545,
+                "end_exclusive": 7633
+              },
+              "sha256": "9bbaca3781140d91938b43fce9d4c020f2c834fb089e8c120dadaffb80cbf7fb",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "controlPage",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 105,
+            "declaration_utf8_byte_range": {
+              "start": 7824,
+              "end_exclusive": 8635
+            },
+            "declaration_sha256": "2aa9c82ded8d5ab999cf9bdbd8e0f7d456d454901e2d4b21f6e4ea8f15f8f30a",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 104,
+              "text": "/** Wait for committed pagination state, then verify exact keyboard focus and row count. */",
+              "utf8_byte_range": {
+                "start": 7729,
+                "end_exclusive": 7820
+              },
+              "sha256": "60ce03cfe86113569a9e8d3452c30d82490fbf303e5c3b4ba83d1611ed00ea39",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "controlsResponse",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 118,
+            "declaration_utf8_byte_range": {
+              "start": 8733,
+              "end_exclusive": 9122
+            },
+            "declaration_sha256": "d70c7d4c02b6ec606360037ce5a47c9a5cb7a89832842c7f2c70ba009b84934a",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 117,
+              "text": "/** Match only real documented inventory reads, separating filtered data and metadata. */",
+              "utf8_byte_range": {
+                "start": 8640,
+                "end_exclusive": 8729
+              },
+              "sha256": "19bb2768224e23196bd0b7beb806570c2721e6403d9873576683b22492cec5b5",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "filterControls",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 125,
+            "declaration_utf8_byte_range": {
+              "start": 9220,
+              "end_exclusive": 10138
+            },
+            "declaration_sha256": "34ffae43a5aacab5124e21c3128afe0326ce50dfe7508800cbc3a705071f7167",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 124,
+              "text": "/** Apply a keyboard filter and compare the real filtered/unfiltered response versions. */",
+              "utf8_byte_range": {
+                "start": 9126,
+                "end_exclusive": 9216
+              },
+              "sha256": "10415fd24cf1b45904741464ce00fcc522b33f190e09dab5f6994410c9d9bda1",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "failOperationRead",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 180,
+            "declaration_utf8_byte_range": {
+              "start": 16629,
+              "end_exclusive": 17011
+            },
+            "declaration_sha256": "64f4d57d3ea7dd1af4f88a679fc897d4bf4755c9f39e3a2d76103d309f33f45f",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 179,
+              "text": "/** Lose one documented polling GET without substituting an operation state or result. */",
+              "utf8_byte_range": {
+                "start": 16534,
+                "end_exclusive": 16623
+              },
+              "sha256": "aaa836b8750ea130de17ed35b9c43e0b5c45e1dda66e1506f0ce21d0a94db85a",
+              "adjacent": true
+            },
+            "documented": true
+          },
+          {
+            "name": "failNext",
+            "kind": "arrow-binding",
+            "change": "new",
+            "line": 242,
+            "declaration_utf8_byte_range": {
+              "start": 22549,
+              "end_exclusive": 23015
+            },
+            "declaration_sha256": "f8315a8ce4944d36ebbf2a5a78696a17dd9142a5482fab4918daf24004539495",
+            "documentation": {
+              "kind": "JSDoc",
+              "line": 241,
+              "text": "/** Lose one cursor read while leaving other legitimate inventory requests untouched. */",
+              "utf8_byte_range": {
+                "start": 22455,
+                "end_exclusive": 22543
+              },
+              "sha256": "bc59f822019ef32ae2b41c8b5ecaf8701b05f651bf375dafb7ceed688ccc278e",
+              "adjacent": true
+            },
+            "documented": true
+          }
+        ],
+        "excluded_unchanged_named_declarations": [
+          "activate",
+          "focused",
+          "discard",
+          "confirm",
+          "register"
+        ]
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/scripts/test_workspace_browser.py",
+        "repository_path": "scripts/test_workspace_browser.py",
+        "sha256_before": "efce8ee8980be499d72be6edb38ab2fa9a8f51fe410c72068e7bae690859882b",
+        "sha256_after": "efce8ee8980be499d72be6edb38ab2fa9a8f51fe410c72068e7bae690859882b",
+        "bytes": 3989,
+        "baseline_sha256": "3cb5414020985cbf9f498260fb9f5a1e39ec4b22d2e913e0ab2b4413d72c2e00",
+        "baseline_bytes": 3495,
+        "all_named_declaration_inventory": 1,
+        "denominator": 1,
+        "documented": 1,
+        "entries": [
+          {
+            "name": "synthetic_framework_catalog",
+            "kind": "python-function-definition",
+            "change": "new",
+            "line": 17,
+            "declaration_utf8_byte_range": {
+              "start": 338,
+              "end_exclusive": 1088
+            },
+            "documentation": {
+              "kind": "Python-first-statement-docstring",
+              "line": 18,
+              "text": "Keep the original review IDs and add 51 authored controls for a second page.",
+              "utf8_byte_range": {
+                "start": 377,
+                "end_exclusive": 459
+              },
+              "adjacent": true,
+              "sha256": "f880c901a6e7517428bbf16076971f8e0447be09cc15f416cfe60b87f3bdaba8"
+            },
+            "documented": true,
+            "declaration_sha256": "ca85812b5d0fcb8a52477a0c7d08fe327b5c37ce51c890b890b9223782573d8d"
+          }
+        ],
+        "excluded_unchanged_named_declarations": []
+      }
+    ],
+    "historical_input": {
+      "path": "/private/tmp/forge-f05-live-state-test-helper-docstrings-applied.json",
+      "sha256": "ab96ebbd4f847f0a6e9bbbb6e9976569b8dcbd2bb4f2a120041220370318f638",
+      "bytes": 3976,
+      "declared_denominator": 27,
+      "declared_documented": 27,
+      "preserved_byte_for_byte": true,
+      "qualification": "Historical receipt declares27/27:17Node,9browser,1Python and binds an earlier browser hash. It is not upgraded to28 or29."
+    },
+    "prior_requested_selected_scope": {
+      "denominator": 28,
+      "documented": 28,
+      "composition": "Historical17Node+9browser+1Python selection plus existing changed browser navigate. The final broader scope adds existing changed Node unsavedForm.",
+      "historical_receipt_fabricated": false
+    },
+    "browser_harness_review": {
+      "sha256": "d510ebffb9c6861f28a352406f53bebe090cb073bad8f12ffaeac720a9e4fb81",
+      "material_weakening_found": false,
+      "observations": [
+        "Successful unlock readiness observes loaded status, non-inert view and exact main focus with bounded wait, without setting focus; pending/throttled unlock remains separate.",
+        "navigate permits only supplied exact prerequisite error text and verifies an initialization control plus exact error focus; normal navigation still verifies heading focus.",
+        "Fault handlers fulfill the documented read error before unroute; real operation IDs/results and known-ID GET recovery remain checked, with one preparation POST.",
+        "Pagination retains exact row/total/version, DOM-identity, failed-read preservation and result/error focus assertions.",
+        "Reflow now checks640 and320 viewport page widths, exact full operation-ID heading text and heading boxes within rows; no clipping/overflow-hidden workaround introduced.",
+        "Served JS/CSS byte equality, page errors, documented loopback routes, cookies and storage checks remain.",
+        "Explicit locator focus/press is unchanged baseline behavior; these targeted probes do not prove complete Tab traversal or manual AT."
+      ]
+    },
+    "source_test_execution_performed_by_this_auditor": false,
+    "native_browser_execution_performed_by_this_auditor": false,
+    "source_edits": false,
+    "git_mutations": false,
+    "cargo_execution": false,
+    "acceptance_eligible": false,
+    "remaining_gates": [
+      "Attributable manual accessibility/keyboard/AT/platform/owner acceptance",
+      "Integrated hosted CI and complete roadmap requirement gates",
+      "User-required full documentation review/update after completed roadmap integration"
+    ],
+    "offset_and_hash_replay_verified": true,
+    "final_receipt_scope_note": "29/29 changed/new named helper/method declarations in the stated three-file inventory, including literal-only unsavedForm. Excludes unchanged declarations and anonymous/property callbacks. Documentation evidence only; full documentation review after roadmap integration remains open."
+  },
+  "helper_audit_pin": {
+    "path": "/private/tmp/forge-f05-live-state-test-helper-docstrings-final.json",
+    "sha256": "253c76c4926ddc88e5c1c4dfbc5c5de5b29c70249a25dd6893550c112d31edbe",
+    "bytes": 34004
+  },
+  "browser_tool": {
+    "name": "Playwright",
+    "version": "1.62.1",
+    "development_only": true,
+    "node_path": "/Users/bluby/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node",
+    "node_version": "v24.19.0",
+    "browser_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "python_version": "3.14.8",
+    "system": "Darwin",
+    "machine": "arm64"
+  },
+  "binary": {
+    "path": "/private/tmp/forge-f05-live-state-browser-binaries/b3a2a99f3c2fed8a847f36f8d102189eba807775f15cb3074aacdc5d893eb857/forge",
+    "sha256": "b3a2a99f3c2fed8a847f36f8d102189eba807775f15cb3074aacdc5d893eb857",
+    "bytes": 68022952,
+    "kind": "preserved local development debug binary; copied after mandatory Rust hook",
+    "exact_js_and_css_embedded": true
+  },
+  "browsers": [
+    {
+      "mode": "writable",
+      "browserVersion": "154.0.8037.97",
+      "embeddedAssetSha256": "c61cb6a87ee9473e254e320402ac38c46f244af7797d004696b362755f753f9d",
+      "embeddedStyleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+      "inputBorderContrast": {
+        "border": "rgb(82, 96, 91)",
+        "fill": "rgb(255, 255, 255)",
+        "ancestor": "rgb(246, 247, 244)",
+        "againstFill": 6.597586198170763,
+        "againstAncestor": 6.135504615280822
+      },
+      "focusChecks": 38,
+      "reflowChecks": [
+        {
+          "viewportWidth": 640,
+          "pageWidth": 640,
+          "operations": [
+            {
+              "id": "op_f4f16ccdf0b59f71cb5aa3962c6e57eaf7e9b844c20f7f9ae2c81fd2ab7b76f3",
+              "heading": "Operation op_f4f16ccdf0b59f71cb5aa3962c6e57eaf7e9b844c20f7f9ae2c81fd2ab7b76f3",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_bf683d0c1d4a577decc505d97c39ab7534a58f62af589484568754227bdac7af",
+              "heading": "Operation op_bf683d0c1d4a577decc505d97c39ab7534a58f62af589484568754227bdac7af",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_7a4a057ee3a6a4695700c6f628e2763a99888c1db031d4b065fd9d6c3e551d1e",
+              "heading": "Operation op_7a4a057ee3a6a4695700c6f628e2763a99888c1db031d4b065fd9d6c3e551d1e",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_fd55884ddbdb4401320dfb657eba0dcd4869d86c4984b1a851238bd3cf715b77",
+              "heading": "Operation op_fd55884ddbdb4401320dfb657eba0dcd4869d86c4984b1a851238bd3cf715b77",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_2d501625b1dc503184653f183d84978dd0347dff103dc71f8578584d5cc7bfe1",
+              "heading": "Operation op_2d501625b1dc503184653f183d84978dd0347dff103dc71f8578584d5cc7bfe1",
+              "headingWithinRow": true
+            }
+          ]
+        },
+        {
+          "viewportWidth": 320,
+          "pageWidth": 320,
+          "operations": [
+            {
+              "id": "op_f4f16ccdf0b59f71cb5aa3962c6e57eaf7e9b844c20f7f9ae2c81fd2ab7b76f3",
+              "heading": "Operation op_f4f16ccdf0b59f71cb5aa3962c6e57eaf7e9b844c20f7f9ae2c81fd2ab7b76f3",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_bf683d0c1d4a577decc505d97c39ab7534a58f62af589484568754227bdac7af",
+              "heading": "Operation op_bf683d0c1d4a577decc505d97c39ab7534a58f62af589484568754227bdac7af",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_7a4a057ee3a6a4695700c6f628e2763a99888c1db031d4b065fd9d6c3e551d1e",
+              "heading": "Operation op_7a4a057ee3a6a4695700c6f628e2763a99888c1db031d4b065fd9d6c3e551d1e",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_fd55884ddbdb4401320dfb657eba0dcd4869d86c4984b1a851238bd3cf715b77",
+              "heading": "Operation op_fd55884ddbdb4401320dfb657eba0dcd4869d86c4984b1a851238bd3cf715b77",
+              "headingWithinRow": true
+            },
+            {
+              "id": "op_2d501625b1dc503184653f183d84978dd0347dff103dc71f8578584d5cc7bfe1",
+              "heading": "Operation op_2d501625b1dc503184653f183d84978dd0347dff103dc71f8578584d5cc7bfe1",
+              "headingWithinRow": true
+            }
+          ]
+        }
+      ],
+      "documentedRequests": [
+        "GET /api/v1/applicability/controls",
+        "GET /api/v1/applicability/draft",
+        "GET /api/v1/effects/previews/{id}",
+        "GET /api/v1/exports/{id}/download",
+        "GET /api/v1/mapping/draft",
+        "GET /api/v1/mapping/subjects",
+        "GET /api/v1/operations/{id}",
+        "GET /api/v1/project/config-status",
+        "GET /api/v1/project/summary",
+        "GET /api/v1/provenance/entries",
+        "GET /api/v1/resources",
+        "GET /api/v1/review-queue/items",
+        "POST /api/v1/applicability/analyses",
+        "POST /api/v1/applicability/initializations",
+        "POST /api/v1/conversions",
+        "POST /api/v1/effects/commits",
+        "POST /api/v1/exports",
+        "POST /api/v1/mapping/builds",
+        "POST /api/v1/mapping/draft/validation",
+        "POST /api/v1/mapping/initializations",
+        "POST /api/v1/resources/register",
+        "POST /api/v1/session/shutdown",
+        "POST /api/v1/session/unlock",
+        "PUT /api/v1/applicability/draft",
+        "PUT /api/v1/mapping/draft"
+      ],
+      "nonLoopbackRequests": 0,
+      "pageErrors": 0,
+      "exit_code": 0,
+      "log": {
+        "path": "/private/tmp/forge-f05-live-state-chrome-writable-preserved-final.log",
+        "sha256": "72d19857a2df0f40e501aa2939297c82f1c426e3e4a311410eb675d99e8f788d",
+        "bytes": 3341
+      }
+    },
+    {
+      "mode": "read-only",
+      "browserVersion": "154.0.8037.97",
+      "embeddedAssetSha256": "c61cb6a87ee9473e254e320402ac38c46f244af7797d004696b362755f753f9d",
+      "embeddedStyleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+      "inputBorderContrast": {
+        "border": "rgb(82, 96, 91)",
+        "fill": "rgb(255, 255, 255)",
+        "ancestor": "rgb(246, 247, 244)",
+        "againstFill": 6.597586198170763,
+        "againstAncestor": 6.135504615280822
+      },
+      "focusChecks": 2,
+      "reflowChecks": [
+        {
+          "viewportWidth": 640,
+          "pageWidth": 640,
+          "operations": []
+        },
+        {
+          "viewportWidth": 320,
+          "pageWidth": 320,
+          "operations": []
+        }
+      ],
+      "documentedRequests": [
+        "GET /api/v1/project/config-status",
+        "GET /api/v1/project/summary",
+        "GET /api/v1/resources",
+        "POST /api/v1/session/shutdown",
+        "POST /api/v1/session/unlock"
+      ],
+      "nonLoopbackRequests": 0,
+      "pageErrors": 0,
+      "exit_code": 0,
+      "log": {
+        "path": "/private/tmp/forge-f05-live-state-chrome-read-only-preserved-final.log",
+        "sha256": "48de1c8ed4ac7db99fd59a840c790a25faac905d4ead5b1431c2bc31ea9fc09d",
+        "bytes": 766
+      }
+    }
+  ],
+  "reflow_fixture": {
+    "scope": "isolated authored operation-row CSS fixture; not full workspace qualification",
+    "browserVersion": "154.0.8037.97",
+    "samples": [
+      {
+        "label": "before",
+        "width": 320,
+        "pageWidth": 769,
+        "viewportWidth": 320,
+        "id": "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "heading": "Operation op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "wrapping": "normal",
+        "styleSha256": "9e185851e7a3369a64c4f2e8c25038397297b4d6e5c873c515e9c1e3c4db94b0"
+      },
+      {
+        "label": "before",
+        "width": 640,
+        "pageWidth": 782,
+        "viewportWidth": 640,
+        "id": "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "heading": "Operation op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "wrapping": "normal",
+        "styleSha256": "9e185851e7a3369a64c4f2e8c25038397297b4d6e5c873c515e9c1e3c4db94b0"
+      },
+      {
+        "label": "before",
+        "width": 1280,
+        "pageWidth": 1280,
+        "viewportWidth": 1280,
+        "id": "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "heading": "Operation op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "wrapping": "normal",
+        "styleSha256": "9e185851e7a3369a64c4f2e8c25038397297b4d6e5c873c515e9c1e3c4db94b0"
+      },
+      {
+        "label": "after",
+        "width": 320,
+        "pageWidth": 320,
+        "viewportWidth": 320,
+        "id": "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "heading": "Operation op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "wrapping": "anywhere",
+        "styleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02"
+      },
+      {
+        "label": "after",
+        "width": 640,
+        "pageWidth": 640,
+        "viewportWidth": 640,
+        "id": "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "heading": "Operation op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "wrapping": "anywhere",
+        "styleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02"
+      },
+      {
+        "label": "after",
+        "width": 1280,
+        "pageWidth": 1280,
+        "viewportWidth": 1280,
+        "id": "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "heading": "Operation op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "wrapping": "anywhere",
+        "styleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02"
+      }
+    ],
+    "script": {
+      "path": "/private/tmp/forge-f05-live-state-reflow-fixture.cjs",
+      "sha256": "ce4b5632c61fd9481a17b930a654f17cce7ad995206f0f09c3efd857e9e285fc",
+      "bytes": 1931
+    },
+    "log": {
+      "path": "/private/tmp/forge-f05-live-state-reflow-fixture.json",
+      "sha256": "43fd33c12bfcbe7aee5b76259255a27912d0a9180721fd71e48df4ed88a97f68",
+      "bytes": 2142
+    }
+  },
+  "retained_failed_attempts": [
+    {
+      "kind": "build",
+      "exit_code": 101,
+      "reason": "Disk-full LLVM failure; disposable completed caches cleaned and rebuilt.",
+      "log": {
+        "path": "/private/tmp/forge-f05-live-state-build-applied.log",
+        "sha256": "3c28fc9839b5f5105fe544fcc86b6130e33fce78cee93eefae20a21fc7741a3c",
+        "bytes": 4392
+      }
+    },
+    {
+      "kind": "writable browser",
+      "exit_code": 1,
+      "reason": "One-shot route cleanup before fulfillment caused route-already-handled failure.",
+      "log": {
+        "path": "/private/tmp/forge-f05-live-state-chrome-writable.log",
+        "sha256": "27703b7ef9657ac559559877e84a973aad22a4ebeba7955b6e6b2c2e646c8a7f",
+        "bytes": 299
+      }
+    },
+    {
+      "kind": "writable browser",
+      "exit_code": 1,
+      "reason": "Navigation fault installed before observed unlock completion.",
+      "log": {
+        "path": "/private/tmp/forge-f05-live-state-chrome-writable-route-order.log",
+        "sha256": "8a3a3821089f347346f13de2c3b9ac535ebbeeea22beee9fdd4cb940ee67235c",
+        "bytes": 2887
+      }
+    },
+    {
+      "kind": "writable browser",
+      "exit_code": 1,
+      "reason": "Generic successful-list focus expectation did not recognize missing prerequisite manifest.",
+      "log": {
+        "path": "/private/tmp/forge-f05-live-state-chrome-writable-ready.log",
+        "sha256": "234885821865370b67145b9e9b940258a8d713b210ea1095be075e82811bab9d",
+        "bytes": 947
+      }
+    },
+    {
+      "kind": "writable browser",
+      "exit_code": 1,
+      "reason": "Operation IDs overflowed page at 640 CSS pixels; production wrapping fixed.",
+      "log": {
+        "path": "/private/tmp/forge-f05-live-state-chrome-writable-initial-inventory.log",
+        "sha256": "7c54c65cccf60968b0f19e07bd3e8a111e19e92bae949b1d1b0436fbafad700e",
+        "bytes": 11115
+      }
+    }
+  ],
+  "reflow_correction": {
+    "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.css",
+    "before_sha256": "9e185851e7a3369a64c4f2e8c25038397297b4d6e5c873c515e9c1e3c4db94b0",
+    "after_sha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+    "change": {
+      "before": "#operation-region { margin: 20px 4vw; }",
+      "after": "#operation-region { margin: 20px 4vw; overflow-wrap: anywhere; }"
+    },
+    "scope": "Wrap long operation identifiers and local status/error text; preserve complete text and IDs."
+  },
+  "historical_navigation_receipt": {
+    "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/docs/workspace-navigation-verification.json",
+    "sha256": "b235a2b01c442721469935206daa27cfb22c46c935e02ac385756a5507a4f83b",
+    "bytes": 34178,
+    "byte_identical_to_baseline": true,
+    "prose_browser_node_correction": "v24.19.0; historical JSON already correct, source-test Node separately v22.22.3"
+  },
+  "frozen_proposal_packets": [
+    {
+      "path": "/private/tmp/forge-f05-live-state-proposal/proposal-index.json",
+      "sha256": "7120e10354d0330f66459678bc3e9900fd4c2341b940d5c333533b7e98cfe686",
+      "bytes": 5090
+    },
+    {
+      "path": "/private/tmp/forge-f05-live-state-tests/index.json",
+      "sha256": "2d42a8d26b122f5d640fe25c4f06054949229d957a10523f5f18efbe6817abff",
+      "bytes": 4254
+    }
+  ],
+  "limitations": [
+    "Raw V8 function/range observations are not line, statement, branch or condition coverage.",
+    "Exact-source VM run uses fake DOM and timers; native-browser observations are separate.",
+    "Changed-function execution does not establish all paths or whole-repository/Rust coverage.",
+    "Named docstring inventory excludes unchanged test helpers and anonymous callbacks; whole-asset function-declaration denominator separately excludes arrow declarations.",
+    "Page interception is not OS-enforced network denial.",
+    "Only one local macOS arm64 installed Chrome version; final-page reflow at 640/320 CSS pixels does not qualify all views or zoom/text sizes.",
+    "Passphrase fixture border measurement is not all-control/native/forced-color/WCAG acceptance.",
+    "Complete keyboard golden path, pending/throttled unlock and real screen-reader announcements remain open.",
+    "Browser/platform matrix, independent security, dependency acceptance, authentic user studies and release/package provenance remain open.",
+    "Required Rust commit hook outcome and stacked PR hosted integration must be recorded separately before draft and final acceptance.",
+    "Full integrated documentation review remains required at the end of scoped roadmap work."
+  ],
+  "first_required_commit_hook": {
+    "log": {
+      "path": "/private/tmp/forge-f05-live-state-required-hook.log",
+      "sha256": "bce5bf9bc92b770f2c231681cd862416bc0de4bd5120764bdbd9509a0fb66dde"
+    },
+    "exit_code": 0,
+    "passed": 2692,
+    "failed": 0,
+    "ignored": 3,
+    "measured": 0,
+    "filtered": 0,
+    "toolchain": "Rust 1.98.1",
+    "checks": [
+      "cargo fmt --check",
+      "cargo clippy --locked --all-targets -- -D warnings",
+      "cargo test --locked"
+    ]
+  },
+  "superseded_successful_browser_observations": {
+    "binary": {
+      "sha256": "031017fff53c3f64b5be90ede59e55a763581fc4f6c37cdd20a0b6c3ac7e0f57",
+      "path": "/private/tmp/forge-f05-live-state-target-1.98.1/debug/forge",
+      "bytes": 68021800,
+      "qualification": "Historical successful native run; mutable build path subsequently rebuilt. Original exact binary bytes were not preserved. Original logs and first receipt retained byte-for-byte."
+    },
+    "browsers": [
+      {
+        "mode": "writable",
+        "browserVersion": "154.0.8037.97",
+        "embeddedAssetSha256": "c61cb6a87ee9473e254e320402ac38c46f244af7797d004696b362755f753f9d",
+        "embeddedStyleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+        "inputBorderContrast": {
+          "border": "rgb(82, 96, 91)",
+          "fill": "rgb(255, 255, 255)",
+          "ancestor": "rgb(246, 247, 244)",
+          "againstFill": 6.597586198170763,
+          "againstAncestor": 6.135504615280822
+        },
+        "focusChecks": 38,
+        "reflowChecks": [
+          {
+            "viewportWidth": 640,
+            "pageWidth": 640,
+            "operations": [
+              {
+                "id": "op_c368ed8b0c95cf85305367634f139584d68d4e868bb153620a45a14c70a61868",
+                "heading": "Operation op_c368ed8b0c95cf85305367634f139584d68d4e868bb153620a45a14c70a61868",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_e67cc657cac8f08000b28d0e05bcd81220134e8d1a677e6a2bdbbbd9775e11de",
+                "heading": "Operation op_e67cc657cac8f08000b28d0e05bcd81220134e8d1a677e6a2bdbbbd9775e11de",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_26c5a13712f8631fa5c0564de9e039690eafe584553daf604fa5bb4da5566c3b",
+                "heading": "Operation op_26c5a13712f8631fa5c0564de9e039690eafe584553daf604fa5bb4da5566c3b",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_07f498fffa52e0654c733475e9ac6af818402d44e2f1e969bca9cfe498799734",
+                "heading": "Operation op_07f498fffa52e0654c733475e9ac6af818402d44e2f1e969bca9cfe498799734",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_e131de0c9461e839545b3200a4e3596b2a28a3c92e9318035844bea1e46d1e03",
+                "heading": "Operation op_e131de0c9461e839545b3200a4e3596b2a28a3c92e9318035844bea1e46d1e03",
+                "headingWithinRow": true
+              }
+            ]
+          },
+          {
+            "viewportWidth": 320,
+            "pageWidth": 320,
+            "operations": [
+              {
+                "id": "op_c368ed8b0c95cf85305367634f139584d68d4e868bb153620a45a14c70a61868",
+                "heading": "Operation op_c368ed8b0c95cf85305367634f139584d68d4e868bb153620a45a14c70a61868",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_e67cc657cac8f08000b28d0e05bcd81220134e8d1a677e6a2bdbbbd9775e11de",
+                "heading": "Operation op_e67cc657cac8f08000b28d0e05bcd81220134e8d1a677e6a2bdbbbd9775e11de",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_26c5a13712f8631fa5c0564de9e039690eafe584553daf604fa5bb4da5566c3b",
+                "heading": "Operation op_26c5a13712f8631fa5c0564de9e039690eafe584553daf604fa5bb4da5566c3b",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_07f498fffa52e0654c733475e9ac6af818402d44e2f1e969bca9cfe498799734",
+                "heading": "Operation op_07f498fffa52e0654c733475e9ac6af818402d44e2f1e969bca9cfe498799734",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_e131de0c9461e839545b3200a4e3596b2a28a3c92e9318035844bea1e46d1e03",
+                "heading": "Operation op_e131de0c9461e839545b3200a4e3596b2a28a3c92e9318035844bea1e46d1e03",
+                "headingWithinRow": true
+              }
+            ]
+          }
+        ],
+        "documentedRequests": [
+          "GET /api/v1/applicability/controls",
+          "GET /api/v1/applicability/draft",
+          "GET /api/v1/effects/previews/{id}",
+          "GET /api/v1/exports/{id}/download",
+          "GET /api/v1/mapping/draft",
+          "GET /api/v1/mapping/subjects",
+          "GET /api/v1/operations/{id}",
+          "GET /api/v1/project/config-status",
+          "GET /api/v1/project/summary",
+          "GET /api/v1/provenance/entries",
+          "GET /api/v1/resources",
+          "GET /api/v1/review-queue/items",
+          "POST /api/v1/applicability/analyses",
+          "POST /api/v1/applicability/initializations",
+          "POST /api/v1/conversions",
+          "POST /api/v1/effects/commits",
+          "POST /api/v1/exports",
+          "POST /api/v1/mapping/builds",
+          "POST /api/v1/mapping/draft/validation",
+          "POST /api/v1/mapping/initializations",
+          "POST /api/v1/resources/register",
+          "POST /api/v1/session/shutdown",
+          "POST /api/v1/session/unlock",
+          "PUT /api/v1/applicability/draft",
+          "PUT /api/v1/mapping/draft"
+        ],
+        "nonLoopbackRequests": 0,
+        "pageErrors": 0,
+        "exit_code": 0,
+        "log": {
+          "path": "/private/tmp/forge-f05-live-state-chrome-writable-reflow-final.log",
+          "sha256": "e0b0a2d6a5474ae24ae6af544e76b811b2950084c38d3629e6d5c3f723a87dc7",
+          "bytes": 3341
+        }
+      },
+      {
+        "mode": "read-only",
+        "browserVersion": "154.0.8037.97",
+        "embeddedAssetSha256": "c61cb6a87ee9473e254e320402ac38c46f244af7797d004696b362755f753f9d",
+        "embeddedStyleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+        "inputBorderContrast": {
+          "border": "rgb(82, 96, 91)",
+          "fill": "rgb(255, 255, 255)",
+          "ancestor": "rgb(246, 247, 244)",
+          "againstFill": 6.597586198170763,
+          "againstAncestor": 6.135504615280822
+        },
+        "focusChecks": 2,
+        "reflowChecks": [
+          {
+            "viewportWidth": 640,
+            "pageWidth": 640,
+            "operations": []
+          },
+          {
+            "viewportWidth": 320,
+            "pageWidth": 320,
+            "operations": []
+          }
+        ],
+        "documentedRequests": [
+          "GET /api/v1/project/config-status",
+          "GET /api/v1/project/summary",
+          "GET /api/v1/resources",
+          "POST /api/v1/session/shutdown",
+          "POST /api/v1/session/unlock"
+        ],
+        "nonLoopbackRequests": 0,
+        "pageErrors": 0,
+        "exit_code": 0,
+        "log": {
+          "path": "/private/tmp/forge-f05-live-state-chrome-read-only-reflow-final.log",
+          "sha256": "48de1c8ed4ac7db99fd59a840c790a25faac905d4ead5b1431c2bc31ea9fc09d",
+          "bytes": 766
+        }
+      }
+    ],
+    "first_receipt": {
+      "path": "/private/tmp/forge-f05-live-state-first-applied-receipt.json",
+      "sha256": "4aaa9db484d2a31d4d319ad83604725b334e3abe56220ef029d2b507cd1ea3da",
+      "bytes": 133732
+    },
+    "qualification": "Historical successful exact-asset observations. The original mutable build binary bytes are no longer retained; final qualifying runs use the separately preserved exact binary."
+  },
+  "focused_docs_review": {
+    "review": {
+      "path": "/private/tmp/forge-f05-live-state-docs-review.json",
+      "sha256": "dea00ea6825c190f4ae6cb31746364eb72a002ffff0337986f36363fd00f7664",
+      "bytes": 4541
+    },
+    "scope": "Independent bounded review of focused docs and receipt before amendment. Full final roadmap docs gate remains open.",
+    "findings_resolved": [
+      "Mutable debug binary path superseded by preserved content-hash artifact and fresh native runs.",
+      "Plan deduplication text restricted to repeated accepted operation observations."
+    ]
+  }
+}

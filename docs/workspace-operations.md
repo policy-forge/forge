@@ -69,6 +69,9 @@ neither durable continuation nor automatic commit replay.
 
 The checkpoint design and regression plan are engineering prerequisites for
 PRD 062 S-4. Source changes, component tests and scoped HTTP checks do not establish
-full S-4 acceptance. Browser consumer integration, platform qualification,
-security/accessibility and human acceptance remain separate gates. All other
-F19 requirements and the final integrated documentation review remain in scope.
+full S-4 acceptance. The [operation browser verification](workspace-operation-browser-verification.md)
+records the current integrated consumer, fresh docstring/test coverage and bounded
+actual capture/cancellation observations, including an earlier incomplete probe.
+Full S-4, platform qualification, security/accessibility and human acceptance
+remain separate gates. All other F19 requirements and the final integrated
+documentation review remain in scope.
