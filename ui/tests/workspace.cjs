@@ -3,6 +3,7 @@ const {chromium}=require("playwright");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const path=require("node:path");
+const {createHash}=require("node:crypto");
 (async()=>{
  const url=process.argv[2];const readOnly=process.argv[3]==="read-only";
  assert.match(url,/^http:\/\/127\.0\.0\.1:[0-9]+$/);
@@ -11,7 +12,8 @@ const path=require("node:path");
  const browser=await chromium.launch(options);
  const context=await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:"block"});
  const page=await context.newPage();page.setDefaultTimeout(20000);
- const violations=[];const calls=new Set();const errors=[];
+ const violations=[];const calls=new Set();const errors=[];let provenanceReads=0;let focusChecks=0;let embeddedAssetSha256;
+  page.on("request",request=>{if(new URL(request.url()).pathname==="/api/v1/provenance/entries")provenanceReads++;});
  const contract=fs.readFileSync(path.join(__dirname,"../../docs/api/forge-workspace-v1.openapi.yaml"),"utf8");
  const documented=[];let routePath;
  for(const line of contract.split("\n")) {
@@ -30,17 +32,51 @@ const path=require("node:path");
  });
  page.on("pageerror",error=>errors.push(error.message));
  try {
+   const assetResponse=page.waitForResponse(response=>/^\/assets\/[a-f0-9]{64}\.js$/.test(new URL(response.url()).pathname));
    await page.goto(url);
+   const servedAsset=await (await assetResponse).body();
+   const expectedAsset=fs.readFileSync(path.join(__dirname,"../workspace.js"));
+   assert.deepEqual(servedAsset,expectedAsset,"the server must embed the exact candidate JavaScript");
+   embeddedAssetSha256=createHash("sha256").update(servedAsset).digest("hex");
    await page.getByLabel("Workspace passphrase").fill("synthetic browser verification passphrase 062");
    await page.getByRole("button",{name:"Unlock workspace",exact:true}).click();
    await page.getByRole("heading",{name:"Overview",exact:true}).waitFor();
-   const navigate=async name=>{await page.getByRole("navigation").getByRole("button",{name,exact:true}).click();await page.getByRole("heading",{name,exact:true}).waitFor();};
+   // Keyboard activation exercises the native button/dialog contracts without a pointer.
+   /** Activate a native control with Enter after explicitly setting keyboard focus. */
+   const activate=async locator=>{await locator.focus();await locator.press("Enter");};
+   /** Wait for queued native close/action completion, then assert the exact focus target. */
+   const focused=async locator=>{await page.waitForFunction(node=>node===document.activeElement,await locator.elementHandle());assert(await locator.evaluate(node=>node===document.activeElement));focusChecks++;};
+   /** Navigate by keyboard and verify the successful destination heading has focus. */
+   const navigate=async name=>{await activate(page.getByRole("navigation").getByRole("button",{name,exact:true}));await page.getByRole("heading",{name,exact:true}).waitFor();await focused(page.locator("#view-title"));};
+   /** Choose the explicit destructive dialog action, then wait for native close. */
+   const discard=async()=>{await activate(page.getByRole("dialog").getByRole("button",{name:"Discard edits",exact:true}));await page.getByRole("dialog").waitFor({state:"hidden"});};
+   // A failed destination read must leave the focused summary intact, then recover normally.
+   await page.route("**/api/v1/resources?*",route=>route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic navigation failure.",retryable:true})}),{times:1});
+   await activate(page.getByRole("navigation").getByRole("button",{name:"Policies & Artifacts",exact:true}));
+   await page.locator("#error").waitFor({state:"visible"});assert.match(await page.locator("#error").textContent(),/Synthetic navigation failure/);await focused(page.locator("#error"));
    const confirm=async()=>{await page.getByRole("dialog").getByRole("button",{name:"Confirm this exact write"}).click();await page.getByRole("dialog").waitFor({state:"hidden"});};
    await navigate("Policies & Artifacts");
    if(readOnly){assert.equal(await page.getByRole("button",{name:"Preview registration"}).count(),0);}
    else {
      const register=async(file,role,key)=>{await page.getByLabel("Resource role",{exact:true}).selectOption(role);await page.getByLabel("Project-relative file path",{exact:true}).fill(file);await page.getByLabel("Stable resource key",{exact:true}).fill(key);await page.getByRole("button",{name:"Preview registration",exact:true}).click();await confirm();};
      await register("policy.md","policy-source","policy");
+     // Inspect must preserve registration values and invoker focus for Keep editing/Escape.
+     const registrationPath=page.getByLabel("Project-relative file path",{exact:true});
+     const registrationKey=page.getByLabel("Stable resource key",{exact:true});
+     const inspectPolicy=page.getByRole("button",{name:"Inspect policy",exact:true});
+     await registrationPath.fill("unconfirmed-policy.md");await registrationKey.fill("unconfirmed-key");
+     const beforeInspect=provenanceReads;
+     await activate(inspectPolicy);await page.getByRole("dialog").waitFor();await focused(page.getByRole("heading",{name:"Discard unconfirmed edits?",exact:true}));
+     await activate(page.getByRole("dialog").getByRole("button",{name:"Keep editing",exact:true}));await page.getByRole("dialog").waitFor({state:"hidden"});
+     assert.equal(await registrationPath.inputValue(),"unconfirmed-policy.md");assert.equal(await registrationKey.inputValue(),"unconfirmed-key");await focused(inspectPolicy);assert.equal(provenanceReads,beforeInspect);
+     await activate(inspectPolicy);await page.getByRole("dialog").waitFor();await page.keyboard.press("Escape");await page.getByRole("dialog").waitFor({state:"hidden"});
+     assert.equal(await registrationPath.inputValue(),"unconfirmed-policy.md");assert.equal(await registrationKey.inputValue(),"unconfirmed-key");await focused(inspectPolicy);assert.equal(provenanceReads,beforeInspect);
+     // A failed approved inspection keeps unsaved values, error focus, and the next discard gate.
+     await page.route("**/api/v1/provenance/entries?*",route=>route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic provenance failure.",retryable:true})}),{times:1});
+     await activate(inspectPolicy);await discard();await page.locator("#error").waitFor({state:"visible"});await focused(page.locator("#error"));assert.match(await page.locator("#error").textContent(),/Synthetic provenance failure/);
+     assert.equal(await registrationPath.inputValue(),"unconfirmed-policy.md");assert.equal(await registrationKey.inputValue(),"unconfirmed-key");
+     await activate(inspectPolicy);await page.getByRole("dialog").waitFor();await discard();await page.getByRole("heading",{name:"Provenance references",exact:true}).waitFor();await focused(page.locator("#view-title"));
+     await navigate("Policies & Artifacts");assert.equal(await page.getByRole("dialog").count(),0,"confirmed discard must clear the old dirty state");
      // Inject documented transport failures without publishing or replacing project data.
      await page.getByLabel("Resource role",{exact:true}).selectOption("oscal-catalog-artifact");await page.getByLabel("Project-relative file path",{exact:true}).fill("framework.json");await page.getByLabel("Stable resource key",{exact:true}).fill("framework");await page.getByRole("button",{name:"Preview registration",exact:true}).click();
      await page.route("**/api/v1/effects/commits",route=>route.fulfill({status:409,contentType:"application/json",body:JSON.stringify({code:"receipt-expired",message:"The preview expired. Prepare a new preview.",retryable:false})}),{times:1});
@@ -54,6 +90,12 @@ const path=require("node:path");
      await navigate("Framework Scope");await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("New decision manifest path within project").fill("scope.json");await page.getByRole("button",{name:"Preview initial scope manifest"}).click();await confirm();
      await navigate("Policies & Artifacts");await register("scope.json","applicability-manifest","scope");
      await navigate("Framework Scope");
+     // Inspecting scope evidence must not erase the unsaved full decision document.
+     const scopeDocument=page.getByLabel("Decision manifest (JSON)",{exact:true});
+     const unsavedScope=(await scopeDocument.inputValue())+"\n ";await scopeDocument.fill(unsavedScope);
+     const inspectScope=page.getByRole("button",{name:"Inspect framework-a",exact:true}).first();const beforeScopeInspect=provenanceReads;
+     await activate(inspectScope);await page.getByRole("dialog").waitFor();await page.keyboard.press("Escape");await page.getByRole("dialog").waitFor({state:"hidden"});
+     assert.equal(await scopeDocument.inputValue(),unsavedScope);await focused(inspectScope);assert.equal(provenanceReads,beforeScopeInspect);
      await page.getByLabel("Control to review").selectOption("framework-a");await page.getByLabel("Explicit decision").selectOption("applicable");await page.getByLabel("Decision reviewer key").fill("reviewer");await page.getByLabel("Decision reviewer name").fill("Synthetic reviewer <script>" );await page.getByLabel("Decision review time (RFC3339)").fill("2026-09-10T00:00:00Z");await page.getByLabel("Decision rationale").fill("Explicit synthetic scope review");
      await page.getByRole("button",{name:"Apply decision to unsaved manifest"}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
      await page.getByRole("button",{name:"Analyze committed scope decisions"}).click();await confirm();
@@ -70,7 +112,12 @@ const path=require("node:path");
      await navigate("Policies & Artifacts");await register("mapping-collection.json","mapping-collection","built-mapping");
      await navigate("Framework Scope");await page.getByLabel("Reviewed mapping collection",{exact:true}).selectOption({label:"built-mapping · mapping-collection.json"});await page.getByRole("button",{name:"Link collection to unsaved scope",exact:true}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();await page.getByRole("button",{name:"Analyze committed scope decisions"}).click();await confirm();
      assert(await page.getByRole("cell",{name:"applicable-reviewed-no-relationship",exact:true}).count()>0);
-     await navigate("Trace & Reports");await page.getByRole("button",{name:"Trace converted",exact:true}).click();await page.getByRole("heading",{name:"Provenance references",exact:true}).waitFor();
+     await navigate("Trace & Reports");
+     const reportTarget=page.getByLabel("Report destination within project");const traceConverted=page.getByRole("button",{name:"Trace converted",exact:true});
+     await reportTarget.fill("unconfirmed-report.html");const beforeTrace=provenanceReads;
+     await activate(traceConverted);await page.getByRole("dialog").waitFor();await activate(page.getByRole("dialog").getByRole("button",{name:"Keep editing",exact:true}));await page.getByRole("dialog").waitFor({state:"hidden"});
+     assert.equal(await reportTarget.inputValue(),"unconfirmed-report.html");await focused(traceConverted);assert.equal(provenanceReads,beforeTrace);
+     await activate(traceConverted);await discard();await page.getByRole("heading",{name:"Provenance references",exact:true}).waitFor();await focused(page.locator("#view-title"));
      await navigate("Trace & Reports");await page.getByLabel("Report",{exact:true}).selectOption("trace");await page.getByLabel("Report destination within project").fill("trace.html");await page.getByRole("button",{name:"Prepare export"}).click();await confirm();
      const download=page.waitForEvent("download");await page.getByRole("button",{name:"Download committed redacted report"}).click();assert.equal((await download).suggestedFilename(),"forge-redacted-report.html");
    }
@@ -83,9 +130,10 @@ const path=require("node:path");
    await page.getByRole("dialog").getByRole("button",{name:"Stop workspace",exact:true}).click();
    await page.getByText("Stopped",{exact:true}).waitFor();
    assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
-   console.log(JSON.stringify({mode:readOnly?"read-only":"writable",documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0}));
+   console.log(JSON.stringify({mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,focusChecks,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0}));
  } catch(error){
-   console.error(error.message);console.error("Visible status:",await page.locator("#error").textContent());
+   console.error(error.stack || error.message);console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
+   console.error("Focus state:",JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,error:document.getElementById("error")?.outerHTML,viewInert:document.getElementById("view")?.inert,dialogs:[...document.querySelectorAll("dialog[open]")].map(node=>node.outerHTML)}))));
    await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:true});process.exitCode=1;
  } finally {await context.close();await browser.close();}
 })().catch(error=>{console.error(error.message);process.exitCode=1;});
