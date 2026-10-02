@@ -908,29 +908,33 @@ Install the pre-commit hook:
 
 ## Local workspace index bundles
 
-For a project with an explicit `forge.workspace.json`, the maintained Python
-client's `bundle_preview()` and `verify_bundle(bundle)` inspect all registrations
-and compare supplied fingerprints with current registered captures in read-only
-sessions. The metadata includes labels, keys, paths, hashes and byte lengths;
-consider its sensitivity before retaining or sharing it. No source bytes or
-project writes are part of this profile, and supplied unregistered paths are not
-opened. Matching an expected subset is separate from whole-index equality and
-observed valid/stale/invalid domain state.
+For an explicit `forge.workspace.json`, the unreleased **Trace & Reports**
+browser panel and maintained Python client's `bundle_preview()` and
+`verify_bundle(bundle)` inspect complete registrations and compare supplied
+fingerprints in either session mode. Preview metadata and acknowledge its
+sensitivity before requesting the browser's local metadata JSON download. This
+writes no project file or server receipt, includes no source content and
+establishes no approval.
 
-These API 1.2.0 queries use the complete expected denominator, including 101 or
-1,000 entries within byte bounds, and prepare no 100-input effect. A retry captures
-current state again. The entire verification wrapper must fit the 1 MiB request
-limit; an encoded bundle near that limit may not fit after wrapping. See
-[Workspace index bundles](workspace-index-bundles.md) for the maintained read-only
-Python example, normalized index hash algorithm, errors and limits. Browser export,
-confirmed writable import and the final full integrated documentation review
-remain open.
+Choose a metadata JSON file, then explicitly compare registered fingerprints.
+Its original bytes plus the 11-byte wrapper must fit 1 MiB, so the selected file
+may be at most 1,048,565 bytes. The server rejects malformed/unsupported input
+without opening supplied unregistered paths. Missing/empty index, subset
+agreement/current-only entries, whole-index equality and observed validation
+state remain separate. Queries keep the complete expected denominator up to
+1,000 within byte limits and prepare no 100-input effect.
+
+See [Workspace index bundles](workspace-index-bundles.md) for the Python example,
+normalized index hash versus original resource hashes and safe errors. Server
+publication/receipt-backed export, source-content opt-in, confirmed writable
+import, full S-6 capacity/batch qualification and the final integrated
+documentation review remain open.
 
 ## Further Reading
 
 - [README.md](../README.md) — project overview and quick start
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
-- [Contributing Guide](CONTRIBUTING.md) — development setup and PR process
+- [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process
 - [Architecture Guide](architecture.md) — pipeline details and crate structure
 - `example_data/` — 25 sample policies
 - `tests/fixtures/` — test fixtures for all subcommands

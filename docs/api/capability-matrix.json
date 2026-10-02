@@ -344,7 +344,7 @@
       "getProjectBundlePreview"
     ],
     "authorization": "browser-read",
-    "notes": "API and maintained headless client only; no bundled UI action yet. Explicit index, every ordered registration, metadata sensitivity categories; no source content, effect, export file or approval. S-6 remains partial."
+    "notes": "API, maintained headless client and Trace & Reports browser preview in either session mode. Every ordered registration and metadata sensitivity categories are retained. An acknowledgment tied to the current preview permits a local metadata JSON download; no source content, project-file/server publication, effect, receipt or domain approval. S-6 remains partial."
   },
   {
     "id": "CM-39",
@@ -358,6 +358,6 @@
       "verifyProjectBundle"
     ],
     "authorization": "browser-read",
-    "notes": "API and maintained headless client only. Read-only POST, complete expected denominator up to1000; never opens supplied unregistered paths. Fingerprint match is separate from domain validation/staleness, whole-index equality and import readiness. No receipt, idempotent replay, hidden prefix or publication."
+    "notes": "API, maintained headless client and Trace & Reports browser comparison in either session mode. The chosen file is at most 1,048,565 bytes; its original bytes plus the 11-byte wrapper fit the 1 MiB read-only POST bound. Complete expected denominator up to 1,000; supplied unregistered paths are never opened. Fingerprints, observed validation/staleness, whole-index equality and import readiness remain separate. No receipt, idempotency key, hidden prefix or server publication."
   }
 ]

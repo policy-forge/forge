@@ -5,7 +5,7 @@ const fs=require("node:fs");
 const path=require("node:path");
 const {createHash}=require("node:crypto");
 (async()=>{
- const url=process.argv[2];const readOnly=process.argv[3]==="read-only";
+ const url=process.argv[2];const readOnly=process.argv[3]==="read-only";const longMetadata=process.env.FORGE_TEST_LONG_METADATA==="1";
  assert.match(url,/^http:\/\/127\.0\.0\.1:[0-9]+$/);
  const options={headless:true,args:["--disable-background-networking"]};
  if(process.env.FORGE_TEST_BROWSER_EXECUTABLE)options.executablePath=process.env.FORGE_TEST_BROWSER_EXECUTABLE;
@@ -392,6 +392,128 @@ const {createHash}=require("node:crypto");
      await page.keyboard.press("Tab");await focused(page.getByRole("button",{name:"Download committed redacted report",exact:true}));
      const download=page.waitForEvent("download");await page.keyboard.press("Enter");assert.equal((await download).suggestedFilename(),"forge-redacted-report.html");
    }
+    /** Exercise real documented metadata reads and a local download in either session mode. */
+    async function verifyMetadataConsumer() {
+      await navigate("Trace & Reports");
+      const panel=page.locator("[data-bundle-panel]");
+      const preview=panel.getByRole("button",{name:"Preview metadata",exact:true});
+      const acknowledgment=page.getByLabel("I understand that labels, resource keys, paths and hashes can reveal project information.",{exact:true});
+      const downloadButton=panel.getByRole("button",{name:"Download metadata bundle",exact:true});
+      const file=page.getByLabel("Choose a metadata bundle JSON file",{exact:true});
+      const compare=panel.getByRole("button",{name:"Compare registered fingerprints",exact:true});
+      const globalStatus=await page.locator("#status").textContent();
+      const metadataReflow=[];
+      /** Measure actual global overflow while permitting table-region scroll, then restore viewport and focus. */
+      async function measureMetadataLongContent(stage) {
+        const previousViewport=page.viewportSize();const previousFocus=await page.locator(":focus").elementHandle();
+        assert(previousViewport);assert(previousFocus);
+        try {
+          for(const width of [640,320]) {
+            await page.setViewportSize({width,height:900});
+            const observation=await page.evaluate(stage=>({stage,viewportWidth:window.innerWidth,
+              documentWidth:document.documentElement.scrollWidth,bodyWidth:document.body.scrollWidth,
+              pageWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
+              tableRegions:[...document.querySelectorAll("[data-bundle-panel] .table-wrap")].map(node=>({
+                caption:node.getAttribute("aria-label"),clientWidth:node.clientWidth,scrollWidth:node.scrollWidth,
+                left:node.getBoundingClientRect().left,right:node.getBoundingClientRect().right})),
+              metadataTextScalars:[...document.querySelectorAll("[data-bundle-metadata] p")].map(node=>[...node.textContent].length),
+              comparisonStatusScalars:[...document.querySelectorAll("[data-bundle-comparison-status]")].map(node=>[...node.textContent].length)}),stage);
+            metadataReflow.push(observation);
+            console.error("Metadata long-content reflow observation:",JSON.stringify(observation));
+          }
+        } finally {
+          await page.setViewportSize(previousViewport);
+          // Measurement explicitly restores the captured native control; subsequent Tab probes start there.
+          if(await previousFocus.evaluate(node=>node.isConnected))await previousFocus.focus();
+        }
+      }
+      assert.equal(await acknowledgment.isChecked(),false);
+      assert.equal(await downloadButton.getAttribute("aria-disabled"),"true");
+      const previewReply=page.waitForResponse(response=>response.request().method()==="GET"&&new URL(response.url()).pathname==="/api/v1/project/bundle-preview"&&response.ok());
+      await activate(preview);
+      const observed=await (await previewReply).json();
+      await page.waitForFunction(({node,count})=>node.textContent===`Metadata preview: ${count} registered resources. No project file was written.`,
+        {node:await panel.locator("[data-bundle-preview-status]").elementHandle(),count:observed.bundle.pins.length});
+      assert.equal(observed.source_content_included,false);
+      assert.equal(observed.bundle.content_profile,"index-and-hashes");
+      assert.equal(observed.bundle.pins.length,observed.bundle.index.resources.length);
+      assert.equal(await panel.getByRole("table",{name:"Complete registered bundle metadata",exact:true}).locator("tbody tr").count(),observed.bundle.pins.length);
+      await focused(preview);
+      let projectLabelObservation;
+      if(longMetadata) {
+        const label=observed.bundle.index.label;
+        assert.equal(label,"<script>"+"L".repeat(192));
+        const metadataLabel=panel.locator("[data-bundle-metadata] p").first();
+        assert.equal(await metadataLabel.textContent(),"Project: "+label);
+        assert.equal(await panel.locator("script").count(),0,"The actual server label must remain literal text");
+        projectLabelObservation={scalarCount:[...label].length,utf8Bytes:Buffer.byteLength(label),
+          literalScriptPrefix:label.startsWith("<script>"),unbrokenSuffixScalars:[...label.slice(8)].length,
+          exactAuthoredLabel:label==="<script>"+"L".repeat(192),renderedAsText:true};
+        console.error("Metadata long-content project-label observation:",JSON.stringify(projectLabelObservation));
+        await measureMetadataLongContent("after-preview");await focused(preview);
+      }
+      // Observe native Tab order after the asynchronous preview, without assigning these targets.
+      await page.keyboard.press("Tab");await focused(panel.getByRole("region",{name:"Complete registered bundle metadata",exact:true}));
+      await page.keyboard.press("Tab");await focused(acknowledgment);await page.keyboard.press("Space");
+      assert.equal(await acknowledgment.isChecked(),true);assert.equal(await downloadButton.getAttribute("aria-disabled"),"false");
+      await page.keyboard.press("Tab");await focused(downloadButton);
+      const localDownload=page.waitForEvent("download");await page.keyboard.press("Enter");const downloaded=await localDownload;
+      assert.equal(downloaded.suggestedFilename(),"forge-workspace-index-and-hashes.json");
+      const downloadedPath=await downloaded.path();assert(downloadedPath);const bytes=fs.readFileSync(downloadedPath);
+      assert.deepEqual(bytes,Buffer.from(JSON.stringify(observed.bundle)),"Local download must contain the complete observed bundle alone");
+      assert(bytes.length<=1024*1024);await focused(downloadButton);
+      await page.keyboard.press("Tab");await focused(file);
+      // setInputFiles supplies an external synthetic File through the native input; no OS chooser claim.
+      const chosenName=longMetadata?"N".repeat(180)+".json":"observed-metadata.json";
+      await file.setInputFiles({name:chosenName,mimeType:"application/json",buffer:bytes});
+      let chosenFileObservation;
+      if(longMetadata) {
+        chosenFileObservation=await file.evaluate(node=>{const chosen=node.files[0];return {
+          name:chosen.name,scalarCount:[...chosen.name].length,byteLength:chosen.size,type:chosen.type};});
+        assert.equal(chosenFileObservation.name,chosenName);assert.equal(chosenFileObservation.scalarCount,185);
+        assert.equal(chosenFileObservation.byteLength,bytes.length);
+        assert.equal(await panel.locator("[data-bundle-comparison-status]").textContent(),`Chosen file: ${chosenName} (${bytes.length} bytes). Compare explicitly.`);
+        console.error("Metadata long-content chosen-file observation:",JSON.stringify(chosenFileObservation));
+        await measureMetadataLongContent("after-file-chosen-before-compare");await focused(file);
+        const overflow=metadataReflow.filter(value=>value.pageWidth>value.viewportWidth);
+        assert.deepEqual(overflow,[],"Actual metadata long content overflowed the global page: "+JSON.stringify(overflow));
+      }
+      await page.keyboard.press("Tab");await focused(compare);
+      const comparisonReply=page.waitForResponse(response=>response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/project/bundle-verifications"&&response.ok());
+      await page.keyboard.press("Enter");const actualComparisonReply=await comparisonReply;const comparison=await actualComparisonReply.json();
+      const raw=actualComparisonReply.request().postDataBuffer();assert(raw);assert.deepEqual(raw,Buffer.concat([Buffer.from('{"bundle":'),bytes,Buffer.from('}')]));
+      assert.equal(raw.length,bytes.length+11);assert(raw.length<=1024*1024);
+      assert.equal(actualComparisonReply.request().headers()["idempotency-key"],undefined);
+      await page.waitForFunction(({node,count})=>node.textContent.startsWith(`Registered fingerprints: ${count} matched,`),
+        {node:await panel.locator("[data-bundle-comparison-status]").elementHandle(),count:observed.bundle.pins.length});
+      assert.equal(comparison.scope,"registered-fingerprints-only");assert.equal(comparison.source_content_included,false);
+      assert.equal(comparison.state,"matched");assert.equal(comparison.expected_resources,observed.bundle.pins.length);
+      assert.equal(comparison.matched_resources,comparison.expected_resources);assert.equal(comparison.unregistered_resources,0);assert.equal(comparison.mismatched_resources,0);
+      assert.equal(comparison.expected_index_matches_current,true);assert.equal(comparison.current_only_resources,0);
+      assert.equal(await panel.getByRole("table",{name:"Complete expected fingerprint comparison",exact:true}).locator("tbody tr").count(),comparison.expected_resources);
+      await focused(compare);
+      // A duplicate raw key remains a strict server-parser rejection, never a client-side projection.
+      const duplicate=Buffer.concat([Buffer.from('{"schema_version":"forge.workspace-index-bundle/1",'),bytes.subarray(1)]);
+      await file.setInputFiles({name:"duplicate-metadata.json",mimeType:"application/json",buffer:duplicate});
+      const rejectedReply=page.waitForResponse(response=>response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/project/bundle-verifications"&&response.status()===400);
+      await activate(compare);const rejected=await rejectedReply;assert.equal((await rejected.json()).code,"invalid-request");
+      assert.deepEqual(rejected.request().postDataBuffer(),Buffer.concat([Buffer.from('{"bundle":'),duplicate,Buffer.from('}')]));
+      const localError=panel.locator("[data-bundle-comparison-error]");await localError.waitFor({state:"visible"});await focused(localError);
+      assert.equal(await page.locator("#error").isVisible(),false);assert.equal(await page.locator("#status").textContent(),globalStatus);
+      // A fresh actual preview revokes the earlier disclosure acknowledgment, even in read-only mode.
+      const refreshed=page.waitForResponse(response=>response.request().method()==="GET"&&new URL(response.url()).pathname==="/api/v1/project/bundle-preview"&&response.ok());
+      await activate(preview);await refreshed;
+      await page.waitForFunction(node=>node.getAttribute("aria-disabled")==="false",await preview.elementHandle());
+      assert.equal(await acknowledgment.isChecked(),false);assert.equal(await downloadButton.getAttribute("aria-disabled"),"true");await focused(preview);
+      assert.equal(await page.getByRole("dialog").count(),0);
+      return {previewRegistrations:observed.bundle.pins.length,comparisonExpected:comparison.expected_resources,
+        localDownloadBytes:bytes.length,localDownloadSha256:createHash("sha256").update(bytes).digest("hex"),rawEnvelopeBytes:raw.length,
+        strictDuplicateStatus:400,longContent:longMetadata?{projectLabelObservation,chosenFileObservation,metadataReflow,
+          initialIndexFixture:readOnly?"same two registered resources, authored long label":"preauthored empty index with long label before existing UI registration",
+          qualification:"Actual server label/native File and global-page measurements; table-region scroll allowed; viewport/focus explicitly restored; scoped reflow observation, not AT/WCAG or full acceptance"}:undefined,
+        scope:"actual GET/POST and local download; synthetic external File via native input; no OS chooser, writable import or full S6 acceptance"};
+    }
+    const metadataConsumerObservation=await verifyMetadataConsumer();
    if(process.env.FORGE_TEST_SCREENSHOT)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT,fullPage:true});
    for(const width of [640,320]){
      await page.setViewportSize({width,height:900});
@@ -422,7 +544,7 @@ const {createHash}=require("node:crypto");
      responseFactsWithoutRenderedObservation:measuredOperationResponses.filter(value=>!renderedFacts.has(`${value.id}|${value.completed}|${value.total}`)).length,
      qualification:renderedCaptureFacts.length?"actual_api_and_rendered_counter_correlation_only":"no_transient_capture_counter_render_observed"};
    assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
-   console.log(JSON.stringify({mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,reflowChecks,syntheticFaults,captureConsumerObservation,unlockRequests,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0}));
+   console.log(JSON.stringify({mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,reflowChecks,syntheticFaults,captureConsumerObservation,metadataConsumerObservation,unlockRequests,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0}));
  } catch(error){
    console.error(error.stack || error.message);console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
    console.error("Focus state:",JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,error:document.getElementById("error")?.outerHTML,viewInert:document.getElementById("view")?.inert,dialogs:[...document.querySelectorAll("dialog[open]")].map(node=>node.outerHTML)}))));

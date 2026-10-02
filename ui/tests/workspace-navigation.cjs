@@ -10,6 +10,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { randomUUID, createHash } = require("node:crypto");
+const { Blob } = require("node:buffer");
 
 const productionPath = process.env.FORGE_TEST_WORKSPACE_JS
   ? path.resolve(process.env.FORGE_TEST_WORKSPACE_JS) : path.resolve(__dirname, "../workspace.js");
@@ -43,6 +44,8 @@ class FakeNode {
     this.id = "";
     this.className = "";
     this.value = "";
+    this.files = [];
+    this.checked = false;
     this._hidden = false;
     this.open = false;
     this.required = false;
@@ -274,6 +277,12 @@ class FakeNode {
     if (this.dispatchEvent(event)) this.close();
   }
 
+  /** Observe local anchor dispatch; this double is not native browser download evidence. */
+  click() {
+    if (this.tagName === "A") this.ownerDocument.downloads.push({url:this.href,filename:this.download});
+    else this.dispatchEvent(eventFor("click",this));
+  }
+
   /** These tests use valid values; constraint validation is outside this harness. */
   reportValidity() { return true; }
 }
@@ -285,6 +294,7 @@ class FakeDocument {
     this.body = new FakeNode(this, "body");
     this.activeElement = this.body;
     this.focusHistory = [];
+    this.downloads = [];
     this.holdCloseEvents = false;
     this.closeEvents = [];
     /** Connect one static shell element before production initializes its handlers. */
@@ -349,6 +359,14 @@ class FakeDocument {
 function harness(overrides = {}) {
   const document = new FakeDocument();
   const requests = [];
+  const objectURLs = new Map(); const revokedURLs = [];
+  /** Track Blob URL lifetimes without mutating the host URL implementation. */
+  class HarnessURL extends URL {
+    /** Retain the actual Blob bytes for source-level local-download assertions. */
+    static createObjectURL(blob) { const key="blob:synthetic-"+randomUUID(); objectURLs.set(key,blob);return key; }
+    /** Record retirement of a previously retained local Blob URL. */
+    static revokeObjectURL(key) { objectURLs.delete(key);revokedURLs.push(key); }
+  }
   const routes = {
     "/project/summary": () => ({
       version: "synthetic-version-1", health: "ready",
@@ -376,7 +394,7 @@ function harness(overrides = {}) {
       else queueMicrotask(callback);
       return timers.length;
     },
-    URLSearchParams, URL, console,
+    URLSearchParams, URL:HarnessURL, Blob, console,
     fetch: async (url, options) => {
       const parsed = new URL(url, "http://127.0.0.1:1");
       const route = parsed.pathname.replace(/^\/api\/v1/, "");
@@ -410,7 +428,7 @@ function harness(overrides = {}) {
     timers.shift()();
     await settle();
   };
-  return { document, requests, routes, run, byId, byButton, byLabel, poll, timers };
+  return { document, requests, routes, run, byId, byButton, byLabel, poll, timers, objectURLs, revokedURLs };
 }
 
 /** Let event callbacks reach their first awaited boundary without wall-clock sleeps. */
@@ -2122,3 +2140,195 @@ for (const fails of [false, true]) {
     oneExactCommit(app);
   });
 }
+
+/** Build intrinsic synthetic metadata using the existing normalized index field order. */
+function metadataPreview(count = 1) {
+  const index = {schema_version:"forge.workspace/1",label:"Synthetic metadata <tag> π",resources:Array.from({length:count},(_,number)=>({key:`item-${number}`,role:"policy-source",path:`item-${number}.md`}))};
+  const bundle = {schema_version:"forge.workspace-index-bundle/1",content_profile:"index-and-hashes",index,
+    index_sha256:createHash("sha256").update(JSON.stringify(index,null,2)+"\n").digest("hex"),
+    pins:index.resources.map(resource=>({key:resource.key,sha256:"a".repeat(64),size_bytes:1}))};
+  return {bundle,snapshot_version:"synthetic-version-1",source_index_present:true,
+    included_metadata:["project-label","resource-keys","typed-roles","project-relative-paths","sha256-fingerprints","byte-lengths"],source_content_included:false};
+}
+
+/** Build complete synthetic comparison rows without claiming backend execution. */
+function metadataComparison(preview, extras = 0, observed = "valid") {
+  const count = preview.bundle.pins.length;
+  return {scope:"registered-fingerprints-only",snapshot_version:"synthetic-version-1",source_index_present:true,state:"matched",
+    current_resources:count+extras,current_only_resources:extras,expected_index_matches_current:extras===0,expected_resources:count,
+    matched_resources:count,unregistered_resources:0,mismatched_resources:0,
+    items:preview.bundle.pins.map(pin=>({key:pin.key,status:"matched",reason_codes:[],observed_resource_validation_state:observed})),source_content_included:false};
+}
+
+/** Install the actual metadata panel through full-asset navigation, with only API responses stubbed. */
+async function metadataApp(overrides = {}) {
+  const preview = metadataPreview();
+  const app = harness({/** Return the default complete synthetic preview for metadata panel probes. */ "/project/bundle-preview":()=>preview,/** Return default complete synthetic comparison rows for metadata panel probes. */ "/project/bundle-verifications":()=>metadataComparison(preview),...overrides});
+  await app.run('navigate("Trace & Reports")');
+  return app;
+}
+
+/** Resolve real rendered metadata controls, statuses and errors by their associations. */
+function metadataParts(app) {
+  const panel=app.byId("view").querySelector("[data-bundle-panel]");assert(panel);
+  return {panel,preview:app.byButton("Preview metadata",panel),download:app.byButton("Download metadata bundle",panel),
+    acknowledgment:app.byLabel("I understand that labels, resource keys, paths and hashes can reveal project information."),
+    file:app.byLabel("Choose a metadata bundle JSON file"),compare:app.byButton("Compare registered fingerprints",panel),
+    previewStatus:panel.querySelector("[data-bundle-preview-status]"),previewError:panel.querySelector("[data-bundle-preview-error]"),
+    comparisonStatus:panel.querySelector("[data-bundle-comparison-status]"),comparisonError:panel.querySelector("[data-bundle-comparison-error]"),
+    comparison:panel.querySelector("[data-bundle-comparison]")};
+}
+
+/** Supply bounded raw file bytes to the native-control double, never to a parsed UI manifest. */
+async function chooseMetadataBytes(app, bytes, name = "metadata.json", read) {
+  const buffer=Buffer.from(bytes);const file=metadataParts(app).file;
+  file.files=[{name,size:buffer.length,
+    /** Model File.arrayBuffer without decoding or rewriting its selected byte sequence. */
+    async arrayBuffer() { return read ? read() : buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength); }}];
+  await file.fire("change");return file;
+}
+
+for (const count of [0,1,101,1000]) {
+  test(`metadata preview retains all ${count} registrations and gates an exact local download`, async()=>{
+    const expected=metadataPreview(count);const app=await metadataApp({/** Supply the full synthetic 0, 1, 101 or 1,000 inventory for disclosure and download checks. */ "/project/bundle-preview":()=>expected});const parts=metadataParts(app);
+    app.run("dirty = true");const globalStatus=app.byId("status").textContent;
+    assert.equal(app.requests.some(request=>request.route==="/project/bundle-preview"),false,"Panel construction makes no background bundle request");
+    parts.download.focus();await parts.download.fire("click");assert.equal(app.document.downloads.length,0);
+    parts.preview.focus();await parts.preview.fire("click");assert.equal(app.document.activeElement,parts.preview);
+    assert.equal(parts.acknowledgment.checked,false);assert.equal(parts.download.getAttribute("aria-disabled"),"true");
+    assert.match(parts.previewStatus.textContent,new RegExp(`Metadata preview: ${count} registered resources`));
+    assert.equal(parts.panel.querySelector("[data-bundle-metadata]").querySelectorAll("tbody")[0].children.length,count);
+    assert.match(parts.panel.textContent,/Synthetic metadata <tag> π/);
+    parts.acknowledgment.checked=true;await parts.acknowledgment.fire("change");parts.download.focus();await parts.download.fire("click");
+    assert.equal(app.document.activeElement,parts.download);assert.equal(app.document.downloads.length,1);
+    const saved=app.document.downloads[0];assert.equal(saved.filename,"forge-workspace-index-and-hashes.json");
+    const body=app.objectURLs.get(saved.url);assert(body);assert.equal(body.type,"application/json");
+    assert.equal(await body.text(),JSON.stringify(expected.bundle));
+    assert.equal(app.run("dirty"),true);assert.equal(app.byId("status").textContent,globalStatus);
+    assert.equal(app.requests.some(request=>/effects\/commits|\/exports/.test(request.route)),false);
+    await app.poll();assert.equal(app.objectURLs.has(saved.url),false);assert.deepEqual(app.revokedURLs,[saved.url]);
+    await parts.preview.fire("click");assert.equal(parts.acknowledgment.checked,false);assert.equal(parts.download.getAttribute("aria-disabled"),"true");
+  });
+}
+
+test("raw comparison preserves BOM, invalid UTF8 and duplicate bytes, and explicitly retries a fresh read",async()=>{
+  const bodies=[];const app=await metadataApp({/** Capture wrapped raw bytes and deliberately reject them so explicit retries remain observable. */ "/project/bundle-verifications":async(_url,options)=>{
+    bodies.push(Buffer.from(await options.body.arrayBuffer()));return {status:400,body:{code:"invalid-request",message:"Synthetic strict parser rejection.",retryable:false}};
+  }});const parts=metadataParts(app);
+  const raw=Buffer.concat([Buffer.from([0xef,0xbb,0xbf,0xff]),Buffer.from('{"schema_version":1,"schema_version":2,"\\u006b":1,"k":2}')]);
+  await chooseMetadataBytes(app,raw);parts.compare.focus();await parts.compare.fire("click");
+  const expected=Buffer.concat([Buffer.from('{"bundle":'),raw,Buffer.from('}')]);assert.deepEqual(bodies,[expected]);
+  assert.equal(app.document.activeElement,parts.comparisonError);assert.match(parts.comparisonError.textContent,/Synthetic strict parser rejection/);
+  parts.compare.focus();await parts.compare.fire("click");assert.deepEqual(bodies,[expected,expected]);
+  const requests=app.requests.filter(request=>request.route==="/project/bundle-verifications");
+  assert.equal(requests.length,2);assert(requests.every(request=>request.options.headers["Content-Type"]==="application/json"&&!request.options.headers["Idempotency-Key"]));
+  assert.equal(app.byId("error").hidden,true);assert.equal(app.document.downloads.length,0);
+});
+
+test("raw envelope boundary includes its eleven wrapper bytes and prevents oversized file reads",async()=>{
+  let posted;const app=await metadataApp({/** Capture the exact-size envelope and reject synthetic padding without implying an intrinsic-valid maximum bundle. */ "/project/bundle-verifications":async(_url,options)=>{
+    posted=Buffer.from(await options.body.arrayBuffer());return {status:400,body:{code:"invalid-request",message:"Synthetic padded input is not an intrinsic bundle.",retryable:false}};
+  }});const parts=metadataParts(app);const bytes=Buffer.alloc(1024*1024-11,32);
+  await chooseMetadataBytes(app,bytes);await parts.compare.fire("click");assert.equal(posted.length,1024*1024);assert.deepEqual(posted.subarray(10,-1),bytes);
+  let reads=0;parts.file.files=[{name:"too-large.json",size:1024*1024-10,
+    /** Fail the test if an unsupported size is allocated or read. */
+    async arrayBuffer(){reads++;throw new Error("must not read");}}];await parts.file.fire("change");
+  await parts.compare.fire("click");assert.equal(reads,0);assert.equal(app.requests.filter(request=>request.route==="/project/bundle-verifications").length,1);
+  assert.match(parts.comparisonError.textContent,/11-byte JSON wrapper/);
+});
+
+test("changing files fences an old read and its finally while a newer comparison remains busy",async()=>{
+  const old=deferred();const fresh=deferred();let posts=0;const app=await metadataApp({/** Hold the newer comparison response and count POSTs while an obsolete file read settles. */ "/project/bundle-verifications":()=>{posts++;return fresh.promise;}});const parts=metadataParts(app);
+  const bytes=Buffer.from(JSON.stringify(metadataPreview().bundle));await chooseMetadataBytes(app,bytes,"old.json",()=>old.promise);
+  parts.compare.focus();const oldAction=parts.compare.fire("click");await settle();
+  await chooseMetadataBytes(app,bytes,"new.json");const newAction=parts.compare.fire("click");await settle();
+  assert.equal(posts,1);assert.equal(parts.compare.getAttribute("aria-disabled"),"true");const status=parts.comparisonStatus.textContent;
+  old.resolve(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));await oldAction;
+  assert.equal(posts,1);assert.equal(parts.comparisonStatus.textContent,status);assert.equal(parts.compare.getAttribute("aria-disabled"),"true");
+  await parts.compare.fire("click");assert.equal(posts,1,"Older finally cannot unlock the newer request");
+  fresh.resolve(metadataComparison(metadataPreview()));await newAction;assert.equal(parts.compare.getAttribute("aria-disabled"),"false");assert.match(parts.comparisonStatus.textContent,/1 matched/);
+});
+
+for (const transition of ["navigation","stop"]) {
+  test(`late metadata preview after ${transition} cannot publish acknowledgment, download or focus`,async()=>{
+    const late=deferred();const app=await metadataApp({/** Hold the preview until navigation or shutdown invalidates its ownership. */ "/project/bundle-preview":()=>late.promise,/** Acknowledge synthetic shutdown so the late preview must remain suppressed. */ "/session/shutdown":()=>({})});const parts=metadataParts(app);
+    parts.preview.focus();const action=parts.preview.fire("click");await settle();await parts.preview.fire("click");
+    assert.equal(app.requests.filter(request=>request.route==="/project/bundle-preview").length,1);
+    if(transition==="navigation")await app.run('navigate("Overview")');else await app.byId("confirm-stop").fire("click");
+    const focus=app.document.activeElement;const focusCount=app.document.focusHistory.length;const status=app.byId("status").textContent;
+    late.resolve(metadataPreview());await action;
+    assert.equal(parts.acknowledgment.checked,false);assert.equal(parts.download.getAttribute("aria-disabled"),"true");assert.equal(app.document.downloads.length,0);
+    assert.equal(app.document.activeElement,focus);assert.equal(app.document.focusHistory.length,focusCount);assert.equal(app.byId("status").textContent,status);
+  });
+}
+
+test("dismissed guarded refresh retires a retained panel yet lets its fresh read own the new epoch",async()=>{
+  const first=deferred();const app=await metadataApp({/** Hold the original preview across a dismissed refresh to test newer epoch ownership. */ "/project/bundle-preview":()=>first.promise});const parts=metadataParts(app);
+  parts.preview.focus();const obsolete=parts.preview.fire("click");await settle();
+  const resources=deferred();app.routes["/resources"]=()=>resources.promise;app.run("let keepMetadataRefresh = true");
+  const refresh=app.run("renderView(()=>keepMetadataRefresh)");await settle();app.run("keepMetadataRefresh = false");
+  resources.resolve({resource_version:"synthetic-version-1",page:{items:[],total_matching:0,next_cursor:null}});assert.equal(await refresh,false);
+  assert.equal(parts.panel.isConnected,true);assert.equal(parts.acknowledgment.checked,false);assert.equal(parts.preview.getAttribute("aria-disabled"),"false");
+  const newer=deferred();app.routes["/project/bundle-preview"]=()=>newer.promise;parts.preview.focus();const fresh=parts.preview.fire("click");await settle();
+  const status=parts.previewStatus.textContent;first.resolve(metadataPreview());await obsolete;
+  assert.equal(parts.previewStatus.textContent,status);assert.equal(parts.preview.getAttribute("aria-disabled"),"true");assert.equal(parts.download.getAttribute("aria-disabled"),"true");
+  newer.resolve(metadataPreview(101));await fresh;assert.match(parts.previewStatus.textContent,/101 registered resources/);assert.equal(app.document.activeElement,parts.preview);
+});
+
+test("independent preview and comparison lanes retain subset extras and stale matched observations",async()=>{
+  const late=deferred();const expected=metadataPreview();const app=await metadataApp({/** Hold the preview while the independent comparison lane completes. */ "/project/bundle-preview":()=>late.promise,
+    /** Return matched stale fingerprints and one current-only resource without whole-index equality. */ "/project/bundle-verifications":()=>metadataComparison(expected,1,"stale")});const parts=metadataParts(app);
+  const preview=parts.preview.fire("click");await settle();await chooseMetadataBytes(app,Buffer.from(JSON.stringify(expected.bundle)));
+  parts.compare.focus();await parts.compare.fire("click");assert.match(parts.comparison.textContent,/Whole index matches: no/);assert.match(parts.comparison.textContent,/stale/);
+  assert.match(parts.comparisonStatus.textContent,/1 matched.*Current-only registrations: 1/);
+  const output=parts.comparison.textContent;late.resolve(expected);await preview;
+  assert.equal(parts.comparison.textContent,output);assert.equal(app.document.activeElement,parts.compare);assert.equal(app.byId("error").hidden,true);
+});
+
+test("missing current index and explicit empty comparison retain distinct source states",async()=>{
+  const empty=metadataPreview(0);const absent={...metadataComparison(empty),source_index_present:false,state:"missing-index",expected_index_matches_current:false};
+  const app=await metadataApp({/** Return missing-index for an empty expected inventory while preserving current index absence. */ "/project/bundle-verifications":()=>absent});const parts=metadataParts(app);
+  await chooseMetadataBytes(app,Buffer.from(JSON.stringify(empty.bundle)));await parts.compare.fire("click");assert.match(parts.comparison.textContent,/missing-index.*Whole index matches: no/);
+  app.routes["/project/bundle-verifications"]=()=>metadataComparison(empty);await parts.compare.fire("click");assert.match(parts.comparison.textContent,/Comparison state: matched.*Whole index matches: yes/);
+  assert.match(parts.comparisonStatus.textContent,/0 expected/);
+});
+
+test("unsupported metadata and unreconciled comparison cannot become successful downloadable or matched UI",async()=>{
+  const hidden={...metadataPreview(),source_content_included:true};const app=await metadataApp({/** Return forbidden source-content metadata so the preview cannot become downloadable. */ "/project/bundle-preview":()=>hidden,
+    /** Return an incorrect expected denominator so comparison cannot announce matched results. */ "/project/bundle-verifications":()=>({...metadataComparison(metadataPreview()),expected_resources:2})});const parts=metadataParts(app);
+  await parts.preview.fire("click");assert.match(parts.previewError.textContent,/unsupported response/);assert.equal(parts.download.getAttribute("aria-disabled"),"true");
+  await chooseMetadataBytes(app,Buffer.from("{}"));await parts.compare.fire("click");assert.match(parts.comparisonError.textContent,/unreconciled/);assert.equal(parts.comparison.children.length,0);
+  assert.equal(app.document.downloads.length,0);assert.equal(app.requests.some(request=>request.route==="/effects/commits"),false);
+});
+
+test("local metadata failures preserve report edits and do not announce a global saved result",async()=>{
+  const app=harness({/** Return a safe missing-index failure while unsaved report edits and global status are retained. */ "/project/bundle-preview":()=>({status:404,body:{code:"not-found",message:"Synthetic absent index.",retryable:false}})});
+  app.run("readOnly = false");await app.run('navigate("Trace & Reports")');const parts=metadataParts(app);
+  const report=app.byLabel("Report destination within project");report.value="unconfirmed.html";await report.fire("input");
+  const status=app.byId("status").textContent;parts.preview.focus();await parts.preview.fire("click");
+  assert.equal(app.document.activeElement,parts.previewError);assert.equal(report.value,"unconfirmed.html");assert.equal(app.run("dirty"),true);
+  await chooseMetadataBytes(app,Buffer.from("{}"),"unreadable.json",()=>Promise.reject(new Error("PRIVATE FILE CONTENT MUST NOT APPEAR")));
+  parts.compare.focus();await parts.compare.fire("click");assert.equal(app.document.activeElement,parts.comparisonError);assert.match(parts.comparisonError.textContent,/chosen file could not be read/);
+  assert(!parts.comparisonError.textContent.includes("PRIVATE"));assert.equal(app.requests.some(request=>request.route==="/project/bundle-verifications"),false);
+  assert.equal(app.byId("status").textContent,status);assert.equal(app.byId("error").hidden,true);assert.equal(app.document.querySelector("dialog[open]"),null);
+});
+
+test("a raw file comparison superseded during request spacing is never sent",async()=>{
+  const app=await metadataApp();const parts=metadataParts(app);const bytes=Buffer.from(JSON.stringify(metadataPreview().bundle));
+  await chooseMetadataBytes(app,bytes,"paced-old.json");app.run("performance.now = () => 0; nextRequestAt = 1000;");
+  parts.compare.focus();const old=parts.compare.fire("click");await settle();assert.equal(app.timers.length,1);
+  await chooseMetadataBytes(app,bytes,"replacement.json");const status=parts.comparisonStatus.textContent;
+  await app.poll();await old;
+  assert.equal(app.requests.some(request=>request.route==="/project/bundle-verifications"),false);
+  assert.equal(parts.comparisonStatus.textContent,status);assert.equal(parts.compare.getAttribute("aria-disabled"),"false");assert.equal(parts.comparisonError.hidden,true);
+});
+
+test("a failed provenance transition retires disclosure while the retained metadata panel remains reusable",async()=>{
+  const app=await metadataApp({/** Fail provenance navigation so disclosure retires while the retained metadata panel remains reusable. */ "/provenance/entries":()=>({status:503,body:{code:"internal-error",message:"Synthetic provenance read failed.",retryable:true}})});const parts=metadataParts(app);
+  await parts.preview.fire("click");parts.acknowledgment.checked=true;await parts.acknowledgment.fire("change");
+  assert.equal(parts.download.getAttribute("aria-disabled"),"false");
+  await assert.rejects(app.run('showProvenance("synthetic-anchor")'),/Synthetic provenance read failed/);
+  assert.equal(parts.panel.isConnected,true);assert.equal(parts.acknowledgment.checked,false);assert.equal(parts.download.getAttribute("aria-disabled"),"true");
+  parts.preview.focus();await parts.preview.fire("click");assert.equal(app.document.activeElement,parts.preview);assert.match(parts.previewStatus.textContent,/1 registered resources/);
+  assert.equal(app.document.downloads.length,0);
+});
