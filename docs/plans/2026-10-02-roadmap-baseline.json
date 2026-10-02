@@ -1,0 +1,391 @@
+{
+  "format": "forge.roadmap-baseline/1",
+  "observed_on": "2026-10-02",
+  "timezone": "America/Los_Angeles",
+  "main": {
+    "protected": true,
+    "sha": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e"
+  },
+  "main_ci": {
+    "conclusion": "failure",
+    "headSha": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+    "jobs": [
+      {
+        "name": "Supply-chain audits",
+        "conclusion": "failure",
+        "url": "https://github.com/policy-forge/forge/actions/runs/36094582840/job/107944076386",
+        "failed_steps": [
+          "Supply-chain audit"
+        ]
+      },
+      {
+        "name": "Test (macos-latest)",
+        "conclusion": "success",
+        "url": "https://github.com/policy-forge/forge/actions/runs/36094582840/job/107944076458",
+        "failed_steps": []
+      },
+      {
+        "name": "Test (windows-latest)",
+        "conclusion": "success",
+        "url": "https://github.com/policy-forge/forge/actions/runs/36094582840/job/107944076468",
+        "failed_steps": []
+      },
+      {
+        "name": "Test (ubuntu-latest)",
+        "conclusion": "success",
+        "url": "https://github.com/policy-forge/forge/actions/runs/36094582840/job/107944076516",
+        "failed_steps": []
+      }
+    ],
+    "url": "https://github.com/policy-forge/forge/actions/runs/36094582840"
+  },
+  "open_prs": [
+    {
+      "baseRefName": "main",
+      "headRefName": "dependabot/cargo/getrandom-0.4.3",
+      "headRefOid": "e5cce34634056262abc0cf503b976fba901e60a7",
+      "isDraft": false,
+      "number": 164,
+      "title": "chore(deps): bump getrandom from 0.4.2 to 0.4.3",
+      "url": "https://github.com/policy-forge/forge/pull/164",
+      "checks": [
+        {
+          "name": "Test (ubuntu-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143890874/job/108100090378"
+        },
+        {
+          "name": "Test (macos-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143890874/job/108100090659"
+        },
+        {
+          "name": "Test (windows-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143890874/job/108100090627"
+        },
+        {
+          "name": "Supply-chain audits",
+          "status": "COMPLETED",
+          "conclusion": "FAILURE",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143890874/job/108100090042"
+        },
+        {
+          "name": "CodeQL",
+          "status": "COMPLETED",
+          "conclusion": "NEUTRAL",
+          "url": "https://github.com/policy-forge/forge/runs/108100064840"
+        },
+        {
+          "name": "CodeRabbit",
+          "status": "SUCCESS",
+          "conclusion": null,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "baseRefName": "main",
+      "headRefName": "dependabot/cargo/pdf-extract-0.12.1",
+      "headRefOid": "db34fdfccaf00262e9706e8f3cd294f9d1f3bc01",
+      "isDraft": false,
+      "number": 163,
+      "title": "chore(deps): bump pdf-extract from 0.12.0 to 0.12.1",
+      "url": "https://github.com/policy-forge/forge/pull/163",
+      "checks": [
+        {
+          "name": "Test (ubuntu-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143881134/job/108100058377"
+        },
+        {
+          "name": "Test (macos-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143881134/job/108100058522"
+        },
+        {
+          "name": "Test (windows-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143881134/job/108100058197"
+        },
+        {
+          "name": "Supply-chain audits",
+          "status": "COMPLETED",
+          "conclusion": "FAILURE",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143881134/job/108100057862"
+        },
+        {
+          "name": "CodeQL",
+          "status": "COMPLETED",
+          "conclusion": "NEUTRAL",
+          "url": "https://github.com/policy-forge/forge/runs/108100035954"
+        },
+        {
+          "name": "CodeRabbit",
+          "status": "SUCCESS",
+          "conclusion": null,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "baseRefName": "main",
+      "headRefName": "dependabot/cargo/argon2-0.6.0",
+      "headRefOid": "eee2916fd7a2b52ea313cf309e4a1550cf4cbe53",
+      "isDraft": false,
+      "number": 162,
+      "title": "chore(deps): bump argon2 from 0.5.3 to 0.6.0",
+      "url": "https://github.com/policy-forge/forge/pull/162",
+      "checks": [
+        {
+          "name": "Test (ubuntu-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143871707/job/108100026373"
+        },
+        {
+          "name": "Test (macos-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143871707/job/108100026285"
+        },
+        {
+          "name": "Test (windows-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143871707/job/108100026328"
+        },
+        {
+          "name": "Supply-chain audits",
+          "status": "COMPLETED",
+          "conclusion": "FAILURE",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143871707/job/108100025982"
+        },
+        {
+          "name": "CodeQL",
+          "status": "COMPLETED",
+          "conclusion": "NEUTRAL",
+          "url": "https://github.com/policy-forge/forge/runs/108100008812"
+        },
+        {
+          "name": "CodeRabbit",
+          "status": "SUCCESS",
+          "conclusion": null,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "baseRefName": "main",
+      "headRefName": "dependabot/cargo/clap-4.6.7",
+      "headRefOid": "f91a77cdda2eb7dd95b231c155672c2bc17feee2",
+      "isDraft": false,
+      "number": 161,
+      "title": "chore(deps): bump clap from 4.6.1 to 4.6.7",
+      "url": "https://github.com/policy-forge/forge/pull/161",
+      "checks": [
+        {
+          "name": "Test (ubuntu-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143862573/job/108099995411"
+        },
+        {
+          "name": "Test (macos-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143862573/job/108099995404"
+        },
+        {
+          "name": "Test (windows-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143862573/job/108099995362"
+        },
+        {
+          "name": "Supply-chain audits",
+          "status": "COMPLETED",
+          "conclusion": "FAILURE",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143862573/job/108099994969"
+        },
+        {
+          "name": "CodeQL",
+          "status": "COMPLETED",
+          "conclusion": "NEUTRAL",
+          "url": "https://github.com/policy-forge/forge/runs/108099969263"
+        },
+        {
+          "name": "CodeRabbit",
+          "status": "SUCCESS",
+          "conclusion": null,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "baseRefName": "main",
+      "headRefName": "dependabot/cargo/rayon-1.12.0",
+      "headRefOid": "9d215ad9b77c123e9b439198521b908ef2d9f9a7",
+      "isDraft": false,
+      "number": 160,
+      "title": "chore(deps): bump rayon from 1.11.0 to 1.12.0",
+      "url": "https://github.com/policy-forge/forge/pull/160",
+      "checks": [
+        {
+          "name": "Test (ubuntu-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143852105/job/108099961895"
+        },
+        {
+          "name": "Test (macos-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143852105/job/108099961899"
+        },
+        {
+          "name": "Test (windows-latest)",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143852105/job/108099961903"
+        },
+        {
+          "name": "Supply-chain audits",
+          "status": "COMPLETED",
+          "conclusion": "FAILURE",
+          "url": "https://github.com/policy-forge/forge/actions/runs/36143852105/job/108099961753"
+        },
+        {
+          "name": "CodeQL",
+          "status": "COMPLETED",
+          "conclusion": "NEUTRAL",
+          "url": "https://github.com/policy-forge/forge/runs/108099934379"
+        },
+        {
+          "name": "CodeRabbit",
+          "status": "SUCCESS",
+          "conclusion": null,
+          "url": ""
+        }
+      ]
+    }
+  ],
+  "tracker": {
+    "epic": {
+      "id": 1390,
+      "index": 2
+    },
+    "F01": {
+      "id": 1391,
+      "index": 3
+    },
+    "F02": {
+      "id": 1392,
+      "index": 4
+    },
+    "F03": {
+      "id": 1393,
+      "index": 5
+    },
+    "F04": {
+      "id": 1394,
+      "index": 6
+    },
+    "F05": {
+      "id": 1395,
+      "index": 7
+    },
+    "F06": {
+      "id": 1396,
+      "index": 8
+    },
+    "F07": {
+      "id": 1397,
+      "index": 9
+    }
+  },
+  "cargo_lock_sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+  "unrelated_work_preserved": [
+    "primary .claude/settings.json",
+    "primary untracked .veans.yml",
+    "primary untracked completion plan",
+    "existing stash",
+    "existing worktrees and branches",
+    "clean product-planning checkout"
+  ],
+  "local_verification": {
+    "rust_toolchain": "1.98.1",
+    "rust_source_matches_baseline": true,
+    "command": "RUSTC_WRAPPER= CARGO_TARGET_DIR=<temporary> scripts/ci-local.sh with Rust 1.98.1 bin directory first in PATH",
+    "fmt": "passed",
+    "strict_clippy_all_targets": "passed",
+    "cargo_test": {
+      "passed": 2692,
+      "failed": 0,
+      "ignored": 3
+    },
+    "dedicated_api_contract_rerun": {
+      "passed": 8,
+      "failed": 0
+    },
+    "cargo_audit": {
+      "status": "passed-with-allowed-warning",
+      "crate": "ttf-parser",
+      "version": "0.25.1",
+      "advisory": "RUSTSEC-2026-0192",
+      "warning": "unmaintained"
+    },
+    "cargo_deny": "passed; duplicate warnings remain",
+    "cargo_vet": {
+      "status": "failed",
+      "exit": 255,
+      "unvetted_dependencies": [
+        "fancy-regex:0.19.2",
+        "fraction:0.17.0",
+        "hashbrown:0.17.1",
+        "jsonschema:0.57.0",
+        "jsonschema-regex:0.57.0",
+        "jsonschema-value:0.57.0",
+        "micromap:0.3.0",
+        "num-bigint:0.4.8",
+        "referencing:0.57.0",
+        "regex:1.13.1",
+        "regex-automata:0.4.18",
+        "regex-syntax:0.8.11",
+        "serde_json:1.0.151",
+        "strum:0.28.0",
+        "strum_macros:0.28.0",
+        "syn:3.0.6",
+        "thiserror:2.0.21",
+        "thiserror-impl:2.0.21",
+        "uuid:1.26.1",
+        "zmij:1.0.23"
+      ]
+    },
+    "benchmarks": "not run; ci-local opt-in disabled",
+    "toolchain_drift": {
+      "installed_current": "1.99.0",
+      "strict_clippy": "failed on unchanged Rust source; new lints include assert_is_empty",
+      "readiness": "open; 1.98.1 success does not establish current stable readiness"
+    },
+    "ledger_checker": "passed: 327 requirements, 47 named gates, exact text/digests/evidence and Markdown consistency",
+    "ledger_negative_cases": {
+      "correctly_rejected": 7,
+      "cases": [
+        "requirement removal",
+        "duplicate identity",
+        "unknown package",
+        "PRD digest drift",
+        "invented acceptance",
+        "empty gate registry",
+        "Markdown status drift"
+      ]
+    }
+  }
+}
