@@ -572,6 +572,12 @@ class CommonSafetyTests(unittest.TestCase):
             common.load_toml(b"x=" + b"1" * 5000)
         self.assertEqual(common.load_json(b'{"n":1.5}'), {"n": 1.5})
 
+    def test_raw_crlf_bytes_preserve_locked_digest(self):
+        with tempfile.TemporaryDirectory() as root:
+            raw = b"first\r\nsecond\r\n"
+            Path(root, "Cargo.lock").write_bytes(raw)
+            self.assertEqual(common.read_bytes(root, "Cargo.lock"), raw)
+
     def test_static_path_aliases(self):
         with tempfile.TemporaryDirectory() as root:
             for path in ("../Cargo.lock", "/Cargo.lock", "C:/outside/file", "Cargo.lock:stream", "aux", "a.", "a ", "a//b", "a\\b"):

@@ -104,7 +104,8 @@ def read_bytes(root: Path | str, relative: str,
                 fds.append(parent)
             before = os.stat(parts[-1], dir_fd=parent, follow_symlinks=False)
             _regular(before, limit)
-            flags = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_NONBLOCK", 0)
+            flags = (os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_NONBLOCK", 0)
+                     | getattr(os, "O_BINARY", 0))
             fd = os.open(parts[-1], flags, dir_fd=parent)
         else:
             path = base
@@ -118,7 +119,7 @@ def read_bytes(root: Path | str, relative: str,
             before = path.lstat()
             _regular(before, limit)
             fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)
-                         | getattr(os, "O_NOFOLLOW", 0))
+                         | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0))
         fds.append(fd)
         opened = os.fstat(fd)
         _regular(opened, limit)

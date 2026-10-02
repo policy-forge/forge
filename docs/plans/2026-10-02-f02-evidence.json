@@ -5,7 +5,7 @@
     {
       "command": "python3.11 -B scripts/test_dependency_inventory.py",
       "outcome": "passed",
-      "tests": 44
+      "tests": 45
     },
     {
       "command": "actionlint .github/workflows/ci.yml",
@@ -49,6 +49,18 @@
     "rust_1_99_clippy_lib_test_diagnostics": 73
   },
   "format": "forge.f02-evidence/1",
+  "hosted_initial_f02": {
+    "correction": "explicit O_BINARY reads preserve raw locked bytes on Windows; hosted recheck pending",
+    "fixtures": {
+      "linux": "passed44",
+      "macos": "passed44",
+      "windows": "failed22 due to text-mode CRLF reading; binary-mode regression added"
+    },
+    "graph_qualification": "passed",
+    "head": "08f44fd12c531c493547bac516627abd7e340d7e",
+    "policy_gate": "exit1, report artifact uploaded11216467776; D069 and new runtime gaps remain",
+    "run": "https://github.com/policy-forge/forge/actions/runs/36983290730"
+  },
   "input_sha256": {
     "Cargo.lock": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
     "Cargo.toml": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
