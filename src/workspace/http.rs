@@ -274,8 +274,10 @@ fn unlock_response(
     response
 }
 
+/// Preserve write scope except for documented read-only query operations.
 fn is_mutation(method: &str, path: &str) -> bool {
     method != "GET"
+        && !(method == "POST" && path == "/api/v1/project/bundle-verifications")
         && !matches!(
             path,
             "/api/v1/session/unlock"
@@ -357,6 +359,7 @@ fn session_view(state: &State, label: &str) -> Result<Value> {
         "api_major":1,"contract_version":contract::VERSION,"project_label":label,"launched_at":session.launched_at}))
 }
 
+/// Validate the normative operation and dispatch captured queries or explicit effects.
 #[allow(clippy::too_many_lines)] // Explicit normative route dispatch; domain rules stay in services.
 fn dispatch(
     state: &Arc<State>,
@@ -512,6 +515,16 @@ fn dispatch(
     }
     let mut snapshot = Snapshot::capture(&state.root)?;
     match (method, path) {
+        ("GET", "/api/v1/project/bundle-preview") => {
+            json_response(super::bundles::preview(&snapshot)?, "ProjectBundlePreview")
+        }
+        ("POST", "/api/v1/project/bundle-verifications") => json_response(
+            super::bundles::verify_registered(
+                &snapshot,
+                payload.as_ref().ok_or_else(Error::invalid)?,
+            )?,
+            "ProjectBundleVerification",
+        ),
         ("GET", "/api/v1/session") => {
             json_response(session_view(state, &snapshot.index.label)?, "Session")
         }

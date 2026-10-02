@@ -152,3 +152,15 @@ The pre-initialization `listMappingSubjects` path requires both existing optiona
 selectors (`resource_id`, `side`); with a selected manifest, the existing inventory
 and filter semantics remain unchanged. Existing closed response clients should
 negotiate the returned contract version when adopting optional provenance fields.
+
+## Unreleased contract 1.2.0
+
+Adds `getProjectBundlePreview` and `verifyProjectBundle`, available with the
+existing read capability through the API and maintained headless client. They
+inspect complete metadata and compare current registered fingerprints. No
+bundled UI action, exported file, effect receipt or writable import is added.
+The existing index, roles, request/response limits and operations retain their
+contracts. `forge.workspace-index-bundle/1` is a separate metadata-only wire
+family; label/key/path/hash information can be sensitive. Fingerprint agreement
+does not establish domain-currentness, approval or import readiness. The full
+S-6 browser export/confirmed import workflow remains open. No release is implied.

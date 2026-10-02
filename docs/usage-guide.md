@@ -906,6 +906,26 @@ Install the pre-commit hook:
 ./scripts/install-hooks.sh
 ```
 
+## Local workspace index bundles
+
+For a project with an explicit `forge.workspace.json`, the maintained Python
+client's `bundle_preview()` and `verify_bundle(bundle)` inspect all registrations
+and compare supplied fingerprints with current registered captures in read-only
+sessions. The metadata includes labels, keys, paths, hashes and byte lengths;
+consider its sensitivity before retaining or sharing it. No source bytes or
+project writes are part of this profile, and supplied unregistered paths are not
+opened. Matching an expected subset is separate from whole-index equality and
+observed valid/stale/invalid domain state.
+
+These API 1.2.0 queries use the complete expected denominator, including 101 or
+1,000 entries within byte bounds, and prepare no 100-input effect. A retry captures
+current state again. The entire verification wrapper must fit the 1 MiB request
+limit; an encoded bundle near that limit may not fit after wrapping. See
+[Workspace index bundles](workspace-index-bundles.md) for the maintained read-only
+Python example, normalized index hash algorithm, errors and limits. Browser export,
+confirmed writable import and the final full integrated documentation review
+remain open.
+
 ## Further Reading
 
 - [README.md](../README.md) — project overview and quick start

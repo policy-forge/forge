@@ -1,0 +1,3471 @@
+{
+  "schema_version": "forge.workspace-bundle-verification/1",
+  "prepared_at_utc": "2026-10-02T15:28:47.108798+00:00",
+  "status": "Applied source-bound local verification draft. No F19 commit, mandatory-hook, hosted-CI, release or human acceptance result yet.",
+  "repository_destination": "docs/workspace-bundle-verification.json",
+  "tracking_root_provided": {
+    "parent": 23,
+    "parent_id": 1418,
+    "child": 24,
+    "child_id": 1419,
+    "branch": "codex/f19-workspace-bundle-queries",
+    "base_pull_request": 177,
+    "base_commit": "5a12daad1f31f33827cde5b50ad6f0915d9e12ec",
+    "primary_source_baseline": "aef0ab24",
+    "qualification": "Root-provided tracking/base identity; this author performed no Git/tracker/PR operation."
+  },
+  "product_scope": {
+    "contract_version": "1.2.0",
+    "wire": "forge.workspace-index-bundle/1",
+    "content_profile": "index-and-hashes",
+    "operations": [
+      {
+        "method": "GET",
+        "path": "/api/v1/project/bundle-preview",
+        "operation_id": "getProjectBundlePreview",
+        "client_method": "Workspace.bundle_preview"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/project/bundle-verifications",
+        "operation_id": "verifyProjectBundle",
+        "client_method": "Workspace.verify_bundle"
+      }
+    ],
+    "scope": "Authenticated API/headless metadata inspection and complete expected registered-fingerprint comparison. Read-only sessions allowed; supplied unregistered paths add no read authority. No browser action, file export, receipt or writable import.",
+    "schema_fixture_entries": {
+      "new": 13,
+      "total": 53,
+      "qualification": "Schema fixture files, not executed tests. Raw decoded duplicate request retained separately and tested through transport."
+    },
+    "boundaries": "1 MiB bundle, normalized index and entire POST JSON body separately;1,000 entries;10 MiB per resource/pin;50 MiB captured or checked declared aggregate;4 MiB response;depth64/separators100,000. Existing100-input effect limit unchanged and inapplicable to queries.",
+    "semantic_qualification": "Normalized Index::bytes hash includes fixed field order, two-space UTF-8 escaped JSON and final LF; resource hashes bind original bytes. Complete expected denominator, missing-index priority, explicit empty index, extra current keys and whole-index equality remain distinct. Observed valid/stale/invalid state is separate from fingerprints, approval and import readiness."
+  },
+  "source_binding": {
+    "retained_execution_index": {
+      "path": "/private/tmp/forge-f19-final-source-and-binaries/index.json",
+      "sha256": "9a4325862ecc74aa7c65ace7145051c2a9ce28ee3701b2964facbf5b504841e5",
+      "bytes": 13700,
+      "role": "retained execution source and binary identity"
+    },
+    "retained_source_inputs": [
+      {
+        "repository_path": "Cargo.lock",
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+        "bytes": 74338,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/Cargo.lock"
+      },
+      {
+        "repository_path": "Cargo.toml",
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+        "bytes": 2344,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/Cargo.toml"
+      },
+      {
+        "repository_path": "docs/api/capability-matrix.json",
+        "sha256": "f7c789df39540e991042cb7cc52672a4e16cb72dffcdb92af1f0d73673e44254",
+        "bytes": 18246,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/capability-matrix.json"
+      },
+      {
+        "repository_path": "docs/api/capability-matrix.md",
+        "sha256": "47e5949ca93e6fa5dc1b32e6eb498c340908bc9a8d241a89eec232a50541245e",
+        "bytes": 9901,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/capability-matrix.md"
+      },
+      {
+        "repository_path": "docs/api/compatibility.md",
+        "sha256": "31b3fde518048396c44f5d0af754ba822c488fabd0386c55161554d49e8a26c1",
+        "bytes": 8975,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/compatibility.md"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/bundle-valid.json",
+        "sha256": "3a74fbe75693d579aea430d6b6387a745e356ba0571d5c9924992c6eb4f4d9cd",
+        "bytes": 572,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/bundle-valid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/empty-bundle-valid.json",
+        "sha256": "c552fdb82640ffe0c05702faf14eb3fa7030f206e3c124626227ecbe0022a866",
+        "bytes": 317,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/empty-bundle-valid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/oversize-pin-invalid.json",
+        "sha256": "f94cb1840dc36a660e799f3795a9c2f2ed6bbbd8cd0b379878c1208df3a9ba45",
+        "bytes": 638,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/oversize-pin-invalid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/preview-valid.json",
+        "sha256": "77700e6641c8c49d2a873bec7d17a5a19d4125b5d475a6439e4e7034711b8a42",
+        "bytes": 957,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/preview-valid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/unknown-approval-invalid.json",
+        "sha256": "c46625ac28a240b8f6e2ba41e282cbf44bfe81bb146ab1382b05e78f902f65a3",
+        "bytes": 668,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/unknown-approval-invalid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/unknown-content-invalid.json",
+        "sha256": "9e52648d68f37578ad8befec18f21ea42603398b9455ba1f865abe0c4e357fc0",
+        "bytes": 674,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/unknown-content-invalid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/unknown-role-invalid.json",
+        "sha256": "2fbcb219d284c72bd97b494a7096c2ac033359b1f66104016b34a6ce076e9b85",
+        "bytes": 637,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/unknown-role-invalid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/upper-hash-invalid.json",
+        "sha256": "3447e1c96776261cb187c9349e625a65129914cd571ed53f29d4b939b5b4b675",
+        "bytes": 632,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/upper-hash-invalid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/verification-matched-valid.json",
+        "sha256": "138fef95cdd005d4da8d8854250648afda89d4914a160bb2ec1142c4be11e7ab",
+        "bytes": 596,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/verification-matched-valid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/verification-missing-index-valid.json",
+        "sha256": "be01ca30f4048fb48b3749f958c5151f22c93e03d5b425b4734a473d1fbda5ad",
+        "bytes": 660,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/verification-missing-index-valid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/verification-request-valid.json",
+        "sha256": "f1e710352e2c5de5a5ebff46014505bb7ee1bfed547385681fb9d62b9c834a4f",
+        "bytes": 632,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/verification-request-valid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/wrong-profile-invalid.json",
+        "sha256": "e4ff066747a7d2ebaa167805b7e51616ba2cb443dc2e490929477fee325c6bfc",
+        "bytes": 632,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/wrong-profile-invalid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/bundle/wrong-version-invalid.json",
+        "sha256": "8c4729524ed97616d4ec6d8a7ab6a898b239964d053493e6a5bbefc0055113b2",
+        "bytes": 632,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/bundle/wrong-version-invalid.json"
+      },
+      {
+        "repository_path": "docs/api/fixtures/index.json",
+        "sha256": "35b2f5eec3f9a1ed9f39f73c62920f00f3ce5a4689e416ca176b7d4e0cfeb416",
+        "bytes": 15569,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/fixtures/index.json"
+      },
+      {
+        "repository_path": "docs/api/forge-workspace-v1.openapi.yaml",
+        "sha256": "557d1f2cb3637a85683375496480bc5f02fab2895f4b8956f24825289a8b1b65",
+        "bytes": 122899,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/api/forge-workspace-v1.openapi.yaml"
+      },
+      {
+        "repository_path": "docs/local-workspace.md",
+        "sha256": "22e2539aa9a019ab0724956e5ee84720268cefdb8bd81e115f133dda9c2a1b5b",
+        "bytes": 14108,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/local-workspace.md"
+      },
+      {
+        "repository_path": "docs/plans/2026-10-02-f19-workspace-bundle-queries.md",
+        "sha256": "fa63fd2270ddbb4fce4e1abc2923ec73df6a1179d52a5076d0afb614fbe64327",
+        "bytes": 5600,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/plans/2026-10-02-f19-workspace-bundle-queries.md"
+      },
+      {
+        "repository_path": "docs/usage-guide.md",
+        "sha256": "a38837e68a19c39c2c78bc81221f91b1f2f8e4dd5219c9843f5a160f9dac3337",
+        "bytes": 37635,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/usage-guide.md"
+      },
+      {
+        "repository_path": "docs/workspace-index-bundles.md",
+        "sha256": "d2ee7bef5bb7cd843c14d418f6da8a5216defb676e8f78ff7f3299666932f760",
+        "bytes": 10390,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/docs/workspace-index-bundles.md"
+      },
+      {
+        "repository_path": "schemas/forge.workspace-1.schema.json",
+        "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+        "bytes": 4223,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/schemas/forge.workspace-1.schema.json"
+      },
+      {
+        "repository_path": "scripts/test_workspace_client.py",
+        "sha256": "fc88791b430478efe595ba5f1b069aa9aeb2836cf57b6390d9a5192dd24124a5",
+        "bytes": 10784,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/scripts/test_workspace_client.py"
+      },
+      {
+        "repository_path": "scripts/workspace_client.py",
+        "sha256": "063f0424ca79079984d950a867af53cfc7b8dfe2cee0ce6e74be02774ffea1e4",
+        "bytes": 6710,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/scripts/workspace_client.py"
+      },
+      {
+        "repository_path": "src/applicability/mod.rs",
+        "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+        "bytes": 75602,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/applicability/mod.rs"
+      },
+      {
+        "repository_path": "src/workspace/bundles.rs",
+        "sha256": "7bcb592b1fafe73154006bc5b544df57ced2188ac71749fa2cc721dde0b795dd",
+        "bytes": 30630,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/workspace/bundles.rs"
+      },
+      {
+        "repository_path": "src/workspace/contract.rs",
+        "sha256": "828abe9abdec87e1bec6715377dd3407f0c0d2eb5d02e9d58d27674127ec303a",
+        "bytes": 17182,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/workspace/contract.rs"
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "sha256": "8a41f2b0d5a00bfa5a5b54ea98de59403cdb0edb7335da618c3d4a716e69d9d7",
+        "bytes": 32592,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/workspace/http.rs"
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "sha256": "23c0cbd53284394d7d111c645b71706f52ea93abb1e9b2c5e8882c47c36095fa",
+        "bytes": 5820,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/workspace/index.rs"
+      },
+      {
+        "repository_path": "src/workspace/mod.rs",
+        "sha256": "79a90de4a346845a31c75da5761d916fd382e009b98b12bb441d859a6228f80c",
+        "bytes": 674,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/workspace/mod.rs"
+      },
+      {
+        "repository_path": "src/workspace/root.rs",
+        "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+        "bytes": 29123,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/workspace/root.rs"
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "sha256": "3c95727ce4cdce2159d96a05a396f44e4ceb2ef903a64490cb327ac203016f45",
+        "bytes": 44631,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/src/workspace/services.rs"
+      },
+      {
+        "repository_path": "tests/api_contract_validation.rs",
+        "sha256": "e229e78db1530f250dc3b7e3fa3207b17624f1ffd95725ccc6d45849f2efa1bc",
+        "bytes": 38059,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/tests/api_contract_validation.rs"
+      },
+      {
+        "repository_path": "tests/workspace_cli_test.rs",
+        "sha256": "ba347e53914b6211e5d8637071006a477e24585ce600a2aa7b0ea999217421b2",
+        "bytes": 72248,
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/source/tests/workspace_cli_test.rs"
+      }
+    ],
+    "retained_binaries": [
+      {
+        "original_path": "/private/tmp/forge-f09-llvm-target-1.98.1/llvm-cov-target/debug/deps/forge-2423f079f8257d3c",
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/binaries/e7f7a6abcdd25bd203a0e3539a61236d6b0a11e88babfaf3d64a026612dca2f6/forge-2423f079f8257d3c",
+        "sha256": "e7f7a6abcdd25bd203a0e3539a61236d6b0a11e88babfaf3d64a026612dca2f6",
+        "bytes": 67797528
+      },
+      {
+        "original_path": "/private/tmp/forge-f09-llvm-target-1.98.1/llvm-cov-target/debug/deps/forge-e8ad8bc6591e2839",
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/binaries/f476fde34aff49f9e8c6133264e1e5df18b0c791445c9e15e16e926a1f94a1f7/forge-e8ad8bc6591e2839",
+        "sha256": "f476fde34aff49f9e8c6133264e1e5df18b0c791445c9e15e16e926a1f94a1f7",
+        "bytes": 69980392
+      },
+      {
+        "original_path": "/private/tmp/forge-f09-llvm-target-1.98.1/llvm-cov-target/debug/deps/api_contract_validation-750c9ab1fc0dee20",
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/binaries/47592f79cdccf9bd1e1160814aed1ef82fcd8c81fd6aa17893a230f0ed1b1ccc/api_contract_validation-750c9ab1fc0dee20",
+        "sha256": "47592f79cdccf9bd1e1160814aed1ef82fcd8c81fd6aa17893a230f0ed1b1ccc",
+        "bytes": 8724600
+      },
+      {
+        "original_path": "/private/tmp/forge-f09-llvm-target-1.98.1/llvm-cov-target/debug/deps/workspace_cli_test-1e89ea3caade4d24",
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/binaries/604399d44434fa0da99bb5f2fc35ac31cdba322368f46c78b3e0df5b566d84dc/workspace_cli_test-1e89ea3caade4d24",
+        "sha256": "604399d44434fa0da99bb5f2fc35ac31cdba322368f46c78b3e0df5b566d84dc",
+        "bytes": 2786592
+      },
+      {
+        "original_path": "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge",
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/binaries/cec759683036d509a4be09180e732a56f3865cb02a4abfe72f912e4b758b936c/forge",
+        "sha256": "cec759683036d509a4be09180e732a56f3865cb02a4abfe72f912e4b758b936c",
+        "bytes": 68278936
+      }
+    ],
+    "original_raw_exports": [
+      {
+        "original_path": "/private/tmp/forge-f19-final-llvm-raw.json",
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/forge-f19-final-llvm-raw.json",
+        "sha256": "56111e0ff65c5c16374012d1a50fd4f01fdb680cd1d721f41fbc53e0e4d82402",
+        "bytes": 12950372
+      },
+      {
+        "original_path": "/private/tmp/forge-f19-final-llvm-raw.lcov",
+        "path": "/private/tmp/forge-f19-final-source-and-binaries/forge-f19-final-llvm-raw.lcov",
+        "sha256": "8db176e8e13c015cb021933364981914a256359fcc4bee894816cc9b9ff866b0",
+        "bytes": 2427787
+      }
+    ],
+    "current_documentation_inputs": [
+      {
+        "path": "/private/tmp/forge-f19-verification-draft-v1/source-doc-snapshots/docs/workspace-index-bundles.md",
+        "sha256": "ebce1735a0a9a5ca7bf1d7a70164775acdf3efa6d69eacefa7c9168bc40d2f50",
+        "bytes": 10383,
+        "repository_path": "docs/workspace-index-bundles.md",
+        "recording_time_workspace_path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/workspace-index-bundles.md"
+      },
+      {
+        "path": "/private/tmp/forge-f19-verification-draft-v1/source-doc-snapshots/docs/plans/2026-10-02-f19-workspace-bundle-queries.md",
+        "sha256": "fa63fd2270ddbb4fce4e1abc2923ec73df6a1179d52a5076d0afb614fbe64327",
+        "bytes": 5600,
+        "repository_path": "docs/plans/2026-10-02-f19-workspace-bundle-queries.md",
+        "recording_time_workspace_path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/plans/2026-10-02-f19-workspace-bundle-queries.md"
+      },
+      {
+        "path": "/private/tmp/forge-f19-verification-draft-v1/source-doc-snapshots/docs/local-workspace.md",
+        "sha256": "fe37a47ac67e63b250cdbcc7fb07381731939f075466e1e718b7b431eedc6a89",
+        "bytes": 14106,
+        "repository_path": "docs/local-workspace.md",
+        "recording_time_workspace_path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/local-workspace.md"
+      },
+      {
+        "path": "/private/tmp/forge-f19-verification-draft-v1/source-doc-snapshots/docs/usage-guide.md",
+        "sha256": "a38837e68a19c39c2c78bc81221f91b1f2f8e4dd5219c9843f5a160f9dac3337",
+        "bytes": 37635,
+        "repository_path": "docs/usage-guide.md",
+        "recording_time_workspace_path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/usage-guide.md"
+      }
+    ],
+    "post_execution_prose_corrections": {
+      "path": "/private/tmp/forge-f19-focused-doc-corrections-v3.json",
+      "sha256": "7f99619ae63a75c66c91c96d2003630ddb440595fc804d65223dfc6d6878bfc7",
+      "bytes": 1227
+    },
+    "focused_application_record": {
+      "path": "/private/tmp/forge-f19-focused-docs-applied-v2.json",
+      "sha256": "60f082dc636385602004f47de951411ec5e4ddf4c19e0d5f6056cebd42bc393b",
+      "bytes": 1914
+    },
+    "qualification": "Runtime Rust/Python/OpenAPI/fixture inputs remain unchanged from successful execution. Two prose-only guide/local-workspace replacements after execution are explicitly pinned; historical source/docs retain their original bytes. The root will separately record any later plan verification-link edit. Binary index is preserved recording-time identity; job receipts do not attest binary hashes before/after execution."
+  },
+  "local_test_evidence": {
+    "platform": "Rust1.98.1,aarch64-apple-darwin local default features; no other-platform/MSRV/release qualification.",
+    "full_suite": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-final-full-tests.json",
+        "sha256": "f6ec9d631b2fe70ec4888725e3f4454946718a7ab5a0ef95d3a27767b5aac68f",
+        "bytes": 14324
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-final-full-tests.log",
+        "sha256": "7cf6ee31f1a982e72dfd0e73e8c77eaa6c98a99d1bcc499e7de62a92f5797435",
+        "bytes": 218910
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 69,
+        "passed": 2721,
+        "failed": 0,
+        "ignored": 3
+      }
+    },
+    "selected_instrumented": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-llvm-final-tests.json",
+        "sha256": "41572ec2cb6bf62229bd9ec3e93b71e398887009ab62be2683e5042f5ef685cd",
+        "bytes": 14842
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-llvm-final-tests.log",
+        "sha256": "14593a335e995679b5f70f5c1935c707ef853f6ddf9efca7a32742bfbb8523dc",
+        "bytes": 147354
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "--locked",
+        "--lib",
+        "--test",
+        "api_contract_validation",
+        "--test",
+        "workspace_cli_test",
+        "--no-report"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 3,
+        "passed": 1867,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "selected_breakdown": {
+      "library": 1839,
+      "api_contract_validation": 9,
+      "workspace_cli_test": 19,
+      "total": 1867,
+      "failed": 0,
+      "ignored": 0
+    },
+    "baseline_and_added_counts": {
+      "baseline_full_receipt": {
+        "path": "/private/tmp/forge-f12-final-full-tests.json",
+        "sha256": "7188920635ebb836c5050171d297158a9316fe62fc580a39b3f9c192d733c334",
+        "bytes": 1530
+      },
+      "baseline_totals": {
+        "path": "/private/tmp/forge-f12-final-full-test-totals.json",
+        "sha256": "45944e6ae474929dba0d27fe96c83fb9fdc1ad21d9af43103961c4f811f02a6f",
+        "bytes": 332
+      },
+      "baseline_passed": 2695,
+      "added_test_declarations_root_bound": {
+        "unit": 17,
+        "http": 8,
+        "api": 1
+      },
+      "current_passed": 2721,
+      "delta": 26,
+      "qualification": "2695+17+8+1=2721. Selected runs, focused repeats and full-suite outcomes are overlapping scopes and are never summed as unique cases."
+    },
+    "maintained_client": {
+      "job": {
+        "receipt": {
+          "path": "/private/tmp/forge-f19-final-client-conformance.json",
+          "sha256": "732ea190cc3ee3a8af9ab30bee31ee0e6b56fce77c80b098ea7b48e3ae075e46",
+          "bytes": 14423
+        },
+        "log": {
+          "path": "/private/tmp/forge-f19-final-client-conformance.log",
+          "sha256": "85626f58b58802c3e67faa2a0542981ff0b41397692311a8e7bac84e27d4ffb8",
+          "bytes": 235
+        },
+        "command": [
+          "rtk",
+          "proxy",
+          "python3",
+          "scripts/test_workspace_client.py",
+          "--forge",
+          "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge"
+        ],
+        "exit_code": 0,
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+        "explicit_extra_environment": {},
+        "source_bytes_unchanged_during_command": true,
+        "raw_test_summaries": {
+          "summaries": 0,
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0
+        }
+      },
+      "instrumented_repeat": {
+        "receipt": {
+          "path": "/private/tmp/forge-f19-llvm-graceful-client-conformance.json",
+          "sha256": "900c7084933d48942ff5e1b632a3a56a44fd307349ffe772a4f6b9254a6cfbcb",
+          "bytes": 14975
+        },
+        "log": {
+          "path": "/private/tmp/forge-f19-llvm-graceful-client-conformance.log",
+          "sha256": "85626f58b58802c3e67faa2a0542981ff0b41397692311a8e7bac84e27d4ffb8",
+          "bytes": 235
+        },
+        "command": [
+          "rtk",
+          "proxy",
+          "env",
+          "LLVM_PROFILE_FILE=/private/tmp/forge-f19-graceful-client/%p-%m.profraw",
+          "PYTHONDONTWRITEBYTECODE=1",
+          "python3",
+          "scripts/test_workspace_client.py",
+          "--forge",
+          "/private/tmp/forge-f09-llvm-target-1.98.1/llvm-cov-target/debug/forge"
+        ],
+        "exit_code": 0,
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+        "explicit_extra_environment": {},
+        "source_bytes_unchanged_during_command": true,
+        "raw_test_summaries": {
+          "summaries": 0,
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0
+        }
+      },
+      "scope": "One existing synthetic workflow repeated against normal and instrumented servers. New methods run in a read-only machine session over six registrations, checking exact ordered pins/hash/size/count/index equality and regular-file bytes before/after. Existing write rejection and clean shutdown are asserted. This is not a Rust pass denominator, full Unicode normalization proof, browser/AT or S6 acceptance."
+    },
+    "continuous_http_repeat": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-llvm-continuous-http-tests.json",
+        "sha256": "3fd400f974de70b310a94d6ef9c313bddb5e50efbbdb28ef6d00c2e417304f26",
+        "bytes": 14899
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-llvm-continuous-http-tests.log",
+        "sha256": "7d7336830256d7e70ed70dc60677c1cb3a95d5578f3af962d4ef18c8e341c89c",
+        "bytes": 1728
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "LLVM_PROFILE_FILE=/private/tmp/forge-f19-continuous-http/%p-%m%c.profraw",
+        "/private/tmp/forge-f09-llvm-target-1.98.1/llvm-cov-target/debug/deps/workspace_cli_test-1e89ea3caade4d24"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 1,
+        "passed": 19,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "no_extra_unique_test_credit": true
+  },
+  "format_lint_evidence": {
+    "final_fmt": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-final-fmt-check.json",
+        "sha256": "0295ac2d9199106bd981447ee9d719becef6e2794e7074a3c9d0bb6cfed3ec9f",
+        "bytes": 14334
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-final-fmt-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "successful_strict_clippy": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-third-strict-clippy.json",
+        "sha256": "9b71ff1ae0967aab73d5b014d5231a428c65fd10aa86bcc2ec418489f185cceb",
+        "bytes": 14382
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-third-strict-clippy.log",
+        "sha256": "80246426b4545089aa9a59e367b303ee61a705990c30fd353f92319cbfae3547",
+        "bytes": 159
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "qualification": "Third strict all-target Clippy succeeded on pre-final-format HTTP test source e49aa318...; final cargo fmt collapsed one unchanged helper call to ba347e53... and final fmt passed. Product source stayed unchanged. Mandatory hook must recheck delivered formatted test bytes; it is pending here."
+  },
+  "coverage": {
+    "evidence_role": "producer derivation of authored module; not independent source review",
+    "producer": {
+      "path": "/private/tmp/forge-f19-coverage-v3/coverage.json",
+      "sha256": "fcca05f3e3f51bd981b83d70b809dc0d162d364ac6e887f52ba99c986be21317",
+      "bytes": 205533,
+      "role": "producer coverage derivation"
+    },
+    "index": {
+      "path": "/private/tmp/forge-f19-coverage-v3/index.json",
+      "sha256": "50ffd392964be9d2703f4d2029bc15094cbbb1dd7fa20e649f11e27b23a6e5b8",
+      "bytes": 6252
+    },
+    "readback": {
+      "path": "/private/tmp/forge-f19-coverage-v3/readback.md",
+      "sha256": "9d1ef09070e7eb481caaaef4199911d5eca6ebd0b4e8fa7f148bc2a4d04caf3e",
+      "bytes": 2638
+    },
+    "methodology": {
+      "diff": "difflib SequenceMatcher autojunk=false against root-retained exact 5a12daad HTTP blob",
+      "function_measure": "five authored source starts; covered if any matching JSON instance count is positive",
+      "generated_serde_search": "functions mapped to bundles.rs with Bundle/Pin type identifiers in mangled name",
+      "line_measure": "unique LCOV DA source lines; max per line across records; covered iff count > 0",
+      "native_llvm_summaries": "reported separately; not substituted for unique DA denominators",
+      "production_boundary": "all mapped lines strictly before first #[cfg(test)]",
+      "pruning": "none; zeros and mapped comments/blank lines retained"
+    },
+    "bundle": {
+      "production_before_cfg_test_line": 238,
+      "production_unique_da": {
+        "covered": 141,
+        "denominator": 142,
+        "percent": 99.29577464788733,
+        "zero_lines": [
+          150
+        ]
+      },
+      "uncovered_source": [
+        {
+          "line": 150,
+          "text": "        return Err(Error::invalid());"
+        }
+      ],
+      "authored_production_functions": {
+        "covered": 5,
+        "denominator": 5,
+        "functions": [
+          {
+            "name": "preview",
+            "start_line": 57,
+            "end_line": 95,
+            "positive_any_instance": true,
+            "unique_da": {
+              "covered": 36,
+              "denominator": 36,
+              "percent": 100.0,
+              "zero_lines": []
+            }
+          },
+          {
+            "name": "verify_registered",
+            "start_line": 106,
+            "end_line": 167,
+            "positive_any_instance": true,
+            "unique_da": {
+              "covered": 54,
+              "denominator": 55,
+              "percent": 98.18181818181819,
+              "zero_lines": [
+                150
+              ]
+            }
+          },
+          {
+            "name": "decode_bundle",
+            "start_line": 173,
+            "end_line": 202,
+            "positive_any_instance": true,
+            "unique_da": {
+              "covered": 28,
+              "denominator": 28,
+              "percent": 100.0,
+              "zero_lines": []
+            }
+          },
+          {
+            "name": "normalized_index_hash",
+            "start_line": 205,
+            "end_line": 207,
+            "positive_any_instance": true,
+            "unique_da": {
+              "covered": 3,
+              "denominator": 3,
+              "percent": 100.0,
+              "zero_lines": []
+            }
+          },
+          {
+            "name": "current_items",
+            "start_line": 213,
+            "end_line": 236,
+            "positive_any_instance": true,
+            "unique_da": {
+              "covered": 20,
+              "denominator": 20,
+              "percent": 100.0,
+              "zero_lines": []
+            }
+          }
+        ]
+      },
+      "cfg_test_unique_da": {
+        "covered": 348,
+        "denominator": 348,
+        "percent": 100.0,
+        "zero_lines": []
+      },
+      "whole_module_unique_da": {
+        "covered": 489,
+        "denominator": 490,
+        "percent": 99.79591836734694,
+        "zero_lines": [
+          150
+        ]
+      },
+      "native_llvm_summary_including_tests": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 36,
+          "covered": 35,
+          "percent": 97.22222222222221
+        },
+        "instantiations": {
+          "count": 49,
+          "covered": 47,
+          "percent": 95.91836734693877
+        },
+        "lines": {
+          "count": 500,
+          "covered": 498,
+          "percent": 99.6
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 1105,
+          "covered": 1084,
+          "notcovered": 21,
+          "percent": 98.09954751131221
+        }
+      },
+      "native_function_summary_reported_by_producer": {
+        "covered": 35,
+        "denominator": 36,
+        "qualification": "Native tool function scope includes generated/test/compiled instances and differs from five authored production functions."
+      },
+      "generated_serde_families": {
+        "coverage_percent": null,
+        "expected_families": [
+          "Bundle::serialize",
+          "Bundle::deserialize",
+          "Pin::serialize",
+          "Pin::deserialize"
+        ],
+        "mapped_function_instance_rows": 0,
+        "qualification": "Behavioral round trips exercise these derives, but no family-level function metric can be claimed from absent records.",
+        "status": "unavailable in provided source-mapped instrumentation"
+      }
+    },
+    "http": {
+      "production_before_cfg_test_line": 711,
+      "production_unique_da": {
+        "covered": 413,
+        "denominator": 556,
+        "percent": 74.28057553956835,
+        "zero_lines": [
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          70,
+          71,
+          72,
+          78,
+          88,
+          89,
+          116,
+          120,
+          130,
+          131,
+          136,
+          137,
+          143,
+          150,
+          163,
+          171,
+          172,
+          173,
+          174,
+          175,
+          179,
+          188,
+          189,
+          190,
+          191,
+          192,
+          194,
+          203,
+          204,
+          205,
+          206,
+          207,
+          213,
+          216,
+          217,
+          218,
+          270,
+          271,
+          272,
+          302,
+          305,
+          306,
+          317,
+          327,
+          332,
+          373,
+          378,
+          387,
+          400,
+          403,
+          421,
+          423,
+          424,
+          425,
+          426,
+          427,
+          428,
+          429,
+          447,
+          452,
+          469,
+          481,
+          506,
+          525,
+          529,
+          532,
+          541,
+          544,
+          545,
+          552,
+          555,
+          556,
+          557,
+          572,
+          578,
+          582,
+          583,
+          584,
+          585,
+          586,
+          587,
+          588,
+          589,
+          590,
+          591,
+          592,
+          593,
+          594,
+          598,
+          599,
+          600,
+          604,
+          607,
+          608,
+          609,
+          610,
+          611,
+          613,
+          614,
+          615,
+          616,
+          623,
+          633,
+          634,
+          635,
+          636,
+          638,
+          641,
+          645,
+          646,
+          647,
+          648,
+          649,
+          650,
+          651,
+          652,
+          653,
+          654,
+          655,
+          656,
+          657,
+          658,
+          660,
+          662,
+          668,
+          669,
+          670,
+          671,
+          672,
+          673,
+          674,
+          675,
+          676,
+          677,
+          678,
+          679,
+          680
+        ]
+      },
+      "added_mapped_runtime_da": {
+        "covered": 8,
+        "da": [
+          {
+            "count": 38,
+            "line": 280
+          },
+          {
+            "count": 11,
+            "line": 518
+          },
+          {
+            "count": 1,
+            "line": 519
+          },
+          {
+            "count": 2,
+            "line": 521
+          },
+          {
+            "count": 1,
+            "line": 522
+          },
+          {
+            "count": 1,
+            "line": 523
+          },
+          {
+            "count": 1,
+            "line": 524
+          },
+          {
+            "count": 0,
+            "line": 525
+          },
+          {
+            "count": 1,
+            "line": 526
+          }
+        ],
+        "denominator": 9,
+        "percent": 88.88888888888889,
+        "zero_lines": [
+          525
+        ]
+      },
+      "added_source_lines_without_da": [
+        277,
+        362,
+        520,
+        527
+      ],
+      "authored_changed_functions": {
+        "covered": 2,
+        "denominator": 2,
+        "functions": [
+          {
+            "end_line": 290,
+            "executed_any_instance": true,
+            "name": "is_mutation",
+            "start_line": 278
+          },
+          {
+            "end_line": 643,
+            "executed_any_instance": true,
+            "name": "dispatch",
+            "start_line": 364
+          }
+        ]
+      },
+      "whole_file_unique_da": {
+        "covered": 471,
+        "denominator": 614,
+        "percent": 76.71009771986971,
+        "zero_lines": [
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          70,
+          71,
+          72,
+          78,
+          88,
+          89,
+          116,
+          120,
+          130,
+          131,
+          136,
+          137,
+          143,
+          150,
+          163,
+          171,
+          172,
+          173,
+          174,
+          175,
+          179,
+          188,
+          189,
+          190,
+          191,
+          192,
+          194,
+          203,
+          204,
+          205,
+          206,
+          207,
+          213,
+          216,
+          217,
+          218,
+          270,
+          271,
+          272,
+          302,
+          305,
+          306,
+          317,
+          327,
+          332,
+          373,
+          378,
+          387,
+          400,
+          403,
+          421,
+          423,
+          424,
+          425,
+          426,
+          427,
+          428,
+          429,
+          447,
+          452,
+          469,
+          481,
+          506,
+          525,
+          529,
+          532,
+          541,
+          544,
+          545,
+          552,
+          555,
+          556,
+          557,
+          572,
+          578,
+          582,
+          583,
+          584,
+          585,
+          586,
+          587,
+          588,
+          589,
+          590,
+          591,
+          592,
+          593,
+          594,
+          598,
+          599,
+          600,
+          604,
+          607,
+          608,
+          609,
+          610,
+          611,
+          613,
+          614,
+          615,
+          616,
+          623,
+          633,
+          634,
+          635,
+          636,
+          638,
+          641,
+          645,
+          646,
+          647,
+          648,
+          649,
+          650,
+          651,
+          652,
+          653,
+          654,
+          655,
+          656,
+          657,
+          658,
+          660,
+          662,
+          668,
+          669,
+          670,
+          671,
+          672,
+          673,
+          674,
+          675,
+          676,
+          677,
+          678,
+          679,
+          680
+        ]
+      },
+      "native_llvm_summary_including_tests": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 75,
+          "covered": 42,
+          "percent": 56.00000000000001
+        },
+        "instantiations": {
+          "count": 146,
+          "covered": 44,
+          "percent": 30.136986301369863
+        },
+        "lines": {
+          "count": 673,
+          "covered": 498,
+          "percent": 73.99702823179793
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 1319,
+          "covered": 959,
+          "notcovered": 360,
+          "percent": 72.70659590598939
+        }
+      },
+      "exact_base": {
+        "binding": "root-retained git-show blob; no Git execution by producer",
+        "commit": "5a12daad1f31f33827cde5b50ad6f0915d9e12ec",
+        "pin": {
+          "bytes": 31917,
+          "path": "/private/tmp/forge-f19-coverage-v3/base-http.rs",
+          "sha256": "7110ea85eb5d7c4bbc40985d5ce66fe03822440db211d0a83480aad7f9fd2598"
+        }
+      }
+    },
+    "selected_authored_rust_function_denominator": {
+      "covered": 7,
+      "denominator": 7,
+      "scope": "Five new bundle functions plus two changed HTTP functions, covered if a matching production instance has a positive count; no path/branch completeness implied."
+    },
+    "branch_mcdc": {
+      "bundle_branch_records": 0,
+      "bundle_mcdc_records": 0,
+      "coverage_percent": null,
+      "http_branch_records": 0,
+      "http_mcdc_records": 0,
+      "lcov_target_brda_records": 0,
+      "status": "unavailable; no target branch or MCDC instrumentation records"
+    },
+    "historical_zero_successors": [
+      {
+        "version": 1,
+        "producer": {
+          "path": "/private/tmp/forge-f19-coverage-v1/coverage.json",
+          "sha256": "9958546499cd19e17d48d99569515efc926a3d989bb06edca54d94806dc66b66",
+          "bytes": 211503,
+          "role": "historical producer derivation"
+        },
+        "http_added_runtime_da": {
+          "covered": 0,
+          "denominator": 9,
+          "zero_lines": [
+            280,
+            518,
+            519,
+            521,
+            522,
+            523,
+            524,
+            525,
+            526
+          ]
+        },
+        "qualification": "Successful test outcomes do not turn zero counters into coverage credit."
+      },
+      {
+        "version": 2,
+        "producer": {
+          "path": "/private/tmp/forge-f19-coverage-v2/coverage.json",
+          "sha256": "f32e118a1f90fd8c6cbde4bf32a39702c6650f4e9da2babe4329f57656aca991",
+          "bytes": 219314,
+          "role": "historical producer derivation"
+        },
+        "http_added_runtime_da": {
+          "covered": 0,
+          "denominator": 9,
+          "zero_lines": [
+            280,
+            518,
+            519,
+            521,
+            522,
+            523,
+            524,
+            525,
+            526
+          ]
+        },
+        "qualification": "Successful test outcomes do not turn zero counters into coverage credit."
+      }
+    ],
+    "final_profile_method": {
+      "index": {
+        "path": "/private/tmp/forge-f19-graceful-coverage-v3/index.json",
+        "sha256": "f10fa62aa5bfdece86d8fe66f2ffc01b56ca94ff59d48dfb8d54fd53fcdd7b22",
+        "bytes": 8131
+      },
+      "original_profiles": 8,
+      "graceful_client_profiles": 2,
+      "objects": 4,
+      "continuous_index_preserved": {
+        "path": "/private/tmp/forge-f19-continuous-coverage-v2/index.json",
+        "sha256": "77ba6f6dd40c1beb5df5b3d9cf30681661f068420b115805719c43a632db74ba",
+        "bytes": 14958
+      },
+      "continuous_profiles": 25,
+      "qualification": "V3 merges original profiles with a separate existing maintained-client run using normal %p-%m output and authenticated shutdown. V2 continuous run repeated19 tests; client repeats and compiled objects add no unique test cases. No general causal profile-flush claim."
+    },
+    "profile_preservation": {
+      "copied_profile_index": {
+        "path": "/private/tmp/forge-f19-profile-inputs-final/index.json",
+        "sha256": "7080bce5d5b17eb8445078da4720e931f695478eac61a1ed2cab266c36fabb06",
+        "bytes": 16122
+      },
+      "copied_profile_or_profdata_entries": 37,
+      "all_copied_pins_replayed": true,
+      "original_profile_state": {
+        "path": "/private/tmp/forge-f19-original-profile-state-v1/index.json",
+        "sha256": "ce2d38e22d65f64eaeee0a627d563c7fb8f2e1b9097b80e6b43e5d9ccf5c7de4",
+        "bytes": 432
+      },
+      "qualification": "Retained copies permit later LLVM cleanup without losing recording-time profiles. Mutable original paths in nested history remain recording-time identities."
+    }
+  },
+  "source_documentation": {
+    "audit": {
+      "path": "/private/tmp/forge-f19-source-docstrings-final-v3.json",
+      "sha256": "4239e888d00885d684cae1e1181812ff31cb3b560e9e268a21697f17a7de7e90",
+      "bytes": 51919,
+      "role": "source documentation audit"
+    },
+    "selected_named_functions": {
+      "documented": 50,
+      "total": 50,
+      "scopes": {
+        "production": 7,
+        "cfg-test": 21,
+        "integration-test": 20,
+        "production-python": 2
+      },
+      "inventory": [
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "preview",
+          "line": 57,
+          "documented": true,
+          "scope": "production"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "verify_registered",
+          "line": 106,
+          "documented": true,
+          "scope": "production"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "decode_bundle",
+          "line": 173,
+          "documented": true,
+          "scope": "production"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "normalized_index_hash",
+          "line": 205,
+          "documented": true,
+          "scope": "production"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "current_items",
+          "line": 213,
+          "documented": true,
+          "scope": "production"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "fixture",
+          "line": 253,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "bundle",
+          "line": 283,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "refresh_index_hash",
+          "line": 288,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "expect_error",
+          "line": 295,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "complete_query_denominators_do_not_use_the_effect_input_cap",
+          "line": 304,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "absent_index_never_matches_even_an_empty_expected_bundle",
+          "line": 326,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "preview_is_deterministic_metadata_with_original_resource_hashes",
+          "line": 348,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "expected_subset_does_not_remove_or_hide_current_extra_registrations",
+          "line": 374,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "authorial_order_and_display_label_are_distinct_from_resource_matches",
+          "line": 392,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "mismatches_and_unregistered_paths_keep_the_complete_expected_order",
+          "line": 424,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "registration_conflicts_are_distinct_from_content_fingerprint_mismatches",
+          "line": 450,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "fingerprint_agreement_retains_stale_and_invalid_observed_states",
+          "line": 465,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "closed_bundle_fields_versions_profiles_and_request_envelopes_are_enforced",
+          "line": 481,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "pin_bijection_and_normalized_index_hash_are_intrinsic_requirements",
+          "line": 517,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "pin_hash_format_and_integer_length_bounds_are_closed",
+          "line": 547,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "nested_index_rejects_duplicate_keys_casefold_aliases_and_unsafe_paths",
+          "line": 572,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "one_over_resource_limit_rejects_the_whole_bundle",
+          "line": 604,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "declared_aggregate_bound_includes_the_normalized_index",
+          "line": 618,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "direct_request_size_bound_includes_extra_wrapper_bytes",
+          "line": 638,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "comparison_uses_observed_capture_not_a_supplied_path_reopen",
+          "line": 646,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "name": "inconsistent_direct_snapshot_state_rejects_without_a_partial_result",
+          "line": 662,
+          "documented": true,
+          "scope": "cfg-test"
+        },
+        {
+          "path": "src/workspace/http.rs",
+          "name": "is_mutation",
+          "line": 278,
+          "documented": true,
+          "scope": "production"
+        },
+        {
+          "path": "src/workspace/http.rs",
+          "name": "dispatch",
+          "line": 364,
+          "documented": true,
+          "scope": "production"
+        },
+        {
+          "path": "tests/api_contract_validation.rs",
+          "name": "bundle_index_api_mirror",
+          "line": 909,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/api_contract_validation.rs",
+          "name": "bundle_index_components_are_composed_from_the_unchanged_index_schema",
+          "line": 938,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_fixture_sha256",
+          "line": 853,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_fixture_index_bytes",
+          "line": 863,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_fixture",
+          "line": 885,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_assert_keys",
+          "line": 905,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_assert_error",
+          "line": 914,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_preview",
+          "line": 931,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_verify",
+          "line": 972,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_assert_counts",
+          "line": 1010,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_project_files",
+          "line": 1029,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "readonly_bundle_preview_and_verification_preserve_registered_bytes",
+          "line": 1044,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_queries_distinguish_missing_and_explicit_empty_indexes",
+          "line": 1101,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_verification_reconciles_mixed_rows_and_registration_conflicts",
+          "line": 1146,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_fingerprint_agreement_retains_invalid_and_stale_resource_states",
+          "line": 1245,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_assert_raw_duplicates_rejected",
+          "line": 1291,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_verification_rejects_closed_contract_and_duplicate_encodings",
+          "line": 1324,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_request_envelope_obeys_existing_raw_and_decoded_limits",
+          "line": 1398,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_queries_preserve_authentication_and_exact_readonly_post_exception",
+          "line": 1445,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "name": "bundle_queries_cover_101_resources_without_effect_prefix_truncation",
+          "line": 1537,
+          "documented": true,
+          "scope": "integration-test"
+        },
+        {
+          "path": "scripts/workspace_client.py",
+          "scope": "production-python",
+          "name": "bundle_preview",
+          "line": 85,
+          "documented": true
+        },
+        {
+          "path": "scripts/workspace_client.py",
+          "scope": "production-python",
+          "name": "verify_bundle",
+          "line": 94,
+          "documented": true
+        }
+      ]
+    },
+    "new_struct_fields": {
+      "documented": 16,
+      "total": 16,
+      "declarations": [
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Bundle.schema_version",
+          "line": 29,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Bundle.content_profile",
+          "line": 31,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Bundle.index",
+          "line": 33,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Bundle.index_sha256",
+          "line": 35,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Bundle.pins",
+          "line": 37,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Pin.key",
+          "line": 45,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Pin.sha256",
+          "line": 47,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Pin.size_bytes",
+          "line": 49,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Fixture.project",
+          "line": 247,
+          "documented": true
+        },
+        {
+          "path": "src/workspace/bundles.rs",
+          "kind": "new-struct-field",
+          "name": "Fixture.snapshot",
+          "line": 249,
+          "documented": true
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "kind": "new-struct-field",
+          "name": "BundleFixtureResource.key",
+          "line": 834,
+          "documented": true
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "kind": "new-struct-field",
+          "name": "BundleFixtureResource.role",
+          "line": 836,
+          "documented": true
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "kind": "new-struct-field",
+          "name": "BundleFixtureResource.path",
+          "line": 838,
+          "documented": true
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "kind": "new-struct-field",
+          "name": "BundleFixtureIndex.schema_version",
+          "line": 845,
+          "documented": true
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "kind": "new-struct-field",
+          "name": "BundleFixtureIndex.label",
+          "line": 847,
+          "documented": true
+        },
+        {
+          "path": "tests/workspace_cli_test.rs",
+          "kind": "new-struct-field",
+          "name": "BundleFixtureIndex.resources",
+          "line": 849,
+          "documented": true
+        }
+      ]
+    },
+    "other_selected_named_declarations": [
+      {
+        "path": "src/workspace/contract.rs",
+        "kind": "changed-named-constant",
+        "name": "VERSION",
+        "line": 96,
+        "documented": true,
+        "source_sha256": "828abe9abdec87e1bec6715377dd3407f0c0d2eb5d02e9d58d27674127ec303a"
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-constant",
+        "name": "MAX_BUNDLE_BYTES",
+        "line": 16,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-constant",
+        "name": "MAX_RESOURCES",
+        "line": 18,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-constant",
+        "name": "MAX_RESOURCE_BYTES",
+        "line": 20,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-constant",
+        "name": "MAX_DECLARED_BYTES",
+        "line": 22,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct",
+        "name": "Bundle",
+        "line": 27,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct",
+        "name": "Pin",
+        "line": 43,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct",
+        "name": "Fixture",
+        "line": 245,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Bundle.schema_version",
+        "line": 29,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Bundle.content_profile",
+        "line": 31,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Bundle.index",
+        "line": 33,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Bundle.index_sha256",
+        "line": 35,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Bundle.pins",
+        "line": 37,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Pin.key",
+        "line": 45,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Pin.sha256",
+        "line": 47,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Pin.size_bytes",
+        "line": 49,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Fixture.project",
+        "line": 247,
+        "documented": true
+      },
+      {
+        "path": "src/workspace/bundles.rs",
+        "kind": "new-struct-field",
+        "name": "Fixture.snapshot",
+        "line": 249,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct",
+        "name": "BundleFixtureResource",
+        "line": 832,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct-field",
+        "name": "BundleFixtureResource.key",
+        "line": 834,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct-field",
+        "name": "BundleFixtureResource.role",
+        "line": 836,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct-field",
+        "name": "BundleFixtureResource.path",
+        "line": 838,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct",
+        "name": "BundleFixtureIndex",
+        "line": 843,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct-field",
+        "name": "BundleFixtureIndex.schema_version",
+        "line": 845,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct-field",
+        "name": "BundleFixtureIndex.label",
+        "line": 847,
+        "documented": true
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "kind": "new-struct-field",
+        "name": "BundleFixtureIndex.resources",
+        "line": 849,
+        "documented": true
+      }
+    ],
+    "whole_file_inventory": [
+      {
+        "path": "src/workspace/bundles.rs",
+        "sha256": "7bcb592b1fafe73154006bc5b544df57ced2188ac71749fa2cc721dde0b795dd",
+        "bytes": 30630,
+        "documented": 26,
+        "named": 26,
+        "by_scope": {
+          "production": 5,
+          "cfg-test": 21
+        },
+        "documented_by_scope": {
+          "production": 5,
+          "cfg-test": 21
+        },
+        "legacy_undocumented": []
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "sha256": "8a41f2b0d5a00bfa5a5b54ea98de59403cdb0edb7335da618c3d4a716e69d9d7",
+        "bytes": 32592,
+        "documented": 2,
+        "named": 19,
+        "by_scope": {
+          "production": 15,
+          "cfg-test": 4
+        },
+        "documented_by_scope": {
+          "production": 2
+        },
+        "legacy_undocumented": [
+          {
+            "name": "internal",
+            "line": 38,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "unauthorized",
+            "line": 41,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "launch",
+            "line": 45,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "open_browser",
+            "line": 116,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "single_header",
+            "line": 139,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "guard",
+            "line": 148,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "unlock_response",
+            "line": 229,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "respond",
+            "line": 292,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "json_response",
+            "line": 350,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "session_view",
+            "line": 356,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "static_response",
+            "line": 645,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "error_response",
+            "line": 664,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "response",
+            "line": 686,
+            "documented": false,
+            "scope": "production"
+          },
+          {
+            "name": "browser_state",
+            "line": 715,
+            "documented": false,
+            "scope": "cfg-test"
+          },
+          {
+            "name": "capability_count",
+            "line": 736,
+            "documented": false,
+            "scope": "cfg-test"
+          },
+          {
+            "name": "snapshot_failure_never_consumes_a_capability_slot",
+            "line": 741,
+            "documented": false,
+            "scope": "cfg-test"
+          },
+          {
+            "name": "malformed_and_wrong_unlock_requests_share_the_generic_failure",
+            "line": 758,
+            "documented": false,
+            "scope": "cfg-test"
+          }
+        ]
+      },
+      {
+        "path": "tests/api_contract_validation.rs",
+        "sha256": "e229e78db1530f250dc3b7e3fa3207b17624f1ffd95725ccc6d45849f2efa1bc",
+        "bytes": 38059,
+        "documented": 6,
+        "named": 35,
+        "by_scope": {
+          "integration-test": 35
+        },
+        "documented_by_scope": {
+          "integration-test": 6
+        },
+        "legacy_undocumented": [
+          {
+            "name": "repo_path",
+            "line": 47,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "load_yaml_as_json",
+            "line": 60,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "load_openapi",
+            "line": 73,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "unlock_operation_id",
+            "line": 109,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "workspace_schema",
+            "line": 168,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "collect_files",
+            "line": 175,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "deserialize",
+            "line": 201,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "expecting",
+            "line": 214,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_bool",
+            "line": 218,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_i64",
+            "line": 222,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_u64",
+            "line": 226,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_f64",
+            "line": 230,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_str",
+            "line": 240,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_string",
+            "line": 244,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_none",
+            "line": 248,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_unit",
+            "line": 252,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_some",
+            "line": 256,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_seq",
+            "line": 263,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "visit_map",
+            "line": 274,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "read_json_strict",
+            "line": 292,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "vendored_openapi_meta_schema_is_pinned_and_intact",
+            "line": 305,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "openapi_document_is_valid_openapi_3_1",
+            "line": 330,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "openapi_paths_operations_and_security_invariants_hold",
+            "line": 363,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "openapi_servers_are_loopback_only",
+            "line": 510,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "openapi_internal_refs_resolve_and_every_component_schema_compiles",
+            "line": 536,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "collect_internal_ref_errors",
+            "line": 562,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "workspace_schema_is_closed_versioned_and_bounded",
+            "line": 602,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "fixtures_validate_against_the_live_contract",
+            "line": 642,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "capability_matrix_covers_the_contract_in_both_directions",
+            "line": 790,
+            "documented": false,
+            "scope": "integration-test"
+          }
+        ]
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "sha256": "ba347e53914b6211e5d8637071006a477e24585ce600a2aa7b0ea999217421b2",
+        "bytes": 72248,
+        "documented": 19,
+        "named": 39,
+        "by_scope": {
+          "integration-test": 39
+        },
+        "documented_by_scope": {
+          "integration-test": 19
+        },
+        "legacy_undocumented": [
+          {
+            "name": "drop",
+            "line": 19,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "launch",
+            "line": 26,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "launch_mode",
+            "line": 30,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "request",
+            "line": 84,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "machine_setup_is_authenticated_offline_and_non_scanning",
+            "line": 120,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "registered_resources_are_typed_and_raw_content_is_not_a_route",
+            "line": 193,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "json",
+            "line": 209,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "exact_preview_commit_is_idempotent_and_registration_is_separate",
+            "line": 234,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "registration_rechecks_unregistered_input_and_preserves_index_on_drift",
+            "line": 284,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "register_and_commit",
+            "line": 299,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "commit_preview",
+            "line": 309,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "deterministic_conversion_reuses_domain_pipeline_and_preserves_portable_sources",
+            "line": 334,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "cancellation_route_rejects_completed_and_unknown_operations",
+            "line": 364,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "headless_scope_workflow_reconciles_counts_and_commits_only_explicit_decisions",
+            "line": 403,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "headless_mapping_initialization_build_export_and_download_are_separate_effects",
+            "line": 507,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "trace_drilldown_uses_exact_registered_sources_and_hash_bound_reports",
+            "line": 593,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "hostile_requests_are_bounded_and_do_not_reflect_private_values",
+            "line": 684,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "response_loss_and_process_interruption_leave_complete_or_absent_outputs",
+            "line": 739,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "assert_unmapped_subject_provenance",
+            "line": 773,
+            "documented": false,
+            "scope": "integration-test"
+          },
+          {
+            "name": "assert_ambiguous_mapping_is_not_ready",
+            "line": 809,
+            "documented": false,
+            "scope": "integration-test"
+          }
+        ]
+      },
+      {
+        "path": "scripts/workspace_client.py",
+        "sha256": "063f0424ca79079984d950a867af53cfc7b8dfe2cee0ce6e74be02774ffea1e4",
+        "bytes": 6710,
+        "documented": 2,
+        "named": 11,
+        "by_scope": {
+          "production-python": 11
+        },
+        "documented_by_scope": {
+          "production-python": 2
+        },
+        "legacy_undocumented": [
+          {
+            "name": "__init__",
+            "line": 22,
+            "documented": false
+          },
+          {
+            "name": "__init__",
+            "line": 28,
+            "documented": false
+          },
+          {
+            "name": "request",
+            "line": 55,
+            "documented": false
+          },
+          {
+            "name": "wait",
+            "line": 104,
+            "documented": false
+          },
+          {
+            "name": "commit",
+            "line": 113,
+            "documented": false
+          },
+          {
+            "name": "close",
+            "line": 120,
+            "documented": false
+          },
+          {
+            "name": "__enter__",
+            "line": 136,
+            "documented": false
+          },
+          {
+            "name": "__exit__",
+            "line": 139,
+            "documented": false
+          },
+          {
+            "name": "read_descriptor",
+            "line": 36,
+            "documented": false
+          }
+        ]
+      }
+    ],
+    "qualification": "This is source documentation coverage, not test execution, product-wide Rustdoc completion or final integrated docs review. Focused product docs were authored by this worker and excluded from its independent review."
+  },
+  "historical_outcomes": {
+    "first_api_http_compile": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-first-api-http-tests.json",
+        "sha256": "9c3ac6e22319a2a040187251c1011a1b94ec248724b296177eab2f9d2bc04e84",
+        "bytes": 13432
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-first-api-http-tests.log",
+        "sha256": "58739df1c95e5f63db159b694a1de5497922fb3838ef46e98e3215bdb33aed5d",
+        "bytes": 1468
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--test",
+        "api_contract_validation",
+        "--test",
+        "workspace_cli_test",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 101,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "second_api_http_fixture": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-second-api-http-tests.json",
+        "sha256": "8643f71b060a80156e830f8203789c325d0cbfb43305b9115ab98d6f01708de3",
+        "bytes": 13434
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-second-api-http-tests.log",
+        "sha256": "a8b6ed8261af21a2c9f5dbb136fa13e9c88efef4fef34dda831569ab7529de67",
+        "bytes": 1556
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--test",
+        "api_contract_validation",
+        "--test",
+        "workspace_cli_test",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 101,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 1,
+        "passed": 8,
+        "failed": 1,
+        "ignored": 0
+      }
+    },
+    "first_doc_lint": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-first-strict-clippy.json",
+        "sha256": "26338a5391d4310dd0f17427e44216f0402da4707630427509c58918072589b4",
+        "bytes": 12959
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-first-strict-clippy.log",
+        "sha256": "4cd4121bea15edd10f214c1f82b8229a10a6411ff9cd1c0f7355d2ea133f76c1",
+        "bytes": 1941
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "second_long_test_lint": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-second-strict-clippy.json",
+        "sha256": "70772a4e0b4a0268e33f69492e9284732524e0ad40c6cc3c694b6821d0c5356a",
+        "bytes": 12960
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-second-strict-clippy.log",
+        "sha256": "d808bad209c3fb1964e2cbe0cd3e6e65f3b18c9ea2888215742d567ee6343c8c",
+        "bytes": 766
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "first_fmt_check": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-first-fmt-check.json",
+        "sha256": "b4575887574dddc7d060705ccb80f7c927d441dc6fc24096f8a905ea05102fd7",
+        "bytes": 13327
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-first-fmt-check.log",
+        "sha256": "5ce2b8c125d9dbb914b1a3448a4ac5ed9c22be671d8eca8b72b1cb1d9cfc5f14",
+        "bytes": 2435
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 1,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "third_fmt_check": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-third-fmt-check.json",
+        "sha256": "5fdbc6d5748fecd19faa45ea944706d1d46ffcee9ffaeda0fe6d4f643e75557b",
+        "bytes": 14336
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-third-fmt-check.log",
+        "sha256": "4487c7490e2490a4a77f8f832b07d0794792f02a8b0a4ea79198b51f47437427",
+        "bytes": 476
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 1,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "raw_duplicate_retained": {
+      "path": "/private/tmp/forge-f19-decoded-duplicate-request-initial.json",
+      "sha256": "67c8dbff7f01d6426d7d623226db9f62b989f9e07cd5ae693fb62b5e3bcce693",
+      "bytes": 913,
+      "role": "retained removed raw duplicate fixture"
+    },
+    "qualification": "Original labels/logs unchanged. First API/HTTP compile failed in newly authored digest formatter (LowerHex), no test execution or product-red credit; second ran API8pass/1fail then stopped before HTTP because raw duplicate bytes violated schema-fixture JSON convention. Raw duplicate was retained outside the schema corpus; actual transport regressions remain. First strict Clippy had3Rustdoc warnings; second long-test warning fixed by helper extraction, no suppression. Formatting failures and fixes are retained; zero/failed/blocked outcomes earn no pass credit."
+  },
+  "supporting_jobs_not_added_to_denominators": {
+    "first-focused-tests": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-first-focused-tests.json",
+        "sha256": "0c4c324d5a580605d569dcd90bde36efe11530e425bf6d240dc7cb18be580bef",
+        "bytes": 13390
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-first-focused-tests.log",
+        "sha256": "d6c89a69155caade4747b3204564ab8244e4852a114318c5e25ea7f94e72d551",
+        "bytes": 2126
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--lib",
+        "workspace::bundles::tests",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 1,
+        "passed": 17,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "third-api-http-tests": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-third-api-http-tests.json",
+        "sha256": "aa2b82a14d3d02ffa7981ca84eb4c42be0ae71a51282ed052169acc5e118b1d7",
+        "bytes": 13015
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-third-api-http-tests.log",
+        "sha256": "0276178c9f5a80f44f1c849b32c3f3fb94d0bf8e22a2152a8629b1cda534041d",
+        "bytes": 2664
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--test",
+        "api_contract_validation",
+        "--test",
+        "workspace_cli_test",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 2,
+        "passed": 28,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "first-fmt-apply": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-first-fmt-apply.json",
+        "sha256": "3946bfddc99c13f754a67445ca5acc4f6186b8882da66a377f6a6df28dc910bb",
+        "bytes": 13300
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-first-fmt-apply.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": false,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "second-fmt-check": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-second-fmt-check.json",
+        "sha256": "56064b3e7806af4a6fd5f1a459b24d03355855b4bc92bf99dc30f55369c62ec0",
+        "bytes": 13326
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-second-fmt-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "final-fmt-apply": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-final-fmt-apply.json",
+        "sha256": "6fec07d9a70cff680c25c3614ec4042928fe8ce0fc3ad7b4904b3dcf5c929486",
+        "bytes": 14310
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-final-fmt-apply.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": false,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "llvm-final-clean": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-llvm-final-clean.json",
+        "sha256": "e4c68c6b095395842df72cbd9d6aeb86a93c89fec97c128bf020d2435cb0bfb4",
+        "bytes": 14733
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-llvm-final-clean.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "clean",
+        "--workspace"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "llvm-final-report-json": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-llvm-final-report-json.json",
+        "sha256": "62093c70ec2d915cfda94b96a4c18078015228d63eda50b16a2e5f37f3f80209",
+        "bytes": 14813
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-llvm-final-report-json.log",
+        "sha256": "aec722526d44fe55f106275f4d31b09b3350d4763569cccc12fdc4bbe173f4e0",
+        "bytes": 73
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "report",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f19-final-llvm-raw.json"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "llvm-final-report-lcov": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-llvm-final-report-lcov.json",
+        "sha256": "ad85912ad35b0ea8730c045a93f88a4dc77ebe7ecb1da772352f432cf0a87875",
+        "bytes": 14813
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-llvm-final-report-lcov.log",
+        "sha256": "18556507e01cabf7bb1cb8300b8cebe4272b1bb1dc7848e828f14ad89b22949a",
+        "bytes": 73
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "report",
+        "--lcov",
+        "--output-path",
+        "/private/tmp/forge-f19-final-llvm-raw.lcov"
+      ],
+      "exit_code": 0,
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "explicit_extra_environment": {},
+      "source_bytes_unchanged_during_command": true,
+      "raw_test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    }
+  },
+  "independent_evidence": [
+    {
+      "path": "/private/tmp/forge-f19-independent-source-review-v1/packet-v2.json",
+      "sha256": "6edd6527fa479cd6bff9b83e54098fd798374f5501bddecba50d84c8c8d8e9e1",
+      "bytes": 20796,
+      "role": "bounded independent source review; authored docs and HTTP tests excluded"
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-contract-review-v1/packet.json",
+      "sha256": "813036a27853808fe3d5a7752db88f5d06b3ef1eb1916252f23d4404b393e4fe",
+      "bytes": 12521,
+      "role": "bounded contract/client static review; authored docs and HTTP tests excluded"
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-evidence-job-replay-v1/packet.json",
+      "sha256": "cba59ebfd0b6b3233ec8ded223e7df17f22acd2779cd98ee2fe952f72ae3d71f",
+      "bytes": 75906,
+      "role": "read-only source/log/profile identity replay; no authored correctness or coverage derivation"
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-evidence-job-replay-v2/packet.json",
+      "sha256": "dc46ff9d39a3cf292a28611a9847f6205e79fefd02b123bf529d7ece97cf30f7",
+      "bytes": 7908,
+      "role": "read-only source/log/profile identity replay; no authored correctness or coverage derivation"
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-evidence-job-replay-v3/packet.json",
+      "sha256": "456f8ca722e32288f3162c9c1779d71c8a97032defeb6753e8626bd7cc8b2b58",
+      "bytes": 12478,
+      "role": "read-only source/log/profile identity replay; no authored correctness or coverage derivation"
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-final-evidence-v1/coverage-replay-graceful-v3.json",
+      "sha256": "43e1e3ab9464061f0c8f2a9ce35408fc1ffc14f358d4bf7a3d92bc0d90c59cc7",
+      "bytes": 371206,
+      "role": "independent exact raw coverage replay"
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-final-evidence-v1/producer-coverage-comparison-v2.json",
+      "sha256": "7ad95917bbe64215f55e55f8a3c7038c63a4d9b7fc64579c38555122f19a7ad0",
+      "bytes": 10772,
+      "role": "independent v1/v2/v3 producer comparison"
+    }
+  ],
+  "remaining_gates": [
+    "Root final concrete packet/source/docs review and mandatory commit hook on delivered bytes; hook evidence will be recorded externally after execution before PR.",
+    "F19 commit/push/draft PR and hosted CI: no outcome in this pre-delivery record.",
+    "Full PRD062S-1 throughS-6 acceptance, including browser metadata export preview/source-content opt-in, confirmed writable import, batch input binding and publication/retention capacity.",
+    "Security/privacy/authority, browser/keyboard/AT/WCAG, supported-platform/interoperability, pilot/release/public API and human acceptance.",
+    "D068 broader workflow/authority/quorum and immutable first-workflow gates remain open; no domain decision accepted by a fingerprint query.",
+    "User final full integrated documentation review/update remains open."
+  ],
+  "no_new_authority": "No new dependency, OSCAL schema asset, index role, signing/identity or domain approval decision. The additive index-bundle wire family is explicit.",
+  "artifact_pins": [
+    {
+      "path": "/private/tmp/forge-f19-final-source-and-binaries/index.json",
+      "sha256": "9a4325862ecc74aa7c65ace7145051c2a9ce28ee3701b2964facbf5b504841e5",
+      "bytes": 13700
+    },
+    {
+      "path": "/private/tmp/forge-f19-coverage-v3/coverage.json",
+      "sha256": "fcca05f3e3f51bd981b83d70b809dc0d162d364ac6e887f52ba99c986be21317",
+      "bytes": 205533
+    },
+    {
+      "path": "/private/tmp/forge-f19-coverage-v3/index.json",
+      "sha256": "50ffd392964be9d2703f4d2029bc15094cbbb1dd7fa20e649f11e27b23a6e5b8",
+      "bytes": 6252
+    },
+    {
+      "path": "/private/tmp/forge-f19-coverage-v3/readback.md",
+      "sha256": "9d1ef09070e7eb481caaaef4199911d5eca6ebd0b4e8fa7f148bc2a4d04caf3e",
+      "bytes": 2638
+    },
+    {
+      "path": "/private/tmp/forge-f19-profile-inputs-final/index.json",
+      "sha256": "7080bce5d5b17eb8445078da4720e931f695478eac61a1ed2cab266c36fabb06",
+      "bytes": 16122
+    },
+    {
+      "path": "/private/tmp/forge-f19-original-profile-state-v1/index.json",
+      "sha256": "ce2d38e22d65f64eaeee0a627d563c7fb8f2e1b9097b80e6b43e5d9ccf5c7de4",
+      "bytes": 432
+    },
+    {
+      "path": "/private/tmp/forge-f19-continuous-coverage-v2/index.json",
+      "sha256": "77ba6f6dd40c1beb5df5b3d9cf30681661f068420b115805719c43a632db74ba",
+      "bytes": 14958
+    },
+    {
+      "path": "/private/tmp/forge-f19-graceful-coverage-v3/index.json",
+      "sha256": "f10fa62aa5bfdece86d8fe66f2ffc01b56ca94ff59d48dfb8d54fd53fcdd7b22",
+      "bytes": 8131
+    },
+    {
+      "path": "/private/tmp/forge-f19-continuous-coverage-v2/merge.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-continuous-coverage-v2/export-json.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-continuous-coverage-v2/raw.json",
+      "sha256": "bcd956aad1a3ecc81427ea984c3baf4020efa278e270c99b97365b2f30f79140",
+      "bytes": 13181264
+    },
+    {
+      "path": "/private/tmp/forge-f19-continuous-coverage-v2/export-lcov.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-continuous-coverage-v2/raw.lcov",
+      "sha256": "c646973e573972c1672e558a2383bc5daa3692514fb4e04bb19afbab2a90560a",
+      "bytes": 2531104
+    },
+    {
+      "path": "/private/tmp/forge-f19-graceful-coverage-v3/merge.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-graceful-coverage-v3/export-json.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-graceful-coverage-v3/raw.json",
+      "sha256": "e9acd0ef12e46751bb6bf85f20bf5f269685996e0feb9d7c7f84f3c3ad4dd3e5",
+      "bytes": 13191509
+    },
+    {
+      "path": "/private/tmp/forge-f19-graceful-coverage-v3/export-lcov.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-graceful-coverage-v3/raw.lcov",
+      "sha256": "fd35575b302a790910744115ee5417eab352f65dee5d603b41d0994105649e07",
+      "bytes": 2532963
+    },
+    {
+      "original_path": "/private/tmp/forge-f19-final-llvm-raw.json",
+      "path": "/private/tmp/forge-f19-final-source-and-binaries/forge-f19-final-llvm-raw.json",
+      "sha256": "56111e0ff65c5c16374012d1a50fd4f01fdb680cd1d721f41fbc53e0e4d82402",
+      "bytes": 12950372
+    },
+    {
+      "original_path": "/private/tmp/forge-f19-final-llvm-raw.lcov",
+      "path": "/private/tmp/forge-f19-final-source-and-binaries/forge-f19-final-llvm-raw.lcov",
+      "sha256": "8db176e8e13c015cb021933364981914a256359fcc4bee894816cc9b9ff866b0",
+      "bytes": 2427787
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-api-http-tests.json",
+      "sha256": "9c3ac6e22319a2a040187251c1011a1b94ec248724b296177eab2f9d2bc04e84",
+      "bytes": 13432
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-api-http-tests.log",
+      "sha256": "58739df1c95e5f63db159b694a1de5497922fb3838ef46e98e3215bdb33aed5d",
+      "bytes": 1468
+    },
+    {
+      "path": "/private/tmp/forge-f19-second-api-http-tests.json",
+      "sha256": "8643f71b060a80156e830f8203789c325d0cbfb43305b9115ab98d6f01708de3",
+      "bytes": 13434
+    },
+    {
+      "path": "/private/tmp/forge-f19-second-api-http-tests.log",
+      "sha256": "a8b6ed8261af21a2c9f5dbb136fa13e9c88efef4fef34dda831569ab7529de67",
+      "bytes": 1556
+    },
+    {
+      "path": "/private/tmp/forge-f19-third-api-http-tests.json",
+      "sha256": "aa2b82a14d3d02ffa7981ca84eb4c42be0ae71a51282ed052169acc5e118b1d7",
+      "bytes": 13015
+    },
+    {
+      "path": "/private/tmp/forge-f19-third-api-http-tests.log",
+      "sha256": "0276178c9f5a80f44f1c849b32c3f3fb94d0bf8e22a2152a8629b1cda534041d",
+      "bytes": 2664
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-focused-tests.json",
+      "sha256": "0c4c324d5a580605d569dcd90bde36efe11530e425bf6d240dc7cb18be580bef",
+      "bytes": 13390
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-focused-tests.log",
+      "sha256": "d6c89a69155caade4747b3204564ab8244e4852a114318c5e25ea7f94e72d551",
+      "bytes": 2126
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-fmt-check.json",
+      "sha256": "b4575887574dddc7d060705ccb80f7c927d441dc6fc24096f8a905ea05102fd7",
+      "bytes": 13327
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-fmt-check.log",
+      "sha256": "5ce2b8c125d9dbb914b1a3448a4ac5ed9c22be671d8eca8b72b1cb1d9cfc5f14",
+      "bytes": 2435
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-fmt-apply.json",
+      "sha256": "3946bfddc99c13f754a67445ca5acc4f6186b8882da66a377f6a6df28dc910bb",
+      "bytes": 13300
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-fmt-apply.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-second-fmt-check.json",
+      "sha256": "56064b3e7806af4a6fd5f1a459b24d03355855b4bc92bf99dc30f55369c62ec0",
+      "bytes": 13326
+    },
+    {
+      "path": "/private/tmp/forge-f19-second-fmt-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-third-fmt-check.json",
+      "sha256": "5fdbc6d5748fecd19faa45ea944706d1d46ffcee9ffaeda0fe6d4f643e75557b",
+      "bytes": 14336
+    },
+    {
+      "path": "/private/tmp/forge-f19-third-fmt-check.log",
+      "sha256": "4487c7490e2490a4a77f8f832b07d0794792f02a8b0a4ea79198b51f47437427",
+      "bytes": 476
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-fmt-apply.json",
+      "sha256": "6fec07d9a70cff680c25c3614ec4042928fe8ce0fc3ad7b4904b3dcf5c929486",
+      "bytes": 14310
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-fmt-apply.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-fmt-check.json",
+      "sha256": "0295ac2d9199106bd981447ee9d719becef6e2794e7074a3c9d0bb6cfed3ec9f",
+      "bytes": 14334
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-fmt-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-strict-clippy.json",
+      "sha256": "26338a5391d4310dd0f17427e44216f0402da4707630427509c58918072589b4",
+      "bytes": 12959
+    },
+    {
+      "path": "/private/tmp/forge-f19-first-strict-clippy.log",
+      "sha256": "4cd4121bea15edd10f214c1f82b8229a10a6411ff9cd1c0f7355d2ea133f76c1",
+      "bytes": 1941
+    },
+    {
+      "path": "/private/tmp/forge-f19-second-strict-clippy.json",
+      "sha256": "70772a4e0b4a0268e33f69492e9284732524e0ad40c6cc3c694b6821d0c5356a",
+      "bytes": 12960
+    },
+    {
+      "path": "/private/tmp/forge-f19-second-strict-clippy.log",
+      "sha256": "d808bad209c3fb1964e2cbe0cd3e6e65f3b18c9ea2888215742d567ee6343c8c",
+      "bytes": 766
+    },
+    {
+      "path": "/private/tmp/forge-f19-third-strict-clippy.json",
+      "sha256": "9b71ff1ae0967aab73d5b014d5231a428c65fd10aa86bcc2ec418489f185cceb",
+      "bytes": 14382
+    },
+    {
+      "path": "/private/tmp/forge-f19-third-strict-clippy.log",
+      "sha256": "80246426b4545089aa9a59e367b303ee61a705990c30fd353f92319cbfae3547",
+      "bytes": 159
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-full-tests.json",
+      "sha256": "f6ec9d631b2fe70ec4888725e3f4454946718a7ab5a0ef95d3a27767b5aac68f",
+      "bytes": 14324
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-full-tests.log",
+      "sha256": "7cf6ee31f1a982e72dfd0e73e8c77eaa6c98a99d1bcc499e7de62a92f5797435",
+      "bytes": 218910
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-client-conformance.json",
+      "sha256": "732ea190cc3ee3a8af9ab30bee31ee0e6b56fce77c80b098ea7b48e3ae075e46",
+      "bytes": 14423
+    },
+    {
+      "path": "/private/tmp/forge-f19-final-client-conformance.log",
+      "sha256": "85626f58b58802c3e67faa2a0542981ff0b41397692311a8e7bac84e27d4ffb8",
+      "bytes": 235
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-clean.json",
+      "sha256": "e4c68c6b095395842df72cbd9d6aeb86a93c89fec97c128bf020d2435cb0bfb4",
+      "bytes": 14733
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-clean.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-tests.json",
+      "sha256": "41572ec2cb6bf62229bd9ec3e93b71e398887009ab62be2683e5042f5ef685cd",
+      "bytes": 14842
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-tests.log",
+      "sha256": "14593a335e995679b5f70f5c1935c707ef853f6ddf9efca7a32742bfbb8523dc",
+      "bytes": 147354
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-report-json.json",
+      "sha256": "62093c70ec2d915cfda94b96a4c18078015228d63eda50b16a2e5f37f3f80209",
+      "bytes": 14813
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-report-json.log",
+      "sha256": "aec722526d44fe55f106275f4d31b09b3350d4763569cccc12fdc4bbe173f4e0",
+      "bytes": 73
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-report-lcov.json",
+      "sha256": "ad85912ad35b0ea8730c045a93f88a4dc77ebe7ecb1da772352f432cf0a87875",
+      "bytes": 14813
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-final-report-lcov.log",
+      "sha256": "18556507e01cabf7bb1cb8300b8cebe4272b1bb1dc7848e828f14ad89b22949a",
+      "bytes": 73
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-continuous-http-tests.json",
+      "sha256": "3fd400f974de70b310a94d6ef9c313bddb5e50efbbdb28ef6d00c2e417304f26",
+      "bytes": 14899
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-continuous-http-tests.log",
+      "sha256": "7d7336830256d7e70ed70dc60677c1cb3a95d5578f3af962d4ef18c8e341c89c",
+      "bytes": 1728
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-graceful-client-conformance.json",
+      "sha256": "900c7084933d48942ff5e1b632a3a56a44fd307349ffe772a4f6b9254a6cfbcb",
+      "bytes": 14975
+    },
+    {
+      "path": "/private/tmp/forge-f19-llvm-graceful-client-conformance.log",
+      "sha256": "85626f58b58802c3e67faa2a0542981ff0b41397692311a8e7bac84e27d4ffb8",
+      "bytes": 235
+    },
+    {
+      "path": "/private/tmp/forge-f19-source-docstrings-final-v3.json",
+      "sha256": "4239e888d00885d684cae1e1181812ff31cb3b560e9e268a21697f17a7de7e90",
+      "bytes": 51919
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-source-review-v1/packet-v2.json",
+      "sha256": "6edd6527fa479cd6bff9b83e54098fd798374f5501bddecba50d84c8c8d8e9e1",
+      "bytes": 20796
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-contract-review-v1/packet.json",
+      "sha256": "813036a27853808fe3d5a7752db88f5d06b3ef1eb1916252f23d4404b393e4fe",
+      "bytes": 12521
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-evidence-job-replay-v1/packet.json",
+      "sha256": "cba59ebfd0b6b3233ec8ded223e7df17f22acd2779cd98ee2fe952f72ae3d71f",
+      "bytes": 75906
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-evidence-job-replay-v2/packet.json",
+      "sha256": "dc46ff9d39a3cf292a28611a9847f6205e79fefd02b123bf529d7ece97cf30f7",
+      "bytes": 7908
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-evidence-job-replay-v3/packet.json",
+      "sha256": "456f8ca722e32288f3162c9c1779d71c8a97032defeb6753e8626bd7cc8b2b58",
+      "bytes": 12478
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-final-evidence-v1/coverage-replay-graceful-v3.json",
+      "sha256": "43e1e3ab9464061f0c8f2a9ce35408fc1ffc14f358d4bf7a3d92bc0d90c59cc7",
+      "bytes": 371206
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-final-evidence-v1/producer-coverage-comparison-v2.json",
+      "sha256": "7ad95917bbe64215f55e55f8a3c7038c63a4d9b7fc64579c38555122f19a7ad0",
+      "bytes": 10772
+    },
+    {
+      "path": "/private/tmp/forge-f19-focused-doc-corrections-v3.json",
+      "sha256": "7f99619ae63a75c66c91c96d2003630ddb440595fc804d65223dfc6d6878bfc7",
+      "bytes": 1227
+    },
+    {
+      "path": "/private/tmp/forge-f19-focused-docs-applied-v2.json",
+      "sha256": "60f082dc636385602004f47de951411ec5e4ddf4c19e0d5f6056cebd42bc393b",
+      "bytes": 1914
+    },
+    {
+      "path": "/private/tmp/forge-f19-decoded-duplicate-request-initial.json",
+      "sha256": "67c8dbff7f01d6426d7d623226db9f62b989f9e07cd5ae693fb62b5e3bcce693",
+      "bytes": 913
+    },
+    {
+      "path": "/private/tmp/forge-f12-final-full-tests.json",
+      "sha256": "7188920635ebb836c5050171d297158a9316fe62fc580a39b3f9c192d733c334",
+      "bytes": 1530
+    },
+    {
+      "path": "/private/tmp/forge-f12-final-full-test-totals.json",
+      "sha256": "45944e6ae474929dba0d27fe96c83fb9fdc1ad21d9af43103961c4f811f02a6f",
+      "bytes": 332
+    },
+    {
+      "path": "/private/tmp/forge-f12-final-full-tests.log",
+      "sha256": "8c6e223d0934787a03a4d14bca47f8e84002b7ba2ceadcd58909a32bb1ce6dbc",
+      "bytes": 216458
+    },
+    {
+      "path": "/private/tmp/forge-f19-coverage-v1/coverage.json",
+      "sha256": "9958546499cd19e17d48d99569515efc926a3d989bb06edca54d94806dc66b66",
+      "bytes": 211503
+    },
+    {
+      "path": "/private/tmp/forge-f19-coverage-v2/coverage.json",
+      "sha256": "f32e118a1f90fd8c6cbde4bf32a39702c6650f4e9da2babe4329f57656aca991",
+      "bytes": 219314
+    }
+  ],
+  "author_actions": "Read source/records and replayed pins/raw logs; wrote only new temporary documentation/verification draft artifacts. No Cargo, executable run, Git, network, tracker, PR or repository write. Existing historical artifacts unchanged.",
+  "root_application_record": {
+    "frozen_draft_manifest": {
+      "path": "/private/tmp/forge-f19-verification-draft-v1/manifest.json",
+      "sha256": "74fa0a3b2d30d5ce0a95a1248c57132dbea4db28821163b82ae28c49d368dca9",
+      "bytes": 2558
+    },
+    "draft_artifact_pin_occurrences_replayed": 192,
+    "unique_draft_artifact_pins_replayed": 125,
+    "final_producer_derivation_check": "derive.py --check matched exact JSON and Markdown; 21 final packet file pins replayed by root",
+    "final_independent_evidence": {
+      "path": "/private/tmp/forge-f19-independent-final-evidence-v1/packet.json",
+      "sha256": "54c6270b46ab382bc5482c102d1aec9448fd1db64a093ae3aed728c6b0e81178",
+      "bytes": 14329
+    },
+    "final_independent_index": {
+      "path": "/private/tmp/forge-f19-independent-final-evidence-v1/index.json",
+      "sha256": "ac3ed0755505d39e8095ab9aba2090b6103f224ac4a346d27f9cdf49f592fc57",
+      "bytes": 6152
+    },
+    "plan_link_delta": {
+      "path": "/private/tmp/forge-f19-plan-verification-link-v4.json",
+      "sha256": "4baf5e198a10d7833c32bf8a7e676f35509e5518e2179ad8e4fdfa2810106869",
+      "bytes": 473
+    },
+    "linked_plan_current": {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/plans/2026-10-02-f19-workspace-bundle-queries.md",
+      "sha256": "9964c737ef1cfbb6d5ab488149d13ca3412e960d8080707d0015dfd16a69cb44",
+      "bytes": 5834,
+      "repository_path": "docs/plans/2026-10-02-f19-workspace-bundle-queries.md"
+    },
+    "qualification": "Root reviewed the frozen packet and applied prose formatting plus a link from the plan. Historical draft and execution-source snapshots remain unchanged. Mandatory hook/commit/hosted results are still pending at recording time; source coverage and docstring counts are not acceptance."
+  }
+}
