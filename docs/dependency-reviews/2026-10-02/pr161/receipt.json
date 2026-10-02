@@ -1,0 +1,14 @@
+{
+  "pr": 161,
+  "url": "https://github.com/policy-forge/forge/pull/161",
+  "head_oid": "f91a77cdda2eb7dd95b231c155672c2bc17feee2",
+  "base_oid": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "state_at_review": "OPEN",
+  "merge_state_at_review": "BLOCKED",
+  "ci_run_url": "https://github.com/policy-forge/forge/actions/runs/36143862573",
+  "vet_unvetted_count": 24,
+  "shared_baseline_unvetted_count": 20,
+  "accepted_audit": false,
+  "human_signoff": null,
+  "scope": "Bounded agent-assisted differential source review with frozen baseline context."
+}

@@ -1,0 +1,4209 @@
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/CHANGELOG.md
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/CHANGELOG.md
+@@ -4,6 +4,95 @@
+ 
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
++
++## 0.11.3 (2026-04-03)
++### Added
++- `dev::initialized_mac_test` function ([#2367])
++- `TryCustomizedInit` trait ([#2395])
++
++[#2367]: https://github.com/RustCrypto/traits/pull/2367
++[#2395]: https://github.com/RustCrypto/traits/pull/2395
++
++## 0.11.2 (2026-03-13)
++### Changed
++- Do not implement `Clone` as part of `(Reset)MacTraits` in the `buffer_fixed!` macro ([#2341])
++- `EagerHash` trait to be a sub-trait of `Clone` ([#2341])
++
++[#2341]: https://github.com/RustCrypto/traits/pull/2341
++
++## 0.11.1 (2026-02-25) [YANKED]
++Note: this version was yanked because v0.11.2 introduces minor breaking changes
++affecting only pre-release versions of downstream crates.
++
++### Added
++- `SmallBlockSizeUser` helper trait. The trait is a sub-trait of `BlockSizeUser`
++  with `BlockSize` bounded by `block_buffer::BlockSizes`. ([#2309])
++
++### Changed
++- `BufferKindUser` is now a sub-trait of `SmallBlockSizeUser` ([#2309])
++
++[#2309]: https://github.com/RustCrypto/traits/pull/2309
++
++## 0.11.0 (2026-02-13) [YANKED]
++Note: this version was yanked because v0.11.1 introduces breaking changes.
++Users should migrate to `digest` v0.11.1 and `crypto-common` v0.2.1 using `cargo update`.
++
++### Added
++- `CustomizedInit` trait ([#1334])
++- `SerializableState` support ([#1369])
++- `DynDigestWithOid` wrapper trait ([#1390])
++- `VariableOutputCoreCustomized` trait ([#1787], [#2043])
++- `buffer_fixed`, `buffer_ct_variable`, `buffer_rt_variable`, and `buffer_xof` macros ([#1799])
++- `XofFixedWrapper` ([#1815])
++- `CollisionResistance` trait ([#1820])
++- `CoreProxy::compose/decompose` methods ([#1898])
++- `EagerHash` trait ([#2014])
++
++### Changed
++- Replaced `generic-array` with `hybrid-array` ([#1358])
++- `crypto-common` dependency bumped to v0.2 ([#1173])
++- Edition changed to 2024 and MSRV bumped to 1.85 ([#1759])
++- Bump `const-oid` dependency to v0.10 ([#1772])
++- `digest::core_api` renamed to `digest::block_api` ([#1799])
++- `CtVariableCoreWrapper` renamed to `CtOutWrapper` ([#1799])
++- Removed the OID type parameter from `CtOutWrapper` ([#1799])
++- Implementations of the `SerializableState` trait ([#1953])
++- `new_test!` and `new_mac_test!` macros ([#1958])
++- Bump `block-buffer` to v0.11 ([#2082])
++- Re-export of `crypto-common` moved to `digest::common` ([#2237])
++- Bump `crypto-common` to v0.2 ([#2276])
++- Replace `subtle` with `ctutils` ([#2301])
++
++### Removed
++- `Mac::new`, `Mac::new_from_slice`, and `Mac::generate_key` methods ([#1173])
++- `CoreWrapper`, `RtVariableCoreWrapper`, and `XofReaderCoreWrapper` types ([#1799])
++- `io::Write/Read` implementations in favor of the `digest_io::IoWrapper` type ([#1809])
++- `VariableOutput` trait ([#2043])
++- Implementation of `subtle::ConstantTimeEq` for `CtOutput`. Note that implementation of
++  `PartialEq`/`Eq` trait is still const time. ([#2292])
++
++[#1173]: https://github.com/RustCrypto/traits/pull/1173
++[#1334]: https://github.com/RustCrypto/traits/pull/1334
++[#1358]: https://github.com/RustCrypto/traits/pull/1358
++[#1369]: https://github.com/RustCrypto/traits/pull/1369
++[#1390]: https://github.com/RustCrypto/traits/pull/1390
++[#1759]: https://github.com/RustCrypto/traits/pull/1759
++[#1772]: https://github.com/RustCrypto/traits/pull/1772
++[#1787]: https://github.com/RustCrypto/traits/pull/1787
++[#1799]: https://github.com/RustCrypto/traits/pull/1799
++[#1809]: https://github.com/RustCrypto/traits/pull/1809
++[#1815]: https://github.com/RustCrypto/traits/pull/1815
++[#1820]: https://github.com/RustCrypto/traits/pull/1820
++[#1898]: https://github.com/RustCrypto/traits/pull/1898
++[#1953]: https://github.com/RustCrypto/traits/pull/1953
++[#1958]: https://github.com/RustCrypto/traits/pull/1958
++[#2014]: https://github.com/RustCrypto/traits/pull/2014
++[#2043]: https://github.com/RustCrypto/traits/pull/2043
++[#2082]: https://github.com/RustCrypto/traits/pull/2082
++[#2237]: https://github.com/RustCrypto/traits/pull/2237
++[#2276]: https://github.com/RustCrypto/traits/pull/2276
++[#2292]: https://github.com/RustCrypto/traits/pull/2292
++[#2301]: https://github.com/RustCrypto/traits/pull/2301
+ 
+ ## 0.10.7 (2023-05-19)
+ ### Changed
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/Cargo.toml
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/Cargo.toml
+@@ -10,10 +10,17 @@
+ # See Cargo.toml.orig for the original contents.
+ 
+ [package]
+-edition = "2018"
++edition = "2024"
++rust-version = "1.85"
+ name = "digest"
+-version = "0.10.7"
++version = "0.11.3"
+ authors = ["RustCrypto Developers"]
++build = false
++autolib = false
++autobins = false
++autoexamples = false
++autotests = false
++autobenches = false
+ description = "Traits for cryptographic hash functions and message authentication codes"
+ documentation = "https://docs.rs/digest"
+ readme = "README.md"
+@@ -31,40 +38,95 @@
+ 
+ [package.metadata.docs.rs]
+ all-features = true
+-rustdoc-args = [
+-    "--cfg",
+-    "docsrs",
++
++[features]
++alloc = []
++block-api = ["dep:block-buffer"]
++default = ["block-api"]
++dev = ["blobby"]
++getrandom = [
++    "common/getrandom",
++    "rand_core",
++]
++mac = ["dep:ctutils"]
++oid = ["dep:const-oid"]
++rand_core = ["common/rand_core"]
++zeroize = [
++    "dep:zeroize",
++    "block-buffer?/zeroize",
+ ]
+ 
++[lib]
++name = "digest"
++path = "src/lib.rs"
++
++[[test]]
++name = "dummy_fixed"
++path = "tests/dummy_fixed.rs"
++
+ [dependencies.blobby]
+-version = "0.3"
++version = "0.4"
+ optional = true
+ 
+ [dependencies.block-buffer]
++version = "0.12"
++optional = true
++
++[dependencies.common]
++version = "0.2"
++package = "crypto-common"
++
++[dependencies.const-oid]
+ version = "0.10"
+ optional = true
+ 
+-[dependencies.const-oid]
+-version = "0.9"
++[dependencies.ctutils]
++version = "0.4"
+ optional = true
+ 
+-[dependencies.crypto-common]
+-version = "0.1.3"
+-
+-[dependencies.subtle]
+-version = "2.4"
++[dependencies.zeroize]
++version = "1.7"
+ optional = true
+ default-features = false
+ 
+-[features]
+-alloc = []
+-core-api = ["block-buffer"]
+-default = ["core-api"]
+-dev = ["blobby"]
+-mac = ["subtle"]
+-oid = ["const-oid"]
+-rand_core = ["crypto-common/rand_core"]
+-std = [
+-    "alloc",
+-    "crypto-common/std",
+-]
++[dev-dependencies.sha2]
++version = "0.11"
++
++[lints.clippy]
++borrow_as_ptr = "warn"
++cast_lossless = "warn"
++cast_possible_truncation = "warn"
++cast_possible_wrap = "warn"
++cast_precision_loss = "warn"
++cast_sign_loss = "warn"
++checked_conversions = "warn"
++from_iter_instead_of_collect = "warn"
++implicit_saturating_sub = "warn"
++manual_assert = "warn"
++map_unwrap_or = "warn"
++missing_errors_doc = "warn"
++missing_panics_doc = "warn"
++mod_module_files = "warn"
++must_use_candidate = "warn"
++needless_range_loop = "allow"
++ptr_as_ptr = "warn"
++redundant_closure_for_method_calls = "warn"
++ref_as_ptr = "warn"
++return_self_not_must_use = "warn"
++semicolon_if_nothing_returned = "warn"
++std_instead_of_alloc = "warn"
++std_instead_of_core = "warn"
++trivially_copy_pass_by_ref = "warn"
++undocumented_unsafe_blocks = "warn"
++unnecessary_safety_comment = "warn"
++unwrap_in_result = "warn"
++unwrap_used = "warn"
++
++[lints.rust]
++missing_copy_implementations = "warn"
++missing_debug_implementations = "warn"
++missing_docs = "warn"
++trivial_casts = "warn"
++trivial_numeric_casts = "warn"
++unused_lifetimes = "warn"
++unused_qualifications = "warn"
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/Cargo.toml.orig
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/Cargo.toml.orig
+@@ -1,35 +1,43 @@
+ [package]
+ name = "digest"
+-description = "Traits for cryptographic hash functions and message authentication codes"
+-version = "0.10.7"
++version = "0.11.3"
+ authors = ["RustCrypto Developers"]
++edition = "2024"
++rust-version = "1.85"
++documentation = "https://docs.rs/digest"
++readme = "README.md"
++repository = "https://github.com/RustCrypto/traits"
+ license = "MIT OR Apache-2.0"
+-readme = "README.md"
+-edition = "2018"
+-documentation = "https://docs.rs/digest"
+-repository = "https://github.com/RustCrypto/traits"
+ keywords = ["digest", "crypto", "hash"]
+ categories = ["cryptography", "no-std"]
++description = "Traits for cryptographic hash functions and message authentication codes"
+ 
+ [dependencies]
+-crypto-common = { version = "0.1.3", path = "../crypto-common" }
++common = { version = "0.2", package = "crypto-common" }
+ 
+ # optional dependencies
+-block-buffer = { version = "0.10", optional = true }
+-subtle = { version = "2.4", default-features = false, optional = true }
+-blobby = { version = "0.3", optional = true }
+-const-oid = { version = "0.9", optional = true }
++block-buffer = { version = "0.12", optional = true }
++blobby = { version = "0.4", optional = true }
++const-oid = { version = "0.10", optional = true }
++ctutils = { version = "0.4", optional = true }
++zeroize = { version = "1.7", optional = true, default-features = false }
++
++[dev-dependencies]
++sha2 = "0.11"
+ 
+ [features]
+-default = ["core-api"]
+-core-api = ["block-buffer"] # Enable Core API traits
+-mac = ["subtle"] # Enable MAC traits
+-rand_core = ["crypto-common/rand_core"] # Enable random key generation methods
+-oid = ["const-oid"] # OID support. WARNING: Bumps MSRV to 1.57
++default = ["block-api"]
+ alloc = []
+-std = ["alloc", "crypto-common/std"]
++block-api = ["dep:block-buffer"] # Enable block API traits
+ dev = ["blobby"]
++getrandom = ["common/getrandom", "rand_core"]
++mac = ["dep:ctutils"] # Enable MAC traits
++rand_core = ["common/rand_core"] # Enable random key generation methods
++oid = ["dep:const-oid"]
++zeroize = ["dep:zeroize", "block-buffer?/zeroize"]
++
++[lints]
++workspace = true
+ 
+ [package.metadata.docs.rs]
+ all-features = true
+-rustdoc-args = ["--cfg", "docsrs"]
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/block_api/ct_variable.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/block_api/ct_variable.rs
+@@ -0,0 +1,205 @@
++use super::{
++    AlgorithmName, Buffer, BufferKindUser, FixedOutputCore, Reset, TruncSide, UpdateCore,
++    VariableOutputCore, VariableOutputCoreCustomized,
++};
++#[cfg(feature = "mac")]
++use crate::MacMarker;
++use crate::{CollisionResistance, CustomizedInit, HashMarker};
++use common::{
++    Block, BlockSizeUser, OutputSizeUser,
++    array::{Array, ArraySize},
++    hazmat::{DeserializeStateError, SerializableState, SerializedState},
++    typenum::{IsLessOrEqual, True},
++};
++use core::{fmt, marker::PhantomData};
++
++/// Wrapper around [`VariableOutputCore`] which selects output size at compile time.
++pub struct CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    inner: T,
++    _out: PhantomData<OutSize>,
++}
++
++impl<T, OutSize> Clone for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + Clone,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    fn clone(&self) -> Self {
++        Self {
++            inner: self.inner.clone(),
++            _out: PhantomData,
++        }
++    }
++}
++
++impl<T, OutSize> HashMarker for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + HashMarker,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++}
++
++#[cfg(feature = "mac")]
++impl<T, OutSize> MacMarker for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + MacMarker,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++}
++
++impl<T, OutSize> CollisionResistance for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + CollisionResistance,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    type CollisionResistance = T::CollisionResistance;
++}
++
++impl<T, OutSize> BlockSizeUser for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    type BlockSize = T::BlockSize;
++}
++
++impl<T, OutSize> UpdateCore for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    #[inline]
++    fn update_blocks(&mut self, blocks: &[Block<Self>]) {
++        self.inner.update_blocks(blocks);
++    }
++}
++
++impl<T, OutSize> OutputSizeUser for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    type OutputSize = OutSize;
++}
++
++impl<T, OutSize> BufferKindUser for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    type BufferKind = T::BufferKind;
++}
++
++impl<T, OutSize> FixedOutputCore for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    #[inline]
++    fn finalize_fixed_core(
++        &mut self,
++        buffer: &mut Buffer<Self>,
++        out: &mut Array<u8, Self::OutputSize>,
++    ) {
++        let mut full_res = Default::default();
++        self.inner.finalize_variable_core(buffer, &mut full_res);
++        let n = out.len();
++        let m = full_res.len() - n;
++        match T::TRUNC_SIDE {
++            TruncSide::Left => out.copy_from_slice(&full_res[..n]),
++            TruncSide::Right => out.copy_from_slice(&full_res[m..]),
++        }
++    }
++}
++
++impl<T, OutSize> Default for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    #[inline]
++    fn default() -> Self {
++        Self {
++            inner: T::new(OutSize::USIZE).unwrap(),
++            _out: PhantomData,
++        }
++    }
++}
++
++impl<T, OutSize> CustomizedInit for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCoreCustomized,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    #[inline]
++    fn new_customized(customization: &[u8]) -> Self {
++        Self {
++            inner: T::new_customized(customization, OutSize::USIZE),
++            _out: PhantomData,
++        }
++    }
++}
++
++impl<T, OutSize> Reset for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    #[inline]
++    fn reset(&mut self) {
++        *self = Default::default();
++    }
++}
++
++impl<T, OutSize> AlgorithmName for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + AlgorithmName,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    fn write_alg_name(f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        T::write_alg_name(f)?;
++        f.write_str("_")?;
++        write!(f, "{}", OutSize::USIZE)
++    }
++}
++
++#[cfg(feature = "zeroize")]
++impl<T, OutSize> zeroize::ZeroizeOnDrop for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + zeroize::ZeroizeOnDrop,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++}
++
++impl<T, OutSize> fmt::Debug for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + AlgorithmName,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        Self::write_alg_name(f)
++    }
++}
++
++impl<T, OutSize> SerializableState for CtOutWrapper<T, OutSize>
++where
++    T: VariableOutputCore + SerializableState,
++    OutSize: ArraySize + IsLessOrEqual<T::OutputSize, Output = True>,
++{
++    type SerializedStateSize = <T as SerializableState>::SerializedStateSize;
++
++    fn serialize(&self) -> SerializedState<Self> {
++        self.inner.serialize()
++    }
++
++    fn deserialize(
++        serialized_state: &SerializedState<Self>,
++    ) -> Result<Self, DeserializeStateError> {
++        let _out = PhantomData;
++        T::deserialize(serialized_state).map(|inner| Self { inner, _out })
++    }
++}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/block_api.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/block_api.rs
+@@ -0,0 +1,163 @@
++//! Low-level traits operating on blocks and wrappers around them.
++//!
++//! Usage of traits in this module in user code is discouraged. Instead use
++//! core algorithm wrapped by the wrapper types, which implement the
++//! higher-level traits.
++use crate::{Digest, HashMarker, InvalidOutputSize};
++
++pub use block_buffer::{Eager, Lazy};
++pub use common::{AlgorithmName, Block, BlockSizeUser, OutputSizeUser, Reset};
++
++use block_buffer::{BlockBuffer, BlockSizes, BufferKind};
++use common::Output;
++
++mod ct_variable;
++pub use ct_variable::CtOutWrapper;
++
++/// Buffer type used by type which implements [`BufferKindUser`].
++pub type Buffer<S> =
++    BlockBuffer<<S as BlockSizeUser>::BlockSize, <S as BufferKindUser>::BufferKind>;
++
++/// Types which consume data in blocks.
++pub trait UpdateCore: BlockSizeUser {
++    /// Update state using the provided data blocks.
++    fn update_blocks(&mut self, blocks: &[Block<Self>]);
++}
++
++/// Sub-trait of [`BlockSizeUser`] implemented if `BlockSize` is
++/// bigger than `U0` and smaller than `U256`.
++///
++/// This trait relies on the hack suggested [here][0] to work around
++/// the long standing Rust issue regarding non-propagation of `where` bounds.
++///
++/// [0]: https://github.com/rust-lang/rust/issues/20671#issuecomment-1905186183
++pub trait SmallBlockSizeUser:
++    BlockSizeUser<BlockSize = <Self as SmallBlockSizeUser>::_BlockSize>
++{
++    /// Helper associated type equal to `<Self as BlockSizeUser>::BlockSize`.
++    type _BlockSize: BlockSizes;
++}
++
++impl<T: BlockSizeUser> SmallBlockSizeUser for T
++where
++    T::BlockSize: BlockSizes,
++{
++    type _BlockSize = T::BlockSize;
++}
++
++/// Types which use [`BlockBuffer`] functionality.
++pub trait BufferKindUser: SmallBlockSizeUser {
++    /// Block buffer kind over which type operates.
++    type BufferKind: BufferKind;
++}
++
++/// Trait implemented by eager hashes which expose their block-level core.
++pub trait EagerHash: SmallBlockSizeUser + Digest + Clone {
++    /// Block-level core type of the hash.
++    type Core: HashMarker
++        + UpdateCore
++        + FixedOutputCore
++        + SmallBlockSizeUser<_BlockSize = <Self as SmallBlockSizeUser>::_BlockSize>
++        + BufferKindUser<BufferKind = Eager>
++        + Default
++        + Clone;
++}
++
++impl<T> EagerHash for T
++where
++    T: CoreProxy + SmallBlockSizeUser + Digest + Clone,
++    <T as CoreProxy>::Core: HashMarker
++        + UpdateCore
++        + FixedOutputCore
++        + SmallBlockSizeUser<_BlockSize = <T as SmallBlockSizeUser>::_BlockSize>
++        + BufferKindUser<BufferKind = Eager>
++        + Default
++        + Clone,
++{
++    type Core = T::Core;
++}
++
++/// Core trait for hash functions with fixed output size.
++pub trait FixedOutputCore: UpdateCore + BufferKindUser + OutputSizeUser {
++    /// Finalize state using remaining data stored in the provided block buffer,
++    /// write result into provided array and leave `self` in a dirty state.
++    fn finalize_fixed_core(&mut self, buffer: &mut Buffer<Self>, out: &mut Output<Self>);
++}
++
++/// Core trait for hash functions with extendable (XOF) output size.
++pub trait ExtendableOutputCore: UpdateCore + BufferKindUser {
++    /// XOF reader core state.
++    type ReaderCore: XofReaderCore;
++
++    /// Retrieve XOF reader using remaining data stored in the block buffer
++    /// and leave hasher in a dirty state.
++    fn finalize_xof_core(&mut self, buffer: &mut Buffer<Self>) -> Self::ReaderCore;
++}
++
++/// Core reader trait for extendable-output function (XOF) result.
++pub trait XofReaderCore: BlockSizeUser {
++    /// Read next XOF block.
++    fn read_block(&mut self) -> Block<Self>;
++}
++
++/// Core trait for hash functions with variable output size.
++///
++/// Maximum output size is equal to [`OutputSizeUser::OutputSize`].
++/// Users are expected to truncate result returned by the
++/// [`finalize_variable_core`] to `output_size` passed to the [`new`] method
++/// during construction. Truncation side is defined by the [`TRUNC_SIDE`]
++/// associated constant.
++///
++/// [`finalize_variable_core`]: VariableOutputCore::finalize_variable_core
++/// [`new`]: VariableOutputCore::new
++/// [`TRUNC_SIDE`]: VariableOutputCore::TRUNC_SIDE
++pub trait VariableOutputCore: UpdateCore + OutputSizeUser + BufferKindUser + Sized {
++    /// Side which should be used in a truncated result.
++    const TRUNC_SIDE: TruncSide;
++
++    /// Initialize hasher state for given output size.
++    ///
++    /// # Errors
++    /// Returns [`InvalidOutputSize`] if `output_size` is not valid for
++    /// the algorithm, e.g. if it's bigger than the [`OutputSize`]
++    /// associated type.
++    ///
++    /// [`OutputSize`]: OutputSizeUser::OutputSize
++    fn new(output_size: usize) -> Result<Self, InvalidOutputSize>;
++
++    /// Finalize hasher and write full hashing result into the `out` buffer.
++    ///
++    /// The result must be truncated to `output_size` used during hasher
++    /// construction. Truncation side is defined by the [`TRUNC_SIDE`]
++    /// associated constant.
++    ///
++    /// [`TRUNC_SIDE`]: VariableOutputCore::TRUNC_SIDE
++    fn finalize_variable_core(&mut self, buffer: &mut Buffer<Self>, out: &mut Output<Self>);
++}
++
++/// Trait adding customization string to hash functions with variable output.
++pub trait VariableOutputCoreCustomized: VariableOutputCore {
++    /// Create new hasher instance with the given customization string and output size.
++    fn new_customized(customization: &[u8], output_size: usize) -> Self;
++}
++
++/// Type which used for defining truncation side in the [`VariableOutputCore`]
++/// trait.
++#[derive(Copy, Clone, Debug)]
++pub enum TruncSide {
++    /// Truncate left side, i.e. `&out[..n]`.
++    Left,
++    /// Truncate right side, i.e. `&out[m..]`.
++    Right,
++}
++
++/// A proxy trait to the core block-level type.
++pub trait CoreProxy {
++    /// Core block-level type.
++    type Core: BufferKindUser;
++
++    /// Create `Self` from core and buffer.
++    fn compose(core: Self::Core, buffer: Buffer<Self::Core>) -> Self;
++    /// Decompose `self` into core and buffer.
++    fn decompose(self) -> (Self::Core, Buffer<Self::Core>);
++}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/buffer_macros/fixed.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/buffer_macros/fixed.rs
+@@ -0,0 +1,488 @@
++/// Creates a buffered wrapper around block-level "core" type which implements fixed output size traits.
++#[macro_export]
++macro_rules! buffer_fixed {
++    (
++        $(#[$attr:meta])*
++        $v:vis struct $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        impl: $($trait_name:ident)*;
++    ) => {
++        $(#[$attr])*
++        $v struct $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? {
++            core: $core_ty,
++            buffer: $crate::block_api::Buffer<$core_ty>,
++        }
++
++        $crate::buffer_fixed!(
++            impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty);
++            $($trait_name)*;
++        );
++    };
++
++    (
++        $(#[$attr:meta])*
++        $v:vis struct $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        oid: $oid:literal;
++        impl: $($trait_name:ident)*;
++    ) => {
++        $crate::buffer_fixed!(
++            $(#[$attr])*
++            $v struct $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty);
++            impl: $($trait_name)*;
++        );
++
++        #[cfg(feature = "oid")]
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::const_oid::AssociatedOid for $name$(< $( $lt ),+ >)? {
++            const OID: $crate::const_oid::ObjectIdentifier =
++                $crate::const_oid::ObjectIdentifier::new_unwrap($oid);
++        }
++    };
++
++    // Terminates `impl_inner` sequences.
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        ;
++    ) => {};
++
++    // Implements the set of traits common for fixed output hashes:
++    // `Default`, `Clone`, `HashMarker`, `Reset`, `FixedOutputReset`, `SerializableState`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        FixedHashTraits $($trait_name:ident)*;
++    ) => {
++        $crate::buffer_fixed!(
++            impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty);
++            BaseFixedTraits AlgorithmName Default Clone HashMarker
++            Reset FixedOutputReset SerializableState ZeroizeOnDrop $($trait_name)*;
++        );
++    };
++
++    // Implements the set of traits common for MAC functions:
++    // `Debug`, `BlockSizeUser`, `OutputSizeUser`, `CoreProxy`, `Update`, `FixedOutput`, `MacMarker`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        MacTraits $($trait_name:ident)*;
++    ) => {
++        $crate::buffer_fixed!(
++            impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty);
++            BaseFixedTraits MacMarker $($trait_name)*;
++        );
++    };
++
++    // Implements the set of traits common for resettable MAC functions:
++    // `Debug`, `BlockSizeUser`, `OutputSizeUser`, `CoreProxy`, `Update`, `FixedOutput`,
++    // `MacMarker`, `Reset`, `FixedOutputReset`.
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        ResetMacTraits $($trait_name:ident)*;
++    ) => {
++        $crate::buffer_fixed!(
++            impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty);
++            MacTraits Reset FixedOutputReset $($trait_name)*;
++        );
++    };
++
++    // Implements basic fixed traits:
++    // `Debug`, `BlockSizeUser`, `OutputSizeUser`, `CoreProxy`, `Update`, and `FixedOutput`.
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        BaseFixedTraits $($trait_name:ident)*;
++    ) => {
++        $crate::buffer_fixed!(
++            impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty);
++            Debug BlockSizeUser OutputSizeUser CoreProxy Update FixedOutput $($trait_name)*;
++        );
++    };
++
++    // Implements `Debug`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        Debug $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? core::fmt::Debug for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++                f.write_str(concat!(stringify!($name), " { ... }"))
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `AlgorithmName`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        AlgorithmName $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::common::AlgorithmName for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn write_alg_name(f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
++                <$core_ty as $crate::common::AlgorithmName>::write_alg_name(f)
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `BlockSizeUser`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        BlockSizeUser $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::block_api::BlockSizeUser for $name$(< $( $lt ),+ >)? {
++            type BlockSize = <$core_ty as $crate::common::BlockSizeUser>::BlockSize;
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `OutputSizeUser`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        OutputSizeUser $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::OutputSizeUser for $name$(< $( $lt ),+ >)? {
++            type OutputSize = <$core_ty as $crate::block_api::OutputSizeUser>::OutputSize;
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `CoreProxy`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        CoreProxy $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::block_api::CoreProxy for $name$(< $( $lt ),+ >)? {
++            type Core = $core_ty;
++            fn compose(core: Self::Core, buffer: $crate::block_api::Buffer<Self::Core>) -> Self {
++                Self { core, buffer }
++            }
++            fn decompose(self) -> (Self::Core, $crate::block_api::Buffer<Self::Core>) {
++                let Self { core, buffer } = self;
++                (core, buffer)
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Update`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        Update $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::Update for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn update(&mut self, data: &[u8]) {
++                let Self { core, buffer } = self;
++                buffer.digest_blocks(data, |blocks| {
++                    $crate::block_api::UpdateCore::update_blocks(core, blocks)
++                });
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `FixedOutput`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        FixedOutput $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::FixedOutput for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn finalize_into(mut self, out: &mut $crate::Output<Self>) {
++                let Self { core, buffer } = &mut self;
++                $crate::block_api::FixedOutputCore::finalize_fixed_core(core, buffer, out);
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Default`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        Default $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? Default for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn default() -> Self {
++                Self {
++                    core: Default::default(),
++                    buffer: Default::default(),
++                }
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `CustomizedInit`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        CustomizedInit $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::CustomizedInit for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn new_customized(customization: &[u8]) -> Self {
++                Self {
++                    core: $crate::CustomizedInit::new_customized(customization),
++                    buffer: Default::default(),
++                }
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Clone`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        Clone $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? Clone for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn clone(&self) -> Self {
++                Self {
++                    core: Clone::clone(&self.core),
++                    buffer: Clone::clone(&self.buffer),
++                }
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `HashMarker` and asserts that `$core_ty` implements it
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        HashMarker $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::HashMarker for $name$(< $( $lt ),+ >)? {}
++
++        // Verify that `$core_ty` implements `HashMarker`
++        const _: () = {
++            fn check$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?(v: &$core_ty) {
++                v as &dyn $crate::HashMarker;
++            }
++        };
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `MacMarker` and asserts that `$core_ty` implements it
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        MacMarker $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::MacMarker for $name$(< $( $lt ),+ >)? {}
++
++        // Verify that `$core_ty` implements `MacMarker`
++        const _: () = {
++            fn check$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?(v: &$core_ty) {
++                v as &dyn $crate::MacMarker;
++            }
++        };
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `InnerUser` and `InnerInit`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        InnerInit $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::common::InnerUser for $name$(< $( $lt ),+ >)? {
++            type Inner = <$core_ty as $crate::common::InnerUser>::Inner;
++        }
++
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::common::InnerInit for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn inner_init(inner: Self::Inner) -> Self {
++                Self {
++                    core: <$core_ty as $crate::common::InnerInit>::inner_init(inner),
++                    buffer: Default::default(),
++                }
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `KeySizeUser` and `KeyInit`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        KeyInit $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::common::KeySizeUser for $name$(< $( $lt ),+ >)? {
++            type KeySize = <$core_ty as $crate::common::KeySizeUser>::KeySize;
++        }
++
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::KeyInit for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn new(key: &$crate::Key<Self>) -> Self {
++                Self {
++                    core: <$core_ty as $crate::KeyInit>::new(key),
++                    buffer: Default::default(),
++                }
++            }
++
++            #[inline]
++            fn new_from_slice(key: &[u8]) -> Result<Self, $crate::InvalidLength> {
++                <$core_ty as $crate::KeyInit>::new_from_slice(key).map(|core|
++                    Self { core, buffer: Default::default() }
++                )
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Reset`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        Reset $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::Reset for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn reset(&mut self) {
++                $crate::Reset::reset(&mut self.core);
++                self.buffer.reset();
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `FixedOutputReset`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        FixedOutputReset $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::FixedOutputReset for $name$(< $( $lt ),+ >)? {
++            #[inline]
++            fn finalize_into_reset(&mut self, out: &mut $crate::Output<Self>) {
++                let Self { core, buffer } = self;
++                $crate::block_api::FixedOutputCore::finalize_fixed_core(core, buffer, out);
++                $crate::Reset::reset(self);
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `SerializableState`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        SerializableState $($trait_name:ident)*;
++    ) => {
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::common::hazmat::SerializableState for $name$(< $( $lt ),+ >)? {
++            type SerializedStateSize = $crate::typenum::Sum<
++                <$core_ty as $crate::common::hazmat::SerializableState>::SerializedStateSize,
++                $crate::block_buffer::SerializedBufferSize<
++                    <$core_ty as $crate::block_api::BlockSizeUser>::BlockSize,
++                    <$core_ty as $crate::block_api::BufferKindUser>::BufferKind,
++                >
++            >;
++
++            #[inline]
++            fn serialize(&self) -> $crate::common::hazmat::SerializedState<Self> {
++                let serialized_core = self.core.serialize();
++                let serialized_buf = self.buffer.serialize();
++                serialized_core.concat(serialized_buf)
++            }
++
++            #[inline]
++            fn deserialize(
++                serialized_state: &$crate::common::hazmat::SerializedState<Self>,
++            ) -> Result<Self, $crate::common::hazmat::DeserializeStateError> {
++                use $crate::common::hazmat::{SerializableState, DeserializeStateError};
++
++                let (serialized_core, serialized_buf) = serialized_state
++                    .split_ref::<<$core_ty as SerializableState>::SerializedStateSize>();
++
++                let core = SerializableState::deserialize(serialized_core)?;
++                let buffer = $crate::block_buffer::BlockBuffer::deserialize(serialized_buf)
++                    .map_err(|_| DeserializeStateError)?;
++
++                Ok(Self { core, buffer })
++            }
++        }
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `ZeroizeOnDrop`
++    (
++        impl_inner: $name:ident
++        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
++        ($core_ty:ty);
++        ZeroizeOnDrop $($trait_name:ident)*;
++    ) => {
++        // Verify that `$core_ty` and `Buffer<$core_ty>` implement `ZeroizeOnDrop`
++        #[cfg(feature = "zeroize")]
++        const _: () = {
++            fn check_core$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?(v: &$core_ty) {
++                v as &dyn $crate::zeroize::ZeroizeOnDrop;
++            }
++
++            fn check_buffer$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?(v: &$crate::block_api::Buffer<$core_ty>) {
++                v as &dyn $crate::zeroize::ZeroizeOnDrop;
++            }
++        };
++
++        #[cfg(feature = "zeroize")]
++        impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? $crate::zeroize::ZeroizeOnDrop for $name$(< $( $lt ),+ >)? {}
++
++        $crate::buffer_fixed!(impl_inner: $name$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?($core_ty); $($trait_name)*;);
++    };
++}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/buffer_macros/variable.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/buffer_macros/variable.rs
+@@ -0,0 +1,211 @@
++/// Creates a buffered wrapper around block-level "core" type which implements variable output size traits
++/// with output size selected at compile time.
++#[macro_export]
++macro_rules! buffer_ct_variable {
++    (
++        $(#[$attr:meta])*
++        $vis:vis struct $name:ident<$out_size:ident>($core_ty:ty);
++        exclude: SerializableState;
++        // Ideally, we would use `$core_ty::OutputSize`, but unfortunately the compiler
++        // does not accept such code. The likely reason is this issue:
++        // https://github.com/rust-lang/rust/issues/79629
++        max_size: $max_size:ty;
++    ) => {
++        $(#[$attr])*
++        $vis struct $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            core: $crate::block_api::CtOutWrapper<$core_ty, $out_size>,
++            buffer: $crate::block_api::Buffer<$core_ty>,
++        }
++
++        impl<$out_size> core::fmt::Debug for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++                f.write_str(concat!(stringify!($name), " { ... }"))
++            }
++        }
++
++        impl<$out_size> $crate::common::AlgorithmName for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn write_alg_name(f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
++                <$core_ty as $crate::common::AlgorithmName>::write_alg_name(f)
++            }
++        }
++
++        impl<$out_size> Clone for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn clone(&self) -> Self {
++                Self {
++                    core: Clone::clone(&self.core),
++                    buffer: Clone::clone(&self.buffer),
++                }
++            }
++        }
++
++        impl<$out_size> Default for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn default() -> Self {
++                Self {
++                    core: Default::default(),
++                    buffer: Default::default(),
++                }
++            }
++        }
++
++        impl<$out_size> $crate::Reset for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn reset(&mut self) {
++                $crate::Reset::reset(&mut self.core);
++                self.buffer.reset();
++            }
++        }
++
++        impl<$out_size> $crate::block_api::BlockSizeUser for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            type BlockSize = <$core_ty as $crate::common::BlockSizeUser>::BlockSize;
++        }
++
++        impl<$out_size> $crate::OutputSizeUser for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            type OutputSize = $out_size;
++        }
++
++        impl<$out_size> $crate::HashMarker for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {}
++
++        // Verify that `$wrapped_ty` implements `HashMarker`
++        const _: () = {
++            fn check<$out_size>(v: &$core_ty)
++            where
++                $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size>,
++                $crate::typenum::LeEq<$out_size, $max_size>: $crate::typenum::NonZero,
++            {
++                v as &dyn $crate::HashMarker;
++            }
++        };
++
++        impl<$out_size> $crate::block_api::CoreProxy for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            type Core = $crate::block_api::CtOutWrapper<$core_ty, $out_size>;
++            fn compose(core: Self::Core, buffer: $crate::block_api::Buffer<Self::Core>) -> Self {
++                Self { core, buffer }
++            }
++            fn decompose(self) -> (Self::Core, $crate::block_api::Buffer<Self::Core>) {
++                let Self { core, buffer } = self;
++                (core, buffer)
++            }
++        }
++
++        impl<$out_size> $crate::Update for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn update(&mut self, data: &[u8]) {
++                let Self { core, buffer } = self;
++                buffer.digest_blocks(data, |blocks| {
++                    $crate::block_api::UpdateCore::update_blocks(core, blocks)
++                });
++            }
++        }
++
++        impl<$out_size> $crate::FixedOutput for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn finalize_into(mut self, out: &mut $crate::Output<Self>) {
++                let Self { core, buffer } = &mut self;
++                $crate::block_api::FixedOutputCore::finalize_fixed_core(core, buffer, out);
++            }
++        }
++
++        impl<$out_size> $crate::FixedOutputReset for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            #[inline]
++            fn finalize_into_reset(&mut self, out: &mut $crate::Output<Self>) {
++                let Self { core, buffer } = self;
++                $crate::block_api::FixedOutputCore::finalize_fixed_core(core, buffer, out);
++                $crate::Reset::reset(self);
++            }
++        }
++    };
++    (
++        $(#[$attr:meta])*
++        $vis:vis struct $name:ident<$out_size:ident>($core_ty:ty);
++        // Ideally, we would use `$core_ty::OutputSize`, but unfortunately the compiler
++        // does not accept such code. The likely reason is this issue:
++        // https://github.com/rust-lang/rust/issues/79629
++        max_size: $max_size:ty;
++    ) => {
++        $crate::buffer_ct_variable!(
++            $(#[$attr])*
++            $vis struct $name<$out_size>($core_ty);
++            exclude: SerializableState;
++            max_size: $max_size;
++        );
++
++        impl<$out_size> $crate::common::hazmat::SerializableState for $name<$out_size>
++        where
++            $out_size: $crate::array::ArraySize + $crate::typenum::IsLessOrEqual<$max_size, Output = $crate::typenum::True>,
++        {
++            type SerializedStateSize = $crate::typenum::Sum<
++                <$core_ty as $crate::common::hazmat::SerializableState>::SerializedStateSize,
++                $crate::block_buffer::SerializedBufferSize<
++                    <$core_ty as $crate::block_api::BlockSizeUser>::BlockSize,
++                    <$core_ty as $crate::block_api::BufferKindUser>::BufferKind,
++                >
++            >;
++
++            #[inline]
++            fn serialize(&self) -> $crate::common::hazmat::SerializedState<Self> {
++                let serialized_core = self.core.serialize();
++                let serialized_buf = self.buffer.serialize();
++                serialized_core.concat(serialized_buf)
++            }
++
++            #[inline]
++            fn deserialize(
++                serialized_state: &$crate::common::hazmat::SerializedState<Self>,
++            ) -> Result<Self, $crate::common::hazmat::DeserializeStateError> {
++                use $crate::common::hazmat::{SerializableState, DeserializeStateError};
++
++                let (serialized_core, serialized_buf) = serialized_state
++                    .split_ref::<<$core_ty as SerializableState>::SerializedStateSize>();
++
++                let core = SerializableState::deserialize(serialized_core)?;
++                let buffer = $crate::block_buffer::BlockBuffer::deserialize(serialized_buf)
++                    .map_err(|_| DeserializeStateError)?;
++
++                Ok(Self { core, buffer })
++            }
++        }
++    };
++}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/buffer_macros/xof.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/buffer_macros/xof.rs
+@@ -0,0 +1,319 @@
++/// Creates a buffered wrapper around block-level "core" type which implements extendable output size traits.
++#[macro_export]
++macro_rules! buffer_xof {
++    (
++        $(#[$hasher_attr:meta])*
++        $hasher_vis:vis struct $hasher_name:ident($hasher_core:ty);
++        $(oid: $oid:literal;)?
++        impl: $($hasher_trait_name:ident)*;
++
++        $(#[$reader_attr:meta])*
++        $reader_vis:vis struct $reader_name:ident($reader_core:ty);
++        impl: $($reader_trait_name:ident)*;
++    ) => {
++        $(#[$hasher_attr])*
++        $hasher_vis struct $hasher_name {
++            core: $hasher_core,
++            buffer: $crate::block_api::Buffer<$hasher_core>,
++        }
++
++        impl $crate::ExtendableOutput for $hasher_name {
++            type Reader = $reader_name;
++
++            #[inline]
++            fn finalize_xof(mut self) -> Self::Reader {
++                let Self { core, buffer } = &mut self;
++                let core = <$hasher_core as $crate::block_api::ExtendableOutputCore>::finalize_xof_core(core, buffer);
++                let buffer = Default::default();
++                Self::Reader { core, buffer }
++            }
++        }
++
++        $(
++            #[cfg(feature = "oid")]
++            impl $crate::const_oid::AssociatedOid for $hasher_name {
++                const OID: $crate::const_oid::ObjectIdentifier =
++                    $crate::const_oid::ObjectIdentifier::new_unwrap($oid);
++            }
++        )?
++
++        $crate::buffer_xof!(
++            impl_inner: $hasher_name($hasher_core);
++            $($hasher_trait_name)*;
++        );
++
++        $(#[$reader_attr])*
++        $reader_vis struct $reader_name {
++            core: $reader_core,
++            buffer: $crate::block_buffer::ReadBuffer<<$reader_core as $crate::block_api::BlockSizeUser>::BlockSize>,
++        }
++
++        impl $crate::XofReader for $reader_name {
++            #[inline]
++            fn read(&mut self, buf: &mut [u8]) {
++                let Self { core, buffer } = self;
++                buffer.read(buf, |block| {
++                    *block = $crate::block_api::XofReaderCore::read_block(core);
++                });
++            }
++        }
++
++        $crate::buffer_xof!(
++            impl_inner: $reader_name($reader_core);
++            $($reader_trait_name)*;
++        );
++    };
++
++    // Terminates `impl_inner` sequences.
++    (
++        impl_inner: $name:ident($core_ty:ty); ;
++    ) => {};
++
++    // Implements the set of traits common for XOF hashers
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        XofHasherTraits $($trait_name:ident)*;
++    ) => {
++        $crate::buffer_xof!(
++            impl_inner: $name($core_ty);
++            Debug AlgorithmName Clone Default BlockSizeUser CoreProxy HashMarker Update SerializableState Reset ExtendableOutputReset $($trait_name)* ;
++        );
++    };
++
++    // Implements the set of traits common for XOF readers
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        XofReaderTraits $($trait_name:ident)*;
++    ) => {
++        $crate::buffer_xof!(
++            impl_inner: $name($core_ty);
++            Debug Clone BlockSizeUser
++            $($trait_name)*;);
++    };
++
++    // Implements `Debug`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        Debug $($trait_name:ident)*;
++    ) => {
++        impl core::fmt::Debug for $name {
++            #[inline]
++            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
++                f.write_str(concat!(stringify!($name), " { ... }"))
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `AlgorithmName`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        AlgorithmName $($trait_name:ident)*;
++    ) => {
++        impl $crate::common::AlgorithmName for $name {
++            #[inline]
++            fn write_alg_name(f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
++                <$core_ty as $crate::common::AlgorithmName>::write_alg_name(f)
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Default`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        Default $($trait_name:ident)*;
++    ) => {
++        impl Default for $name {
++            #[inline]
++            fn default() -> Self {
++                Self {
++                    core: Default::default(),
++                    buffer: Default::default(),
++                }
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `CustomizedInit`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        CustomizedInit $($trait_name:ident)*;
++    ) => {
++        impl $crate::CustomizedInit for $name {
++            #[inline]
++            fn new_customized(customization: &[u8]) -> Self {
++                Self {
++                    core: $crate::CustomizedInit::new_customized(customization),
++                    buffer: Default::default(),
++                }
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Clone`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        Clone $($trait_name:ident)*;
++    ) => {
++        impl Clone for $name {
++            #[inline]
++            fn clone(&self) -> Self {
++                Self {
++                    core: Clone::clone(&self.core),
++                    buffer: Clone::clone(&self.buffer),
++                }
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `BlockSizeUser`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        BlockSizeUser $($trait_name:ident)*;
++    ) => {
++        impl $crate::block_api::BlockSizeUser for $name {
++            type BlockSize = <$core_ty as $crate::common::BlockSizeUser>::BlockSize;
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `CoreProxy`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        CoreProxy $($trait_name:ident)*;
++    ) => {
++        impl $crate::block_api::CoreProxy for $name {
++            type Core = $core_ty;
++            fn compose(core: Self::Core, buffer: $crate::block_api::Buffer<Self::Core>) -> Self {
++                Self { core, buffer }
++            }
++            fn decompose(self) -> (Self::Core, $crate::block_api::Buffer<Self::Core>) {
++                let Self { core, buffer } = self;
++                (core, buffer)
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `HashMarker`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        HashMarker $($trait_name:ident)*;
++    ) => {
++        impl $crate::HashMarker for $name {}
++
++        // Verify that `$core_ty` implements `HashMarker`
++        const _: () = {
++            fn check(v: &$core_ty) {
++                v as &dyn $crate::HashMarker;
++            }
++        };
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Update`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        Update $($trait_name:ident)*;
++    ) => {
++        impl $crate::Update for $name {
++            #[inline]
++            fn update(&mut self, data: &[u8]) {
++                let Self { core, buffer } = self;
++                buffer.digest_blocks(data, |blocks| {
++                    $crate::block_api::UpdateCore::update_blocks(core, blocks)
++                });
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `Reset`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        Reset $($trait_name:ident)*;
++    ) => {
++        impl $crate::Reset for $name {
++            #[inline]
++            fn reset(&mut self) {
++                $crate::Reset::reset(&mut self.core);
++                self.buffer.reset();
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `ExtendableOutputReset`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        ExtendableOutputReset $($trait_name:ident)*;
++    ) => {
++        impl $crate::ExtendableOutputReset for $name {
++            #[inline]
++            fn finalize_xof_reset(&mut self) -> Self::Reader {
++                let Self { core, buffer } = self;
++                let core = <$core_ty as $crate::block_api::ExtendableOutputCore>::finalize_xof_core(core, buffer);
++                $crate::Reset::reset(self);
++                let buffer = Default::default();
++                Self::Reader { core, buffer }
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++
++    // Implements `SerializableState`
++    (
++        impl_inner: $name:ident($core_ty:ty);
++        SerializableState $($trait_name:ident)*;
++    ) => {
++        impl $crate::common::hazmat::SerializableState for $name {
++            type SerializedStateSize = $crate::typenum::Sum<
++                <$core_ty as $crate::common::hazmat::SerializableState>::SerializedStateSize,
++                $crate::block_buffer::SerializedBufferSize<
++                    <$core_ty as $crate::block_api::BlockSizeUser>::BlockSize,
++                    <$core_ty as $crate::block_api::BufferKindUser>::BufferKind,
++                >
++            >;
++
++            #[inline]
++            fn serialize(&self) -> $crate::common::hazmat::SerializedState<Self> {
++                let serialized_core = self.core.serialize();
++                let serialized_buf = self.buffer.serialize();
++                serialized_core.concat(serialized_buf)
++            }
++
++            #[inline]
++            fn deserialize(
++                serialized_state: &$crate::common::hazmat::SerializedState<Self>,
++            ) -> Result<Self, $crate::common::hazmat::DeserializeStateError> {
++                use $crate::common::hazmat::{SerializableState, DeserializeStateError};
++
++                let (serialized_core, serialized_buf) = serialized_state
++                    .split_ref::<<$core_ty as SerializableState>::SerializedStateSize>();
++
++                let core = SerializableState::deserialize(serialized_core)?;
++                let buffer = $crate::block_buffer::BlockBuffer::deserialize(serialized_buf)
++                    .map_err(|_| DeserializeStateError)?;
++
++                Ok(Self { core, buffer })
++            }
++        }
++
++        $crate::buffer_xof!(impl_inner: $name($core_ty); $($trait_name)*;);
++    };
++}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/buffer_macros.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/buffer_macros.rs
+@@ -0,0 +1,3 @@
++mod fixed;
++mod variable;
++mod xof;
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/core_api/ct_variable.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/core_api/ct_variable.rs
+@@ -1,204 +0,0 @@
+-use super::{
+-    AlgorithmName, Buffer, BufferKindUser, FixedOutputCore, Reset, TruncSide, UpdateCore,
+-    VariableOutputCore,
+-};
+-use crate::HashMarker;
+-#[cfg(feature = "mac")]
+-use crate::MacMarker;
+-#[cfg(feature = "oid")]
+-use const_oid::{AssociatedOid, ObjectIdentifier};
+-use core::{fmt, marker::PhantomData};
+-use crypto_common::{
+-    generic_array::{ArrayLength, GenericArray},
+-    typenum::{IsLess, IsLessOrEqual, Le, LeEq, NonZero, U256},
+-    Block, BlockSizeUser, OutputSizeUser,
+-};
+-
+-/// Dummy type used with [`CtVariableCoreWrapper`] in cases when
+-/// resulting hash does not have a known OID.
+-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+-pub struct NoOid;
+-
+-/// Wrapper around [`VariableOutputCore`] which selects output size
+-/// at compile time.
+-#[derive(Clone)]
+-pub struct CtVariableCoreWrapper<T, OutSize, O = NoOid>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    inner: T,
+-    _out: PhantomData<(OutSize, O)>,
+-}
+-
+-impl<T, OutSize, O> HashMarker for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore + HashMarker,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-}
+-
+-#[cfg(feature = "mac")]
+-impl<T, OutSize, O> MacMarker for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore + MacMarker,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-}
+-
+-impl<T, OutSize, O> BlockSizeUser for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    type BlockSize = T::BlockSize;
+-}
+-
+-impl<T, OutSize, O> UpdateCore for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn update_blocks(&mut self, blocks: &[Block<Self>]) {
+-        self.inner.update_blocks(blocks);
+-    }
+-}
+-
+-impl<T, OutSize, O> OutputSizeUser for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize> + 'static,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    type OutputSize = OutSize;
+-}
+-
+-impl<T, OutSize, O> BufferKindUser for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    type BufferKind = T::BufferKind;
+-}
+-
+-impl<T, OutSize, O> FixedOutputCore for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize> + 'static,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn finalize_fixed_core(
+-        &mut self,
+-        buffer: &mut Buffer<Self>,
+-        out: &mut GenericArray<u8, Self::OutputSize>,
+-    ) {
+-        let mut full_res = Default::default();
+-        self.inner.finalize_variable_core(buffer, &mut full_res);
+-        let n = out.len();
+-        let m = full_res.len() - n;
+-        match T::TRUNC_SIDE {
+-            TruncSide::Left => out.copy_from_slice(&full_res[..n]),
+-            TruncSide::Right => out.copy_from_slice(&full_res[m..]),
+-        }
+-    }
+-}
+-
+-impl<T, OutSize, O> Default for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn default() -> Self {
+-        Self {
+-            inner: T::new(OutSize::USIZE).unwrap(),
+-            _out: PhantomData,
+-        }
+-    }
+-}
+-
+-impl<T, OutSize, O> Reset for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn reset(&mut self) {
+-        *self = Default::default();
+-    }
+-}
+-
+-impl<T, OutSize, O> AlgorithmName for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore + AlgorithmName,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    fn write_alg_name(f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        T::write_alg_name(f)?;
+-        f.write_str("_")?;
+-        write!(f, "{}", OutSize::USIZE)
+-    }
+-}
+-
+-#[cfg(feature = "oid")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "oid")))]
+-impl<T, OutSize, O> AssociatedOid for CtVariableCoreWrapper<T, OutSize, O>
+-where
+-    T: VariableOutputCore,
+-    O: AssociatedOid,
+-    OutSize: ArrayLength<u8> + IsLessOrEqual<T::OutputSize>,
+-    LeEq<OutSize, T::OutputSize>: NonZero,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    const OID: ObjectIdentifier = O::OID;
+-}
+-
+-/// Implement dummy type with hidden docs which is used to "carry" hasher
+-/// OID for [`CtVariableCoreWrapper`].
+-#[macro_export]
+-macro_rules! impl_oid_carrier {
+-    ($name:ident, $oid:literal) => {
+-        #[doc(hidden)]
+-        #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+-        pub struct $name;
+-
+-        #[cfg(feature = "oid")]
+-        impl AssociatedOid for $name {
+-            const OID: ObjectIdentifier = ObjectIdentifier::new_unwrap($oid);
+-        }
+-    };
+-}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/core_api/rt_variable.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/core_api/rt_variable.rs
+@@ -1,166 +0,0 @@
+-use super::{AlgorithmName, TruncSide, UpdateCore, VariableOutputCore};
+-#[cfg(feature = "mac")]
+-use crate::MacMarker;
+-use crate::{HashMarker, InvalidBufferSize};
+-use crate::{InvalidOutputSize, Reset, Update, VariableOutput, VariableOutputReset};
+-use block_buffer::BlockBuffer;
+-use core::fmt;
+-use crypto_common::typenum::{IsLess, Le, NonZero, Unsigned, U256};
+-
+-/// Wrapper around [`VariableOutputCore`] which selects output size
+-/// at run time.
+-#[derive(Clone)]
+-pub struct RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + UpdateCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    core: T,
+-    buffer: BlockBuffer<T::BlockSize, T::BufferKind>,
+-    output_size: usize,
+-}
+-
+-impl<T> RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn finalize_dirty(&mut self, out: &mut [u8]) -> Result<(), InvalidBufferSize> {
+-        let Self {
+-            core,
+-            buffer,
+-            output_size,
+-        } = self;
+-        if out.len() != *output_size || out.len() > Self::MAX_OUTPUT_SIZE {
+-            return Err(InvalidBufferSize);
+-        }
+-        let mut full_res = Default::default();
+-        core.finalize_variable_core(buffer, &mut full_res);
+-        let n = out.len();
+-        let m = full_res.len() - n;
+-        match T::TRUNC_SIDE {
+-            TruncSide::Left => out.copy_from_slice(&full_res[..n]),
+-            TruncSide::Right => out.copy_from_slice(&full_res[m..]),
+-        }
+-        Ok(())
+-    }
+-}
+-
+-impl<T> HashMarker for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + HashMarker,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-}
+-
+-#[cfg(feature = "mac")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "mac")))]
+-impl<T> MacMarker for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + MacMarker,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-}
+-
+-impl<T> Reset for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + UpdateCore + Reset,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn reset(&mut self) {
+-        self.buffer.reset();
+-        self.core.reset();
+-    }
+-}
+-
+-impl<T> Update for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + UpdateCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn update(&mut self, input: &[u8]) {
+-        let Self { core, buffer, .. } = self;
+-        buffer.digest_blocks(input, |blocks| core.update_blocks(blocks));
+-    }
+-}
+-
+-impl<T> VariableOutput for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + UpdateCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    const MAX_OUTPUT_SIZE: usize = T::OutputSize::USIZE;
+-
+-    fn new(output_size: usize) -> Result<Self, InvalidOutputSize> {
+-        let buffer = Default::default();
+-        T::new(output_size).map(|core| Self {
+-            core,
+-            buffer,
+-            output_size,
+-        })
+-    }
+-
+-    fn output_size(&self) -> usize {
+-        self.output_size
+-    }
+-
+-    fn finalize_variable(mut self, out: &mut [u8]) -> Result<(), InvalidBufferSize> {
+-        self.finalize_dirty(out)
+-    }
+-}
+-
+-impl<T> VariableOutputReset for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + UpdateCore + Reset,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    fn finalize_variable_reset(&mut self, out: &mut [u8]) -> Result<(), InvalidBufferSize> {
+-        self.finalize_dirty(out)?;
+-        self.core.reset();
+-        self.buffer.reset();
+-        Ok(())
+-    }
+-}
+-
+-impl<T> fmt::Debug for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + UpdateCore + AlgorithmName,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+-        T::write_alg_name(f)?;
+-        f.write_str(" { .. }")
+-    }
+-}
+-
+-#[cfg(feature = "std")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+-impl<T> std::io::Write for RtVariableCoreWrapper<T>
+-where
+-    T: VariableOutputCore + UpdateCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+-        Update::update(self, buf);
+-        Ok(buf.len())
+-    }
+-
+-    #[inline]
+-    fn flush(&mut self) -> std::io::Result<()> {
+-        Ok(())
+-    }
+-}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/core_api/wrapper.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/core_api/wrapper.rs
+@@ -1,290 +0,0 @@
+-use super::{
+-    AlgorithmName, Buffer, BufferKindUser, ExtendableOutputCore, FixedOutputCore, OutputSizeUser,
+-    Reset, UpdateCore, XofReaderCoreWrapper,
+-};
+-use crate::{
+-    ExtendableOutput, ExtendableOutputReset, FixedOutput, FixedOutputReset, HashMarker, Update,
+-};
+-use block_buffer::BlockBuffer;
+-use core::fmt;
+-use crypto_common::{
+-    typenum::{IsLess, Le, NonZero, U256},
+-    BlockSizeUser, InvalidLength, Key, KeyInit, KeySizeUser, Output,
+-};
+-
+-#[cfg(feature = "mac")]
+-use crate::MacMarker;
+-#[cfg(feature = "oid")]
+-use const_oid::{AssociatedOid, ObjectIdentifier};
+-
+-/// Wrapper around [`BufferKindUser`].
+-///
+-/// It handles data buffering and implements the slice-based traits.
+-#[derive(Clone, Default)]
+-pub struct CoreWrapper<T>
+-where
+-    T: BufferKindUser,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    core: T,
+-    buffer: BlockBuffer<T::BlockSize, T::BufferKind>,
+-}
+-
+-impl<T> HashMarker for CoreWrapper<T>
+-where
+-    T: BufferKindUser + HashMarker,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-}
+-
+-#[cfg(feature = "mac")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "mac")))]
+-impl<T> MacMarker for CoreWrapper<T>
+-where
+-    T: BufferKindUser + MacMarker,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-}
+-
+-// this blanket impl is needed for HMAC
+-impl<T> BlockSizeUser for CoreWrapper<T>
+-where
+-    T: BufferKindUser + HashMarker,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    type BlockSize = T::BlockSize;
+-}
+-
+-impl<T> CoreWrapper<T>
+-where
+-    T: BufferKindUser,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    /// Create new wrapper from `core`.
+-    #[inline]
+-    pub fn from_core(core: T) -> Self {
+-        let buffer = Default::default();
+-        Self { core, buffer }
+-    }
+-
+-    /// Decompose wrapper into inner parts.
+-    #[inline]
+-    pub fn decompose(self) -> (T, Buffer<T>) {
+-        let Self { core, buffer } = self;
+-        (core, buffer)
+-    }
+-}
+-
+-impl<T> KeySizeUser for CoreWrapper<T>
+-where
+-    T: BufferKindUser + KeySizeUser,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    type KeySize = T::KeySize;
+-}
+-
+-impl<T> KeyInit for CoreWrapper<T>
+-where
+-    T: BufferKindUser + KeyInit,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn new(key: &Key<Self>) -> Self {
+-        Self {
+-            core: T::new(key),
+-            buffer: Default::default(),
+-        }
+-    }
+-
+-    #[inline]
+-    fn new_from_slice(key: &[u8]) -> Result<Self, InvalidLength> {
+-        Ok(Self {
+-            core: T::new_from_slice(key)?,
+-            buffer: Default::default(),
+-        })
+-    }
+-}
+-
+-impl<T> fmt::Debug for CoreWrapper<T>
+-where
+-    T: BufferKindUser + AlgorithmName,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+-        T::write_alg_name(f)?;
+-        f.write_str(" { .. }")
+-    }
+-}
+-
+-impl<T> Reset for CoreWrapper<T>
+-where
+-    T: BufferKindUser + Reset,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn reset(&mut self) {
+-        self.core.reset();
+-        self.buffer.reset();
+-    }
+-}
+-
+-impl<T> Update for CoreWrapper<T>
+-where
+-    T: BufferKindUser + UpdateCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn update(&mut self, input: &[u8]) {
+-        let Self { core, buffer } = self;
+-        buffer.digest_blocks(input, |blocks| core.update_blocks(blocks));
+-    }
+-}
+-
+-impl<T> OutputSizeUser for CoreWrapper<T>
+-where
+-    T: BufferKindUser + OutputSizeUser,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    type OutputSize = T::OutputSize;
+-}
+-
+-impl<T> FixedOutput for CoreWrapper<T>
+-where
+-    T: FixedOutputCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn finalize_into(mut self, out: &mut Output<Self>) {
+-        let Self { core, buffer } = &mut self;
+-        core.finalize_fixed_core(buffer, out);
+-    }
+-}
+-
+-impl<T> FixedOutputReset for CoreWrapper<T>
+-where
+-    T: FixedOutputCore + Reset,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn finalize_into_reset(&mut self, out: &mut Output<Self>) {
+-        let Self { core, buffer } = self;
+-        core.finalize_fixed_core(buffer, out);
+-        core.reset();
+-        buffer.reset();
+-    }
+-}
+-
+-impl<T> ExtendableOutput for CoreWrapper<T>
+-where
+-    T: ExtendableOutputCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-    <T::ReaderCore as BlockSizeUser>::BlockSize: IsLess<U256>,
+-    Le<<T::ReaderCore as BlockSizeUser>::BlockSize, U256>: NonZero,
+-{
+-    type Reader = XofReaderCoreWrapper<T::ReaderCore>;
+-
+-    #[inline]
+-    fn finalize_xof(self) -> Self::Reader {
+-        let (mut core, mut buffer) = self.decompose();
+-        let core = core.finalize_xof_core(&mut buffer);
+-        let buffer = Default::default();
+-        Self::Reader { core, buffer }
+-    }
+-}
+-
+-impl<T> ExtendableOutputReset for CoreWrapper<T>
+-where
+-    T: ExtendableOutputCore + Reset,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-    <T::ReaderCore as BlockSizeUser>::BlockSize: IsLess<U256>,
+-    Le<<T::ReaderCore as BlockSizeUser>::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn finalize_xof_reset(&mut self) -> Self::Reader {
+-        let Self { core, buffer } = self;
+-        let reader_core = core.finalize_xof_core(buffer);
+-        core.reset();
+-        buffer.reset();
+-        let buffer = Default::default();
+-        Self::Reader {
+-            core: reader_core,
+-            buffer,
+-        }
+-    }
+-}
+-
+-#[cfg(feature = "oid")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "oid")))]
+-impl<T> AssociatedOid for CoreWrapper<T>
+-where
+-    T: BufferKindUser + AssociatedOid,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    const OID: ObjectIdentifier = T::OID;
+-}
+-
+-#[cfg(feature = "std")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+-impl<T> std::io::Write for CoreWrapper<T>
+-where
+-    T: BufferKindUser + UpdateCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+-        Update::update(self, buf);
+-        Ok(buf.len())
+-    }
+-
+-    #[inline]
+-    fn flush(&mut self) -> std::io::Result<()> {
+-        Ok(())
+-    }
+-}
+-
+-/// A proxy trait to a core type implemented by [`CoreWrapper`]
+-// TODO: replace with an inherent associated type on stabilization:
+-// https://github.com/rust-lang/rust/issues/8995
+-pub trait CoreProxy: sealed::Sealed {
+-    /// Type wrapped by [`CoreWrapper`].
+-    type Core;
+-}
+-
+-mod sealed {
+-    pub trait Sealed {}
+-}
+-
+-impl<T> sealed::Sealed for CoreWrapper<T>
+-where
+-    T: BufferKindUser,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-}
+-
+-impl<T> CoreProxy for CoreWrapper<T>
+-where
+-    T: BufferKindUser,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    type Core = T;
+-}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/core_api/xof_reader.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/core_api/xof_reader.rs
+@@ -1,63 +0,0 @@
+-use super::{AlgorithmName, XofReaderCore};
+-use crate::XofReader;
+-use block_buffer::EagerBuffer;
+-use core::fmt;
+-use crypto_common::typenum::{IsLess, Le, NonZero, U256};
+-
+-/// Wrapper around [`XofReaderCore`] implementations.
+-///
+-/// It handles data buffering and implements the mid-level traits.
+-#[derive(Clone, Default)]
+-pub struct XofReaderCoreWrapper<T>
+-where
+-    T: XofReaderCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    pub(super) core: T,
+-    pub(super) buffer: EagerBuffer<T::BlockSize>,
+-}
+-
+-impl<T> fmt::Debug for XofReaderCoreWrapper<T>
+-where
+-    T: XofReaderCore + AlgorithmName,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+-        T::write_alg_name(f)?;
+-        f.write_str(" { .. }")
+-    }
+-}
+-
+-impl<T> XofReader for XofReaderCoreWrapper<T>
+-where
+-    T: XofReaderCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn read(&mut self, buffer: &mut [u8]) {
+-        let Self { core, buffer: buf } = self;
+-        buf.set_data(buffer, |blocks| {
+-            for block in blocks {
+-                *block = core.read_block();
+-            }
+-        });
+-    }
+-}
+-
+-#[cfg(feature = "std")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+-impl<T> std::io::Read for XofReaderCoreWrapper<T>
+-where
+-    T: XofReaderCore,
+-    T::BlockSize: IsLess<U256>,
+-    Le<T::BlockSize, U256>: NonZero,
+-{
+-    #[inline]
+-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+-        XofReader::read(self, buf);
+-        Ok(buf.len())
+-    }
+-}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/core_api.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/core_api.rs
+@@ -1,119 +0,0 @@
+-//! Low-level traits operating on blocks and wrappers around them.
+-//!
+-//! Usage of traits in this module in user code is discouraged. Instead use
+-//! core algorithm wrapped by the wrapper types, which implement the
+-//! higher-level traits.
+-use crate::InvalidOutputSize;
+-
+-pub use crypto_common::{AlgorithmName, Block, BlockSizeUser, OutputSizeUser, Reset};
+-
+-use block_buffer::{BlockBuffer, BufferKind};
+-use crypto_common::{
+-    typenum::{IsLess, Le, NonZero, U256},
+-    Output,
+-};
+-
+-mod ct_variable;
+-mod rt_variable;
+-mod wrapper;
+-mod xof_reader;
+-
+-pub use ct_variable::CtVariableCoreWrapper;
+-pub use rt_variable::RtVariableCoreWrapper;
+-pub use wrapper::{CoreProxy, CoreWrapper};
+-pub use xof_reader::XofReaderCoreWrapper;
+-
+-/// Buffer type used by type which implements [`BufferKindUser`].
+-pub type Buffer<S> =
+-    BlockBuffer<<S as BlockSizeUser>::BlockSize, <S as BufferKindUser>::BufferKind>;
+-
+-/// Types which consume data in blocks.
+-pub trait UpdateCore: BlockSizeUser {
+-    /// Update state using the provided data blocks.
+-    fn update_blocks(&mut self, blocks: &[Block<Self>]);
+-}
+-
+-/// Types which use [`BlockBuffer`] functionality.
+-pub trait BufferKindUser: BlockSizeUser {
+-    /// Block buffer kind over which type operates.
+-    type BufferKind: BufferKind;
+-}
+-
+-/// Core trait for hash functions with fixed output size.
+-pub trait FixedOutputCore: UpdateCore + BufferKindUser + OutputSizeUser
+-where
+-    Self::BlockSize: IsLess<U256>,
+-    Le<Self::BlockSize, U256>: NonZero,
+-{
+-    /// Finalize state using remaining data stored in the provided block buffer,
+-    /// write result into provided array and leave `self` in a dirty state.
+-    fn finalize_fixed_core(&mut self, buffer: &mut Buffer<Self>, out: &mut Output<Self>);
+-}
+-
+-/// Core trait for hash functions with extendable (XOF) output size.
+-pub trait ExtendableOutputCore: UpdateCore + BufferKindUser
+-where
+-    Self::BlockSize: IsLess<U256>,
+-    Le<Self::BlockSize, U256>: NonZero,
+-{
+-    /// XOF reader core state.
+-    type ReaderCore: XofReaderCore;
+-
+-    /// Retrieve XOF reader using remaining data stored in the block buffer
+-    /// and leave hasher in a dirty state.
+-    fn finalize_xof_core(&mut self, buffer: &mut Buffer<Self>) -> Self::ReaderCore;
+-}
+-
+-/// Core reader trait for extendable-output function (XOF) result.
+-pub trait XofReaderCore: BlockSizeUser {
+-    /// Read next XOF block.
+-    fn read_block(&mut self) -> Block<Self>;
+-}
+-
+-/// Core trait for hash functions with variable output size.
+-///
+-/// Maximum output size is equal to [`OutputSizeUser::OutputSize`].
+-/// Users are expected to truncate result returned by the
+-/// [`finalize_variable_core`] to `output_size` passed to the [`new`] method
+-/// during construction. Truncation side is defined by the [`TRUNC_SIDE`]
+-/// associated constant.
+-///
+-/// [`finalize_variable_core`]: VariableOutputCore::finalize_variable_core
+-/// [`new`]: VariableOutputCore::new
+-/// [`TRUNC_SIDE`]: VariableOutputCore::TRUNC_SIDE
+-pub trait VariableOutputCore: UpdateCore + OutputSizeUser + BufferKindUser + Sized
+-where
+-    Self::BlockSize: IsLess<U256>,
+-    Le<Self::BlockSize, U256>: NonZero,
+-{
+-    /// Side which should be used in a truncated result.
+-    const TRUNC_SIDE: TruncSide;
+-
+-    /// Initialize hasher state for given output size.
+-    ///
+-    /// Returns [`InvalidOutputSize`] if `output_size` is not valid for
+-    /// the algorithm, e.g. if it's bigger than the [`OutputSize`]
+-    /// associated type.
+-    ///
+-    /// [`OutputSize`]: OutputSizeUser::OutputSize
+-    fn new(output_size: usize) -> Result<Self, InvalidOutputSize>;
+-
+-    /// Finalize hasher and write full hashing result into the `out` buffer.
+-    ///
+-    /// The result must be truncated to `output_size` used during hasher
+-    /// construction. Truncation side is defined by the [`TRUNC_SIDE`]
+-    /// associated constant.
+-    ///
+-    /// [`TRUNC_SIDE`]: VariableOutputCore::TRUNC_SIDE
+-    fn finalize_variable_core(&mut self, buffer: &mut Buffer<Self>, out: &mut Output<Self>);
+-}
+-
+-/// Type which used for defining truncation side in the [`VariableOutputCore`]
+-/// trait.
+-#[derive(Copy, Clone, Debug)]
+-pub enum TruncSide {
+-    /// Truncate left side, i.e. `&out[..n]`.
+-    Left,
+-    /// Truncate right side, i.e. `&out[m..]`.
+-    Right,
+-}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/dev/fixed.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/dev/fixed.rs
+@@ -1,24 +1,22 @@
+-use crate::{Digest, FixedOutput, FixedOutputReset, HashMarker, Update};
+-use core::fmt::Debug;
++use crate::{Digest, FixedOutput, FixedOutputReset, HashMarker, dev::TestVector};
+ 
+ /// Fixed-output resettable digest test via the `Digest` trait
+-pub fn fixed_reset_test<D>(input: &[u8], output: &[u8]) -> Option<&'static str>
+-where
+-    D: FixedOutputReset + Debug + Clone + Default + Update + HashMarker,
+-{
++pub fn fixed_reset_test<D: FixedOutputReset + Clone + Default + HashMarker>(
++    &TestVector { input, output }: &TestVector,
++) -> Result<(), &'static str> {
+     let mut hasher = D::new();
+     // Test that it works when accepting the message all at once
+     hasher.update(input);
+     let mut hasher2 = hasher.clone();
+     if hasher.finalize()[..] != output[..] {
+-        return Some("whole message");
++        return Err("whole message");
+     }
+ 
+     // Test if reset works correctly
+     hasher2.reset();
+     hasher2.update(input);
+     if hasher2.finalize_reset()[..] != output[..] {
+-        return Some("whole message after reset");
++        return Err("whole message after reset");
+     }
+ 
+     // Test that it works when accepting the message in chunks
+@@ -29,26 +27,25 @@
+             hasher2.update(chunk);
+         }
+         if hasher.finalize()[..] != output[..] {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+         if hasher2.finalize_reset()[..] != output[..] {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+     }
+ 
+-    None
++    Ok(())
+ }
+ 
+ /// Variable-output resettable digest test
+-pub fn fixed_test<D>(input: &[u8], output: &[u8]) -> Option<&'static str>
+-where
+-    D: FixedOutput + Default + Debug + Clone,
+-{
++pub fn fixed_test<D: FixedOutput + Default + HashMarker>(
++    &TestVector { input, output }: &TestVector,
++) -> Result<(), &'static str> {
+     let mut hasher = D::default();
+     // Test that it works when accepting the message all at once
+     hasher.update(input);
+     if hasher.finalize_fixed()[..] != output[..] {
+-        return Some("whole message");
++        return Err("whole message");
+     }
+ 
+     // Test that it works when accepting the message in chunks
+@@ -58,8 +55,8 @@
+             hasher.update(chunk);
+         }
+         if hasher.finalize_fixed()[..] != output[..] {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+     }
+-    None
++    Ok(())
+ }
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/dev/mac.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/dev/mac.rs
+@@ -1,159 +1,163 @@
++use crate::{FixedOutputReset, Mac, common::KeyInit};
++
++/// Tag truncation side used in MAC tests
++#[derive(Clone, Copy, Debug)]
++pub enum MacTruncSide {
++    /// Tag truncated from left (i.e. `tag[..n]`)
++    Left,
++    /// Tag truncated from right (i.e. `tag[n..]`)
++    Right,
++    /// Tag is not truncated
++    None,
++}
++
++/// MAC test vector
++#[derive(Debug, Clone, Copy)]
++pub struct MacTestVector {
++    /// Initialization key
++    pub key: &'static [u8],
++    /// Input message
++    pub input: &'static [u8],
++    /// Output tag
++    pub tag: &'static [u8],
++}
++
++/// Run MAC test
++pub fn mac_test<M: Mac + KeyInit + Clone>(
++    &MacTestVector { key, input, tag }: &MacTestVector,
++    trunc_side: MacTruncSide,
++) -> Result<(), &'static str> {
++    let Ok(mac0) = <M as KeyInit>::new_from_slice(key) else {
++        return Err("Failed to initialize MAC instance");
++    };
++
++    initialized_mac_test(mac0, input, tag, trunc_side)
++}
++
++/// Run the MAC test directly on an initialized MAC.
++/// This is useful for when custom initialization is needed
++pub fn initialized_mac_test<M: Mac + Clone>(
++    mac0: M,
++    input: &[u8],
++    tag: &[u8],
++    trunc_side: MacTruncSide,
++) -> Result<(), &'static str> {
++    let mut mac = mac0.clone();
++    mac.update(input);
++    let result = mac.finalize().into_bytes();
++    let n = tag.len();
++    let result_bytes = match trunc_side {
++        MacTruncSide::Left => &result[..n],
++        MacTruncSide::Right => &result[result.len() - n..],
++        MacTruncSide::None => &result[..],
++    };
++    if result_bytes != tag {
++        return Err("whole message");
++    }
++
++    // test reading different chunk sizes
++    for chunk_size in 1..core::cmp::min(64, input.len()) {
++        let mut mac = mac0.clone();
++        for chunk in input.chunks(chunk_size) {
++            mac.update(chunk);
++        }
++        let res = match trunc_side {
++            MacTruncSide::Left => mac.verify_truncated_left(tag),
++            MacTruncSide::Right => mac.verify_truncated_right(tag),
++            MacTruncSide::None => mac.verify_slice(tag),
++        };
++        if res.is_err() {
++            return Err("chunked message");
++        }
++    }
++
++    Ok(())
++}
++
++/// Run resettable MAC test
++pub fn reset_mac_test<M: Mac + KeyInit + FixedOutputReset + Clone>(
++    &MacTestVector { key, input, tag }: &MacTestVector,
++    trunc_side: MacTruncSide,
++) -> Result<(), &'static str> {
++    let Ok(mac0) = <M as KeyInit>::new_from_slice(key) else {
++        return Err("Failed to initialize MAC instance");
++    };
++
++    let mut mac = mac0.clone();
++    Mac::update(&mut mac, input);
++    let result = mac.finalize_reset().into_bytes();
++    let n = tag.len();
++    let result_bytes = match trunc_side {
++        MacTruncSide::Left => &result[..n],
++        MacTruncSide::Right => &result[result.len() - n..],
++        MacTruncSide::None => &result[..],
++    };
++    if result_bytes != tag {
++        return Err("whole message");
++    }
++
++    // test if reset worked correctly
++    Mac::update(&mut mac, input);
++    let res = match trunc_side {
++        MacTruncSide::Left => mac.verify_truncated_left(tag),
++        MacTruncSide::Right => mac.verify_truncated_right(tag),
++        MacTruncSide::None => mac.verify_slice(tag),
++    };
++    if res.is_err() {
++        return Err("after reset");
++    }
++
++    // test reading different chunk sizes
++    for chunk_size in 1..core::cmp::min(64, input.len()) {
++        let mut mac = mac0.clone();
++        for chunk in input.chunks(chunk_size) {
++            Mac::update(&mut mac, chunk);
++        }
++        let res = match trunc_side {
++            MacTruncSide::Left => mac.verify_truncated_left(tag),
++            MacTruncSide::Right => mac.verify_truncated_right(tag),
++            MacTruncSide::None => mac.verify_slice(tag),
++        };
++        if res.is_err() {
++            return Err("chunked message");
++        }
++    }
++
++    Ok(())
++}
++
+ /// Define MAC test
+ #[macro_export]
+-#[cfg(feature = "mac")]
+-#[cfg_attr(docsrs, doc(cfg(all(feature = "dev", feature = "mac"))))]
+ macro_rules! new_mac_test {
+-    ($name:ident, $test_name:expr, $mac:ty $(,)?) => {
+-        digest::new_mac_test!($name, $test_name, $mac, "");
++    ($name:ident, $mac:ty, $test_fn:ident $(,)?) => {
++        digest::new_mac_test!($name, $mac, $test_fn, $crate::dev::MacTruncSide::None);
+     };
+-    ($name:ident, $test_name:expr, $mac:ty, trunc_left $(,)?) => {
+-        digest::new_mac_test!($name, $test_name, $mac, "left");
++    ($name:ident, $mac:ty, $test_fn:ident, trunc_left $(,)?) => {
++        digest::new_mac_test!($name, $mac, $test_fn, $crate::dev::MacTruncSide::Left);
+     };
+-    ($name:ident, $test_name:expr, $mac:ty, trunc_right $(,)?) => {
+-        digest::new_mac_test!($name, $test_name, $mac, "right");
++    ($name:ident, $mac:ty, $test_fn:ident, trunc_right $(,)?) => {
++        digest::new_mac_test!($name, $mac, $test_fn, $crate::dev::MacTruncSide::Right);
+     };
+-    ($name:ident, $test_name:expr, $mac:ty, $trunc:expr $(,)?) => {
++    ($name:ident, $mac:ty, $test_fn:ident, $trunc:expr $(,)?) => {
+         #[test]
+         fn $name() {
+-            use core::cmp::min;
+-            use digest::dev::blobby::Blob3Iterator;
+-            use digest::Mac;
++            use digest::dev::MacTestVector;
+ 
+-            fn run_test(key: &[u8], input: &[u8], tag: &[u8]) -> Option<&'static str> {
+-                let mac0 = <$mac as Mac>::new_from_slice(key).unwrap();
++            $crate::dev::blobby::parse_into_structs!(
++                include_bytes!(concat!("data/", stringify!($name), ".blb"));
++                static TEST_VECTORS: &[MacTestVector { key, input, tag }];
++            );
+ 
+-                let mut mac = mac0.clone();
+-                mac.update(input);
+-                let result = mac.finalize().into_bytes();
+-                let n = tag.len();
+-                let result_bytes = match $trunc {
+-                    "left" => &result[..n],
+-                    "right" => &result[result.len() - n..],
+-                    _ => &result[..],
+-                };
+-                if result_bytes != tag {
+-                    return Some("whole message");
+-                }
+-
+-                // test reading different chunk sizes
+-                for chunk_size in 1..min(64, input.len()) {
+-                    let mut mac = mac0.clone();
+-                    for chunk in input.chunks(chunk_size) {
+-                        mac.update(chunk);
+-                    }
+-                    let res = match $trunc {
+-                        "left" => mac.verify_truncated_left(tag),
+-                        "right" => mac.verify_truncated_right(tag),
+-                        _ => mac.verify_slice(tag),
+-                    };
+-                    if res.is_err() {
+-                        return Some("chunked message");
+-                    }
+-                }
+-
+-                None
+-            }
+-
+-            let data = include_bytes!(concat!("data/", $test_name, ".blb"));
+-
+-            for (i, row) in Blob3Iterator::new(data).unwrap().enumerate() {
+-                let [key, input, tag] = row.unwrap();
+-                if let Some(desc) = run_test(key, input, tag) {
++            for (i, tv) in TEST_VECTORS.iter().enumerate() {
++                if let Err(reason) = $test_fn::<$mac>(tv, $trunc) {
+                     panic!(
+                         "\n\
+-                         Failed test №{}: {}\n\
+-                         key:\t{:?}\n\
+-                         input:\t{:?}\n\
+-                         tag:\t{:?}\n",
+-                        i, desc, key, input, tag,
++                        Failed test #{i}\n\
++                        reason:\t{reason:?}\n\
++                        test vector:\t{tv:?}\n"
+                     );
+                 }
+             }
+         }
+     };
+ }
+-
+-/// Define resettable MAC test
+-#[macro_export]
+-#[cfg(feature = "mac")]
+-#[cfg_attr(docsrs, doc(cfg(all(feature = "dev", feature = "mac"))))]
+-macro_rules! new_resettable_mac_test {
+-    ($name:ident, $test_name:expr, $mac:ty $(,)?) => {
+-        digest::new_resettable_mac_test!($name, $test_name, $mac, "");
+-    };
+-    ($name:ident, $test_name:expr, $mac:ty, trunc_left $(,)?) => {
+-        digest::new_resettable_mac_test!($name, $test_name, $mac, "left");
+-    };
+-    ($name:ident, $test_name:expr, $mac:ty, trunc_right $(,)?) => {
+-        digest::new_resettable_mac_test!($name, $test_name, $mac, "right");
+-    };
+-    ($name:ident, $test_name:expr, $mac:ty, $trunc:expr $(,)?) => {
+-        #[test]
+-        fn $name() {
+-            use core::cmp::min;
+-            use digest::dev::blobby::Blob3Iterator;
+-            use digest::Mac;
+-
+-            fn run_test(key: &[u8], input: &[u8], tag: &[u8]) -> Option<&'static str> {
+-                let mac0 = <$mac as Mac>::new_from_slice(key).unwrap();
+-
+-                let mut mac = mac0.clone();
+-                mac.update(input);
+-                let result = mac.finalize_reset().into_bytes();
+-                let n = tag.len();
+-                let result_bytes = match $trunc {
+-                    "left" => &result[..n],
+-                    "right" => &result[result.len() - n..],
+-                    _ => &result[..],
+-                };
+-                if result_bytes != tag {
+-                    return Some("whole message");
+-                }
+-
+-                // test if reset worked correctly
+-                mac.update(input);
+-                let res = match $trunc {
+-                    "left" => mac.verify_truncated_left(tag),
+-                    "right" => mac.verify_truncated_right(tag),
+-                    _ => mac.verify_slice(tag),
+-                };
+-                if res.is_err() {
+-                    return Some("after reset");
+-                }
+-
+-                // test reading different chunk sizes
+-                for chunk_size in 1..min(64, input.len()) {
+-                    let mut mac = mac0.clone();
+-                    for chunk in input.chunks(chunk_size) {
+-                        mac.update(chunk);
+-                    }
+-                    let res = match $trunc {
+-                        "left" => mac.verify_truncated_left(tag),
+-                        "right" => mac.verify_truncated_right(tag),
+-                        _ => mac.verify_slice(tag),
+-                    };
+-                    if res.is_err() {
+-                        return Some("chunked message");
+-                    }
+-                }
+-                None
+-            }
+-
+-            let data = include_bytes!(concat!("data/", $test_name, ".blb"));
+-
+-            for (i, row) in Blob3Iterator::new(data).unwrap().enumerate() {
+-                let [key, input, tag] = row.unwrap();
+-                if let Some(desc) = run_test(key, input, tag) {
+-                    panic!(
+-                        "\n\
+-                         Failed test №{}: {}\n\
+-                         key:\t{:?}\n\
+-                         input:\t{:?}\n\
+-                         tag:\t{:?}\n",
+-                        i, desc, key, input, tag,
+-                    );
+-                }
+-            }
+-        }
+-    };
+-}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/dev/rng.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/dev/rng.rs
+@@ -10,7 +10,7 @@
+     w: Wrapping(0xB0AD_B4F3),
+ };
+ 
+-/// Xorshift RNG instance/
++/// Xorshift RNG instance
+ pub(crate) struct XorShiftRng {
+     x: Wrapping<u32>,
+     y: Wrapping<u32>,
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/dev/variable.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/dev/variable.rs
+@@ -1,11 +1,9 @@
+-use crate::{VariableOutput, VariableOutputReset};
+-use core::fmt::Debug;
++use crate::{VariableOutput, VariableOutputReset, dev::TestVector};
+ 
+ /// Variable-output resettable digest test
+-pub fn variable_reset_test<D>(input: &[u8], output: &[u8]) -> Option<&'static str>
+-where
+-    D: VariableOutputReset + Debug + Clone,
+-{
++pub fn variable_reset_test<D: VariableOutputReset + Clone>(
++    &TestVector { input, output }: &TestVector,
++) -> Result<(), &'static str> {
+     let mut hasher = D::new(output.len()).unwrap();
+     let mut buf = [0u8; 128];
+     let buf = &mut buf[..output.len()];
+@@ -14,7 +12,7 @@
+     let mut hasher2 = hasher.clone();
+     hasher.finalize_variable(buf).unwrap();
+     if buf != output {
+-        return Some("whole message");
++        return Err("whole message");
+     }
+     buf.iter_mut().for_each(|b| *b = 0);
+ 
+@@ -23,7 +21,7 @@
+     hasher2.update(input);
+     hasher2.finalize_variable_reset(buf).unwrap();
+     if buf != output {
+-        return Some("whole message after reset");
++        return Err("whole message after reset");
+     }
+     buf.iter_mut().for_each(|b| *b = 0);
+ 
+@@ -36,25 +34,24 @@
+         }
+         hasher.finalize_variable(buf).unwrap();
+         if buf != output {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+         buf.iter_mut().for_each(|b| *b = 0);
+ 
+         hasher2.finalize_variable_reset(buf).unwrap();
+         if buf != output {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+         buf.iter_mut().for_each(|b| *b = 0);
+     }
+ 
+-    None
++    Ok(())
+ }
+ 
+ /// Variable-output resettable digest test
+-pub fn variable_test<D>(input: &[u8], output: &[u8]) -> Option<&'static str>
+-where
+-    D: VariableOutput + Debug + Clone,
+-{
++pub fn variable_test<D: VariableOutput>(
++    &TestVector { input, output }: &TestVector,
++) -> Result<(), &'static str> {
+     let mut hasher = D::new(output.len()).unwrap();
+     let mut buf = [0u8; 128];
+     let buf = &mut buf[..output.len()];
+@@ -62,7 +59,7 @@
+     hasher.update(input);
+     hasher.finalize_variable(buf).unwrap();
+     if buf != output {
+-        return Some("whole message");
++        return Err("whole message");
+     }
+     buf.iter_mut().for_each(|b| *b = 0);
+ 
+@@ -74,9 +71,9 @@
+         }
+         hasher.finalize_variable(buf).unwrap();
+         if buf != output {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+         buf.iter_mut().for_each(|b| *b = 0);
+     }
+-    None
++    Ok(())
+ }
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/dev/xof.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/dev/xof.rs
+@@ -1,11 +1,10 @@
+-use crate::ExtendableOutputReset;
++use crate::{ExtendableOutputReset, dev::TestVector};
+ use core::fmt::Debug;
+ 
+ /// Resettable XOF test
+-pub fn xof_reset_test<D>(input: &[u8], output: &[u8]) -> Option<&'static str>
+-where
+-    D: ExtendableOutputReset + Default + Debug + Clone,
+-{
++pub fn xof_reset_test<D: ExtendableOutputReset + Default + Debug + Clone>(
++    &TestVector { input, output }: &TestVector,
++) -> Result<(), &'static str> {
+     let mut hasher = D::default();
+     let mut buf = [0u8; 1024];
+     let buf = &mut buf[..output.len()];
+@@ -14,7 +13,7 @@
+     let mut hasher2 = hasher.clone();
+     hasher.finalize_xof_into(buf);
+     if buf != output {
+-        return Some("whole message");
++        return Err("whole message");
+     }
+     buf.iter_mut().for_each(|b| *b = 0);
+ 
+@@ -23,7 +22,7 @@
+     hasher2.update(input);
+     hasher2.finalize_xof_reset_into(buf);
+     if buf != output {
+-        return Some("whole message after reset");
++        return Err("whole message after reset");
+     }
+     buf.iter_mut().for_each(|b| *b = 0);
+ 
+@@ -36,16 +35,16 @@
+         }
+         hasher.finalize_xof_into(buf);
+         if buf != output {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+         buf.iter_mut().for_each(|b| *b = 0);
+ 
+         hasher2.finalize_xof_reset_into(buf);
+         if buf != output {
+-            return Some("message in chunks");
++            return Err("message in chunks");
+         }
+         buf.iter_mut().for_each(|b| *b = 0);
+     }
+ 
+-    None
++    Ok(())
+ }
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/dev.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/dev.rs
+@@ -1,37 +1,49 @@
+ //! Development-related functionality
++
++#![allow(clippy::missing_errors_doc)]
+ 
+ pub use blobby;
+ 
+ mod fixed;
++#[cfg(feature = "mac")]
+ mod mac;
+ mod rng;
+-mod variable;
+ mod xof;
+ 
+ pub use fixed::*;
++#[cfg(feature = "mac")]
+ pub use mac::*;
+-pub use variable::*;
+ pub use xof::*;
++
++/// Test vector for hash functions
++#[derive(Debug, Clone, Copy)]
++pub struct TestVector {
++    /// Input data
++    pub input: &'static [u8],
++    /// Output hash
++    pub output: &'static [u8],
++}
+ 
+ /// Define hash function test
+ #[macro_export]
+-#[cfg_attr(docsrs, doc(cfg(feature = "dev")))]
+ macro_rules! new_test {
+-    ($name:ident, $test_name:expr, $hasher:ty, $test_func:ident $(,)?) => {
++    ($name:ident, $hasher:ty, $test_fn:ident $(,)?) => {
+         #[test]
+         fn $name() {
+-            use digest::dev::blobby::Blob2Iterator;
+-            let data = include_bytes!(concat!("data/", $test_name, ".blb"));
++            use $crate::dev::TestVector;
+ 
+-            for (i, row) in Blob2Iterator::new(data).unwrap().enumerate() {
+-                let [input, output] = row.unwrap();
+-                if let Some(desc) = $test_func::<$hasher>(input, output) {
++            $crate::dev::blobby::parse_into_structs!(
++                include_bytes!(concat!("data/", stringify!($name), ".blb"));
++                static TEST_VECTORS: &[TestVector { input, output }];
++            );
++
++            for (i, tv) in TEST_VECTORS.iter().enumerate() {
++                if let Err(reason) = $test_fn::<$hasher>(tv) {
+                     panic!(
+                         "\n\
+-                         Failed test №{}: {}\n\
+-                         input:\t{:?}\n\
+-                         output:\t{:?}\n",
+-                        i, desc, input, output,
++                        Failed test #{i}:\n\
++                        reason:\t{reason}\n\
++                        test vector:\t{tv:?}\n"
+                     );
+                 }
+             }
+@@ -39,9 +51,78 @@
+     };
+ }
+ 
++/// Define hash function serialization test
++#[macro_export]
++macro_rules! hash_serialization_test {
++    ($name:ident, $hasher:ty $(,)?) => {
++        #[test]
++        fn $name() {
++            use digest::{
++                Digest,
++                common::{BlockSizeUser, hazmat::SerializableState},
++                typenum::Unsigned,
++            };
++
++            let mut h = <$hasher>::new();
++
++            h.update(&[0x13; <$hasher as BlockSizeUser>::BlockSize::USIZE + 1]);
++
++            let serialized_state = h.serialize();
++            let expected = include_bytes!(concat!("data/", stringify!($name), ".bin"));
++            assert_eq!(serialized_state.as_slice(), expected);
++
++            let mut h = <$hasher>::deserialize(&serialized_state).unwrap();
++
++            h.update(&[0x13; <$hasher as BlockSizeUser>::BlockSize::USIZE + 1]);
++            let output1 = h.finalize();
++
++            let mut h = <$hasher>::new();
++            h.update(&[0x13; 2 * (<$hasher as BlockSizeUser>::BlockSize::USIZE + 1)]);
++            let output2 = h.finalize();
++
++            assert_eq!(output1, output2);
++        }
++    };
++}
++
++/// Define hash function serialization test
++#[macro_export]
++macro_rules! hash_rt_outsize_serialization_test {
++    ($name:ident, $hasher:ty, $expected_serialized_state:expr) => {
++        #[test]
++        fn $name() {
++            use digest::{
++                Digest, Update, VariableOutput,
++                common::{BlockSizeUser, hazmat::SerializableState},
++                typenum::Unsigned,
++            };
++            const HASH_OUTPUT_SIZE: usize = <$hasher>::MAX_OUTPUT_SIZE - 1;
++
++            let mut h = <$hasher>::new(HASH_OUTPUT_SIZE).unwrap();
++
++            h.update(&[0x13; <$hasher as BlockSizeUser>::BlockSize::USIZE + 1]);
++
++            let serialized_state = h.serialize();
++            assert_eq!(serialized_state.as_slice(), $expected_serialized_state);
++
++            let mut h = <$hasher>::deserialize(&serialized_state).unwrap();
++
++            h.update(&[0x13; <$hasher as BlockSizeUser>::BlockSize::USIZE + 1]);
++            let mut output1 = [0; HASH_OUTPUT_SIZE];
++            h.finalize_variable(&mut output1).unwrap();
++
++            let mut h = <$hasher>::new(HASH_OUTPUT_SIZE).unwrap();
++            h.update(&[0x13; 2 * (<$hasher as BlockSizeUser>::BlockSize::USIZE + 1)]);
++            let mut output2 = [0; HASH_OUTPUT_SIZE];
++            h.finalize_variable(&mut output2).unwrap();
++
++            assert_eq!(output1, output2);
++        }
++    };
++}
++
+ /// Define [`Update`][crate::Update] impl benchmark
+ #[macro_export]
+-#[cfg_attr(docsrs, doc(cfg(feature = "dev")))]
+ macro_rules! bench_update {
+     (
+         $init:expr;
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/digest.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/digest.rs
+@@ -1,8 +1,10 @@
+ use super::{FixedOutput, FixedOutputReset, InvalidBufferSize, Reset, Update};
+-use crypto_common::{typenum::Unsigned, Output, OutputSizeUser};
++use common::{Output, OutputSizeUser, typenum::Unsigned};
+ 
+ #[cfg(feature = "alloc")]
+ use alloc::boxed::Box;
++#[cfg(feature = "oid")]
++use const_oid::DynAssociatedOid;
+ 
+ /// Marker trait for cryptographic hash functions.
+ pub trait HashMarker {}
+@@ -112,7 +114,7 @@
+     where
+         Self: Reset,
+     {
+-        Reset::reset(self)
++        Reset::reset(self);
+     }
+ 
+     #[inline]
+@@ -137,7 +139,6 @@
+ 
+     /// Retrieve result and reset hasher instance
+     #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+     fn finalize_reset(&mut self) -> Box<[u8]> {
+         let mut result = vec![0; self.output_size()];
+         self.finalize_into_reset(&mut result).unwrap();
+@@ -146,8 +147,8 @@
+ 
+     /// Retrieve result and consume boxed hasher instance
+     #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+     #[allow(clippy::boxed_local)]
++    #[must_use]
+     fn finalize(mut self: Box<Self>) -> Box<[u8]> {
+         let mut result = vec![0; self.output_size()];
+         self.finalize_into_reset(&mut result).unwrap();
+@@ -156,12 +157,14 @@
+ 
+     /// Write result into provided array and consume the hasher instance.
+     ///
+-    /// Returns error if buffer length is not equal to `output_size`.
++    /// # Errors
++    /// If buffer length is not equal to `output_size`.
+     fn finalize_into(self, buf: &mut [u8]) -> Result<(), InvalidBufferSize>;
+ 
+     /// Write result into provided array and reset the hasher instance.
+     ///
+-    /// Returns error if buffer length is not equal to `output_size`.
++    /// # Errors
++    /// If buffer length is not equal to `output_size`.
+     fn finalize_into_reset(&mut self, out: &mut [u8]) -> Result<(), InvalidBufferSize>;
+ 
+     /// Reset hasher instance to its initial state.
+@@ -172,7 +175,6 @@
+ 
+     /// Clone hasher state into a boxed trait object
+     #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+     fn box_clone(&self) -> Box<dyn DynDigest>;
+ }
+ 
+@@ -196,21 +198,15 @@
+     }
+ 
+     fn finalize_into(self, buf: &mut [u8]) -> Result<(), InvalidBufferSize> {
+-        if buf.len() == self.output_size() {
+-            FixedOutput::finalize_into(self, Output::<Self>::from_mut_slice(buf));
+-            Ok(())
+-        } else {
+-            Err(InvalidBufferSize)
+-        }
++        buf.try_into()
++            .map_err(|_| InvalidBufferSize)
++            .map(|buf| FixedOutput::finalize_into(self, buf))
+     }
+ 
+     fn finalize_into_reset(&mut self, buf: &mut [u8]) -> Result<(), InvalidBufferSize> {
+-        if buf.len() == self.output_size() {
+-            FixedOutputReset::finalize_into_reset(self, Output::<Self>::from_mut_slice(buf));
+-            Ok(())
+-        } else {
+-            Err(InvalidBufferSize)
+-        }
++        let buf = <&mut Output<Self>>::try_from(buf).map_err(|_| InvalidBufferSize)?;
++        FixedOutputReset::finalize_into_reset(self, buf);
++        Ok(())
+     }
+ 
+     fn reset(&mut self) {
+@@ -228,9 +224,15 @@
+ }
+ 
+ #[cfg(feature = "alloc")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+ impl Clone for Box<dyn DynDigest> {
+     fn clone(&self) -> Self {
+         self.box_clone()
+     }
+ }
++
++/// Convenience wrapper trait around [DynDigest] and [DynAssociatedOid].
++#[cfg(feature = "oid")]
++pub trait DynDigestWithOid: DynDigest + DynAssociatedOid {}
++
++#[cfg(feature = "oid")]
++impl<T: DynDigest + DynAssociatedOid> DynDigestWithOid for T {}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/lib.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/lib.rs
+@@ -1,76 +1,79 @@
+-//! This crate provides traits which describe functionality of cryptographic hash
+-//! functions and Message Authentication algorithms.
+-//!
+-//! Traits in this repository are organized into the following levels:
+-//!
+-//! - **High-level convenience traits**: [`Digest`], [`DynDigest`], [`Mac`].
+-//!   Wrappers around lower-level traits for most common use-cases. Users should
+-//!   usually prefer using these traits.
+-//! - **Mid-level traits**: [`Update`], [`FixedOutput`], [`FixedOutputReset`],
+-//!   [`ExtendableOutput`], [`ExtendableOutputReset`], [`XofReader`],
+-//!   [`VariableOutput`], [`Reset`], [`KeyInit`], and [`InnerInit`]. These
+-//!   traits atomically describe available functionality of an algorithm.
+-//! - **Marker traits**: [`HashMarker`], [`MacMarker`]. Used to distinguish
+-//!   different algorithm classes.
+-//! - **Low-level traits** defined in the [`core_api`] module. These traits
+-//!   operate at a block-level and do not contain any built-in buffering.
+-//!   They are intended to be implemented by low-level algorithm providers only.
+-//!   Usually they should not be used in application-level code.
+-//!
+-//! Additionally hash functions implement traits from the standard library:
+-//! [`Default`], [`Clone`], [`Write`][std::io::Write]. The latter is
+-//! feature-gated behind `std` feature, which is usually enabled by default
+-//! by hash implementation crates.
+-
+ #![no_std]
+ #![cfg_attr(docsrs, feature(doc_cfg))]
++#![doc = include_str!("../README.md")]
+ #![forbid(unsafe_code)]
+ #![doc(
+     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
+     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
+ )]
+-#![warn(missing_docs, rust_2018_idioms)]
++#![allow(clippy::unwrap_used)] // TODO
++
++//! ## Structure
++//!
++//! Traits in this crate are organized into the following levels:
++//!
++//! - **High-level convenience traits**: [`Digest`], [`DynDigest`], [`Mac`].
++//!   Wrappers around lower-level traits for most common use-cases. Users should
++//!   usually prefer using these traits.
++//! - **Mid-level traits**: [`Update`], [`FixedOutput`], [`FixedOutputReset`], [`ExtendableOutput`],
++//!   [`ExtendableOutputReset`], [`XofReader`], [`Reset`], [`KeyInit`], and [`InnerInit`].
++//!   These traits atomically describe available functionality of an algorithm.
++//! - **Marker traits**: [`HashMarker`], [`MacMarker`]. Used to distinguish
++//!   different algorithm classes.
++//! - **Low-level traits** defined in the [`block_api`] module. These traits
++//!   operate at a block-level and do not contain any built-in buffering.
++//!   They are intended to be implemented by low-level algorithm providers only.
++//!   Usually they should not be used in application-level code.
++//!
++//! Additionally hash functions implement traits from the standard library:
++//! [`Default`] and [`Clone`].
++//!
++//! This crate does not provide any implementations of the `io::Read/Write` traits,
++//! see the [`digest-io`] crate for `std::io`-compatibility wrappers.
++//!
++//! [`digest-io`]: https://docs.rs/digest-io
+ 
+ #[cfg(feature = "alloc")]
+ #[macro_use]
+ extern crate alloc;
+ 
+-#[cfg(feature = "std")]
+-extern crate std;
+-
+ #[cfg(feature = "rand_core")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
+-pub use crypto_common::rand_core;
++pub use common::rand_core;
++
++#[cfg(feature = "zeroize")]
++pub use zeroize;
+ 
+ #[cfg(feature = "alloc")]
+ use alloc::boxed::Box;
+ 
+ #[cfg(feature = "dev")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "dev")))]
+ pub mod dev;
+ 
+-#[cfg(feature = "core-api")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "core-api")))]
+-pub mod core_api;
++#[cfg(feature = "block-api")]
++pub mod block_api;
++mod buffer_macros;
+ mod digest;
+ #[cfg(feature = "mac")]
+ mod mac;
+-
+-#[cfg(feature = "core-api")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "core-api")))]
++mod xof_fixed;
++
++#[cfg(feature = "block-api")]
+ pub use block_buffer;
++pub use common;
+ #[cfg(feature = "oid")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "oid")))]
+ pub use const_oid;
+-pub use crypto_common;
+-
++
++#[cfg(feature = "oid")]
++pub use crate::digest::DynDigestWithOid;
+ pub use crate::digest::{Digest, DynDigest, HashMarker};
+-pub use crypto_common::{generic_array, typenum, typenum::consts, Output, OutputSizeUser, Reset};
+ #[cfg(feature = "mac")]
+-pub use crypto_common::{InnerInit, InvalidLength, Key, KeyInit};
++pub use common::{InnerInit, InvalidLength, Key, KeyInit};
++pub use common::{Output, OutputSizeUser, Reset, array, typenum, typenum::consts};
+ #[cfg(feature = "mac")]
+ pub use mac::{CtOutput, Mac, MacError, MacMarker};
+-
++pub use xof_fixed::XofFixedWrapper;
++
++use common::typenum::Unsigned;
+ use core::fmt;
+ 
+ /// Types which consume data with byte granularity.
+@@ -130,7 +133,6 @@
+     /// `Box<[u8]>` is used instead of `Vec<u8>` to save stack space, since
+     /// they have size of 2 and 3 words respectively.
+     #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+     fn read_boxed(&mut self, n: usize) -> Box<[u8]> {
+         let mut buf = vec![0u8; n].into_boxed_slice();
+         self.read(&mut buf);
+@@ -167,7 +169,6 @@
+     /// `Box<[u8]>` is used instead of `Vec<u8>` to save stack space, since
+     /// they have size of 2 and 3 words respectively.
+     #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+     fn finalize_boxed(self, output_size: usize) -> Box<[u8]> {
+         let mut buf = vec![0u8; output_size].into_boxed_slice();
+         self.finalize_xof().read(&mut buf);
+@@ -191,7 +192,6 @@
+     /// `Box<[u8]>` is used instead of `Vec<u8>` to save stack space, since
+     /// they have size of 2 and 3 words respectively.
+     #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+     fn finalize_boxed_reset(&mut self, output_size: usize) -> Box<[u8]> {
+         let mut buf = vec![0u8; output_size].into_boxed_slice();
+         self.finalize_xof_reset().read(&mut buf);
+@@ -199,78 +199,41 @@
+     }
+ }
+ 
+-/// Trait for hash functions with variable-size output.
+-pub trait VariableOutput: Sized + Update {
+-    /// Maximum size of output hash.
+-    const MAX_OUTPUT_SIZE: usize;
+-
+-    /// Create new hasher instance with the given output size.
+-    ///
+-    /// It will return `Err(InvalidOutputSize)` in case if hasher can not return
+-    /// hash of the specified output size.
+-    fn new(output_size: usize) -> Result<Self, InvalidOutputSize>;
+-
+-    /// Get output size of the hasher instance provided to the `new` method
+-    fn output_size(&self) -> usize;
+-
+-    /// Write result into the output buffer.
+-    ///
+-    /// Returns `Err(InvalidOutputSize)` if `out` size is not equal to
+-    /// `self.output_size()`.
+-    fn finalize_variable(self, out: &mut [u8]) -> Result<(), InvalidBufferSize>;
+-
+-    /// Compute hash of `data` and write it to `output`.
+-    ///
+-    /// Length of the output hash is determined by `output`. If `output` is
+-    /// bigger than `Self::MAX_OUTPUT_SIZE`, this method returns
+-    /// `InvalidOutputSize`.
+-    fn digest_variable(
+-        input: impl AsRef<[u8]>,
+-        output: &mut [u8],
+-    ) -> Result<(), InvalidOutputSize> {
+-        let mut hasher = Self::new(output.len())?;
+-        hasher.update(input.as_ref());
+-        hasher
+-            .finalize_variable(output)
+-            .map_err(|_| InvalidOutputSize)
+-    }
+-
+-    /// Retrieve result into a boxed slice and consume hasher.
+-    ///
+-    /// `Box<[u8]>` is used instead of `Vec<u8>` to save stack space, since
+-    /// they have size of 2 and 3 words respectively.
+-    #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+-    fn finalize_boxed(self) -> Box<[u8]> {
+-        let n = self.output_size();
+-        let mut buf = vec![0u8; n].into_boxed_slice();
+-        self.finalize_variable(&mut buf)
+-            .expect("buf length is equal to output_size");
+-        buf
+-    }
+-}
+-
+-/// Trait for hash functions with variable-size output able to reset themselves.
+-pub trait VariableOutputReset: VariableOutput + Reset {
+-    /// Write result into the output buffer and reset the hasher state.
+-    ///
+-    /// Returns `Err(InvalidOutputSize)` if `out` size is not equal to
+-    /// `self.output_size()`.
+-    fn finalize_variable_reset(&mut self, out: &mut [u8]) -> Result<(), InvalidBufferSize>;
+-
+-    /// Retrieve result into a boxed slice and reset the hasher state.
+-    ///
+-    /// `Box<[u8]>` is used instead of `Vec<u8>` to save stack space, since
+-    /// they have size of 2 and 3 words respectively.
+-    #[cfg(feature = "alloc")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+-    fn finalize_boxed_reset(&mut self) -> Box<[u8]> {
+-        let n = self.output_size();
+-        let mut buf = vec![0u8; n].into_boxed_slice();
+-        self.finalize_variable_reset(&mut buf)
+-            .expect("buf length is equal to output_size");
+-        buf
+-    }
++/// Trait for hash functions with customization string for domain separation.
++pub trait CustomizedInit: Sized {
++    /// Create new hasher instance with the given customization string.
++    fn new_customized(customization: &[u8]) -> Self;
++}
++
++/// Trait for hash functions with customization string for domain separation which place
++/// restrictions on customization strings.
++pub trait TryCustomizedInit: Sized {
++    /// Error returned for invalid customization strings.
++    type Error;
++
++    /// Create new hasher instance with the given customization string.
++    ///
++    /// # Errors
++    /// If the provided customization string is not valid for the hash function.
++    fn try_new_customized(customization: &[u8]) -> Result<Self, Self::Error>;
++}
++
++impl<T: CustomizedInit> TryCustomizedInit for T {
++    type Error = core::convert::Infallible;
++
++    fn try_new_customized(customization: &[u8]) -> Result<Self, Self::Error> {
++        Ok(Self::new_customized(customization))
++    }
++}
++
++/// Types with a certain collision resistance.
++pub trait CollisionResistance {
++    /// Collision resistance in bytes.
++    ///
++    /// This applies to an output size of at least `2 * CollisionResistance` bytes.
++    /// For a smaller output size collision resistance can be usually calculated as
++    /// `min(CollisionResistance, OutputSize / 2)`.
++    type CollisionResistance: Unsigned;
+ }
+ 
+ /// The error type used in variable hash traits.
+@@ -283,9 +246,7 @@
+     }
+ }
+ 
+-#[cfg(feature = "std")]
+-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+-impl std::error::Error for InvalidOutputSize {}
++impl core::error::Error for InvalidOutputSize {}
+ 
+ /// Buffer length is not equal to hash output size.
+ #[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
+@@ -297,5 +258,4 @@
+     }
+ }
+ 
+-#[cfg(feature = "std")]
+-impl std::error::Error for InvalidBufferSize {}
++impl core::error::Error for InvalidBufferSize {}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/mac.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/mac.rs
+@@ -1,39 +1,18 @@
+ use crate::{FixedOutput, FixedOutputReset, Update};
+-use crypto_common::{InvalidLength, Key, KeyInit, Output, OutputSizeUser, Reset};
+-
+-#[cfg(feature = "rand_core")]
+-use crate::rand_core::{CryptoRng, RngCore};
++use common::{Output, OutputSizeUser, Reset};
++
++use common::typenum::Unsigned;
+ use core::fmt;
+-use crypto_common::typenum::Unsigned;
+-use subtle::{Choice, ConstantTimeEq};
++use ctutils::CtEq;
+ 
+ /// Marker trait for Message Authentication algorithms.
+-#[cfg_attr(docsrs, doc(cfg(feature = "mac")))]
+ pub trait MacMarker {}
+ 
+ /// Convenience wrapper trait covering functionality of Message Authentication algorithms.
+ ///
+-/// This trait wraps [`KeyInit`], [`Update`], [`FixedOutput`], and [`MacMarker`]
+-/// traits and provides additional convenience methods.
+-#[cfg_attr(docsrs, doc(cfg(feature = "mac")))]
++/// This trait wraps [`Update`], [`FixedOutput`], and [`MacMarker`] traits
++/// and provides additional convenience methods.
+ pub trait Mac: OutputSizeUser + Sized {
+-    /// Create new value from fixed size key.
+-    fn new(key: &Key<Self>) -> Self
+-    where
+-        Self: KeyInit;
+-
+-    /// Generate random key using the provided [`CryptoRng`].
+-    #[cfg(feature = "rand_core")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
+-    fn generate_key(rng: impl CryptoRng + RngCore) -> Key<Self>
+-    where
+-        Self: KeyInit;
+-
+-    /// Create new value from variable size key.
+-    fn new_from_slice(key: &[u8]) -> Result<Self, InvalidLength>
+-    where
+-        Self: KeyInit;
+-
+     /// Update state using the provided data.
+     fn update(&mut self, data: &[u8]);
+ 
+@@ -57,10 +36,16 @@
+         Self: Reset;
+ 
+     /// Check if tag/code value is correct for the processed input.
++    ///
++    /// # Errors
++    /// Returns [`MacError`] if `tag` is not valid.
+     fn verify(self, tag: &Output<Self>) -> Result<(), MacError>;
+ 
+     /// Check if tag/code value is correct for the processed input and reset
+     /// [`Mac`] instance.
++    ///
++    /// # Errors
++    /// Returns [`MacError`] if `tag` is not valid.
+     fn verify_reset(&mut self, tag: &Output<Self>) -> Result<(), MacError>
+     where
+         Self: FixedOutputReset;
+@@ -68,15 +53,15 @@
+     /// Check truncated tag correctness using all bytes
+     /// of calculated tag.
+     ///
+-    /// Returns `Error` if `tag` is not valid or not equal in length
+-    /// to MAC's output.
++    /// # Errors
++    /// Returns [`MacError`] if `tag` is not valid or not equal in length to this MAC's output.
+     fn verify_slice(self, tag: &[u8]) -> Result<(), MacError>;
+ 
+     /// Check truncated tag correctness using all bytes
+     /// of calculated tag and reset [`Mac`] instance.
+     ///
+-    /// Returns `Error` if `tag` is not valid or not equal in length
+-    /// to MAC's output.
++    /// # Errors
++    /// Returns [`MacError`] if `tag` is not valid or not equal in length to MAC's output.
+     fn verify_slice_reset(&mut self, tag: &[u8]) -> Result<(), MacError>
+     where
+         Self: FixedOutputReset;
+@@ -84,33 +69,19 @@
+     /// Check truncated tag correctness using left side bytes
+     /// (i.e. `tag[..n]`) of calculated tag.
+     ///
++    /// # Errors
+     /// Returns `Error` if `tag` is not valid or empty.
+     fn verify_truncated_left(self, tag: &[u8]) -> Result<(), MacError>;
+ 
+     /// Check truncated tag correctness using right side bytes
+     /// (i.e. `tag[n..]`) of calculated tag.
+     ///
++    /// # Errors
+     /// Returns `Error` if `tag` is not valid or empty.
+     fn verify_truncated_right(self, tag: &[u8]) -> Result<(), MacError>;
+ }
+ 
+ impl<T: Update + FixedOutput + MacMarker> Mac for T {
+-    #[inline(always)]
+-    fn new(key: &Key<Self>) -> Self
+-    where
+-        Self: KeyInit,
+-    {
+-        KeyInit::new(key)
+-    }
+-
+-    #[inline(always)]
+-    fn new_from_slice(key: &[u8]) -> Result<Self, InvalidLength>
+-    where
+-        Self: KeyInit,
+-    {
+-        KeyInit::new_from_slice(key)
+-    }
+-
+     #[inline]
+     fn update(&mut self, data: &[u8]) {
+         Update::update(self, data);
+@@ -140,7 +111,7 @@
+     where
+         Self: Reset,
+     {
+-        Reset::reset(self)
++        Reset::reset(self);
+     }
+ 
+     #[inline]
+@@ -170,12 +141,8 @@
+         if n != Self::OutputSize::USIZE {
+             return Err(MacError);
+         }
+-        let choice = self.finalize_fixed().ct_eq(tag);
+-        if choice.into() {
+-            Ok(())
+-        } else {
+-            Err(MacError)
+-        }
++        let choice = self.finalize_fixed().as_slice().ct_eq(tag);
++        if choice.into() { Ok(()) } else { Err(MacError) }
+     }
+ 
+     #[inline]
+@@ -187,12 +154,8 @@
+         if n != Self::OutputSize::USIZE {
+             return Err(MacError);
+         }
+-        let choice = self.finalize_fixed_reset().ct_eq(tag);
+-        if choice.into() {
+-            Ok(())
+-        } else {
+-            Err(MacError)
+-        }
++        let choice = self.finalize_fixed_reset().as_slice().ct_eq(tag);
++        if choice.into() { Ok(()) } else { Err(MacError) }
+     }
+ 
+     fn verify_truncated_left(self, tag: &[u8]) -> Result<(), MacError> {
+@@ -202,11 +165,7 @@
+         }
+         let choice = self.finalize_fixed()[..n].ct_eq(tag);
+ 
+-        if choice.into() {
+-            Ok(())
+-        } else {
+-            Err(MacError)
+-        }
++        if choice.into() { Ok(()) } else { Err(MacError) }
+     }
+ 
+     fn verify_truncated_right(self, tag: &[u8]) -> Result<(), MacError> {
+@@ -217,21 +176,7 @@
+         let m = Self::OutputSize::USIZE - n;
+         let choice = self.finalize_fixed()[m..].ct_eq(tag);
+ 
+-        if choice.into() {
+-            Ok(())
+-        } else {
+-            Err(MacError)
+-        }
+-    }
+-
+-    #[cfg(feature = "rand_core")]
+-    #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
+-    #[inline]
+-    fn generate_key(rng: impl CryptoRng + RngCore) -> Key<Self>
+-    where
+-        Self: KeyInit,
+-    {
+-        <T as KeyInit>::generate_key(rng)
++        if choice.into() { Ok(()) } else { Err(MacError) }
+     }
+ }
+ 
+@@ -240,7 +185,6 @@
+ ///
+ /// It is useful for implementing Message Authentication Codes (MACs).
+ #[derive(Clone)]
+-#[cfg_attr(docsrs, doc(cfg(feature = "mac")))]
+ pub struct CtOutput<T: OutputSizeUser> {
+     bytes: Output<T>,
+ }
+@@ -252,10 +196,16 @@
+         Self { bytes }
+     }
+ 
++    /// Get reference to the inner [`Output`] array this type wraps.
++    #[inline(always)]
++    pub fn as_bytes(&self) -> &Output<T> {
++        &self.bytes
++    }
++
+     /// Get the inner [`Output`] array this type wraps.
+     #[inline(always)]
+-    pub fn into_bytes(self) -> Output<T> {
+-        self.bytes
++    pub fn into_bytes(&self) -> Output<T> {
++        self.bytes.clone()
+     }
+ }
+ 
+@@ -273,26 +223,38 @@
+     }
+ }
+ 
+-impl<T: OutputSizeUser> ConstantTimeEq for CtOutput<T> {
+-    #[inline(always)]
+-    fn ct_eq(&self, other: &Self) -> Choice {
+-        self.bytes.ct_eq(&other.bytes)
+-    }
+-}
+-
+ impl<T: OutputSizeUser> PartialEq for CtOutput<T> {
+     #[inline(always)]
+-    fn eq(&self, x: &CtOutput<T>) -> bool {
+-        self.ct_eq(x).into()
++    fn eq(&self, other: &CtOutput<T>) -> bool {
++        self.bytes.ct_eq(&other.bytes).into()
+     }
+ }
+ 
+ impl<T: OutputSizeUser> Eq for CtOutput<T> {}
++
++impl<T: OutputSizeUser> fmt::Debug for CtOutput<T> {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.write_str("CtOutput { ... }")
++    }
++}
++
++impl<T: OutputSizeUser> Drop for CtOutput<T> {
++    #[inline]
++    fn drop(&mut self) {
++        #[cfg(feature = "zeroize")]
++        {
++            use zeroize::Zeroize;
++            self.bytes.zeroize();
++        }
++    }
++}
++
++#[cfg(feature = "zeroize")]
++impl<T: OutputSizeUser> zeroize::ZeroizeOnDrop for CtOutput<T> {}
+ 
+ /// Error type for when the [`Output`] of a [`Mac`]
+ /// is not equal to the expected value.
+ #[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
+-#[cfg_attr(docsrs, doc(cfg(feature = "mac")))]
+ pub struct MacError;
+ 
+ impl fmt::Display for MacError {
+@@ -301,5 +263,4 @@
+     }
+ }
+ 
+-#[cfg(feature = "std")]
+-impl std::error::Error for MacError {}
++impl core::error::Error for MacError {}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/src/xof_fixed.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/src/xof_fixed.rs
+@@ -0,0 +1,152 @@
++use core::fmt;
++use core::marker::PhantomData;
++
++use common::array::ArraySize;
++use common::hazmat::SerializableState;
++use common::{BlockSizeUser, KeyInit, KeySizeUser, OutputSizeUser, Reset};
++
++use crate::{
++    CollisionResistance, CustomizedInit, ExtendableOutput, ExtendableOutputReset, FixedOutput,
++    FixedOutputReset, HashMarker, Update,
++};
++
++/// Wrapper around [`ExtendableOutput`] types adding [`OutputSizeUser`] with the given size of `S`.
++pub struct XofFixedWrapper<T: ExtendableOutput, S: ArraySize> {
++    hash: T,
++    size: PhantomData<S>,
++}
++
++impl<T: ExtendableOutput + Clone, S: ArraySize> Clone for XofFixedWrapper<T, S> {
++    fn clone(&self) -> Self {
++        Self {
++            hash: self.hash.clone(),
++            size: PhantomData,
++        }
++    }
++}
++
++impl<T: ExtendableOutput + fmt::Debug, S: ArraySize> fmt::Debug for XofFixedWrapper<T, S> {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.debug_struct("XofFixedWrapper")
++            .field("hash", &self.hash)
++            .field("_size", &self.size)
++            .finish()
++    }
++}
++
++impl<T: ExtendableOutput + Default, S: ArraySize> Default for XofFixedWrapper<T, S> {
++    fn default() -> Self {
++        Self {
++            hash: Default::default(),
++            size: PhantomData,
++        }
++    }
++}
++
++impl<T: ExtendableOutput + HashMarker, S: ArraySize> HashMarker for XofFixedWrapper<T, S> {}
++
++#[cfg(feature = "mac")]
++impl<T: ExtendableOutput + crate::MacMarker, S: ArraySize> crate::MacMarker
++    for XofFixedWrapper<T, S>
++{
++}
++
++impl<T: ExtendableOutput + CollisionResistance, S: ArraySize> CollisionResistance
++    for XofFixedWrapper<T, S>
++{
++    type CollisionResistance = T::CollisionResistance;
++}
++
++// this blanket impl is needed for HMAC
++impl<T: ExtendableOutput + BlockSizeUser, S: ArraySize> BlockSizeUser for XofFixedWrapper<T, S> {
++    type BlockSize = T::BlockSize;
++}
++
++impl<T: ExtendableOutput + KeySizeUser, S: ArraySize> KeySizeUser for XofFixedWrapper<T, S> {
++    type KeySize = T::KeySize;
++}
++
++impl<T: ExtendableOutput + KeyInit, S: ArraySize> KeyInit for XofFixedWrapper<T, S> {
++    fn new(key: &common::Key<Self>) -> Self {
++        Self {
++            hash: T::new(key),
++            size: PhantomData,
++        }
++    }
++}
++
++impl<T: ExtendableOutput + Reset, S: ArraySize> Reset for XofFixedWrapper<T, S> {
++    fn reset(&mut self) {
++        self.hash.reset();
++    }
++}
++
++impl<T: ExtendableOutput + Update, S: ArraySize> Update for XofFixedWrapper<T, S> {
++    fn update(&mut self, data: &[u8]) {
++        self.hash.update(data);
++    }
++}
++
++impl<T: ExtendableOutput, S: ArraySize> OutputSizeUser for XofFixedWrapper<T, S> {
++    type OutputSize = S;
++}
++
++impl<T: ExtendableOutput + Update, S: ArraySize> FixedOutput for XofFixedWrapper<T, S> {
++    fn finalize_into(self, out: &mut common::Output<Self>) {
++        self.hash.finalize_xof_into(out);
++    }
++}
++
++impl<T: ExtendableOutputReset, S: ArraySize> FixedOutputReset for XofFixedWrapper<T, S> {
++    fn finalize_into_reset(&mut self, out: &mut common::Output<Self>) {
++        self.hash.finalize_xof_reset_into(out);
++    }
++}
++
++impl<T: ExtendableOutput, S: ArraySize> ExtendableOutput for XofFixedWrapper<T, S> {
++    type Reader = T::Reader;
++
++    fn finalize_xof(self) -> Self::Reader {
++        self.hash.finalize_xof()
++    }
++}
++
++impl<T: ExtendableOutputReset, S: ArraySize> ExtendableOutputReset for XofFixedWrapper<T, S> {
++    fn finalize_xof_reset(&mut self) -> Self::Reader {
++        self.hash.finalize_xof_reset()
++    }
++}
++
++#[cfg(feature = "zeroize")]
++impl<T: ExtendableOutput + zeroize::ZeroizeOnDrop, S: ArraySize> zeroize::ZeroizeOnDrop
++    for XofFixedWrapper<T, S>
++{
++}
++
++impl<T: ExtendableOutput + CustomizedInit, S: ArraySize> CustomizedInit for XofFixedWrapper<T, S> {
++    fn new_customized(customization: &[u8]) -> Self {
++        Self {
++            hash: T::new_customized(customization),
++            size: PhantomData,
++        }
++    }
++}
++
++impl<T: ExtendableOutput + SerializableState, S: ArraySize> SerializableState
++    for XofFixedWrapper<T, S>
++{
++    type SerializedStateSize = T::SerializedStateSize;
++
++    fn serialize(&self) -> common::hazmat::SerializedState<Self> {
++        self.hash.serialize()
++    }
++
++    fn deserialize(
++        serialized_state: &common::hazmat::SerializedState<Self>,
++    ) -> Result<Self, common::hazmat::DeserializeStateError> {
++        T::deserialize(serialized_state).map(|hash| Self {
++            hash,
++            size: PhantomData,
++        })
++    }
++}
+--- /private/tmp/forge-f03-evidence/pr162/source/digest-0.10.7/tests/dummy_fixed.rs
++++ /private/tmp/forge-f03-evidence/pr162/source/digest-0.11.3/tests/dummy_fixed.rs
+@@ -0,0 +1,127 @@
++//! Tests against a pseudo-hash.
++
++#![cfg(feature = "block-api")]
++
++mod block_api {
++    use core::fmt;
++    use digest::{
++        HashMarker, Output, OutputSizeUser, Reset,
++        block_api::{
++            AlgorithmName, Block, BlockSizeUser, Buffer, BufferKindUser, FixedOutputCore,
++            UpdateCore,
++        },
++        common::hazmat::{DeserializeStateError, SerializableState, SerializedState},
++        consts::U8,
++    };
++
++    #[cfg(feature = "zeroize")]
++    use zeroize::Zeroize;
++
++    /// Core of primitive XOR hasher for testing purposes
++    #[derive(Clone, Default, Debug)]
++    pub struct FixedHashCore {
++        state: u64,
++    }
++
++    impl AlgorithmName for FixedHashCore {
++        fn write_alg_name(f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
++            f.write_str("FixedHash")
++        }
++    }
++
++    impl BlockSizeUser for FixedHashCore {
++        type BlockSize = U8;
++    }
++
++    impl BufferKindUser for FixedHashCore {
++        type BufferKind = block_buffer::Eager;
++    }
++
++    impl Reset for FixedHashCore {
++        fn reset(&mut self) {
++            self.state = 0;
++        }
++    }
++
++    impl UpdateCore for FixedHashCore {
++        fn update_blocks(&mut self, blocks: &[Block<Self>]) {
++            for block in blocks {
++                self.state ^= u64::from_le_bytes(block.0);
++            }
++        }
++    }
++
++    impl HashMarker for FixedHashCore {}
++
++    impl OutputSizeUser for FixedHashCore {
++        type OutputSize = U8;
++    }
++
++    impl FixedOutputCore for FixedHashCore {
++        fn finalize_fixed_core(&mut self, buffer: &mut Buffer<Self>, out: &mut Output<Self>) {
++            let block = buffer.pad_with_zeros();
++            self.state ^= u64::from_le_bytes(block.0);
++            out.copy_from_slice(&self.state.to_le_bytes());
++        }
++    }
++
++    impl SerializableState for FixedHashCore {
++        type SerializedStateSize = U8;
++
++        fn serialize(&self) -> SerializedState<Self> {
++            self.state.to_le_bytes().into()
++        }
++
++        fn deserialize(
++            serialized_state: &SerializedState<Self>,
++        ) -> Result<Self, DeserializeStateError> {
++            Ok(Self {
++                state: u64::from_le_bytes(serialized_state.0),
++            })
++        }
++    }
++
++    impl Drop for FixedHashCore {
++        fn drop(&mut self) {
++            #[cfg(feature = "zeroize")]
++            self.state.zeroize();
++        }
++    }
++
++    #[cfg(feature = "zeroize")]
++    impl zeroize::ZeroizeOnDrop for FixedHashCore {}
++}
++
++digest::buffer_fixed!(
++    /// Primitive XOR hasher for testing purposes
++    pub struct FixedHash(block_api::FixedHashCore);
++    impl: BaseFixedTraits Default Clone HashMarker Reset FixedOutputReset;
++);
++digest::buffer_fixed!(
++    /// Primitive XOR hasher for testing purposes
++    pub struct FixedHashWithSer(block_api::FixedHashCore);
++    impl: FixedHashTraits;
++);
++digest::buffer_fixed!(
++    /// Primitive XOR hasher for testing purposes
++    pub struct FixedHashWithOid(block_api::FixedHashCore);
++    oid: "0.1.2.3.4.5";
++    impl: BaseFixedTraits Default Clone HashMarker Reset FixedOutputReset;
++);
++digest::buffer_fixed!(
++    /// Primitive XOR hasher for testing purposes
++    pub struct FixedHashWithOidSer(block_api::FixedHashCore);
++    oid: "0.1.2.3.4.5";
++    impl: FixedHashTraits;
++);
++
++#[cfg(feature = "dev")]
++digest::hash_serialization_test!(fixed_hash_serialization, FixedHashWithSer,);
++
++#[cfg(feature = "zeroize")]
++/// check for `ZeroizeOnDrop` implementations
++const _: () = {
++    const fn check_zeroize<T: zeroize::ZeroizeOnDrop>() {}
++    check_zeroize::<FixedHashWithSer>();
++    check_zeroize::<FixedHashWithOidSer>();
++};
