@@ -1572,3 +1572,676 @@ fn bundle_queries_cover_101_resources_without_effect_prefix_truncation() {
     }
     assert_eq!(bundle_project_files(&server), before);
 }
+
+/// Real HTTP checkpoint observations without the existing helper's implicit polling.
+mod checkpoint_http {
+    use super::{Server, bundle_fixture_sha256};
+    use std::fmt::Write as _;
+    use std::io::BufRead as _;
+    use std::process::{Command, Stdio};
+    use std::time::Duration;
+
+    use serde_json::{Value, json};
+
+    /// Redact ephemeral session authority while preserving the actual response structure.
+    fn checkpoint_redact_authority(value: &mut Value) {
+        match value {
+            Value::Object(fields) => {
+                for (key, value) in fields {
+                    if matches!(key.as_str(), "token" | "capability") {
+                        *value = json!("<session-authority-redacted>");
+                    } else {
+                        checkpoint_redact_authority(value);
+                    }
+                }
+            }
+            Value::Array(values) => {
+                for value in values {
+                    checkpoint_redact_authority(value);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Retain the actual status, original response digest and redacted parsed body.
+    fn checkpoint_record_response(
+        method: &str,
+        path: &str,
+        key: Option<&str>,
+        status: u16,
+        bytes: &[u8],
+        response: &Value,
+    ) {
+        let mut redacted = response.clone();
+        checkpoint_redact_authority(&mut redacted);
+        eprintln!(
+            "checkpoint_http_response {}",
+            json!({
+                "method":method,"path":path,"idempotency_key":key,"status":status,
+                "original_response_sha256":bundle_fixture_sha256(bytes),"response":redacted,
+                "authority_redaction":"token and capability values only; request authorization omitted"
+            })
+        );
+    }
+
+    /// Send one JSON request and retain its immediate response, below 30 requests/second.
+    fn checkpoint_raw(
+        server: &Server,
+        method: &str,
+        path: &str,
+        key: Option<&str>,
+        value: &Value,
+    ) -> (u16, Value) {
+        std::thread::sleep(Duration::from_millis(50));
+        let mut headers = String::from("Content-Type: application/json\r\n");
+        if let Some(key) = key {
+            write!(headers, "Idempotency-Key: {key}\r\n").unwrap();
+        }
+        let body = if method == "GET" { String::new() } else { value.to_string() };
+        let (status, _, bytes) = server.request(method, path, true, None, &headers, &body);
+        let response = serde_json::from_slice(&bytes).expect("checkpoint HTTP response is JSON");
+        checkpoint_record_response(method, path, key, status, &bytes, &response);
+        (status, response)
+    }
+
+    /// Admit actual preparation and preserve the accepted pending envelope before any GET.
+    fn checkpoint_accept(server: &Server, path: &str, key: &str, request: &Value) -> Value {
+        let deadline = std::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            let (status, operation) = checkpoint_raw(server, "POST", path, Some(key), request);
+            if status == 400
+                && operation["code"] == "invalid-request"
+                && operation["retryable"] == true
+            {
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "preparation admission remained busy"
+                );
+                std::thread::sleep(Duration::from_millis(100));
+                continue;
+            }
+            assert_eq!(status, 202, "preparation admission status");
+            assert_eq!(operation["state"], "pending");
+            assert_eq!(operation["cancel_requested"], false);
+            checkpoint_shape(&operation);
+            return operation;
+        }
+    }
+
+    /// Check active-only measured progress and the distinct terminal result/error contracts.
+    fn checkpoint_shape(operation: &Value) {
+        let active = matches!(operation["state"].as_str(), Some("pending" | "running"));
+        if let Some(progress) = operation.get("progress").filter(|value| !value.is_null()) {
+            assert!(active, "terminal operation retained capture progress");
+            let completed = progress["completed_items"].as_u64().expect("completed capture count");
+            let total = progress["total_items"].as_u64().expect("complete capture denominator");
+            assert!(completed <= total, "capture count exceeds its denominator");
+        }
+        match operation["state"].as_str().expect("operation state") {
+            "pending" | "running" | "cancelled" => {
+                assert!(operation.get("result").is_none(), "non-success exposed a result");
+                assert!(operation.get("error").is_none(), "non-failure exposed an error");
+            }
+            "succeeded" => {
+                assert!(operation.get("result").is_some(), "success lacks a result");
+                assert!(operation.get("error").is_none(), "success retained an error");
+            }
+            "failed" => {
+                assert!(operation.get("error").is_some(), "failure lacks a safe error");
+                assert!(operation.get("result").is_none(), "failure exposed a result");
+            }
+            _ => panic!("unknown operation state"),
+        }
+    }
+
+    /// Poll an admitted ID through raw GETs without counting polls as additional test cases.
+    fn checkpoint_terminal(server: &Server, accepted: &Value) -> Value {
+        let id = accepted["operation_id"].as_str().expect("accepted operation ID");
+        let path = format!("/api/v1/operations/{id}");
+        let deadline = std::time::Instant::now() + Duration::from_secs(40);
+        loop {
+            let (status, operation) = checkpoint_raw(server, "GET", &path, None, &json!({}));
+            assert_eq!(status, 200, "operation polling status");
+            assert_eq!(operation["operation_id"], accepted["operation_id"]);
+            assert_eq!(operation["kind"], accepted["kind"]);
+            checkpoint_shape(&operation);
+            if !matches!(operation["state"].as_str(), Some("pending" | "running")) {
+                return operation;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "operation failed to settle within its budget"
+            );
+            std::thread::sleep(Duration::from_millis(100));
+        }
+    }
+
+    /// Retain a byte fingerprint for every ordinary file in this flat owned fixture.
+    fn checkpoint_fingerprints(server: &Server) -> std::collections::BTreeMap<String, String> {
+        std::fs::read_dir(server.project.path())
+            .unwrap()
+            .map(|entry| {
+                let entry = entry.unwrap();
+                assert!(
+                    entry.file_type().unwrap().is_file(),
+                    "fixture entry is not an ordinary file"
+                );
+                let name = entry.file_name().into_string().expect("UTF-8 fixture name");
+                let bytes = std::fs::read(entry.path()).unwrap();
+                (name, bundle_fixture_sha256(&bytes))
+            })
+            .collect()
+    }
+
+    /// Prepare a synchronous preview through the real API without implicit confirmation.
+    fn checkpoint_preview(server: &Server, path: &str, key: &str, request: &Value) -> Value {
+        let (status, response) = checkpoint_raw(server, "POST", path, Some(key), request);
+        assert_eq!(status, 200, "synchronous preview status");
+        assert!(response["preview"].is_object(), "synchronous route lacks a preview");
+        response["preview"].clone()
+    }
+
+    /// Explicitly confirm exactly the supplied session receipt and verify committed write truth.
+    fn checkpoint_confirm(server: &Server, preview: &Value, key: &str) -> Value {
+        let request = json!({"receipt":preview["receipt"]["token"],
+            "observed_version":preview["target_version"],"confirmed":true});
+        let (status, operation) =
+            checkpoint_raw(server, "POST", "/api/v1/effects/commits", Some(key), &request);
+        assert_eq!(status, 202, "explicit commit status");
+        assert_eq!(operation["kind"], "commit");
+        assert_eq!(operation["state"], "succeeded");
+        assert_eq!(operation["result"]["write_committed"], true);
+        checkpoint_shape(&operation);
+        operation
+    }
+
+    /// Register a supplied fixture by preparing and explicitly confirming its index edit.
+    fn checkpoint_register(server: &Server, path: &str, role: &str, key: &str) {
+        let preview = checkpoint_preview(
+            server,
+            "/api/v1/resources/register",
+            &format!("checkpoint-register-{key}"),
+            &json!({"path":path,"role":role,"key":key}),
+        );
+        checkpoint_confirm(server, &preview, &format!("checkpoint-register-commit-{key}"));
+    }
+
+    /// Look up one declared key in the complete small fixture's actual resource metadata.
+    fn checkpoint_resource(server: &Server, key: &str) -> Value {
+        let (status, resources) =
+            checkpoint_raw(server, "GET", "/api/v1/resources", None, &json!({}));
+        assert_eq!(status, 200, "resource inventory status");
+        assert!(resources["page"]["next_cursor"].is_null(), "small fixture unexpectedly paginated");
+        resources["page"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|item| item["key"] == key)
+            .expect("declared fixture resource")
+            .clone()
+    }
+
+    /// Construct 100 valid policy registrations below per-file and aggregate capture limits.
+    fn checkpoint_capture_fixture(server: &Server) {
+        let content = format!(
+            "# Checkpoint policy\n\n## Scope\n\n{}",
+            "Supplied checkpoint fixture text remains ordinary policy input.\n".repeat(6144)
+        );
+        assert!(content.len() < 400 * 1024);
+        let resources: Vec<_> = (0..100)
+            .map(|index| {
+                let key = format!("checkpoint-policy-{index}");
+                let path = format!("checkpoint-policy-{index}.md");
+                std::fs::write(server.project.path().join(&path), &content).unwrap();
+                json!({"key":key,"role":"policy-source","path":path})
+            })
+            .collect();
+        let index = json!({"schema_version":"forge.workspace/1",
+            "label":"Bounded checkpoint capture fixture","resources":resources});
+        let index_bytes = serde_json::to_vec(&index).unwrap();
+        assert!(content.len() * 100 + index_bytes.len() < 50 * 1024 * 1024);
+        std::fs::write(server.project.path().join("forge.workspace.json"), index_bytes).unwrap();
+        std::fs::write(server.project.path().join("checkpoint-trace.html"), "UNCHANGED TARGET")
+            .unwrap();
+    }
+
+    /// Verify the same-key reply, terminal latch, and pre-commit download boundary.
+    fn checkpoint_terminal_race(
+        server: &Server,
+        accepted: &Value,
+        key: &str,
+        request: &Value,
+        terminal: &Value,
+    ) {
+        let id = accepted["operation_id"].as_str().unwrap();
+        let query = format!("/api/v1/operations/{id}");
+        let (status, replay) =
+            checkpoint_raw(server, "POST", "/api/v1/exports", Some(key), request);
+        assert_eq!(status, 202);
+        assert!(accepted == &replay, "same-key replay changed its original admission envelope");
+        let (status, rejection) =
+            checkpoint_raw(server, "POST", &format!("{query}/cancellation"), None, &json!({}));
+        assert_eq!(status, 409);
+        assert_eq!(rejection["code"], "operation-not-cancellable");
+        let (status, stable) = checkpoint_raw(server, "GET", &query, None, &json!({}));
+        assert_eq!(status, 200);
+        assert!(terminal == &stable, "late cancel or callback changed terminal state");
+        assert_eq!(
+            server.request("GET", &format!("/api/v1/exports/{id}/download"), true, None, "", "").0,
+            404
+        );
+    }
+
+    /// Return actual running/progress/acknowledgment observations from one bounded cancel race.
+    fn checkpoint_cancel_attempt(
+        server: &Server,
+        request: &Value,
+        attempt: usize,
+    ) -> (bool, bool, bool) {
+        let key = format!("checkpoint-observe-trace-{attempt}");
+        let accepted = checkpoint_accept(server, "/api/v1/exports", &key, request);
+        let id = accepted["operation_id"].as_str().unwrap();
+        let query = format!("/api/v1/operations/{id}");
+        let (status, observed) = checkpoint_raw(server, "GET", &query, None, &json!({}));
+        assert_eq!(status, 200, "live operation GET status");
+        assert_eq!(observed["operation_id"], accepted["operation_id"]);
+        checkpoint_shape(&observed);
+        let running = observed["state"] == "running";
+        let capture = !observed["progress"].is_null();
+        if capture {
+            assert_eq!(observed["progress"]["total_items"], 100);
+        }
+        let (status, cancellation) =
+            checkpoint_raw(server, "POST", &format!("{query}/cancellation"), None, &json!({}));
+        let acknowledged = status == 200;
+        if acknowledged {
+            assert_eq!(cancellation["cancel_requested"], true);
+            assert!(matches!(cancellation["state"].as_str(), Some("pending" | "running")));
+            checkpoint_shape(&cancellation);
+        } else {
+            assert_eq!(status, 409, "terminal cancellation status");
+            assert_eq!(cancellation["code"], "operation-not-cancellable");
+        }
+        let terminal = checkpoint_terminal(server, &accepted);
+        assert_eq!(terminal["state"], if acknowledged { "cancelled" } else { "succeeded" });
+        checkpoint_terminal_race(server, &accepted, &key, request, &terminal);
+        eprintln!(
+            "checkpoint_http_attempt attempt={attempt} admitted=pending observed_state={} capture_completed={:?} capture_total={:?} cancellation_status={status} cancellation_reply_state={} terminal_state={}",
+            observed["state"].as_str().unwrap(),
+            observed["progress"]["completed_items"].as_u64(),
+            observed["progress"]["total_items"].as_u64(),
+            cancellation["state"].as_str().unwrap_or("not-cancellable"),
+            terminal["state"].as_str().unwrap()
+        );
+        (running, capture, acknowledged)
+    }
+
+    /// Observe real cancellation races; fast completion is reported without running-cancel credit.
+    #[test]
+    fn checkpoint_http_reports_observed_capture_cancellation_and_terminal_races() {
+        let mut server = Server::launch_mode(false, false);
+        let unrelated = checkpoint_preview(
+            &server,
+            "/api/v1/resources/register",
+            "checkpoint-unrelated-register",
+            &json!({"path":"unregistered.md",
+                "role":"policy-source","key":"unrelated"}),
+        );
+        checkpoint_capture_fixture(&server);
+        let before = checkpoint_fingerprints(&server);
+        let request = json!({"report_kind":"trace","target_path":"checkpoint-trace.html"});
+        let mut running_observations = 0;
+        let mut capture_observations = 0;
+        let mut acknowledged_cancellations = 0;
+        let mut running_cancel_acknowledgments = 0;
+        let mut fast_terminals = 0;
+        let mut attempts = 0;
+        for attempt in 0..3 {
+            attempts += 1;
+            let (running, capture, acknowledged) =
+                checkpoint_cancel_attempt(&server, &request, attempt);
+            running_observations += usize::from(running);
+            capture_observations += usize::from(capture);
+            acknowledged_cancellations += usize::from(acknowledged);
+            running_cancel_acknowledgments += usize::from(running && acknowledged);
+            fast_terminals += usize::from(!acknowledged);
+            assert!(
+                before == checkpoint_fingerprints(&server),
+                "preparation changed fixture files"
+            );
+            if running && capture && acknowledged {
+                break;
+            }
+        }
+        let (status, retained) = checkpoint_raw(
+            &server,
+            "GET",
+            &format!("/api/v1/effects/previews/{}", unrelated["preview_id"].as_str().unwrap()),
+            None,
+            &json!({}),
+        );
+        assert_eq!(status, 200);
+        assert!(unrelated == retained, "unrelated retained preview changed");
+        eprintln!(
+            "checkpoint_http_observation attempts={attempts} running_gets={running_observations} capture_progress_gets={capture_observations} cancellation_acks={acknowledged_cancellations} running_get_then_cancel_ack_same_attempt={running_cancel_acknowledgments} terminal_before_cancel={fast_terminals}"
+        );
+        if running_cancel_acknowledgments == 0 || capture_observations == 0 {
+            eprintln!(
+                "checkpoint_http_observation qualification=one_or_more_running_capture_cancel_observations_not_obtained"
+            );
+        }
+        checkpoint_stop(&mut server);
+    }
+
+    /// Stop through the real endpoint and wait for an actual successful process exit.
+    fn checkpoint_stop(server: &mut Server) {
+        let (status, response) =
+            checkpoint_raw(server, "POST", "/api/v1/session/shutdown", None, &json!({}));
+        assert_eq!(status, 200, "graceful shutdown status");
+        assert_eq!(response["state"], "shutting-down");
+        let deadline = std::time::Instant::now() + Duration::from_secs(20);
+        loop {
+            if let Some(status) = server.process.try_wait().unwrap() {
+                assert!(status.success(), "workspace process exited unsuccessfully");
+                return;
+            }
+            assert!(std::time::Instant::now() < deadline, "workspace process did not shut down");
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    /// Launch a fresh writable process against the same still-owned project after graceful exit.
+    fn checkpoint_start_fresh(server: &mut Server) {
+        assert!(server.process.try_wait().unwrap().is_some(), "previous process is still running");
+        server.process = Command::new(env!("CARGO_BIN_EXE_forge"))
+            .args(["workspace", "--project"])
+            .arg(server.project.path())
+            .arg("--machine-session")
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let stdout = server.process.stdout.take().unwrap();
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let mut line = String::new();
+            let result = std::io::BufReader::new(stdout).read_line(&mut line).map(|_| line);
+            let _ = send.send(result);
+        });
+        let line = receive
+            .recv_timeout(Duration::from_secs(20))
+            .expect("fresh workspace launch timed out")
+            .expect("fresh machine descriptor read");
+        let descriptor: Value = serde_json::from_str(&line).expect("fresh machine descriptor JSON");
+        assert_eq!(descriptor["mode"], "machine");
+        assert_eq!(descriptor["read_only"], false);
+        descriptor["base_url"]
+            .as_str()
+            .unwrap()
+            .strip_prefix("http://")
+            .expect("fresh loopback URL")
+            .clone_into(&mut server.host);
+        assert!(server.host.starts_with("127.0.0.1:"));
+        descriptor["capability"].as_str().unwrap().clone_into(&mut server.capability);
+    }
+
+    /// Reject the old capability, operation, preview, and receipt using fresh correct authority.
+    fn checkpoint_reject_old_session(
+        server: &Server,
+        old_capability: &str,
+        old_accepted: &Value,
+        old_preview: &Value,
+    ) {
+        let old_auth = format!("Authorization: Bearer {old_capability}\r\n");
+        let (status, _, bytes) =
+            server.request("GET", "/api/v1/project/summary", false, None, &old_auth, "");
+        let response = serde_json::from_slice(&bytes).expect("old authority rejection is JSON");
+        checkpoint_record_response(
+            "GET",
+            "/api/v1/project/summary",
+            None,
+            status,
+            &bytes,
+            &response,
+        );
+        assert_eq!(status, 401);
+        for path in [
+            format!("/api/v1/operations/{}", old_accepted["operation_id"].as_str().unwrap()),
+            format!("/api/v1/effects/previews/{}", old_preview["preview_id"].as_str().unwrap()),
+        ] {
+            let (status, rejected) = checkpoint_raw(server, "GET", &path, None, &json!({}));
+            assert_eq!(status, 404);
+            assert_eq!(rejected["code"], "not-found");
+        }
+        let old_commit = json!({"receipt":old_preview["receipt"]["token"],
+            "observed_version":old_preview["target_version"],"confirmed":true});
+        let (status, rejected) = checkpoint_raw(
+            server,
+            "POST",
+            "/api/v1/effects/commits",
+            Some("checkpoint-old-receipt"),
+            &old_commit,
+        );
+        assert_eq!(status, 409);
+        assert_eq!(rejected["code"], "receipt-mismatch");
+    }
+
+    /// Confirm only the fresh receipt, preserve all other files, and keep committed truth latched.
+    fn checkpoint_confirm_fresh(server: &Server, preview: &Value) {
+        let mut before = checkpoint_fingerprints(server);
+        let committed = checkpoint_confirm(server, preview, "checkpoint-fresh-confirmed-commit");
+        let output =
+            std::fs::read(server.project.path().join("checkpoint-converted.json")).unwrap();
+        assert_eq!(bundle_fixture_sha256(&output), preview["exact_bytes_sha256"].as_str().unwrap());
+        assert_eq!(committed["result"]["committed_sha256"], preview["exact_bytes_sha256"]);
+        let committed_files = checkpoint_fingerprints(server);
+        let query = format!("/api/v1/operations/{}", committed["operation_id"].as_str().unwrap());
+        let (status, rejected) =
+            checkpoint_raw(server, "POST", &format!("{query}/cancellation"), None, &json!({}));
+        assert_eq!(status, 409);
+        assert_eq!(rejected["code"], "operation-not-cancellable");
+        let (status, stable) = checkpoint_raw(server, "GET", &query, None, &json!({}));
+        assert_eq!(status, 200);
+        assert!(stable == committed, "late cancellation changed committed write truth");
+        assert!(
+            committed_files == checkpoint_fingerprints(server),
+            "late cancellation changed files"
+        );
+        let mut after = checkpoint_fingerprints(server);
+        before.remove("checkpoint-converted.json").expect("existing target sentinel");
+        after.remove("checkpoint-converted.json").expect("explicitly committed target");
+        assert!(
+            before == after,
+            "explicit confirmation changed a source, index, or unrelated file"
+        );
+    }
+
+    /// Reject old session authority and require a fresh changed-input preview before writing.
+    #[test]
+    fn checkpoint_http_graceful_restart_rejects_old_state_and_recaptures_changed_input() {
+        let mut server = Server::launch_mode(true, false);
+        std::fs::write(
+            server.project.path().join("policy.md"),
+            "# Initial policy\n\n## Scope\n\n- Operators must review every initial request.\n",
+        )
+        .unwrap();
+        std::fs::write(server.project.path().join("checkpoint-converted.json"), "UNCHANGED TARGET")
+            .unwrap();
+        let before = checkpoint_fingerprints(&server);
+        let source = checkpoint_resource(&server, "policy");
+        let request = json!({"source_resource_id":source["resource_id"],
+            "output_kind":"oscal-catalog","target_path":"checkpoint-converted.json"});
+        let key = "checkpoint-restart-conversion";
+        let old_accepted = checkpoint_accept(&server, "/api/v1/conversions", key, &request);
+        let old_terminal = checkpoint_terminal(&server, &old_accepted);
+        assert_eq!(old_terminal["state"], "succeeded");
+        let old_preview = old_terminal["result"]["preview"].clone();
+        let old_capability = server.capability.clone();
+        checkpoint_stop(&mut server);
+        assert!(
+            before == checkpoint_fingerprints(&server),
+            "shutdown or unconfirmed preview wrote files"
+        );
+        let changed = "# Changed policy\n\n## Scope\n\n- Every changed request must receive explicit review.\n";
+        std::fs::write(server.project.path().join("policy.md"), changed).unwrap();
+        let changed_before = checkpoint_fingerprints(&server);
+        checkpoint_start_fresh(&mut server);
+        assert!(old_capability != server.capability, "fresh session reused its capability");
+        checkpoint_reject_old_session(&server, &old_capability, &old_accepted, &old_preview);
+        assert!(changed_before == checkpoint_fingerprints(&server), "old authority changed files");
+        let current = checkpoint_resource(&server, "policy");
+        assert_eq!(current["resource_id"], source["resource_id"]);
+        assert_eq!(current["sha256"], bundle_fixture_sha256(changed.as_bytes()));
+        let accepted = checkpoint_accept(&server, "/api/v1/conversions", key, &request);
+        assert_ne!(accepted["operation_id"], old_accepted["operation_id"]);
+        let terminal = checkpoint_terminal(&server, &accepted);
+        assert_eq!(terminal["state"], "succeeded");
+        let preview = &terminal["result"]["preview"];
+        assert_eq!(
+            preview["input_hashes"],
+            json!([{"resource_id":current["resource_id"],"sha256":current["sha256"]}])
+        );
+        assert_ne!(preview["exact_bytes_sha256"], old_preview["exact_bytes_sha256"]);
+        assert!(
+            changed_before == checkpoint_fingerprints(&server),
+            "fresh preparation wrote files"
+        );
+        checkpoint_confirm_fresh(&server, preview);
+        checkpoint_stop(&mut server);
+        eprintln!(
+            "checkpoint_http_restart graceful_process_exits=2 old_capability_rejected=1 old_operation_rejected=1 old_preview_rejected=1 old_receipt_rejected=1 changed_source_hash_bound=1 explicit_fresh_commit=1"
+        );
+    }
+
+    /// Build a small valid supplied-policy/catalog fixture for all four preparation adapters.
+    fn checkpoint_four_route_fixture(server: &Server) {
+        std::fs::write(
+            server.project.path().join("policy.md"),
+            "# Supplied policy\n\n## Scope\n\n- Operators must review every supplied request.\n",
+        )
+        .unwrap();
+        for (key, id, uuid) in [
+            ("source", "policy-a", "11111111-1111-4111-8111-111111111111"),
+            ("framework", "framework-a", "22222222-2222-4222-8222-222222222222"),
+        ] {
+            let catalog = json!({"catalog":{"uuid":uuid,"metadata":{"title":"Checkpoint catalog",
+                "last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
+                "controls":[{"id":id,"title":"Supplied checkpoint control"}]}});
+            let path = format!("checkpoint-{key}.json");
+            std::fs::write(
+                server.project.path().join(&path),
+                serde_json::to_vec(&catalog).unwrap(),
+            )
+            .unwrap();
+            checkpoint_register(server, &path, "oscal-catalog-artifact", key);
+        }
+        let source = checkpoint_resource(server, "source");
+        let framework = checkpoint_resource(server, "framework");
+        let scope = checkpoint_preview(
+            server,
+            "/api/v1/applicability/initializations",
+            "checkpoint-scope-initialize",
+            &json!({"framework_resource_id":framework["resource_id"],
+                "target_path":"checkpoint-scope.json"}),
+        );
+        checkpoint_confirm(server, &scope, "checkpoint-scope-initialize-commit");
+        checkpoint_register(server, "checkpoint-scope.json", "applicability-manifest", "scope");
+        let mapping_request = json!({"source_resource_id":source["resource_id"],
+            "target_resource_id":framework["resource_id"],"target_path":"checkpoint-mapping.json",
+            "scope":"control-only","maps":[{"key":"explicit-none","relationship":"no-relationship",
+                "sources":[{"type":"control","id_ref":"policy-a"}],
+                "targets":[{"type":"control","id_ref":"framework-a"}],"reviewer_key":"reviewer",
+                "reviewed_at":"2026-09-10T00:00:00Z","rationale":"Explicit supplied absence."}],
+            "review":{"collection":{"key":"checkpoint-map","title":"Checkpoint mapping",
+                "version":"1","last_modified":"2026-09-10T00:00:00Z"},
+                "reviewers":[{"key":"reviewer","type":"person","name":"Checkpoint Reviewer"}],
+                "provenance":{"method":"human","matching_rationale":"semantic","status":"draft",
+                    "mapping_description":"Explicit supplied review.","reviewer_keys":["reviewer"],
+                    "reviewed_at":"2026-09-10T00:00:00Z"}}});
+        let mapping = checkpoint_preview(
+            server,
+            "/api/v1/mapping/initializations",
+            "checkpoint-mapping-initialize",
+            &mapping_request,
+        );
+        checkpoint_confirm(server, &mapping, "checkpoint-mapping-initialize-commit");
+        checkpoint_register(server, "checkpoint-mapping.json", "mapping-collection", "mapping");
+    }
+
+    /// Exercise normal raw admission and real domain results for each background preparation kind.
+    #[test]
+    fn checkpoint_http_all_four_preparation_routes_settle_without_implicit_writes() {
+        let mut server = Server::launch_mode(true, false);
+        checkpoint_four_route_fixture(&server);
+        let policy = checkpoint_resource(&server, "policy");
+        for path in [
+            "checkpoint-output.json",
+            "applicability-report.json",
+            "mapping-collection.json",
+            "checkpoint-review.html",
+        ] {
+            std::fs::write(server.project.path().join(path), "UNCHANGED TARGET").unwrap();
+        }
+        let before = checkpoint_fingerprints(&server);
+        for (path, kind, request, preview_member) in [
+            (
+                "/api/v1/conversions",
+                "conversion",
+                json!({"source_resource_id":policy["resource_id"],
+                "output_kind":"oscal-catalog","target_path":"checkpoint-output.json"}),
+                "preview",
+            ),
+            (
+                "/api/v1/applicability/analyses",
+                "applicability-analysis",
+                json!({}),
+                "report_preview",
+            ),
+            ("/api/v1/mapping/builds", "mapping-build", json!({}), "report_preview"),
+            (
+                "/api/v1/exports",
+                "export",
+                json!({"report_kind":"trace",
+                "target_path":"checkpoint-review.html"}),
+                "preview",
+            ),
+        ] {
+            let key = format!("checkpoint-four-routes-{kind}");
+            let accepted = checkpoint_accept(&server, path, &key, &request);
+            assert_eq!(accepted["kind"], kind);
+            let terminal = checkpoint_terminal(&server, &accepted);
+            assert_eq!(terminal["state"], "succeeded", "normal preparation kind: {kind}");
+            let preview = &terminal["result"][preview_member];
+            assert!(preview.is_object(), "normal preparation lacks the expected preview");
+            let (status, retained) = checkpoint_raw(
+                &server,
+                "GET",
+                &format!("/api/v1/effects/previews/{}", preview["preview_id"].as_str().unwrap()),
+                None,
+                &json!({}),
+            );
+            assert_eq!(status, 200);
+            assert!(preview == &retained, "prepared preview was not retained exactly");
+            let (status, replay) = checkpoint_raw(&server, "POST", path, Some(&key), &request);
+            assert_eq!(status, 202);
+            assert!(accepted == replay, "same-key retry admitted a different operation");
+            assert!(before == checkpoint_fingerprints(&server), "normal preparation wrote files");
+            match kind {
+                "conversion" => assert_eq!(terminal["result"]["validation"]["state"], "valid"),
+                "applicability-analysis" => assert_eq!(terminal["result"]["eligible_controls"], 1),
+                "mapping-build" => {
+                    assert_eq!(terminal["result"]["maps_total"], 1);
+                    assert_eq!(terminal["result"]["no_relationship_count"], 1);
+                }
+                "export" => assert!(terminal["result"]["redaction_summary"].is_object()),
+                _ => panic!("unknown checkpoint route fixture"),
+            }
+            eprintln!(
+                "checkpoint_http_normal_route kind={kind} accepted=pending terminal=succeeded confirmed=false"
+            );
+        }
+        checkpoint_stop(&mut server);
+    }
+}

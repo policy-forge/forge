@@ -104,9 +104,20 @@ reuses its key; an identical commit retry returns the recorded result. A lost
 HTTP response does not authorize a new effect. Query the original operation
 before preparing another write. Background preparation can be cancelled;
 cancellation discards proposed results and never publishes files. Once a commit
-has begun, it is not cancellable. An operation's deadline is checked before
-retaining prepared results; the shared CPU-bound domain engine is not forcibly
-interrupted mid-call.
+has begun, it is not cancellable. Background preparation uses one 30-second
+monotonic budget from acceptance, including time waiting for its worker. Equality
+with the deadline exhausts that budget. Cooperative checks run around registered
+reads, classification, temporary staging copies, domain calls and preview
+retention. A blocking read, parser or domain call finishes before its next check;
+the deadline is not a hard process timeout.
+
+While capture is measured, `progress` counts complete captured and classified
+registrations against the full registered set (up to 1,000), including inputs
+classified as invalid. It clears before unmeasured work and at termination.
+Capture completion does not mean preparation or publication succeeded. A cancel
+acknowledgment may still show pending/running; poll the original operation for its
+terminal state. See [workspace operations](workspace-operations.md) for recovery
+and the distinction between session retry and fresh-process re-execution.
 
 Publication is a single-file atomic rename, with exclusive staging, flush, input
 revalidation, and destination/parent identity revalidation immediately before

@@ -8,6 +8,7 @@ pub(crate) mod domain;
 pub(crate) mod effects;
 pub(crate) mod http;
 pub(crate) mod index;
+pub(crate) mod preparation;
 pub(crate) mod provenance;
 pub(crate) mod reports;
 pub(crate) mod root;
