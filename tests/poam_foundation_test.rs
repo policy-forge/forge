@@ -321,7 +321,7 @@ fn stale_or_misbound_source_pins_fail_before_output() {
         write_json(&f.directory.path().join("poam.json"), &bad);
         let out = check(&f);
         assert_eq!(out.status.code(), Some(2));
-        assert!(out.stdout.is_empty());
+        assert_eq!(out.stdout, [] as [u8; 0]);
     }
 }
 
@@ -338,7 +338,7 @@ fn explicit_result_key_and_uuid_must_match_same_epoch() {
         write_json(&f.directory.path().join("poam.json"), &bad);
         let out = check(&f);
         assert_eq!(out.status.code(), Some(2));
-        assert!(out.stdout.is_empty());
+        assert_eq!(out.stdout, [] as [u8; 0]);
     }
 }
 
@@ -389,7 +389,7 @@ fn duplicate_stable_keys_and_uuids_are_not_accepted_as_new_source() {
         });
         let out = init(&f, None);
         assert_eq!(out.status.code(), Some(2));
-        assert!(out.stdout.is_empty());
+        assert_eq!(out.stdout, [] as [u8; 0]);
     }
 }
 
@@ -465,7 +465,7 @@ fn symlink_hardlink_parent_alias_and_special_inputs_fail_closed() {
         }
         let out = init(&f, None);
         assert_eq!(out.status.code(), Some(2));
-        assert!(out.stdout.is_empty());
+        assert_eq!(out.stdout, [] as [u8; 0]);
     }
 }
 
@@ -507,7 +507,7 @@ fn source_property_namespaces_are_not_interchangeable() {
     });
     let out = init(&f, None);
     assert_eq!(out.status.code(), Some(2));
-    assert!(out.stdout.is_empty());
+    assert_eq!(out.stdout, [] as [u8; 0]);
 }
 
 #[test]
@@ -605,7 +605,7 @@ fn explicit_result_can_be_second_and_cross_epoch_references_fail() {
     });
     let output = init(&f, None);
     assert_eq!(output.status.code(), Some(2));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
 }
 
 #[test]
@@ -623,7 +623,7 @@ fn every_companion_identity_and_type_pin_is_verified() {
             write_json(&f.directory.path().join("poam.json"), &bad);
             let output = check(&f);
             assert_eq!(output.status.code(), Some(2), "{companion}.{field}");
-            assert!(output.stdout.is_empty());
+            assert_eq!(output.stdout, [] as [u8; 0]);
         }
     }
     let mut parsed = manifest::parse(&serde_json::to_vec(&original).unwrap()).unwrap();
@@ -675,7 +675,7 @@ fn missing_duplicate_partial_and_stale_native_context_receipts_fail() {
         });
         let output = init(&f, None);
         assert_eq!(output.status.code(), Some(2), "case {case}");
-        assert!(output.stdout.is_empty());
+        assert_eq!(output.stdout, [] as [u8; 0]);
     }
 }
 
@@ -732,7 +732,7 @@ fn nested_context_receipt_href_must_resolve_from_ar_directory() {
     assert_ne!(ssp["rlinks"][0]["href"], plan["source"]["context"]["ssp"]["artifact"]);
     let output = check(&f);
     assert_eq!(output.status.code(), Some(2));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
     assert!(
         String::from_utf8_lossy(&output.stderr)
             .contains("AR context resource link resolves to a different confined companion")
@@ -786,7 +786,7 @@ fn freshly_pinned_ar_rejects_invalid_structure_scope_and_references_before_outpu
         let output = check(&f);
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert_eq!(output.status.code(), Some(2), "case {case}: {stderr}");
-        assert!(output.stdout.is_empty(), "case {case}");
+        assert_eq!(output.stdout, [] as [u8; 0], "case {case}");
         assert!(
             stderr.contains(expected_error),
             "case {case}: expected {expected_error}; got {stderr}"
@@ -818,7 +818,7 @@ fn wrong_companion_root_with_fresh_hash_is_rejected_before_output() {
         write_json(&f.directory.path().join("poam.json"), &scaffold);
         let result = check(&f);
         assert_eq!(result.status.code(), Some(2));
-        assert!(result.stdout.is_empty());
+        assert_eq!(result.stdout, [] as [u8; 0]);
     }
 }
 
