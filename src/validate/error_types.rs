@@ -372,7 +372,7 @@ mod tests {
     fn report_new_empty_errors_is_valid() {
         let report = ValidationReport::new("test.json".to_string(), vec![]);
         assert!(report.is_valid());
-        assert!(report.errors().is_empty());
+        assert_eq!(report.errors(), []);
         assert_eq!(report.schema_error_count(), 0);
         assert_eq!(report.semantic_error_count(), 0);
     }

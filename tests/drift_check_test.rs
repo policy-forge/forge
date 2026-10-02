@@ -65,7 +65,7 @@ fn drift_json_reports_clean_for_only_volatile_metadata_changes() {
     assert_eq!(result["status"], "clean");
     assert_eq!(result["artifact_type"], "catalog");
     assert_eq!(result["comparison_contract"], 1);
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr, [] as [u8; 0]);
 }
 
 #[test]
@@ -129,7 +129,7 @@ fn drift_rejects_mismatched_models_with_exit_two() {
 
     assert_eq!(output.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&output.stderr).contains("Artifact type mismatch"));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
 }
 
 #[test]
@@ -158,7 +158,7 @@ fn drift_read_errors_do_not_disclose_absolute_runner_paths() {
     let absolute_root = dir.path().display().to_string();
     assert!(stderr.contains("unable to inspect committed artifact"), "{stderr}");
     assert!(!stderr.contains(&absolute_root), "{stderr}");
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
 }
 
 #[test]
@@ -190,7 +190,7 @@ fn drift_model_errors_do_not_disclose_absolute_runner_paths() {
     let absolute_root = dir.path().display().to_string();
     assert!(stderr.contains("committed artifact uses unsupported Profile"), "{stderr}");
     assert!(!stderr.contains(&absolute_root), "{stderr}");
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
 }
 
 #[test]
@@ -221,5 +221,5 @@ fn drift_structure_errors_do_not_disclose_absolute_runner_paths() {
         "{stderr}"
     );
     assert!(!stderr.contains(&absolute_root), "{stderr}");
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
 }

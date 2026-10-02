@@ -148,7 +148,7 @@ fn opt_in_components_html_exact_provenance_and_cross_directory_bytes() {
     for policy in policies {
         let mut end = 0;
         let spans = policy["spans"].as_array().unwrap();
-        assert!(!spans.is_empty());
+        assert_ne!(spans.as_slice(), [] as [serde_json::Value; 0]);
         for span in spans {
             assert_eq!(span["output"]["start"].as_u64().unwrap(), end);
             end = span["output"]["end"].as_u64().unwrap();
@@ -264,7 +264,7 @@ fn impact_noop_independent_directories_report_churn_and_unverified_inputs() {
     exit(&result, 0);
     let value: Value = serde_json::from_slice(&result.stdout).unwrap();
     assert_eq!(value["status"], "complete");
-    assert!(value["findings"].as_array().unwrap().is_empty());
+    assert_eq!(value["findings"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
     impact_request(&root, "old/project.json", "old/project.json");
     exit(&run(&root, &["author", "impact", "--manifest", "impact.json"]), 0);
     // Reformat only the report, manually refreshing every affected binding.
@@ -303,7 +303,7 @@ fn impact_noop_independent_directories_report_churn_and_unverified_inputs() {
     exit(&result, 2);
     let value: Value = serde_json::from_slice(&result.stdout).unwrap();
     assert_eq!(value["status"], "incomplete");
-    assert!(value["sections"].as_array().unwrap().is_empty());
+    assert_eq!(value["sections"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -400,7 +400,7 @@ fn handoff_is_explicit_exact_draft_only_self_contained_and_no_overwrite() {
         let record = read(&root.join("drafts-a"), &format!("{key}.lifecycle.json"));
         assert_eq!(record["schema_version"], "forge.policy-lifecycle/2");
         assert_eq!(record["state"], "draft");
-        assert!(record["history"].as_array().unwrap().is_empty());
+        assert_eq!(record["history"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
         exit(
             &run(
                 &root.join("drafts-a"),
@@ -693,7 +693,7 @@ fn component_extension_reformat_is_visible_and_drift_is_unverified() {
     exit(&output, 2);
     let report: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["status"], "incomplete");
-    assert!(report["sections"].as_array().unwrap().is_empty());
+    assert_eq!(report["sections"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
     assert!(String::from_utf8_lossy(&output.stdout).contains("component-input"));
 }
 
@@ -737,7 +737,7 @@ fn impact_html_is_deterministic_across_directories_and_keeps_answer_values_priva
         let report: Value = serde_json::from_slice(&artifacts["impact.json"]).unwrap();
         assert_eq!(report["schema_version"], "forge.authoring-impact-report/1");
         assert_eq!(report["status"], "complete");
-        assert!(!report["findings"].as_array().unwrap().is_empty());
+        assert_ne!(report["findings"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
         for (path, bytes) in &artifacts {
             let text = String::from_utf8_lossy(bytes);
             for value in ["Fictional draft custodian", "Different draft custodian"] {
@@ -812,7 +812,7 @@ fn handoff_publishes_complete_drafts_with_exit_one_when_drafting_work_remains() 
     assert_eq!(plan["plan"]["policies"][0]["state"], "blocked-context");
     let record = read(&root.join("pending-drafts"), "sample-policy.lifecycle.json");
     assert_eq!(record["state"], "draft");
-    assert!(record["history"].as_array().unwrap().is_empty());
+    assert_eq!(record["history"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
     exit(
         &run(
             &root.join("pending-drafts"),
@@ -873,8 +873,8 @@ fn outside_component_pins_are_classified_consistently_across_snapshot_locations(
         assert_eq!(report["status"], "incomplete");
         assert_eq!(report["findings"][0]["category"], "component-input-unverified");
         assert_eq!(report["findings"][0]["unverified_reason"], "component-input");
-        assert!(report["sections"].as_array().unwrap().is_empty());
-        assert!(report["policies"].as_array().unwrap().is_empty());
+        assert_eq!(report["sections"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
+        assert_eq!(report["policies"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
         for (path, bytes) in &artifacts {
             let text = String::from_utf8_lossy(bytes);
             for private in [
@@ -920,8 +920,8 @@ fn failed_old_capture_does_not_refund_unknown_bytes_to_the_new_snapshot() {
         assert_eq!(report["findings"][0]["subject_key"], "both");
         assert!(report["old_report_sha256"].is_null());
         assert!(report["new_report_sha256"].is_null());
-        assert!(report["sections"].as_array().unwrap().is_empty());
-        assert!(report["policies"].as_array().unwrap().is_empty());
+        assert_eq!(report["sections"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
+        assert_eq!(report["policies"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
     }
 }
 

@@ -118,7 +118,7 @@ fn invalid_arguments_and_inputs_exit_two() {
 
     let capped = reuse(&root, &["--max-candidates", "0"]);
     assert_exit(&capped, 2);
-    assert!(capped.stdout.is_empty());
+    assert_eq!(capped.stdout, [] as [u8; 0]);
 
     let negative = reuse(&root, &["--min-score", "-1"]);
     assert_exit(&negative, 2);
@@ -168,7 +168,7 @@ fn publishes_a_generation_and_refuses_an_existing_destination() {
 
     let refused = reuse(&root, &["--format", "json", "--output-dir", "out", "--html"]);
     assert_exit(&refused, 2);
-    assert!(refused.stdout.is_empty());
+    assert_eq!(refused.stdout, [] as [u8; 0]);
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
@@ -273,7 +273,7 @@ fn report_holds_only_declared_metadata_and_verbatim_spans() {
             let end = usize::try_from(candidate["span"]["end"].as_u64().unwrap()).unwrap();
             assert!(start < end && end <= bytes.len());
             let text = std::str::from_utf8(&bytes[start..end]).unwrap();
-            assert!(!text.trim().is_empty());
+            assert_ne!(text.trim(), "");
             let _ = slices.insert(text.to_owned());
         }
     }

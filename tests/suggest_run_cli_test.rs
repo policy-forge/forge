@@ -231,7 +231,7 @@ fn process_execution_is_refused_without_side_effects_or_json_contamination() {
     prepared(&root, "#!/bin/sh\n(sleep 30) & printf leaked > escaped.txt; printf response\n");
     let output = invoke(&root, &["--format", "json"]);
     assert_exit(&output, 1);
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout, [] as [u8; 0]);
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("process adapter execution is disabled")
     );

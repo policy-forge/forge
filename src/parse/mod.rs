@@ -357,7 +357,7 @@ mod tests {
         assert_eq!(sections[0].title, "Policy");
         assert_eq!(sections[0].heading_level, 1);
         assert_eq!(sections[0].source_line, 1);
-        assert!(sections[0].children.is_empty());
+        assert_eq!(sections[0].children, [] as [crate::parse::SectionNode; 0]);
     }
 
     // ── T009: H1 followed by H2 ─────────────────────────────────────
@@ -471,7 +471,7 @@ mod tests {
     fn no_headings_returns_empty_vec() {
         let md = "Just some text.\n\nMore text.\n";
         let sections = extract_sections(md).unwrap();
-        assert!(sections.is_empty());
+        assert_eq!(sections, [] as [crate::parse::SectionNode; 0]);
     }
 
     // ── F0006: YAML front matter must not become a phantom section ──
@@ -504,7 +504,7 @@ mod tests {
         let sections = extract_sections(md).unwrap();
         assert_eq!(sections.len(), 1);
         assert_eq!(sections[0].title, "Only One");
-        assert!(sections[0].children.is_empty());
+        assert_eq!(sections[0].children, [] as [crate::parse::SectionNode; 0]);
     }
 
     // ── T021: H1 → H3 → H2 pops H3 and makes H2 sibling ──────────
