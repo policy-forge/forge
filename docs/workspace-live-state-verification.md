@@ -1,5 +1,10 @@
 # Workspace live-state development verification
 
+This is the historical pagination/live-state slice. The separate
+[keyboard verification successor](workspace-keyboard-verification.md) records
+later unlock and confirmation changes; this slice’s JSON receipt and observations
+remain unchanged.
+
 This record binds the applied F05 pagination, operation-status and control-border
 slice on baseline `01251ab5963d00ca3d8dbfb4132d57cdbb8f2de8`. The
 [machine-readable receipt](workspace-live-state-verification.json) retains exact

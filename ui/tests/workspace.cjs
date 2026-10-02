@@ -12,11 +12,12 @@ const {createHash}=require("node:crypto");
  const browser=await chromium.launch(options);
  const context=await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:"block"});
  const page=await context.newPage();page.setDefaultTimeout(20000);
- const violations=[];const calls=new Set();const errors=[];let provenanceReads=0;let focusChecks=0;let embeddedAssetSha256;let embeddedStyleSha256;let inputBorderContrast;let conversionRequests=0;const reflowChecks=[];
+ const violations=[];const calls=new Set();const errors=[];let provenanceReads=0;let focusChecks=0;let embeddedAssetSha256;let embeddedStyleSha256;let inputBorderContrast;let conversionRequests=0;let unlockRequests=0;const reflowChecks=[];const syntheticFaults=[];
   page.on("request",request=>{
     const pathname=new URL(request.url()).pathname;
     if(pathname==="/api/v1/provenance/entries")provenanceReads++;
     if(pathname==="/api/v1/conversions"&&request.method()==="POST")conversionRequests++;
+    if(pathname==="/api/v1/session/unlock"&&request.method()==="POST")unlockRequests++;
   });
  const contract=fs.readFileSync(path.join(__dirname,"../../docs/api/forge-workspace-v1.openapi.yaml"),"utf8");
  const documented=[];let routePath;
@@ -72,18 +73,50 @@ const {createHash}=require("node:crypto");
    inputBorderContrast={...inputColors,againstFill:contrast(inputColors.border,inputColors.fill),againstAncestor:contrast(inputColors.border,inputColors.ancestor)};
    assert(inputBorderContrast.againstFill>=3,"the input border must contrast with its fill by at least 3:1");
    assert(inputBorderContrast.againstAncestor>=3,"the input border must contrast with its adjacent background by at least 3:1");
-   await page.getByLabel("Workspace passphrase").fill("synthetic browser verification passphrase 062");
-   await page.getByRole("button",{name:"Unlock workspace",exact:true}).click();
+   /** Activate a native control with Enter after explicitly setting keyboard focus. */
+   const activate=async locator=>{await locator.focus();await locator.press("Enter");};
+   /** Observe exact focus after async work without assigning a target to satisfy the assertion. */
+   const focused=async locator=>{await page.waitForFunction(node=>node===document.activeElement,await locator.elementHandle());assert(await locator.evaluate(node=>node===document.activeElement));focusChecks++;};
+   const credential=page.getByLabel("Workspace passphrase");
+   await focused(credential);
+   assert.equal(await page.locator("#status").textContent(),"Workspace locked — passphrase required.");
+   assert.equal(await credential.getAttribute("aria-describedby"),"status");
+   // This documented429 is a delayed synthetic UI fault, not authentic server timing evidence.
+   const throttleMessage="Too many attempts — retry available in 2 seconds. Wait, then retry. If repeated, stop and relaunch the workspace from the terminal.";
+   let releaseThrottle;
+   const throttleGate=new Promise(resolve=>{releaseThrottle=resolve;});
+   /** Hold one closed Error-envelope response until pending keyboard behavior is observed. */
+   const delayThrottle=async route=>{await throttleGate;await route.fulfill({status:429,contentType:"application/json",body:JSON.stringify({code:"unlock-throttled",message:throttleMessage,retryable:true})});};
+   await page.route("**/api/v1/session/unlock",delayThrottle,{times:1});
+   await credential.fill("synthetic browser verification passphrase 062");
+   const pendingUnlock=page.waitForRequest(request=>new URL(request.url()).pathname==="/api/v1/session/unlock"&&request.method()==="POST");
+   await credential.press("Enter");await pendingUnlock;
+   await page.waitForFunction(()=>document.getElementById("status").textContent==="Unlocking workspace…");
+   await focused(credential);
+   assert.equal(await page.locator("#unlock-form").getAttribute("aria-busy"),"true");
+   const unlockButton=page.getByRole("button",{name:"Unlock workspace",exact:true});
+   assert.equal(await unlockButton.getAttribute("aria-disabled"),"true");
+   const nativeUnlockState=await unlockButton.evaluate(control=>({disabled:control.disabled,connected:control.isConnected}));
+   assert.deepEqual(nativeUnlockState,{disabled:false,connected:true},"Pending focus must remain on a connected native control");
+   await credential.press("Enter");
+   // Observe beyond the client's60ms request spacing while the injected reply is still held.
+   await page.waitForTimeout(150);assert.equal(unlockRequests,1,"Pending Enter must not duplicate unlock transport");
+   releaseThrottle();
+   await page.waitForFunction(message=>document.getElementById("status").textContent===message,throttleMessage);
+   await focused(credential);
+   assert.equal(await credential.inputValue(),"");
+   assert.equal(await page.locator("#error").isVisible(),false);
+   assert.equal(await page.locator("#unlock-form").getAttribute("aria-busy"),"false");
+   assert.equal(await unlockButton.getAttribute("aria-disabled"),"false");
+   syntheticFaults.push({kind:"unlock-throttled",status:429,message:throttleMessage,duplicateSubmitObservationMs:150,scope:"delayed documented UI fault; no authentic server delay qualification"});
+   await credential.fill("synthetic browser verification passphrase 062");
+   await credential.press("Enter");
    await page.getByRole("heading",{name:"Overview",exact:true}).waitFor();
    // Visible shell headings precede async unlock completion; observe readiness without setting focus.
    await page.waitForFunction(()=>document.activeElement===document.getElementById("main")
      && !document.getElementById("view").inert
      && document.getElementById("status").textContent==="Project state loaded.");
    // Keyboard activation exercises the native button/dialog contracts without a pointer.
-   /** Activate a native control with Enter after explicitly setting keyboard focus. */
-   const activate=async locator=>{await locator.focus();await locator.press("Enter");};
-   /** Wait for queued native close/action completion, then assert the exact focus target. */
-   const focused=async locator=>{await page.waitForFunction(node=>node===document.activeElement,await locator.elementHandle());assert(await locator.evaluate(node=>node===document.activeElement));focusChecks++;};
    /** Verify heading focus or the declared prerequisite error before a manifest exists. */
    const navigate=async(name,initialInventoryError)=>{
      await activate(page.getByRole("navigation").getByRole("button",{name,exact:true}));
@@ -141,7 +174,18 @@ const {createHash}=require("node:crypto");
    await page.route("**/api/v1/resources?*",route=>route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic navigation failure.",retryable:true})}),{times:1});
    await activate(page.getByRole("navigation").getByRole("button",{name:"Policies & Artifacts",exact:true}));
    await page.locator("#error").waitFor({state:"visible"});assert.match(await page.locator("#error").textContent(),/Synthetic navigation failure/);await focused(page.locator("#error"));
-   const confirm=async()=>{await page.getByRole("dialog").getByRole("button",{name:"Confirm this exact write"}).click();await page.getByRole("dialog").waitFor({state:"hidden"});};
+   /** Confirm with native Enter, then observe queued close and the exact current saved focus target. */
+   const confirm=async(refreshFailure)=>{
+     const dialog=page.getByRole("dialog");
+     await activate(dialog.getByRole("button",{name:"Confirm this exact write",exact:true}));
+     await dialog.waitFor({state:"hidden"});
+     await page.waitForFunction(()=>document.getElementById("status").textContent.startsWith("Saved "));
+     if(refreshFailure){
+       const error=page.locator("#error");await error.waitFor({state:"visible"});
+       assert.match(await error.textContent(),/write was saved, but the view could not be refreshed/);
+       assert((await error.textContent()).includes(refreshFailure));await focused(error);
+     }else await focused(page.locator("#view-title"));
+   };
    await navigate("Policies & Artifacts");
    if(readOnly){assert.equal(await page.getByRole("button",{name:"Preview registration"}).count(),0);}
    else {
@@ -167,11 +211,11 @@ const {createHash}=require("node:crypto");
      // Inject documented transport failures without publishing or replacing project data.
      await page.getByLabel("Resource role",{exact:true}).selectOption("oscal-catalog-artifact");await page.getByLabel("Project-relative file path",{exact:true}).fill("framework.json");await page.getByLabel("Stable resource key",{exact:true}).fill("framework");await page.getByRole("button",{name:"Preview registration",exact:true}).click();
      await page.route("**/api/v1/effects/commits",route=>route.fulfill({status:409,contentType:"application/json",body:JSON.stringify({code:"receipt-expired",message:"The preview expired. Prepare a new preview.",retryable:false})}),{times:1});
-     await page.getByRole("dialog").getByRole("button",{name:"Confirm this exact write"}).click();const alert=page.getByRole("dialog").getByRole("alert");await alert.waitFor();assert.match(await alert.textContent(),/receipt-expired/);assert(await alert.evaluate(node=>node===document.activeElement));
+     await activate(page.getByRole("dialog").getByRole("button",{name:"Confirm this exact write",exact:true}));const alert=page.getByRole("dialog").getByRole("alert");await alert.waitFor();assert.match(await alert.textContent(),/receipt-expired/);assert(await alert.evaluate(node=>node===document.activeElement));
      await page.getByRole("dialog").getByRole("button",{name:"Keep editing",exact:true}).click();assert.equal(await page.getByLabel("Project-relative file path",{exact:true}).inputValue(),"framework.json");
      await page.getByRole("button",{name:"Preview registration",exact:true}).click();await page.getByRole("dialog").waitFor();assert.equal(await page.getByRole("dialog").getByRole("alert").count(),0,"a new preview must not retain the previous confirmation error");
      await page.route("**/api/v1/resources?*",route=>route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic refresh failure.",retryable:true})}),{times:1});
-     await confirm();await page.locator("#error").waitFor({state:"visible"});assert.match(await page.locator("#error").textContent(),/write was saved.*Synthetic refresh failure/);assert(await page.locator("#error").evaluate(node=>node===document.activeElement));await page.getByRole("button",{name:"Refresh",exact:true}).click();await page.getByLabel("Output model").waitFor();
+     await confirm("Synthetic refresh failure.");await page.locator("#error").waitFor({state:"visible"});assert.match(await page.locator("#error").textContent(),/write was saved.*Synthetic refresh failure/);assert(await page.locator("#error").evaluate(node=>node===document.activeElement));await page.getByRole("button",{name:"Refresh",exact:true}).click();await page.getByLabel("Output model").waitFor();
      await page.getByLabel("Output model").selectOption("oscal-catalog");await page.getByLabel("Output project-relative path").fill("converted.json");
      // Use a real preparation and real known ID; only its first status read is fault injected.
      const preparationsBefore=conversionRequests;
@@ -219,7 +263,7 @@ const {createHash}=require("node:crypto");
      await page.getByRole("dialog").waitFor();await focused(page.getByRole("heading",{name:"Review proposed write",exact:true}));await confirm();
      await navigate("Policies & Artifacts");
      await register("converted.json","oscal-catalog-artifact","converted");
-     await navigate("Framework Scope","Register one valid applicability manifest and its dependencies.");await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("New decision manifest path within project").fill("scope.json");await page.getByRole("button",{name:"Preview initial scope manifest"}).click();await confirm();
+     await navigate("Framework Scope","Register one valid applicability manifest and its dependencies.");await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("New decision manifest path within project").fill("scope.json");await page.getByRole("button",{name:"Preview initial scope manifest"}).click();await confirm("Register one valid applicability manifest and its dependencies.");
      await navigate("Policies & Artifacts");await register("scope.json","applicability-manifest","scope");
      await navigate("Framework Scope");
      // The launcher supplies 53 authored controls; ordinary navigation retains heading focus.
@@ -287,7 +331,7 @@ const {createHash}=require("node:crypto");
      for(const [label,value] of [["Stable collection key","mapping"],["Mapping collection title","Synthetic mapping"],["Document version","1"],["Review time (RFC3339, including timezone)","2026-09-10T00:00:00Z"],["Reviewer key","reviewer"],["Asserted reviewer name","Synthetic mapping reviewer"],["Intended use and limitations","Synthetic explicit review only"],["Stable relationship key","reviewed-none"],["Relationship rationale","Explicit absence of a positive relationship"]])await page.getByLabel(label,{exact:true}).fill(value);
      await page.getByLabel("Review matching rationale").selectOption("semantic");await page.getByRole("button",{name:"Load selected Catalog subjects"}).click();
      await page.getByLabel("Reviewed policy subject").selectOption({index:1});await page.getByLabel("Reviewed framework subject").selectOption({label:"Control: framework-a"});await page.getByLabel("Reviewed relationship",{exact:true}).selectOption("no-relationship");
-     await page.getByRole("button",{name:"Preview initial mapping manifest"}).click();await confirm();
+     await page.getByRole("button",{name:"Preview initial mapping manifest"}).click();await confirm("The selected domain inputs are missing, ambiguous, invalid, or stale.");
      await navigate("Policies & Artifacts");await register("mapping-manifest.json","mapping-collection","mapping");await navigate("Mappings");
      await page.getByLabel("Relationship to review").selectOption("reviewed-none");await page.getByLabel("Mapping review rationale").fill("Explicit updated rationale");await page.getByRole("button",{name:"Apply relationship to unsaved manifest"}).click();await page.getByRole("button",{name:"Validate decisions"}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
      await page.getByLabel("New relationship key",{exact:true}).fill("reviewed-additional");await page.getByLabel("New relationship policy subject",{exact:true}).selectOption({index:1});await page.getByLabel("New relationship framework subject",{exact:true}).selectOption({label:"framework-b"});await page.getByLabel("New relationship type",{exact:true}).selectOption("equivalent-to");await page.getByLabel("New relationship reviewer",{exact:true}).selectOption("reviewer");await page.getByLabel("New relationship review time (RFC3339)",{exact:true}).fill("2026-09-10T00:00:00Z");await page.getByLabel("New relationship rationale",{exact:true}).fill("Explicit additional synthetic review");await page.getByRole("button",{name:"Add relationship to unsaved manifest",exact:true}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
@@ -302,7 +346,10 @@ const {createHash}=require("node:crypto");
      assert.equal(await reportTarget.inputValue(),"unconfirmed-report.html");await focused(traceConverted);assert.equal(provenanceReads,beforeTrace);
      await activate(traceConverted);await discard();await page.getByRole("heading",{name:"Provenance references",exact:true}).waitFor();await focused(page.locator("#view-title"));
      await navigate("Trace & Reports");await page.getByLabel("Report",{exact:true}).selectOption("trace");await page.getByLabel("Report destination within project").fill("trace.html");await page.getByRole("button",{name:"Prepare export"}).click();await confirm();
-     const download=page.waitForEvent("download");await page.getByRole("button",{name:"Download committed redacted report"}).click();assert.equal((await download).suggestedFilename(),"forge-redacted-report.html");
+     // Continue from post-close heading using native Tab; do not reset focus for this assertion.
+     await page.keyboard.press("Tab");await focused(page.getByRole("button",{name:"Refresh",exact:true}));
+     await page.keyboard.press("Tab");await focused(page.getByRole("button",{name:"Download committed redacted report",exact:true}));
+     const download=page.waitForEvent("download");await page.keyboard.press("Enter");assert.equal((await download).suggestedFilename(),"forge-redacted-report.html");
    }
    if(process.env.FORGE_TEST_SCREENSHOT)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT,fullPage:true});
    for(const width of [640,320]){
@@ -321,7 +368,7 @@ const {createHash}=require("node:crypto");
    await page.getByRole("dialog").getByRole("button",{name:"Stop workspace",exact:true}).click();
    await page.getByText("Stopped",{exact:true}).waitFor();
    assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
-   console.log(JSON.stringify({mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,reflowChecks,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0}));
+   console.log(JSON.stringify({mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,reflowChecks,syntheticFaults,unlockRequests,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0}));
  } catch(error){
    console.error(error.stack || error.message);console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
    console.error("Focus state:",JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,error:document.getElementById("error")?.outerHTML,viewInert:document.getElementById("view")?.inert,dialogs:[...document.querySelectorAll("dialog[open]")].map(node=>node.outerHTML)}))));
