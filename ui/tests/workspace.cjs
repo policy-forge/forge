@@ -1,17 +1,22 @@
 // Real embedded UI interactions: no privileged API calls or injected project state.
-const {chromium}=require("playwright");
+const {chromium,errors:browserErrors}=require("playwright");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const path=require("node:path");
 const {createHash}=require("node:crypto");
+const {createTracker,reconcileCleanup,publishOutcome}=require("./workspace_failure.cjs");
+const failureTracker=createTracker(browserErrors.TimeoutError);
+let outcomePublished=false;
 (async()=>{
+ let browser=null;let context=null;let page=null;let observation=null;
+ try {
  const url=process.argv[2];const readOnly=process.argv[3]==="read-only";const longMetadata=process.env.FORGE_TEST_LONG_METADATA==="1";
  assert.match(url,/^http:\/\/127\.0\.0\.1:[0-9]+$/);
  const options={headless:true,args:["--disable-background-networking"]};
  if(process.env.FORGE_TEST_BROWSER_EXECUTABLE)options.executablePath=process.env.FORGE_TEST_BROWSER_EXECUTABLE;
- const browser=await chromium.launch(options);
- const context=await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:"block"});
- const page=await context.newPage();page.setDefaultTimeout(20000);
+ browser=await chromium.launch(options);
+ context=await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:"block"});
+ page=await context.newPage();page.setDefaultTimeout(20000);
  const violations=[];const calls=new Set();const errors=[];let provenanceReads=0;let focusChecks=0;let embeddedAssetSha256;let embeddedStyleSha256;let inputBorderContrast;let conversionRequests=0;let unlockRequests=0;const reflowChecks=[];const syntheticFaults=[];const measuredOperationResponses=[];const measuredOperationTasks=new Set();
   page.on("request",request=>{
     const pathname=new URL(request.url()).pathname;
@@ -56,7 +61,7 @@ const {createHash}=require("node:crypto");
  }
  page.on("response",queueMeasuredOperation);
  page.on("pageerror",error=>errors.push(error.message));
- try {
+   failureTracker.setStage("asset-binding");
    const assetResponse=page.waitForResponse(response=>/^\/assets\/[a-f0-9]{64}\.js$/.test(new URL(response.url()).pathname));
    const styleResponse=page.waitForResponse(response=>/^\/assets\/[a-f0-9]{64}\.css$/.test(new URL(response.url()).pathname));
    await page.goto(url);
@@ -89,6 +94,7 @@ const {createHash}=require("node:crypto");
      window.__forgeCapturedRegistrationObserver=observer;
    });
    // These measured colors qualify only this fixture's input boundary, not full AA acceptance.
+   failureTracker.setStage("input-style-binding");
    const inputColors=await page.getByLabel("Workspace passphrase").evaluate(input=>{
      const style=getComputedStyle(input);
      let ancestor=input.parentElement;let background="rgb(255, 255, 255)";
@@ -118,6 +124,7 @@ const {createHash}=require("node:crypto");
    const activate=async locator=>{await locator.focus();await locator.press("Enter");};
    /** Observe exact focus after async work without assigning a target to satisfy the assertion. */
    const focused=async locator=>{await page.waitForFunction(node=>node===document.activeElement,await locator.elementHandle());assert(await locator.evaluate(node=>node===document.activeElement));focusChecks++;};
+   failureTracker.setStage("unlock");
    const credential=page.getByLabel("Workspace passphrase");
    await focused(credential);
    assert.equal(await page.locator("#status").textContent(),"Workspace locked — passphrase required.");
@@ -211,6 +218,7 @@ const {createHash}=require("node:crypto");
      }else assert.equal(matching,total);
      await controlPage(matching,total,1,Math.min(matching,50));
    };
+   failureTracker.setStage("navigation-recovery");
    // A failed destination read must leave the focused summary intact, then recover normally.
    await page.route("**/api/v1/resources?*",route=>route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic navigation failure.",retryable:true})}),{times:1});
    await activate(page.getByRole("navigation").getByRole("button",{name:"Policies & Artifacts",exact:true}));
@@ -227,6 +235,7 @@ const {createHash}=require("node:crypto");
        assert((await error.textContent()).includes(refreshFailure));await focused(error);
      }else await focused(page.locator("#view-title"));
    };
+   failureTracker.setStage("resource-authoring");
    await navigate("Policies & Artifacts");
    if(readOnly){assert.equal(await page.getByRole("button",{name:"Preview registration"}).count(),0);}
    else {
@@ -258,6 +267,7 @@ const {createHash}=require("node:crypto");
      await page.route("**/api/v1/resources?*",route=>route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic refresh failure.",retryable:true})}),{times:1});
      await confirm("Synthetic refresh failure.");await page.locator("#error").waitFor({state:"visible"});assert.match(await page.locator("#error").textContent(),/write was saved.*Synthetic refresh failure/);assert(await page.locator("#error").evaluate(node=>node===document.activeElement));await page.getByRole("button",{name:"Refresh",exact:true}).click();await page.getByLabel("Output model").waitFor();
      await page.getByLabel("Output model").selectOption("oscal-catalog");await page.getByLabel("Output project-relative path").fill("converted.json");
+     failureTracker.setStage("conversion-recovery");
      // Use a real preparation and real known ID; only its first status read is fault injected.
      const preparationsBefore=conversionRequests;
      const conversionReply=page.waitForResponse(response=>response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/conversions"&&response.ok());
@@ -304,6 +314,7 @@ const {createHash}=require("node:crypto");
      await page.getByRole("dialog").waitFor();await focused(page.getByRole("heading",{name:"Review proposed write",exact:true}));await confirm();
      await navigate("Policies & Artifacts");
      await register("converted.json","oscal-catalog-artifact","converted");
+     failureTracker.setStage("framework-workflow");
      await navigate("Framework Scope","Register one valid applicability manifest and its dependencies.");await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("New decision manifest path within project").fill("scope.json");await page.getByRole("button",{name:"Preview initial scope manifest"}).click();await confirm("Register one valid applicability manifest and its dependencies.");
      await navigate("Policies & Artifacts");await register("scope.json","applicability-manifest","scope");
      await navigate("Framework Scope");
@@ -361,6 +372,7 @@ const {createHash}=require("node:crypto");
      const inspectScope=page.getByRole("button",{name:"Inspect framework-a",exact:true}).first();const beforeScopeInspect=provenanceReads;
      await activate(inspectScope);await page.getByRole("dialog").waitFor();await page.keyboard.press("Escape");await page.getByRole("dialog").waitFor({state:"hidden"});
      assert.equal(await scopeDocument.inputValue(),unsavedScope);await focused(inspectScope);assert.equal(provenanceReads,beforeScopeInspect);
+     failureTracker.setStage("decision-authoring");
      await page.getByLabel("Control to review").selectOption("framework-a");await page.getByLabel("Explicit decision").selectOption("applicable");await page.getByLabel("Decision reviewer key").fill("reviewer");await page.getByLabel("Decision reviewer name").fill("Synthetic reviewer <script>" );await page.getByLabel("Decision review time (RFC3339)").fill("2026-09-10T00:00:00Z");await page.getByLabel("Decision rationale").fill("Explicit synthetic scope review");
      await page.getByRole("button",{name:"Apply decision to unsaved manifest"}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
      // One real committed decision changes the matching count without changing total scope.
@@ -381,6 +393,7 @@ const {createHash}=require("node:crypto");
      await navigate("Framework Scope");await page.getByLabel("Reviewed mapping collection",{exact:true}).selectOption({label:"built-mapping · mapping-collection.json"});await page.getByRole("button",{name:"Link collection to unsaved scope",exact:true}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();await page.getByRole("button",{name:"Analyze committed scope decisions"}).click();await confirm();
      assert(await page.getByRole("cell",{name:"applicable-reviewed-no-relationship",exact:true}).count()>0);
      await navigate("Trace & Reports");
+     failureTracker.setStage("trace-export");
      const reportTarget=page.getByLabel("Report destination within project");const traceConverted=page.getByRole("button",{name:"Trace converted",exact:true});
      await reportTarget.fill("unconfirmed-report.html");const beforeTrace=provenanceReads;
      await activate(traceConverted);await page.getByRole("dialog").waitFor();await activate(page.getByRole("dialog").getByRole("button",{name:"Keep editing",exact:true}));await page.getByRole("dialog").waitFor({state:"hidden"});
@@ -394,6 +407,7 @@ const {createHash}=require("node:crypto");
    }
     /** Exercise real documented metadata reads and a local download in either session mode. */
     async function verifyMetadataConsumer() {
+      failureTracker.setStage("metadata-preview");
       await navigate("Trace & Reports");
       const panel=page.locator("[data-bundle-panel]");
       const preview=panel.getByRole("button",{name:"Preview metadata",exact:true});
@@ -439,6 +453,7 @@ const {createHash}=require("node:crypto");
       assert.equal(observed.bundle.pins.length,observed.bundle.index.resources.length);
       assert.equal(await panel.getByRole("table",{name:"Complete registered bundle metadata",exact:true}).locator("tbody tr").count(),observed.bundle.pins.length);
       await focused(preview);
+      failureTracker.setStage("metadata-long-label");
       let projectLabelObservation;
       if(longMetadata) {
         const label=observed.bundle.index.label;
@@ -452,6 +467,7 @@ const {createHash}=require("node:crypto");
         console.error("Metadata long-content project-label observation:",JSON.stringify(projectLabelObservation));
         await measureMetadataLongContent("after-preview");await focused(preview);
       }
+      failureTracker.setStage("metadata-download");
       // Observe native Tab order after the asynchronous preview, without assigning these targets.
       await page.keyboard.press("Tab");await focused(panel.getByRole("region",{name:"Complete registered bundle metadata",exact:true}));
       await page.keyboard.press("Tab");await focused(acknowledgment);await page.keyboard.press("Space");
@@ -462,6 +478,7 @@ const {createHash}=require("node:crypto");
       const downloadedPath=await downloaded.path();assert(downloadedPath);const bytes=fs.readFileSync(downloadedPath);
       assert.deepEqual(bytes,Buffer.from(JSON.stringify(observed.bundle)),"Local download must contain the complete observed bundle alone");
       assert(bytes.length<=1024*1024);await focused(downloadButton);
+      failureTracker.setStage("metadata-file-selection");
       await page.keyboard.press("Tab");await focused(file);
       // setInputFiles supplies an external synthetic File through the native input; no OS chooser claim.
       const chosenName=longMetadata?"N".repeat(180)+".json":"observed-metadata.json";
@@ -478,6 +495,7 @@ const {createHash}=require("node:crypto");
         const overflow=metadataReflow.filter(value=>value.pageWidth>value.viewportWidth);
         assert.deepEqual(overflow,[],"Actual metadata long content overflowed the global page: "+JSON.stringify(overflow));
       }
+      failureTracker.setStage("metadata-comparison");
       await page.keyboard.press("Tab");await focused(compare);
       const comparisonReply=page.waitForResponse(response=>response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/project/bundle-verifications"&&response.ok());
       await page.keyboard.press("Enter");const actualComparisonReply=await comparisonReply;const comparison=await actualComparisonReply.json();
@@ -492,6 +510,7 @@ const {createHash}=require("node:crypto");
       assert.equal(comparison.expected_index_matches_current,true);assert.equal(comparison.current_only_resources,0);
       assert.equal(await panel.getByRole("table",{name:"Complete expected fingerprint comparison",exact:true}).locator("tbody tr").count(),comparison.expected_resources);
       await focused(compare);
+      failureTracker.setStage("metadata-duplicate");
       // A duplicate raw key remains a strict server-parser rejection, never a client-side projection.
       const duplicate=Buffer.concat([Buffer.from('{"schema_version":"forge.workspace-index-bundle/1",'),bytes.subarray(1)]);
       await file.setInputFiles({name:"duplicate-metadata.json",mimeType:"application/json",buffer:duplicate});
@@ -500,6 +519,7 @@ const {createHash}=require("node:crypto");
       assert.deepEqual(rejected.request().postDataBuffer(),Buffer.concat([Buffer.from('{"bundle":'),duplicate,Buffer.from('}')]));
       const localError=panel.locator("[data-bundle-comparison-error]");await localError.waitFor({state:"visible"});await focused(localError);
       assert.equal(await page.locator("#error").isVisible(),false);assert.equal(await page.locator("#status").textContent(),globalStatus);
+      failureTracker.setStage("metadata-refresh");
       // A fresh actual preview revokes the earlier disclosure acknowledgment, even in read-only mode.
       const refreshed=page.waitForResponse(response=>response.request().method()==="GET"&&new URL(response.url()).pathname==="/api/v1/project/bundle-preview"&&response.ok());
       await activate(preview);await refreshed;
@@ -515,6 +535,7 @@ const {createHash}=require("node:crypto");
     }
     const metadataConsumerObservation=await verifyMetadataConsumer();
    if(process.env.FORGE_TEST_SCREENSHOT)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT,fullPage:true});
+   failureTracker.setStage("final-reflow");
    for(const width of [640,320]){
      await page.setViewportSize({width,height:900});
      const observation=await page.evaluate(()=>({viewportWidth:window.innerWidth,pageWidth:document.documentElement.scrollWidth,operations:[...document.querySelectorAll("#operation-region article")].map(node=>{
@@ -525,12 +546,15 @@ const {createHash}=require("node:crypto");
      for(const row of observation.operations){assert.equal(row.heading,"Operation "+row.id);assert(row.headingWithinRow,"Operation heading overflowed its row: "+JSON.stringify(row));}
      reflowChecks.push(observation);
    }
+   failureTracker.setStage("storage-checks");
    assert.deepEqual(await context.cookies(),[]);
    assert.deepEqual(await page.evaluate(()=>[localStorage.length,sessionStorage.length]),[0,0]);
+   failureTracker.setStage("session-shutdown");
    await page.getByRole("button",{name:"Stop workspace",exact:true}).first().click();
    await page.getByRole("dialog").getByRole("button",{name:"Stop workspace",exact:true}).click();
    await page.getByText("Stopped",{exact:true}).waitFor();
    await Promise.all([...measuredOperationTasks]);
+   failureTracker.setStage("counter-correlation");
    const renderedCaptureFacts=await page.evaluate(()=>{
      window.__forgeCapturedRegistrationObserver.disconnect();
      return window.__forgeCapturedRegistrationObservations;
@@ -543,11 +567,21 @@ const {createHash}=require("node:crypto");
      distinctRenderedCounterFacts:renderedCaptureFacts.length,
      responseFactsWithoutRenderedObservation:measuredOperationResponses.filter(value=>!renderedFacts.has(`${value.id}|${value.completed}|${value.total}`)).length,
      qualification:renderedCaptureFacts.length?"actual_api_and_rendered_counter_correlation_only":"no_transient_capture_counter_render_observed"};
+   failureTracker.setStage("request-page-errors");
    assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
-   console.log(JSON.stringify({mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,reflowChecks,syntheticFaults,captureConsumerObservation,metadataConsumerObservation,unlockRequests,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0}));
+   observation={mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,reflowChecks,syntheticFaults,captureConsumerObservation,metadataConsumerObservation,unlockRequests,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0};
  } catch(error){
+   failureTracker.capture(error);process.exitCode=1;
+   try {
+
    console.error(error.stack || error.message);console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
    console.error("Focus state:",JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,error:document.getElementById("error")?.outerHTML,viewInert:document.getElementById("view")?.inert,dialogs:[...document.querySelectorAll("dialog[open]")].map(node=>node.outerHTML)}))));
-   await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:true});process.exitCode=1;
- } finally {await context.close();await browser.close();}
-})().catch(error=>{console.error(error.message);process.exitCode=1;});
+   if(page!==null)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:true});
+   } catch(diagnosticError){failureTracker.capture(diagnosticError);}
+ } finally {await reconcileCleanup(failureTracker,context,browser);}
+ outcomePublished=true;
+ if(!publishOutcome(failureTracker,observation,value=>console.log(JSON.stringify(value))))process.exitCode=1;
+})().catch(error=>{
+ failureTracker.capture(error);process.exitCode=1;
+ if(!outcomePublished){outcomePublished=true;console.log(JSON.stringify(failureTracker.current()));}
+});

@@ -4,6 +4,7 @@ import copy
 import io
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -38,7 +39,7 @@ class HostedChromeControls(unittest.TestCase):
     def campaign_fixture(self,name):
         """Author explicitly synthetic closed pass rows with the actual two/six fixture resource denominators."""
         long=name.startswith("long-");read_only=name.endswith("read-only");expected=2 if read_only else 6
-        return {"name":name,"status":"passed","failure":None,"observation":{"mode":"read-only" if read_only else "writable","long_fixture":long,"focus_checks":10,"unlock_requests":3,"documented_request_count":10,"synthetic_ui_fault_count":1,"reflow":[{"viewport":width,"page":width} for width in ([640,320]*(3 if long else 1))],"metadata":{"expected_resources":expected,"local_download_bytes":100,"local_download_sha256":"c"*64,"raw_envelope_bytes":111,"strict_duplicate_status":400},"capture_counts":{"actualCounterResponses":0,"distinctRenderedCounterFacts":0,"responseFactsWithoutRenderedObservation":0},"non_loopback_requests":0,"page_errors":0},"cleanup":{"forge_exit_zero":True,"node_exit_zero":True,"tree_empty":True,"terminal_eof":True,"forced":False},"terminal_bytes":100,"no_echo_modes":2}
+        return {"name":name,"status":"passed","failure":None,"observation":{"mode":"read-only" if read_only else "writable","long_fixture":long,"focus_checks":10,"unlock_requests":3,"documented_request_count":10,"synthetic_ui_fault_count":1,"reflow":[{"viewport":width,"page":width} for width in ([640,320]*(3 if long else 1))],"metadata":{"expected_resources":expected,"local_download_bytes":100,"local_download_sha256":"c"*64,"raw_envelope_bytes":111,"strict_duplicate_status":400},"capture_counts":{"actualCounterResponses":0,"distinctRenderedCounterFacts":0,"responseFactsWithoutRenderedObservation":0},"non_loopback_requests":0,"page_errors":0},"cleanup":{"forge_exit_zero":True,"node_exit_zero":True,"tree_empty":True,"terminal_eof":True,"forced":False},"terminal_bytes":100,"no_echo_modes":2,"browser_failure":None}
 
     def producer_fixture(self,status="passed"):
         """Return a fresh independent expectation tree so malformed cases cannot taint later controls."""
@@ -454,7 +455,7 @@ class HostedChromeControls(unittest.TestCase):
             destination=self.root/f"diagnostic-{index}"
             with mock.patch.object(wrapper.sys,"platform","linux"),mock.patch.object(wrapper.shared,"capture_identity",return_value=self.identity),mock.patch.object(wrapper.shared,"tool_versions",return_value=self.rust),mock.patch.object(browser,"capture_tools",side_effect=error),mock.patch.object(wrapper,"native_run") as native:
                 value=wrapper.verify(self.root,self.forge,self.root/"node",self.root/"npm",self.root/"chrome",destination,build_outcome="success",npm_outcome="success")
-            self.assertEqual(value["schema_version"],"forge.workspace-hosted-chrome-verification/2");self.assertEqual(value["status"],"failed");native.assert_not_called()
+            self.assertEqual(value["schema_version"],"forge.workspace-hosted-chrome-verification/3");self.assertEqual(value["status"],"failed");native.assert_not_called()
             self.assertEqual(value["producer"]["status"],"not-run");self.assertIsNone(value["browser_tools"]);self.assertNotIn("PRIVATE",(destination/wrapper.OUTPUT).read_text())
             if index==0:self.assertEqual(value["diagnostic"],{"phase":"browser-tool-capture","step":"package-probe","reason":"tool-exit-nonzero","exit_code":23});self.assertEqual(value["failure"],"browser-tool-capture-failed")
             else:self.assertIsNone(value["diagnostic"]);self.assertEqual(value["failure"],"verification-input-invalid")
@@ -562,6 +563,145 @@ class HostedChromeControls(unittest.TestCase):
         row,tree,process,*_=self.drain_mocked_command([(10,b"PRIVATE stdout"),(11,b"PRIVATE stderr")],read_failure=True)
         self.assertEqual(row,{"exit_code":0,"failure":"execution-unverified","output":b""});tree.stop.assert_called_once();process.wait.assert_called_once()
         process.stdout.close.assert_called_once();process.stderr.close.assert_called_once()
+
+
+    def browser_failure_fixture(self,*,stage="metadata-file-selection",category="assertion",operator="strictEqual"):
+        """Provide independent literal fixed protocol facts without importing the CJS diagnostic helper."""
+        return {"schema_version":"forge.workspace-browser-failure/1","stage":stage,"category":category,"assertion_operator":operator}
+
+    def failed_browser_receipt(self,diagnostic=None):
+        """Keep the complete four-row failed denominator while attaching only explicitly synthetic safe facts."""
+        value=self.producer_fixture("failed");row=value["campaigns"][0]
+        row.update(failure="browser-failed",browser_failure=diagnostic)
+        row["cleanup"].update(node_exit_zero=False,forced=True)
+        return value
+
+    def test_browser_failure_decoder_binds_actual_exit_and_fixed_operators(self):
+        """Capture declared safe facts for actual nonzero statuses; assert(...) uses the fixed Node '==' operator."""
+        for operator in ("strictEqual","deepStrictEqual","match","==",None):
+            raw=wrapper.shared.canonical_bytes(self.browser_failure_fixture(operator=operator))
+            for code in (1,-9,-2147483648,2147483647):
+                expected={"stage":"metadata-file-selection","category":"assertion","assertion_operator":operator,"node_exit_code":code}
+                self.assertEqual(browser.decode_browser_failure(raw,code),expected)
+        raw=wrapper.shared.canonical_bytes(self.browser_failure_fixture())
+        padded=raw+b" "*(1024-len(raw))
+        self.assertEqual(browser.decode_browser_failure(padded,1)["node_exit_code"],1)
+        self.assertIsNone(browser.decode_browser_failure(padded+b" ",1))
+        for category in ("timeout","unclassified"):
+            raw=wrapper.shared.canonical_bytes(self.browser_failure_fixture(category=category,operator=None))
+            self.assertEqual(browser.decode_browser_failure(raw,3)["category"],category)
+        for code in (0,None,True,1.0,-2147483649,2147483648):
+            self.assertIsNone(browser.decode_browser_failure(wrapper.shared.canonical_bytes(self.browser_failure_fixture()),code))
+
+    def test_browser_failure_decoder_rejects_open_unknown_and_ambiguous_stdout(self):
+        """Do not select a line, last object or arbitrary enum from private/malformed child output."""
+        valid=self.browser_failure_fixture();cases=[]
+        for field,value in (("schema_version","private/version"),("stage","PRIVATE path token"),("category","SECRET"),("assertion_operator","PRIVATE"),("node_exit_code",7),("private","SECRET")):
+            row=copy.deepcopy(valid);row[field]=value;cases.append(wrapper.shared.canonical_bytes(row))
+        row=copy.deepcopy(valid);row.update(category="timeout",assertion_operator="match");cases.append(wrapper.shared.canonical_bytes(row))
+        for field in valid:
+            row=copy.deepcopy(valid);del row[field];cases.append(wrapper.shared.canonical_bytes(row))
+        raw=wrapper.shared.canonical_bytes(valid)
+        cases.extend((b"",b"PRIVATE warning\n"+raw,raw+raw,raw[:-2],b" "*1025,b"\xff",b"[]",raw.replace(b'"stage":',br'"st\u0061ge":"unlock","stage":'),raw.replace(b'"assertion_operator":"strictEqual"',b'"assertion_operator":NaN')))
+        for data in cases:
+            with self.subTest(size=len(data)):self.assertIsNone(browser.decode_browser_failure(data,1))
+
+    def test_failed_browser_receipt_retains_safe_diagnostic_without_pass_credit(self):
+        """A real strict artifact read can retain the fixed failed-row facts and actual status without passing it."""
+        diagnostic={"stage":"metadata-file-selection","category":"assertion","assertion_operator":"==","node_exit_code":-9}
+        value,pin=self.read(self.failed_browser_receipt(diagnostic),1)
+        self.assertEqual(value["status"],"failed");self.assertEqual(len(value["campaigns"]),4)
+        self.assertEqual(value["campaigns"][0]["failure"],"browser-failed")
+        self.assertEqual(value["campaigns"][0]["browser_failure"],diagnostic);self.assertIsNone(value["campaigns"][0]["observation"])
+        self.assertFalse(value["acceptance_eligible"]);self.assertGreater(pin["bytes"],0)
+        for row in self.read(self.producer_fixture())[0]["campaigns"]:self.assertIsNone(row["browser_failure"])
+
+    def test_browser_failure_reader_refuses_contradictory_closed_facts(self):
+        """Refuse unknown/private nested facts, false child status, old versions and diagnostics attached to success."""
+        diagnostic={"stage":"metadata-file-selection","category":"assertion","assertion_operator":"match","node_exit_code":1}
+        for field,wrong in (("stage",None),("stage",{}),("category","PRIVATE"),("assertion_operator","PRIVATE"),("node_exit_code",0),("node_exit_code",True),("node_exit_code",None),("node_exit_code",1.0),("node_exit_code",2147483648),("private","SECRET")):
+            row=copy.deepcopy(diagnostic);row[field]=wrong
+            with self.subTest(field=field),self.assertRaises(ValueError):self.read(self.failed_browser_receipt(row),1)
+        for field in diagnostic:
+            row=copy.deepcopy(diagnostic);del row[field]
+            with self.subTest(missing=field),self.assertRaises(ValueError):self.read(self.failed_browser_receipt(row),1)
+        value=self.failed_browser_receipt(diagnostic);value["campaigns"][0]["cleanup"]["node_exit_zero"]=True
+        with self.assertRaises(ValueError):self.read(value,1)
+        value=self.failed_browser_receipt(diagnostic);value["campaigns"][0]["failure"]="browser-timeout"
+        with self.assertRaises(ValueError):self.read(value,1)
+        value=self.producer_fixture();value["campaigns"][0]["browser_failure"]=diagnostic
+        with self.assertRaises(ValueError):self.read(value)
+        value=self.failed_browser_receipt({**diagnostic,"category":"timeout"})
+        with self.assertRaises(ValueError):self.read(value,1)
+        value=self.producer_fixture();value["schema_version"]="forge.hosted-chrome-smoke/1"
+        with self.assertRaises(ValueError):self.read(value)
+        value=self.producer_fixture();del value["campaigns"][0]["browser_failure"]
+        with self.assertRaises(ValueError):self.read(value)
+
+    def exercise_failed_browser_campaign(self,raw,*,exit_code=17):
+        """Drive the real campaign to nonzero Node completion with fake PTY/pipes/process ownership only."""
+        process=mock.Mock();process.returncode=exit_code;process.poll.return_value=exit_code
+        process.stdout=mock.Mock();process.stdout.fileno.return_value=10
+        process.stderr=mock.Mock();process.stderr.fileno.return_value=11
+        tree=mock.Mock();tree.stop.return_value=True;tree.poll_child.return_value=-9
+        terminal=[b"Set workspace passphrase (",b"Confirm passphrase:",b"Local workspace: http://127.0.0.1:12345"]
+        pipes={10:[raw[index:index+8192] for index in range(0,len(raw),8192)]+[b""],11:[b"SECRET private stderr path token",b""]}
+        clock=[0.0]
+        def monotonic():
+            """Advance a synthetic monotonic clock without waiting or asserting native timing."""
+            clock[0]+=.001;return clock[0]
+        def terminal_block(_descriptor,state):
+            """Supply synthetic startup chunks and count bytes without touching an actual terminal."""
+            block=terminal.pop(0);state["bytes"]+=len(block);return block
+        def ready(streams,_writes,_errors,_timeout):
+            """Expose ready fake pipes; the incomplete Forge terminal becomes idle after startup."""
+            return ([stream for stream in streams if stream!=23 or terminal],[],[])
+        def read_pipe(descriptor,maximum):
+            """Supply bounded fake stdout/stderr bytes to the actual production drain loop."""
+            block=pipes[descriptor].pop(0)
+            if len(block)>maximum:raise AssertionError("Synthetic block exceeds read bound")
+            return block
+        with mock.patch("pty.fork",return_value=(24,23)),mock.patch.object(browser,"OwnedTree",return_value=tree),mock.patch.object(browser.subprocess,"Popen",return_value=process) as spawn,mock.patch.object(browser.os,"set_blocking"),mock.patch.object(browser.os,"close") as closed,mock.patch.object(browser,"terminal_read",side_effect=terminal_block),mock.patch.object(browser,"terminal_submit") as submitted,mock.patch.object(browser.select,"select",side_effect=ready),mock.patch.object(browser.os,"read",side_effect=read_pipe),mock.patch.object(browser.time,"monotonic",side_effect=monotonic),mock.patch.object(browser,"clean_environment",return_value={}):
+            row=browser.campaign(self.root,self.forge,self.root/"node",self.root/"chrome","long-writable",{},self.tools)
+        return row,tree,process,spawn,submitted,closed
+
+    def test_actual_failed_campaign_attaches_only_closed_stdout_and_actual_exit(self):
+        """The production campaign consumer retains safe failure facts while its original forced failure stays intact."""
+        raw=wrapper.shared.canonical_bytes(self.browser_failure_fixture())
+        row,tree,process,spawn,submitted,closed=self.exercise_failed_browser_campaign(raw,exit_code=-9)
+        self.assertEqual(row["status"],"failed");self.assertEqual(row["failure"],"browser-failed");self.assertIsNone(row["observation"])
+        self.assertEqual(row["browser_failure"],{"stage":"metadata-file-selection","category":"assertion","assertion_operator":"strictEqual","node_exit_code":-9})
+        self.assertEqual(row["cleanup"],{"forge_exit_zero":False,"node_exit_zero":False,"tree_empty":True,"terminal_eof":False,"forced":True})
+        self.assertNotIn("SECRET",json.dumps(row));self.assertEqual(submitted.call_count,2)
+        tree.stop.assert_called_once();tree.close.assert_called_once();process.wait.assert_called_once_with(timeout=5)
+        process.stdout.close.assert_called_once();process.stderr.close.assert_called_once();spawn.assert_called_once();self.assertEqual(sum(call.args==(23,) for call in closed.call_args_list),1)
+
+    def test_actual_failed_campaign_keeps_primary_failure_when_diagnostic_unavailable(self):
+        """Malformed/private/oversized failure stdout cannot become safe facts or weaken the real campaign result."""
+        valid=self.browser_failure_fixture();claimed={**valid,"node_exit_code":0}
+        raw=wrapper.shared.canonical_bytes(valid)
+        for data in (b"PRIVATE",raw+raw,wrapper.shared.canonical_bytes(claimed),b" "*1025):
+            row,*_=self.exercise_failed_browser_campaign(data)
+            self.assertEqual(row["failure"],"browser-failed");self.assertEqual(row["status"],"failed")
+            self.assertIsNone(row["browser_failure"]);self.assertIsNone(row["observation"])
+            self.assertTrue(row["cleanup"]["forced"]);self.assertFalse(row["cleanup"]["node_exit_zero"])
+
+    def test_failure_helper_protocol_mirrors_and_input_pins_are_consumed(self):
+        """Read only helper literals and prove both new helper/control paths enter wrapper and producer source capture."""
+        helper=(Path(browser.__file__).resolve().parents[1]/"ui/tests/workspace_failure.cjs").read_text()
+        stage_body=re.search(r"const STAGES = Object\.freeze\(\[(.*?)\]\);",helper,re.S).group(1)
+        operator_body=re.search(r"const OPERATORS = Object\.freeze\(\[(.*?)\]\);",helper,re.S).group(1)
+        self.assertEqual(set(re.findall(r'"([^"\n]+)"',stage_body)),set(browser.BROWSER_FAILURE_STAGES))
+        self.assertEqual(set(re.findall(r'"([^"\n]+)"',operator_body)),set(browser.BROWSER_FAILURE_OPERATORS))
+        self.assertEqual(set(re.findall(r'category = "([^"\n]+)"',helper)),set(browser.BROWSER_FAILURE_CATEGORIES))
+        self.assertIn('schema_version: "'+browser.BROWSER_FAILURE_SCHEMA+'"',helper)
+        paths=("ui/tests/workspace_failure.cjs","ui/tests/workspace_failure.test.cjs")
+        for name in paths:self.assertIn(name,wrapper.EXTRA_INPUTS);self.assertIn(name,browser.CAPTURE_INPUTS)
+        original=wrapper.shared.hash_file
+        with mock.patch.object(browser.sys,"platform","linux"),mock.patch.object(browser,"capture_tools",return_value=self.tools),mock.patch.object(browser,"campaign",side_effect=[self.campaign_fixture(name) for name in browser.CAMPAIGNS]),mock.patch.object(wrapper.shared,"hash_file",wraps=original) as hashed:
+            value=browser.produce(self.root,self.forge,self.root/"node",self.root/"npm",self.root/"chrome",self.root/"helper-pins")
+        self.assertEqual(value["status"],"passed")
+        for name in paths:self.assertEqual(sum(call.args==(self.root/name,) for call in hashed.call_args_list),2)
 
 
 if __name__=="__main__":unittest.main()

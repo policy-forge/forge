@@ -12,9 +12,9 @@ import verify_workspace as shared
 import test_workspace_hosted_chrome as browser
 
 sys.dont_write_bytecode=True
-SCHEMA="forge.workspace-hosted-chrome-verification/2"
+SCHEMA="forge.workspace-hosted-chrome-verification/3"
 OUTPUT="workspace-hosted-chrome-verification.json"
-EXTRA_INPUTS=("ui/tests/workspace.cjs","ui/package.json","ui/package-lock.json","scripts/workspace_browser_fixtures.py","scripts/workspace_browser_tool_probe.cjs","scripts/test_workspace_hosted_chrome.py","scripts/verify_workspace_hosted_chrome.py","scripts/test_verify_workspace_hosted_chrome.py","docs/development-tools/hosted-chrome.json")
+EXTRA_INPUTS=("ui/tests/workspace.cjs","ui/tests/workspace_failure.cjs","ui/tests/workspace_failure.test.cjs","ui/package.json","ui/package-lock.json","scripts/workspace_browser_fixtures.py","scripts/workspace_browser_tool_probe.cjs","scripts/test_workspace_hosted_chrome.py","scripts/verify_workspace_hosted_chrome.py","scripts/test_verify_workspace_hosted_chrome.py","docs/development-tools/hosted-chrome.json")
 
 
 def read_bytes(path):
@@ -48,11 +48,14 @@ def read_receipt(path,exit_code,tools):
     if not isinstance(rows,list) or len(rows) not in {0,4}:raise ValueError("campaign-denominator")
     if rows and [row.get("name") for row in rows]!=list(browser.CAMPAIGNS):raise ValueError("campaign-order")
     for row in rows:
-        browser.closed(row,("name","status","failure","observation","cleanup","terminal_bytes","no_echo_modes"))
+        browser.closed(row,("name","status","failure","observation","cleanup","terminal_bytes","no_echo_modes","browser_failure"))
         browser.closed(row["cleanup"],("forge_exit_zero","node_exit_zero","tree_empty","terminal_eof","forced"))
         if any(type(flag) is not bool for flag in row["cleanup"].values()):raise ValueError("cleanup-type")
         browser.integer(row["terminal_bytes"],73728);browser.integer(row["no_echo_modes"],2)
         if row["status"] not in {"passed","failed"} or row["failure"] is not None and browser.failure_code(ValueError(row["failure"]))!=row["failure"]:raise ValueError("campaign-status")
+        if row["browser_failure"] is not None:
+            browser.validate_browser_failure(row["browser_failure"])
+            if row["status"]!="failed" or row["failure"]!="browser-failed" or row["cleanup"]["node_exit_zero"]:raise ValueError("browser-failure-outcome")
         if row["status"]=="passed":
             if row["failure"] is not None or row["cleanup"]!={"forge_exit_zero":True,"node_exit_zero":True,"tree_empty":True,"terminal_eof":True,"forced":False} or row["terminal_bytes"]>65536 or row["no_echo_modes"]!=2:raise ValueError("campaign-cleanup")
             observation=row["observation"]

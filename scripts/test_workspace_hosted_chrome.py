@@ -18,12 +18,42 @@ import verify_workspace as shared
 from workspace_browser_fixtures import synthetic_framework_catalog, synthetic_long_project_label
 
 sys.dont_write_bytecode=True
-SCHEMA="forge.hosted-chrome-smoke/1"
+SCHEMA="forge.hosted-chrome-smoke/2"
 OUTPUT="hosted-chrome-smoke.json"
 CAMPAIGNS=("default-read-only","default-writable","long-read-only","long-writable")
 PASSPHRASE=b"synthetic browser verification passphrase 062"
 MAX_OUTPUT=262144
 ROOT=Path(__file__).resolve().parents[1]
+
+# Failure protocol enums mirror the consumed pure CJS helper and are pinned/drift-checked by controls.
+BROWSER_FAILURE_SCHEMA="forge.workspace-browser-failure/1"
+BROWSER_FAILURE_STAGES=frozenset(("browser-setup","asset-binding","input-style-binding","unlock","navigation-recovery","resource-authoring","conversion-recovery","framework-workflow","decision-authoring","trace-export","metadata-preview","metadata-long-label","metadata-download","metadata-file-selection","metadata-comparison","metadata-duplicate","metadata-refresh","final-reflow","storage-checks","session-shutdown","counter-correlation","request-page-errors","browser-cleanup"))
+BROWSER_FAILURE_CATEGORIES=frozenset(("assertion","timeout","unclassified"))
+BROWSER_FAILURE_OPERATORS=frozenset(("strictEqual","deepStrictEqual","match","=="))
+CAPTURE_INPUTS=("ui/workspace.js","ui/workspace.css","ui/tests/workspace.cjs","ui/tests/workspace_failure.cjs","ui/tests/workspace_failure.test.cjs","scripts/test_workspace_hosted_chrome.py","scripts/workspace_browser_tool_probe.cjs","scripts/workspace_browser_fixtures.py")
+
+
+def validate_browser_failure(value):
+    """Validate closed safe failed-row facts; they cannot change the primary failure or qualify a pass."""
+    closed(value,("stage","category","assertion_operator","node_exit_code"))
+    if type(value["stage"]) is not str or value["stage"] not in BROWSER_FAILURE_STAGES:raise ValueError("browser-failure-stage")
+    if type(value["category"]) is not str or value["category"] not in BROWSER_FAILURE_CATEGORIES:raise ValueError("browser-failure-category")
+    operator=value["assertion_operator"]
+    if operator is not None and (type(operator) is not str or operator not in BROWSER_FAILURE_OPERATORS):raise ValueError("browser-failure-operator")
+    if value["category"]!="assertion" and operator is not None:raise ValueError("browser-failure-category")
+    code=value["node_exit_code"]
+    if type(code) is not int or code==0 or not -2147483648<=code<=2147483647:raise ValueError("browser-failure-exit")
+    return value
+
+
+def decode_browser_failure(raw,node_exit_code):
+    """Decode one small complete CJS envelope and bind actual Popen status; malformed output stays unavailable."""
+    try:
+        value=strict_json(raw,maximum=1024)
+        closed(value,("schema_version","stage","category","assertion_operator"))
+        if value["schema_version"]!=BROWSER_FAILURE_SCHEMA:raise ValueError("browser-failure-version")
+        return validate_browser_failure({"stage":value["stage"],"category":value["category"],"assertion_operator":value["assertion_operator"],"node_exit_code":node_exit_code})
+    except Exception:return None
 
 
 def closed(value,keys):
@@ -452,7 +482,7 @@ def campaign(root,forge,node,chrome,name,source,tools):
     import pty
     import termios
     tree=OwnedTree();pid=None;terminal=None;process=None;forge_code=None;stdout=bytearray();stderr_bytes=0
-    state={"bytes":0,"tail":b"","eof":False};row={"name":name,"status":"failed","failure":"campaign-unverified","observation":None,"cleanup":{"forge_exit_zero":False,"node_exit_zero":False,"tree_empty":False,"terminal_eof":False,"forced":False},"terminal_bytes":0,"no_echo_modes":0}
+    state={"bytes":0,"tail":b"","eof":False};row={"name":name,"status":"failed","failure":"campaign-unverified","observation":None,"cleanup":{"forge_exit_zero":False,"node_exit_zero":False,"tree_empty":False,"terminal_eof":False,"forced":False},"terminal_bytes":0,"no_echo_modes":0,"browser_failure":None}
     with tempfile.TemporaryDirectory(prefix="forge-hosted-chrome-") as private:
         project=Path(private)/"project";project.mkdir();read_only,long=make_fixture(project,name)
         try:
@@ -490,7 +520,9 @@ def campaign(root,forge,node,chrome,name,source,tools):
                     if stream==process.stdout:stdout.extend(block)
                     else:stderr_bytes+=len(block)
                     if len(stdout)+stderr_bytes>MAX_OUTPUT:raise ValueError("browser-output-bound")
-            if process.returncode!=0:raise ValueError("browser-failed")
+            if process.returncode!=0:
+                row["browser_failure"]=decode_browser_failure(stdout,process.returncode)
+                raise ValueError("browser-failed")
             # Linux-only producer: drain the complete PTY stream and require observed EOF before closing.
             deadline=time.monotonic()+5
             while forge_code is None or not state["eof"]:
@@ -535,7 +567,7 @@ def produce(root,forge,node,npm,chrome,output_dir):
     try:
         if sys.platform!="linux":receipt.update(status="incomplete",failure="unsupported-platform")
         else:
-            before={name:shared.hash_file(root/name) for name in ("ui/workspace.js","ui/workspace.css","ui/tests/workspace.cjs","scripts/test_workspace_hosted_chrome.py","scripts/workspace_browser_tool_probe.cjs","scripts/workspace_browser_fixtures.py")}
+            before={name:shared.hash_file(root/name) for name in CAPTURE_INPUTS}
             before["provided_release_binary"]=shared.hash_file(forge);tools=capture_tools(root,node,npm,chrome);receipt["tools"]=tools
             receipt["campaigns"]=[campaign(root,forge,node,chrome,name,before,tools) for name in CAMPAIGNS]
             after={name:shared.hash_file(root/name) for name in before if name!="provided_release_binary"};after["provided_release_binary"]=shared.hash_file(forge)

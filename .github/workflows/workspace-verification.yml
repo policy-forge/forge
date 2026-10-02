@@ -204,6 +204,11 @@ jobs:
             --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org \
             --cache "$private/cache" --userconfig "$private/user.rc" --globalconfig "$private/global.rc"
 
+      # Mock diagnostics use only the approved installed Playwright graph.
+      # They preserve failure attribution; they do not establish browser acceptance.
+      - name: Check redacted browser failure diagnostics
+        run: node --test ui/tests/workspace_failure.test.cjs
+
       # Build provisioning is distinct from runtime OS network denial.
       - name: Fetch locked Cargo inputs
         run: cargo fetch --locked
