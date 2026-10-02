@@ -248,22 +248,36 @@ and restarting; results are not silently evicted.
 
 ### Workspace index bundle inspection
 
-Unreleased API 1.2.0 adds `bundle_preview()` and `verify_bundle(bundle)` to the
-maintained Python client. They inspect the complete explicit index and compare
-expected fingerprints with currently registered captures in read-only sessions.
-Labels, keys, paths and stable hashes remain sensitive metadata. Supplying an
-unregistered path causes no read of that path, and matching fingerprints do not
-establish domain approval, import readiness or later byte stability.
+In **Trace & Reports**, use **Preview metadata** to inspect every registered
+resource key, role, project-relative path, SHA-256 fingerprint and byte length.
+This read is available in writable and read-only sessions. Labels, paths, keys
+and stable hashes can reveal project information even though source content is
+excluded. Acknowledge that sensitivity before **Download metadata bundle**, which
+requests a local `forge-workspace-index-and-hashes.json` file. It creates no
+project file, server publication or receipt. A fresh preview or view/session
+retirement clears acknowledgment for the old preview.
 
-The preview preserves all registrations within the existing 1,000-entry and byte
-bounds; the 100-input prepared-effect limit does not apply. Verification separates
-missing versus explicitly empty indexes, expected-entry agreement, extra current
-keys, whole-index equality and observed valid/stale/invalid domain metadata. It
-creates no effect or replay receipt. The entire POST wrapper must fit 1 MiB,
-including its JSON overhead; retries compare a new capture. See
-[Workspace index bundles](workspace-index-bundles.md) for the maintained read-only
-example, normalized index hash versus original-resource hashes, limits and errors.
-Browser export, confirmed writable import and full S-6 acceptance remain open.
+To compare an existing file, use **Choose a metadata bundle JSON file**, then
+**Compare registered fingerprints**. The file may contain at most **1,048,565
+bytes**: its original bytes and fixed 11-byte JSON wrapper must fit the 1 MiB
+request bound. The browser sends those bytes without decoding, stripping a BOM,
+removing duplicate keys or rewriting JSON. The server validates the input and
+compares only current registered captures; supplied unregistered paths are not
+opened. An explicit retry captures current state again.
+
+Queries preserve complete denominators through the existing 1,000-registration
+and byte bounds, with no 100-input preparation prefix. Missing versus explicitly
+empty current index, expected fingerprint agreement versus current-only
+registrations, whole-index equality and observed valid/stale/invalid content
+remain distinct. Matching hashes or the local sensitivity acknowledgment
+establish neither domain approval nor import readiness or later byte stability.
+
+The maintained Python client still exposes `bundle_preview()` and
+`verify_bundle(bundle)` for the same read-only queries. See
+[Workspace index bundles](workspace-index-bundles.md) for its example, normalized
+index hashing, limits and errors. Receipt-backed server export/publication,
+source-content opt-in, confirmed writable import, reviewed batch binding,
+retention/capacity qualification and full S-6 acceptance remain open.
 
 ## Verification and remaining gates
 
@@ -295,6 +309,11 @@ records fresh integrated source, docstring and test coverage checks, both native
 modes and a bounded actual capture/cancellation probe. It preserves the earlier
 incomplete probe and all zero/unmapped coverage dimensions. These observations
 remain scoped development evidence.
+
+The [browser metadata verification record](workspace-bundle-browser-verification.md)
+records the fresh source/docstring coverage audit, actual local downloads and raw
+comparisons in both modes, and long-content reflow observations. The earlier
+overflow failure and remaining coverage gaps are preserved there.
 
 Manual screen-reader/keyboard evaluation, WCAG 2.2 AA acceptance, the complete
 supported browser/platform matrix, security approval, five target-user studies,

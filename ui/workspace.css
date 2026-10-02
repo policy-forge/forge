@@ -58,3 +58,5 @@ section button, article button { margin: 8px 8px 8px 0; }
 #operation-region { margin: 20px 4vw; overflow-wrap: anywhere; }
 #operation-region article { padding: 16px 0; border-top: 1px solid var(--border); }
 button[aria-disabled=true] { cursor: default; }
+
+[data-bundle-panel] { overflow-wrap: anywhere; }

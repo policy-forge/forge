@@ -18,6 +18,8 @@ const operationRows = new Map();
 const requestRows = new Map();
 // Disconnected pagers cannot retain their view-resume callbacks.
 const retainedPagers = new WeakMap();
+// Installed metadata callbacks retire local disclosure ownership on every view epoch.
+const bundlePanels = new WeakMap();
 const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports"];
 
 function node(tag, text, className) {
@@ -37,17 +39,20 @@ function showError(error) {
   box.focus();
 }
 
-async function api(path, method = "GET", body, key) {
+/** Preserve ordinary JSON requests while allowing one documented bounded raw-file query. */
+async function api(path, method = "GET", body, key, rawBody, rawIsCurrent) {
+  if (rawBody !== undefined && (path !== "/project/bundle-verifications" || method !== "POST" || !(rawBody instanceof Blob) || rawBody.size > 1024 * 1024)) throw new Error("Unsupported raw metadata comparison request.");
   const now=performance.now();const reserved=Math.max(now,nextRequestAt);nextRequestAt=reserved+60;
   if(reserved>now)await new Promise(resolve=>setTimeout(resolve,reserved-now));
   if (stopped) throw new Error("This workspace has stopped. Relaunch it from the terminal.");
+  if (rawBody !== undefined && rawIsCurrent && !rawIsCurrent()) throw new Error("The metadata comparison was superseded before sending.");
   const headers = { "Accept": "application/json" };
   if (capability) headers["Authorization"] = `Bearer ${capability}`;
   if (method !== "GET") headers["Content-Type"] = "application/json";
   if (key) headers["Idempotency-Key"] = key;
   let response;
   try {
-    response = await fetch(`/api/v1${path}`, {method, headers, body: method === "GET" ? undefined : JSON.stringify(body ?? {}), cache: "no-store", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer"});
+    response = await fetch(`/api/v1${path}`, {method, headers, body: method === "GET" ? undefined : rawBody ?? JSON.stringify(body ?? {}), cache: "no-store", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer"});
   } catch {
     throw new Error("The local workspace is unavailable. Check its terminal before retrying.");
   }
@@ -182,6 +187,7 @@ async function pagedTable(path, caption, columns, filters = []) {
 /** Install only an owned live view; dismissed write previews cannot publish a late refresh. */
 async function renderView(isCurrent = () => true) {
   if (stopped || !isCurrent()) return false;
+  invalidateBundlePanels();
   const previousStatus = element("status").textContent;
   const sequence = ++pending;
   element("error").hidden = true;
@@ -235,6 +241,7 @@ async function renderView(isCurrent = () => true) {
       fragment.append(node("p", "Select a registered resource to inspect its source and decision references."));
       for (const resource of resources) fragment.append(button(`Trace ${resource.key}`, () => showProvenance(resource.resource_id)));
       if (!readOnly) fragment.append(exportForm());
+      fragment.append(metadataBundlePanel());
     }
     if (sequence !== pending || stopped || !isCurrent()) return false;
     element("view").replaceChildren(fragment);
@@ -307,7 +314,7 @@ element("refresh").addEventListener("click", () => navigate(activeView,viewFilte
 element("stop").addEventListener("click", () => element("stop-dialog").showModal());
 element("keep-working").addEventListener("click", () => element("stop-dialog").close());
 element("confirm-stop").addEventListener("click", async () => {
-  try { await api("/session/shutdown", "POST", {}); stopped = true; pending++; capability = "";
+  try { await api("/session/shutdown", "POST", {}); stopped = true; invalidateBundlePanels(); pending++; capability = "";
     for (const row of operationRows.values()) { row.generation++; row.status.textContent = "Workspace stopped. Operation status is no longer queryable in this session."; row.cancel.setAttribute("aria-disabled", "true"); row.check.setAttribute("aria-disabled", "true"); row.review.disabled = true; }
     for (const row of requestRows.values()) { row.status.textContent = "Workspace stopped. The request cannot be recovered in this session."; row.retry.setAttribute("aria-disabled", "true"); row.review.setAttribute("aria-disabled", "true"); }
     element("stop-dialog").close(); element("workspace").hidden = true; element("stop").hidden = true; element("connection").textContent = "Stopped"; element("status").textContent = "Workspace stopped. Relaunch it from the terminal to continue."; element("main").focus(); }
@@ -830,6 +837,7 @@ function evidenceList(rows) {
 /** Inspect/Trace use the same discard gate; failed or superseded reads keep the form. */
 async function showProvenance(anchor) {
   if (!await allowViewChange()) return false;
+  invalidateBundlePanels();
   const sequence = ++pending;
   element("view").inert = true;
   element("refresh").disabled = true;
@@ -863,6 +871,201 @@ async function showProvenance(anchor) {
     if(sequence === pending) {element("view").inert=false;element("refresh").disabled=false;}
   }
 }
+/** Retire installed metadata reads and acknowledgments before a view epoch changes. */
+function invalidateBundlePanels() {
+  for (const section of element("view").querySelectorAll("[data-bundle-panel]")) bundlePanels.get(section)?.();
+}
+
+/** Accept only a supported closed response object, without dropping unknown metadata. */
+function bundleClosedObject(value, keys) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) &&
+    Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
+}
+
+/** Validate complete metadata before retaining a local downloadable bundle. */
+function checkedBundlePreview(value) {
+  /** Reject unsupported preview metadata before it can become a local file. */
+  const fail = () => { throw new Error("The metadata preview returned an unsupported response. Preview metadata again."); };
+  if (!bundleClosedObject(value, ["bundle", "snapshot_version", "source_index_present", "included_metadata", "source_content_included"]) ||
+      value.source_index_present !== true || value.source_content_included !== false ||
+      typeof value.snapshot_version !== "string" || value.snapshot_version.length < 8 || value.snapshot_version.length > 128 ||
+      JSON.stringify(value.included_metadata) !== JSON.stringify(["project-label", "resource-keys", "typed-roles", "project-relative-paths", "sha256-fingerprints", "byte-lengths"])) fail();
+  const bundle = value.bundle;
+  if (!bundleClosedObject(bundle, ["schema_version", "content_profile", "index", "index_sha256", "pins"]) ||
+      bundle.schema_version !== "forge.workspace-index-bundle/1" || bundle.content_profile !== "index-and-hashes" ||
+      typeof bundle.index_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(bundle.index_sha256) ||
+      !bundleClosedObject(bundle.index, ["schema_version", "label", "resources"]) || bundle.index.schema_version !== "forge.workspace/1" ||
+      typeof bundle.index.label !== "string" || [...bundle.index.label].length < 1 || [...bundle.index.label].length > 200 ||
+      !Array.isArray(bundle.index.resources) || bundle.index.resources.length > 1000 ||
+      !Array.isArray(bundle.pins) || bundle.pins.length !== bundle.index.resources.length) fail();
+  const keys = new Set(); const paths = new Set();
+  const roles = ["policy-source", "oscal-catalog-artifact", "oscal-component-artifact", "mapping-collection", "applicability-manifest", "applicability-report", "trace-report"];
+  for (let index = 0; index < bundle.index.resources.length; index++) {
+    const resource = bundle.index.resources[index]; const pin = bundle.pins[index];
+    if (!bundleClosedObject(resource, ["key", "role", "path"]) || typeof resource.key !== "string" ||
+        !/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(resource.key) || keys.has(resource.key) || !roles.includes(resource.role) ||
+        typeof resource.path !== "string" || resource.path.length > 512 || !/^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(resource.path) || paths.has(resource.path) ||
+        !bundleClosedObject(pin, ["key", "sha256", "size_bytes"]) || pin.key !== resource.key || typeof pin.sha256 !== "string" ||
+        !/^[a-f0-9]{64}$/.test(pin.sha256) || !Number.isSafeInteger(pin.size_bytes) || pin.size_bytes < 0 || pin.size_bytes > 10 * 1024 * 1024) fail();
+    keys.add(resource.key); paths.add(resource.path);
+  }
+  const blob = new Blob([JSON.stringify(bundle)], {type:"application/json"});
+  if (blob.size > 1024 * 1024) throw new Error("The complete metadata bundle exceeds the 1 MiB download bound. No partial file was created.");
+  return { bundle, blob };
+}
+
+/** Reconcile every expected comparison row without treating fingerprints as approval. */
+function checkedBundleComparison(value) {
+  /** Reject unsupported comparison data without inferring a successful observation. */
+  const fail = () => { throw new Error("The fingerprint comparison returned unsupported or unreconciled results. Compare again."); };
+  const fields = ["scope", "snapshot_version", "source_index_present", "state", "current_resources", "current_only_resources", "expected_index_matches_current", "expected_resources", "matched_resources", "unregistered_resources", "mismatched_resources", "items", "source_content_included"];
+  if (!bundleClosedObject(value, fields) || value.scope !== "registered-fingerprints-only" || value.source_content_included !== false ||
+      typeof value.snapshot_version !== "string" || value.snapshot_version.length < 8 || value.snapshot_version.length > 128 ||
+      typeof value.source_index_present !== "boolean" || typeof value.expected_index_matches_current !== "boolean" ||
+      !["missing-index", "matched", "mismatched"].includes(value.state) || !Array.isArray(value.items)) fail();
+  for (const key of ["current_resources", "current_only_resources", "expected_resources", "matched_resources", "unregistered_resources", "mismatched_resources"]) {
+    if (!Number.isSafeInteger(value[key]) || value[key] < 0 || value[key] > 1000) fail();
+  }
+  if (value.matched_resources + value.unregistered_resources + value.mismatched_resources !== value.expected_resources ||
+      value.items.length !== value.expected_resources || value.current_only_resources + value.matched_resources + value.mismatched_resources !== value.current_resources ||
+      value.state !== (!value.source_index_present ? "missing-index" : value.matched_resources === value.expected_resources ? "matched" : "mismatched") ||
+      (!value.source_index_present && (value.current_resources !== 0 || value.expected_index_matches_current !== false))) fail();
+  const keys = new Set(); const counts = {matched:0, "not-registered":0, mismatched:0};
+  for (const item of value.items) {
+    if (!bundleClosedObject(item, ["key", "status", "reason_codes", "observed_resource_validation_state"]) || typeof item.key !== "string" ||
+        !/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(item.key) || keys.has(item.key) || !Object.hasOwn(counts, item.status) ||
+        !Array.isArray(item.reason_codes) || item.reason_codes.length > 2 || new Set(item.reason_codes).size !== item.reason_codes.length ||
+        item.reason_codes.some(reason => !["registration-not-found", "registration-conflict", "sha256-mismatch", "size-mismatch"].includes(reason)) ||
+        !["valid", "stale", "invalid", "not-registered"].includes(item.observed_resource_validation_state)) fail();
+    if (item.status === "matched" && (item.reason_codes.length || item.observed_resource_validation_state === "not-registered") ||
+        item.status === "not-registered" && (item.reason_codes.length !== 1 || item.reason_codes[0] !== "registration-not-found" || item.observed_resource_validation_state !== "not-registered") ||
+        item.status === "mismatched" && (!item.reason_codes.length || item.reason_codes.includes("registration-not-found") || item.observed_resource_validation_state === "not-registered" ||
+          item.reason_codes.includes("registration-conflict") && item.reason_codes.length !== 1)) fail();
+    counts[item.status]++; keys.add(item.key);
+  }
+  if (counts.matched !== value.matched_resources || counts["not-registered"] !== value.unregistered_resources || counts.mismatched !== value.mismatched_resources) fail();
+  return value;
+}
+
+/** Bound a chosen file before reading and wrap its exact bytes without JSON rewriting. */
+async function bundleVerificationBody(file) {
+  if (!file || !Number.isSafeInteger(file.size) || file.size < 0 || typeof file.arrayBuffer !== "function") throw new Error("Choose one metadata bundle JSON file before comparing.");
+  if (file.size > 1024 * 1024 - 11) throw new Error("The chosen file and its 11-byte JSON wrapper must fit the 1 MiB request bound.");
+  let bytes;
+  try { bytes = await file.arrayBuffer(); } catch { throw new Error("The chosen file could not be read. Choose it again before comparing."); }
+  if (!bytes || bytes.byteLength !== file.size || bytes.byteLength > 1024 * 1024 - 11) throw new Error("The chosen file changed or exceeds the supported request bound. Choose it again.");
+  const body = new Blob(['{"bundle":', new Uint8Array(bytes), '}'], {type:"application/json"});
+  if (body.size !== file.size + 11 || body.size > 1024 * 1024) throw new Error("The chosen file exceeds the complete 1 MiB request bound.");
+  return body;
+}
+
+/** Keep independent, read-only metadata preview and raw-file comparison in the installed view. */
+function metadataBundlePanel() {
+  const section = node("section"); section.setAttribute("data-bundle-panel", "");
+  const title = node("h2", "Workspace metadata bundle"); title.id = `bundle-${crypto.randomUUID()}`; section.setAttribute("aria-labelledby", title.id);
+  const previewStatus = node("p"); previewStatus.setAttribute("role", "status"); previewStatus.setAttribute("aria-live", "polite"); previewStatus.setAttribute("data-bundle-preview-status", "");
+  const previewError = node("div"); previewError.setAttribute("role", "alert"); previewError.setAttribute("data-bundle-preview-error", ""); previewError.tabIndex = -1; previewError.hidden = true;
+  const metadata = node("div"); metadata.setAttribute("data-bundle-metadata", "");
+  const disclosure = node("div");
+  const acknowledgment = fieldInput(disclosure, "I understand that labels, resource keys, paths and hashes can reveal project information.", "checkbox"); acknowledgment.required = false;
+  const previewButton = node("button", "Preview metadata"); previewButton.type = "button"; previewButton.setAttribute("aria-disabled", "false");
+  const download = node("button", "Download metadata bundle"); download.type = "button"; download.setAttribute("aria-disabled", "true"); acknowledgment.setAttribute("aria-disabled", "true");
+  const comparisonForm = node("div");
+  const file = fieldInput(comparisonForm, "Choose a metadata bundle JSON file", "file"); file.required = false; file.accept = ".json,application/json";
+  const compare = node("button", "Compare registered fingerprints"); compare.type = "button"; compare.setAttribute("aria-disabled", "true");
+  const comparisonStatus = node("p"); comparisonStatus.setAttribute("role", "status"); comparisonStatus.setAttribute("aria-live", "polite"); comparisonStatus.setAttribute("data-bundle-comparison-status", "");
+  const comparisonError = node("div"); comparisonError.setAttribute("role", "alert"); comparisonError.setAttribute("data-bundle-comparison-error", ""); comparisonError.tabIndex = -1; comparisonError.hidden = true;
+  const comparison = node("div"); comparison.setAttribute("data-bundle-comparison", "");
+  let previewSequence = 0; let comparisonSequence = 0; let previewBusy = false; let comparisonBusy = false; let retained = null;
+  const downloadURLs = new Set();
+  /** Require this connected section and the current session's visible Trace & Reports view. */
+  function installed() { return !stopped && activeView === "Trace & Reports" && section.isConnected && element("view").contains(section) && !element("view").inert; }
+  /** Reject results owned by an older local lane, navigation epoch or stopped session. */
+  function current(epoch, sequence, lane) { return installed() && epoch === pending && sequence === (lane === "preview" ? previewSequence : comparisonSequence); }
+  /** Retain focused native controls while making unavailable actions inert to activation. */
+  function refreshActions() {
+    const ready = installed() && retained && retained.epoch === pending && retained.sequence === previewSequence;
+    previewButton.setAttribute("aria-disabled", String(!installed() || previewBusy));
+    acknowledgment.setAttribute("aria-disabled", String(!ready));
+    download.setAttribute("aria-disabled", String(!ready || !acknowledgment.checked));
+    compare.setAttribute("aria-disabled", String(!installed() || comparisonBusy || !file.files?.length));
+    section.setAttribute("aria-busy", String(previewBusy || comparisonBusy));
+  }
+  /** Revoke each locally created download URL exactly once when retired or dispatched. */
+  function revokeDownload(url) { if (downloadURLs.delete(url)) URL.revokeObjectURL(url); }
+  /** Clear prior local download authority without changing project edits or focus. */
+  function retirePreview() {
+    retained = null; acknowledgment.checked = false; metadata.replaceChildren();
+    for (const url of [...downloadURLs]) revokeDownload(url);
+  }
+  /** Retire both read lanes when even a retained view's navigation epoch changes. */
+  function invalidatePanel() {
+    previewSequence++; comparisonSequence++; previewBusy = false; comparisonBusy = false; retirePreview();
+    comparison.replaceChildren(); previewError.hidden = true; comparisonError.hidden = true;
+    previewStatus.textContent = "Preview metadata again before downloading.";
+    comparisonStatus.textContent = file.files?.length ? "Compare again to observe current registered fingerprints." : ""; refreshActions();
+  }
+  /** Report a safe current read failure locally, preserving any newer focus owner. */
+  function readFailure(error, box, status, invoker) {
+    box.textContent = error instanceof Error ? error.message : "The metadata read could not be completed."; box.hidden = false;
+    status.textContent = "The read did not complete. Retry explicitly; no project file was written.";
+    if (document.activeElement === invoker && !document.querySelector("dialog[open]")) box.focus();
+  }
+  /** Fetch a complete preview and reset disclosure acknowledgment for this exact local generation. */
+  async function loadMetadata() {
+    if (!installed() || previewBusy) return;
+    const sequence = ++previewSequence; const epoch = pending; previewBusy = true; retirePreview(); previewError.hidden = true;
+    previewStatus.textContent = "Reading registered metadata…"; refreshActions();
+    try {
+      const value = await api("/project/bundle-preview"); if (!current(epoch, sequence, "preview")) return;
+      const checked = checkedBundlePreview(value);
+      retained = { ...checked, epoch, sequence };
+      metadata.append(node("p", `Project: ${checked.bundle.index.label}`), table("Complete registered bundle metadata", [["Key","key"],["Role","role"],["Project-relative path","path"],["SHA-256","sha256"],["Bytes","size_bytes"]], checked.bundle.index.resources.map((resource, index) => ({...resource, ...checked.bundle.pins[index]}))));
+      previewStatus.textContent = `Metadata preview: ${checked.bundle.pins.length} registered resources. No project file was written.`;
+    } catch (error) { if (current(epoch, sequence, "preview")) readFailure(error, previewError, previewStatus, previewButton); }
+    finally { if (sequence === previewSequence) { previewBusy = false; refreshActions(); } }
+  }
+  /** Acknowledge only a still-owned observed preview, never project approval or a server write. */
+  function acknowledgeMetadata() {
+    if (!installed() || !retained || retained.epoch !== pending || retained.sequence !== previewSequence) acknowledgment.checked = false;
+    refreshActions();
+  }
+  /** Download the acknowledged local metadata bytes with a fixed safe filename and no effect. */
+  function downloadMetadata() {
+    if (!installed() || !retained || retained.epoch !== pending || retained.sequence !== previewSequence || !acknowledgment.checked) return;
+    const url = URL.createObjectURL(retained.blob); downloadURLs.add(url);
+    const link = node("a"); link.href = url; link.download = "forge-workspace-index-and-hashes.json";
+    document.body.append(link); link.click(); link.remove();
+    previewStatus.textContent = "Metadata download requested. No project file was written.";
+    setTimeout(() => revokeDownload(url), 1000);
+  }
+  /** A new file cancels only obsolete comparison work without retaining raw file content in storage. */
+  function fileChanged() {
+    comparisonSequence++; comparisonBusy = false; comparisonError.hidden = true; comparison.replaceChildren();
+    comparisonStatus.textContent = file.files?.length ? `Chosen file: ${file.files[0].name} (${file.files[0].size} bytes). Compare explicitly.` : "Choose one metadata bundle JSON file."; refreshActions();
+  }
+  /** Compare exact chosen bytes only against registered captures; each explicit retry is a fresh read. */
+  async function compareFile() {
+    if (!installed() || comparisonBusy || !file.files?.length) return;
+    const selected = file.files[0]; const sequence = ++comparisonSequence; const epoch = pending; comparisonBusy = true;
+    comparisonError.hidden = true; comparison.replaceChildren(); comparisonStatus.textContent = "Reading the chosen file for registered fingerprint comparison…"; refreshActions();
+    try {
+      const body = await bundleVerificationBody(selected); if (!current(epoch, sequence, "comparison")) return;
+      const response = await api("/project/bundle-verifications", "POST", undefined, undefined, body, () => current(epoch, sequence, "comparison")); if (!current(epoch, sequence, "comparison")) return;
+      const value = checkedBundleComparison(response);
+      comparison.append(node("p", `Comparison state: ${value.state}. Whole index matches: ${value.expected_index_matches_current ? "yes" : "no"}.`),
+        table("Complete expected fingerprint comparison", [["Key","key"],["Fingerprint","status"],["Reasons","reasons"],["Observed content state","observed_resource_validation_state"]], value.items.map(item => ({...item,reasons:item.reason_codes.join(", ") || "none"}))));
+      comparisonStatus.textContent = `Registered fingerprints: ${value.matched_resources} matched, ${value.unregistered_resources} not registered, ${value.mismatched_resources} mismatched of ${value.expected_resources} expected. Current-only registrations: ${value.current_only_resources}.`;
+    } catch (error) { if (current(epoch, sequence, "comparison")) readFailure(error, comparisonError, comparisonStatus, compare); }
+    finally { if (sequence === comparisonSequence) { comparisonBusy = false; refreshActions(); } }
+  }
+  previewButton.addEventListener("click", loadMetadata); acknowledgment.addEventListener("change", acknowledgeMetadata);
+  download.addEventListener("click", downloadMetadata); file.addEventListener("change", fileChanged); compare.addEventListener("click", compareFile);
+  section.prepend(title, node("p", "Metadata includes project labels, keys, paths and stable hashes. It excludes source content; fingerprints do not establish approval or import readiness."), previewButton, previewStatus, previewError, metadata);
+  section.append(disclosure, download, node("p", "Local JSON download only; no project file, receipt or server publication. A selected file plus its 11-byte wrapper must fit the 1 MiB comparison request."), comparisonForm, compare, comparisonStatus, comparisonError, comparison);
+  section.setAttribute("aria-busy", "false"); bundlePanels.set(section, invalidatePanel); return section;
+}
+
 function exportForm() {
   const form=node("form");form.append(node("h2","Export a redacted static report"));
   const kind=field(form,"Report","select",[["applicability-gap","Applicability counts"],["mapping-collection","Mapping participation"],["trace","Trace summary"]]);

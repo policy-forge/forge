@@ -1,6 +1,12 @@
 # Workspace index bundle inspection
 
-Unreleased API contract **1.2.0** adds a read-only preview of the explicit workspace index and a comparison of supplied fingerprints with currently registered resources. The maintained Python client exposes `bundle_preview()` and `verify_bundle(bundle)`. This slice supplies API/headless inspection; the bundled browser has no bundle action yet.
+Unreleased API contract **1.2.0** supplies complete explicit-index metadata
+preview and registered fingerprint comparison. The maintained Python client
+exposes `bundle_preview()` and `verify_bundle(bundle)`. The **Trace & Reports**
+browser panel also previews metadata, requires sensitivity acknowledgment before
+a local JSON download, and compares a chosen file's original bytes. Both queries
+are available in read-only sessions; this panel does not publish a project
+bundle, register supplied paths or import data.
 
 ## Inspect and compare
 
@@ -27,6 +33,37 @@ PYTHON
 The client starts a read-only machine session, keeps its capability in memory and closes the session when the context ends. Each call captures current state again, so a comparison can differ from the preceding preview if project bytes changed. Inspect the returned bundle in memory before choosing whether to retain or share its metadata. The example prints only comparison state and counts. It creates no exported file, write preview, receipt, registration or import.
 
 The operations are `GET /api/v1/project/bundle-preview` (`getProjectBundlePreview`) and `POST /api/v1/project/bundle-verifications` (`verifyProjectBundle`). The POST body is exactly `{"bundle": ...}`. Both require the ordinary session capability and are available in read-only sessions. They accept no selection, cursor or idempotency key. Browser clients retain the existing Origin, Fetch Metadata and JSON requirements.
+
+## Browser preview, download and comparison
+
+In **Trace & Reports**, use **Preview metadata** to inspect every registered
+resource key, role, project-relative path, SHA-256 fingerprint and byte length.
+This read is available in writable and read-only sessions. Labels, paths, keys
+and stable hashes can reveal project information even though source content is
+excluded. Acknowledge that sensitivity before **Download metadata bundle**, which
+requests a local `forge-workspace-index-and-hashes.json` file. It creates no
+project file, server publication or receipt. A fresh preview or view/session
+retirement clears acknowledgment for the old preview.
+
+To compare an existing file, use **Choose a metadata bundle JSON file**, then
+**Compare registered fingerprints**. The file may contain at most **1,048,565
+bytes**: its original bytes and fixed 11-byte JSON wrapper must fit the 1 MiB
+request bound. The browser sends those bytes without decoding, stripping a BOM,
+removing duplicate keys or rewriting JSON. The server validates the input and
+compares only current registered captures; supplied unregistered paths are not
+opened. An explicit retry captures current state again.
+
+Queries preserve complete denominators through the existing 1,000-registration
+and byte bounds, with no 100-input preparation prefix. Missing versus explicitly
+empty current index, expected fingerprint agreement versus current-only
+registrations, whole-index equality and observed valid/stale/invalid content
+remain distinct. Matching hashes or the local sensitivity acknowledgment
+establish neither domain approval nor import readiness or later byte stability.
+
+The local download contains the observed bundle alone, encoded as compact UTF-8
+JSON within 1 MiB. Its file hash describes those downloaded bytes. That encoding
+is separate from the normalized index hash and original resource fingerprints
+described below. No source content or server receipt is added.
 
 ## What the bundle contains
 
@@ -80,6 +117,8 @@ Each item also reports `observed_resource_validation_state`: `valid`, `stale`, `
 |---|---:|
 | Existing index encoding | 1 MiB including its final LF |
 | Encoded bundle | 1 MiB |
+| Browser local metadata download | 1 MiB |
+| Browser selected comparison file | 1,048,565 bytes (plus 11-byte wrapper) |
 | Entire raw POST JSON body | 1 MiB, including `bundle`, braces, escapes and whitespace |
 | Registered/index/pin/item count | 1,000 |
 | Each resource and each declared pin size | 10 MiB |
@@ -96,6 +135,16 @@ Malformed/unsupported bundle or request shape, pin-order/bijection errors and an
 
 ## Remaining workflow and acceptance
 
-This metadata inspection has no browser action, bundle file publication, source-content export or confirmed writable import. Full PRD 062 S-6 still needs the browser export/preview and explicit confirmed import workflow, reviewed batch input binding and publication/retention capacity. The effect input cap is unchanged. No new index role, archive format, schema relaxation, dependency or approval policy is introduced.
+This metadata consumer supplies browser preview, an acknowledged local metadata
+download and registered comparison. Receipt-backed server export/publication,
+source-content export, confirmed writable import, reviewed batch input binding
+and retention/capacity qualification remain open. Full PRD 062 S-6 remains open.
+The 100-consumed-input effect cap, closed seven roles and existing
+schema/dependency/approval boundaries are unchanged.
 
-All six PRD 062 Should-Have acceptance gates, security/privacy, real browser/keyboard/assistive-technology, supported-platform/interoperability, pilot/release and human acceptance remain open where recorded. Focused API/client tests and fixture inventories do not establish those outcomes. The user's final full integrated documentation review/update remains open.
+All six PRD 062 Should-Have acceptance gates, security/privacy, supported-platform
+and interoperability, human keyboard/assistive-technology/WCAG, pilot/release and
+human acceptance remain open where recorded. The scoped
+[browser metadata verification](workspace-bundle-browser-verification.md) is
+development evidence. The final full integrated documentation review/update
+remains open.
