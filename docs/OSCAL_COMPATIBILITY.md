@@ -15,6 +15,10 @@ for verifying the current baseline and evaluating a future patch release.
   never triggers a network request.
 - Export preserves the imported `metadata.oscal-version` and the user-owned
   `metadata.version` across JSON, XML, and YAML.
+- Catalog and Component Definition JSON/YAML inputs exported to JSON/YAML
+  preserve their complete decoded native trees after validation. XML input or
+  output retains the typed projection and is not qualified for arbitrary native
+  field preservation. Profile validation does not imply Profile export support.
 - Runtime validation, export, and non-oscal-cli compatibility tests are fully
   offline. JSON Schema and XSD references must resolve from vendored files.
 
@@ -28,7 +32,7 @@ The authoritative inventory is
 [`schemas/oscal-schema-manifest.json`](../schemas/oscal-schema-manifest.json).
 It pins `usnistgov/OSCAL` tag `v1.2.3`, release commit `e061961`, publication
 date `2026-08-07`, exact release URLs, byte sizes, and SHA-256 digests for all
-nine runtime and compatibility-test assets. Vendored schema bytes must not be
+eleven runtime and compatibility-test assets. Vendored schema bytes must not be
 edited locally.
 
 Verify the checked-in baseline from a clean checkout:
@@ -88,6 +92,8 @@ Normal FORGE execution never performs these network operations.
      --pattern 'oscal_catalog_schema.json' \
      --pattern 'oscal_component_schema.json' \
      --pattern 'oscal_profile_schema.json' \
+     --pattern 'oscal_mapping_schema.json' \
+     --pattern 'oscal_assessment-results_schema.json' \
      --pattern 'oscal_assessment-plan_schema.json' \
      --pattern 'oscal_ssp_schema.json' \
      --pattern 'oscal_catalog_schema.xsd' \

@@ -159,29 +159,26 @@ forge convert pol-*.md --strategy catalog --format json --output out/ --jobs 4
 
 ### 3.2 `export` — Convert Between Formats
 
-Converts an existing OSCAL artifact between JSON, XML, and YAML. Auto-detects the input format from the file extension.
+Exports Catalog or Component Definition artifacts. The file extension selects the input format. JSON/YAML inputs exported to JSON/YAML are validated and emitted from the complete decoded value, preserving authored fields, array order, scalar types and version declarations. Formatting, object key order and YAML presentation are not preserved. XML inputs or targets retain Forge's typed projection and may omit native fields.
 
 ```bash
-# JSON to XML
-forge export catalog.json --format xml
+# JSON to YAML, retaining the complete decoded native tree
+forge export catalog.json --format yaml --output catalog.yaml
 
-# XML to YAML
-forge export catalog.xml --format yaml
+# YAML back to JSON, retaining the same tree
+forge export catalog.yaml --format json --output returned-catalog.json
 
-# YAML to JSON, written to a file
-forge export catalog.yaml --format json --output catalog.json
-
-# JSON Component Definition to XML
+# XML uses the typed projection; arbitrary native fields may be omitted
 forge export component.json --format xml
 ```
 
-File extensions recognized: `.json`, `.xml`, `.yaml`, `.yml`.
+File extensions recognized: `.json`, `.xml`, `.yaml`, `.yml`. Input model type is detected from the document root. Profile, SSP and Control Mapping export remain unsupported even when their validation is available.
 
-Input OSCAL model type (Catalog vs Component Definition) is auto-detected from the document structure. The pipeline validates the artifact against OSCAL JSON schemas before serializing to the target format.
+Catalog and Component Definition declarations `1.2.0` through `1.2.3` are checked against the pinned offline `1.2.3` schemas, rather than historical schemas selected by the declaration. Invalid input is rejected before output publication: parsing/export failures retain exit 1, while schema/semantic failures retain exit 3. See [Native export verification](native-export-verification.md) for executed tests and YAML limits.
 
 ### 3.3 `validate` — Schema and Semantic Validation
 
-Validates an OSCAL JSON artifact against the OSCAL v1.2.0 JSON schema with semantic checks.
+Validates an OSCAL JSON artifact against the pinned offline OSCAL v1.2.3 JSON schema with semantic checks; the declared version never selects or downloads a schema.
 
 ```bash
 # Basic validation with human-readable output

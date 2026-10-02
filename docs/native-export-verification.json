@@ -1,0 +1,2097 @@
+{
+  "schema_version": "forge.native-export-verification/4",
+  "measured_on": "2026-10-02",
+  "scope": "Catalog and Component Definition complete decoded JSON/YAML CLI trees; XML projection and overlay acceptance remain separate.",
+  "baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "tracker": {
+    "epic": 2,
+    "f09_parent": 17,
+    "prerequisite_child": 18
+  },
+  "runtime": {
+    "rust": "1.98.1",
+    "rust_commit": "48a229ceaefd4985c50990b14116b6d856af0985",
+    "llvm": "22.1.8",
+    "cargo_llvm_cov": "0.8.7",
+    "host": "aarch64-apple-darwin",
+    "os": "macOS 27.0.1",
+    "receipt_python": "3.14.8"
+  },
+  "source_pins": [
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/cli/export.rs",
+      "sha256": "4ec7e7776f4d6cf18e4141a4cb627982b0c9a7672f965efa5ebe27e66faf5e66",
+      "bytes": 40177,
+      "repository_path": "src/cli/export.rs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/json_strict.rs",
+      "sha256": "ec828d864efacb0ec0734042b6e873af3180680df00b80bb5fa43709a6d199f7",
+      "bytes": 20528,
+      "repository_path": "src/json_strict.rs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/export_lossless_integration.rs",
+      "sha256": "3a876ad7cd31e3da7bf713279118cef8d00291c75e95cb0515cc0440f9d09aeb",
+      "bytes": 18777,
+      "repository_path": "tests/export_lossless_integration.rs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/fixtures/export/lossless-catalog.json",
+      "sha256": "cef45631988b777c891ec5bd68cd9297074197d791f7b4d89f3d632878f9f553",
+      "bytes": 31005,
+      "repository_path": "tests/fixtures/export/lossless-catalog.json"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/fixtures/export/lossless-component.json",
+      "sha256": "33c296c94cddc0bc033c23c1978740fef070632b0e47384680262b84c2c4e3a1",
+      "bytes": 26394,
+      "repository_path": "tests/fixtures/export/lossless-component.json"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/error.rs",
+      "sha256": "6e2f79f2c424092952d1d5795c9d7daa9ce418e6f8d82424a4b7eaa3c5f0543e",
+      "bytes": 36835,
+      "repository_path": "src/error.rs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/export/yaml.rs",
+      "sha256": "f5bf35cb707dac78c4207584ab73fbda119f135b0d2c122dd68d0d5ab7109ea0",
+      "bytes": 2435,
+      "repository_path": "src/export/yaml.rs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.toml",
+      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+      "bytes": 2344,
+      "repository_path": "Cargo.toml"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.lock",
+      "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+      "bytes": 74338,
+      "repository_path": "Cargo.lock"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/schemas/oscal-schema-manifest.json",
+      "sha256": "0e2d5b80d0532192d714fa636047d18bc8322c87eb3dd06132fa1d9bdf293719",
+      "bytes": 4675,
+      "repository_path": "schemas/oscal-schema-manifest.json"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/README.md",
+      "sha256": "e01ddf27a4b57d261e1d38efb8f3b3bfabaa59553c9ff020bf8b0ecf532eb779",
+      "bytes": 24369,
+      "repository_path": "README.md"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/usage-guide.md",
+      "sha256": "f3b18ae6e0711dd2d7818b1770a7bbd01e18e1a5b990bf4d651f9b82c08105b6",
+      "bytes": 36847,
+      "repository_path": "docs/usage-guide.md"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/OSCAL_COMPATIBILITY.md",
+      "sha256": "9558d70140b67b84c3d6b5cd5280ce96c7bcabc3d67e65b09e78d258b2a3e9b5",
+      "bytes": 7604,
+      "repository_path": "docs/OSCAL_COMPATIBILITY.md"
+    }
+  ],
+  "executables": {
+    "baseline_cli": {
+      "path": "/private/tmp/forge-f09-baseline-binaries/60a1b7b1965a9e71affa2b2bd14ea2156b1d9a5fb9df542a5c55c2da6394b05d/forge",
+      "sha256": "60a1b7b1965a9e71affa2b2bd14ea2156b1d9a5fb9df542a5c55c2da6394b05d",
+      "bytes": 67990184
+    },
+    "initial_candidate_cli": {
+      "path": "/private/tmp/forge-f09-candidate-binaries/066c4ee1d141bf9d57c4f31d84aa31e4b89b2e723af2806a77eb3ab82c6aa7a7/forge",
+      "sha256": "066c4ee1d141bf9d57c4f31d84aa31e4b89b2e723af2806a77eb3ab82c6aa7a7",
+      "bytes": 68081432
+    },
+    "final_instrumented_cli": {
+      "path": "/private/tmp/forge-f09-final-instrumented-binaries/14cf7375a242b1eb19ac56691d03b57b6772f9fefc375ec51662f753365953b3/forge",
+      "sha256": "14cf7375a242b1eb19ac56691d03b57b6772f9fefc375ec51662f753365953b3",
+      "bytes": 69783848
+    }
+  },
+  "history": {
+    "initial_baseline": {
+      "passed": 1,
+      "failed": 18,
+      "qualification": "Blanket exit-2 expectation was a harness mistake. Its rejection exit mismatches are not product defect evidence."
+    },
+    "corrected_baseline": {
+      "passed": 6,
+      "failed": 13,
+      "test_source_sha256": "8b02fb2673b2cf4cbfeef02d0b1080182b7e7fbe0cd9bf2650d37031ea10037a",
+      "qualification": "Thirteen overlapping behavior failures, not thirteen distinct defects. CLI source matched exact main. New YAML helper was present but unused by baseline CLI. Six existing rejection cases already passed."
+    },
+    "initial_candidate": {
+      "passed_new_tests": 19,
+      "passed_existing_integration_tests": 20,
+      "strict_parser_tests_passed": 12,
+      "source_sha256": "28a4b1e3113e9ecb005721d746eb654373f5d6b63eed238d9089d5ddf159e2df"
+    },
+    "final_candidate": {
+      "integration_preservation_tests_passed": 20,
+      "existing_integration_tests_passed": 20,
+      "library_tests_passed": 1828,
+      "total_instrumented_tests_passed": 1868,
+      "failed": 0,
+      "ignored": 0,
+      "qualification": "Adds supported-model refusal and depth-boundary assertions to frozen original comparison; final source also includes API doc-only qualifications."
+    },
+    "baseline_missing_first_subtrees": {
+      "catalog": 120,
+      "component_definition": 67,
+      "qualification": "Counts the first absent subtree only, not every descendant. No changed values or extra fields in these two JSON outputs."
+    },
+    "formatting_correction": {
+      "first_hook_exit": 1,
+      "failed_stage": "cargo fmt --check; Clippy/full tests not run by that attempt",
+      "preformat_test_source": {
+        "path": "/private/tmp/forge-f09-export-tests-before-rustfmt.rs",
+        "sha256": "ab8d3f8a3d4f2b81c1ec67a0a4db3ea361abca57a5187d6f4406f97b76ddf456",
+        "bytes": 18646
+      },
+      "delivery_test_source": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/export_lossless_integration.rs",
+        "sha256": "cb40a9e0fa920a59073e3fc4608c39fa9d6f1ebaa7f6de2d8306889b0da610bf",
+        "bytes": 18779
+      },
+      "change": "Rustfmt layout and optional trailing commas only; same declarations, assertions, fixtures, commands and exit expectations.",
+      "fresh_instrumented_passed": 1868,
+      "failed": 0,
+      "ignored": 0,
+      "production_coverage_denominators_and_uncovered_sets_unchanged": true
+    },
+    "clippy_corrections": {
+      "failed_stage": "Strict Clippy rejected elidable lifetime; full tests not run by that attempt.",
+      "standalone_lifetime_check_exit": 101,
+      "additional_test_lint": "Unnecessary raw byte-string hashes; literal content unchanged.",
+      "corrections": "Elide unused impl lifetime and remove unnecessary literal hashes without lint suppression.",
+      "strict_all_target_clippy_exit": 0,
+      "delivery_parser": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/json_strict.rs",
+        "sha256": "ec828d864efacb0ec0734042b6e873af3180680df00b80bb5fa43709a6d199f7",
+        "bytes": 20528
+      },
+      "delivery_tests": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/export_lossless_integration.rs",
+        "sha256": "3a876ad7cd31e3da7bf713279118cef8d00291c75e95cb0515cc0440f9d09aeb",
+        "bytes": 18777
+      },
+      "fresh_instrumented_passed": 1868,
+      "failed": 0,
+      "ignored": 0,
+      "production_denominators_and_uncovered_sets_unchanged": true,
+      "second_git_commit_exit": 1,
+      "second_hook_clippy_exit": 101
+    },
+    "exit_label_correction": "Earlier /3 field second_hook_exit=1 recorded the Git caller exit. This successor names Git exit1 separately from the retained hook/Clippy command exit101."
+  },
+  "documentation": {
+    "selected_functions_documented": 51,
+    "selected_functions_total": 51,
+    "selected_production": 13,
+    "selected_unit_tests": 9,
+    "selected_integration_declarations": 29,
+    "integration_tests": 20,
+    "integration_helpers": 9,
+    "production_audit": {
+      "schema_version": "forge.f09-production-docstrings/1",
+      "created_at": "2026-10-02T13:02:15.694138+00:00",
+      "base_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+      "scope": "All explicitly declared named production functions/methods in the two pinned files; cfg(test) modules and their test-only functions/helpers excluded. Trait default methods, unnamed closures, types/fields, and tests are not function denominators. This is a source documentation audit, not execution or coverage evidence.",
+      "method": "Definition and adjacent /// locations inventoried from exact source; impl-qualified names disambiguate repeated trait methods. Function declaration/body and doc blocks compared to exact base, then changes manually checked against the production diffs.",
+      "files": [
+        {
+          "repository_path": "src/json_strict.rs",
+          "inspected_path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/json_strict.rs",
+          "bytes": 20528,
+          "sha256": "ec828d864efacb0ec0734042b6e873af3180680df00b80bb5fa43709a6d199f7",
+          "baseline_sha256": "fec323dc53982eedee319b24510017da2ed531cc35437f791029c84fddf4438e",
+          "production_function_count": 24,
+          "production_documented_count": 9,
+          "changed_or_new_names": [
+            "parse_yaml_value",
+            "StrictObjectKey::deserialize",
+            "StrictObjectKeyVisitor::expecting",
+            "StrictObjectKeyVisitor::visit_str",
+            "StrictObjectKeyVisitor::visit_string",
+            "StrictValueVisitor::visit_map"
+          ],
+          "changed_or_new_count": 6,
+          "changed_or_new_documented_count": 6,
+          "behavior_or_declaration_change_names": [
+            "parse_yaml_value",
+            "StrictObjectKey::deserialize",
+            "StrictObjectKeyVisitor::expecting",
+            "StrictObjectKeyVisitor::visit_str",
+            "StrictObjectKeyVisitor::visit_string",
+            "StrictValueVisitor::visit_map"
+          ],
+          "doc_only_change_names": [],
+          "legacy_function_count": 19,
+          "legacy_documented_count": 4,
+          "missing_documentation_names": [
+            "enforce_bounds",
+            "bounds_error",
+            "render_path",
+            "StrictValue::deserialize",
+            "StrictValueVisitor::expecting",
+            "StrictValueVisitor::visit_bool",
+            "StrictValueVisitor::visit_i64",
+            "StrictValueVisitor::visit_u64",
+            "StrictValueVisitor::visit_f64",
+            "StrictValueVisitor::visit_str",
+            "StrictValueVisitor::visit_string",
+            "StrictValueVisitor::visit_none",
+            "StrictValueVisitor::visit_unit",
+            "StrictValueVisitor::visit_some",
+            "StrictValueVisitor::visit_seq"
+          ],
+          "cfg_test_exclusion_start_line": 356,
+          "excluded_cfg_test_functions": [
+            {
+              "name": "yaml_rejects_duplicate_keys_at_every_mapping_depth",
+              "line": 369
+            },
+            {
+              "name": "yaml_preserves_scalar_types_and_core_scalar_tags",
+              "line": 386
+            },
+            {
+              "name": "yaml_requires_one_complete_document",
+              "line": 400
+            },
+            {
+              "name": "yaml_rejects_non_string_keys_and_preserves_quoted_keys",
+              "line": 412
+            },
+            {
+              "name": "yaml_reports_decoded_depth_and_string_bounds",
+              "line": 437
+            },
+            {
+              "name": "yaml_preserves_ordinary_alias_expansion",
+              "line": 452
+            },
+            {
+              "name": "yaml_aliases_are_checked_against_decoded_bounds",
+              "line": 468
+            },
+            {
+              "name": "yaml_qualifies_erased_uri_tags_without_rejecting_ordinary_strings",
+              "line": 479
+            },
+            {
+              "name": "yaml_rejects_malformed_nonfinite_and_local_tagged_values",
+              "line": 497
+            },
+            {
+              "name": "classifies_duplicate_trailing_and_bound_violations_without_raw_keys",
+              "line": 521
+            },
+            {
+              "name": "bounds_apply_to_object_keys_and_escape_diagnostic_paths",
+              "line": 541
+            },
+            {
+              "name": "lowercase_sha256_requires_exact_length_and_alphabet",
+              "line": 550
+            }
+          ],
+          "functions": [
+            {
+              "name": "parse_value",
+              "kind": "standalone",
+              "line": 82,
+              "byte_offset": 3090,
+              "doc_start_line": 81,
+              "doc_end_line": 81,
+              "documented": true,
+              "doc_first_line": "Parse one complete JSON value without duplicate object keys and enforce structural bounds.",
+              "doc_sha256": "69883ca4465067fc592b490a7473db5dda2bb3c6b35130f7af395b6fd64eab78",
+              "declaration_body_sha256": "6232e40a6eb5c9d23213f8b8ebbbdc23a4202cf386e560dde80f0fa31ba80ff7",
+              "change": "unchanged"
+            },
+            {
+              "name": "parse_yaml_value",
+              "kind": "standalone",
+              "line": 120,
+              "byte_offset": 4824,
+              "doc_start_line": 103,
+              "doc_end_line": 119,
+              "documented": true,
+              "doc_first_line": "Decode exactly one YAML document as a duplicate-free JSON-compatible value.",
+              "doc_sha256": "7f55f3ac9cb1e35c50772c886b2c33d865d325740ef33460225375455f521e1a",
+              "declaration_body_sha256": "5354299b3e3d4cd59d606823222805221a7be604cd68ec89186a2fffdb99e1cc",
+              "change": "new"
+            },
+            {
+              "name": "bounded",
+              "kind": "standalone",
+              "line": 129,
+              "byte_offset": 5302,
+              "doc_start_line": 128,
+              "doc_end_line": 128,
+              "documented": true,
+              "doc_first_line": "Escape and truncate caller-controlled values before including them in diagnostics.",
+              "doc_sha256": "d6cbcc734b3d282b0edeea0225cde49ed03a319cdf237c06929a326895bcc5d9",
+              "declaration_body_sha256": "776cae7fa889eec13489e4bce66bc82a30dfcdb39874ec75d05467a889bdecf4",
+              "change": "unchanged"
+            },
+            {
+              "name": "validate_lowercase_sha256",
+              "kind": "standalone",
+              "line": 134,
+              "byte_offset": 5508,
+              "doc_start_line": 133,
+              "doc_end_line": 133,
+              "documented": true,
+              "doc_first_line": "Validate the canonical lowercase hexadecimal representation of one SHA-256 digest.",
+              "doc_sha256": "7a442e27d82569eebfd90420ae912c4383c2f05b5beef3f95a354a10ce99a29a",
+              "declaration_body_sha256": "7c8712f9ffa45d5d5387c9ff6791b3fbc5cf7c4f5f785eae26123d5046a3e540",
+              "change": "unchanged"
+            },
+            {
+              "name": "enforce_bounds",
+              "kind": "standalone",
+              "line": 148,
+              "byte_offset": 5886,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "91a4cef7b9c48266250b6bf05aa91ef94cc209554b9ff010fc8199f3ae9d8dac",
+              "change": "unchanged"
+            },
+            {
+              "name": "bounds_error",
+              "kind": "standalone",
+              "line": 197,
+              "byte_offset": 7563,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "992c899dc216e440c35ac5cc2714a7c50d5412b36e38ba8ce508175ae8a456c1",
+              "change": "unchanged"
+            },
+            {
+              "name": "render_path",
+              "kind": "standalone",
+              "line": 203,
+              "byte_offset": 7778,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "78d1a6c77b5b11b8870fe7c3dac0c9067642759579a974ef98d3c55594cfdb8e",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictObjectKey::deserialize",
+              "kind": "method",
+              "line": 226,
+              "byte_offset": 8498,
+              "doc_start_line": 225,
+              "doc_end_line": 225,
+              "documented": true,
+              "doc_first_line": "Observe the decoded key type so YAML cannot coerce numbers into strings.",
+              "doc_sha256": "f6ffc7fcb1fe3617b35598e015a390c9f2fc7da956469e7b848807844d3e3b1f",
+              "declaration_body_sha256": "a0f45a48faf1395db9f4b4c352f81b1ff4c67e0a75d12b937c5a529447246851",
+              "change": "new"
+            },
+            {
+              "name": "StrictObjectKeyVisitor::expecting",
+              "kind": "method",
+              "line": 241,
+              "byte_offset": 8956,
+              "doc_start_line": 240,
+              "doc_end_line": 240,
+              "documented": true,
+              "doc_first_line": "Describe the JSON-compatible mapping-key contract in decoder diagnostics.",
+              "doc_sha256": "30f5e810e83d8fb1b19debd8ca014a949bc0dae0fe7912b0d71c8b8056a35e35",
+              "declaration_body_sha256": "c1c1512018fa781f8b748310e1222eb7afd74e486afa108ff09122367e62934e",
+              "change": "new"
+            },
+            {
+              "name": "StrictObjectKeyVisitor::visit_str",
+              "kind": "method",
+              "line": 246,
+              "byte_offset": 9171,
+              "doc_start_line": 245,
+              "doc_end_line": 245,
+              "documented": true,
+              "doc_first_line": "Retain a decoded borrowed string key without scalar coercion.",
+              "doc_sha256": "e4300119ac3b97e86ed74092958c813d85352d757867268eb23d8716694d36a0",
+              "declaration_body_sha256": "3bbce2328643b701c79c1927b0a09472f81ec275f45fb946834ed82604572266",
+              "change": "new"
+            },
+            {
+              "name": "StrictObjectKeyVisitor::visit_string",
+              "kind": "method",
+              "line": 254,
+              "byte_offset": 9395,
+              "doc_start_line": 253,
+              "doc_end_line": 253,
+              "documented": true,
+              "doc_first_line": "Retain a decoded owned string key without scalar coercion.",
+              "doc_sha256": "b4677c3d36ad23c46e4a30cdedabb9a3ed2d3363efcdefc74420a228f781d22d",
+              "declaration_body_sha256": "8896405bbdd78cfc8d01f46aa6b751490a1a44352ed1812663175cc28ebacec5",
+              "change": "new"
+            },
+            {
+              "name": "StrictValue::deserialize",
+              "kind": "method",
+              "line": 262,
+              "byte_offset": 9584,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "196f88f04f7f0607ffcbad4f7381900bd44d17db138dd6486023a65257f9518f",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::expecting",
+              "kind": "method",
+              "line": 275,
+              "byte_offset": 9868,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "c4c58d7e1a3882ef046d73492622652d97ba5193ccf94e7f65055917a53d639c",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_bool",
+              "kind": "method",
+              "line": 279,
+              "byte_offset": 10036,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "a6df5c7a91f2f566ebbcecaa8974b37cb93b1716e2e5ff52fcd1b95d38d1345c",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_i64",
+              "kind": "method",
+              "line": 283,
+              "byte_offset": 10155,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "2c5896641d8266186b29ab8f4283dcf31a6dbd42c6e20da2318775b5a7054584",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_u64",
+              "kind": "method",
+              "line": 287,
+              "byte_offset": 10288,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "15d2c86de7968cfe244dd615022345b0d1c729f957e5582435b826c6a50705f8",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_f64",
+              "kind": "method",
+              "line": 291,
+              "byte_offset": 10421,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "c11d5df8c8ce413bc221ccaba50b6308ce78f6e7b2474305b6f3989e212f31fc",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_str",
+              "kind": "method",
+              "line": 301,
+              "byte_offset": 10688,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "b0efe76096342e9bfa2cc113193f8325a630a2fa05c64353a14d639575b71c86",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_string",
+              "kind": "method",
+              "line": 308,
+              "byte_offset": 10856,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "6bfc0dcdab6c11495a0a33a9b8c46fa0788799f9232b56918e970aae32b79378",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_none",
+              "kind": "method",
+              "line": 312,
+              "byte_offset": 10981,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "9475163c104095a2ff6e92594842ebbb39d1962f6cf274ddc325b42f793cd72d",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_unit",
+              "kind": "method",
+              "line": 316,
+              "byte_offset": 11080,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "aa372114ad7358a3f3ae114625a2c5821ea4b55d029cc1334f2691d4adb95373",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_some",
+              "kind": "method",
+              "line": 320,
+              "byte_offset": 11179,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "82e990707f3cc58eab609e7e5f64d7b0d09aa67dac155b9e4a6e72d0712cb329",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_seq",
+              "kind": "method",
+              "line": 327,
+              "byte_offset": 11356,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "documented": false,
+              "doc_first_line": null,
+              "doc_sha256": null,
+              "declaration_body_sha256": "a41ec63725430f1afc555f740484200422d4a42a3d7b6eaeb81617c626138b44",
+              "change": "unchanged"
+            },
+            {
+              "name": "StrictValueVisitor::visit_map",
+              "kind": "method",
+              "line": 339,
+              "byte_offset": 11769,
+              "doc_start_line": 338,
+              "doc_end_line": 338,
+              "documented": true,
+              "doc_first_line": "Preserve string-keyed mappings and reject duplicates before inserting values.",
+              "doc_sha256": "d9de9c62b1229e655047ef2a442054928de5a652fbb1ace994bfb2316f28fb13",
+              "declaration_body_sha256": "4174f06c34d1fc1db6c68349a367d44a33043495cb657e396b9b40a9314a014c",
+              "change": "declaration-or-body"
+            }
+          ]
+        },
+        {
+          "repository_path": "src/cli/export.rs",
+          "inspected_path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/cli/export.rs",
+          "bytes": 40177,
+          "sha256": "4ec7e7776f4d6cf18e4141a4cb627982b0c9a7672f965efa5ebe27e66faf5e66",
+          "baseline_sha256": "5fa709a25d3f8372120dc34e493e0dd59653df6658c5e7cfde9e747d7a91abd9",
+          "production_function_count": 15,
+          "production_documented_count": 15,
+          "changed_or_new_names": [
+            "deserialize_oscal",
+            "serialize_oscal",
+            "model_json_value",
+            "validate_oscal_json_value",
+            "validate_oscal_model",
+            "export_json_value",
+            "export_artifact"
+          ],
+          "changed_or_new_count": 7,
+          "changed_or_new_documented_count": 7,
+          "behavior_or_declaration_change_names": [
+            "export_json_value",
+            "export_artifact"
+          ],
+          "doc_only_change_names": [
+            "deserialize_oscal",
+            "serialize_oscal",
+            "model_json_value",
+            "validate_oscal_json_value",
+            "validate_oscal_model"
+          ],
+          "legacy_function_count": 14,
+          "legacy_documented_count": 14,
+          "missing_documentation_names": [],
+          "cfg_test_exclusion_start_line": 484,
+          "excluded_cfg_test_functions": [
+            {
+              "name": "rejects_foreign_xml_root_namespace",
+              "line": 495
+            },
+            {
+              "name": "detect_format_json",
+              "line": 503
+            },
+            {
+              "name": "detect_format_xml",
+              "line": 509
+            },
+            {
+              "name": "detect_format_yaml",
+              "line": 515
+            },
+            {
+              "name": "detect_format_yml",
+              "line": 521
+            },
+            {
+              "name": "detect_format_case_insensitive",
+              "line": 527
+            },
+            {
+              "name": "detect_format_unsupported_extension",
+              "line": 536
+            },
+            {
+              "name": "detect_format_no_extension",
+              "line": 544
+            },
+            {
+              "name": "deserialize_json_catalog",
+              "line": 555
+            },
+            {
+              "name": "deserialize_json_component",
+              "line": 562
+            },
+            {
+              "name": "export_json_catalog_to_xml",
+              "line": 573
+            },
+            {
+              "name": "export_json_component_to_xml",
+              "line": 586
+            },
+            {
+              "name": "validate_valid_catalog_model",
+              "line": 599
+            },
+            {
+              "name": "validate_valid_component_model",
+              "line": 606
+            },
+            {
+              "name": "supported_patch_declarations_validate_and_are_preserved",
+              "line": 613
+            },
+            {
+              "name": "unsupported_declaration_fails_with_declared_and_schema_versions",
+              "line": 632
+            },
+            {
+              "name": "export_artifact_json_to_xml_stdout",
+              "line": 648
+            },
+            {
+              "name": "export_artifact_json_to_xml_file",
+              "line": 655
+            },
+            {
+              "name": "export_json_catalog_to_yaml",
+              "line": 670
+            },
+            {
+              "name": "export_json_component_to_yaml",
+              "line": 682
+            },
+            {
+              "name": "deserialize_invalid_oscal_json",
+              "line": 694
+            },
+            {
+              "name": "export_artifact_empty_file",
+              "line": 705
+            },
+            {
+              "name": "export_artifact_nonexistent_file",
+              "line": 718
+            },
+            {
+              "name": "export_artifact_unsupported_extension",
+              "line": 729
+            },
+            {
+              "name": "export_artifact_no_extension",
+              "line": 742
+            },
+            {
+              "name": "export_artifact_format_mismatch",
+              "line": 755
+            },
+            {
+              "name": "export_xml_catalog_to_json",
+              "line": 773
+            },
+            {
+              "name": "export_yaml_catalog_to_json",
+              "line": 790
+            },
+            {
+              "name": "export_artifact_output_to_file",
+              "line": 812
+            },
+            {
+              "name": "export_same_format_json_to_json",
+              "line": 828
+            },
+            {
+              "name": "unsupported_profile_and_mapping_messages_match_across_json_and_yaml",
+              "line": 840
+            },
+            {
+              "name": "export_reader_rejects_a_directory_before_deserialization",
+              "line": 853
+            }
+          ],
+          "functions": [
+            {
+              "name": "detect_format",
+              "kind": "standalone",
+              "line": 31,
+              "byte_offset": 1138,
+              "doc_start_line": 26,
+              "doc_end_line": 30,
+              "documented": true,
+              "doc_first_line": "Detect the OSCAL format of an input file from its file extension.",
+              "doc_sha256": "96d778e4b8ed67a8daf5ffb1d00c5689f7f5b2c3ff4fd4e0d0ef02626b5f9306",
+              "declaration_body_sha256": "499ddfff5be1b62db851e4800d18346fad1e84abc8a204182d046d4ba189ed8c",
+              "change": "unchanged"
+            },
+            {
+              "name": "deserialize_oscal",
+              "kind": "standalone",
+              "line": 60,
+              "byte_offset": 2451,
+              "doc_start_line": 46,
+              "doc_end_line": 59,
+              "documented": true,
+              "doc_first_line": "Deserialize an OSCAL artifact from a string in the specified format.",
+              "doc_sha256": "500ca291021cf3a90ecb1f8e75ea889ab47bda240e73fd28cb6607ac41a1faa4",
+              "declaration_body_sha256": "e372eaa78b88dd6991a951ccd942eaf06b2c2e3230dab2fda893214c226523a9",
+              "change": "doc-only"
+            },
+            {
+              "name": "deserialize_from_json",
+              "kind": "standalone",
+              "line": 70,
+              "byte_offset": 2875,
+              "doc_start_line": 69,
+              "doc_end_line": 69,
+              "documented": true,
+              "doc_first_line": "Deserialize an OSCAL artifact from JSON.",
+              "doc_sha256": "df3ffd2d0c59402fa0a861efa5c6836381ca4222f95bf794e87914c186ff5b0e",
+              "declaration_body_sha256": "bd0c50c8fa1fd1db037581b36cc61c799651c7496338bd0b9f99fd8117bb8054",
+              "change": "unchanged"
+            },
+            {
+              "name": "oscal_model_from_value",
+              "kind": "standalone",
+              "line": 79,
+              "byte_offset": 3251,
+              "doc_start_line": 78,
+              "doc_end_line": 78,
+              "documented": true,
+              "doc_first_line": "Build a supported OSCAL envelope from a parsed format-neutral JSON value.",
+              "doc_sha256": "b56d43d9cf910386f27ccfbe008118aa501649b8c923a53c8ed91553691bb937",
+              "declaration_body_sha256": "73cd555338d9169399894ffee19e63fbfe523a45c66c1400e767c81a9c748549",
+              "change": "unchanged"
+            },
+            {
+              "name": "deserialize_from_xml",
+              "kind": "standalone",
+              "line": 126,
+              "byte_offset": 5286,
+              "doc_start_line": 123,
+              "doc_end_line": 125,
+              "documented": true,
+              "doc_first_line": "Deserialize an OSCAL artifact from XML.",
+              "doc_sha256": "49f54680fd742687f677c38d2891193931ae69f0ee1ac7dbce4b7491af1a9a4a",
+              "declaration_body_sha256": "b5b2538d28dd59cd919f6f2545667193f61c730da3fc6624d505df750d342712",
+              "change": "unchanged"
+            },
+            {
+              "name": "detect_xml_root_element",
+              "kind": "standalone",
+              "line": 156,
+              "byte_offset": 6558,
+              "doc_start_line": 152,
+              "doc_end_line": 155,
+              "documented": true,
+              "doc_first_line": "Extract and validate the root element name from XML content.",
+              "doc_sha256": "3634c0aa81b9e5aba92c129cc3590b258d102ecd52c3e9ced785ed642b4126de",
+              "declaration_body_sha256": "307cb39f8a1cd0fe720e33b2fecfd293d112973727c1aaaad046c137a559ef9d",
+              "change": "unchanged"
+            },
+            {
+              "name": "deserialize_from_yaml_format",
+              "kind": "standalone",
+              "line": 208,
+              "byte_offset": 8918,
+              "doc_start_line": 207,
+              "doc_end_line": 207,
+              "documented": true,
+              "doc_first_line": "Deserialize an OSCAL artifact from YAML.",
+              "doc_sha256": "423b93ae4d373e56377195079eecb23479677d1cbf4b346fa566aa232414f424",
+              "declaration_body_sha256": "83b2254b5b4feadeee232e5a0e6edc660f86eb5b709b1ebf8c11e804670ba16a",
+              "change": "unchanged"
+            },
+            {
+              "name": "serialize_oscal",
+              "kind": "standalone",
+              "line": 222,
+              "byte_offset": 9504,
+              "doc_start_line": 214,
+              "doc_end_line": 221,
+              "documented": true,
+              "doc_first_line": "Serialize an OSCAL model to a string in the specified format.",
+              "doc_sha256": "8cbcd182c451f527d3638bd4f0908d1875e3f6030de507447bc8af4fd8c03a26",
+              "declaration_body_sha256": "a3569208497cd11d1012ecb60336f99ac71eff42d5e5a8469bd8f71640a96fff",
+              "change": "doc-only"
+            },
+            {
+              "name": "model_json_value",
+              "kind": "standalone",
+              "line": 254,
+              "byte_offset": 11066,
+              "doc_start_line": 249,
+              "doc_end_line": 253,
+              "documented": true,
+              "doc_first_line": "Convert the strongly typed model to the canonical JSON validation representation.",
+              "doc_sha256": "94bbb52994cbbbc92c49c2bb97a64aa92bcf03e7b72680647c321bdf08fd53e6",
+              "declaration_body_sha256": "328724f92dd14b5dfd9ccf36b975e7eb53275b7ba8525586f125ba365bfac548",
+              "change": "doc-only"
+            },
+            {
+              "name": "validate_oscal_json_value",
+              "kind": "standalone",
+              "line": 278,
+              "byte_offset": 11982,
+              "doc_start_line": 277,
+              "doc_end_line": 277,
+              "documented": true,
+              "doc_first_line": "Validate the supplied JSON tree using schema and semantic checks.",
+              "doc_sha256": "9e995b6311501bb5cbf726fd09b60a0316a6db9d13a244a0ead25e0b15e6706f",
+              "declaration_body_sha256": "eebf92bb997c945d59628ba6c5001ebb6c08cc8f954e33fe2d737a94848b9c5b",
+              "change": "doc-only"
+            },
+            {
+              "name": "validate_oscal_model",
+              "kind": "standalone",
+              "line": 306,
+              "byte_offset": 13039,
+              "doc_start_line": 299,
+              "doc_end_line": 305,
+              "documented": true,
+              "doc_first_line": "Validate an OSCAL model using full validation (schema + semantic checks).",
+              "doc_sha256": "36b81246e32b82eeeae81024549e4da9fc7bb92b354bb4e0df962ae0c6b7d350",
+              "declaration_body_sha256": "75edc21a8392d1ec720d652371d24b99ef1dc1a6937320f6ce4d7e6195fc8547",
+              "change": "doc-only"
+            },
+            {
+              "name": "export_json_value",
+              "kind": "standalone",
+              "line": 317,
+              "byte_offset": 13619,
+              "doc_start_line": 312,
+              "doc_end_line": 316,
+              "documented": true,
+              "doc_first_line": "Decode the original JSON/YAML tree; XML retains its existing typed projection.",
+              "doc_sha256": "7d7be7180c2e777d9a68fffe4d2d1d1ac4ff52a5fbc2a92f60c159fd63610fd3",
+              "declaration_body_sha256": "ea04fb59fea14f4eb0ace7f00c1886f7be634ce16781c969ca482ddde833797a",
+              "change": "new"
+            },
+            {
+              "name": "export_artifact",
+              "kind": "standalone",
+              "line": 367,
+              "byte_offset": 16097,
+              "doc_start_line": 363,
+              "doc_end_line": 366,
+              "documented": true,
+              "doc_first_line": "Execute the full export pipeline: read → detect → deserialize → validate → serialize → write.",
+              "doc_sha256": "1015d07d0db3805d378805f23ef18a661bbfd65af12b773b3c49d0ecf2a14f09",
+              "declaration_body_sha256": "8222381cb554c217f964b9a4a3d17e19359554c95a2d335fc02e8ba589ab0cb3",
+              "change": "declaration-or-body"
+            },
+            {
+              "name": "read_export_input",
+              "kind": "standalone",
+              "line": 417,
+              "byte_offset": 17945,
+              "doc_start_line": 416,
+              "doc_end_line": 416,
+              "documented": true,
+              "doc_first_line": "Read one regular OSCAL artifact through a bounded, already-open file handle.",
+              "doc_sha256": "228325652c39c80644fd4edf6ecd03cd29502ae435c20042688bb924926f1d1f",
+              "declaration_body_sha256": "58889db0b979bc6b053618e07acbf421bed7965d812770b1d8a967a786c7ed9b",
+              "change": "unchanged"
+            },
+            {
+              "name": "execute",
+              "kind": "standalone",
+              "line": 476,
+              "byte_offset": 19978,
+              "doc_start_line": 472,
+              "doc_end_line": 475,
+              "documented": true,
+              "doc_first_line": "CLI handler for `forge export`.",
+              "doc_sha256": "b9c91b502a6ea49e99d513a05bb081bb4bebc0f9c9103de7e09715a36049562b",
+              "declaration_body_sha256": "8194c43604d69e0cd2a910a065667650f0af93d5d0e6d3e1ecb2f1890c7ed070",
+              "change": "unchanged"
+            }
+          ]
+        }
+      ],
+      "totals": {
+        "production_function_count": 39,
+        "production_documented_count": 24,
+        "changed_or_new_count": 13,
+        "changed_or_new_documented_count": 13,
+        "legacy_function_count": 33,
+        "legacy_documented_count": 18
+      },
+      "qualification": "Changed/new documentation is complete for this explicit two-file inventory. Whole-file legacy documentation is partial in json_strict.rs. No tests/Cargo/rustdoc were executed by this audit; execution and production coverage must use separately bound receipts and must exclude the listed cfg(test) functions.",
+      "supersedes_for_applied_source": {
+        "path": "/private/tmp/forge-f09-production-docstrings-final-aef-ce51-4ec7.json",
+        "sha256": "57aac86c514797d5130e68c040bf11794e9d9ba9ef9a6d487c8ff69789d9fdfe",
+        "reason": "Final successor binds applied parser ec828 after the single Clippy lifetime-elision correction; CLI4ec7, line numbers, docs, function bodies and denominators remain unchanged. All earlier artifacts are retained unchanged."
+      },
+      "production_coverage_inventory_qualification": "The broad changed/new source inventory is thirteen named production functions: six new, two with modified declarations/bodies, five doc-only. All 44 functions below cfg(test) are excluded from production coverage inventory. Presence of adjacent Rustdoc is not execution evidence.",
+      "baseline_verification": {
+        "selected_slice_baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+        "baseline_role": "Frozen refreshed origin/main baseline for this slice, supplied by the coordinator; both relevant file bytes independently verified at this immutable commit.",
+        "other_local_main_observation_commit": "3f32896c6cf4809bb611b16f8162b8b9041ec9af",
+        "other_local_main_role": "Previously observed local main ref; not the selected slice baseline.",
+        "relevant_files_byte_identical_between_commits": true,
+        "note": "Previous successor recorded the local main observation as primary. This successor restores the immutable slice baseline. Identical file hashes establish the same source comparison and counts; no hosted CI or ongoing remote freshness claim is made."
+      },
+      "change_classification": {
+        "new": [
+          "src/json_strict.rs::parse_yaml_value",
+          "src/json_strict.rs::StrictObjectKey::deserialize",
+          "src/json_strict.rs::StrictObjectKeyVisitor::expecting",
+          "src/json_strict.rs::StrictObjectKeyVisitor::visit_str",
+          "src/json_strict.rs::StrictObjectKeyVisitor::visit_string",
+          "src/cli/export.rs::export_json_value"
+        ],
+        "declaration-or-body": [
+          "src/json_strict.rs::StrictValueVisitor::visit_map",
+          "src/cli/export.rs::export_artifact"
+        ],
+        "doc-only": [
+          "src/cli/export.rs::deserialize_oscal",
+          "src/cli/export.rs::serialize_oscal",
+          "src/cli/export.rs::model_json_value",
+          "src/cli/export.rs::validate_oscal_json_value",
+          "src/cli/export.rs::validate_oscal_model"
+        ]
+      },
+      "retained_initial_cli_source": {
+        "path": "/private/tmp/forge-f09-initial-coverage-sources/src/cli/export.rs",
+        "sha256": "28a4b1e3113e9ecb005721d746eb654373f5d6b63eed238d9089d5ddf159e2df",
+        "bytes": 39574,
+        "qualified_as": "Historical coverage/source candidate, not final CLI bytes."
+      },
+      "final_doc_only_amendment": {
+        "changed_doc_names": [
+          "validate_oscal_json_value"
+        ],
+        "all_production_declaration_bodies_match_previous_candidate": true,
+        "no_new_named_functions": true
+      },
+      "clippy_lifetime_only_amendment": {
+        "retained_parser": {
+          "path": "/private/tmp/forge-f09-parser-before-clippy-fix.rs",
+          "bytes": 20534,
+          "sha256": "ce51f37276141b3482ca95c97ad197e59e495d025b64f7452e822410e127a092"
+        },
+        "applied_parser": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/json_strict.rs",
+          "bytes": 20528,
+          "sha256": "ec828d864efacb0ec0734042b6e873af3180680df00b80bb5fa43709a6d199f7"
+        },
+        "line": 237,
+        "old_impl_header": "impl<'de> Visitor<'de> for StrictObjectKeyVisitor {",
+        "new_impl_header": "impl Visitor<'_> for StrictObjectKeyVisitor {",
+        "exact_single_replacement_verified": true,
+        "changed_functions": [],
+        "all_production_function_declarations_and_bodies_unchanged_from_prior_candidate": true,
+        "all_cfg_test_function_declarations_and_bodies_unchanged_from_prior_candidate": true,
+        "all_adjacent_rustdoc_blocks_unchanged": true,
+        "source_line_numbers_unchanged": true,
+        "byte_offsets_recomputed": true,
+        "suppression_added": false,
+        "qualification": "Source-equivalence and documentation inspection only. Rust typechecking, Clippy, Cargo tests and coverage are coordinator-owned and were not executed by this audit."
+      },
+      "final_reverification": {
+        "files": [
+          {
+            "path": "src/json_strict.rs",
+            "production": 24,
+            "documented": 9,
+            "selected": 6,
+            "selected_documented": 6,
+            "cfg_test_excluded": 12,
+            "baseline_sha256_reverified": "fec323dc53982eedee319b24510017da2ed531cc35437f791029c84fddf4438e"
+          },
+          {
+            "path": "src/cli/export.rs",
+            "production": 15,
+            "documented": 15,
+            "selected": 7,
+            "selected_documented": 7,
+            "cfg_test_excluded": 32,
+            "baseline_sha256_reverified": "5fa709a25d3f8372120dc34e493e0dd59653df6658c5e7cfde9e747d7a91abd9"
+          }
+        ],
+        "changed_or_new_documented": "13/13",
+        "production_inventory": "39 named production functions/methods; 24 adjacent Rustdoc blocks",
+        "legacy_inventory": "33 preexisting production functions/methods; 18 adjacent Rustdoc blocks; 15 missing legacy parser docs",
+        "cfg_test_excluded": 44,
+        "no_new_named_functions": true,
+        "behavioral_selection": 8,
+        "doc_only_selection": 5,
+        "all_selected_docs_adjacency_rechecked": true,
+        "baseline_files_reverified_at_immutable_aef": true
+      }
+    },
+    "test_function_names": [
+      "fixture_path",
+      "fixture_bytes",
+      "fixture_value",
+      "run_export",
+      "assert_exported_value",
+      "assert_lossless_json",
+      "assert_lossless_yaml_round_trip",
+      "assert_rejected",
+      "assert_rejected_diagnostic",
+      "native_fixtures_validate_for_supported_declarations_against_pinned_schema",
+      "catalog_json_export_preserves_complete_native_value",
+      "component_json_export_preserves_complete_native_value",
+      "catalog_yaml_round_trip_preserves_complete_native_value",
+      "component_yaml_round_trip_preserves_complete_native_value",
+      "supported_declarations_round_trip_without_version_rewrite",
+      "stdout_exports_preserve_complete_native_values_and_source_bytes",
+      "nested_duplicate_json_is_rejected_without_publication",
+      "nested_duplicate_yaml_flow_mapping_is_rejected_without_publication",
+      "nested_duplicate_yaml_block_mapping_is_rejected_without_publication",
+      "unknown_native_fields_are_rejected_without_publication",
+      "unsupported_version_declarations_are_rejected_without_publication",
+      "malformed_json_is_rejected_without_publication",
+      "malformed_yaml_is_rejected_without_publication",
+      "multiple_yaml_documents_are_rejected_without_publication",
+      "nonfinite_yaml_scalars_are_rejected_without_publication",
+      "orphaned_resource_reference_is_rejected_without_publication",
+      "component_statement_without_uuid_is_rejected_without_publication",
+      "other_oscal_models_are_rejected_without_publication",
+      "decoded_depth_limit_is_rejected_without_publication"
+    ],
+    "qualification": "Adjacent Rustdoc inspection, not rustdoc compiler or runtime coverage. Whole production inventory is 24/39; 15 legacy parser functions remain undocumented. Inherited trait docs, closures, types and generated items are excluded."
+  },
+  "production_line_coverage": {
+    "schema_version": "forge.native-export-line-coverage/4",
+    "supersedes_scoped_measurement_only": {
+      "path": "/private/tmp/forge-f09-production-coverage-formatted-final.json",
+      "sha256": "acbf39a980bd42f237ab91cba62e7b9e0bd73a358be0fa3d5c9f1d2e6adee47d",
+      "bytes": 15430
+    },
+    "method": "LCOV DA line counts; positive count means executed. Include every instrumented production line in each selected source file, including uncovered lines. Exclude test modules explicitly. Zero branch/MCDC instrumentation does not establish branch coverage.",
+    "baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+    "raw_json": {
+      "path": "/private/tmp/forge-f09-llvm-qualified-final-raw.json",
+      "sha256": "a28bc80732251601bfa0ff954404e73c4e96ab9130935580769fb08aeb4a251e",
+      "bytes": 12862441
+    },
+    "raw_lcov": {
+      "path": "/private/tmp/forge-f09-llvm-qualified-final-raw.lcov",
+      "sha256": "5911da56dac8e85912ddb955413f60a77fa68a75e646df959873bb6a6439bac9",
+      "bytes": 2442802
+    },
+    "test_log": {
+      "path": "/private/tmp/forge-f09-llvm-qualified-final-tests.log",
+      "sha256": "55cfe756417e3e73068bf4c04278b46d8b56d5c38e9fbcaaa99267b5661ca86c",
+      "bytes": 147107
+    },
+    "test_passed": 1868,
+    "test_failed": 0,
+    "test_ignored": 0,
+    "files": [
+      {
+        "repository_path": "src/json_strict.rs",
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/json_strict.rs",
+          "sha256": "ec828d864efacb0ec0734042b6e873af3180680df00b80bb5fa43709a6d199f7",
+          "bytes": 20528
+        },
+        "production_cutoff_exclusive": 356,
+        "excluded_scope": "All cfg(test) code is in the test module at this cutoff; the independent function inventory excludes all 44 test functions.",
+        "production_lines": 179,
+        "covered_production_lines": 165,
+        "line_execution_counts": {
+          "82": 4468,
+          "83": 4468,
+          "84": 4468,
+          "85": 4468,
+          "86": 4468,
+          "87": 4468,
+          "88": 4468,
+          "89": 124,
+          "90": 124,
+          "91": 88,
+          "93": 36,
+          "95": 124,
+          "96": 4344,
+          "97": 4344,
+          "98": 4344,
+          "99": 4336,
+          "100": 4288,
+          "101": 4468,
+          "120": 412,
+          "121": 412,
+          "122": 412,
+          "123": 220,
+          "124": 220,
+          "125": 176,
+          "126": 412,
+          "129": 18184,
+          "130": 18184,
+          "131": 18184,
+          "134": 22196,
+          "135": 22196,
+          "136": 1417496,
+          "138": 48,
+          "139": 22148,
+          "140": 22148,
+          "141": 22196,
+          "148": 359972,
+          "149": 359972,
+          "150": 359972,
+          "151": 359972,
+          "152": 359972,
+          "153": 359972,
+          "154": 359972,
+          "155": 52,
+          "156": 52,
+          "157": 52,
+          "158": 52,
+          "159": 359920,
+          "160": 234820,
+          "161": 234820,
+          "162": 32,
+          "163": 32,
+          "164": 32,
+          "165": 43988,
+          "166": 56192,
+          "167": 56192,
+          "168": 56192,
+          "169": 56192,
+          "170": 56192,
+          "172": 42048,
+          "174": 68824,
+          "175": 299232,
+          "176": 299232,
+          "177": 8,
+          "178": 8,
+          "179": 8,
+          "180": 8,
+          "181": 8,
+          "182": 8,
+          "183": 8,
+          "184": 8,
+          "185": 299224,
+          "186": 299224,
+          "187": 299224,
+          "188": 299224,
+          "189": 299224,
+          "191": 66892,
+          "193": 247076,
+          "195": 359972,
+          "197": 92,
+          "198": 92,
+          "199": 92,
+          "200": 92,
+          "201": 92,
+          "203": 92,
+          "204": 92,
+          "205": 3864,
+          "206": 3864,
+          "207": 1924,
+          "208": 1924,
+          "209": 1924,
+          "210": 1924,
+          "211": 1940,
+          "212": 1940,
+          "213": 1940,
+          "214": 1940,
+          "215": 1940,
+          "218": 92,
+          "219": 92,
+          "226": 328640,
+          "227": 328640,
+          "228": 328640,
+          "230": 328640,
+          "231": 328640,
+          "241": 20,
+          "242": 20,
+          "243": 20,
+          "246": 328620,
+          "247": 328620,
+          "248": 328620,
+          "250": 328620,
+          "251": 328620,
+          "254": 0,
+          "255": 0,
+          "256": 0,
+          "262": 394888,
+          "263": 394888,
+          "264": 394888,
+          "266": 394888,
+          "267": 394888,
+          "275": 12,
+          "276": 12,
+          "277": 12,
+          "279": 1960,
+          "280": 1960,
+          "281": 1960,
+          "283": 4,
+          "284": 4,
+          "285": 4,
+          "287": 9864,
+          "288": 9864,
+          "289": 9864,
+          "291": 116,
+          "292": 116,
+          "293": 116,
+          "295": 116,
+          "296": 116,
+          "297": 116,
+          "298": 116,
+          "299": 116,
+          "301": 260760,
+          "302": 260760,
+          "303": 260760,
+          "305": 260760,
+          "306": 260760,
+          "308": 0,
+          "309": 0,
+          "310": 0,
+          "312": 0,
+          "313": 0,
+          "314": 0,
+          "316": 520,
+          "317": 520,
+          "318": 520,
+          "320": 0,
+          "321": 0,
+          "322": 0,
+          "324": 0,
+          "325": 0,
+          "327": 47820,
+          "328": 47820,
+          "329": 47820,
+          "331": 47820,
+          "332": 109112,
+          "333": 61292,
+          "334": 61292,
+          "335": 47704,
+          "336": 47820,
+          "339": 73812,
+          "340": 73812,
+          "341": 73812,
+          "343": 73812,
+          "344": 328184,
+          "345": 401864,
+          "347": 328184,
+          "348": 132,
+          "349": 328052,
+          "350": 328052,
+          "352": 73200,
+          "353": 73812
+        },
+        "uncovered_production_lines": [
+          254,
+          255,
+          256,
+          308,
+          309,
+          310,
+          312,
+          313,
+          314,
+          320,
+          321,
+          322,
+          324,
+          325
+        ],
+        "patch_added_instrumented_lines": 25,
+        "covered_patch_added_instrumented_lines": 22,
+        "patch_added_line_execution_counts": {
+          "120": 412,
+          "121": 412,
+          "122": 412,
+          "123": 220,
+          "124": 220,
+          "125": 176,
+          "126": 412,
+          "226": 328640,
+          "227": 328640,
+          "228": 328640,
+          "230": 328640,
+          "231": 328640,
+          "241": 20,
+          "242": 20,
+          "243": 20,
+          "246": 328620,
+          "247": 328620,
+          "248": 328620,
+          "250": 328620,
+          "251": 328620,
+          "254": 0,
+          "255": 0,
+          "256": 0,
+          "344": 328184,
+          "345": 401864
+        },
+        "patch_qualification": "Added source lines from exact main diff, including moved/Rustfmt lines; not statement or branch coverage."
+      },
+      {
+        "repository_path": "src/cli/export.rs",
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/cli/export.rs",
+          "sha256": "4ec7e7776f4d6cf18e4141a4cb627982b0c9a7672f965efa5ebe27e66faf5e66",
+          "bytes": 40177
+        },
+        "production_cutoff_exclusive": 484,
+        "excluded_scope": "All cfg(test) code is in the test module at this cutoff; the independent function inventory excludes all 44 test functions.",
+        "production_lines": 297,
+        "covered_production_lines": 225,
+        "line_execution_counts": {
+          "31": 704,
+          "32": 704,
+          "33": 704,
+          "34": 704,
+          "35": 704,
+          "37": 696,
+          "38": 696,
+          "39": 696,
+          "40": 340,
+          "41": 300,
+          "42": 8,
+          "44": 704,
+          "60": 66,
+          "61": 66,
+          "62": 66,
+          "63": 42,
+          "64": 24,
+          "65": 0,
+          "67": 66,
+          "70": 48,
+          "71": 48,
+          "72": 0,
+          "73": 0,
+          "75": 48,
+          "76": 48,
+          "79": 90,
+          "80": 90,
+          "81": 90,
+          "82": 90,
+          "83": 90,
+          "84": 3,
+          "85": 3,
+          "86": 3,
+          "87": 3,
+          "88": 3,
+          "89": 3,
+          "91": 87,
+          "93": 54,
+          "94": 54,
+          "95": 0,
+          "96": 0,
+          "97": 54,
+          "100": 21,
+          "101": 21,
+          "102": 0,
+          "105": 0,
+          "106": 21,
+          "108": 6,
+          "109": 6,
+          "110": 6,
+          "112": 0,
+          "113": 0,
+          "114": 0,
+          "115": 0,
+          "117": 6,
+          "118": 6,
+          "119": 6,
+          "121": 90,
+          "126": 24,
+          "130": 24,
+          "131": 24,
+          "132": 24,
+          "133": 15,
+          "134": 15,
+          "136": 9,
+          "137": 9,
+          "138": 9,
+          "140": 0,
+          "141": 0,
+          "142": 0,
+          "143": 0,
+          "144": 0,
+          "145": 0,
+          "146": 0,
+          "147": 0,
+          "148": 0,
+          "150": 24,
+          "156": 27,
+          "160": 27,
+          "162": 75,
+          "163": 24,
+          "164": 27,
+          "165": 27,
+          "166": 27,
+          "167": 27,
+          "168": 27,
+          "169": 0,
+          "170": 0,
+          "171": 27,
+          "172": 27,
+          "173": 51,
+          "174": 51,
+          "175": 0,
+          "176": 0,
+          "177": 51,
+          "178": 27,
+          "179": 27,
+          "181": 3,
+          "182": 3,
+          "183": 3,
+          "184": 3,
+          "185": 3,
+          "186": 3,
+          "187": 3,
+          "188": 48,
+          "190": 24,
+          "193": 0,
+          "194": 0,
+          "195": 0,
+          "197": 0,
+          "198": 0,
+          "199": 0,
+          "200": 0,
+          "202": 48,
+          "205": 27,
+          "208": 6,
+          "209": 6,
+          "211": 6,
+          "212": 6,
+          "222": 60,
+          "223": 60,
+          "224": 60,
+          "226": 0,
+          "227": 0,
+          "228": 0,
+          "230": 0,
+          "232": 54,
+          "233": 42,
+          "234": 42,
+          "236": 12,
+          "237": 12,
+          "238": 12,
+          "242": 6,
+          "243": 3,
+          "244": 3,
+          "247": 60,
+          "254": 45,
+          "255": 45,
+          "256": 45,
+          "257": 45,
+          "258": 33,
+          "259": 33,
+          "260": 0,
+          "261": 0,
+          "262": 0,
+          "263": 0,
+          "264": 33,
+          "266": 12,
+          "267": 12,
+          "268": 0,
+          "269": 0,
+          "270": 0,
+          "271": 0,
+          "272": 12,
+          "275": 45,
+          "278": 309,
+          "279": 309,
+          "280": 309,
+          "281": 309,
+          "282": 309,
+          "283": 309,
+          "285": 309,
+          "286": 186,
+          "287": 186,
+          "289": 123,
+          "290": 123,
+          "291": 123,
+          "292": 123,
+          "293": 123,
+          "294": 123,
+          "295": 123,
+          "297": 309,
+          "306": 21,
+          "307": 21,
+          "308": 21,
+          "309": 21,
+          "310": 21,
+          "317": 510,
+          "318": 510,
+          "319": 510,
+          "320": 510,
+          "321": 510,
+          "322": 510,
+          "324": 264,
+          "325": 264,
+          "328": 222,
+          "329": 84,
+          "330": 84,
+          "331": 84,
+          "332": 84,
+          "333": 84,
+          "335": 24,
+          "336": 24,
+          "338": 108,
+          "340": 24,
+          "342": 339,
+          "343": 3,
+          "344": 3,
+          "345": 336,
+          "347": 264,
+          "348": 24,
+          "349": 24,
+          "350": 24,
+          "352": 24,
+          "353": 24,
+          "354": 24,
+          "355": 24,
+          "357": 24,
+          "358": 24,
+          "359": 24,
+          "361": 510,
+          "367": 525,
+          "368": 525,
+          "369": 525,
+          "370": 525,
+          "371": 525,
+          "372": 525,
+          "374": 525,
+          "375": 6,
+          "376": 519,
+          "377": 519,
+          "378": 513,
+          "380": 513,
+          "381": 513,
+          "382": 0,
+          "384": 0,
+          "386": 0,
+          "388": 513,
+          "389": 3,
+          "390": 510,
+          "392": 510,
+          "393": 288,
+          "395": 288,
+          "396": 168,
+          "398": 168,
+          "399": 75,
+          "400": 0,
+          "401": 0,
+          "402": 57,
+          "404": 36,
+          "405": 36,
+          "408": 168,
+          "410": 168,
+          "411": 165,
+          "413": 165,
+          "414": 525,
+          "417": 516,
+          "420": 516,
+          "421": 0,
+          "422": 0,
+          "424": 0,
+          "426": 0,
+          "427": 516,
+          "428": 3,
+          "429": 3,
+          "430": 3,
+          "431": 513,
+          "433": 513,
+          "434": 0,
+          "435": 0,
+          "437": 0,
+          "439": 0,
+          "440": 513,
+          "441": 513,
+          "442": 0,
+          "443": 0,
+          "444": 0,
+          "445": 513,
+          "446": 513,
+          "447": 0,
+          "448": 0,
+          "449": 0,
+          "450": 0,
+          "451": 0,
+          "452": 513,
+          "454": 513,
+          "455": 0,
+          "456": 0,
+          "458": 0,
+          "459": 513,
+          "460": 513,
+          "461": 513,
+          "462": 0,
+          "463": 0,
+          "464": 0,
+          "465": 0,
+          "466": 0,
+          "467": 513,
+          "469": 513,
+          "470": 516,
+          "476": 438,
+          "477": 438,
+          "478": 438,
+          "479": 438,
+          "480": 438,
+          "481": 438,
+          "482": 438
+        },
+        "uncovered_production_lines": [
+          65,
+          72,
+          73,
+          95,
+          96,
+          102,
+          105,
+          112,
+          113,
+          114,
+          115,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          169,
+          170,
+          175,
+          176,
+          193,
+          194,
+          195,
+          197,
+          198,
+          199,
+          200,
+          226,
+          227,
+          228,
+          230,
+          260,
+          261,
+          262,
+          263,
+          268,
+          269,
+          270,
+          271,
+          382,
+          384,
+          386,
+          400,
+          401,
+          421,
+          422,
+          424,
+          426,
+          434,
+          435,
+          437,
+          439,
+          442,
+          443,
+          444,
+          447,
+          448,
+          449,
+          450,
+          451,
+          455,
+          456,
+          458,
+          462,
+          463,
+          464,
+          465,
+          466
+        ],
+        "patch_added_instrumented_lines": 38,
+        "covered_patch_added_instrumented_lines": 38,
+        "patch_added_line_execution_counts": {
+          "317": 510,
+          "318": 510,
+          "319": 510,
+          "320": 510,
+          "321": 510,
+          "322": 510,
+          "324": 264,
+          "325": 264,
+          "328": 222,
+          "329": 84,
+          "330": 84,
+          "331": 84,
+          "332": 84,
+          "333": 84,
+          "335": 24,
+          "336": 24,
+          "338": 108,
+          "340": 24,
+          "342": 339,
+          "343": 3,
+          "344": 3,
+          "345": 336,
+          "347": 264,
+          "348": 24,
+          "349": 24,
+          "350": 24,
+          "352": 24,
+          "353": 24,
+          "354": 24,
+          "355": 24,
+          "357": 24,
+          "358": 24,
+          "359": 24,
+          "361": 510,
+          "392": 510,
+          "402": 57,
+          "404": 36,
+          "405": 36
+        },
+        "patch_qualification": "Added source lines from exact main diff, including moved/Rustfmt lines; not statement or branch coverage."
+      }
+    ],
+    "qualification": "Scoped synthetic execution is not XML losslessness, external interoperability, allocation confinement, approved overlay scope or human acceptance.",
+    "delivery_test_source": {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/export_lossless_integration.rs",
+      "sha256": "3a876ad7cd31e3da7bf713279118cef8d00291c75e95cb0515cc0440f9d09aeb",
+      "bytes": 18777
+    },
+    "format_correction": "Rustfmt-only test layout/optional trailing commas after the first hook rejected formatting; no production changes. Fresh instrumented execution binds final delivery bytes. Earlier coverage/test source bytes retained.",
+    "lint_correction": "Unsuppressed lifetime elision in new visitor impl and removal of unnecessary raw byte-string hashes; literal content unchanged. Strict all-target Clippy passes and fresh instrumented execution binds final delivery source/test bytes."
+  },
+  "raw_artifact_pins": [
+    {
+      "path": "/private/tmp/forge-f09-export-baseline-attempt-one.json",
+      "sha256": "2899eaaadb291539b6091cdbda573dfbd4c5169589e98c5870458148b3e3c623",
+      "bytes": 3373
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-baseline.log",
+      "sha256": "d180878bf9f45962c7a9afde57e589d10db4aa2f06987fd433f94def0afc9fab",
+      "bytes": 175995
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-baseline-corrected.json",
+      "sha256": "b48e41c8c6d45ab710f4859ffd13651a972d66271ced603d83c8f8bb4f59891f",
+      "bytes": 1880
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-baseline-corrected.log",
+      "sha256": "f6f1cf624607b53085b1a5775c4d942b0d8cd280c3d772a427f66c8b00afbb42",
+      "bytes": 165303
+    },
+    {
+      "path": "/private/tmp/forge-f09-baseline-tree-differences.json",
+      "sha256": "14593ab4b939fd9e01278f82ae13d9babe482ea1463ab3552e6817438019326d",
+      "bytes": 12840
+    },
+    {
+      "path": "/private/tmp/forge-f09-baseline-lossless-catalog.json",
+      "sha256": "6cbd4c84e5402a0ff05388987cf73a16cb22201c1bbada130d8a8d58d3725f88",
+      "bytes": 9666
+    },
+    {
+      "path": "/private/tmp/forge-f09-baseline-lossless-component.json",
+      "sha256": "7b9760e1c7cc53174f1c04870cc55d34f05d6f9a090e181d5409ab9988d82e7a",
+      "bytes": 4436
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-tests-before-boundary-successor.rs",
+      "sha256": "8b02fb2673b2cf4cbfeef02d0b1080182b7e7fbe0cd9bf2650d37031ea10037a",
+      "bytes": 15684
+    },
+    {
+      "path": "/private/tmp/forge-f09-strict-parser-tests.log",
+      "sha256": "e14f35dd85c2eda01253b0a1e94332a08d8d28b2d7550ffa669790422c945d2d",
+      "bytes": 1398
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-candidate-tests.log",
+      "sha256": "829af7ba3a39963b44caa5d445bbdbb7a4a107b3987f871e02a9d30c688c3b3e",
+      "bytes": 3709
+    },
+    {
+      "path": "/private/tmp/forge-f09-production-coverage.json",
+      "sha256": "06540498561ef3f9ebf75b67bc5ac6f0cffd420c06c29b69a4f8962cb3777740",
+      "bytes": 14533
+    },
+    {
+      "path": "/private/tmp/forge-f09-production-coverage-final.json",
+      "sha256": "6fb6a4187766443bbb59b917c8c2673fd315e7acbebc23cddf82b1be9af7b74f",
+      "bytes": 14814
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-tests.log",
+      "sha256": "45c5158e1ca19721828358b671cad979f7ec3110a513657d45cec8128a12ce7f",
+      "bytes": 155207
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-final-tests.log",
+      "sha256": "a8f47e28359c0b287fc20f2e35b8f8135888782e10ee710548ec1aef88852ded",
+      "bytes": 147107
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-raw.json",
+      "sha256": "a865df5f03be19da7e5d82532ea98469535823126fd560477499858f89c81736",
+      "bytes": 12813043
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-raw.lcov",
+      "sha256": "5a77652c2dcaa02810577e559bf618d335bbabe555387504096183474f42da2d",
+      "bytes": 2428960
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-final-raw.json",
+      "sha256": "c17431b177f69b2d57b9da539520071dd133b426ffe0c5d2ab480fdf15e4ded9",
+      "bytes": 12837804
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-final-raw.lcov",
+      "sha256": "b4e9f445f6fd8e874a378e26ff615773fa3714e48fe84d135f350ff35ab4287b",
+      "bytes": 2435636
+    },
+    {
+      "path": "/private/tmp/forge-f09-production-docstrings-final-aef-ce51-4ec7.json",
+      "sha256": "57aac86c514797d5130e68c040bf11794e9d9ba9ef9a6d487c8ff69789d9fdfe",
+      "bytes": 32423
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-boundary-test-successor.json",
+      "sha256": "cdff6d8d1b4530903ec603bceb52f1880d9b507c7a9364ee08c8429855f6f908",
+      "bytes": 5477
+    },
+    {
+      "path": "/private/tmp/forge-f09-initial-coverage-sources/src/cli/export.rs",
+      "sha256": "28a4b1e3113e9ecb005721d746eb654373f5d6b63eed238d9089d5ddf159e2df",
+      "bytes": 39574
+    },
+    {
+      "path": "/private/tmp/forge-f09-initial-coverage-sources/src/json_strict.rs",
+      "sha256": "ce51f37276141b3482ca95c97ad197e59e495d025b64f7452e822410e127a092",
+      "bytes": 20534
+    },
+    {
+      "path": "/private/tmp/forge-f09-doc-audit/index-v2.json",
+      "sha256": "574f662d3495dc1c402d426a55619f2bd305ef64e241f9164bf91a77d1932e9a",
+      "bytes": 3921
+    },
+    {
+      "path": "/private/tmp/forge-f09-doc-audit/declaration-inventory-v2.json",
+      "sha256": "60563c7ebde87fe065e686bc568671452c2a6300f0959df0a1f260f12ffbbff3",
+      "bytes": 46496
+    },
+    {
+      "path": "/private/tmp/forge-f09-cache-cleanup.json",
+      "sha256": "08b005459cae3a0ebd3020e3f3851758420265d8666702d1fe12b024b44f1545",
+      "bytes": 3922
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-formatted-final-tests.log",
+      "sha256": "d1a31e3c3fe244eb51f4f0324be000e8f5a82db33eb57dbc9f68466558d2733c",
+      "bytes": 147106
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-formatted-final-raw.json",
+      "sha256": "cedeeaf5c07d872bf5e88dca182a608e51edee5373d1fecf21d86c3c72df4a23",
+      "bytes": 12850635
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-formatted-final-raw.lcov",
+      "sha256": "2100cfb5dbf8698318810e26ad1a4024e62c5393cb9a1791fce48b98f9a1b2f4",
+      "bytes": 2439396
+    },
+    {
+      "path": "/private/tmp/forge-f09-production-coverage-formatted-final.json",
+      "sha256": "acbf39a980bd42f237ab91cba62e7b9e0bd73a358be0fa3d5c9f1d2e6adee47d",
+      "bytes": 15430
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-tests-before-rustfmt.rs",
+      "sha256": "ab8d3f8a3d4f2b81c1ec67a0a4db3ea361abca57a5187d6f4406f97b76ddf456",
+      "bytes": 18646
+    },
+    {
+      "path": "/private/tmp/forge-f09-native-export-verification-pre-format.json",
+      "sha256": "b504b35aa8dbe8e9d4a8df4851981e59eb26c9609acc530fc2011f3602f60434",
+      "bytes": 66801
+    },
+    {
+      "path": "/private/tmp/forge-f09-native-export-verification-pre-format.md",
+      "sha256": "7a0564c351f0bdf800013f54be20e37ab27c84607b11432495e903ca45fd1009",
+      "bytes": 7278
+    },
+    {
+      "path": "/private/tmp/forge-f09-required-hook.log",
+      "sha256": "dad481e2e31adf775b38c6aa640ae102bdb5b3da6ebd32a15b64eefd362f9ff6",
+      "bytes": 4232
+    },
+    {
+      "path": "/private/tmp/forge-f09-independent-pre-format-review.json",
+      "sha256": "6001bd79a55c03821e70953c3660c78b1b7a5cf5a9a56c5290277c66ef7e8bbb",
+      "bytes": 28987
+    },
+    {
+      "path": "/private/tmp/forge-f09-parser-before-clippy-fix.rs",
+      "sha256": "ce51f37276141b3482ca95c97ad197e59e495d025b64f7452e822410e127a092",
+      "bytes": 20534
+    },
+    {
+      "path": "/private/tmp/forge-f09-export-tests-before-raw-literal-fix.rs",
+      "sha256": "cb40a9e0fa920a59073e3fc4608c39fa9d6f1ebaa7f6de2d8306889b0da610bf",
+      "bytes": 18779
+    },
+    {
+      "path": "/private/tmp/forge-f09-native-export-verification-before-clippy-fix.json",
+      "sha256": "e6d3d7eae9e34d414c6862622fe7b73d3cc4ca9bf0e0adaf7557b40e8cb192d5",
+      "bytes": 70319
+    },
+    {
+      "path": "/private/tmp/forge-f09-native-export-verification-before-clippy-fix.md",
+      "sha256": "01780deee91ba4b8cbe20e71a37b60646f1974e95e604e13ba15b4a014ee72c1",
+      "bytes": 7636
+    },
+    {
+      "path": "/private/tmp/forge-f09-required-hook-formatted.log",
+      "sha256": "fabb88a1a5e8b7a8b3b97d58ada62616789cbc5ccef634732f51a06ea0c2056d",
+      "bytes": 8476
+    },
+    {
+      "path": "/private/tmp/forge-f09-clippy-after-lifetime-fix.log",
+      "sha256": "4761f345304a4d4877707479e12f6b765473629079a7a41a888a6de8ee365b80",
+      "bytes": 1111
+    },
+    {
+      "path": "/private/tmp/forge-f09-clippy-final.log",
+      "sha256": "9833d1e5fc9892cffae860be5b4923300016635e593a9ff8d6852a04c8a615cb",
+      "bytes": 159
+    },
+    {
+      "path": "/private/tmp/forge-f09-production-docstrings-final-aef-ec828-4ec7.json",
+      "sha256": "98d3f682f9c6f08bb8192c75eac188d48a28732d550cb8e37fefd659a5e41cb3",
+      "bytes": 34862
+    },
+    {
+      "path": "/private/tmp/forge-f09-independent-formatted-stage-review.json",
+      "sha256": "75eaa2958dc3aecfaeecbd5b37894e735bd31ad326c143844ecb647e38caed47",
+      "bytes": 35379
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-qualified-final-tests.log",
+      "sha256": "55cfe756417e3e73068bf4c04278b46d8b56d5c38e9fbcaaa99267b5661ca86c",
+      "bytes": 147107
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-qualified-final-raw.json",
+      "sha256": "a28bc80732251601bfa0ff954404e73c4e96ab9130935580769fb08aeb4a251e",
+      "bytes": 12862441
+    },
+    {
+      "path": "/private/tmp/forge-f09-llvm-qualified-final-raw.lcov",
+      "sha256": "5911da56dac8e85912ddb955413f60a77fa68a75e646df959873bb6a6439bac9",
+      "bytes": 2442802
+    },
+    {
+      "path": "/private/tmp/forge-f09-production-coverage-qualified-final.json",
+      "sha256": "71f91ddcd9f7901d7d8dcdd56df835f31f68a706f6eaded7a18c00d4aa768981",
+      "bytes": 15728
+    },
+    {
+      "path": "/private/tmp/forge-f09-native-export-verification-before-exit-label-fix.json",
+      "sha256": "fecadc0eb88672d25d18eed0cfb424e4077fed7e5b4d12f2860dbd163d6afbeb",
+      "bytes": 76913
+    }
+  ],
+  "artifact_custody": "Top-level raw artifact bytes and preserved executable hashes are checked. Historical receipts contain source/build-path identities at recording time; reused mutable paths inside them are not claimed to retain old bytes. Retained source snapshots and explicit immutable baseline commit identify historical source.",
+  "limits": {
+    "raw_input_bytes": 52428800,
+    "decoded_max_depth": 100,
+    "decoded_string_or_key_bytes": "raw UTF-8 input length",
+    "qualification": "Postdecode structural checks do not establish decoder allocation, expanded-alias memory, RSS or hard wall-time confinement. YAML comments/presentation/anchor syntax and decoder-erased URI tags are not preserved."
+  },
+  "remaining_gates": [
+    "XML native losslessness",
+    "Other OSCAL model export and approved overlay representation/scope/collision decisions",
+    "Per-model overlay round trips and independent interoperability",
+    "Authentic privacy/owner/pilot and human acceptance evidence",
+    "Hosted CI and dependency/schema/release reconciliation",
+    "Full integrated documentation review at the end of the scoped roadmap"
+  ],
+  "mandatory_commit_hook": "Formatting, strict default all-target Clippy and full Rust tests must pass before draft PR; its actual completion is reported in the PR/commit receipt, not inferred from this focused pre-hook record.",
+  "supersedes_focused_record_only": {
+    "path": "/private/tmp/forge-f09-native-export-verification-before-exit-label-fix.json",
+    "sha256": "fecadc0eb88672d25d18eed0cfb424e4077fed7e5b4d12f2860dbd163d6afbeb",
+    "bytes": 76913
+  }
+}
