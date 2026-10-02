@@ -145,6 +145,109 @@ class Clock:
         self.now += duration
 
 
+class CampaignAdapter:
+    """Drive actual worker source with fake native/thread/HTTP endpoints; no native timing proof.
+
+    Printable prompt suffixes model valid UTF-8 console renderings, not an
+    observed Windows code page. The writer runs synchronously after both owned
+    no-echo gates enqueue inputs; this fixture does not model OS scheduling.
+    """
+
+    def __init__(self, text, *, mode=1, startup_expired=False, late_fault=False, close_stuck=False):
+        """Retain explicit scenario controls and only synthetic handle/process state."""
+        self.api, self.library = native_api()
+        self.text, self.mode = text, mode
+        self.startup_expired, self.late_fault, self.close_stuck = startup_expired, late_fault, close_stuck
+        self.clock, self.done = Clock(), False
+        self.writer_args, self.monitor = None, None
+        self.writer_ran, self.writer_cancelled = False, False
+        self.writes, self.mode_calls, self.connections = [], [], []
+        self.checks = smoke.empty_checks()
+        self.query_type = smoke.BrowserQueries
+        self.process = types.SimpleNamespace(hProcess=20,hThread=21,dwProcessId=42)
+        pipes=iter(((10,11),(12,13)))
+        self.api.pipe=lambda:next(pipes)
+        self.api.create=self.create
+        self.api.in_job=lambda *_args:True
+        self.api.members=lambda _job:[42]
+        self.api.resume=lambda _process:None
+        self.api.exited=lambda _process:0 if self.done else None
+        self.api.console_mode=self.console_mode
+        self.library.CreatePseudoConsole.implementation=self.pseudo_console
+        self.library.WriteFile.implementation=self.write
+
+    def pseudo_console(self, _size, _input, _output, _flags, handle):
+        """Return an opaque fake handle without loading or calling a Windows API."""
+        handle._obj.value=99
+        return 0
+
+    def create(self, executable, arguments, directory, attribute, value, size):
+        """Reconcile real launch arguments before returning an in-memory process handle."""
+        expected=['workspace','--project',Path('/synthetic/project'),'--read-only','--no-open']
+        if arguments!=expected or directory!=expected[2] or attribute!=0x20016 or value!=99:
+            raise AssertionError('worker launch contract')
+        return self.process
+
+    def console_mode(self, process):
+        """Record each owned mode query and return the explicit control value."""
+        self.mode_calls.append(process)
+        return self.mode
+
+    def write(self, _handle, buffer, count, written, _overlap):
+        """Capture full fake transfers only after actual worker no-echo gates enqueue them."""
+        self.writes.append(buffer.raw[:count]);written._obj.value=count
+        return 1
+
+    def thread(self, *, target, args, daemon):
+        """Model drain/close completion while leaving every product/native action inert."""
+        def start():
+            """Feed bounded printable output, or retain the writer arguments for later submission."""
+            if target is smoke.read_terminal:
+                self.monitor=args[2]
+                for offset in range(0,len(self.text),8192):self.monitor.feed(self.text[offset:offset+8192])
+            elif target is smoke.write_terminal:
+                self.writer_args=args
+                if self.startup_expired:self.clock.now=30.0
+        def join(**_kwargs):
+            """Consume queued inputs or cancellation and finish a separately modeled reader."""
+            if target is smoke.write_terminal and not self.writer_ran:
+                self.writer_cancelled=args[5].is_set()
+                smoke.write_terminal(*args)
+                self.writer_ran=True
+            elif target is smoke.read_terminal:
+                if self.late_fault:
+                    with self.monitor.condition:self.monitor._fail('native-api-failed')
+                self.monitor.finish(not self.late_fault)
+        def alive():
+            """Expose only the requested stuck-close negative control."""
+            return self.close_stuck and target is not smoke.read_terminal and target is not smoke.write_terminal
+        return types.SimpleNamespace(start=start,join=join,is_alive=alive)
+
+    def connection(self, host, port, timeout):
+        """Return one current-contract response per frozen route; never open a socket."""
+        bodies=[{'code':'unauthorized','message':'safe','retryable':False}]*2+[
+            {'capability':'c'*64,'session':session()},session(),summary(),{'state':'shutting-down'}]
+        index=len(self.connections)
+        response=Response(smoke.SEQUENCE[index][2],json.dumps(bodies[index]).encode())
+        connection=Connection(response);self.connections.append(connection)
+        if index==5:self.done=True
+        return connection
+
+    def queries(self, port, checks, monitor, deadline):
+        """Run the actual writer after both gates, then preserve actual six-request validation."""
+        if self.writer_args is None or self.writer_args[2].qsize()!=2:
+            raise AssertionError('input authority gates')
+        smoke.write_terminal(*self.writer_args);self.writer_ran=True
+        return self.query_type(port,checks,monitor,deadline,self.connection)
+
+    def run(self):
+        """Execute the actual worker function under deterministic fake adapters and clock."""
+        with patch.object(smoke.threading,'Thread',side_effect=self.thread), \
+             patch.object(smoke,'BrowserQueries',side_effect=self.queries), \
+             patch.object(smoke.time,'monotonic',self.clock),patch.object(smoke.time,'sleep',self.clock.pause):
+            smoke.worker_campaign(self.api,Path('/synthetic/forge.exe'),Path('/synthetic/project'),self.checks)
+
+
 class Controls(unittest.TestCase):
     """Meaningful pure/adapter regressions; every native observation remains unqualified."""
 
@@ -216,7 +319,7 @@ class Controls(unittest.TestCase):
             self.assert_fault('worker-result-invalid',lambda:smoke.validate_receipt(bad))
 
     def test_chunked_unicode_prompts_and_vt_controls(self):
-        """UTF-8 and CSI/OSC split boundaries still expose the two exact complete prompts."""
+        """Chunked VT output exposes the stable first prefix and complete confirmation prompt."""
         monitor=smoke.TerminalMonitor()
         raw=('\x1b[?25h\x1b]0;safe title\x07'+smoke.PROMPTS[0]+'\x00\r\n'+smoke.PROMPTS[1]).encode()
         for byte in raw:monitor.feed(bytes([byte]))
@@ -484,6 +587,115 @@ class Controls(unittest.TestCase):
         smoke.write_terminal(api,10,inputs,monitor,checks)
         self.assertEqual(b''.join(calls),b'first\rsecond\r');self.assertEqual(checks['input_writes'],2)
         self.assertIsNone(monitor.fault)
+
+    def test_idle_writer_queue_empty_is_readiness_not_native_failure(self):
+        """Actual writer retries bounded empty polls, then submits both logical CR inputs."""
+        api,library=native_api();clock=Clock();calls=[];timeouts=[]
+        def write(_handle,buffer,count,written,_overlap):
+            """Transfer synthetic data without native calls and retain logical submission bytes."""
+            calls.append(buffer.raw[:count]);written._obj.value=count;return 1
+        class Inputs:
+            """Script two idle polls followed by two available logical submissions."""
+            def get(self,timeout):
+                """Advance the deterministic clock for idle polls and expose the requested cap."""
+                timeouts.append(timeout)
+                if len(timeouts)<=2:
+                    clock.pause(timeout);raise smoke.queue.Empty
+                return b'first\r' if len(timeouts)==3 else b'second\r'
+        library.WriteFile.implementation=write;checks=smoke.empty_checks();monitor=smoke.TerminalMonitor()
+        with patch.object(smoke.time,'monotonic',clock):
+            smoke.write_terminal(api,10,Inputs(),monitor,checks,deadline=1)
+        self.assertEqual(b''.join(calls),b'first\rsecond\r')
+        self.assertEqual(checks['input_writes'],2);self.assertIsNone(monitor.fault)
+        self.assertTrue(all(0<timeout<=0.1 for timeout in timeouts))
+
+    def test_idle_writer_cancellation_exits_without_fault_or_input(self):
+        """Cancellation during an empty poll exits the actual writer without fake API failure."""
+        api,library=native_api();stop=smoke.threading.Event();timeouts=[]
+        class Inputs:
+            """Cancel a pending queue wait without making any data available."""
+            def get(self,timeout):
+                """Mark cancellation at the next bounded empty readiness observation."""
+                timeouts.append(timeout);stop.set();raise smoke.queue.Empty
+        checks=smoke.empty_checks();monitor=smoke.TerminalMonitor()
+        smoke.write_terminal(api,10,Inputs(),monitor,checks,stop,time.monotonic()+1)
+        self.assertEqual(len(timeouts),1);self.assertLessEqual(timeouts[0],0.1)
+        self.assertEqual(library.WriteFile.calls,[]);self.assertEqual(checks['input_writes'],0)
+        self.assertIsNone(monitor.fault)
+
+    def test_idle_writer_absolute_deadline_is_typed_without_wait_reset(self):
+        """Repeated empty queue polls expire at the original deadline with worker-timeout."""
+        api,library=native_api();clock=Clock();timeouts=[]
+        class Inputs:
+            """Keep the queue empty until deterministic absolute expiry."""
+            def get(self,timeout):
+                """Advance by exactly the requested remaining bounded interval."""
+                timeouts.append(timeout);clock.pause(timeout);raise smoke.queue.Empty
+        checks=smoke.empty_checks();monitor=smoke.TerminalMonitor()
+        with patch.object(smoke.time,'monotonic',clock):
+            smoke.write_terminal(api,10,Inputs(),monitor,checks,deadline=0.25)
+        self.assertEqual(clock.now,0.25);self.assertEqual(monitor.fault.code,'worker-timeout')
+        self.assertEqual(library.WriteFile.calls,[]);self.assertEqual(checks['input_writes'],0)
+        self.assertTrue(all(0<timeout<=0.1 for timeout in timeouts))
+
+    def test_reader_unexpected_error_does_not_claim_pipe_eof(self):
+        """Unexpected ReadFile failure latches a safe diagnostic while EOF remains unobserved."""
+        api,library=native_api();library.ReadFile.implementation=lambda *_args:0
+        monitor=smoke.TerminalMonitor()
+        with patch.object(api.c,'get_last_error',return_value=5,create=True):
+            smoke.read_terminal(api,10,monitor)
+        self.assertEqual(monitor.fault.code,'native-api-failed');self.assertFalse(monitor.eof)
+
+    def test_reader_zero_bytes_and_broken_pipe_record_actual_eof(self):
+        """Actual zero-byte read and both declared pipe-end statuses independently establish EOF."""
+        for error in (None,109,232):
+            with self.subTest(error=error):
+                api,library=native_api();library.ReadFile.implementation=lambda *_args:1 if error is None else 0
+                monitor=smoke.TerminalMonitor()
+                with patch.object(api.c,'get_last_error',return_value=error,create=True):
+                    smoke.read_terminal(api,10,monitor)
+                self.assertTrue(monitor.eof);self.assertIsNone(monitor.fault)
+
+    def test_worker_prompt_timeout_survives_later_reader_and_cleanup_fault(self):
+        """The real worker cancels idle writing and retains prompt-timeout despite late teardown faults."""
+        adapter=CampaignAdapter(b'',startup_expired=True,late_fault=True,close_stuck=True)
+        self.assert_fault('prompt-timeout',adapter.run,'terminal')
+        self.assertTrue(adapter.writer_cancelled);self.assertEqual(adapter.writes,[])
+        self.assertEqual(adapter.checks['input_writes'],0);self.assertEqual(adapter.checks['responses'],[])
+        self.assertEqual(adapter.monitor.fault.code,'native-api-failed')
+        self.assertFalse(adapter.checks['conpty_closed']);self.assertFalse(adapter.checks['terminal_eof'])
+        self.assertFalse(adapter.checks['terminal_bounded'])
+
+    def test_worker_ascii_prefix_accepts_valid_unicode_renderings_only_after_no_echo(self):
+        """Full Unicode/mojibake suffixes retain strict decoding and both owned mode/input gates."""
+        for suffix in ('15–128 characters): ','15â€“128 characters): '):
+            with self.subTest(suffix=suffix):
+                text=(smoke.PROMPTS[0]+suffix+'\r\n'+smoke.PROMPTS[1]+'\r\nLocal workspace: http://127.0.0.1:1234\r\n').encode()
+                adapter=CampaignAdapter(text);adapter.run()
+                self.assertEqual(adapter.mode_calls,[42,42])
+                self.assertEqual(adapter.writes,[(smoke.PASSPHRASE+'\r').encode()]*2)
+                self.assertEqual(adapter.checks['prompts'],2);self.assertEqual(adapter.checks['no_echo_modes'],2)
+                self.assertEqual(adapter.checks['input_writes'],2)
+                self.assertEqual(adapter.checks['responses'],[{'method':m,'path':p,'status':status} for m,p,status in smoke.SEQUENCE])
+                self.assertTrue(adapter.checks['conpty_closed']);self.assertTrue(adapter.checks['terminal_eof'])
+                self.assertTrue(adapter.checks['no_echo_observed'])
+
+    def test_worker_ascii_prefix_grants_no_input_without_owned_no_echo_mode(self):
+        """Visible prefix alone cannot authorize a credential when owned console mode remains echoed."""
+        text=(smoke.PROMPTS[0]+'15â€“128 characters): '+smoke.PROMPTS[1]).encode()
+        adapter=CampaignAdapter(text,mode=7)
+        self.assert_fault('console-mode-unverified',adapter.run,'terminal')
+        self.assertTrue(adapter.mode_calls);self.assertTrue(adapter.writer_cancelled)
+        self.assertEqual(adapter.writes,[]);self.assertEqual(adapter.checks['input_writes'],0)
+        self.assertEqual(adapter.checks['no_echo_modes'],0);self.assertEqual(adapter.checks['responses'],[])
+
+    def test_worker_ascii_prefix_does_not_accept_malformed_utf8(self):
+        """A matching ASCII prefix cannot bypass strict terminal decoding or enqueue any secret."""
+        adapter=CampaignAdapter(smoke.PROMPTS[0].encode()+b'\xff')
+        self.assert_fault('terminal-malformed',adapter.run,'terminal')
+        self.assertEqual(adapter.mode_calls,[]);self.assertEqual(adapter.writes,[])
+        self.assertEqual(adapter.checks['prompts'],0);self.assertEqual(adapter.checks['input_writes'],0)
+        self.assertEqual(adapter.checks['responses'],[])
 
     def test_worker_campaign_launch_uses_required_project_option(self):
         """Reach the real launch adapter with fake pipes/threads and the declared long project option.

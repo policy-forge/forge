@@ -35,7 +35,9 @@ SCHEMA = 'forge.windows-console-smoke/1'
 OUTPUT = 'windows-console-smoke.json'
 LABEL = 'Synthetic Windows console smoke'
 PASSPHRASE = 'synthetic browser verification passphrase 062'
-PROMPTS = ('Set workspace passphrase (15–128 characters): ', 'Confirm passphrase: ')
+# Match an ASCII prefix independent of console rendering of the numeric en dash.
+# The separately observed owned no-echo mode still gates every input submission.
+PROMPTS = ('Set workspace passphrase (', 'Confirm passphrase: ')
 MAX_BINARY = 256 * 1024 * 1024
 MAX_TERMINAL = 65536
 MAX_RESPONSE = 4 * 1024 * 1024
@@ -343,10 +345,10 @@ class TerminalMonitor:
                 if char == '\x07' or self.escape.endswith('\x1b\\'):
                     self.state, self.escape = 'text', ''
 
-    def finish(self):
-        """Record actual pipe EOF and reject incomplete UTF-8/VT state."""
+    def finish(self, eof=True):
+        """Finalize decoding; only a verified pipe-end observation records actual EOF."""
         with self.condition:
-            self.eof = True
+            self.eof = eof
             if self.fault is None:
                 try:
                     self.decoder.decode(b'', final=True)
@@ -720,37 +722,62 @@ def contain_before_resume(api, process, job):
 
 
 def read_terminal(api, handle, monitor):
-    """Drain synchronous output through EOF, continuing discard after sticky bounds."""
+    """Drain output; zero bytes/broken pipe alone establish EOF, not reader failure."""
+    eof = False
     try:
         while True:
             buffer, count = api.c.create_string_buffer(8192), api.c.c_uint32()
             if not api.dll.ReadFile(handle,buffer,8192,api.c.byref(count),None):
                 if api.c.get_last_error() in (109,232):
+                    eof = True
                     break
                 raise SmokeFault('terminal','native-api-failed')
             if count.value == 0:
+                eof = True
                 break
             monitor.feed(buffer.raw[:count.value])
     except BaseException:
         with monitor.condition:
             monitor._fail('native-api-failed')
     finally:
-        monitor.finish()
+        monitor.finish(eof)
 
 
-def write_terminal(api, handle, inputs, monitor, checks):
-    """Serialize exactly two logical CR submissions with partial-write handling."""
+def write_terminal(api, handle, inputs, monitor, checks, stop=None, deadline=None):
+    """Submit two CR inputs; idle queue polls honor cancellation and one absolute deadline.
+
+    Empty bounded polls are readiness observations, never native API failures.
+    Cancellation cannot preempt an in-progress synchronous WriteFile; teardown
+    still requires the writer to finish and records failure if it remains live.
+    """
+    stop = threading.Event() if stop is None else stop
+    deadline = time.monotonic() + 60 if deadline is None else deadline
     try:
         for _ in range(2):
-            data = inputs.get(timeout=30)
+            while True:
+                if stop.is_set() or monitor.fault is not None:
+                    return
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise SmokeFault('terminal', 'worker-timeout')
+                try:
+                    data = inputs.get(timeout=min(0.1, remaining))
+                except queue.Empty:
+                    continue
+                break
             offset = 0
             while offset < len(data):
+                if stop.is_set() or monitor.fault is not None:
+                    return
                 buffer, count = api.c.create_string_buffer(data[offset:]), api.c.c_uint32()
                 api.require(api.dll.WriteFile(handle,buffer,len(data)-offset,api.c.byref(count),None),'terminal')
                 if not 0 < count.value <= len(data)-offset:
                     raise SmokeFault('terminal','native-api-failed')
                 offset += count.value
             checks['input_writes'] += 1
+    except SmokeFault as error:
+        with monitor.condition:
+            monitor._fail(error.code)
     except BaseException:
         with monitor.condition:
             monitor._fail('native-api-failed')
@@ -770,11 +797,16 @@ def wait_no_echo(api, process, monitor, deadline):
 
 
 def worker_campaign(api, forge, fixture, checks):
-    """Run actual owned ConPTY unlock/query/shutdown and verify its full teardown."""
+    """Run owned ConPTY smoke; preserve the first failure and cancel idle writer teardown.
+
+    Prompt rendering grants no input authority: actual owned console mode must
+    be processed-only before each submission. Cleanup observations remain
+    required for pass even when an earlier closed failure keeps diagnostic priority.
+    """
     c, native = api.c, api.dll
     deadline = time.monotonic()+60
     startup = min(deadline,time.monotonic()+30)
-    monitor, inputs = TerminalMonitor(), queue.Queue(maxsize=2)
+    monitor, inputs, stop = TerminalMonitor(), queue.Queue(maxsize=2), threading.Event()
     in_read = in_write = out_read = out_write = hpc = process = None
     reader = writer = closer = None
     failure = None
@@ -792,7 +824,7 @@ def worker_campaign(api, forge, fixture, checks):
         checks['console_job'] = True
         api.close(in_read); in_read = None
         api.close(out_write); out_write = None
-        writer = threading.Thread(target=write_terminal,args=(api,in_write,inputs,monitor,checks),daemon=True)
+        writer = threading.Thread(target=write_terminal,args=(api,in_write,inputs,monitor,checks,stop,deadline),daemon=True)
         writer.start()
         for prompt in PROMPTS:
             monitor.wait_text(re.escape(prompt),startup)
@@ -815,6 +847,7 @@ def worker_campaign(api, forge, fixture, checks):
     except BaseException:
         failure = SmokeFault('terminal','internal-control-error')
     finally:
+        stop.set()
         native.FreeConsole()
         if writer:
             writer.join(timeout=0.2)
@@ -833,9 +866,9 @@ def worker_campaign(api, forge, fixture, checks):
         checks['terminal_bytes'] = monitor.total
         checks['terminal_bounded'] = monitor.fault is None and monitor.total <= MAX_TERMINAL and checks['terminal_eof']
         checks['no_echo_observed'] = checks['terminal_bounded'] and checks['no_echo_modes'] == 2
-        if monitor.fault is not None:
+        if failure is None and monitor.fault is not None:
             failure = monitor.fault
-        if not checks['conpty_closed'] or not checks['terminal_eof'] or (writer and writer.is_alive()):
+        if failure is None and (not checks['conpty_closed'] or not checks['terminal_eof'] or (writer and writer.is_alive())):
             failure = SmokeFault('cleanup','console-close-timeout')
         for handle in (in_read,out_write,in_write if writer is None or not writer.is_alive() else None):
             if handle:

@@ -6,6 +6,9 @@ actual Windows x64 console. It adds a dedicated ordinary-PR job alongside the
 three-platform API verifier. The first hosted native
 attempt failed; the corrected launch and successor coverage are recorded in
 [the launch correction](2026-10-02-windows-console-launch-correction.md).
+The second hosted native attempt also failed. The current narrow successor and
+63-control coverage are recorded in
+[the startup diagnostics](2026-10-02-windows-console-startup-diagnostics.md).
 Local controls do not establish Windows acceptance.
 
 The source base is `a7fc14960027f2820805db838e2243588cd01765` (draft PR #183).

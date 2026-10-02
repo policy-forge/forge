@@ -12,7 +12,7 @@ import verify_workspace as shared
 import test_workspace_hosted_chrome as browser
 
 sys.dont_write_bytecode=True
-SCHEMA="forge.workspace-hosted-chrome-verification/1"
+SCHEMA="forge.workspace-hosted-chrome-verification/2"
 OUTPUT="workspace-hosted-chrome-verification.json"
 EXTRA_INPUTS=("ui/tests/workspace.cjs","ui/package.json","ui/package-lock.json","scripts/workspace_browser_fixtures.py","scripts/workspace_browser_tool_probe.cjs","scripts/test_workspace_hosted_chrome.py","scripts/verify_workspace_hosted_chrome.py","scripts/test_verify_workspace_hosted_chrome.py","docs/development-tools/hosted-chrome.json")
 
@@ -110,7 +110,7 @@ def verify(root,forge,node,npm,chrome,output_dir,expected_commit=None,build_outc
     destination=Path(output_dir)
     if destination.exists() and (not destination.is_dir() or any(destination.iterdir())):raise ValueError("fresh-output")
     destination.mkdir(parents=True,exist_ok=True)
-    receipt={"schema_version":SCHEMA,"scope":"f04-installed-chrome-prerequisite","truth_state":"synthetic-development","acceptance_eligible":False,"status":"failed","failure":"verification-unverified","identity":None,"checkout":None,"tools":None,"browser_tools":None,"input_stability":"unverified","tool_stability":"unverified","producer":{"status":"not-run","producer_exit_code":None,"failure":"not-run","receipt":None,"receipt_pin":None},"build":{"outcome":build_outcome,"profile":"release","features":"default","locked":True,"offline":True,"binding":"workflow-step-assertion"},"npm":{"outcome":npm_outcome,"ignore_scripts":True,"omit_optional":True,"browser_downloads":False,"binding":"workflow-step-assertion"},"pending_gates":list(shared.PENDING)}
+    receipt={"schema_version":SCHEMA,"scope":"f04-installed-chrome-prerequisite","truth_state":"synthetic-development","acceptance_eligible":False,"status":"failed","failure":"verification-unverified","diagnostic":None,"identity":None,"checkout":None,"tools":None,"browser_tools":None,"input_stability":"unverified","tool_stability":"unverified","producer":{"status":"not-run","producer_exit_code":None,"failure":"not-run","receipt":None,"receipt_pin":None},"build":{"outcome":build_outcome,"profile":"release","features":"default","locked":True,"offline":True,"binding":"workflow-step-assertion"},"npm":{"outcome":npm_outcome,"ignore_scripts":True,"omit_optional":True,"browser_downloads":False,"binding":"workflow-step-assertion"},"pending_gates":list(shared.PENDING)}
     try:
         before=capture_identity(root,forge,30);receipt["identity"]=before
         tools=shared.tool_versions(root,30);receipt["tools"]=tools
@@ -130,6 +130,10 @@ def verify(root,forge,node,npm,chrome,output_dir,expected_commit=None,build_outc
         receipt["input_stability"]="unchanged" if before==after else "changed"
         receipt["tool_stability"]="unchanged" if tools==tools_after and receipt["browser_tools"]==browser_after else "changed"
         if receipt["input_stability"]!="unchanged" or receipt["tool_stability"]!="unchanged":receipt.update(status="failed",failure="verification-input-changed")
+    except browser.ToolCaptureError as error:
+        try:diagnostic=browser.tool_diagnostic(error)
+        except Exception:receipt.update(status="failed",failure="verification-input-invalid")
+        else:receipt.update(status="failed",failure="browser-tool-capture-failed",diagnostic=diagnostic)
     except Exception:receipt.update(status="failed",failure="verification-input-invalid")
     shared.atomic_receipt(destination/OUTPUT,receipt)
     return receipt

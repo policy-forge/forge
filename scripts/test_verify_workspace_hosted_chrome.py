@@ -363,4 +363,109 @@ class HostedChromeControls(unittest.TestCase):
         self.assertEqual(verify.call_args.args[6:],("a"*40,"success","success"))
 
 
+    def tool_command_rows(self):
+        """Create fresh mocked successful command outputs; these are not installed-tool observations."""
+        return [{"exit_code":0,"failure":None,"output":value} for value in (b"v24.19.0\n",b"11.17.0\n",b"Google Chrome 150.1.2.3\n",wrapper.shared.canonical_bytes(self.package_fixture()))]
+
+    def capture_with_mocked_tools(self,rows):
+        """Mock every executable/path/hash/command boundary while exercising the actual closed tool-capture control flow."""
+        chrome=Path("/opt/google/chrome/chrome")
+        with mock.patch.object(Path,"resolve",side_effect=lambda **_kwargs:chrome),mock.patch.object(Path,"open",side_effect=lambda *_args,**_kwargs:io.BytesIO(b"\x7fELF")),mock.patch.object(browser,"command",side_effect=rows),mock.patch.object(browser.shared,"hash_file",return_value=self.pin),mock.patch.object(browser,"large_file_pin",return_value=self.pin):
+            return browser.capture_tools(self.root,chrome,chrome,chrome)
+
+    def test_tool_diagnostics_are_closed_exact_and_output_free(self):
+        """Require exact safe keys and signed integer statuses; reject arbitrary strings, bools and out-of-range values."""
+        for code in (None,-(2**31),-9,0,127,2**31-1):
+            value=browser.tool_diagnostic(browser.ToolCaptureError("node-version","tool-exit-nonzero",code))
+            self.assertEqual(value,{"phase":"browser-tool-capture","step":"node-version","reason":"tool-exit-nonzero","exit_code":code})
+        for step,reason,code in (("PRIVATE","tool-version",0),("node-version","PRIVATE",0),("node-version","tool-version",True),("node-version","tool-version",1.0),("node-version","tool-version",2**31),("node-version","tool-version",-(2**31)-1)):
+            with self.subTest(step=step,reason=reason,code=code),self.assertRaises(ValueError):browser.ToolCaptureError(step,reason,code)
+        self.assertEqual(str(browser.ToolCaptureError("package-probe","output-bound",-9)),"tool-capture-failed")
+
+    def test_each_tool_command_failure_keeps_phase_and_actual_exit(self):
+        """Distinguish all four command preflights and actual nonzero/signal exits without retaining private output."""
+        for index,step in enumerate(("node-version","npm-version","chrome-version","package-probe")):
+            for code,failure,expected in ((23,None,"tool-exit-nonzero"),(-9,"command-timeout","command-timeout"),(None,"pidfd-unavailable","pidfd-unavailable")):
+                rows=self.tool_command_rows();rows[index]={"exit_code":code,"failure":failure,"output":b"PRIVATE path token"}
+                with self.subTest(step=step,code=code),self.assertRaises(browser.ToolCaptureError) as caught:self.capture_with_mocked_tools(rows)
+                value=browser.tool_diagnostic(caught.exception)
+                self.assertEqual((value["step"],value["reason"],value["exit_code"]),(step,expected,code));self.assertNotIn("PRIVATE",json.dumps(value))
+
+    def test_tool_output_validation_keeps_zero_exit_and_exact_phase(self):
+        """Successful commands with wrong versions/product or malformed package JSON still fail at their own gate."""
+        for index,step,raw,reason in ((0,"node-version",b"v24.18.0\n","tool-version"),(1,"npm-version",b"11.16.0\n","tool-version"),(2,"chrome-version",b"Chromium PRIVATE\n","chrome-product"),(3,"package-validation",b'{"PRIVATE":',"tool-capture-unverified")):
+            rows=self.tool_command_rows();rows[index]["output"]=raw
+            with self.subTest(step=step),self.assertRaises(browser.ToolCaptureError) as caught:self.capture_with_mocked_tools(rows)
+            self.assertEqual(browser.tool_diagnostic(caught.exception),{"phase":"browser-tool-capture","step":step,"reason":reason,"exit_code":0})
+        self.assertEqual(self.capture_with_mocked_tools(self.tool_command_rows()),self.tools)
+
+    def test_tool_resolution_engine_and_pin_failures_are_phase_bound(self):
+        """Expose no path/error text for missing tools, wrong ELF bytes and changed final hash input."""
+        chrome=Path("/opt/google/chrome/chrome")
+        for index,step in enumerate(("resolve-node","resolve-npm","resolve-chrome")):
+            resolved=[chrome]*3;resolved[index]=FileNotFoundError("PRIVATE path token")
+            with mock.patch.object(Path,"resolve",side_effect=resolved),self.assertRaises(browser.ToolCaptureError) as caught:browser.capture_tools(self.root,chrome,chrome,chrome)
+            self.assertEqual(browser.tool_diagnostic(caught.exception),{"phase":"browser-tool-capture","step":step,"reason":"executable-unavailable","exit_code":None})
+        with mock.patch.object(Path,"resolve",return_value=chrome),mock.patch.object(Path,"open",return_value=io.BytesIO(b"text")),self.assertRaises(browser.ToolCaptureError) as caught:browser.capture_tools(self.root,chrome,chrome,chrome)
+        self.assertEqual(browser.tool_diagnostic(caught.exception)["reason"],"chrome-engine")
+        with mock.patch.object(Path,"resolve",return_value=chrome),mock.patch.object(Path,"open",return_value=io.BytesIO(b"\x7fELF")),mock.patch.object(browser,"command",side_effect=self.tool_command_rows()),mock.patch.object(browser.shared,"hash_file",side_effect=OSError("PRIVATE path token")),self.assertRaises(browser.ToolCaptureError) as caught:browser.capture_tools(self.root,chrome,chrome,chrome)
+        self.assertEqual(browser.tool_diagnostic(caught.exception),{"phase":"browser-tool-capture","step":"node-pin","reason":"tool-capture-unverified","exit_code":None})
+
+    def test_command_unavailable_native_lifecycle_is_typed_before_spawn(self):
+        """Mock unavailable Linux facilities before Popen; null status records no command execution or native proof."""
+        for reason in ("subreaper-unavailable","pidfd-unavailable"):
+            with mock.patch.object(browser,"OwnedTree",side_effect=ValueError(reason)),mock.patch.object(browser.subprocess,"Popen") as spawn:
+                row=browser.command(["PRIVATE"],self.root,1,{})
+            self.assertEqual(row,{"exit_code":None,"failure":reason,"output":b""});spawn.assert_not_called()
+        with mock.patch.object(browser.ctypes,"CDLL",return_value=object()),self.assertRaisesRegex(ValueError,"subreaper-unavailable"):browser.OwnedTree()
+        for error in (RuntimeError("subreaper-unavailable PRIVATE"),ValueError("PRIVATE path token"),OSError("output-bound")):
+            self.assertEqual(browser.command_failure(error),"execution-unverified")
+
+    def test_command_failure_discards_bytes_and_preserves_forced_exit(self):
+        """Mock actual child ownership/cleanup status; forced cleanup remains failed and cannot manufacture a zero exit."""
+        for reason,clean in (("process-scan-bound",True),("command-timeout",True),("output-bound",True),("child-exit-unverified",False)):
+            tree=mock.Mock();tree.observe.side_effect=ValueError(reason);tree.stop.return_value=clean
+            process=mock.Mock();process.returncode=None;process.poll.return_value=None;process.stdout.fileno.return_value=10
+            def waited(timeout):
+                """Model only the direct owner's observed SIGKILL wait result after cleanup; no real process is launched."""
+                process.returncode=-9;return -9
+            process.wait.side_effect=waited
+            with mock.patch.object(browser,"OwnedTree",return_value=tree),mock.patch.object(browser.subprocess,"Popen",return_value=process),mock.patch.object(browser.os,"set_blocking"):
+                row=browser.command(["PRIVATE"],self.root,1,{})
+            self.assertEqual(row,{"exit_code":-9,"failure":reason if clean else "cleanup-unverified","output":b""});tree.stop.assert_called_once();tree.close.assert_called_once();process.stdout.close.assert_called_once()
+        self.assertEqual(browser.command_failure(ValueError("process-visibility-unverified")),"process-visibility-unverified")
+
+    def test_nonzero_command_and_cleanup_failure_cannot_pass(self):
+        """Keep a completed child's real nonzero exit, and discard bytes when natural cleanup or handle closure fails."""
+        for clean,close_failure in ((True,False),(False,False),(True,True)):
+            tree=mock.Mock();tree.settle.return_value=clean
+            if close_failure:tree.close.side_effect=OSError("PRIVATE path token")
+            process=mock.Mock(returncode=17);process.poll.return_value=17;process.stdout.fileno.return_value=10
+            with mock.patch.object(browser,"OwnedTree",return_value=tree),mock.patch.object(browser.subprocess,"Popen",return_value=process),mock.patch.object(browser.os,"set_blocking"),mock.patch.object(browser.select,"select",return_value=([process.stdout],[],[])),mock.patch.object(browser.os,"read",side_effect=[b"PRIVATE output",b""]):
+                row=browser.command(["PRIVATE"],self.root,1,{})
+            self.assertEqual(row["exit_code"],17)
+            if clean and not close_failure:self.assertEqual(row,{"exit_code":17,"failure":None,"output":b"PRIVATE output"})
+            else:self.assertEqual(row,{"exit_code":17,"failure":"cleanup-unverified","output":b""})
+
+    def test_wrapper_v2_preflight_diagnostic_never_starts_producer(self):
+        """Publish a typed tool error with no producer/campaign credit; arbitrary errors and tampered records stay redacted."""
+        for index,error in enumerate((browser.ToolCaptureError("package-probe","tool-exit-nonzero",23),RuntimeError("PRIVATE path token"),browser.ToolCaptureError("node-version","command-timeout",-9))):
+            if index==2:error.reason="PRIVATE path token"
+            destination=self.root/f"diagnostic-{index}"
+            with mock.patch.object(wrapper.sys,"platform","linux"),mock.patch.object(wrapper.shared,"capture_identity",return_value=self.identity),mock.patch.object(wrapper.shared,"tool_versions",return_value=self.rust),mock.patch.object(browser,"capture_tools",side_effect=error),mock.patch.object(wrapper,"native_run") as native:
+                value=wrapper.verify(self.root,self.forge,self.root/"node",self.root/"npm",self.root/"chrome",destination,build_outcome="success",npm_outcome="success")
+            self.assertEqual(value["schema_version"],"forge.workspace-hosted-chrome-verification/2");self.assertEqual(value["status"],"failed");native.assert_not_called()
+            self.assertEqual(value["producer"]["status"],"not-run");self.assertIsNone(value["browser_tools"]);self.assertNotIn("PRIVATE",(destination/wrapper.OUTPUT).read_text())
+            if index==0:self.assertEqual(value["diagnostic"],{"phase":"browser-tool-capture","step":"package-probe","reason":"tool-exit-nonzero","exit_code":23});self.assertEqual(value["failure"],"browser-tool-capture-failed")
+            else:self.assertIsNone(value["diagnostic"]);self.assertEqual(value["failure"],"verification-input-invalid")
+
+    def test_after_tool_failure_revokes_synthetic_success(self):
+        """A post-campaign typed tool failure preserves history yet revokes outer pass and leaves stability unverified."""
+        value,_=self.run_outer(tools_after=browser.ToolCaptureError("chrome-pin","chrome-file-changed"))
+        self.assertEqual(value["status"],"failed");self.assertEqual(value["failure"],"browser-tool-capture-failed")
+        self.assertEqual(value["producer"]["status"],"passed");self.assertEqual(value["tool_stability"],"unverified")
+        self.assertEqual(value["diagnostic"],{"phase":"browser-tool-capture","step":"chrome-pin","reason":"chrome-file-changed","exit_code":None})
+        self.output=self.root/"ordinary-success";value,_=self.run_outer();self.assertIsNone(value["diagnostic"]);self.assertEqual(value["status"],"passed")
+
+
 if __name__=="__main__":unittest.main()

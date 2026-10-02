@@ -77,12 +77,49 @@ def process_identity(pid):
     except PermissionError:raise ValueError("process-visibility-unverified")
 
 
+COMMAND_FAILURES=frozenset({"subreaper-unavailable","pidfd-unavailable","process-scan-bound","process-stat-bound","process-visibility-unverified","owned-process-bound","child-exit-unverified","command-timeout","output-bound","cleanup-unverified","execution-unverified"})
+TOOL_STEPS=frozenset({"resolve-node","resolve-npm","resolve-chrome","chrome-engine","node-version","npm-version","chrome-version","package-probe","package-validation","node-pin","npm-pin","chrome-pin"})
+TOOL_FAILURES=COMMAND_FAILURES|frozenset({"executable-unavailable","chrome-path","chrome-engine","tool-exit-nonzero","tool-version","chrome-product","tool-scope","package-graph","package-scope","package-pin","closed-fields","integer","chrome-file-bound","chrome-file-changed","tool-capture-unverified"})
+
+
+class ToolCaptureError(ValueError):
+    """Carry only a validated tool step/reason and exact bounded process status; never retain raw command output."""
+    def __init__(self,step,reason,exit_code=None):
+        """Reject unapproved diagnostic strings and bool/unbounded exit values before storing the three safe facts."""
+        if type(step) is not str or step not in TOOL_STEPS or type(reason) is not str or reason not in TOOL_FAILURES:raise ValueError("diagnostic-invalid")
+        if exit_code is not None and (type(exit_code) is not int or not -(2**31)<=exit_code<2**31):raise ValueError("diagnostic-invalid")
+        super().__init__("tool-capture-failed");self.step=step;self.reason=reason;self.exit_code=exit_code
+
+
+def tool_diagnostic(error):
+    """Revalidate an internally typed failure and return one closed, path/output/exception-free public record."""
+    checked=ToolCaptureError(error.step,error.reason,error.exit_code)
+    return {"phase":"browser-tool-capture","step":checked.step,"reason":checked.reason,"exit_code":checked.exit_code}
+
+
+def command_failure(error):
+    """Preserve known producer-owned lifecycle codes; arbitrary exceptions are represented only by a fixed fallback."""
+    code=error.args[0] if type(error) is ValueError and len(error.args)==1 and type(error.args[0]) is str else None
+    return code if code in COMMAND_FAILURES else "execution-unverified"
+
+
+def tool_capture_step(step,callback,exit_code=None):
+    """Associate one bounded preflight with its safe phase; raw exceptions cannot cross the typed diagnostic boundary."""
+    try:return callback()
+    except ToolCaptureError:raise
+    except Exception as error:
+        code=error.args[0] if type(error) is ValueError and len(error.args)==1 and type(error.args[0]) is str else None
+        reason=code if code in TOOL_FAILURES else "executable-unavailable" if isinstance(error,FileNotFoundError) else "tool-capture-unverified"
+        raise ToolCaptureError(step,reason,exit_code) from None
+
+
 class OwnedTree:
     """Observe this Linux producer's descendants by PID/start identity; never kill unrelated or recycled processes."""
     def __init__(self):
         """Adopt orphaned descendants before any campaign starts; unavailable Linux confinement fails closed."""
-        library=ctypes.CDLL(None,use_errno=True)
-        if library.prctl(36,1,0,0,0)!=0:raise ValueError("subreaper-unavailable")
+        try:available=ctypes.CDLL(None,use_errno=True).prctl(36,1,0,0,0)==0
+        except Exception:available=False
+        if not available:raise ValueError("subreaper-unavailable")
         if not hasattr(os,"pidfd_open") or not hasattr(signal,"pidfd_send_signal"):raise ValueError("pidfd-unavailable")
         self.owner=os.getpid();self.seen={};self.forced=False;self.processes={};self.children=set();self.exits={};self.handles={}
 
@@ -199,9 +236,10 @@ class OwnedTree:
 
 
 def command(command_line,root,timeout,environment):
-    """Capture one bounded tool output and observe its owned descendants without retaining any raw log file."""
-    tree=OwnedTree();process=None;captured=bytearray();failure=None
+    """Capture bounded private output and actual exit status; fixed lifecycle failures retain no raw output or exceptions."""
+    tree=None;process=None;captured=bytearray();failure=None
     try:
+        tree=OwnedTree()
         process=subprocess.Popen(command_line,cwd=root,env=environment,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,start_new_session=True)
         tree.track_process(process);os.set_blocking(process.stdout.fileno(),False);deadline=time.monotonic()+timeout;eof=False
         while process.poll() is None or not eof:
@@ -213,16 +251,20 @@ def command(command_line,root,timeout,environment):
                 captured.extend(block)
                 if len(captured)>MAX_OUTPUT:raise ValueError("output-bound")
         if not tree.settle():raise ValueError("cleanup-unverified")
-    except Exception:
-        failure="execution-unverified"
+    except Exception as error:
+        failure=command_failure(error)
         if process is not None:
-            if not tree.stop():failure="cleanup-unverified"
+            try:
+                if not tree.stop():failure="cleanup-unverified"
+            except Exception:failure="cleanup-unverified"
             try:process.wait(timeout=5)
-            except subprocess.TimeoutExpired:failure="cleanup-unverified"
+            except Exception:failure="cleanup-unverified"
         captured.clear()
     finally:
-        tree.close()
-        if process is not None and process.stdout is not None:process.stdout.close()
+        try:
+            if tree is not None:tree.close()
+            if process is not None and process.stdout is not None:process.stdout.close()
+        except Exception:failure="cleanup-unverified";captured.clear()
     return {"exit_code":None if process is None else process.returncode,"failure":failure,"output":bytes(captured)}
 
 
@@ -263,23 +305,32 @@ def large_file_pin(path):
 
 
 def capture_tools(root,node,npm,chrome):
-    """Bind exact approved Node/npm, UI-local packages and the installed named Chrome ELF executable before use."""
-    node,npm,chrome=(Path(item).resolve(strict=True) for item in (node,npm,chrome))
-    if str(chrome)!="/opt/google/chrome/chrome":raise ValueError("chrome-path")
-    with chrome.open("rb") as stream:
-        if stream.read(4)!=b"\x7fELF":raise ValueError("chrome-engine")
-    environment=clean_environment(node,chrome)
-    observations=[]
-    for arguments in ([node,"--version"],[node,npm,"--version"],[chrome,"--version"],[node,root/"scripts/workspace_browser_tool_probe.cjs"]):
-        row=command([str(item) for item in arguments],root,30,environment)
-        if row["exit_code"]!=0 or row["failure"] is not None:raise ValueError("tool-unavailable")
+    """Bind approved local tools; a failure exposes only its allowlisted phase/reason and exact command status."""
+    node=tool_capture_step("resolve-node",lambda:Path(node).resolve(strict=True))
+    npm=tool_capture_step("resolve-npm",lambda:Path(npm).resolve(strict=True))
+    chrome=tool_capture_step("resolve-chrome",lambda:Path(chrome).resolve(strict=True))
+    if str(chrome)!="/opt/google/chrome/chrome":raise ToolCaptureError("chrome-engine","chrome-path")
+    def check_engine():
+        """Read only the existing four-byte ELF gate before any command; no launcher fallback or engine download is allowed."""
+        with chrome.open("rb") as stream:
+            if stream.read(4)!=b"\x7fELF":raise ValueError("chrome-engine")
+    tool_capture_step("chrome-engine",check_engine)
+    environment=clean_environment(node,chrome);observations=[]
+    for step,arguments in (("node-version",[node,"--version"]),("npm-version",[node,npm,"--version"]),("chrome-version",[chrome,"--version"]),("package-probe",[node,root/"scripts/workspace_browser_tool_probe.cjs"])):
+        row=tool_capture_step(step,lambda:command([str(item) for item in arguments],root,30,environment))
+        if row["failure"] is not None:raise ToolCaptureError(step,row["failure"] if row["failure"] in COMMAND_FAILURES else "execution-unverified",row["exit_code"])
+        if row["exit_code"]!=0:raise ToolCaptureError(step,"tool-exit-nonzero",row["exit_code"])
         observations.append(row["output"])
-    if observations[0].strip()!=b"v24.19.0" or observations[1].strip()!=b"11.17.0":raise ValueError("tool-version")
+    if observations[0].strip()!=b"v24.19.0":raise ToolCaptureError("node-version","tool-version",0)
+    if observations[1].strip()!=b"11.17.0":raise ToolCaptureError("npm-version","tool-version",0)
     match=re.fullmatch(rb"Google Chrome ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\s*",observations[2])
-    if not match:raise ValueError("chrome-product")
-    packages=validate_packages(strict_json(observations[3]))
-    return {"node":{"version":"24.19.0",**shared.hash_file(node)},"npm":{"version":"11.17.0",**shared.hash_file(npm)},
-            "chrome":{"product":"Google Chrome","version":match[1].decode(),"executable_path":"/opt/google/chrome/chrome",**large_file_pin(chrome)},"packages":packages}
+    if not match:raise ToolCaptureError("chrome-version","chrome-product",0)
+    packages=tool_capture_step("package-validation",lambda:validate_packages(strict_json(observations[3])),0)
+    node_pin=tool_capture_step("node-pin",lambda:shared.hash_file(node))
+    npm_pin=tool_capture_step("npm-pin",lambda:shared.hash_file(npm))
+    chrome_pin=tool_capture_step("chrome-pin",lambda:large_file_pin(chrome))
+    return {"node":{"version":"24.19.0",**node_pin},"npm":{"version":"11.17.0",**npm_pin},
+            "chrome":{"product":"Google Chrome","version":match[1].decode(),"executable_path":"/opt/google/chrome/chrome",**chrome_pin},"packages":packages}
 
 
 def make_fixture(project,name):
