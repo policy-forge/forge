@@ -1,0 +1,182 @@
+{
+  "schema_version": "forge.development-verification/1",
+  "scope": "F06 artifact preflight; synthetic development only",
+  "base": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "acceptance_eligible": false,
+  "platform": "macOS aarch64",
+  "rustc": "1.98.1 (48a229ceaefd4985c50990b14116b6d856af0985)",
+  "llvm": "22.1.8",
+  "cargo_llvm_cov": "0.8.7",
+  "documentation": {
+    "new_module_and_cli_missing_docs": "deny(missing_docs), compiler passed",
+    "strict_rustdoc": "passed broken_intra_doc_links and private_intra_doc_links denied",
+    "strict_rustdoc_log_sha256": "fab6be8f2e0c73b263824b22c329fbbf260f3d2f3273ea4a9e3cca752d89e2a5",
+    "numeric_whole_repository_docstring_coverage": null,
+    "final_full_documentation_review": "open"
+  },
+  "coverage": {
+    "denominator": "LCOV instrumented production lines before each cfg(test) block; blank and uninstrumented lines excluded",
+    "modules": [
+      {
+        "path": "src/suggest/eval/mod.rs",
+        "sha256": "756498507d7b5b9f9d36e23f2d120f60d51cc9eac766d6317fd5a387f4201cf5",
+        "production_stop_exclusive": 16,
+        "instrumented_lines": 0,
+        "covered_lines": 0,
+        "percent": null,
+        "uncovered_lines": []
+      },
+      {
+        "path": "src/suggest/eval/capture.rs",
+        "sha256": "7519da34035928a5aaaacb91d36401ab102586eafb1fa50c86e68910e350a606",
+        "production_stop_exclusive": 238,
+        "instrumented_lines": 182,
+        "covered_lines": 176,
+        "percent": 96.7,
+        "uncovered_lines": [
+          115,
+          119,
+          138,
+          155,
+          159,
+          234
+        ]
+      },
+      {
+        "path": "src/suggest/eval/manifest.rs",
+        "sha256": "60fa33052ef58c4f40c68bf5d59740a93a919fe9b0dd39a5d59e705eb947ecaa",
+        "production_stop_exclusive": 269,
+        "instrumented_lines": 91,
+        "covered_lines": 91,
+        "percent": 100.0,
+        "uncovered_lines": []
+      },
+      {
+        "path": "src/suggest/eval/preflight.rs",
+        "sha256": "4c7a79b2a126747e1d13c036e7611081780fdfa91079a6bb53f538939e6c9141",
+        "production_stop_exclusive": 309,
+        "instrumented_lines": 244,
+        "covered_lines": 238,
+        "percent": 97.54,
+        "uncovered_lines": [
+          140,
+          163,
+          165,
+          235,
+          236,
+          237
+        ]
+      },
+      {
+        "path": "src/suggest/eval/report.rs",
+        "sha256": "c6660ebe3e3f67d9df880f7263a1b396143a830f76616c34c9b8aaabc2922c92",
+        "production_stop_exclusive": 234,
+        "instrumented_lines": 69,
+        "covered_lines": 66,
+        "percent": 95.65,
+        "uncovered_lines": [
+          229,
+          230,
+          231
+        ]
+      },
+      {
+        "path": "src/suggest/validate.rs",
+        "sha256": "7e62e706290160ed1f7e9f702afc501eab99701a054f10275c9f2304e15abfb0",
+        "production_stop_exclusive": 449,
+        "instrumented_lines": 303,
+        "covered_lines": 299,
+        "percent": 98.68,
+        "uncovered_lines": [
+          123,
+          195,
+          222,
+          418
+        ]
+      }
+    ],
+    "new_preflight_modules_combined": {
+      "covered": 571,
+      "instrumented": 586,
+      "percent": 97.44
+    },
+    "cli_dispatcher": {
+      "path": "src/cli/mod.rs",
+      "sha256": "06d2d65b87e4c8a3450d3185707b3412a88dd322ee77d4c00e9d89468cf177d5",
+      "scope": "new Eval dispatcher only",
+      "start": 1998,
+      "end_exclusive": 2022,
+      "instrumented_lines": 18,
+      "covered_lines": 12,
+      "uncovered_lines": [
+        2008,
+        2009,
+        2015,
+        2016,
+        2017,
+        2018
+      ]
+    },
+    "tests": [
+      {
+        "passed": 1826,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0
+      },
+      {
+        "passed": 27,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0
+      },
+      {
+        "passed": 16,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0
+      }
+    ],
+    "passed_total": 1869,
+    "shared_fixture_helpers_included": true,
+    "lcov_sha256": "70eb04169ae6f8150fdb3f17fc7093b6f8fea98072cd4b2da685c1d798e00548",
+    "test_log_sha256": "304c5f9492458c763f9ef546d71c50b8e9525f1fa843d639041f2b423989178d",
+    "whole_repository_branch_path_platform_coverage": false
+  },
+  "docs_example_smoke": {
+    "schema_version": "forge.development-doc-smoke/1",
+    "scope": "synthetic-doc-example-only",
+    "status": "passed",
+    "exit_code": 1,
+    "guide_sha256": "88b753a06a74369dc6208748f84fea9afcd709a2f34d718024549a45f5b159ca",
+    "manifest_sha256": "d9ac0005376f1f04befac999492d7e483196310d881cb6c1061996741ecc2ee1",
+    "debug_binary_sha256": "3a9b9435da97ec6507d088e29627a9e2c3ed34657897defffc88c759cf9f89ef",
+    "report_sha256": "f66f7e0133e8c2500973f8963d9445bcff95a0b6e6ea928ddec90569d4cfacc9",
+    "counts": {
+      "expected": 1,
+      "artifacts_valid": 0,
+      "not_run": 1,
+      "execution_blocked": 0,
+      "tool_error": 0,
+      "response_invalid": 0,
+      "awaiting_adjudication": 0,
+      "adjudication_disputed": 0
+    },
+    "acceptance_eligible": false
+  },
+  "remaining_gates": [
+    "authentic-lawful-inputs",
+    "gold-target-content-unit-universes",
+    "independent-human-adjudication-and-dispute-resolution",
+    "approved-freeze-splits-exposure",
+    "approved-thresholds-and-resource-profile",
+    "candidate-runtime-model-template-provenance",
+    "qualified-confined-local-execution",
+    "full-metrics-and-regression",
+    "usefulness-and-task-selection",
+    "final-full-documentation-review"
+  ]
+}
