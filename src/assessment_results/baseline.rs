@@ -22,12 +22,15 @@ pub const CODE_UPSTREAM_CHANGED: &str = "upstream-fingerprint-changed";
 
 const MAX_BASELINE_BYTES: u64 = 50 * 1024 * 1024;
 
-/// Compare a prior FORGE Assessment Results artifact to the current reviewed build.
+/// Compare a prior one-epoch FORGE Assessment Results artifact to the current reviewed build.
+///
+/// Multiple result epochs are rejected before adding findings to the report.
 ///
 /// # Errors
 ///
 /// Returns an error when the baseline is oversized, invalid, not a FORGE-produced
-/// schema-valid artifact, or cannot be compared by stable identity.
+/// schema-valid artifact, contains multiple result epochs, or cannot be compared
+/// by stable identity.
 pub fn analyze(
     baseline_bytes: &[u8],
     current_snapshots: &BTreeMap<(ConclusionType, String), ObjectSnapshot>,
@@ -117,6 +120,9 @@ pub fn analyze(
     Ok(())
 }
 
+/// Read stable conclusion identities from exactly one schema-validated result epoch.
+///
+/// Reject unsupported result cardinality before extracting any snapshots.
 fn extract_snapshots(
     baseline: &Value,
 ) -> Result<BTreeMap<(ConclusionType, String), ObjectSnapshot>, ForgeError> {
@@ -124,6 +130,11 @@ fn extract_snapshots(
         .pointer("/assessment-results/results")
         .and_then(Value::as_array)
         .ok_or_else(|| error("baseline results array is required"))?;
+    if results.len() != 1 {
+        return Err(error(
+            "baseline must contain exactly one result epoch; multiple result epochs are not supported",
+        ));
+    }
     let mut snapshots = BTreeMap::new();
     for result in results {
         for (field, object_type) in [

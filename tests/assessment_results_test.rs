@@ -892,3 +892,328 @@ fn init_scaffolds_validated_scope_without_conclusions() {
     assert_eq!(value["result"]["findings"], json!([]));
     assert_eq!(value["result"]["risks"], json!([]));
 }
+
+/// Load genuine synthetic context pins and build the existing single-result fixture.
+fn built_epoch_fixture(
+    fixture: &Fixture,
+) -> (
+    forge::assessment_results::manifest::AssessmentResultsManifest,
+    forge::assessment_results::context::LoadedContext,
+    forge::assessment_results::model::BuiltAssessmentResults,
+) {
+    let bytes = std::fs::read(&fixture.manifest).unwrap();
+    let manifest = forge::assessment_results::manifest::parse(&bytes).unwrap();
+    let context =
+        forge::assessment_results::context::load(&fixture.manifest, &manifest.context).unwrap();
+    let built = forge::assessment_results::model::build(&manifest, &context).unwrap();
+    (manifest, context, built)
+}
+
+/// Combine independently built synthetic epochs without inventing UUIDs or hashes.
+///
+/// Conclusion keys and relationship endpoints are renamed before assembly. The
+/// optional empty epoch omits native conclusion arrays through the normal builder.
+/// Validate the whole plural artifact so cardinality rejection cannot be confused
+/// with schema-invalid input, duplicate keys or conflicting conclusion UUIDs.
+fn plural_epoch_baseline(
+    manifest: &forge::assessment_results::manifest::AssessmentResultsManifest,
+    context: &forge::assessment_results::context::LoadedContext,
+    current: &forge::assessment_results::model::BuiltAssessmentResults,
+    empty: bool,
+    reversed: bool,
+) -> Value {
+    let mut additional = manifest.clone();
+    additional.result.key = "epoch-synthetic-additional".to_string();
+    additional.result.title = "Synthetic additional fixture epoch".to_string();
+    additional.result.description =
+        "Test fixture only; not an authenticated assessment epoch.".to_string();
+    if empty {
+        additional.result.observations.clear();
+        additional.result.findings.clear();
+        additional.result.risks.clear();
+        additional.result.relationships.clear();
+    } else {
+        for observation in &mut additional.result.observations {
+            observation.key = format!("additional-{}", observation.key);
+        }
+        for finding in &mut additional.result.findings {
+            finding.key = format!("additional-{}", finding.key);
+        }
+        for risk in &mut additional.result.risks {
+            risk.key = format!("additional-{}", risk.key);
+        }
+        for relationship in &mut additional.result.relationships {
+            relationship.from.key = format!("additional-{}", relationship.from.key);
+            relationship.to.key = format!("additional-{}", relationship.to.key);
+        }
+    }
+    let second = forge::assessment_results::model::build(&additional, context).unwrap();
+    for (key, snapshot) in &second.object_snapshots {
+        assert!(!current.object_snapshots.contains_key(key), "repeated conclusion stable key");
+        assert!(current.object_snapshots.values().all(|prior| prior.uuid != snapshot.uuid));
+    }
+    let mut baseline = serde_json::to_value(&current.artifact).unwrap();
+    let second_value = serde_json::to_value(&second.artifact).unwrap();
+    let first_result = baseline["assessment-results"]["results"][0].clone();
+    let second_result = second_value["assessment-results"]["results"][0].clone();
+    assert_ne!(first_result["uuid"], second_result["uuid"]);
+    assert_ne!(manifest.result.key, additional.result.key);
+    if empty {
+        for field in ["observations", "findings", "risks"] {
+            assert!(second_result.get(field).is_none(), "empty native arrays must be omitted");
+        }
+    }
+    baseline["assessment-results"]["results"] = if reversed {
+        json!([second_result, first_result])
+    } else {
+        json!([first_result, second_result])
+    };
+    let schema: Value =
+        serde_json::from_str(include_str!("../schemas/oscal_assessment-results_schema.json"))
+            .unwrap();
+    let validator = jsonschema::validator_for(&schema).unwrap();
+    let errors: Vec<_> = validator.iter_errors(&baseline).map(|error| error.to_string()).collect();
+    assert_eq!(
+        errors.as_slice(),
+        [] as [String; 0],
+        "plural baseline must be schema-valid: {errors:?}"
+    );
+    baseline
+}
+
+/// Preserve raw synthetic baseline and command outcomes when root requests evidence.
+///
+/// `FORGE_ASSESSMENT_EPOCH_TEST_EVIDENCE_DIR` must name a fresh run directory;
+/// each controlled case uses a new child directory, preserving earlier receipts.
+fn record_epoch_cli_case(case: &str, baseline_bytes: &[u8], output: &Output) {
+    let Some(directory) = std::env::var_os("FORGE_ASSESSMENT_EPOCH_TEST_EVIDENCE_DIR") else {
+        return;
+    };
+    let directory = PathBuf::from(directory);
+    std::fs::create_dir_all(&directory).unwrap();
+    let case_directory = directory.join(case);
+    std::fs::create_dir(&case_directory).expect("evidence case directory must be new");
+    std::fs::write(case_directory.join("baseline.json"), baseline_bytes).unwrap();
+    std::fs::write(case_directory.join("stdout.bin"), &output.stdout).unwrap();
+    std::fs::write(case_directory.join("stderr.bin"), &output.stderr).unwrap();
+    write_json(
+        &case_directory.join("outcome.json"),
+        &json!({
+            "truth_state": "synthetic-development",
+            "case": case,
+            "exit_code": output.status.code(),
+            "baseline_sha256": common::sha256_hex(baseline_bytes),
+            "stdout_sha256": common::sha256_hex(&output.stdout),
+            "stderr_sha256": common::sha256_hex(&output.stderr),
+            "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance"
+        }),
+    );
+}
+
+/// Require plural-baseline rejection before file, report or stdout publication.
+///
+/// Both exit gates and absent/existing destinations are exercised with file and
+/// stdout artifact modes. Every manifest, baseline and captured context byte stays
+/// unchanged; existing artifact/report binary sentinels must also remain intact.
+fn assert_plural_epoch_cli_rejected(
+    fixture: &Fixture,
+    context: &forge::assessment_results::context::LoadedContext,
+    baseline: &Value,
+    case: &str,
+) {
+    let baseline_path = fixture.directory.path().join(format!("baseline-{case}.json"));
+    let baseline_bytes = write_json(&baseline_path, baseline);
+    let inputs: Vec<_> = std::iter::once(&fixture.manifest)
+        .chain(context.input_paths.iter())
+        .chain(std::iter::once(&baseline_path))
+        .map(|path| (path.clone(), std::fs::read(path).unwrap()))
+        .collect();
+    for fail_on in ["any", "never"] {
+        for existing in [false, true] {
+            for stdout_artifact in [false, true] {
+                let artifact_sentinel = b"existing assessment artifact\0\xff\n";
+                let report_sentinel = b"existing assessment report\0\xfe\n";
+                for (path, sentinel) in [
+                    (&fixture.output, artifact_sentinel.as_slice()),
+                    (&fixture.report, report_sentinel.as_slice()),
+                ] {
+                    if existing {
+                        std::fs::write(path, sentinel).unwrap();
+                    } else if path.exists() {
+                        std::fs::remove_file(path).unwrap();
+                    }
+                }
+                let mut args = vec![
+                    "assessment",
+                    "results",
+                    "build",
+                    "--manifest",
+                    fixture.manifest.to_str().unwrap(),
+                    "--baseline",
+                    baseline_path.to_str().unwrap(),
+                    "--report",
+                    fixture.report.to_str().unwrap(),
+                    "--report-format",
+                    "json",
+                    "--fail-on",
+                    fail_on,
+                ];
+                if !stdout_artifact {
+                    args.extend(["--output", fixture.output.to_str().unwrap()]);
+                }
+                let output = run(&args);
+                let label =
+                    format!("{case}-{fail_on}-existing-{existing}-stdout-{stdout_artifact}");
+                record_epoch_cli_case(&label, &baseline_bytes, &output);
+                assert_eq!(
+                    output.status.code(),
+                    Some(2),
+                    "{label}: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                assert_eq!(
+                    output.stdout.as_slice(),
+                    [] as [u8; 0],
+                    "{label} published an artifact to stdout"
+                );
+                assert!(String::from_utf8_lossy(&output.stderr).contains(
+                    "baseline must contain exactly one result epoch; multiple result epochs are not supported"
+                ));
+                if existing {
+                    assert_eq!(std::fs::read(&fixture.output).unwrap(), artifact_sentinel);
+                    assert_eq!(std::fs::read(&fixture.report).unwrap(), report_sentinel);
+                } else {
+                    assert!(!fixture.output.exists(), "{label} published an artifact file");
+                    assert!(!fixture.report.exists(), "{label} published a review report");
+                }
+                for (path, bytes) in &inputs {
+                    assert_eq!(
+                        std::fs::read(path).unwrap(),
+                        *bytes,
+                        "changed source: {}",
+                        path.display()
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// Reject populated or conclusion-free plural baselines in either native result order.
+#[test]
+fn plural_result_baselines_rejected_before_cli_publication() {
+    let fixture = fixture();
+    let (manifest, context, current) = built_epoch_fixture(&fixture);
+    for empty in [false, true] {
+        for reversed in [false, true] {
+            let baseline = plural_epoch_baseline(&manifest, &context, &current, empty, reversed);
+            let case = format!("empty-{empty}-reversed-{reversed}");
+            assert_plural_epoch_cli_rejected(&fixture, &context, &baseline, &case);
+        }
+    }
+}
+
+/// Direct callers must reject plural epochs without modifying any prepopulated report field.
+#[test]
+fn plural_result_baselines_rejected_without_mutating_report() {
+    use forge::assessment_results::report::{
+        AssessmentResultsReport, BaselineFinding, ContextSummary, ReportStatus,
+    };
+
+    let fixture = fixture();
+    let (manifest, context, current) = built_epoch_fixture(&fixture);
+    for empty in [false, true] {
+        for reversed in [false, true] {
+            let baseline = plural_epoch_baseline(&manifest, &context, &current, empty, reversed);
+            let bytes = serde_json::to_vec(&baseline).unwrap();
+            let mut report = AssessmentResultsReport::new(
+                &manifest,
+                current.artifact.assessment_results.uuid.clone(),
+                context.artifact_identities().into_iter().map(ContextSummary::from),
+            );
+            report.status = ReportStatus::ReviewRequired;
+            report.findings.push(BaselineFinding {
+                id: "synthetic-existing-review-action".to_string(),
+                code: "synthetic-existing-action".to_string(),
+                object_type: None,
+                key: "retain-prepopulated-report".to_string(),
+                old_fingerprint: None,
+                new_fingerprint: None,
+            });
+            let before = serde_json::to_value(&report).unwrap();
+            let result = forge::assessment_results::baseline::analyze(
+                &bytes,
+                &current.object_snapshots,
+                &context,
+                &mut report,
+            );
+            assert!(result.is_err(), "plural native baseline must be rejected");
+            assert_eq!(
+                serde_json::to_value(&report).unwrap(),
+                before,
+                "rejection mutated the report"
+            );
+            let error = result.unwrap_err();
+            assert!(matches!(&error, forge::ForgeError::AssessmentResultsBuild(_)));
+            assert!(error.to_string().contains(
+                "baseline must contain exactly one result epoch; multiple result epochs are not supported"
+            ));
+        }
+    }
+}
+
+/// Preserve unchanged one-result comparisons through both the public API and CLI exit gates.
+#[test]
+fn one_result_baseline_comparison_remains_unchanged() {
+    use forge::assessment_results::report::{AssessmentResultsReport, ContextSummary};
+
+    let fixture = fixture();
+    let (manifest, context, current) = built_epoch_fixture(&fixture);
+    let baseline = serde_json::to_value(&current.artifact).unwrap();
+    let baseline_path = fixture.directory.path().join("baseline-one-result.json");
+    let bytes = write_json(&baseline_path, &baseline);
+    let mut report = AssessmentResultsReport::new(
+        &manifest,
+        current.artifact.assessment_results.uuid.clone(),
+        context.artifact_identities().into_iter().map(ContextSummary::from),
+    );
+    let before = serde_json::to_value(&report).unwrap();
+    forge::assessment_results::baseline::analyze(
+        &bytes,
+        &current.object_snapshots,
+        &context,
+        &mut report,
+    )
+    .expect("unchanged one-result baseline comparison must remain supported");
+    assert_eq!(serde_json::to_value(&report).unwrap(), before);
+    let manifest_bytes = std::fs::read(&fixture.manifest).unwrap();
+    for fail_on in ["any", "never"] {
+        let output = run(&[
+            "assessment",
+            "results",
+            "build",
+            "--manifest",
+            fixture.manifest.to_str().unwrap(),
+            "--baseline",
+            baseline_path.to_str().unwrap(),
+            "--output",
+            fixture.output.to_str().unwrap(),
+            "--report",
+            fixture.report.to_str().unwrap(),
+            "--report-format",
+            "json",
+            "--fail-on",
+            fail_on,
+        ]);
+        assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
+        assert_eq!(output.stdout.as_slice(), [] as [u8; 0]);
+        let artifact: Value =
+            serde_json::from_slice(&std::fs::read(&fixture.output).unwrap()).unwrap();
+        let review: Value =
+            serde_json::from_slice(&std::fs::read(&fixture.report).unwrap()).unwrap();
+        assert_eq!(artifact, baseline);
+        assert_eq!(review, before);
+        assert_eq!(std::fs::read(&baseline_path).unwrap(), bytes);
+        assert_eq!(std::fs::read(&fixture.manifest).unwrap(), manifest_bytes);
+    }
+}
