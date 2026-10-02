@@ -149,8 +149,12 @@ HTML or a CLI text table. Its complete closed envelope, count invariants, exact
 canonical bytes, input pins, and recomputed counts are validated. A structurally
 valid historical report with changed inputs is stale. Unsupported versions and
 extra content fail closed. Applicability JSON reports retain their PRD-056
-contract and are compared with a freshly validated analysis. Historical report
-fingerprints identify the manifest and, when that exact manifest is still
+contract and are compared with a freshly validated analysis. Their six
+classification counts must sum exactly to the declared inventory total;
+overflowing sums are invalid. Unfiltered reports restate each category exactly,
+while filtered details may show a subset of the complete inventory. A valid
+historical report still requires recomputation to establish currentness.
+Historical report fingerprints identify the manifest and, when that exact manifest is still
 present, its referenced framework and mapping files. If the manifest changed,
 only its historical hash is shown; old file paths cannot be reconstructed or
 inferred from current registrations.
