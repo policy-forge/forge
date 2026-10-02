@@ -291,6 +291,15 @@ blocked non-loopback page traffic, storage absence, workflow behavior, and
 narrow-viewport reflow. This is not proof that all browser background traffic or
 all OS processes are network-denied.
 
+Current API/client verification is configured separately on Linux, macOS and
+Windows, including ordinary PRs with stacked bases. Versioned `/2` receipts
+retain the current 16 client assertion groups and complete 39-operation
+inventory, exact inputs, requested head/base and tested Git parents. A passed
+receipt covers the declared three-suite slice only. See the
+[current verification guide](plans/2026-10-02-f04-current-api-verification.md)
+and [development record](workspace-current-api-verification.md) for status,
+coverage gaps, publication failure controls and remaining gates.
+
 Focused Inspect/Trace navigation uses the same unsaved-edit decision as ordinary
 navigation. Keep editing or Escape preserves values and returns focus to the
 connected enabled invoker; a failed provenance read preserves the form for retry.
