@@ -243,7 +243,7 @@ pub struct Participation {
 /// Validation gates for the stages completed before a report is rendered.
 ///
 /// Each `true` value means the corresponding stage and every preceding stage completed
-/// successfully; mapping-schema validation is set only by [`BuildProduct::finalize_report`].
+/// successfully; mapping-schema validation is set only by `BuildProduct::finalize_report`.
 #[derive(Debug, Clone, Serialize)]
 #[allow(clippy::struct_excessive_bools)] // Explicit gates make the machine report auditable.
 pub struct ValidationSummary {

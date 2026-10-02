@@ -421,7 +421,7 @@ fn validate(manifest: &AssessmentResultsManifest) -> Result<(), ForgeError> {
     validate_result(&manifest.result, &parties, &roles)
 }
 
-fn validate_context(context: &ContextManifest) -> Result<(), ForgeError> {
+pub(crate) fn validate_context(context: &ContextManifest) -> Result<(), ForgeError> {
     for (path, artifact) in [
         ("$.context.assessment_plan", &context.assessment_plan),
         ("$.context.ssp", &context.ssp),
@@ -441,7 +441,7 @@ fn validate_context(context: &ContextManifest) -> Result<(), ForgeError> {
     Ok(())
 }
 
-fn validate_artifact(path: &str, artifact: &ArtifactManifest) -> Result<(), ForgeError> {
+pub(crate) fn validate_artifact(path: &str, artifact: &ArtifactManifest) -> Result<(), ForgeError> {
     relative_json_path(&format!("{path}.artifact"), &artifact.artifact)?;
     relative_href(&format!("{path}.href"), &artifact.href)?;
     json_strict::validate_lowercase_sha256(

@@ -21,6 +21,8 @@ pub enum OscalModelType {
     SystemSecurityPlan,
     /// An OSCAL Control Mapping collection.
     Mapping,
+    /// An OSCAL Plan of Action and Milestones.
+    Poam,
 }
 
 impl OscalModelType {
@@ -33,6 +35,7 @@ impl OscalModelType {
             Self::Profile => "profile",
             Self::SystemSecurityPlan => "system-security-plan",
             Self::Mapping => "mapping-collection",
+            Self::Poam => "plan-of-action-and-milestones",
         }
     }
 }

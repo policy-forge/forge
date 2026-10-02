@@ -52,7 +52,7 @@ fn manifest_pins_the_approved_release_and_complete_allowlist() {
     assert_eq!(manifest.release_commit, "e061961");
     assert_eq!(manifest.published_at, "2026-08-07");
     assert_eq!(manifest.schema_version, "1.2.3");
-    assert_eq!(manifest.assets.len(), 11);
+    assert_eq!(manifest.assets.len(), 12);
 
     let names: HashSet<_> = manifest.assets.iter().map(|asset| asset.name.as_str()).collect();
     assert_eq!(names.len(), manifest.assets.len(), "asset names must be unique");
@@ -66,6 +66,7 @@ fn manifest_pins_the_approved_release_and_complete_allowlist() {
             "oscal_assessment-results_schema.json",
             "oscal_assessment-plan_schema.json",
             "oscal_ssp_schema.json",
+            "oscal_poam_schema.json",
             "oscal_catalog_schema.xsd",
             "oscal_component_schema.xsd",
             "oscal_profile_schema.xsd",
@@ -138,4 +139,80 @@ fn vendored_schemas_are_offline_and_compile_where_applicable() {
             );
         }
     }
+}
+
+fn poam_schema() -> Value {
+    serde_json::from_str(include_str!("../schemas/oscal_poam_schema.json"))
+        .expect("pinned POA&M schema must be valid JSON")
+}
+
+fn minimal_native_poam() -> Value {
+    serde_json::json!({
+        "plan-of-action-and-milestones": {
+            "uuid": "3360ade4-47bf-4b4b-ad32-2576dcaa0001",
+            "metadata": {
+                "title": "Schema boundary fixture",
+                "last-modified": "2026-10-02T00:00:00Z",
+                "version": "1",
+                "oscal-version": "1.2.3"
+            },
+            "import-ssp": { "href": "ssp.json" },
+            "poam-items": [{
+                "uuid": "3360ade4-47bf-4b4b-ad32-2576dcaa0002",
+                "title": "Explicit fixture item",
+                "description": "Tests native structure without asserting source or workflow acceptance."
+            }]
+        }
+    })
+}
+
+#[test]
+fn poam_release_asset_and_schema_identity_are_pinned() {
+    let asset = manifest()
+        .assets
+        .into_iter()
+        .find(|asset| asset.name == "oscal_poam_schema.json")
+        .expect("POA&M release asset must be listed");
+    assert_eq!(asset.local_path, "schemas/oscal_poam_schema.json");
+    assert_eq!(asset.size, 148_253);
+    assert_eq!(asset.sha256, "f4fd94487408a9589954b5b92d88965c984d4f79b85365cc574b860898759437");
+    assert_eq!(asset.format, "json-schema");
+    assert_eq!(asset.model, "poam");
+    assert_eq!(asset.role, "runtime");
+
+    let schema = poam_schema();
+    assert_eq!(schema["$schema"], "http://json-schema.org/draft-07/schema#");
+    assert_eq!(schema["$id"], "http://csrc.nist.gov/ns/oscal/1.2.3/oscal-poam-schema.json");
+}
+
+#[test]
+fn native_poam_schema_accepts_an_explicit_named_item_offline() {
+    let validator = jsonschema::validator_for(&poam_schema())
+        .expect("pinned POA&M schema must compile offline");
+    let candidate = minimal_native_poam();
+    assert!(validator.is_valid(&candidate), "minimal native fixture must match the exact schema");
+}
+
+#[test]
+fn native_poam_schema_rejects_an_empty_scaffold() {
+    let validator = jsonschema::validator_for(&poam_schema())
+        .expect("pinned POA&M schema must compile offline");
+    let mut candidate = minimal_native_poam();
+    assert!(validator.is_valid(&candidate));
+    candidate["plan-of-action-and-milestones"]["poam-items"] = serde_json::json!([]);
+    assert!(!validator.is_valid(&candidate), "a zero-selection scaffold is not a native POA&M");
+}
+
+#[test]
+fn native_poam_schema_leaves_system_context_choice_to_semantic_validation() {
+    let validator = jsonschema::validator_for(&poam_schema())
+        .expect("pinned POA&M schema must compile offline");
+    let mut candidate = minimal_native_poam();
+    candidate["plan-of-action-and-milestones"]
+        .as_object_mut()
+        .expect("fixture root must be an object")
+        .remove("import-ssp");
+    // The official model requires import-ssp or system-id. Its generated JSON
+    // Schema does not encode that choice; Forge must enforce it separately.
+    assert!(validator.is_valid(&candidate), "the exact schema leaves this semantic gap open");
 }

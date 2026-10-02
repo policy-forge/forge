@@ -1,0 +1,210 @@
+{
+  "schema_version": "forge.poam-foundation-verification/1",
+  "evidence_kind": "synthetic-development-verification",
+  "base_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "toolchain": {
+    "rustc": "1.98.1",
+    "rustc_commit": "48a229ceaefd4985c50990b14116b6d856af0985",
+    "host": "aarch64-apple-darwin",
+    "llvm": "22.1.8",
+    "cargo_llvm_cov": "0.8.7"
+  },
+  "documentation": {
+    "status": "passed",
+    "method": "compiler-enforced missing_docs for poam module and PoamCommand/PoamInitArgs, plus rustdoc link checks",
+    "whole_repository_or_private_item_percentage_measured": false,
+    "missing_public_docs_errors": 0,
+    "broken_or_private_link_errors": 0,
+    "command": "RUSTDOCFLAGS=\"-D rustdoc::broken_intra_doc_links -D rustdoc::private_intra_doc_links\" cargo doc --lib --no-deps --locked --offline"
+  },
+  "strict_clippy": {
+    "status": "passed",
+    "command": "cargo clippy --locked --offline --all-targets --all-features -- -D warnings"
+  },
+  "coverage": {
+    "status": "passed",
+    "command": "cargo llvm-cov --locked --offline --lib --test poam_foundation_test --test schema_provenance_test --test assessment_results_test --json",
+    "scope": "LCOV DA records in src/poam/*.rs before each cfg(test) module; test code excluded",
+    "covered_lines": 1322,
+    "instrumented_lines": 1406,
+    "line_percent": 94.03,
+    "branch_coverage_measured": false,
+    "files": [
+      {
+        "file": "src/poam/identity.rs",
+        "source_sha256": "1a5014a48bf2f0724710682e3301dc286c8fd97008f402129aa124ba519db2be",
+        "covered_lines": 17,
+        "instrumented_lines": 17,
+        "line_percent": 100.0,
+        "test_code_excluded_from_line": 48,
+        "uncovered_lines": []
+      },
+      {
+        "file": "src/poam/manifest.rs",
+        "source_sha256": "52bf4ceff06d8e432879600fa24c2444e6822b0162d2608db37c01a00da46344",
+        "covered_lines": 181,
+        "instrumented_lines": 182,
+        "line_percent": 99.45,
+        "test_code_excluded_from_line": 355,
+        "uncovered_lines": [
+          302
+        ]
+      },
+      {
+        "file": "src/poam/mod.rs",
+        "source_sha256": "91586fd3783a26c38aa9459e7d6924ace0aedafcc1712d1eb274ab458c24a6fb",
+        "covered_lines": 160,
+        "instrumented_lines": 165,
+        "line_percent": 96.97,
+        "test_code_excluded_from_line": 232,
+        "uncovered_lines": [
+          55,
+          72,
+          112,
+          115,
+          151
+        ]
+      },
+      {
+        "file": "src/poam/report.rs",
+        "source_sha256": "21558549ce25b13aae6ac36b8a2f492eccd6a715e20a43ac41fd6b3d105d199e",
+        "covered_lines": 60,
+        "instrumented_lines": 64,
+        "line_percent": 93.75,
+        "test_code_excluded_from_line": 182,
+        "uncovered_lines": [
+          103,
+          104,
+          105,
+          137
+        ]
+      },
+      {
+        "file": "src/poam/source.rs",
+        "source_sha256": "76043586acb5a8d764887fa16de10ddbf2ec3f304c024b133d10b9d674a3cd17",
+        "covered_lines": 904,
+        "instrumented_lines": 978,
+        "line_percent": 92.43,
+        "test_code_excluded_from_line": 1252,
+        "uncovered_lines": [
+          158,
+          169,
+          175,
+          234,
+          235,
+          236,
+          239,
+          254,
+          331,
+          348,
+          386,
+          489,
+          564,
+          575,
+          583,
+          596,
+          620,
+          622,
+          649,
+          652,
+          653,
+          654,
+          675,
+          679,
+          680,
+          681,
+          682,
+          683,
+          684,
+          696,
+          697,
+          698,
+          699,
+          700,
+          701,
+          704,
+          711,
+          714,
+          715,
+          716,
+          726,
+          800,
+          801,
+          802,
+          809,
+          810,
+          811,
+          818,
+          819,
+          830,
+          831,
+          848,
+          849,
+          912,
+          932,
+          955,
+          988,
+          994,
+          1000,
+          1009,
+          1044,
+          1050,
+          1071,
+          1081,
+          1087,
+          1089,
+          1096,
+          1123,
+          1138,
+          1208,
+          1212,
+          1223,
+          1230,
+          1235
+        ]
+      }
+    ],
+    "test_suites": [
+      {
+        "target": "lib",
+        "passed": 1854,
+        "failed": 0,
+        "ignored": 0
+      },
+      {
+        "target": "assessment_results_test",
+        "passed": 13,
+        "failed": 0,
+        "ignored": 0
+      },
+      {
+        "target": "poam_foundation_test",
+        "passed": 26,
+        "failed": 0,
+        "ignored": 0
+      },
+      {
+        "target": "schema_provenance_test",
+        "passed": 11,
+        "failed": 0,
+        "ignored": 0
+      }
+    ]
+  },
+  "raw_receipt_sha256": {
+    "forge-f07-coverage.json": "372ecd54fa8c001f12bfdf8f4227f8dddd3dc8b3257164deb6caab590fb118f3",
+    "forge-f07-coverage.lcov": "f44de18fd81d9a6014cd0a242e0e1df431450a5891cfb15cf4c4656bd2cd1cae",
+    "forge-f07-coverage.log": "52eb8c02cfefccc8c72d1bdd599c78056f474a71f4842a8ce6101b8b70c3cf16",
+    "forge-f07-rustdoc.log": "a11d65e26fdfa03d8626f8acc0d4c10ff6fb934ff8b0d49dd1304a6a8ab8aa5f",
+    "forge-f07-clippy.log": "050e949e1d74add224e8513d3eec95ca8bdc5596cf837935cff541dad56ecba5"
+  },
+  "schema_sha256": "f4fd94487408a9589954b5b92d88965c984d4f79b85365cc574b860898759437",
+  "acceptance": {
+    "workflow_validated": false,
+    "owner_decision_accepted": false,
+    "independent_interoperability_accepted": false,
+    "remediation_pilot_accepted": false,
+    "hosted_ci_status": "not-run-before-pr",
+    "whole_roadmap_complete": false
+  }
+}
