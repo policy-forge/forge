@@ -377,7 +377,7 @@ mod tests {
         let (text, citations) =
             extract_citations_from_text("req-1", "Users must authenticate before access").unwrap();
 
-        assert!(citations.is_empty());
+        assert_eq!(citations, [] as [crate::model::Citation; 0]);
         assert_eq!(text, "Users must authenticate before access");
     }
 
@@ -386,7 +386,7 @@ mod tests {
         let original = "  Preserve\ttabs,  double spaces,\nand surrounding whitespace.  ";
         let (text, citations) = extract_citations_from_text("req-1", original).unwrap();
 
-        assert!(citations.is_empty());
+        assert_eq!(citations, [] as [crate::model::Citation; 0]);
         assert_eq!(text, original);
     }
 
@@ -727,7 +727,7 @@ mod tests {
         let doc = extract_citations(doc).unwrap();
 
         // req-1: no citations
-        assert!(doc.sections[0].requirements[0].citations.is_empty());
+        assert_eq!(doc.sections[0].requirements[0].citations, [] as [crate::model::Citation; 0]);
         assert_eq!(doc.sections[0].requirements[0].text, "No citations here");
 
         // req-2: one URL citation
@@ -830,7 +830,7 @@ mod tests {
             extract_citations_from_text("req-1", "This section covers authentication requirements")
                 .unwrap();
 
-        assert!(citations.is_empty());
+        assert_eq!(citations, [] as [crate::model::Citation; 0]);
         assert_eq!(text, "This section covers authentication requirements");
     }
 

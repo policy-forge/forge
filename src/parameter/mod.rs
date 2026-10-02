@@ -368,7 +368,7 @@ mod tests {
     #[test]
     fn extract_empty_text_no_error() {
         let (text, params) = extract_parameters_from_text("POL-AC-001", "").unwrap();
-        assert!(params.is_empty());
+        assert_eq!(params, [] as [crate::model::PolicyParameter; 0]);
         assert_eq!(text, "");
     }
 
@@ -421,7 +421,10 @@ mod tests {
         };
 
         extract_parameters(&mut doc).unwrap();
-        assert!(doc.sections[0].requirements[0].parameters.is_empty());
+        assert_eq!(
+            doc.sections[0].requirements[0].parameters,
+            [] as [crate::model::PolicyParameter; 0]
+        );
         assert_eq!(doc.sections[0].requirements[0].text, "within 30 days");
     }
 
@@ -556,7 +559,7 @@ mod tests {
     fn ec1_no_params_text_unchanged() {
         let (text, params) =
             extract_parameters_from_text("POL-AC-001", "Users must authenticate").unwrap();
-        assert!(params.is_empty());
+        assert_eq!(params, [] as [crate::model::PolicyParameter; 0]);
         assert_eq!(text, "Users must authenticate");
     }
 
@@ -592,7 +595,7 @@ mod tests {
             extract_parameters_from_text("POL-AC-001", "at least no less than 30 days retention")
                 .unwrap();
         // "no less than" → Threshold::Minimum
-        assert!(!params.is_empty());
+        assert_ne!(params, [] as [crate::model::PolicyParameter; 0]);
     }
 
     #[test]
@@ -613,7 +616,7 @@ mod tests {
     #[test]
     fn ec10_empty_text_no_error() {
         let (text, params) = extract_parameters_from_text("POL-AC-001", "").unwrap();
-        assert!(params.is_empty());
+        assert_eq!(params, [] as [crate::model::PolicyParameter; 0]);
         assert_eq!(text, "");
     }
 
@@ -714,7 +717,7 @@ mod tests {
         let mut document = make_doc(vec![make_req("POL-AC-001", "No configurable value.")]);
         extract_parameters(&mut document).unwrap();
         let requirement = &document.sections[0].requirements[0];
-        assert!(requirement.parameters.is_empty());
+        assert_eq!(requirement.parameters, [] as [crate::model::PolicyParameter; 0]);
         assert!(requirement.parameters_extracted);
     }
 

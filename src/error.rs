@@ -646,7 +646,7 @@ mod tests {
     #[test]
     fn drift_detected_has_no_message_and_exit_code_one() {
         let err = ForgeError::DriftDetected;
-        assert!(err.to_string().is_empty());
+        assert_eq!(err.to_string(), "");
         assert_eq!(exit_code(&err), 1);
     }
 

@@ -346,8 +346,8 @@ mod tests {
 
         let formatted = format_schema_error(&errors[0], &instance);
         assert_eq!(formatted.category, ValidationErrorCategory::Schema);
-        assert!(!formatted.message.is_empty());
-        assert!(!formatted.expected.is_empty());
+        assert_ne!(formatted.message, "");
+        assert_ne!(formatted.expected, "");
         // SEC-2: should not contain raw crate text patterns
         assert!(!formatted.message.contains("jsonschema"));
         assert!(!formatted.message.contains("::"));

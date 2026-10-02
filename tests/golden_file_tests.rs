@@ -416,7 +416,7 @@ mod accuracy_tests {
         assert_eq!(report.expected_count, 3);
         assert_eq!(report.correct_count, 3);
         assert!((report.accuracy_pct - 100.0).abs() < f64::EPSILON);
-        assert!(report.missed_requirements.is_empty());
+        assert_eq!(report.missed_requirements, [] as [std::string::String; 0]);
     }
 
     #[test]

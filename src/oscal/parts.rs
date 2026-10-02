@@ -290,8 +290,8 @@ mod tests {
         assert_eq!(parts[0].name, OscalPartName::Statement);
         assert_eq!(parts[0].id, "POL-AC-001_smt");
         assert_eq!(parts[0].prose, "All users must use MFA.");
-        assert!(parts[0].parts.is_empty());
-        assert!(parts[0].props.is_empty());
+        assert_eq!(parts[0].parts, [] as [crate::oscal::parts::OscalPart; 0]);
+        assert_eq!(parts[0].props, [] as [crate::oscal::parts::OscalProp; 0]);
     }
 
     #[test]
