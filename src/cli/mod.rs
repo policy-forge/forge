@@ -282,6 +282,12 @@ pub enum Commands {
         #[command(subcommand)]
         command: AssessmentCommand,
     },
+    /// Scaffold a POA&M manifest and check exact source integrity
+    Poam {
+        /// Explicit scaffold or source-only integrity operation.
+        #[command(subcommand)]
+        command: PoamCommand,
+    },
 
     /// Link exact requirement and implementation subjects to evidence metadata
     Linkage {
@@ -375,6 +381,71 @@ pub enum Commands {
         #[arg(long)]
         timestamp: Option<chrono::DateTime<chrono::Utc>>,
     },
+}
+
+/// Mechanical POA&M foundation commands. Workflow validation is a later gate.
+#[derive(Subcommand)]
+#[deny(missing_docs)]
+pub enum PoamCommand {
+    /// Pin one explicit Assessment Results result without selecting remediation
+    Init(Box<PoamInitArgs>),
+    /// Check source integrity only; this does not validate a remediation plan
+    Check {
+        /// Closed forge.poam/1 foundation manifest
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Acknowledge that this foundation check covers source integrity only
+        #[arg(long, required = true)]
+        source_only: bool,
+        /// Content-minimizing source inventory format
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
+}
+
+/// Explicit input and document identity for a zero-selection POA&M scaffold.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamInitArgs {
+    /// Confined bundle directory; all artifact paths are relative descendants
+    #[arg(long, default_value = ".")]
+    pub root: PathBuf,
+    /// Local FORGE Assessment Results JSON
+    #[arg(long)]
+    pub assessment_results: PathBuf,
+    /// Local Assessment Plan referenced by the Assessment Results
+    #[arg(long)]
+    pub assessment_plan: PathBuf,
+    /// Local System Security Plan referenced by the Assessment Plan
+    #[arg(long)]
+    pub ssp: PathBuf,
+    /// Local Profile referenced by the System Security Plan
+    #[arg(long)]
+    pub profile: PathBuf,
+    /// Local Catalog imported by the Profile
+    #[arg(long)]
+    pub catalog: PathBuf,
+    /// Exact selected source result UUID
+    #[arg(long)]
+    pub result_uuid: String,
+    /// Exact selected FORGE result stable key
+    #[arg(long)]
+    pub result_key: String,
+    /// Immutable local plan key
+    #[arg(long)]
+    pub document_key: String,
+    /// Explicit scaffold document title
+    #[arg(long)]
+    pub title: String,
+    /// Explicit scaffold document version
+    #[arg(long)]
+    pub document_version: String,
+    /// Explicit RFC3339 document timestamp; never taken from the clock
+    #[arg(long)]
+    pub last_modified: String,
+    /// New manifest filename in the bundle root; existing files are preserved
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }
 
 /// OSCAL assessment workflow commands.
@@ -637,7 +708,7 @@ pub enum LifecycleCommand {
         /// Owner party key; repeat for multiple owners
         #[arg(long = "owner", required = true)]
         owners: Vec<String>,
-        /// Party declaration in KEY=ROLE[,ROLE] form
+        /// Party declaration in `KEY=ROLE[,ROLE]` form
         #[arg(long = "party")]
         parties: Vec<String>,
         /// Explicit next review date (YYYY-MM-DD)
@@ -1357,6 +1428,8 @@ pub enum SchemaType {
     SystemSecurityPlan,
     /// Validate against the OSCAL Control Mapping schema.
     Mapping,
+    /// Validate a native OSCAL Plan of Action and Milestones.
+    Poam,
 }
 
 /// Raw convert-command arguments captured from clap before resolution.
@@ -1669,6 +1742,18 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 } else {
                     Ok(())
                 }
+            }
+        },
+        Commands::Poam { command } => match command {
+            PoamCommand::Init(args) => crate::poam::execute_init(args),
+            PoamCommand::Check { manifest, source_only, format } => {
+                if !source_only {
+                    return Err(ForgeError::PoamBuild(
+                        "POA&M foundation check requires explicit --source-only acknowledgement"
+                            .to_string(),
+                    ));
+                }
+                crate::poam::execute_source_check(manifest, *format)
             }
         },
         Commands::Assessment { command } => match command {

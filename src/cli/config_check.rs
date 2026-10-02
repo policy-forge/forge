@@ -151,6 +151,7 @@ fn schema_type_label(schema_type: &crate::cli::SchemaType) -> &'static str {
         crate::cli::SchemaType::ComponentDefinition => "component-definition",
         crate::cli::SchemaType::SystemSecurityPlan => "system-security-plan",
         crate::cli::SchemaType::Mapping => "mapping",
+        crate::cli::SchemaType::Poam => "poam",
     }
 }
 

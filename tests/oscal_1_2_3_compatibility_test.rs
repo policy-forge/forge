@@ -207,6 +207,7 @@ fn runtime_schema_manifest_tracks_supported_models_and_assessment_context() {
             "catalog",
             "component-definition",
             "mapping",
+            "poam",
             "profile",
             "ssp",
         ]),
