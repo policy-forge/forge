@@ -1,0 +1,2824 @@
+{
+  "schema_version": "forge.assessment-baseline-verification/1",
+  "recorded_at": "2026-10-02T13:37:21.804294+00:00",
+  "baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "scope": "Existing one-result Assessment Results baseline safety boundary. Synthetic development regression; no multi-epoch authoring, F08 authority or human/interoperability acceptance.",
+  "tracker": {
+    "project_id": 3,
+    "kanban_view_id": 12,
+    "epic": "#2",
+    "parent": "#19",
+    "prerequisite": "#20"
+  },
+  "source_pins": [
+    {
+      "repository_path": "README.md",
+      "recording_time_worktree": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/README.md",
+        "sha256": "0a3af14f132c688a3cd6bfe5a87d4581a19ad4d3d7676f3106e96dbc363557ef",
+        "bytes": 23869
+      },
+      "retained_source": {
+        "path": "/private/tmp/forge-f10-applied-sources/README.md",
+        "sha256": "0a3af14f132c688a3cd6bfe5a87d4581a19ad4d3d7676f3106e96dbc363557ef",
+        "bytes": 23869
+      }
+    },
+    {
+      "repository_path": "docs/assessment-results.md",
+      "recording_time_worktree": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/assessment-results.md",
+        "sha256": "5bdeb2df10d535b0785ee828bf99a0f65acf946633d530a5ef8b27a16b41bec5",
+        "bytes": 4588
+      },
+      "retained_source": {
+        "path": "/private/tmp/forge-f10-applied-sources/docs/assessment-results.md",
+        "sha256": "5bdeb2df10d535b0785ee828bf99a0f65acf946633d530a5ef8b27a16b41bec5",
+        "bytes": 4588
+      }
+    },
+    {
+      "repository_path": "docs/usage-guide.md",
+      "recording_time_worktree": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/usage-guide.md",
+        "sha256": "5790d2d3d433ae7629ea7e45dd9e368de47f8e3fe50ec86db51109163a1eb6d5",
+        "bytes": 36161
+      },
+      "retained_source": {
+        "path": "/private/tmp/forge-f10-applied-sources/docs/usage-guide.md",
+        "sha256": "5790d2d3d433ae7629ea7e45dd9e368de47f8e3fe50ec86db51109163a1eb6d5",
+        "bytes": 36161
+      }
+    },
+    {
+      "repository_path": "src/assessment_results/baseline.rs",
+      "recording_time_worktree": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/assessment_results/baseline.rs",
+        "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+        "bytes": 17307
+      },
+      "retained_source": {
+        "path": "/private/tmp/forge-f10-applied-sources/src/assessment_results/baseline.rs",
+        "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+        "bytes": 17307
+      }
+    },
+    {
+      "repository_path": "src/cli/mod.rs",
+      "recording_time_worktree": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/cli/mod.rs",
+        "sha256": "a215123f2ae26f6d299749ed526eb864916fc56b236bddf239fa2fefe72d68ec",
+        "bytes": 103177
+      },
+      "retained_source": {
+        "path": "/private/tmp/forge-f10-applied-sources/src/cli/mod.rs",
+        "sha256": "a215123f2ae26f6d299749ed526eb864916fc56b236bddf239fa2fefe72d68ec",
+        "bytes": 103177
+      }
+    },
+    {
+      "repository_path": "tests/assessment_results_test.rs",
+      "recording_time_worktree": {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/assessment_results_test.rs",
+        "sha256": "8bef82770a54f5c213ced1ec32b566ab87c66b0d8c6ec36796bc8aa8d83cd66e",
+        "bytes": 50647
+      },
+      "retained_source": {
+        "path": "/private/tmp/forge-f10-applied-sources/tests/assessment_results_test.rs",
+        "sha256": "8bef82770a54f5c213ced1ec32b566ab87c66b0d8c6ec36796bc8aa8d83cd66e",
+        "bytes": 50647
+      }
+    }
+  ],
+  "executables": {
+    "baseline": {
+      "path": "/private/tmp/forge-f10-baseline-binaries/664b2f11b3204eaac3b55a33a5837ffe481207299dbf66a97f01daf6c6ddff53/forge",
+      "sha256": "664b2f11b3204eaac3b55a33a5837ffe481207299dbf66a97f01daf6c6ddff53",
+      "bytes": 67987336
+    },
+    "final_normal": {
+      "path": "/private/tmp/forge-f10-final-normal-binaries/f5f12730e1576d02f1d93590168516d50414b65946dc0f24b0a48c109d461ad0/forge",
+      "sha256": "f5f12730e1576d02f1d93590168516d50414b65946dc0f24b0a48c109d461ad0",
+      "bytes": 67987240
+    }
+  },
+  "history": {
+    "first_attempt": {
+      "state": "test-harness-compilation-failure",
+      "exit_code": 101,
+      "reason": "Three ambiguous empty-slice assertions require explicit String/u8 types; no runtime product defect credit.",
+      "receipt": {
+        "label": "baseline-red",
+        "started_at": "2026-10-02T13:24:00.796177+00:00",
+        "finished_at": "2026-10-02T13:24:23.781433+00:00",
+        "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "command": [
+          "rtk",
+          "proxy",
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "--test",
+          "assessment_results_test"
+        ],
+        "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "exit_code": 101,
+        "source_pins": [
+          {
+            "repository_path": "src/assessment_results/baseline.rs",
+            "sha256": "fbd04a45b3e17058f19cc04bbfeb72b711d308ac5a6444265827a960359add44",
+            "bytes": 16837
+          },
+          {
+            "repository_path": "tests/assessment_results_test.rs",
+            "sha256": "477dfa8a8c70ebb02dcfa087ce66f47cbed20df5f1fd5d6513de93a04071b965",
+            "bytes": 49799
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          }
+        ],
+        "log": {
+          "path": "/private/tmp/forge-f10-baseline-red.log",
+          "sha256": "5db552f5b7a7028c08c12f73a9de8bc7a462c05ce6f1567c181e962981ddff7d",
+          "bytes": 2305
+        }
+      }
+    },
+    "corrected_baseline": {
+      "state": "executed-failing-regression",
+      "test_counts": {
+        "passed": 14,
+        "failed": 2,
+        "ignored": 0
+      },
+      "receipt": {
+        "label": "baseline-red-corrected",
+        "started_at": "2026-10-02T13:24:55.120311+00:00",
+        "finished_at": "2026-10-02T13:24:59.526185+00:00",
+        "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "command": [
+          "rtk",
+          "proxy",
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "--test",
+          "assessment_results_test"
+        ],
+        "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "exit_code": 101,
+        "source_pins": [
+          {
+            "repository_path": "src/assessment_results/baseline.rs",
+            "sha256": "fbd04a45b3e17058f19cc04bbfeb72b711d308ac5a6444265827a960359add44",
+            "bytes": 16837
+          },
+          {
+            "repository_path": "tests/assessment_results_test.rs",
+            "sha256": "77a09c558aaf6ddfb30d38d3364d0d5e57a9bd392c6e1798c2f71bf63c234a67",
+            "bytes": 49836
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          }
+        ],
+        "log": {
+          "path": "/private/tmp/forge-f10-baseline-red-corrected.log",
+          "sha256": "7764e8e0f15843126d7d88ce969f095ee36ab663420cc515e3b3429914164286",
+          "bytes": 2487
+        }
+      },
+      "qualification": "Both looping negative tests stop at first assertion failure. Actual reached variant is populated, forward order; CLI any/absent/file returns1 instead2, direct API accepts. No credit for unreached red cases. The one-result positive control passed.",
+      "raw_cli_outcome": {
+        "baseline_sha256": "d31775a6082ca709566a1f7293d4446961b44cefd4e6319362d1b0d1092afda5",
+        "case": "empty-false-reversed-false-any-existing-false-stdout-false",
+        "exit_code": 1,
+        "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "truth_state": "synthetic-development"
+      }
+    },
+    "candidate": {
+      "test_counts": {
+        "passed": 16,
+        "failed": 0,
+        "ignored": 0
+      },
+      "receipt": {
+        "label": "candidate-green",
+        "started_at": "2026-10-02T13:26:01.628416+00:00",
+        "finished_at": "2026-10-02T13:26:26.446558+00:00",
+        "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "command": [
+          "rtk",
+          "proxy",
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "--test",
+          "assessment_results_test"
+        ],
+        "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "exit_code": 0,
+        "source_pins": [
+          {
+            "repository_path": "src/assessment_results/baseline.rs",
+            "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+            "bytes": 17307
+          },
+          {
+            "repository_path": "tests/assessment_results_test.rs",
+            "sha256": "8bef82770a54f5c213ced1ec32b566ab87c66b0d8c6ec36796bc8aa8d83cd66e",
+            "bytes": 50647
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          }
+        ],
+        "log": {
+          "path": "/private/tmp/forge-f10-candidate-green.log",
+          "sha256": "61a04258d22a09671c5e5815412ab98bfe84d0abc89052d1c78cbea481d01bd0",
+          "bytes": 1610
+        }
+      },
+      "matrix": {
+        "scope": "Synthetic CLI regression only; passing source-bound tests separately assert destination/source preservation.",
+        "case_count": 32,
+        "cases": [
+          {
+            "case": "empty-false-reversed-false-any-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-any-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-false/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-false/outcome.json",
+                "sha256": "c1ab108844278cdbd9962999ec2fb2b98299a3f217e44b99fd5766454a9d544c",
+                "bytes": 492
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-false-any-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-any-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-true/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-true/outcome.json",
+                "sha256": "249b1846c73dd207fcc1a63959844ba78204294742dc452651026165f4c3aa2f",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-false-any-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-any-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-false/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-false/outcome.json",
+                "sha256": "9b3ff39415c30f1b8b6a159b6877eb23d26a5a03fa667aae5498ddabe193657b",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-false-any-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-any-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-true/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-true/outcome.json",
+                "sha256": "8b4bfe6b29820b6cb7e0350cd2e6b4f0583e1072f046595c3a2396dbb545c56b",
+                "bytes": 490
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-any-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-false-never-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-never-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-false/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-false/outcome.json",
+                "sha256": "7d3212d460fb60ca094e33027f11f879d38a80763cc32b34f9fab6c2e9449098",
+                "bytes": 494
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-false-never-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-never-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-true/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-true/outcome.json",
+                "sha256": "9de1ea8d335947ad893b616dfb98a2b148801c0c249d4cb2e054e01471492fdc",
+                "bytes": 493
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-false-never-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-never-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-false/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-false/outcome.json",
+                "sha256": "e13191a62facd9052ef3025f54068c427cb16e61669c1e06623dce287c0d120b",
+                "bytes": 493
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-false-never-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+              "case": "empty-false-reversed-false-never-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-true/baseline.json",
+                "sha256": "0893008baf70e0f4053352692c76d9b5a6191938db967e79d81eebfea78867de",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-true/outcome.json",
+                "sha256": "54adcdbb8c3a1f51e7ab3549eaa63d9995dbf9030d0b76fcf2849cc5fe656214",
+                "bytes": 492
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-false-never-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-any-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-any-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-false/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-false/outcome.json",
+                "sha256": "63e87279197353ec12aaf9bece56a51f0b4fdacc999a59d16b7d842f4695c18c",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-any-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-any-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-true/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-true/outcome.json",
+                "sha256": "b60a87d67e2f3f5909faefb72fbc4380f33edfcc36752308072688110a1f6925",
+                "bytes": 490
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-any-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-any-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-false/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-false/outcome.json",
+                "sha256": "1062377810935409638106c88bb18806d888bc61f94f58196c807b21b5a2f722",
+                "bytes": 490
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-any-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-any-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-true/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-true/outcome.json",
+                "sha256": "2a118b61c79a9113fcc89c89c45d7a5e16fb06bf37159f0b27967165e8b23dd7",
+                "bytes": 489
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-any-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-never-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-never-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-false/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-false/outcome.json",
+                "sha256": "4c128989c471bfa7a67329faf75d3200095240968abffe749908992e82339af4",
+                "bytes": 493
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-never-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-never-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-true/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-true/outcome.json",
+                "sha256": "d41bf5a6fc87a1874275fcc0217a2f8e20bc58d1bf2d61bf211dd4a330797bd8",
+                "bytes": 492
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-never-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-never-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-false/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-false/outcome.json",
+                "sha256": "726dd9d2c0b03341a7284a3c79b5826bbe0656fdb656708898b1e542dcdfdba0",
+                "bytes": 492
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-false-reversed-true-never-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+              "case": "empty-false-reversed-true-never-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-true/baseline.json",
+                "sha256": "6d2689ea715813efc1200a6f5f5c27a95c7fd6155251e078e39e7e46324381fd",
+                "bytes": 35221
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-true/outcome.json",
+                "sha256": "32b68a077049e109a1ea131c28114e6e5e0fd03c37e5664ffcd0768fc03508e7",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-false-reversed-true-never-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-any-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-any-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-false/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-false/outcome.json",
+                "sha256": "a30a573d174b1b6e6ea182efd8aa201072cdd32f1d251def7610b1e8cad19f5c",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-any-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-any-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-true/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-true/outcome.json",
+                "sha256": "78f82acbadd82fa58f8a912df7683ad7378851daf42d452098c7bb71b2c1d826",
+                "bytes": 490
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-any-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-any-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-false/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-false/outcome.json",
+                "sha256": "946939154a4a51aaa1fbf240039ad83a41c476e9aa43007748510191198e3fa7",
+                "bytes": 490
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-any-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-any-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-true/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-true/outcome.json",
+                "sha256": "b2cc29e0394fa8c4d8b6b30a953b05bd08301c481012e5a224757051eda9b870",
+                "bytes": 489
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-any-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-never-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-never-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-false/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-false/outcome.json",
+                "sha256": "c956c444cab4a4fe42c2ec98dc0021a334fad5b6b4a958aa16d114ff8c4cc477",
+                "bytes": 493
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-never-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-never-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-true/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-true/outcome.json",
+                "sha256": "9a0672c594d1090ff28ae7c84f48cf2284f1295810356eb6db380b242869fb03",
+                "bytes": 492
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-never-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-never-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-false/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-false/outcome.json",
+                "sha256": "7b9dec58832f5e508f263175e59549ba21b826f9e42fbaa2b7ff874e4c5025b8",
+                "bytes": 492
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-false-never-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+              "case": "empty-true-reversed-false-never-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-true/baseline.json",
+                "sha256": "0290a176d5388b84d7cc2f69395b953ae11eecacc479995345f7628fde104480",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-true/outcome.json",
+                "sha256": "2c81e67dd32002a171113b821b64e6441d1265e875cd31b23405d7564aae4eab",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-false-never-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-any-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-any-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-false/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-false/outcome.json",
+                "sha256": "d0b957c8cd3ebacff7072cc8ef9b029eeb5d5046908980d0d7682032d386d668",
+                "bytes": 490
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-any-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-any-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-true/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-true/outcome.json",
+                "sha256": "7934cec651142d77c64813574c3a2183e51dbf821ac8fcf18af4b1f28c51321e",
+                "bytes": 489
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-any-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-any-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-false/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-false/outcome.json",
+                "sha256": "184f242e7e2f74305e6eab71870d9ba716ab13cd6a59da4e7b53268d38c8df28",
+                "bytes": 489
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-any-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-any-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-true/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-true/outcome.json",
+                "sha256": "1499d898ec6dfb3dc1bc1084b799e171f4ddb55cb0ce19f9f12208bc2766ac2b",
+                "bytes": 488
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-any-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-never-existing-false-stdout-false",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-never-existing-false-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-false/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-false/outcome.json",
+                "sha256": "1c7efa8b6be389b504651abd7ed767ef505483bcfd27121095dbf08277886107",
+                "bytes": 492
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-never-existing-false-stdout-true",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-never-existing-false-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-true/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-true/outcome.json",
+                "sha256": "0018f512345aecdc9d132b772e5c23505958e40fc5441a09617ae3ff1fa83d3b",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-false-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-never-existing-true-stdout-false",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-never-existing-true-stdout-false",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-false/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-false/outcome.json",
+                "sha256": "0bf9c70786ff03899757c622c23d8a8bb95e786a85cf9fb5c30485e7e0d4ba55",
+                "bytes": 491
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-false/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-false/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          },
+          {
+            "case": "empty-true-reversed-true-never-existing-true-stdout-true",
+            "outcome": {
+              "baseline_sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+              "case": "empty-true-reversed-true-never-existing-true-stdout-true",
+              "exit_code": 2,
+              "qualification": "CLI regression evidence only; no authentic epoch or assessor acceptance",
+              "stderr_sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truth_state": "synthetic-development"
+            },
+            "raw_pins": [
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-true/baseline.json",
+                "sha256": "b3c7234a4c9b5125e792c316879f2f62122f2b9d58ab53a885854144aa0e870f",
+                "bytes": 22955
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-true/outcome.json",
+                "sha256": "56727af631f6c5dea5bc1cf612c782d124cbb6c5dac24d993615ebeab4a23185",
+                "bytes": 490
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-true/stderr.bin",
+                "sha256": "db5cd49a23eab0b56c095982888f1a1f3b8556e35676612cb4cb34aff823cf57",
+                "bytes": 128
+              },
+              {
+                "path": "/private/tmp/forge-f10-candidate-green-evidence/empty-true-reversed-true-never-existing-true-stdout-true/stdout.bin",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "documentation": {
+    "selected_named_declarations": 9,
+    "selected_adjacent_rustdoc": 9,
+    "whole_production_baseline_functions": 11,
+    "documented_production_baseline_functions": 2,
+    "legacy_undocumented_production_functions": 9,
+    "new_test_helpers_and_tests": 7,
+    "documented_new_test_helpers_and_tests": 7,
+    "whole_test_file_functions": 22,
+    "documented_whole_test_file_functions": 7,
+    "audit": {
+      "schema_version": "forge.f10-source-rustdoc-audit/1",
+      "created_utc": "2026-10-02T13:26:53.382518+00:00",
+      "baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+      "scope": "All explicit named function declarations in two exact files; attributes and adjacent Rustdoc compared to immutable aef. All integration-test declarations are excluded from the production denominator. Anonymous closures, constants, types and fields excluded.",
+      "method": "Function code spans use verified standalone declarations and same-indent closing braces; manually review diff and adjacency before accepting final audit. Exact body/doc/attribute hashes retained.",
+      "files": [
+        {
+          "repository_path": "src/assessment_results/baseline.rs",
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/assessment_results/baseline.rs",
+          "bytes": 17307,
+          "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+          "baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "baseline_bytes": 16837,
+          "baseline_sha256": "fbd04a45b3e17058f19cc04bbfeb72b711d308ac5a6444265827a960359add44",
+          "denominator_role": "production",
+          "whole_named_count": 11,
+          "whole_documented_count": 2,
+          "selected_count": 2,
+          "selected_documented_count": 2,
+          "selected_names": [
+            "analyze",
+            "extract_snapshots"
+          ],
+          "legacy_missing_docs": [
+            "compare_upstream",
+            "find_stale_references",
+            "props_named",
+            "required_prop",
+            "required_string",
+            "parse_subject_type",
+            "push",
+            "bounded",
+            "error"
+          ],
+          "baseline_named_count": 11,
+          "baseline_documented_count": 1,
+          "functions": [
+            {
+              "name": "analyze",
+              "kind": "helper-or-production",
+              "line": 34,
+              "end_line": 121,
+              "byte_offset": 1298,
+              "declaration_body_sha256": "ef6c3e45ab79f6c883aba46784d944a742f94194679e7b3694904aaa277d76ff",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": true,
+              "doc_start_line": 25,
+              "doc_end_line": 33,
+              "doc_sha256": "6ed471b4701bf3b2c28a99627144a616ca4784c679f2919f36f260bfcb41e8bc",
+              "doc_first_line": "Compare a prior one-epoch FORGE Assessment Results artifact to the current reviewed build.",
+              "change": "doc-only"
+            },
+            {
+              "name": "extract_snapshots",
+              "kind": "helper-or-production",
+              "line": 126,
+              "end_line": 192,
+              "byte_offset": 4694,
+              "declaration_body_sha256": "71097bcbf3f4db4ab4143bcc2ff68f23b7ad1b4c41fc13937c6681a2ed443174",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": true,
+              "doc_start_line": 123,
+              "doc_end_line": 125,
+              "doc_sha256": "1ecc2c20231ef538f71812ecad4081ebb1a5015f809e2809e2891bb1d0a18c49",
+              "doc_first_line": "Read stable conclusion identities from exactly one schema-validated result epoch.",
+              "change": "declaration-body-or-attribute"
+            },
+            {
+              "name": "compare_upstream",
+              "kind": "helper-or-production",
+              "line": 194,
+              "end_line": 255,
+              "byte_offset": 7678,
+              "declaration_body_sha256": "5162c30bc6da685891744a5bbfc1ed67a68c4321022fe5c7461d3778602e77d7",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "find_stale_references",
+              "kind": "helper-or-production",
+              "line": 261,
+              "end_line": 373,
+              "byte_offset": 10056,
+              "declaration_body_sha256": "7e311556c1b635112dc1a33dda67b7aea717ed52db6bfa4805147be001688a7f",
+              "attribute_sha256": "a98e0e1b76da55f520c5d4f3808360f5e5e55b6f86ed820a8ffb2b7a0a7d0bec",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "props_named",
+              "kind": "helper-or-production",
+              "line": 375,
+              "end_line": 387,
+              "byte_offset": 14717,
+              "declaration_body_sha256": "30e285f41608129575a4ed851096a007cb6cce49a64119ac4acc57acc0668cf9",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "required_prop",
+              "kind": "helper-or-production",
+              "line": 389,
+              "end_line": 396,
+              "byte_offset": 15181,
+              "declaration_body_sha256": "fdcbdd6e61e60681517be6a6d0c658df0fdaaa5077ee7ba0570e2a35f928395c",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "required_string",
+              "kind": "helper-or-production",
+              "line": 398,
+              "end_line": 404,
+              "byte_offset": 15589,
+              "declaration_body_sha256": "1fe7ce0f92fcb9ebab54cebc8f62c96554b4937ab183b18a1d7a833051fcab95",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "parse_subject_type",
+              "kind": "helper-or-production",
+              "line": 406,
+              "end_line": 416,
+              "byte_offset": 15876,
+              "declaration_body_sha256": "b907e38103696c033c87cdd93005e29d63746e01f34e100671d77a949fa00ce0",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "push",
+              "kind": "helper-or-production",
+              "line": 418,
+              "end_line": 441,
+              "byte_offset": 16342,
+              "declaration_body_sha256": "64e2888d3ee1ce2c5baf8221792f5016cd8a1aa112009e14f9a3fde6d625ff59",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "bounded",
+              "kind": "helper-or-production",
+              "line": 443,
+              "end_line": 445,
+              "byte_offset": 17126,
+              "declaration_body_sha256": "283a4bb840fee4115de2d45668ceaf241288dc896c101670823f3013e3b60ed0",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "error",
+              "kind": "helper-or-production",
+              "line": 447,
+              "end_line": 449,
+              "byte_offset": 17197,
+              "declaration_body_sha256": "1192176262f0fe91f7e4110687ba3a7e051029c9415a69a4b0f8e0e50cac4b7c",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            }
+          ]
+        },
+        {
+          "repository_path": "tests/assessment_results_test.rs",
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/tests/assessment_results_test.rs",
+          "bytes": 50647,
+          "sha256": "8bef82770a54f5c213ced1ec32b566ab87c66b0d8c6ec36796bc8aa8d83cd66e",
+          "baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "baseline_bytes": 36047,
+          "baseline_sha256": "01cb01cdfc0045b8457aecf66e50d59c36ce8a2ff44bfb8a08bfd10ee9e6d567",
+          "denominator_role": "integration tests and helpers, all excluded from production",
+          "whole_named_count": 22,
+          "whole_documented_count": 7,
+          "selected_count": 7,
+          "selected_documented_count": 7,
+          "selected_names": [
+            "built_epoch_fixture",
+            "plural_epoch_baseline",
+            "record_epoch_cli_case",
+            "assert_plural_epoch_cli_rejected",
+            "plural_result_baselines_rejected_before_cli_publication",
+            "plural_result_baselines_rejected_without_mutating_report",
+            "one_result_baseline_comparison_remains_unchanged"
+          ],
+          "legacy_missing_docs": [
+            "run",
+            "write_json",
+            "artifact",
+            "linkage_index",
+            "mutate_assessment_plan",
+            "fixture",
+            "build_is_schema_valid_deterministic_and_content_minimizing",
+            "invalid_graph_stale_context_and_missing_provenance_exit_two_without_output",
+            "evidence_link_without_findings_does_not_invent_a_conclusion",
+            "assessment_plan_scope_excluded_by_profile_is_rejected",
+            "assessment_plan_exclusions_remove_controls_objectives_and_subjects_from_scope",
+            "nested_assessment_plan_task_is_available_to_observation_provenance",
+            "baseline_status_change_is_a_stable_review_action",
+            "baseline_reports_object_content_rationale_stale_and_upstream_changes",
+            "init_scaffolds_validated_scope_without_conclusions"
+          ],
+          "baseline_named_count": 15,
+          "baseline_documented_count": 0,
+          "functions": [
+            {
+              "name": "run",
+              "kind": "helper-or-production",
+              "line": 35,
+              "end_line": 37,
+              "byte_offset": 1134,
+              "declaration_body_sha256": "e600c2c37108f4b0d41222640328edb4f75a4feb607f0debdcb33b99c0bbb9f0",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "write_json",
+              "kind": "helper-or-production",
+              "line": 39,
+              "end_line": 44,
+              "byte_offset": 1257,
+              "declaration_body_sha256": "ab216fca049ec05a488af10e98ca3f3584c09bb489170737fbbcb1b69e2e0c78",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "artifact",
+              "kind": "helper-or-production",
+              "line": 46,
+              "end_line": 56,
+              "byte_offset": 1488,
+              "declaration_body_sha256": "5b2aca614e5dd152bf46355e6d5f5a855a7f23bd60102a0e6dc682434a14abe9",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "linkage_index",
+              "kind": "helper-or-production",
+              "line": 58,
+              "end_line": 84,
+              "byte_offset": 1896,
+              "declaration_body_sha256": "a27856459a899b8ab33cf9ff9e6491343b03ca61a81dae9cf0f4e2fdb525b269",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "mutate_assessment_plan",
+              "kind": "helper-or-production",
+              "line": 86,
+              "end_line": 98,
+              "byte_offset": 2868,
+              "declaration_body_sha256": "e5a00bd7bd13f95683b5181a01315ab09f6ea0d978c7d9eb407b58897717dbe7",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "fixture",
+              "kind": "helper-or-production",
+              "line": 104,
+              "end_line": 362,
+              "byte_offset": 3734,
+              "declaration_body_sha256": "2d27338bd86b10c378c0021935e93e8fea74a0bd6e3a6e5b11aa01972715090a",
+              "attribute_sha256": "857852b008c4fc2158bde05bdfdde434220dc084cbca6fb68faa490534006d06",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "build_is_schema_valid_deterministic_and_content_minimizing",
+              "kind": "test",
+              "line": 365,
+              "end_line": 429,
+              "byte_offset": 15227,
+              "declaration_body_sha256": "bc52ed7f2786cd8d3c45602bd66cf6368fc77f6a3a42a49e3420caeefa4da715",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "invalid_graph_stale_context_and_missing_provenance_exit_two_without_output",
+              "kind": "test",
+              "line": 432,
+              "end_line": 505,
+              "byte_offset": 18054,
+              "declaration_body_sha256": "765cf593ab305289dcf6d150781f69f01de0c23319bc7914b00d85354200cbab",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "evidence_link_without_findings_does_not_invent_a_conclusion",
+              "kind": "test",
+              "line": 508,
+              "end_line": 531,
+              "byte_offset": 21157,
+              "declaration_body_sha256": "f2beda21c188e99d35d53b30a372e7589a5817ea485643c49166b30af388b0db",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "assessment_plan_scope_excluded_by_profile_is_rejected",
+              "kind": "test",
+              "line": 534,
+              "end_line": 563,
+              "byte_offset": 22208,
+              "declaration_body_sha256": "05812558b8d22397ee69fd2aba4ace29606db23d4bb428cbb56db459b35c121a",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "assessment_plan_exclusions_remove_controls_objectives_and_subjects_from_scope",
+              "kind": "test",
+              "line": 566,
+              "end_line": 622,
+              "byte_offset": 23413,
+              "declaration_body_sha256": "1a71f057a6cd4dc55770f4f264116f8d571a78a5f058403edad89b638b6648f6",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "nested_assessment_plan_task_is_available_to_observation_provenance",
+              "kind": "test",
+              "line": 625,
+              "end_line": 653,
+              "byte_offset": 25721,
+              "declaration_body_sha256": "f2a05118834b6aad9b86956ecd4683ebe700680ba4c38c6762c9bcad2359f812",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "baseline_status_change_is_a_stable_review_action",
+              "kind": "test",
+              "line": 656,
+              "end_line": 747,
+              "byte_offset": 26813,
+              "declaration_body_sha256": "bf99bf4be1d35363231af1cf96f4f2df603e9894f8812d39b0d796ce8b77a459",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "baseline_reports_object_content_rationale_stale_and_upstream_changes",
+              "kind": "test",
+              "line": 754,
+              "end_line": 864,
+              "byte_offset": 30095,
+              "declaration_body_sha256": "19fe1a6bbe1cc0a9d403eacf3ecdc7b357bc89aa589e3e552a63dcfa2bcbe7b9",
+              "attribute_sha256": "234f3b588cb29c50f04ff1708d914229a811fe1d4f51ae93b0ebf716513fd4d9",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "init_scaffolds_validated_scope_without_conclusions",
+              "kind": "test",
+              "line": 867,
+              "end_line": 894,
+              "byte_offset": 34900,
+              "declaration_body_sha256": "30d55e534c0d87737b6141c43f5b236cd5cdcb54cf772642ff7b452e0b613791",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": false,
+              "doc_start_line": null,
+              "doc_end_line": null,
+              "doc_sha256": null,
+              "doc_first_line": null,
+              "change": "unchanged"
+            },
+            {
+              "name": "built_epoch_fixture",
+              "kind": "helper-or-production",
+              "line": 897,
+              "end_line": 910,
+              "byte_offset": 36134,
+              "declaration_body_sha256": "3d008a85e31995dc57f996d80bc8fd110f35f0544fe58ebc8cb64182ad9b9465",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": true,
+              "doc_start_line": 896,
+              "doc_end_line": 896,
+              "doc_sha256": "0175b3579c2b13b947fcdb3b515928af6cf81720807f9cce098c88cec058f285",
+              "doc_first_line": "Load genuine synthetic context pins and build the existing single-result fixture.",
+              "change": "new"
+            },
+            {
+              "name": "plural_epoch_baseline",
+              "kind": "helper-or-production",
+              "line": 918,
+              "end_line": 982,
+              "byte_offset": 37166,
+              "declaration_body_sha256": "b93a003cc675e2eef8b522d591f2e6c94573e06e4234b89f838648792adcd47b",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": true,
+              "doc_start_line": 912,
+              "doc_end_line": 917,
+              "doc_sha256": "68f2804ac3317c271c8a9ce4f1f6ea02a91f6ddcb5bc4afcb483d88704a144b7",
+              "doc_first_line": "Combine independently built synthetic epochs without inventing UUIDs or hashes.",
+              "change": "new"
+            },
+            {
+              "name": "record_epoch_cli_case",
+              "kind": "helper-or-production",
+              "line": 988,
+              "end_line": 1011,
+              "byte_offset": 40460,
+              "declaration_body_sha256": "cbba61bcd79dd2b341e86421c77db06edeb25237b648e13325ef653502aad825",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": true,
+              "doc_start_line": 984,
+              "doc_end_line": 987,
+              "doc_sha256": "4b69ff8f8ab0035b8ccae666ca350ab48656851f46b636bfe9c29ced3e4380df",
+              "doc_first_line": "Preserve raw synthetic baseline and command outcomes when root requests evidence.",
+              "change": "new"
+            },
+            {
+              "name": "assert_plural_epoch_cli_rejected",
+              "kind": "helper-or-production",
+              "line": 1018,
+              "end_line": 1100,
+              "byte_offset": 41988,
+              "declaration_body_sha256": "8bfef875a90400e43fd43403ea11a07d962bdc4420360c5dd161e99837b2a322",
+              "attribute_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "documented": true,
+              "doc_start_line": 1013,
+              "doc_end_line": 1017,
+              "doc_sha256": "f96549e239c51cacb50af81a93be95353df439ff313e015355883d47a278c958",
+              "doc_first_line": "Require plural-baseline rejection before file, report or stdout publication.",
+              "change": "new"
+            },
+            {
+              "name": "plural_result_baselines_rejected_before_cli_publication",
+              "kind": "test",
+              "line": 1104,
+              "end_line": 1114,
+              "byte_offset": 45657,
+              "declaration_body_sha256": "e440127d09059efe81eee3a11b563b655095c356f9b3ad908a5c594ccf49b414",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": true,
+              "doc_start_line": 1102,
+              "doc_end_line": 1102,
+              "doc_sha256": "82441222406b115a1ab42e5a12a10518a11b51e2ed3ddb81fbb59956149671ac",
+              "doc_first_line": "Reject populated or conclusion-free plural baselines in either native result order.",
+              "change": "new"
+            },
+            {
+              "name": "plural_result_baselines_rejected_without_mutating_report",
+              "kind": "test",
+              "line": 1118,
+              "end_line": 1163,
+              "byte_offset": 46264,
+              "declaration_body_sha256": "d1a7a13608d27465983ee738aab8f4fce7454da46413a0db2b41581331c77e15",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": true,
+              "doc_start_line": 1116,
+              "doc_end_line": 1116,
+              "doc_sha256": "79467ec388370c7831bc1954fb6539f229353570e9fec96d7b9335a9211e3c6b",
+              "doc_first_line": "Direct callers must reject plural epochs without modifying any prepopulated report field.",
+              "change": "new"
+            },
+            {
+              "name": "one_result_baseline_comparison_remains_unchanged",
+              "kind": "test",
+              "line": 1167,
+              "end_line": 1219,
+              "byte_offset": 48421,
+              "declaration_body_sha256": "1f54ad49e80c440a6b8a4a3da22ca430a77569486966754abf3611358fcb0360",
+              "attribute_sha256": "d2cd4db48a350e8f0b47944c46e3ffdbba132d2290a91d7012b56eb46c8ab4f6",
+              "documented": true,
+              "doc_start_line": 1165,
+              "doc_end_line": 1165,
+              "doc_sha256": "c215652b1409451fe93c23e7496ed913518bca62827bb8a0def1ff6f3866b911",
+              "doc_first_line": "Preserve unchanged one-result comparisons through both the public API and CLI exit gates.",
+              "change": "new"
+            }
+          ]
+        }
+      ],
+      "execution_qualification": "Source/documentation inspection only; no Cargo, rustdoc or test execution by this audit."
+    },
+    "cli_help": "Baseline field Rustdoc explicitly states one-result input and fail-on never rejection; fields/types/anonymous closures are excluded from the named-function denominator."
+  },
+  "production_line_coverage": {
+    "schema_version": "forge.assessment-baseline-coverage/3",
+    "baseline_commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+    "source": {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/assessment_results/baseline.rs",
+      "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+      "bytes": 17307
+    },
+    "raw_lcov": {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-raw.lcov",
+      "sha256": "bc141846004187e5952be865d725655a305db1e6e442227b40a748c355f9ebd3",
+      "bytes": 1018268
+    },
+    "raw_json": {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-raw.json",
+      "sha256": "ce1ddcdf4bca5214d30309d63380f0b41e7d414ee94bcc05961467727785bc7c",
+      "bytes": 5964356
+    },
+    "scope": "All unique production LCOV DA entries in the current-only baseline.rs mappings. No cfg(test) declarations or blank/line-comment DA entries are present. Every zero count retained. Selected assessment integration coverage only; not whole-project/statement/branch/MCDC/platform coverage.",
+    "source_symbol_families": [
+      "Cs2JH5OKvciWJ_5forge"
+    ],
+    "line_execution_counts": {
+      "34": 43,
+      "35": 43,
+      "36": 43,
+      "37": 43,
+      "38": 43,
+      "39": 43,
+      "40": 43,
+      "41": 0,
+      "42": 43,
+      "43": 43,
+      "44": 43,
+      "45": 43,
+      "46": 43,
+      "48": 43,
+      "49": 43,
+      "50": 43,
+      "52": 7,
+      "53": 7,
+      "54": 29,
+      "56": 29,
+      "57": 29,
+      "59": 1,
+      "60": 1,
+      "61": 1,
+      "62": 1,
+      "63": 1,
+      "64": 1,
+      "65": 1,
+      "67": 1,
+      "68": 1,
+      "69": 1,
+      "70": 1,
+      "71": 1,
+      "72": 1,
+      "73": 1,
+      "75": 27,
+      "76": 27,
+      "77": 0,
+      "78": 0,
+      "79": 0,
+      "80": 0,
+      "81": 0,
+      "82": 27,
+      "83": 27,
+      "84": 4,
+      "85": 4,
+      "86": 4,
+      "87": 4,
+      "88": 4,
+      "89": 4,
+      "90": 4,
+      "91": 4,
+      "92": 23,
+      "93": 27,
+      "94": 1,
+      "95": 1,
+      "96": 1,
+      "97": 1,
+      "98": 1,
+      "99": 1,
+      "100": 1,
+      "101": 1,
+      "102": 26,
+      "103": 27,
+      "104": 3,
+      "105": 3,
+      "106": 3,
+      "107": 3,
+      "108": 3,
+      "109": 3,
+      "110": 3,
+      "111": 3,
+      "112": 24,
+      "114": 0,
+      "118": 7,
+      "119": 7,
+      "120": 7,
+      "121": 43,
+      "126": 43,
+      "127": 43,
+      "128": 43,
+      "129": 43,
+      "130": 43,
+      "131": 43,
+      "132": 43,
+      "133": 43,
+      "134": 36,
+      "135": 36,
+      "136": 36,
+      "137": 7,
+      "138": 7,
+      "139": 7,
+      "140": 21,
+      "141": 7,
+      "142": 7,
+      "143": 7,
+      "144": 7,
+      "145": 28,
+      "146": 28,
+      "147": 28,
+      "148": 28,
+      "149": 28,
+      "150": 28,
+      "151": 28,
+      "152": 28,
+      "153": 28,
+      "154": 28,
+      "155": 28,
+      "157": 28,
+      "158": 28,
+      "159": 7,
+      "161": 14,
+      "162": 14,
+      "163": 14,
+      "164": 0,
+      "165": 14,
+      "166": 14,
+      "167": 14,
+      "168": 14,
+      "169": 14,
+      "172": 7,
+      "175": 28,
+      "176": 28,
+      "177": 28,
+      "178": 28,
+      "179": 28,
+      "180": 28,
+      "182": 0,
+      "183": 0,
+      "184": 0,
+      "185": 0,
+      "186": 0,
+      "187": 28,
+      "191": 7,
+      "192": 43,
+      "194": 7,
+      "195": 7,
+      "196": 7,
+      "197": 7,
+      "198": 7,
+      "199": 7,
+      "200": 7,
+      "201": 7,
+      "202": 7,
+      "203": 7,
+      "204": 28,
+      "205": 28,
+      "206": 28,
+      "207": 28,
+      "208": 28,
+      "209": 28,
+      "210": 0,
+      "211": 0,
+      "212": 0,
+      "213": 0,
+      "214": 28,
+      "216": 28,
+      "217": 28,
+      "218": 0,
+      "219": 0,
+      "220": 0,
+      "221": 0,
+      "223": 28,
+      "224": 3,
+      "225": 3,
+      "226": 3,
+      "227": 3,
+      "228": 3,
+      "229": 3,
+      "230": 3,
+      "231": 3,
+      "232": 25,
+      "234": 7,
+      "235": 7,
+      "236": 7,
+      "237": 7,
+      "238": 7,
+      "239": 7,
+      "240": 7,
+      "242": 0,
+      "244": 7,
+      "245": 1,
+      "246": 1,
+      "247": 1,
+      "248": 1,
+      "249": 1,
+      "250": 1,
+      "251": 1,
+      "252": 1,
+      "253": 6,
+      "254": 7,
+      "255": 7,
+      "261": 7,
+      "262": 7,
+      "263": 7,
+      "264": 7,
+      "265": 7,
+      "266": 7,
+      "267": 7,
+      "268": 7,
+      "269": 7,
+      "270": 7,
+      "271": 7,
+      "272": 7,
+      "273": 7,
+      "275": 7,
+      "276": 7,
+      "277": 7,
+      "278": 7,
+      "279": 7,
+      "281": 7,
+      "282": 7,
+      "283": 0,
+      "284": 0,
+      "285": 7,
+      "287": 0,
+      "288": 7,
+      "289": 7,
+      "290": 7,
+      "292": 7,
+      "293": 7,
+      "294": 7,
+      "295": 7,
+      "296": 7,
+      "298": 7,
+      "299": 7,
+      "300": 7,
+      "301": 0,
+      "302": 0,
+      "303": 7,
+      "305": 0,
+      "306": 7,
+      "307": 7,
+      "309": 42,
+      "310": 7,
+      "312": 42,
+      "313": 0,
+      "315": 42,
+      "316": 0,
+      "318": 42,
+      "319": 42,
+      "320": 1,
+      "321": 1,
+      "322": 41,
+      "324": 7,
+      "326": 7,
+      "327": 7,
+      "329": 7,
+      "330": 7,
+      "331": 0,
+      "332": 0,
+      "333": 7,
+      "336": 7,
+      "337": 7,
+      "339": 7,
+      "340": 7,
+      "341": 1,
+      "342": 1,
+      "343": 6,
+      "346": 14,
+      "347": 14,
+      "348": 14,
+      "349": 14,
+      "351": 14,
+      "352": 14,
+      "353": 7,
+      "354": 7,
+      "356": 0,
+      "358": 14,
+      "359": 0,
+      "360": 14,
+      "361": 0,
+      "362": 14,
+      "363": 7,
+      "364": 0,
+      "365": 0,
+      "366": 14,
+      "369": 7,
+      "370": 2,
+      "371": 2,
+      "372": 7,
+      "373": 7,
+      "375": 105,
+      "376": 105,
+      "377": 105,
+      "378": 105,
+      "379": 105,
+      "380": 105,
+      "381": 756,
+      "382": 756,
+      "383": 756,
+      "384": 756,
+      "385": 126,
+      "386": 105,
+      "387": 105,
+      "389": 91,
+      "390": 91,
+      "391": 91,
+      "392": 91,
+      "393": 0,
+      "394": 0,
+      "396": 91,
+      "398": 49,
+      "399": 49,
+      "400": 49,
+      "401": 49,
+      "402": 49,
+      "403": 49,
+      "404": 49,
+      "406": 42,
+      "407": 42,
+      "408": 42,
+      "409": 35,
+      "410": 28,
+      "411": 21,
+      "412": 14,
+      "413": 7,
+      "414": 0,
+      "416": 42,
+      "418": 16,
+      "419": 16,
+      "420": 16,
+      "421": 16,
+      "422": 16,
+      "423": 16,
+      "424": 16,
+      "425": 16,
+      "426": 16,
+      "427": 16,
+      "428": 80,
+      "429": 80,
+      "430": 80,
+      "431": 80,
+      "432": 16,
+      "433": 16,
+      "434": 16,
+      "435": 16,
+      "436": 16,
+      "437": 16,
+      "438": 16,
+      "439": 16,
+      "440": 16,
+      "441": 16,
+      "443": 0,
+      "444": 0,
+      "445": 0,
+      "447": 36,
+      "448": 36,
+      "449": 36
+    },
+    "covered_lines": 306,
+    "total_lines": 349,
+    "uncovered_lines": [
+      41,
+      77,
+      78,
+      79,
+      80,
+      81,
+      114,
+      164,
+      182,
+      183,
+      184,
+      185,
+      186,
+      210,
+      211,
+      212,
+      213,
+      218,
+      219,
+      220,
+      221,
+      242,
+      283,
+      284,
+      287,
+      301,
+      302,
+      305,
+      313,
+      316,
+      331,
+      332,
+      356,
+      359,
+      361,
+      364,
+      365,
+      393,
+      394,
+      414,
+      443,
+      444,
+      445
+    ],
+    "patch_added_line_execution_counts": {
+      "133": 43,
+      "134": 36,
+      "135": 36,
+      "136": 36,
+      "137": 7
+    },
+    "covered_patch_added_lines": 5,
+    "patch_added_instrumented_lines": 5,
+    "llvm_file_summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 23,
+        "covered": 15,
+        "percent": 65.21739130434783
+      },
+      "instantiations": {
+        "count": 24,
+        "covered": 15,
+        "percent": 62.5
+      },
+      "lines": {
+        "count": 361,
+        "covered": 311,
+        "percent": 86.14958448753463
+      },
+      "regions": {
+        "count": 563,
+        "covered": 492,
+        "notcovered": 71,
+        "percent": 87.38898756660745
+      }
+    },
+    "test_result": {
+      "passed": 16,
+      "failed": 0,
+      "ignored": 0
+    },
+    "supersedes_for_current_source": "Earlier preliminary/v2 exports contain retained old zero-count object mappings at aef line positions and cannot establish current-source module coverage. Their gap-region attribution was incorrect. Preserved at /private/tmp/forge-f10-mixed-mapping-export/index.json; fresh workspace clean and unique successor raw reports isolate the current source."
+  },
+  "checks": {
+    "strict_default_all_target_clippy": {
+      "label": "clippy",
+      "started_at": "2026-10-02T13:26:43.084495+00:00",
+      "finished_at": "2026-10-02T13:26:51.967005+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "exit_code": 0,
+      "source_pins": [
+        {
+          "repository_path": "src/assessment_results/baseline.rs",
+          "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+          "bytes": 17307
+        },
+        {
+          "repository_path": "tests/assessment_results_test.rs",
+          "sha256": "8bef82770a54f5c213ced1ec32b566ab87c66b0d8c6ec36796bc8aa8d83cd66e",
+          "bytes": 50647
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        }
+      ],
+      "log": {
+        "path": "/private/tmp/forge-f10-clippy.log",
+        "sha256": "1e64e7df5083a470eea88bf20d4679342ea1d43addb04d95df383e111b2fa4a9",
+        "bytes": 159
+      }
+    },
+    "instrumented_integration_tests": {
+      "label": "llvm-cleaned-tests",
+      "started_at": "2026-10-02T13:34:34.356632+00:00",
+      "finished_at": "2026-10-02T13:34:45.438347+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "--locked",
+        "--offline",
+        "--test",
+        "assessment_results_test",
+        "--no-report"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "exit_code": 0,
+      "source_pins": [
+        {
+          "repository_path": "src/assessment_results/baseline.rs",
+          "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+          "bytes": 17307
+        },
+        {
+          "repository_path": "tests/assessment_results_test.rs",
+          "sha256": "8bef82770a54f5c213ced1ec32b566ab87c66b0d8c6ec36796bc8aa8d83cd66e",
+          "bytes": 50647
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        }
+      ],
+      "log": {
+        "path": "/private/tmp/forge-f10-llvm-cleaned-tests.log",
+        "sha256": "6b4b9adc1a775375c520bc18ac06c633341f6728bcda93572cc25c9bbd796dcc",
+        "bytes": 1727
+      }
+    },
+    "full_rust_suite": {
+      "receipt": {
+        "label": "full-tests",
+        "started_at": "2026-10-02T13:31:24.190615+00:00",
+        "finished_at": "2026-10-02T13:32:33.029230+00:00",
+        "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "command": [
+          "rtk",
+          "proxy",
+          "cargo",
+          "test",
+          "--locked",
+          "--offline"
+        ],
+        "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "exit_code": 0,
+        "source_pins": [
+          {
+            "repository_path": "src/assessment_results/baseline.rs",
+            "sha256": "daa8e52210ff6f56febb7a42928aea3b0c10c710b96a94eb7730365edd17a292",
+            "bytes": 17307
+          },
+          {
+            "repository_path": "tests/assessment_results_test.rs",
+            "sha256": "8bef82770a54f5c213ced1ec32b566ab87c66b0d8c6ec36796bc8aa8d83cd66e",
+            "bytes": 50647
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          }
+        ],
+        "log": {
+          "path": "/private/tmp/forge-f10-full-tests.log",
+          "sha256": "edb796240349fccf7487fc3a805ddbb1fde3c6373fec72c076016e206d7f3233",
+          "bytes": 216356
+        }
+      },
+      "summary_count": 69,
+      "test_counts": {
+        "passed": 2695,
+        "failed": 0,
+        "ignored": 3
+      }
+    },
+    "mandatory_commit_hook": "Required at commit; its exact-head completion is recorded separately in the PR and tracker. No bypass authorized or used."
+  },
+  "raw_artifact_pins": [
+    {
+      "path": "/private/tmp/forge-f10-baseline-red.json",
+      "sha256": "2043f527e0c6207c8e7dc57ae05e49a9653b3b0285f7c58634930fbc788c5f1c",
+      "bytes": 1392
+    },
+    {
+      "path": "/private/tmp/forge-f10-baseline-red.log",
+      "sha256": "5db552f5b7a7028c08c12f73a9de8bc7a462c05ce6f1567c181e962981ddff7d",
+      "bytes": 2305
+    },
+    {
+      "path": "/private/tmp/forge-f10-baseline-red-corrected.json",
+      "sha256": "fa5d56a56eea7fa37e4d9307b2f40327cf26297d8155f493adbe1697607270ef",
+      "bytes": 1412
+    },
+    {
+      "path": "/private/tmp/forge-f10-baseline-red-corrected.log",
+      "sha256": "7764e8e0f15843126d7d88ce969f095ee36ab663420cc515e3b3429914164286",
+      "bytes": 2487
+    },
+    {
+      "path": "/private/tmp/forge-f10-candidate-green.json",
+      "sha256": "8ef91228b894552140e2a0d47de10ed3df569ec4ff42f4d247585c30ff8b9ac9",
+      "bytes": 1396
+    },
+    {
+      "path": "/private/tmp/forge-f10-candidate-green.log",
+      "sha256": "61a04258d22a09671c5e5815412ab98bfe84d0abc89052d1c78cbea481d01bd0",
+      "bytes": 1610
+    },
+    {
+      "path": "/private/tmp/forge-f10-format.json",
+      "sha256": "3a93d404d7ec6acf5dae0c087c71eb67e8ed94c697263694fe26bd302456eb25",
+      "bytes": 1296
+    },
+    {
+      "path": "/private/tmp/forge-f10-format.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f10-clippy.json",
+      "sha256": "bb363f31d7cae37f2c6aac33ff5921fc5d1cc9f3568bcf8f9971d78b20888514",
+      "bytes": 1391
+    },
+    {
+      "path": "/private/tmp/forge-f10-clippy.log",
+      "sha256": "1e64e7df5083a470eea88bf20d4679342ea1d43addb04d95df383e111b2fa4a9",
+      "bytes": 159
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-tests.json",
+      "sha256": "f5f291a9d0eaf2d2dfc84576d46e4003a3bb912e841aaae87c359bd362372f23",
+      "bytes": 1409
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-tests.log",
+      "sha256": "86dde0428a6dc147e283342b1b7b959ee3d4638784c19256357415f98654de3e",
+      "bytes": 1728
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-report-lcov.json",
+      "sha256": "ba75f30f10e13aa28d3abbe8e148e9042a991eeefb2958db317e31c5c2e6ecaa",
+      "bytes": 1415
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-report-lcov.log",
+      "sha256": "5ab631cbfa12828cbb7ee64ca7c1897d5d5bff0b84d5d0ee47a0d26c51d52538",
+      "bytes": 67
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-report-json.json",
+      "sha256": "89d270bc2fc5bf92cf77fafbda37668d92f959a52de2763707403e2f689fc960",
+      "bytes": 1415
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-report-json.log",
+      "sha256": "1e9920507651a6aad99d32cadb0fe4a737e8297a9298cb0a43a95ddbdb64f6cf",
+      "bytes": 67
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-raw.json",
+      "sha256": "0b38565a02358e45d53bd1a12a4e6301531e0b6f3a457d1e903cca2620ff031d",
+      "bytes": 13048537
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-raw.lcov",
+      "sha256": "98665ebae3ee0b06b52756bdf72dbf3135cc196b831c09e938617ed03b451aab",
+      "bytes": 2454677
+    },
+    {
+      "path": "/private/tmp/forge-f10-production-coverage-preliminary.json",
+      "sha256": "c49fa15ef566d27bf0101b6750bdec0ad6fcb1f436d4b75b6e4bf7dd085b5228",
+      "bytes": 8737
+    },
+    {
+      "path": "/private/tmp/forge-f10-production-coverage.json",
+      "sha256": "6ed2e70ebbed503f8b99402f9c28232a9412a3ba4906c24723e7c013b261b0d4",
+      "bytes": 17526
+    },
+    {
+      "path": "/private/tmp/forge-f10-full-tests.json",
+      "sha256": "6306c7fabcc6b7f4a727010e43c935ce16b01578a1bf58f726d7dff4c6c90846",
+      "bytes": 1343
+    },
+    {
+      "path": "/private/tmp/forge-f10-full-tests.log",
+      "sha256": "edb796240349fccf7487fc3a805ddbb1fde3c6373fec72c076016e206d7f3233",
+      "bytes": 216356
+    },
+    {
+      "path": "/private/tmp/forge-f10-green-matrix-verification.json",
+      "sha256": "c9b86852d6fb2ce50c34cff2f659cd44f3ff90457172d9930d938d0912cfffd3",
+      "bytes": 56387
+    },
+    {
+      "path": "/private/tmp/forge-f10-tests-before-type-fix.rs",
+      "sha256": "477dfa8a8c70ebb02dcfa087ce66f47cbed20df5f1fd5d6513de93a04071b965",
+      "bytes": 49799
+    },
+    {
+      "path": "/private/tmp/forge-f10-tests-corrected-before-rustfmt.rs",
+      "sha256": "77a09c558aaf6ddfb30d38d3364d0d5e57a9bd392c6e1798c2f71bf63c234a67",
+      "bytes": 49836
+    },
+    {
+      "path": "/private/tmp/forge-f10-source-rustdoc-final-daa8-8bef-v1.json",
+      "sha256": "56a9a752633d0fe1a0308b489f6d9f05ce0f31c79b975c990cfc2c3d949c55a2",
+      "bytes": 24524
+    },
+    {
+      "path": "/private/tmp/forge-f10-doc-audit-tool-v1.py",
+      "sha256": "76d42a400f9b6bf12e4808be95efc6c20bbd557437ba7b5ed1acd0d4d79217d4",
+      "bytes": 5854
+    },
+    {
+      "path": "/private/tmp/forge-f10-run.py",
+      "sha256": "f96e4f6e6ee766f1791a7db4ebf616d22401bedd699eab4735e4752aae130dec",
+      "bytes": 1483
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-clean-current-workspace.json",
+      "sha256": "901d5d332cbcc98e1cb2f7be9f3f1347621151d86317ca4f78797f5723565d6e",
+      "bytes": 1377
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-clean-current-workspace.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-tests.json",
+      "sha256": "1fbb264b06a9ae97773386b0dd450965f4450e77a79d81960ab9f7f77149e29d",
+      "bytes": 1425
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-tests.log",
+      "sha256": "6b4b9adc1a775375c520bc18ac06c633341f6728bcda93572cc25c9bbd796dcc",
+      "bytes": 1727
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-report-lcov.json",
+      "sha256": "f0a2b3d1907c965021b3801b3599bcf72b9f4df02c209e738b07b19598f9aec4",
+      "bytes": 1439
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-report-lcov.log",
+      "sha256": "7bfc262854615653e32ee37f21f68b2a832074d9bf087b08a8fb75d40a708e3b",
+      "bytes": 75
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-report-json.json",
+      "sha256": "7df12235a919e6c34371f96e2cd27b9305a7f7d55b092dc1272e3322728dcc38",
+      "bytes": 1439
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-report-json.log",
+      "sha256": "3febcc58dd01960abc22017855c08f1b10436ef2da07865efae9f7dc3da06b47",
+      "bytes": 75
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-raw.json",
+      "sha256": "ce1ddcdf4bca5214d30309d63380f0b41e7d414ee94bcc05961467727785bc7c",
+      "bytes": 5964356
+    },
+    {
+      "path": "/private/tmp/forge-f10-llvm-cleaned-raw.lcov",
+      "sha256": "bc141846004187e5952be865d725655a305db1e6e442227b40a748c355f9ebd3",
+      "bytes": 1018268
+    },
+    {
+      "path": "/private/tmp/forge-f10-production-coverage-cleaned.json",
+      "sha256": "2a2d9e2a34f5c4003ca1eb3b6e894aa911f8fa3663545ea559e9fdb9d56e7577",
+      "bytes": 7881
+    },
+    {
+      "path": "/private/tmp/forge-f10-baseline-red-corrected-evidence/empty-false-reversed-false-any-existing-false-stdout-false/stdout.bin",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/private/tmp/forge-f10-baseline-red-corrected-evidence/empty-false-reversed-false-any-existing-false-stdout-false/outcome.json",
+      "sha256": "a5205a75a5935ee8952d6d09ad6bc178c96a3eb8f5fc732a9d0d036a7affb94b",
+      "bytes": 492
+    },
+    {
+      "path": "/private/tmp/forge-f10-baseline-red-corrected-evidence/empty-false-reversed-false-any-existing-false-stdout-false/baseline.json",
+      "sha256": "d31775a6082ca709566a1f7293d4446961b44cefd4e6319362d1b0d1092afda5",
+      "bytes": 35221
+    },
+    {
+      "path": "/private/tmp/forge-f10-baseline-red-corrected-evidence/empty-false-reversed-false-any-existing-false-stdout-false/stderr.bin",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "coverage_history": {
+    "mixed_export_index": {
+      "path": "/private/tmp/forge-f10-mixed-mapping-export/index.json",
+      "sha256": "164e87c2380c9d01c6c520955ee7691671307981a91acb75cd0de1acd2079fb7",
+      "bytes": 2101
+    },
+    "correction": "Independent source-symbol replay found zero-count aef mappings mixed with current objects. Earlier gap-region/comment-filter attribution was incorrect. cargo llvm-cov clean --workspace removed disposable owned objects; fresh cleaned-test and cleaned-raw reports isolate one current symbol family."
+  },
+  "custody": "Worktree source paths are recording-time identities; retained source paths bind bytes independently of later branch reuse. Raw receipts, failed harness, pre-format harness, preliminary coverage and preserved executables remain unchanged.",
+  "limits": [
+    "Resource/error/schema/manifest/version/UUID contracts unchanged; no crate or schema changes.",
+    "Current-only LCOV production306/349 with all43uncovered lines retained; runtime guard5/5. Mixed old/current mappings and the incorrect gap/comment-filter attribution are preserved as superseded historical attempts, not current-source coverage.",
+    "LLVM native file summary uses a distinct denominator; zero branch/MCDC count is no branch/MCDC evidence.",
+    "Selected integration instrumentation16/0/0 does not establish whole-project/platform coverage.",
+    "The three added tests exercise32negativeCLI calls,4direct negative variants,1positive direct comparison and2positive CLI gates. Included common helpers contribute4of16 harness test passes."
+  ],
+  "remaining_gates": [
+    "S-3 accepted F08 authoring/selection contract and reviewed-risk handoff with no automatic owners/dates.",
+    "S-4 explicit plural manifest/version/key/UUID/graph/context/baseline-report and aggregate-bound contracts plus validated real assessor workflows.",
+    "PRD063 Compliance/Legal terminology and Engineering subset approvals, three sanitized assessor workflows, independent downstream interoperability and pilot/release acceptance.",
+    "Full integrated documentation review after all roadmap work, across CLI/API/examples/architecture/schema/dependencies/provenance/platform and requirement/acceptance evidence.",
+    "Hosted checks and integrated release gates remain separate from this local prerequisite; no merge/publication/human acceptance."
+  ]
+}

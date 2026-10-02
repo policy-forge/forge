@@ -220,7 +220,9 @@ The workflow is offline, deterministic, exact-context-bound, and
 content-minimizing. Optional PRD 060 linkage input supplies evidence identity
 only. Baseline reports flag stable-object, status, rationale, stale-reference,
 and upstream-fingerprint changes with exit `1`; invalid analysis exits `2`
-before writes. See [OSCAL Assessment Results](docs/assessment-results.md).
+before writes. Baselines must contain exactly one result epoch; plural baselines
+are invalid even with `--fail-on never`. See
+[OSCAL Assessment Results](docs/assessment-results.md).
 
 ### Policy Lifecycle
 
