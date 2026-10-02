@@ -14,6 +14,7 @@ pub mod adapter;
 pub mod bundle;
 pub mod consent;
 pub mod disposition;
+pub mod eval;
 pub mod prepare;
 pub mod promote;
 pub mod promotion;

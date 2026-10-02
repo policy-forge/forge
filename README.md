@@ -62,6 +62,10 @@ See [Reusable Policy Components](docs/reusable-policy-components.md) for the
 closed component/composition contracts, safe substitution rules, impact report,
 and OSCAL trace provenance workflow.
 
+See [Suggestion Evaluation Artifact Preflight](docs/suggestion-evaluation-preflight.md)
+for local pinned-artifact checks and complete case accounting. This preparation
+step leaves authentic evaluation, generation and acceptance gates open.
+
 ## 🚦 Quick Start
 
 ```bash
