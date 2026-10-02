@@ -1,0 +1,5529 @@
+{
+  "schema": "forge.f04-windows-startup-diagnostic-audit/1",
+  "snapshot": "precommit v5 successor; fresh hosted native execution required",
+  "applied_base_commit": "19232d667e726b24701f5dc555149bd1ab92ef09",
+  "historical_documents": [
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/plans/2026-10-02-windows-console-control-audit-v1.json",
+      "bytes": 111902,
+      "sha256": "b03e323ffd666987714b9a9722bcd3daf9f51775bf21e34664e10d7658f689c5"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/plans/2026-10-02-windows-console-control-audit-v2.json",
+      "bytes": 136189,
+      "sha256": "07bf5198299e6dbe3e878d36232dfd63c0b69fcdc0584d13073e253d368b553e"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/plans/2026-10-02-windows-console-launch-correction.md",
+      "bytes": 3359,
+      "sha256": "43786f89215bf5847d3832548fd8a2c8b059e09254812f1dfaec79608e9ea58d"
+    }
+  ],
+  "local_control_receipt": {
+    "path": "/private/tmp/forge-f04-windows-root-controls-v3/coverage.json",
+    "bytes": 131638,
+    "sha256": "ee6db7e4de6c8726b5e25410dc79cde916e68c8ffbafba49626748e0e5a9daed"
+  },
+  "raw_control_log": {
+    "path": "/private/tmp/forge-f04-windows-root-controls-v3/raw-unittest.log",
+    "bytes": 16551,
+    "sha256": "2703e675f67f5f11aa4c184c84729124d102c06c5d40c2abd8c7dc6f55e996fa"
+  },
+  "coverage_collector": {
+    "path": "/private/tmp/forge-f04-windows-local-coverage-v3.py",
+    "bytes": 5347,
+    "sha256": "c9653f5098e0c58ab5f4ad9e401539b6892c883fa532dbd10b6beced1224b09d"
+  },
+  "coverage": {
+    "schema": "forge.f04-windows-root-controls/1",
+    "source_before": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_windows_console.py",
+        "bytes": 53270,
+        "sha256": "409908f748a6ec1ba26935e3deecfc28ebcbb43ca7c13a9202b7f9d5c3fb421c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_windows_console_controls.py",
+        "bytes": 52630,
+        "sha256": "4fe66a7f3152ba1816537d5be6d1dd657c189ee572f1fff6412ab075e57bb6d3"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_windows_console.py",
+        "bytes": 18887,
+        "sha256": "81f35da41306832fece6f3d8b0e4cb20a51eb6efecd916c8afb958ca5a498b13"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_verify_workspace_windows_console.py",
+        "bytes": 20902,
+        "sha256": "092e23a2a3efc93c3bc797bd7626bb0d32976f6eb972c4463a2f3fa7d8324c20"
+      }
+    ],
+    "source_after": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_windows_console.py",
+        "bytes": 53270,
+        "sha256": "409908f748a6ec1ba26935e3deecfc28ebcbb43ca7c13a9202b7f9d5c3fb421c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_windows_console_controls.py",
+        "bytes": 52630,
+        "sha256": "4fe66a7f3152ba1816537d5be6d1dd657c189ee572f1fff6412ab075e57bb6d3"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_windows_console.py",
+        "bytes": 18887,
+        "sha256": "81f35da41306832fece6f3d8b0e4cb20a51eb6efecd916c8afb958ca5a498b13"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_verify_workspace_windows_console.py",
+        "bytes": 20902,
+        "sha256": "092e23a2a3efc93c3bc797bd7626bb0d32976f6eb972c4463a2f3fa7d8324c20"
+      }
+    ],
+    "source_unchanged": true,
+    "python": "3.14.8",
+    "python_executable": {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "bytes": 34640,
+      "sha256": "7ebde552773a4045532637b114d645a313e045ac07b26f5e520bf039f1e34063"
+    },
+    "tests": {
+      "run": 63,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "files": [
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_windows_console.py",
+          "bytes": 53270,
+          "sha256": "409908f748a6ec1ba26935e3deecfc28ebcbb43ca7c13a9202b7f9d5c3fb421c"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "SmokeFault",
+            "kind": "class",
+            "line": 67,
+            "end_line": 75,
+            "documented": true
+          },
+          {
+            "name": "SmokeFault.__init__",
+            "kind": "function",
+            "line": 70,
+            "end_line": 75,
+            "documented": true,
+            "actual_primary_thread_calls": 91
+          },
+          {
+            "name": "exact",
+            "kind": "function",
+            "line": 78,
+            "end_line": 82,
+            "documented": true,
+            "actual_primary_thread_calls": 293
+          },
+          {
+            "name": "strict_json",
+            "kind": "function",
+            "line": 85,
+            "end_line": 107,
+            "documented": true,
+            "actual_primary_thread_calls": 32
+          },
+          {
+            "name": "strict_json.pairs",
+            "kind": "function",
+            "line": 90,
+            "end_line": 97,
+            "documented": true,
+            "actual_primary_thread_calls": 60
+          },
+          {
+            "name": "strict_json.constant",
+            "kind": "function",
+            "line": 99,
+            "end_line": 101,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "file_pin",
+            "kind": "function",
+            "line": 110,
+            "end_line": 135,
+            "documented": true,
+            "actual_primary_thread_calls": 8
+          },
+          {
+            "name": "ensure_x64_executable",
+            "kind": "function",
+            "line": 138,
+            "end_line": 153,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "empty_checks",
+            "kind": "function",
+            "line": 156,
+            "end_line": 160,
+            "documented": true,
+            "actual_primary_thread_calls": 31
+          },
+          {
+            "name": "new_receipt",
+            "kind": "function",
+            "line": 163,
+            "end_line": 177,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "validate_checks",
+            "kind": "function",
+            "line": 180,
+            "end_line": 193,
+            "documented": true,
+            "actual_primary_thread_calls": 21
+          },
+          {
+            "name": "validate_receipt",
+            "kind": "function",
+            "line": 196,
+            "end_line": 244,
+            "documented": true,
+            "actual_primary_thread_calls": 19
+          },
+          {
+            "name": "exclusive_json",
+            "kind": "function",
+            "line": 247,
+            "end_line": 256,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "TerminalMonitor",
+            "kind": "class",
+            "line": 259,
+            "end_line": 373,
+            "documented": true
+          },
+          {
+            "name": "TerminalMonitor.__init__",
+            "kind": "function",
+            "line": 267,
+            "end_line": 273,
+            "documented": true,
+            "actual_primary_thread_calls": 38
+          },
+          {
+            "name": "TerminalMonitor.forbid",
+            "kind": "function",
+            "line": 275,
+            "end_line": 279,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "TerminalMonitor._fail",
+            "kind": "function",
+            "line": 281,
+            "end_line": 285,
+            "documented": true,
+            "actual_primary_thread_calls": 15
+          },
+          {
+            "name": "TerminalMonitor._scan",
+            "kind": "function",
+            "line": 287,
+            "end_line": 291,
+            "documented": true,
+            "actual_primary_thread_calls": 112
+          },
+          {
+            "name": "TerminalMonitor.feed",
+            "kind": "function",
+            "line": 293,
+            "end_line": 313,
+            "documented": true,
+            "actual_primary_thread_calls": 118
+          },
+          {
+            "name": "TerminalMonitor._character",
+            "kind": "function",
+            "line": 315,
+            "end_line": 346,
+            "documented": true,
+            "actual_primary_thread_calls": 135737
+          },
+          {
+            "name": "TerminalMonitor.finish",
+            "kind": "function",
+            "line": 348,
+            "end_line": 359,
+            "documented": true,
+            "actual_primary_thread_calls": 16
+          },
+          {
+            "name": "TerminalMonitor.wait_text",
+            "kind": "function",
+            "line": 361,
+            "end_line": 373,
+            "documented": true,
+            "actual_primary_thread_calls": 13
+          },
+          {
+            "name": "validate_session",
+            "kind": "function",
+            "line": 376,
+            "end_line": 384,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "validate_summary",
+            "kind": "function",
+            "line": 387,
+            "end_line": 397,
+            "documented": true,
+            "actual_primary_thread_calls": 7
+          },
+          {
+            "name": "BrowserQueries",
+            "kind": "class",
+            "line": 400,
+            "end_line": 472,
+            "documented": true
+          },
+          {
+            "name": "BrowserQueries.__init__",
+            "kind": "function",
+            "line": 403,
+            "end_line": 408,
+            "documented": true,
+            "actual_primary_thread_calls": 12
+          },
+          {
+            "name": "BrowserQueries.request",
+            "kind": "function",
+            "line": 410,
+            "end_line": 472,
+            "documented": true,
+            "actual_primary_thread_calls": 28
+          },
+          {
+            "name": "NativeAPI",
+            "kind": "class",
+            "line": 475,
+            "end_line": 694,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__",
+            "kind": "function",
+            "line": 484,
+            "end_line": 569,
+            "documented": true,
+            "actual_primary_thread_calls": 29
+          },
+          {
+            "name": "NativeAPI.__init__.Coord",
+            "kind": "class",
+            "line": 494,
+            "end_line": 496,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__.Startup",
+            "kind": "class",
+            "line": 498,
+            "end_line": 504,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__.StartupEx",
+            "kind": "class",
+            "line": 506,
+            "end_line": 508,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__.Process",
+            "kind": "class",
+            "line": 510,
+            "end_line": 512,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__.Limits",
+            "kind": "class",
+            "line": 514,
+            "end_line": 518,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__.Io",
+            "kind": "class",
+            "line": 520,
+            "end_line": 522,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__.Extended",
+            "kind": "class",
+            "line": 524,
+            "end_line": 527,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.__init__.Accounting",
+            "kind": "class",
+            "line": 529,
+            "end_line": 533,
+            "documented": true
+          },
+          {
+            "name": "NativeAPI.require_native_x64",
+            "kind": "function",
+            "line": 571,
+            "end_line": 576,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "NativeAPI.require",
+            "kind": "function",
+            "line": 578,
+            "end_line": 582,
+            "documented": true,
+            "actual_primary_thread_calls": 97
+          },
+          {
+            "name": "NativeAPI.close",
+            "kind": "function",
+            "line": 584,
+            "end_line": 587,
+            "documented": true,
+            "actual_primary_thread_calls": 54
+          },
+          {
+            "name": "NativeAPI.new_job",
+            "kind": "function",
+            "line": 589,
+            "end_line": 599,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "NativeAPI.active",
+            "kind": "function",
+            "line": 601,
+            "end_line": 607,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "NativeAPI.members",
+            "kind": "function",
+            "line": 609,
+            "end_line": 616,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "NativeAPI.in_job",
+            "kind": "function",
+            "line": 618,
+            "end_line": 622,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "NativeAPI.terminate",
+            "kind": "function",
+            "line": 624,
+            "end_line": 626,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "NativeAPI.exited",
+            "kind": "function",
+            "line": 628,
+            "end_line": 637,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "NativeAPI.create",
+            "kind": "function",
+            "line": 639,
+            "end_line": 661,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "NativeAPI.resume",
+            "kind": "function",
+            "line": 663,
+            "end_line": 666,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "NativeAPI.pipe",
+            "kind": "function",
+            "line": 668,
+            "end_line": 672,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "NativeAPI.console_mode",
+            "kind": "function",
+            "line": 674,
+            "end_line": 694,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "await_empty",
+            "kind": "function",
+            "line": 697,
+            "end_line": 704,
+            "documented": true,
+            "actual_primary_thread_calls": 9
+          },
+          {
+            "name": "contain_before_resume",
+            "kind": "function",
+            "line": 707,
+            "end_line": 721,
+            "documented": true,
+            "actual_primary_thread_calls": 16
+          },
+          {
+            "name": "read_terminal",
+            "kind": "function",
+            "line": 724,
+            "end_line": 743,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "write_terminal",
+            "kind": "function",
+            "line": 746,
+            "end_line": 783,
+            "documented": true,
+            "actual_primary_thread_calls": 9
+          },
+          {
+            "name": "wait_no_echo",
+            "kind": "function",
+            "line": 786,
+            "end_line": 796,
+            "documented": true,
+            "actual_primary_thread_calls": 8
+          },
+          {
+            "name": "worker_campaign",
+            "kind": "function",
+            "line": 799,
+            "end_line": 881,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "worker_main",
+            "kind": "function",
+            "line": 884,
+            "end_line": 901,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "run_controller",
+            "kind": "function",
+            "line": 904,
+            "end_line": 973,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "execute",
+            "kind": "function",
+            "line": 976,
+            "end_line": 1019,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "main",
+            "kind": "function",
+            "line": 1022,
+            "end_line": 1037,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0,
+          "16": 0,
+          "17": 0,
+          "18": 0,
+          "19": 0,
+          "20": 0,
+          "21": 0,
+          "22": 0,
+          "23": 0,
+          "24": 0,
+          "25": 0,
+          "26": 0,
+          "27": 0,
+          "28": 0,
+          "29": 0,
+          "30": 0,
+          "31": 0,
+          "32": 0,
+          "34": 0,
+          "35": 0,
+          "36": 0,
+          "37": 0,
+          "40": 0,
+          "41": 0,
+          "42": 0,
+          "43": 0,
+          "44": 0,
+          "45": 0,
+          "51": 0,
+          "55": 0,
+          "57": 0,
+          "67": 0,
+          "68": 0,
+          "70": 0,
+          "72": 91,
+          "73": 0,
+          "74": 91,
+          "75": 91,
+          "78": 0,
+          "80": 293,
+          "81": 2,
+          "82": 291,
+          "85": 0,
+          "87": 32,
+          "88": 1,
+          "90": 31,
+          "92": 60,
+          "93": 315,
+          "94": 257,
+          "95": 2,
+          "96": 255,
+          "97": 58,
+          "99": 31,
+          "101": 2,
+          "103": 31,
+          "104": 61,
+          "105": 30,
+          "106": 6,
+          "107": 6,
+          "110": 0,
+          "112": 8,
+          "113": 14,
+          "114": 6,
+          "115": 6,
+          "116": 6,
+          "117": 0,
+          "118": 6,
+          "119": 1,
+          "120": 5,
+          "121": 10,
+          "122": 10,
+          "123": 10,
+          "124": 5,
+          "125": 5,
+          "126": 5,
+          "127": 0,
+          "128": 5,
+          "129": 5,
+          "130": 10,
+          "131": 10,
+          "132": 0,
+          "133": 5,
+          "134": 3,
+          "135": 2,
+          "138": 0,
+          "140": 4,
+          "141": 8,
+          "142": 4,
+          "143": 4,
+          "144": 1,
+          "145": 3,
+          "146": 3,
+          "147": 1,
+          "148": 2,
+          "149": 2,
+          "150": 2,
+          "151": 1,
+          "152": 3,
+          "153": 0,
+          "156": 0,
+          "158": 434,
+          "159": 31,
+          "160": 31,
+          "163": 0,
+          "165": 4,
+          "166": 8,
+          "167": 4,
+          "168": 4,
+          "169": 8,
+          "170": 4,
+          "171": 4,
+          "172": 4,
+          "173": 8,
+          "174": 4,
+          "175": 4,
+          "176": 4,
+          "177": 4,
+          "180": 0,
+          "182": 21,
+          "183": 560,
+          "184": 0,
+          "185": 98,
+          "186": 79,
+          "187": 1,
+          "188": 19,
+          "189": 0,
+          "190": 79,
+          "191": 62,
+          "192": 62,
+          "193": 2,
+          "196": 0,
+          "198": 38,
+          "199": 19,
+          "200": 36,
+          "201": 35,
+          "202": 1,
+          "203": 17,
+          "204": 17,
+          "205": 17,
+          "206": 0,
+          "207": 17,
+          "208": 0,
+          "209": 17,
+          "210": 17,
+          "211": 17,
+          "212": 51,
+          "213": 34,
+          "214": 102,
+          "215": 85,
+          "216": 24,
+          "217": 61,
+          "218": 61,
+          "219": 0,
+          "220": 17,
+          "221": 0,
+          "222": 17,
+          "223": 14,
+          "224": 14,
+          "225": 0,
+          "226": 14,
+          "227": 8,
+          "228": 8,
+          "229": 7,
+          "230": 7,
+          "231": 157,
+          "232": 32,
+          "233": 4,
+          "234": 21,
+          "235": 3,
+          "236": 2,
+          "237": 7,
+          "238": 6,
+          "239": 3,
+          "240": 59,
+          "241": 20,
+          "242": 2,
+          "243": 1,
+          "244": 3,
+          "247": 0,
+          "249": 6,
+          "250": 6,
+          "251": 1,
+          "252": 5,
+          "253": 8,
+          "254": 4,
+          "255": 4,
+          "256": 4,
+          "259": 0,
+          "260": 0,
+          "267": 0,
+          "269": 38,
+          "270": 38,
+          "271": 38,
+          "272": 38,
+          "273": 38,
+          "275": 0,
+          "277": 8,
+          "278": 4,
+          "279": 4,
+          "281": 0,
+          "283": 15,
+          "284": 15,
+          "285": 15,
+          "287": 0,
+          "289": 112,
+          "290": 450,
+          "291": 3,
+          "293": 0,
+          "295": 236,
+          "296": 118,
+          "297": 3,
+          "298": 115,
+          "299": 0,
+          "300": 0,
+          "301": 115,
+          "302": 115,
+          "303": 2,
+          "304": 2,
+          "305": 113,
+          "306": 113,
+          "307": 111,
+          "308": 135845,
+          "309": 135737,
+          "310": 108,
+          "311": 5,
+          "312": 5,
+          "313": 113,
+          "315": 0,
+          "317": 135737,
+          "318": 131572,
+          "319": 6,
+          "320": 131566,
+          "321": 131564,
+          "322": 2,
+          "323": 1,
+          "325": 4165,
+          "326": 4165,
+          "327": 1,
+          "328": 4164,
+          "329": 6,
+          "330": 2,
+          "331": 4,
+          "332": 3,
+          "333": 1,
+          "334": 0,
+          "336": 1,
+          "337": 4158,
+          "338": 4,
+          "339": 1,
+          "340": 0,
+          "341": 1,
+          "342": 3,
+          "343": 0,
+          "344": 4154,
+          "345": 4154,
+          "346": 1,
+          "348": 0,
+          "350": 32,
+          "351": 16,
+          "352": 16,
+          "353": 9,
+          "354": 9,
+          "355": 8,
+          "356": 1,
+          "357": 2,
+          "358": 2,
+          "359": 16,
+          "361": 0,
+          "363": 26,
+          "364": 13,
+          "365": 13,
+          "366": 1,
+          "367": 12,
+          "368": 12,
+          "369": 10,
+          "370": 2,
+          "371": 2,
+          "372": 2,
+          "373": 0,
+          "376": 0,
+          "378": 10,
+          "379": 10,
+          "380": 10,
+          "381": 8,
+          "382": 8,
+          "383": 7,
+          "384": 3,
+          "387": 0,
+          "389": 7,
+          "390": 7,
+          "391": 7,
+          "392": 7,
+          "393": 7,
+          "394": 6,
+          "395": 50,
+          "396": 4,
+          "397": 3,
+          "400": 0,
+          "401": 0,
+          "403": 0,
+          "405": 12,
+          "406": 3,
+          "407": 9,
+          "408": 9,
+          "410": 0,
+          "412": 28,
+          "413": 2,
+          "414": 26,
+          "415": 26,
+          "416": 1,
+          "417": 25,
+          "418": 25,
+          "419": 1,
+          "420": 24,
+          "421": 24,
+          "422": 24,
+          "423": 1,
+          "424": 46,
+          "425": 23,
+          "426": 23,
+          "427": 6,
+          "428": 23,
+          "429": 9,
+          "430": 0,
+          "431": 9,
+          "432": 23,
+          "433": 23,
+          "434": 23,
+          "435": 23,
+          "436": 23,
+          "437": 0,
+          "438": 23,
+          "439": 23,
+          "440": 23,
+          "441": 1,
+          "442": 22,
+          "443": 2,
+          "444": 20,
+          "445": 19,
+          "446": 1,
+          "447": 5,
+          "448": 0,
+          "450": 23,
+          "451": 23,
+          "452": 18,
+          "453": 6,
+          "454": 6,
+          "455": 0,
+          "456": 12,
+          "457": 3,
+          "458": 3,
+          "459": 0,
+          "460": 3,
+          "461": 3,
+          "462": 3,
+          "463": 3,
+          "464": 9,
+          "465": 3,
+          "466": 6,
+          "467": 3,
+          "469": 3,
+          "470": 3,
+          "471": 0,
+          "472": 18,
+          "475": 0,
+          "476": 0,
+          "484": 0,
+          "486": 29,
+          "487": 0,
+          "488": 29,
+          "489": 0,
+          "490": 29,
+          "491": 29,
+          "492": 29,
+          "494": 58,
+          "495": 29,
+          "496": 29,
+          "498": 58,
+          "499": 29,
+          "500": 58,
+          "501": 29,
+          "502": 29,
+          "503": 29,
+          "504": 29,
+          "506": 58,
+          "507": 29,
+          "508": 29,
+          "510": 58,
+          "511": 29,
+          "512": 29,
+          "514": 58,
+          "515": 29,
+          "516": 58,
+          "517": 29,
+          "518": 29,
+          "520": 58,
+          "521": 29,
+          "522": 203,
+          "524": 58,
+          "525": 29,
+          "526": 58,
+          "527": 29,
+          "529": 58,
+          "530": 29,
+          "531": 58,
+          "532": 29,
+          "533": 29,
+          "535": 29,
+          "536": 232,
+          "537": 203,
+          "538": 0,
+          "539": 29,
+          "540": 551,
+          "541": 29,
+          "542": 29,
+          "543": 29,
+          "544": 29,
+          "545": 29,
+          "546": 29,
+          "547": 29,
+          "548": 29,
+          "549": 29,
+          "550": 29,
+          "551": 29,
+          "552": 29,
+          "553": 29,
+          "554": 29,
+          "555": 29,
+          "556": 29,
+          "557": 29,
+          "558": 29,
+          "559": 29,
+          "560": 29,
+          "561": 29,
+          "562": 29,
+          "563": 29,
+          "564": 29,
+          "565": 754,
+          "566": 725,
+          "567": 725,
+          "568": 0,
+          "569": 0,
+          "571": 0,
+          "573": 5,
+          "574": 5,
+          "575": 4,
+          "576": 3,
+          "578": 0,
+          "580": 97,
+          "581": 4,
+          "582": 93,
+          "584": 0,
+          "586": 54,
+          "587": 54,
+          "589": 0,
+          "591": 2,
+          "592": 2,
+          "593": 2,
+          "594": 2,
+          "595": 2,
+          "596": 1,
+          "597": 1,
+          "598": 1,
+          "599": 1,
+          "601": 0,
+          "603": 2,
+          "604": 2,
+          "605": 1,
+          "606": 0,
+          "607": 1,
+          "609": 0,
+          "611": 3,
+          "612": 3,
+          "613": 3,
+          "614": 3,
+          "615": 2,
+          "616": 1,
+          "618": 0,
+          "620": 5,
+          "621": 5,
+          "622": 5,
+          "624": 0,
+          "626": 5,
+          "628": 0,
+          "630": 0,
+          "631": 0,
+          "632": 0,
+          "633": 0,
+          "634": 0,
+          "635": 0,
+          "636": 0,
+          "637": 0,
+          "639": 0,
+          "641": 2,
+          "642": 2,
+          "643": 2,
+          "644": 2,
+          "645": 0,
+          "646": 2,
+          "647": 2,
+          "648": 2,
+          "649": 2,
+          "650": 1,
+          "651": 1,
+          "652": 1,
+          "653": 1,
+          "655": 5,
+          "656": 2,
+          "657": 1,
+          "658": 1,
+          "659": 1,
+          "661": 2,
+          "663": 0,
+          "665": 2,
+          "666": 0,
+          "668": 0,
+          "670": 0,
+          "671": 0,
+          "672": 0,
+          "674": 0,
+          "676": 2,
+          "677": 2,
+          "678": 2,
+          "679": 2,
+          "680": 2,
+          "681": 1,
+          "682": 1,
+          "683": 1,
+          "684": 0,
+          "685": 0,
+          "686": 1,
+          "687": 1,
+          "688": 0,
+          "689": 1,
+          "691": 2,
+          "692": 1,
+          "693": 2,
+          "694": 1,
+          "697": 0,
+          "699": 13,
+          "700": 13,
+          "701": 6,
+          "702": 5,
+          "703": 1,
+          "704": 4,
+          "707": 0,
+          "709": 16,
+          "710": 16,
+          "711": 16,
+          "712": 16,
+          "713": 8,
+          "714": 1,
+          "715": 1,
+          "716": 16,
+          "717": 3,
+          "718": 3,
+          "719": 0,
+          "720": 3,
+          "721": 13,
+          "724": 0,
+          "726": 5,
+          "727": 5,
+          "728": 15,
+          "729": 15,
+          "730": 15,
+          "731": 3,
+          "732": 2,
+          "733": 2,
+          "734": 1,
+          "735": 12,
+          "736": 2,
+          "737": 2,
+          "738": 10,
+          "739": 1,
+          "740": 2,
+          "741": 1,
+          "743": 5,
+          "746": 0,
+          "753": 9,
+          "754": 9,
+          "755": 9,
+          "756": 17,
+          "757": 19,
+          "758": 19,
+          "759": 4,
+          "760": 15,
+          "761": 15,
+          "762": 1,
+          "763": 14,
+          "764": 14,
+          "765": 6,
+          "766": 6,
+          "767": 8,
+          "768": 8,
+          "769": 19,
+          "770": 11,
+          "771": 0,
+          "772": 11,
+          "773": 11,
+          "774": 11,
+          "775": 0,
+          "776": 11,
+          "777": 8,
+          "778": 1,
+          "779": 2,
+          "780": 1,
+          "781": 0,
+          "782": 0,
+          "783": 0,
+          "786": 0,
+          "788": 1512,
+          "789": 1510,
+          "790": 0,
+          "791": 1510,
+          "792": 1,
+          "793": 1509,
+          "794": 5,
+          "795": 1504,
+          "796": 3,
+          "799": 0,
+          "806": 6,
+          "807": 6,
+          "808": 6,
+          "809": 6,
+          "810": 6,
+          "811": 6,
+          "812": 6,
+          "813": 6,
+          "814": 6,
+          "815": 6,
+          "816": 6,
+          "817": 6,
+          "818": 0,
+          "819": 6,
+          "820": 6,
+          "821": 6,
+          "822": 6,
+          "823": 5,
+          "824": 5,
+          "825": 5,
+          "826": 5,
+          "827": 5,
+          "828": 5,
+          "829": 9,
+          "830": 7,
+          "831": 5,
+          "832": 5,
+          "833": 4,
+          "834": 4,
+          "835": 2,
+          "836": 2,
+          "837": 14,
+          "838": 12,
+          "839": 2,
+          "840": 2,
+          "841": 0,
+          "842": 2,
+          "843": 0,
+          "844": 2,
+          "845": 4,
+          "846": 4,
+          "847": 0,
+          "848": 0,
+          "850": 6,
+          "851": 6,
+          "852": 6,
+          "853": 5,
+          "854": 6,
+          "855": 6,
+          "856": 6,
+          "857": 6,
+          "859": 6,
+          "860": 6,
+          "861": 6,
+          "862": 6,
+          "863": 6,
+          "864": 6,
+          "865": 6,
+          "866": 6,
+          "867": 6,
+          "868": 6,
+          "869": 6,
+          "870": 0,
+          "871": 6,
+          "872": 0,
+          "873": 24,
+          "874": 18,
+          "875": 2,
+          "876": 6,
+          "877": 6,
+          "878": 6,
+          "879": 5,
+          "880": 6,
+          "881": 4,
+          "884": 0,
+          "886": 0,
+          "887": 0,
+          "888": 0,
+          "889": 0,
+          "890": 0,
+          "891": 0,
+          "892": 0,
+          "893": 0,
+          "894": 0,
+          "895": 0,
+          "896": 0,
+          "897": 0,
+          "898": 0,
+          "899": 0,
+          "900": 0,
+          "901": 0,
+          "904": 0,
+          "906": 6,
+          "907": 6,
+          "908": 6,
+          "909": 6,
+          "910": 6,
+          "911": 18,
+          "912": 6,
+          "913": 6,
+          "914": 6,
+          "915": 6,
+          "916": 6,
+          "917": 6,
+          "918": 2,
+          "919": 1,
+          "920": 1,
+          "921": 0,
+          "922": 4,
+          "923": 4,
+          "924": 8,
+          "925": 4,
+          "926": 4,
+          "927": 4,
+          "928": 4,
+          "929": 3,
+          "931": 36,
+          "932": 0,
+          "933": 3,
+          "934": 2,
+          "935": 0,
+          "937": 1,
+          "938": 1,
+          "939": 0,
+          "940": 3,
+          "941": 3,
+          "942": 3,
+          "943": 1,
+          "944": 2,
+          "945": 0,
+          "946": 4,
+          "947": 4,
+          "948": 0,
+          "949": 0,
+          "951": 6,
+          "953": 6,
+          "954": 5,
+          "955": 5,
+          "956": 1,
+          "957": 5,
+          "958": 6,
+          "959": 5,
+          "960": 0,
+          "961": 1,
+          "962": 1,
+          "964": 6,
+          "965": 6,
+          "966": 6,
+          "967": 6,
+          "969": 6,
+          "971": 6,
+          "972": 6,
+          "973": 5,
+          "976": 0,
+          "978": 0,
+          "979": 0,
+          "980": 0,
+          "981": 0,
+          "982": 0,
+          "983": 0,
+          "984": 0,
+          "985": 0,
+          "986": 0,
+          "987": 0,
+          "988": 0,
+          "989": 0,
+          "990": 0,
+          "991": 0,
+          "992": 0,
+          "993": 0,
+          "994": 0,
+          "995": 0,
+          "996": 0,
+          "997": 0,
+          "998": 0,
+          "999": 0,
+          "1001": 0,
+          "1002": 0,
+          "1003": 0,
+          "1004": 0,
+          "1005": 0,
+          "1006": 0,
+          "1007": 0,
+          "1008": 0,
+          "1009": 0,
+          "1010": 0,
+          "1011": 0,
+          "1012": 0,
+          "1013": 0,
+          "1014": 0,
+          "1015": 0,
+          "1016": 0,
+          "1017": 0,
+          "1018": 0,
+          "1019": 0,
+          "1022": 0,
+          "1024": 0,
+          "1025": 0,
+          "1026": 0,
+          "1027": 0,
+          "1028": 0,
+          "1029": 0,
+          "1030": 0,
+          "1031": 0,
+          "1032": 0,
+          "1033": 0,
+          "1034": 0,
+          "1035": 0,
+          "1036": 0,
+          "1037": 0,
+          "1040": 0,
+          "1041": 0,
+          "1042": 0,
+          "1043": 0,
+          "1045": 0,
+          "1046": 0
+        },
+        "positive_lines": 606,
+        "zero_lines": 233,
+        "calls": [
+          {
+            "line": 70,
+            "name": "SmokeFault.__init__",
+            "count": 91
+          },
+          {
+            "line": 78,
+            "name": "exact",
+            "count": 293
+          },
+          {
+            "line": 85,
+            "name": "strict_json",
+            "count": 32
+          },
+          {
+            "line": 90,
+            "name": "strict_json.<locals>.pairs",
+            "count": 60
+          },
+          {
+            "line": 99,
+            "name": "strict_json.<locals>.constant",
+            "count": 2
+          },
+          {
+            "line": 110,
+            "name": "file_pin",
+            "count": 8
+          },
+          {
+            "line": 138,
+            "name": "ensure_x64_executable",
+            "count": 4
+          },
+          {
+            "line": 156,
+            "name": "empty_checks",
+            "count": 31
+          },
+          {
+            "line": 163,
+            "name": "new_receipt",
+            "count": 4
+          },
+          {
+            "line": 180,
+            "name": "validate_checks",
+            "count": 21
+          },
+          {
+            "line": 183,
+            "name": "validate_checks.<locals>.<genexpr>",
+            "count": 280
+          },
+          {
+            "line": 196,
+            "name": "validate_receipt",
+            "count": 19
+          },
+          {
+            "line": 231,
+            "name": "validate_receipt.<locals>.<genexpr>",
+            "count": 77
+          },
+          {
+            "line": 232,
+            "name": "validate_receipt.<locals>.<genexpr>",
+            "count": 16
+          },
+          {
+            "line": 240,
+            "name": "validate_receipt.<locals>.<genexpr>",
+            "count": 30
+          },
+          {
+            "line": 241,
+            "name": "validate_receipt.<locals>.<genexpr>",
+            "count": 10
+          },
+          {
+            "line": 247,
+            "name": "exclusive_json",
+            "count": 6
+          },
+          {
+            "line": 267,
+            "name": "TerminalMonitor.__init__",
+            "count": 38
+          },
+          {
+            "line": 275,
+            "name": "TerminalMonitor.forbid",
+            "count": 4
+          },
+          {
+            "line": 281,
+            "name": "TerminalMonitor._fail",
+            "count": 15
+          },
+          {
+            "line": 287,
+            "name": "TerminalMonitor._scan",
+            "count": 112
+          },
+          {
+            "line": 290,
+            "name": "TerminalMonitor._scan.<locals>.<genexpr>",
+            "count": 228
+          },
+          {
+            "line": 293,
+            "name": "TerminalMonitor.feed",
+            "count": 118
+          },
+          {
+            "line": 315,
+            "name": "TerminalMonitor._character",
+            "count": 135737
+          },
+          {
+            "line": 348,
+            "name": "TerminalMonitor.finish",
+            "count": 16
+          },
+          {
+            "line": 361,
+            "name": "TerminalMonitor.wait_text",
+            "count": 13
+          },
+          {
+            "line": 376,
+            "name": "validate_session",
+            "count": 10
+          },
+          {
+            "line": 387,
+            "name": "validate_summary",
+            "count": 7
+          },
+          {
+            "line": 395,
+            "name": "validate_summary.<locals>.<genexpr>",
+            "count": 26
+          },
+          {
+            "line": 403,
+            "name": "BrowserQueries.__init__",
+            "count": 12
+          },
+          {
+            "line": 410,
+            "name": "BrowserQueries.request",
+            "count": 28
+          },
+          {
+            "line": 484,
+            "name": "NativeAPI.__init__",
+            "count": 29
+          },
+          {
+            "line": 494,
+            "name": "NativeAPI.__init__.<locals>.Coord",
+            "count": 29
+          },
+          {
+            "line": 498,
+            "name": "NativeAPI.__init__.<locals>.Startup",
+            "count": 29
+          },
+          {
+            "line": 506,
+            "name": "NativeAPI.__init__.<locals>.StartupEx",
+            "count": 29
+          },
+          {
+            "line": 510,
+            "name": "NativeAPI.__init__.<locals>.Process",
+            "count": 29
+          },
+          {
+            "line": 514,
+            "name": "NativeAPI.__init__.<locals>.Limits",
+            "count": 29
+          },
+          {
+            "line": 520,
+            "name": "NativeAPI.__init__.<locals>.Io",
+            "count": 29
+          },
+          {
+            "line": 524,
+            "name": "NativeAPI.__init__.<locals>.Extended",
+            "count": 29
+          },
+          {
+            "line": 529,
+            "name": "NativeAPI.__init__.<locals>.Accounting",
+            "count": 29
+          },
+          {
+            "line": 571,
+            "name": "NativeAPI.require_native_x64",
+            "count": 5
+          },
+          {
+            "line": 578,
+            "name": "NativeAPI.require",
+            "count": 97
+          },
+          {
+            "line": 584,
+            "name": "NativeAPI.close",
+            "count": 54
+          },
+          {
+            "line": 589,
+            "name": "NativeAPI.new_job",
+            "count": 2
+          },
+          {
+            "line": 601,
+            "name": "NativeAPI.active",
+            "count": 2
+          },
+          {
+            "line": 609,
+            "name": "NativeAPI.members",
+            "count": 3
+          },
+          {
+            "line": 618,
+            "name": "NativeAPI.in_job",
+            "count": 5
+          },
+          {
+            "line": 624,
+            "name": "NativeAPI.terminate",
+            "count": 5
+          },
+          {
+            "line": 639,
+            "name": "NativeAPI.create",
+            "count": 2
+          },
+          {
+            "line": 656,
+            "name": "NativeAPI.create.<locals>.<genexpr>",
+            "count": 1
+          },
+          {
+            "line": 663,
+            "name": "NativeAPI.resume",
+            "count": 2
+          },
+          {
+            "line": 674,
+            "name": "NativeAPI.console_mode",
+            "count": 2
+          },
+          {
+            "line": 697,
+            "name": "await_empty",
+            "count": 9
+          },
+          {
+            "line": 707,
+            "name": "contain_before_resume",
+            "count": 16
+          },
+          {
+            "line": 724,
+            "name": "read_terminal",
+            "count": 5
+          },
+          {
+            "line": 746,
+            "name": "write_terminal",
+            "count": 9
+          },
+          {
+            "line": 786,
+            "name": "wait_no_echo",
+            "count": 8
+          },
+          {
+            "line": 799,
+            "name": "worker_campaign",
+            "count": 6
+          },
+          {
+            "line": 904,
+            "name": "run_controller",
+            "count": 6
+          },
+          {
+            "line": 931,
+            "name": "run_controller.<locals>.<genexpr>",
+            "count": 18
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_windows_console_controls.py",
+          "bytes": 52630,
+          "sha256": "4fe66a7f3152ba1816537d5be6d1dd657c189ee572f1fff6412ab075e57bb6d3"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "session",
+            "kind": "function",
+            "line": 29,
+            "end_line": 32,
+            "documented": true,
+            "actual_primary_thread_calls": 30
+          },
+          {
+            "name": "summary",
+            "kind": "function",
+            "line": 35,
+            "end_line": 39,
+            "documented": true,
+            "actual_primary_thread_calls": 17
+          },
+          {
+            "name": "passed_receipt",
+            "kind": "function",
+            "line": 42,
+            "end_line": 55,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "Response",
+            "kind": "class",
+            "line": 58,
+            "end_line": 74,
+            "documented": true
+          },
+          {
+            "name": "Response.__init__",
+            "kind": "function",
+            "line": 61,
+            "end_line": 65,
+            "documented": true,
+            "actual_primary_thread_calls": 23
+          },
+          {
+            "name": "Response.read",
+            "kind": "function",
+            "line": 67,
+            "end_line": 70,
+            "documented": true,
+            "actual_primary_thread_calls": 23
+          },
+          {
+            "name": "Response.getheader",
+            "kind": "function",
+            "line": 72,
+            "end_line": 74,
+            "documented": true,
+            "actual_primary_thread_calls": 43
+          },
+          {
+            "name": "Connection",
+            "kind": "class",
+            "line": 77,
+            "end_line": 94,
+            "documented": true
+          },
+          {
+            "name": "Connection.__init__",
+            "kind": "function",
+            "line": 80,
+            "end_line": 82,
+            "documented": true,
+            "actual_primary_thread_calls": 23
+          },
+          {
+            "name": "Connection.request",
+            "kind": "function",
+            "line": 84,
+            "end_line": 86,
+            "documented": true,
+            "actual_primary_thread_calls": 23
+          },
+          {
+            "name": "Connection.getresponse",
+            "kind": "function",
+            "line": 88,
+            "end_line": 90,
+            "documented": true,
+            "actual_primary_thread_calls": 23
+          },
+          {
+            "name": "Connection.close",
+            "kind": "function",
+            "line": 92,
+            "end_line": 94,
+            "documented": true,
+            "actual_primary_thread_calls": 23
+          },
+          {
+            "name": "NativeFunction",
+            "kind": "class",
+            "line": 97,
+            "end_line": 108,
+            "documented": true
+          },
+          {
+            "name": "NativeFunction.__init__",
+            "kind": "function",
+            "line": 100,
+            "end_line": 103,
+            "documented": true,
+            "actual_primary_thread_calls": 725
+          },
+          {
+            "name": "NativeFunction.__call__",
+            "kind": "function",
+            "line": 105,
+            "end_line": 108,
+            "documented": true,
+            "actual_primary_thread_calls": 145
+          },
+          {
+            "name": "NativeLibrary",
+            "kind": "class",
+            "line": 111,
+            "end_line": 122,
+            "documented": true
+          },
+          {
+            "name": "NativeLibrary.__init__",
+            "kind": "function",
+            "line": 114,
+            "end_line": 116,
+            "documented": true,
+            "actual_primary_thread_calls": 29
+          },
+          {
+            "name": "NativeLibrary.__getattr__",
+            "kind": "function",
+            "line": 118,
+            "end_line": 122,
+            "documented": true,
+            "actual_primary_thread_calls": 947
+          },
+          {
+            "name": "native_api",
+            "kind": "function",
+            "line": 125,
+            "end_line": 129,
+            "documented": true,
+            "actual_primary_thread_calls": 29
+          },
+          {
+            "name": "Clock",
+            "kind": "class",
+            "line": 132,
+            "end_line": 145,
+            "documented": true
+          },
+          {
+            "name": "Clock.__init__",
+            "kind": "function",
+            "line": 135,
+            "end_line": 137,
+            "documented": true,
+            "actual_primary_thread_calls": 8
+          },
+          {
+            "name": "Clock.__call__",
+            "kind": "function",
+            "line": 139,
+            "end_line": 141,
+            "documented": true,
+            "actual_primary_thread_calls": 1582
+          },
+          {
+            "name": "Clock.pause",
+            "kind": "function",
+            "line": 143,
+            "end_line": 145,
+            "documented": true,
+            "actual_primary_thread_calls": 1520
+          },
+          {
+            "name": "CampaignAdapter",
+            "kind": "class",
+            "line": 148,
+            "end_line": 248,
+            "documented": true
+          },
+          {
+            "name": "CampaignAdapter.__init__",
+            "kind": "function",
+            "line": 156,
+            "end_line": 177,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "CampaignAdapter.pseudo_console",
+            "kind": "function",
+            "line": 179,
+            "end_line": 182,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "CampaignAdapter.create",
+            "kind": "function",
+            "line": 184,
+            "end_line": 189,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "CampaignAdapter.console_mode",
+            "kind": "function",
+            "line": 191,
+            "end_line": 194,
+            "documented": true,
+            "actual_primary_thread_calls": 1505
+          },
+          {
+            "name": "CampaignAdapter.write",
+            "kind": "function",
+            "line": 196,
+            "end_line": 199,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "CampaignAdapter.thread",
+            "kind": "function",
+            "line": 201,
+            "end_line": 224,
+            "documented": true,
+            "actual_primary_thread_calls": 15
+          },
+          {
+            "name": "CampaignAdapter.thread.start",
+            "kind": "function",
+            "line": 203,
+            "end_line": 210,
+            "documented": true,
+            "actual_primary_thread_calls": 15
+          },
+          {
+            "name": "CampaignAdapter.thread.join",
+            "kind": "function",
+            "line": 211,
+            "end_line": 220,
+            "documented": true,
+            "actual_primary_thread_calls": 15
+          },
+          {
+            "name": "CampaignAdapter.thread.alive",
+            "kind": "function",
+            "line": 221,
+            "end_line": 223,
+            "documented": true,
+            "actual_primary_thread_calls": 26
+          },
+          {
+            "name": "CampaignAdapter.connection",
+            "kind": "function",
+            "line": 226,
+            "end_line": 234,
+            "documented": true,
+            "actual_primary_thread_calls": 12
+          },
+          {
+            "name": "CampaignAdapter.queries",
+            "kind": "function",
+            "line": 236,
+            "end_line": 241,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "CampaignAdapter.run",
+            "kind": "function",
+            "line": 243,
+            "end_line": 248,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "Controls",
+            "kind": "class",
+            "line": 251,
+            "end_line": 828,
+            "documented": true
+          },
+          {
+            "name": "Controls.assert_fault",
+            "kind": "function",
+            "line": 254,
+            "end_line": 260,
+            "documented": true,
+            "actual_primary_thread_calls": 73
+          },
+          {
+            "name": "Controls.test_strict_json_nested_duplicates_nonfinite_utf8_and_raw_limit",
+            "kind": "function",
+            "line": 262,
+            "end_line": 268,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_file_pin_and_inclusive_bound",
+            "kind": "function",
+            "line": 270,
+            "end_line": 278,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_pe_architecture_headers_are_bounded",
+            "kind": "function",
+            "line": 280,
+            "end_line": 288,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_exclusive_receipt_preserves_existing_bytes",
+            "kind": "function",
+            "line": 290,
+            "end_line": 298,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards",
+            "kind": "function",
+            "line": 300,
+            "end_line": 312,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_failure_receipts_require_closed_failure_and_uncompleted_state",
+            "kind": "function",
+            "line": 314,
+            "end_line": 319,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_chunked_unicode_prompts_and_vt_controls",
+            "kind": "function",
+            "line": 321,
+            "end_line": 327,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_complete_url_requires_line_termination",
+            "kind": "function",
+            "line": 329,
+            "end_line": 334,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_malformed_terminal_and_incomplete_eof_fail_closed",
+            "kind": "function",
+            "line": 336,
+            "end_line": 342,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_terminal_bound_is_inclusive_and_overflow_drain_sticky",
+            "kind": "function",
+            "line": 344,
+            "end_line": 352,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_secret_echo_across_chunks_wraps_and_osc_is_rejected",
+            "kind": "function",
+            "line": 354,
+            "end_line": 361,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_session_and_summary_closed_shape_controls",
+            "kind": "function",
+            "line": 363,
+            "end_line": 371,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_actual_transport_sequence_and_security_headers",
+            "kind": "function",
+            "line": 373,
+            "end_line": 397,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_actual_transport_sequence_and_security_headers.factory",
+            "kind": "function",
+            "line": 379,
+            "end_line": 382,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "Controls.test_transport_rejects_wrong_order_and_invalid_port_without_dispatch",
+            "kind": "function",
+            "line": 399,
+            "end_line": 408,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_transport_bounds_malformed_response_status_and_finally_cleanup",
+            "kind": "function",
+            "line": 410,
+            "end_line": 418,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_native_layout_signatures_and_symbolic_attribute_values",
+            "kind": "function",
+            "line": 420,
+            "end_line": 427,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_native_host_architecture_rejects_emulation_and_non_x64",
+            "kind": "function",
+            "line": 429,
+            "end_line": 440,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_native_host_architecture_rejects_emulation_and_non_x64.architecture",
+            "kind": "function",
+            "line": 433,
+            "end_line": 435,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "Controls.test_owned_job_kill_flag_no_breakaway_and_failed_configuration_closes",
+            "kind": "function",
+            "line": 442,
+            "end_line": 453,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_owned_job_kill_flag_no_breakaway_and_failed_configuration_closes.configure",
+            "kind": "function",
+            "line": 446,
+            "end_line": 448,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_atomic_attribute_create_flags_and_lifetime",
+            "kind": "function",
+            "line": 455,
+            "end_line": 473,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_atomic_attribute_create_flags_and_lifetime.initialize",
+            "kind": "function",
+            "line": 458,
+            "end_line": 460,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "Controls.test_containment_failure_terminates_suspended_child_without_resume",
+            "kind": "function",
+            "line": 475,
+            "end_line": 486,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_containment_failure_terminates_suspended_child_without_resume.contained",
+            "kind": "function",
+            "line": 482,
+            "end_line": 484,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume",
+            "kind": "function",
+            "line": 488,
+            "end_line": 506,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.in_any_job",
+            "kind": "function",
+            "line": 492,
+            "end_line": 494,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.truncated",
+            "kind": "function",
+            "line": 499,
+            "end_line": 501,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound",
+            "kind": "function",
+            "line": 508,
+            "end_line": 525,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound.accounting",
+            "kind": "function",
+            "line": 511,
+            "end_line": 515,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound.incomplete",
+            "kind": "function",
+            "line": 519,
+            "end_line": 521,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "Controls.test_cleanup_requires_actual_zero_and_boundary_timeout",
+            "kind": "function",
+            "line": 527,
+            "end_line": 537,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_cleanup_requires_actual_zero_and_boundary_timeout.failed_query",
+            "kind": "function",
+            "line": 533,
+            "end_line": 535,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_owned_console_mode_is_observed_not_modified_and_always_detached",
+            "kind": "function",
+            "line": 539,
+            "end_line": 551,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_owned_console_mode_is_observed_not_modified_and_always_detached.mode",
+            "kind": "function",
+            "line": 542,
+            "end_line": 544,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_no_echo_readiness_requires_actual_processed_only_mode",
+            "kind": "function",
+            "line": 553,
+            "end_line": 564,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_actual_read_loop_handles_eof_and_keeps_draining_after_overflow",
+            "kind": "function",
+            "line": 566,
+            "end_line": 575,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_actual_read_loop_handles_eof_and_keeps_draining_after_overflow.read",
+            "kind": "function",
+            "line": 569,
+            "end_line": 571,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "Controls.test_writer_partial_transfers_count_logical_inputs_only",
+            "kind": "function",
+            "line": 577,
+            "end_line": 589,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_writer_partial_transfers_count_logical_inputs_only.write",
+            "kind": "function",
+            "line": 580,
+            "end_line": 582,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure",
+            "kind": "function",
+            "line": 591,
+            "end_line": 610,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.write",
+            "kind": "function",
+            "line": 594,
+            "end_line": 596,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.Inputs",
+            "kind": "class",
+            "line": 597,
+            "end_line": 604,
+            "documented": true
+          },
+          {
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.Inputs.get",
+            "kind": "function",
+            "line": 599,
+            "end_line": 604,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input",
+            "kind": "function",
+            "line": 612,
+            "end_line": 624,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input.Inputs",
+            "kind": "class",
+            "line": 615,
+            "end_line": 619,
+            "documented": true
+          },
+          {
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input.Inputs.get",
+            "kind": "function",
+            "line": 617,
+            "end_line": 619,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset",
+            "kind": "function",
+            "line": 626,
+            "end_line": 639,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset.Inputs",
+            "kind": "class",
+            "line": 629,
+            "end_line": 633,
+            "documented": true
+          },
+          {
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset.Inputs.get",
+            "kind": "function",
+            "line": 631,
+            "end_line": 633,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "Controls.test_reader_unexpected_error_does_not_claim_pipe_eof",
+            "kind": "function",
+            "line": 641,
+            "end_line": 647,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_reader_zero_bytes_and_broken_pipe_record_actual_eof",
+            "kind": "function",
+            "line": 649,
+            "end_line": 657,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_prompt_timeout_survives_later_reader_and_cleanup_fault",
+            "kind": "function",
+            "line": 659,
+            "end_line": 667,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_ascii_prefix_accepts_valid_unicode_renderings_only_after_no_echo",
+            "kind": "function",
+            "line": 669,
+            "end_line": 681,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_ascii_prefix_grants_no_input_without_owned_no_echo_mode",
+            "kind": "function",
+            "line": 683,
+            "end_line": 690,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_ascii_prefix_does_not_accept_malformed_utf8",
+            "kind": "function",
+            "line": 692,
+            "end_line": 698,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option",
+            "kind": "function",
+            "line": 700,
+            "end_line": 728,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.pseudo_console",
+            "kind": "function",
+            "line": 709,
+            "end_line": 711,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.launch",
+            "kind": "function",
+            "line": 712,
+            "end_line": 715,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.thread",
+            "kind": "function",
+            "line": 716,
+            "end_line": 719,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "Controls.test_controller_success_reconciles_worker_exit_and_actual_empty_job",
+            "kind": "function",
+            "line": 730,
+            "end_line": 744,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_successful_worker_lingering_descendant_is_closed_cleanup_failure",
+            "kind": "function",
+            "line": 746,
+            "end_line": 761,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_controller_failure_and_malformed_results_force_job_cleanup",
+            "kind": "function",
+            "line": 763,
+            "end_line": 778,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit",
+            "kind": "function",
+            "line": 780,
+            "end_line": 798,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit.broken",
+            "kind": "function",
+            "line": 789,
+            "end_line": 791,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "Controls.test_standalone_receipt_collision_is_silent_and_no_replace",
+            "kind": "function",
+            "line": 800,
+            "end_line": 810,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Controls.test_unsupported_cli_is_incomplete_closed_and_secret_free",
+            "kind": "function",
+            "line": 812,
+            "end_line": 828,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "struct_pack",
+            "kind": "function",
+            "line": 831,
+            "end_line": 834,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0,
+          "16": 0,
+          "17": 0,
+          "18": 0,
+          "19": 0,
+          "20": 0,
+          "21": 0,
+          "23": 0,
+          "24": 0,
+          "25": 0,
+          "26": 0,
+          "29": 0,
+          "31": 60,
+          "32": 30,
+          "35": 0,
+          "37": 34,
+          "38": 17,
+          "39": 17,
+          "42": 0,
+          "44": 3,
+          "45": 3,
+          "46": 3,
+          "47": 3,
+          "48": 3,
+          "49": 42,
+          "50": 39,
+          "51": 12,
+          "52": 9,
+          "53": 21,
+          "54": 3,
+          "55": 3,
+          "58": 0,
+          "59": 0,
+          "61": 0,
+          "63": 23,
+          "64": 23,
+          "65": 23,
+          "67": 0,
+          "69": 23,
+          "70": 23,
+          "72": 0,
+          "74": 43,
+          "77": 0,
+          "78": 0,
+          "80": 0,
+          "82": 23,
+          "84": 0,
+          "86": 23,
+          "88": 0,
+          "90": 23,
+          "92": 0,
+          "94": 23,
+          "97": 0,
+          "98": 0,
+          "100": 0,
+          "102": 725,
+          "103": 725,
+          "105": 0,
+          "107": 145,
+          "108": 145,
+          "111": 0,
+          "112": 0,
+          "114": 0,
+          "116": 29,
+          "118": 0,
+          "120": 947,
+          "121": 725,
+          "122": 947,
+          "125": 0,
+          "127": 29,
+          "128": 58,
+          "129": 29,
+          "132": 0,
+          "133": 0,
+          "135": 0,
+          "137": 8,
+          "139": 0,
+          "141": 1582,
+          "143": 0,
+          "145": 1520,
+          "148": 0,
+          "149": 0,
+          "156": 0,
+          "158": 5,
+          "159": 5,
+          "160": 5,
+          "161": 5,
+          "162": 5,
+          "163": 5,
+          "164": 5,
+          "165": 5,
+          "166": 5,
+          "167": 5,
+          "168": 5,
+          "169": 15,
+          "170": 5,
+          "171": 10,
+          "172": 10,
+          "173": 10,
+          "174": 1514,
+          "175": 5,
+          "176": 5,
+          "177": 5,
+          "179": 0,
+          "181": 5,
+          "182": 5,
+          "184": 0,
+          "186": 5,
+          "187": 5,
+          "188": 0,
+          "189": 5,
+          "191": 0,
+          "193": 1505,
+          "194": 1505,
+          "196": 0,
+          "198": 4,
+          "199": 4,
+          "201": 0,
+          "203": 15,
+          "205": 15,
+          "206": 5,
+          "207": 9,
+          "208": 10,
+          "209": 5,
+          "210": 5,
+          "211": 15,
+          "213": 15,
+          "214": 3,
+          "215": 3,
+          "216": 3,
+          "217": 12,
+          "218": 5,
+          "219": 1,
+          "220": 5,
+          "221": 15,
+          "223": 26,
+          "224": 15,
+          "226": 0,
+          "228": 24,
+          "229": 12,
+          "230": 12,
+          "231": 12,
+          "232": 12,
+          "233": 12,
+          "234": 12,
+          "236": 0,
+          "238": 2,
+          "239": 0,
+          "240": 2,
+          "241": 2,
+          "243": 0,
+          "245": 10,
+          "246": 10,
+          "247": 13,
+          "248": 5,
+          "251": 0,
+          "252": 0,
+          "254": 0,
+          "256": 146,
+          "257": 73,
+          "258": 73,
+          "259": 73,
+          "260": 5,
+          "262": 0,
+          "264": 6,
+          "265": 10,
+          "266": 10,
+          "267": 2,
+          "268": 1,
+          "270": 0,
+          "272": 2,
+          "273": 1,
+          "274": 1,
+          "275": 1,
+          "276": 2,
+          "277": 2,
+          "278": 2,
+          "280": 0,
+          "282": 2,
+          "283": 1,
+          "284": 1,
+          "285": 1,
+          "286": 4,
+          "287": 3,
+          "288": 6,
+          "290": 0,
+          "292": 2,
+          "293": 1,
+          "294": 1,
+          "295": 1,
+          "296": 1,
+          "297": 2,
+          "298": 1,
+          "300": 0,
+          "302": 1,
+          "303": 4,
+          "304": 3,
+          "305": 3,
+          "306": 3,
+          "307": 2,
+          "308": 2,
+          "309": 3,
+          "310": 13,
+          "311": 12,
+          "312": 24,
+          "314": 0,
+          "316": 1,
+          "317": 9,
+          "318": 4,
+          "319": 8,
+          "321": 0,
+          "323": 1,
+          "324": 1,
+          "325": 71,
+          "326": 3,
+          "327": 1,
+          "329": 0,
+          "331": 1,
+          "332": 1,
+          "333": 2,
+          "334": 1,
+          "336": 0,
+          "338": 6,
+          "339": 5,
+          "340": 5,
+          "341": 1,
+          "342": 1,
+          "344": 0,
+          "346": 1,
+          "347": 9,
+          "348": 1,
+          "349": 1,
+          "350": 1,
+          "351": 1,
+          "352": 1,
+          "354": 0,
+          "356": 3,
+          "357": 2,
+          "358": 17,
+          "359": 2,
+          "360": 1,
+          "361": 1,
+          "363": 0,
+          "365": 1,
+          "366": 7,
+          "367": 1,
+          "368": 1,
+          "369": 10,
+          "370": 1,
+          "371": 2,
+          "373": 0,
+          "375": 2,
+          "376": 1,
+          "377": 7,
+          "378": 1,
+          "379": 1,
+          "381": 6,
+          "382": 6,
+          "383": 1,
+          "384": 1,
+          "385": 2,
+          "386": 7,
+          "387": 7,
+          "388": 6,
+          "389": 6,
+          "390": 6,
+          "391": 6,
+          "392": 6,
+          "393": 6,
+          "394": 6,
+          "395": 1,
+          "396": 1,
+          "397": 2,
+          "399": 0,
+          "401": 7,
+          "402": 1,
+          "403": 2,
+          "404": 2,
+          "405": 2,
+          "406": 1,
+          "407": 2,
+          "408": 2,
+          "410": 0,
+          "412": 2,
+          "413": 1,
+          "414": 1,
+          "415": 1,
+          "416": 6,
+          "417": 10,
+          "418": 10,
+          "420": 0,
+          "422": 1,
+          "423": 1,
+          "424": 1,
+          "425": 1,
+          "426": 1,
+          "427": 1,
+          "429": 0,
+          "431": 1,
+          "432": 5,
+          "433": 4,
+          "435": 4,
+          "436": 4,
+          "437": 4,
+          "438": 3,
+          "439": 2,
+          "440": 1,
+          "442": 0,
+          "444": 3,
+          "445": 1,
+          "446": 1,
+          "448": 1,
+          "449": 1,
+          "450": 1,
+          "451": 2,
+          "452": 1,
+          "453": 1,
+          "455": 0,
+          "457": 1,
+          "458": 1,
+          "460": 4,
+          "461": 1,
+          "462": 2,
+          "463": 1,
+          "464": 1,
+          "465": 1,
+          "466": 1,
+          "467": 1,
+          "468": 1,
+          "469": 1,
+          "470": 1,
+          "471": 2,
+          "472": 2,
+          "473": 1,
+          "475": 0,
+          "477": 2,
+          "478": 2,
+          "479": 1,
+          "480": 2,
+          "481": 1,
+          "482": 1,
+          "484": 1,
+          "485": 1,
+          "486": 1,
+          "488": 0,
+          "490": 1,
+          "491": 3,
+          "492": 1,
+          "494": 3,
+          "495": 1,
+          "496": 2,
+          "497": 2,
+          "498": 1,
+          "499": 1,
+          "501": 1,
+          "502": 1,
+          "503": 2,
+          "504": 1,
+          "505": 2,
+          "506": 1,
+          "508": 0,
+          "510": 1,
+          "511": 1,
+          "513": 2,
+          "514": 1,
+          "515": 2,
+          "516": 1,
+          "517": 1,
+          "518": 3,
+          "519": 2,
+          "521": 2,
+          "522": 2,
+          "523": 4,
+          "524": 2,
+          "525": 2,
+          "527": 0,
+          "529": 4,
+          "530": 1,
+          "531": 2,
+          "532": 1,
+          "533": 1,
+          "535": 1,
+          "536": 1,
+          "537": 2,
+          "539": 0,
+          "541": 2,
+          "542": 1,
+          "544": 1,
+          "545": 1,
+          "546": 1,
+          "547": 1,
+          "548": 1,
+          "549": 1,
+          "550": 2,
+          "551": 1,
+          "553": 0,
+          "555": 1,
+          "556": 9,
+          "557": 1,
+          "558": 1,
+          "559": 2,
+          "560": 1,
+          "561": 1,
+          "562": 2,
+          "563": 2,
+          "564": 2,
+          "566": 0,
+          "568": 1,
+          "569": 1,
+          "571": 11,
+          "572": 1,
+          "573": 1,
+          "574": 1,
+          "575": 1,
+          "577": 0,
+          "579": 1,
+          "580": 1,
+          "582": 5,
+          "583": 1,
+          "584": 1,
+          "585": 1,
+          "586": 1,
+          "587": 1,
+          "588": 1,
+          "589": 1,
+          "591": 0,
+          "593": 1,
+          "594": 1,
+          "596": 2,
+          "597": 2,
+          "598": 1,
+          "599": 1,
+          "601": 4,
+          "602": 4,
+          "603": 2,
+          "604": 2,
+          "605": 1,
+          "606": 2,
+          "607": 1,
+          "608": 1,
+          "609": 1,
+          "610": 10,
+          "612": 0,
+          "614": 1,
+          "615": 2,
+          "616": 1,
+          "617": 1,
+          "619": 1,
+          "620": 1,
+          "621": 1,
+          "622": 1,
+          "623": 1,
+          "624": 1,
+          "626": 0,
+          "628": 1,
+          "629": 2,
+          "630": 1,
+          "631": 1,
+          "633": 3,
+          "634": 1,
+          "635": 2,
+          "636": 1,
+          "637": 1,
+          "638": 1,
+          "639": 8,
+          "641": 0,
+          "643": 2,
+          "644": 1,
+          "645": 2,
+          "646": 1,
+          "647": 1,
+          "649": 0,
+          "651": 4,
+          "652": 6,
+          "653": 6,
+          "654": 3,
+          "655": 6,
+          "656": 3,
+          "657": 3,
+          "659": 0,
+          "661": 1,
+          "662": 1,
+          "663": 1,
+          "664": 1,
+          "665": 1,
+          "666": 1,
+          "667": 1,
+          "669": 0,
+          "671": 3,
+          "672": 4,
+          "673": 2,
+          "674": 2,
+          "675": 2,
+          "676": 2,
+          "677": 2,
+          "678": 2,
+          "679": 14,
+          "680": 2,
+          "681": 2,
+          "683": 0,
+          "685": 1,
+          "686": 1,
+          "687": 1,
+          "688": 1,
+          "689": 1,
+          "690": 1,
+          "692": 0,
+          "694": 1,
+          "695": 1,
+          "696": 1,
+          "697": 1,
+          "698": 1,
+          "700": 0,
+          "707": 3,
+          "708": 1,
+          "709": 1,
+          "711": 1,
+          "712": 1,
+          "714": 1,
+          "715": 1,
+          "716": 1,
+          "718": 2,
+          "719": 9,
+          "720": 1,
+          "721": 1,
+          "722": 2,
+          "723": 2,
+          "724": 1,
+          "725": 1,
+          "726": 1,
+          "727": 1,
+          "728": 1,
+          "730": 0,
+          "732": 2,
+          "733": 1,
+          "734": 2,
+          "735": 3,
+          "736": 5,
+          "737": 1,
+          "738": 6,
+          "739": 2,
+          "740": 1,
+          "741": 1,
+          "742": 1,
+          "743": 1,
+          "744": 1,
+          "746": 0,
+          "748": 2,
+          "749": 1,
+          "750": 4,
+          "751": 3,
+          "752": 3,
+          "753": 1,
+          "754": 6,
+          "755": 2,
+          "756": 1,
+          "757": 1,
+          "758": 2,
+          "759": 1,
+          "760": 1,
+          "761": 1,
+          "763": 0,
+          "765": 3,
+          "766": 4,
+          "767": 2,
+          "768": 8,
+          "769": 6,
+          "770": 6,
+          "771": 4,
+          "772": 2,
+          "773": 2,
+          "774": 1,
+          "775": 4,
+          "776": 2,
+          "777": 2,
+          "778": 2,
+          "780": 0,
+          "782": 3,
+          "783": 4,
+          "784": 2,
+          "785": 8,
+          "786": 4,
+          "787": 4,
+          "788": 2,
+          "789": 1,
+          "791": 2,
+          "792": 1,
+          "793": 2,
+          "794": 4,
+          "795": 4,
+          "796": 2,
+          "797": 2,
+          "798": 2,
+          "800": 0,
+          "802": 2,
+          "803": 1,
+          "804": 1,
+          "805": 1,
+          "806": 1,
+          "807": 1,
+          "808": 1,
+          "809": 1,
+          "810": 1,
+          "812": 0,
+          "814": 1,
+          "816": 0,
+          "817": 0,
+          "818": 0,
+          "820": 2,
+          "821": 1,
+          "822": 1,
+          "823": 1,
+          "824": 1,
+          "825": 1,
+          "826": 28,
+          "827": 1,
+          "828": 1,
+          "831": 0,
+          "833": 3,
+          "834": 3,
+          "837": 0,
+          "838": 0
+        },
+        "positive_lines": 518,
+        "zero_lines": 112,
+        "calls": [
+          {
+            "line": 29,
+            "name": "session",
+            "count": 30
+          },
+          {
+            "line": 35,
+            "name": "summary",
+            "count": 17
+          },
+          {
+            "line": 42,
+            "name": "passed_receipt",
+            "count": 3
+          },
+          {
+            "line": 61,
+            "name": "Response.__init__",
+            "count": 23
+          },
+          {
+            "line": 67,
+            "name": "Response.read",
+            "count": 23
+          },
+          {
+            "line": 72,
+            "name": "Response.getheader",
+            "count": 43
+          },
+          {
+            "line": 80,
+            "name": "Connection.__init__",
+            "count": 23
+          },
+          {
+            "line": 84,
+            "name": "Connection.request",
+            "count": 23
+          },
+          {
+            "line": 88,
+            "name": "Connection.getresponse",
+            "count": 23
+          },
+          {
+            "line": 92,
+            "name": "Connection.close",
+            "count": 23
+          },
+          {
+            "line": 100,
+            "name": "NativeFunction.__init__",
+            "count": 725
+          },
+          {
+            "line": 105,
+            "name": "NativeFunction.__call__",
+            "count": 145
+          },
+          {
+            "line": 114,
+            "name": "NativeLibrary.__init__",
+            "count": 29
+          },
+          {
+            "line": 118,
+            "name": "NativeLibrary.__getattr__",
+            "count": 947
+          },
+          {
+            "line": 125,
+            "name": "native_api",
+            "count": 29
+          },
+          {
+            "line": 135,
+            "name": "Clock.__init__",
+            "count": 8
+          },
+          {
+            "line": 139,
+            "name": "Clock.__call__",
+            "count": 1582
+          },
+          {
+            "line": 143,
+            "name": "Clock.pause",
+            "count": 1520
+          },
+          {
+            "line": 156,
+            "name": "CampaignAdapter.__init__",
+            "count": 5
+          },
+          {
+            "line": 169,
+            "name": "CampaignAdapter.__init__.<locals>.<lambda>",
+            "count": 10
+          },
+          {
+            "line": 171,
+            "name": "CampaignAdapter.__init__.<locals>.<lambda>",
+            "count": 5
+          },
+          {
+            "line": 172,
+            "name": "CampaignAdapter.__init__.<locals>.<lambda>",
+            "count": 5
+          },
+          {
+            "line": 173,
+            "name": "CampaignAdapter.__init__.<locals>.<lambda>",
+            "count": 5
+          },
+          {
+            "line": 174,
+            "name": "CampaignAdapter.__init__.<locals>.<lambda>",
+            "count": 1509
+          },
+          {
+            "line": 179,
+            "name": "CampaignAdapter.pseudo_console",
+            "count": 5
+          },
+          {
+            "line": 184,
+            "name": "CampaignAdapter.create",
+            "count": 5
+          },
+          {
+            "line": 191,
+            "name": "CampaignAdapter.console_mode",
+            "count": 1505
+          },
+          {
+            "line": 196,
+            "name": "CampaignAdapter.write",
+            "count": 4
+          },
+          {
+            "line": 201,
+            "name": "CampaignAdapter.thread",
+            "count": 15
+          },
+          {
+            "line": 203,
+            "name": "CampaignAdapter.thread.<locals>.start",
+            "count": 15
+          },
+          {
+            "line": 211,
+            "name": "CampaignAdapter.thread.<locals>.join",
+            "count": 15
+          },
+          {
+            "line": 221,
+            "name": "CampaignAdapter.thread.<locals>.alive",
+            "count": 26
+          },
+          {
+            "line": 226,
+            "name": "CampaignAdapter.connection",
+            "count": 12
+          },
+          {
+            "line": 236,
+            "name": "CampaignAdapter.queries",
+            "count": 2
+          },
+          {
+            "line": 243,
+            "name": "CampaignAdapter.run",
+            "count": 5
+          },
+          {
+            "line": 254,
+            "name": "Controls.assert_fault",
+            "count": 73
+          },
+          {
+            "line": 262,
+            "name": "Controls.test_strict_json_nested_duplicates_nonfinite_utf8_and_raw_limit",
+            "count": 1
+          },
+          {
+            "line": 266,
+            "name": "Controls.test_strict_json_nested_duplicates_nonfinite_utf8_and_raw_limit.<locals>.<lambda>",
+            "count": 5
+          },
+          {
+            "line": 267,
+            "name": "Controls.test_strict_json_nested_duplicates_nonfinite_utf8_and_raw_limit.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 270,
+            "name": "Controls.test_file_pin_and_inclusive_bound",
+            "count": 1
+          },
+          {
+            "line": 276,
+            "name": "Controls.test_file_pin_and_inclusive_bound.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 277,
+            "name": "Controls.test_file_pin_and_inclusive_bound.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 278,
+            "name": "Controls.test_file_pin_and_inclusive_bound.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 280,
+            "name": "Controls.test_pe_architecture_headers_are_bounded",
+            "count": 1
+          },
+          {
+            "line": 288,
+            "name": "Controls.test_pe_architecture_headers_are_bounded.<locals>.<lambda>",
+            "count": 3
+          },
+          {
+            "line": 290,
+            "name": "Controls.test_exclusive_receipt_preserves_existing_bytes",
+            "count": 1
+          },
+          {
+            "line": 297,
+            "name": "Controls.test_exclusive_receipt_preserves_existing_bytes.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 300,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards",
+            "count": 1
+          },
+          {
+            "line": 303,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 304,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 305,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 306,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 307,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 308,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 309,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 312,
+            "name": "Controls.test_receipt_pass_and_mutable_claim_guards.<locals>.<lambda>",
+            "count": 12
+          },
+          {
+            "line": 314,
+            "name": "Controls.test_failure_receipts_require_closed_failure_and_uncompleted_state",
+            "count": 1
+          },
+          {
+            "line": 317,
+            "name": "Controls.test_failure_receipts_require_closed_failure_and_uncompleted_state.<locals>.<lambda>",
+            "count": 4
+          },
+          {
+            "line": 319,
+            "name": "Controls.test_failure_receipts_require_closed_failure_and_uncompleted_state.<locals>.<lambda>",
+            "count": 4
+          },
+          {
+            "line": 321,
+            "name": "Controls.test_chunked_unicode_prompts_and_vt_controls",
+            "count": 1
+          },
+          {
+            "line": 329,
+            "name": "Controls.test_complete_url_requires_line_termination",
+            "count": 1
+          },
+          {
+            "line": 333,
+            "name": "Controls.test_complete_url_requires_line_termination.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 336,
+            "name": "Controls.test_malformed_terminal_and_incomplete_eof_fail_closed",
+            "count": 1
+          },
+          {
+            "line": 344,
+            "name": "Controls.test_terminal_bound_is_inclusive_and_overflow_drain_sticky",
+            "count": 1
+          },
+          {
+            "line": 354,
+            "name": "Controls.test_secret_echo_across_chunks_wraps_and_osc_is_rejected",
+            "count": 1
+          },
+          {
+            "line": 363,
+            "name": "Controls.test_session_and_summary_closed_shape_controls",
+            "count": 1
+          },
+          {
+            "line": 369,
+            "name": "Controls.test_session_and_summary_closed_shape_controls.<locals>.<lambda>",
+            "count": 5
+          },
+          {
+            "line": 371,
+            "name": "Controls.test_session_and_summary_closed_shape_controls.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 373,
+            "name": "Controls.test_actual_transport_sequence_and_security_headers",
+            "count": 1
+          },
+          {
+            "line": 379,
+            "name": "Controls.test_actual_transport_sequence_and_security_headers.<locals>.factory",
+            "count": 6
+          },
+          {
+            "line": 397,
+            "name": "Controls.test_actual_transport_sequence_and_security_headers.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 399,
+            "name": "Controls.test_transport_rejects_wrong_order_and_invalid_port_without_dispatch",
+            "count": 1
+          },
+          {
+            "line": 401,
+            "name": "Controls.test_transport_rejects_wrong_order_and_invalid_port_without_dispatch.<locals>.<lambda>",
+            "count": 3
+          },
+          {
+            "line": 403,
+            "name": "Controls.test_transport_rejects_wrong_order_and_invalid_port_without_dispatch.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 404,
+            "name": "Controls.test_transport_rejects_wrong_order_and_invalid_port_without_dispatch.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 405,
+            "name": "Controls.test_transport_rejects_wrong_order_and_invalid_port_without_dispatch.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 408,
+            "name": "Controls.test_transport_rejects_wrong_order_and_invalid_port_without_dispatch.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 410,
+            "name": "Controls.test_transport_bounds_malformed_response_status_and_finally_cleanup",
+            "count": 1
+          },
+          {
+            "line": 417,
+            "name": "Controls.test_transport_bounds_malformed_response_status_and_finally_cleanup.<locals>.<lambda>",
+            "count": 5
+          },
+          {
+            "line": 418,
+            "name": "Controls.test_transport_bounds_malformed_response_status_and_finally_cleanup.<locals>.<lambda>",
+            "count": 5
+          },
+          {
+            "line": 420,
+            "name": "Controls.test_native_layout_signatures_and_symbolic_attribute_values",
+            "count": 1
+          },
+          {
+            "line": 429,
+            "name": "Controls.test_native_host_architecture_rejects_emulation_and_non_x64",
+            "count": 1
+          },
+          {
+            "line": 433,
+            "name": "Controls.test_native_host_architecture_rejects_emulation_and_non_x64.<locals>.architecture",
+            "count": 4
+          },
+          {
+            "line": 439,
+            "name": "Controls.test_native_host_architecture_rejects_emulation_and_non_x64.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 442,
+            "name": "Controls.test_owned_job_kill_flag_no_breakaway_and_failed_configuration_closes",
+            "count": 1
+          },
+          {
+            "line": 444,
+            "name": "Controls.test_owned_job_kill_flag_no_breakaway_and_failed_configuration_closes.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 446,
+            "name": "Controls.test_owned_job_kill_flag_no_breakaway_and_failed_configuration_closes.<locals>.configure",
+            "count": 1
+          },
+          {
+            "line": 451,
+            "name": "Controls.test_owned_job_kill_flag_no_breakaway_and_failed_configuration_closes.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 455,
+            "name": "Controls.test_atomic_attribute_create_flags_and_lifetime",
+            "count": 1
+          },
+          {
+            "line": 458,
+            "name": "Controls.test_atomic_attribute_create_flags_and_lifetime.<locals>.initialize",
+            "count": 4
+          },
+          {
+            "line": 462,
+            "name": "Controls.test_atomic_attribute_create_flags_and_lifetime.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 471,
+            "name": "Controls.test_atomic_attribute_create_flags_and_lifetime.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 472,
+            "name": "Controls.test_atomic_attribute_create_flags_and_lifetime.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 475,
+            "name": "Controls.test_containment_failure_terminates_suspended_child_without_resume",
+            "count": 1
+          },
+          {
+            "line": 477,
+            "name": "Controls.test_containment_failure_terminates_suspended_child_without_resume.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 478,
+            "name": "Controls.test_containment_failure_terminates_suspended_child_without_resume.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 480,
+            "name": "Controls.test_containment_failure_terminates_suspended_child_without_resume.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 482,
+            "name": "Controls.test_containment_failure_terminates_suspended_child_without_resume.<locals>.contained",
+            "count": 1
+          },
+          {
+            "line": 488,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume",
+            "count": 1
+          },
+          {
+            "line": 491,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 492,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.<locals>.in_any_job",
+            "count": 3
+          },
+          {
+            "line": 496,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 497,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 499,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.<locals>.truncated",
+            "count": 1
+          },
+          {
+            "line": 503,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 505,
+            "name": "Controls.test_current_job_complete_membership_is_required_before_child_resume.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 508,
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound",
+            "count": 1
+          },
+          {
+            "line": 511,
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound.<locals>.accounting",
+            "count": 2
+          },
+          {
+            "line": 519,
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound.<locals>.incomplete",
+            "count": 2
+          },
+          {
+            "line": 523,
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 524,
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 525,
+            "name": "Controls.test_job_accounting_membership_and_complete_pid_bound.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 527,
+            "name": "Controls.test_cleanup_requires_actual_zero_and_boundary_timeout",
+            "count": 1
+          },
+          {
+            "line": 529,
+            "name": "Controls.test_cleanup_requires_actual_zero_and_boundary_timeout.<locals>.<lambda>",
+            "count": 3
+          },
+          {
+            "line": 531,
+            "name": "Controls.test_cleanup_requires_actual_zero_and_boundary_timeout.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 533,
+            "name": "Controls.test_cleanup_requires_actual_zero_and_boundary_timeout.<locals>.failed_query",
+            "count": 1
+          },
+          {
+            "line": 537,
+            "name": "Controls.test_cleanup_requires_actual_zero_and_boundary_timeout.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 539,
+            "name": "Controls.test_owned_console_mode_is_observed_not_modified_and_always_detached",
+            "count": 1
+          },
+          {
+            "line": 541,
+            "name": "Controls.test_owned_console_mode_is_observed_not_modified_and_always_detached.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 542,
+            "name": "Controls.test_owned_console_mode_is_observed_not_modified_and_always_detached.<locals>.mode",
+            "count": 1
+          },
+          {
+            "line": 550,
+            "name": "Controls.test_owned_console_mode_is_observed_not_modified_and_always_detached.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 553,
+            "name": "Controls.test_no_echo_readiness_requires_actual_processed_only_mode",
+            "count": 1
+          },
+          {
+            "line": 556,
+            "name": "Controls.test_no_echo_readiness_requires_actual_processed_only_mode.<locals>.<lambda>",
+            "count": 8
+          },
+          {
+            "line": 562,
+            "name": "Controls.test_no_echo_readiness_requires_actual_processed_only_mode.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 563,
+            "name": "Controls.test_no_echo_readiness_requires_actual_processed_only_mode.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 564,
+            "name": "Controls.test_no_echo_readiness_requires_actual_processed_only_mode.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 566,
+            "name": "Controls.test_actual_read_loop_handles_eof_and_keeps_draining_after_overflow",
+            "count": 1
+          },
+          {
+            "line": 569,
+            "name": "Controls.test_actual_read_loop_handles_eof_and_keeps_draining_after_overflow.<locals>.read",
+            "count": 11
+          },
+          {
+            "line": 577,
+            "name": "Controls.test_writer_partial_transfers_count_logical_inputs_only",
+            "count": 1
+          },
+          {
+            "line": 580,
+            "name": "Controls.test_writer_partial_transfers_count_logical_inputs_only.<locals>.write",
+            "count": 5
+          },
+          {
+            "line": 591,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure",
+            "count": 1
+          },
+          {
+            "line": 594,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.<locals>.write",
+            "count": 2
+          },
+          {
+            "line": 597,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.<locals>.Inputs",
+            "count": 1
+          },
+          {
+            "line": 599,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.<locals>.Inputs.get",
+            "count": 4
+          },
+          {
+            "line": 610,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.<locals>.<genexpr>",
+            "count": 5
+          },
+          {
+            "line": 612,
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input",
+            "count": 1
+          },
+          {
+            "line": 615,
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input.<locals>.Inputs",
+            "count": 1
+          },
+          {
+            "line": 617,
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input.<locals>.Inputs.get",
+            "count": 1
+          },
+          {
+            "line": 626,
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset",
+            "count": 1
+          },
+          {
+            "line": 629,
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset.<locals>.Inputs",
+            "count": 1
+          },
+          {
+            "line": 631,
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset.<locals>.Inputs.get",
+            "count": 3
+          },
+          {
+            "line": 639,
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset.<locals>.<genexpr>",
+            "count": 4
+          },
+          {
+            "line": 641,
+            "name": "Controls.test_reader_unexpected_error_does_not_claim_pipe_eof",
+            "count": 1
+          },
+          {
+            "line": 643,
+            "name": "Controls.test_reader_unexpected_error_does_not_claim_pipe_eof.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 649,
+            "name": "Controls.test_reader_zero_bytes_and_broken_pipe_record_actual_eof",
+            "count": 1
+          },
+          {
+            "line": 653,
+            "name": "Controls.test_reader_zero_bytes_and_broken_pipe_record_actual_eof.<locals>.<lambda>",
+            "count": 3
+          },
+          {
+            "line": 659,
+            "name": "Controls.test_worker_prompt_timeout_survives_later_reader_and_cleanup_fault",
+            "count": 1
+          },
+          {
+            "line": 669,
+            "name": "Controls.test_worker_ascii_prefix_accepts_valid_unicode_renderings_only_after_no_echo",
+            "count": 1
+          },
+          {
+            "line": 683,
+            "name": "Controls.test_worker_ascii_prefix_grants_no_input_without_owned_no_echo_mode",
+            "count": 1
+          },
+          {
+            "line": 692,
+            "name": "Controls.test_worker_ascii_prefix_does_not_accept_malformed_utf8",
+            "count": 1
+          },
+          {
+            "line": 700,
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option",
+            "count": 1
+          },
+          {
+            "line": 707,
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 709,
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.<locals>.pseudo_console",
+            "count": 1
+          },
+          {
+            "line": 712,
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.<locals>.launch",
+            "count": 1
+          },
+          {
+            "line": 716,
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.<locals>.thread",
+            "count": 2
+          },
+          {
+            "line": 719,
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.<locals>.thread.<locals>.<lambda>",
+            "count": 7
+          },
+          {
+            "line": 723,
+            "name": "Controls.test_worker_campaign_launch_uses_required_project_option.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 730,
+            "name": "Controls.test_controller_success_reconciles_worker_exit_and_actual_empty_job",
+            "count": 1
+          },
+          {
+            "line": 732,
+            "name": "Controls.test_controller_success_reconciles_worker_exit_and_actual_empty_job.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 734,
+            "name": "Controls.test_controller_success_reconciles_worker_exit_and_actual_empty_job.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 735,
+            "name": "Controls.test_controller_success_reconciles_worker_exit_and_actual_empty_job.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 736,
+            "name": "Controls.test_controller_success_reconciles_worker_exit_and_actual_empty_job.<locals>.<lambda>",
+            "count": 4
+          },
+          {
+            "line": 746,
+            "name": "Controls.test_successful_worker_lingering_descendant_is_closed_cleanup_failure",
+            "count": 1
+          },
+          {
+            "line": 748,
+            "name": "Controls.test_successful_worker_lingering_descendant_is_closed_cleanup_failure.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 750,
+            "name": "Controls.test_successful_worker_lingering_descendant_is_closed_cleanup_failure.<locals>.<lambda>",
+            "count": 3
+          },
+          {
+            "line": 751,
+            "name": "Controls.test_successful_worker_lingering_descendant_is_closed_cleanup_failure.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 752,
+            "name": "Controls.test_successful_worker_lingering_descendant_is_closed_cleanup_failure.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 758,
+            "name": "Controls.test_successful_worker_lingering_descendant_is_closed_cleanup_failure.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 763,
+            "name": "Controls.test_controller_failure_and_malformed_results_force_job_cleanup",
+            "count": 1
+          },
+          {
+            "line": 766,
+            "name": "Controls.test_controller_failure_and_malformed_results_force_job_cleanup.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 768,
+            "name": "Controls.test_controller_failure_and_malformed_results_force_job_cleanup.<locals>.<lambda>",
+            "count": 6
+          },
+          {
+            "line": 769,
+            "name": "Controls.test_controller_failure_and_malformed_results_force_job_cleanup.<locals>.<lambda>",
+            "count": 4
+          },
+          {
+            "line": 770,
+            "name": "Controls.test_controller_failure_and_malformed_results_force_job_cleanup.<locals>.<lambda>",
+            "count": 4
+          },
+          {
+            "line": 775,
+            "name": "Controls.test_controller_failure_and_malformed_results_force_job_cleanup.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 780,
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit",
+            "count": 1
+          },
+          {
+            "line": 783,
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 785,
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit.<locals>.<lambda>",
+            "count": 6
+          },
+          {
+            "line": 786,
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 787,
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 789,
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit.<locals>.broken",
+            "count": 2
+          },
+          {
+            "line": 795,
+            "name": "Controls.test_controller_timeout_and_failed_accounting_never_claim_clean_exit.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 800,
+            "name": "Controls.test_standalone_receipt_collision_is_silent_and_no_replace",
+            "count": 1
+          },
+          {
+            "line": 812,
+            "name": "Controls.test_unsupported_cli_is_incomplete_closed_and_secret_free",
+            "count": 1
+          },
+          {
+            "line": 826,
+            "name": "Controls.test_unsupported_cli_is_incomplete_closed_and_secret_free.<locals>.<genexpr>",
+            "count": 14
+          },
+          {
+            "line": 831,
+            "name": "struct_pack",
+            "count": 3
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_windows_console.py",
+          "bytes": 18887,
+          "sha256": "81f35da41306832fece6f3d8b0e4cb20a51eb6efecd916c8afb958ca5a498b13"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "exact_keys",
+            "kind": "function",
+            "line": 59,
+            "end_line": 62,
+            "documented": true,
+            "actual_primary_thread_calls": 527
+          },
+          {
+            "name": "file_pin",
+            "kind": "function",
+            "line": 65,
+            "end_line": 73,
+            "documented": true,
+            "actual_primary_thread_calls": 168
+          },
+          {
+            "name": "unique_object",
+            "kind": "function",
+            "line": 76,
+            "end_line": 83,
+            "documented": true,
+            "actual_primary_thread_calls": 757
+          },
+          {
+            "name": "reject_constant",
+            "kind": "function",
+            "line": 86,
+            "end_line": 88,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "native_bytes",
+            "kind": "function",
+            "line": 91,
+            "end_line": 116,
+            "documented": true,
+            "actual_primary_thread_calls": 51
+          },
+          {
+            "name": "validate_platform",
+            "kind": "function",
+            "line": 119,
+            "end_line": 132,
+            "documented": true,
+            "actual_primary_thread_calls": 39
+          },
+          {
+            "name": "validate_checks",
+            "kind": "function",
+            "line": 135,
+            "end_line": 152,
+            "documented": true,
+            "actual_primary_thread_calls": 32
+          },
+          {
+            "name": "validate_pass",
+            "kind": "function",
+            "line": 155,
+            "end_line": 175,
+            "documented": true,
+            "actual_primary_thread_calls": 18
+          },
+          {
+            "name": "read_native_receipt",
+            "kind": "function",
+            "line": 178,
+            "end_line": 214,
+            "documented": true,
+            "actual_primary_thread_calls": 48
+          },
+          {
+            "name": "capture_identity",
+            "kind": "function",
+            "line": 217,
+            "end_line": 221,
+            "documented": true,
+            "actual_primary_thread_calls": 45
+          },
+          {
+            "name": "native_run",
+            "kind": "function",
+            "line": 224,
+            "end_line": 238,
+            "documented": true,
+            "actual_primary_thread_calls": 16
+          },
+          {
+            "name": "tools_complete",
+            "kind": "function",
+            "line": 241,
+            "end_line": 243,
+            "documented": true,
+            "actual_primary_thread_calls": 36
+          },
+          {
+            "name": "verify",
+            "kind": "function",
+            "line": 246,
+            "end_line": 285,
+            "documented": true,
+            "actual_primary_thread_calls": 25
+          },
+          {
+            "name": "main",
+            "kind": "function",
+            "line": 288,
+            "end_line": 309,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0,
+          "17": 0,
+          "19": 0,
+          "20": 0,
+          "21": 0,
+          "22": 0,
+          "23": 0,
+          "24": 0,
+          "25": 0,
+          "26": 0,
+          "32": 0,
+          "40": 0,
+          "45": 0,
+          "46": 0,
+          "47": 0,
+          "56": 0,
+          "59": 0,
+          "61": 527,
+          "62": 6,
+          "65": 0,
+          "67": 168,
+          "68": 6,
+          "69": 162,
+          "70": 161,
+          "71": 2,
+          "72": 159,
+          "73": 0,
+          "76": 0,
+          "78": 757,
+          "79": 3736,
+          "80": 2980,
+          "81": 1,
+          "82": 2979,
+          "83": 756,
+          "86": 0,
+          "88": 1,
+          "91": 0,
+          "93": 51,
+          "94": 51,
+          "95": 50,
+          "96": 3,
+          "97": 47,
+          "98": 47,
+          "99": 47,
+          "100": 47,
+          "101": 1,
+          "102": 46,
+          "103": 0,
+          "104": 92,
+          "105": 46,
+          "106": 46,
+          "107": 46,
+          "108": 46,
+          "109": 138,
+          "110": 92,
+          "111": 0,
+          "112": 46,
+          "113": 0,
+          "114": 46,
+          "116": 47,
+          "119": 0,
+          "121": 39,
+          "122": 38,
+          "123": 0,
+          "124": 38,
+          "125": 38,
+          "126": 0,
+          "127": 38,
+          "128": 0,
+          "129": 38,
+          "130": 0,
+          "131": 38,
+          "132": 0,
+          "135": 0,
+          "137": 32,
+          "138": 434,
+          "139": 403,
+          "140": 0,
+          "141": 139,
+          "142": 112,
+          "143": 4,
+          "144": 27,
+          "145": 27,
+          "146": 0,
+          "147": 147,
+          "148": 123,
+          "149": 123,
+          "150": 2,
+          "151": 121,
+          "152": 1,
+          "155": 0,
+          "157": 18,
+          "158": 18,
+          "159": 18,
+          "160": 1,
+          "161": 17,
+          "162": 0,
+          "163": 136,
+          "164": 0,
+          "165": 462,
+          "166": 2,
+          "167": 120,
+          "168": 1,
+          "169": 98,
+          "170": 2,
+          "171": 12,
+          "172": 12,
+          "173": 1,
+          "174": 11,
+          "175": 1,
+          "178": 0,
+          "180": 48,
+          "181": 46,
+          "182": 43,
+          "183": 42,
+          "184": 1,
+          "185": 41,
+          "186": 2,
+          "187": 39,
+          "188": 38,
+          "189": 38,
+          "190": 35,
+          "191": 2,
+          "192": 33,
+          "193": 33,
+          "194": 99,
+          "195": 66,
+          "196": 33,
+          "197": 32,
+          "198": 32,
+          "199": 32,
+          "200": 0,
+          "201": 32,
+          "202": 24,
+          "203": 23,
+          "204": 18,
+          "205": 0,
+          "206": 18,
+          "208": 5,
+          "209": 0,
+          "210": 5,
+          "211": 1,
+          "212": 43,
+          "213": 1,
+          "214": 13,
+          "217": 0,
+          "219": 45,
+          "220": 225,
+          "221": 45,
+          "224": 0,
+          "226": 32,
+          "227": 16,
+          "228": 16,
+          "229": 16,
+          "230": 16,
+          "231": 2,
+          "232": 2,
+          "233": 14,
+          "234": 14,
+          "235": 11,
+          "236": 3,
+          "237": 3,
+          "238": 14,
+          "241": 0,
+          "243": 654,
+          "246": 0,
+          "248": 25,
+          "249": 0,
+          "250": 25,
+          "251": 25,
+          "252": 1,
+          "253": 24,
+          "254": 48,
+          "255": 24,
+          "256": 24,
+          "257": 24,
+          "258": 24,
+          "259": 24,
+          "260": 23,
+          "261": 23,
+          "262": 23,
+          "263": 23,
+          "264": 22,
+          "265": 1,
+          "266": 21,
+          "267": 1,
+          "268": 20,
+          "269": 4,
+          "270": 4,
+          "272": 16,
+          "273": 16,
+          "274": 16,
+          "275": 22,
+          "276": 22,
+          "277": 22,
+          "278": 22,
+          "279": 22,
+          "280": 8,
+          "281": 2,
+          "283": 2,
+          "284": 24,
+          "285": 24,
+          "288": 0,
+          "290": 2,
+          "291": 2,
+          "292": 2,
+          "293": 2,
+          "294": 2,
+          "295": 2,
+          "296": 2,
+          "297": 2,
+          "298": 2,
+          "299": 2,
+          "300": 2,
+          "301": 2,
+          "302": 2,
+          "303": 4,
+          "304": 2,
+          "305": 1,
+          "306": 1,
+          "307": 1,
+          "308": 1,
+          "309": 1,
+          "312": 0,
+          "313": 0
+        },
+        "positive_lines": 176,
+        "zero_lines": 57,
+        "calls": [
+          {
+            "line": 59,
+            "name": "exact_keys",
+            "count": 527
+          },
+          {
+            "line": 65,
+            "name": "file_pin",
+            "count": 168
+          },
+          {
+            "line": 76,
+            "name": "unique_object",
+            "count": 757
+          },
+          {
+            "line": 86,
+            "name": "reject_constant",
+            "count": 1
+          },
+          {
+            "line": 91,
+            "name": "native_bytes",
+            "count": 51
+          },
+          {
+            "line": 119,
+            "name": "validate_platform",
+            "count": 39
+          },
+          {
+            "line": 135,
+            "name": "validate_checks",
+            "count": 32
+          },
+          {
+            "line": 155,
+            "name": "validate_pass",
+            "count": 18
+          },
+          {
+            "line": 163,
+            "name": "validate_pass.<locals>.<genexpr>",
+            "count": 68
+          },
+          {
+            "line": 165,
+            "name": "validate_pass.<locals>.<genexpr>",
+            "count": 233
+          },
+          {
+            "line": 167,
+            "name": "validate_pass.<locals>.<genexpr>",
+            "count": 60
+          },
+          {
+            "line": 178,
+            "name": "read_native_receipt",
+            "count": 48
+          },
+          {
+            "line": 212,
+            "name": "read_native_receipt.<locals>.<genexpr>",
+            "count": 22
+          },
+          {
+            "line": 217,
+            "name": "capture_identity",
+            "count": 45
+          },
+          {
+            "line": 224,
+            "name": "native_run",
+            "count": 16
+          },
+          {
+            "line": 241,
+            "name": "tools_complete",
+            "count": 36
+          },
+          {
+            "line": 243,
+            "name": "tools_complete.<locals>.<genexpr>",
+            "count": 346
+          },
+          {
+            "line": 246,
+            "name": "verify",
+            "count": 25
+          },
+          {
+            "line": 288,
+            "name": "main",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_verify_workspace_windows_console.py",
+          "bytes": 20902,
+          "sha256": "092e23a2a3efc93c3bc797bd7626bb0d32976f6eb972c4463a2f3fa7d8324c20"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "WindowsWrapperTests",
+            "kind": "class",
+            "line": 17,
+            "end_line": 324,
+            "documented": true
+          },
+          {
+            "name": "WindowsWrapperTests.setUp",
+            "kind": "function",
+            "line": 20,
+            "end_line": 37,
+            "documented": true,
+            "actual_primary_thread_calls": 20
+          },
+          {
+            "name": "WindowsWrapperTests.native_fixture",
+            "kind": "function",
+            "line": 39,
+            "end_line": 57,
+            "documented": true,
+            "actual_primary_thread_calls": 47
+          },
+          {
+            "name": "WindowsWrapperTests.read_fixture",
+            "kind": "function",
+            "line": 59,
+            "end_line": 63,
+            "documented": true,
+            "actual_primary_thread_calls": 30
+          },
+          {
+            "name": "WindowsWrapperTests.run_wrapper",
+            "kind": "function",
+            "line": 65,
+            "end_line": 87,
+            "documented": true,
+            "actual_primary_thread_calls": 23
+          },
+          {
+            "name": "WindowsWrapperTests.run_wrapper.producer",
+            "kind": "function",
+            "line": 72,
+            "end_line": 81,
+            "documented": true,
+            "actual_primary_thread_calls": 16
+          },
+          {
+            "name": "WindowsWrapperTests.test_complete_synthetic_fixture_preserves_scope_and_pins",
+            "kind": "function",
+            "line": 89,
+            "end_line": 101,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_missing_failed_or_unverified_producer_never_passes",
+            "kind": "function",
+            "line": 103,
+            "end_line": 111,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_valid_failed_and_unsupported_producers_are_distinct",
+            "kind": "function",
+            "line": 113,
+            "end_line": 120,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_build_and_dirty_inputs_prevent_native_execution",
+            "kind": "function",
+            "line": 122,
+            "end_line": 129,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_source_and_release_drift_override_native_pass",
+            "kind": "function",
+            "line": 131,
+            "end_line": 140,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_each_supplemented_input_drift_fails",
+            "kind": "function",
+            "line": 142,
+            "end_line": 151,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_tool_missing_or_changed_fails_closed",
+            "kind": "function",
+            "line": 153,
+            "end_line": 165,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_hosted_parent_order_and_context_are_not_local_credit",
+            "kind": "function",
+            "line": 167,
+            "end_line": 179,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_closed_shape_and_integral_types",
+            "kind": "function",
+            "line": 181,
+            "end_line": 201,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding",
+            "kind": "function",
+            "line": 203,
+            "end_line": 218,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_response_method_order_and_outcome",
+            "kind": "function",
+            "line": 220,
+            "end_line": 230,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_duplicate_nonfinite_and_oversized_receipts",
+            "kind": "function",
+            "line": 232,
+            "end_line": 241,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_link_receipts_are_rejected_or_explicitly_unavailable",
+            "kind": "function",
+            "line": 242,
+            "end_line": 252,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_nonregular_artifacts_fail_before_open",
+            "kind": "function",
+            "line": 254,
+            "end_line": 264,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_unsupported_cannot_invent_native_flags",
+            "kind": "function",
+            "line": 266,
+            "end_line": 275,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_fixture_mutations_do_not_taint_expected_bindings",
+            "kind": "function",
+            "line": 277,
+            "end_line": 287,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_existing_output_is_never_replaced",
+            "kind": "function",
+            "line": 289,
+            "end_line": 297,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_main_publication_error_is_fixed_nonzero",
+            "kind": "function",
+            "line": 299,
+            "end_line": 306,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_unexpected_input_exception_is_redacted_and_failed",
+            "kind": "function",
+            "line": 308,
+            "end_line": 315,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "WindowsWrapperTests.test_main_forwards_hosted_identifiers_and_build",
+            "kind": "function",
+            "line": 317,
+            "end_line": 324,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "14": 0,
+          "17": 0,
+          "18": 0,
+          "20": 0,
+          "22": 20,
+          "23": 20,
+          "24": 20,
+          "25": 20,
+          "26": 20,
+          "27": 100,
+          "28": 80,
+          "29": 80,
+          "30": 80,
+          "31": 20,
+          "32": 40,
+          "33": 20,
+          "34": 40,
+          "35": 20,
+          "36": 20,
+          "37": 100,
+          "39": 0,
+          "41": 47,
+          "42": 94,
+          "43": 47,
+          "44": 47,
+          "45": 47,
+          "46": 47,
+          "47": 705,
+          "48": 329,
+          "49": 47,
+          "50": 47,
+          "51": 5,
+          "52": 5,
+          "53": 47,
+          "54": 3,
+          "55": 54,
+          "56": 3,
+          "57": 47,
+          "59": 0,
+          "61": 30,
+          "62": 30,
+          "63": 30,
+          "65": 0,
+          "67": 23,
+          "68": 23,
+          "69": 23,
+          "70": 23,
+          "72": 23,
+          "74": 16,
+          "75": 16,
+          "76": 16,
+          "77": 15,
+          "78": 15,
+          "79": 16,
+          "80": 4,
+          "81": 16,
+          "83": 46,
+          "84": 46,
+          "85": 46,
+          "86": 23,
+          "87": 23,
+          "89": 0,
+          "91": 1,
+          "92": 1,
+          "93": 1,
+          "94": 1,
+          "95": 1,
+          "96": 1,
+          "97": 1,
+          "98": 1,
+          "99": 1,
+          "100": 1,
+          "101": 1,
+          "103": 0,
+          "105": 6,
+          "106": 10,
+          "107": 5,
+          "108": 5,
+          "109": 5,
+          "110": 5,
+          "111": 5,
+          "113": 0,
+          "115": 3,
+          "116": 2,
+          "117": 2,
+          "118": 2,
+          "119": 2,
+          "120": 2,
+          "122": 0,
+          "124": 11,
+          "125": 5,
+          "126": 5,
+          "127": 5,
+          "128": 5,
+          "129": 5,
+          "131": 0,
+          "133": 3,
+          "134": 2,
+          "135": 2,
+          "136": 2,
+          "137": 2,
+          "138": 2,
+          "139": 2,
+          "140": 2,
+          "142": 0,
+          "144": 5,
+          "145": 4,
+          "146": 4,
+          "147": 4,
+          "148": 8,
+          "149": 4,
+          "150": 4,
+          "151": 4,
+          "153": 0,
+          "155": 1,
+          "156": 1,
+          "157": 1,
+          "158": 1,
+          "159": 1,
+          "160": 1,
+          "161": 1,
+          "162": 1,
+          "163": 1,
+          "164": 1,
+          "165": 1,
+          "167": 0,
+          "169": 1,
+          "170": 1,
+          "171": 1,
+          "172": 1,
+          "173": 1,
+          "174": 1,
+          "175": 1,
+          "176": 1,
+          "177": 1,
+          "178": 1,
+          "179": 1,
+          "181": 0,
+          "183": 1,
+          "184": 7,
+          "185": 6,
+          "186": 6,
+          "187": 12,
+          "188": 6,
+          "189": 6,
+          "190": 12,
+          "191": 6,
+          "192": 5,
+          "193": 4,
+          "194": 4,
+          "195": 8,
+          "196": 4,
+          "197": 3,
+          "198": 2,
+          "199": 2,
+          "200": 4,
+          "201": 2,
+          "203": 0,
+          "205": 3,
+          "206": 2,
+          "207": 2,
+          "208": 2,
+          "209": 2,
+          "210": 2,
+          "211": 2,
+          "212": 2,
+          "213": 2,
+          "214": 10,
+          "215": 9,
+          "216": 9,
+          "217": 18,
+          "218": 9,
+          "220": 0,
+          "222": 5,
+          "223": 4,
+          "224": 4,
+          "225": 8,
+          "226": 4,
+          "227": 1,
+          "228": 1,
+          "229": 1,
+          "230": 1,
+          "232": 0,
+          "234": 1,
+          "235": 1,
+          "236": 2,
+          "237": 1,
+          "238": 5,
+          "239": 4,
+          "240": 8,
+          "241": 4,
+          "242": 0,
+          "244": 1,
+          "245": 1,
+          "246": 1,
+          "247": 1,
+          "248": 1,
+          "249": 0,
+          "250": 0,
+          "251": 2,
+          "252": 1,
+          "254": 0,
+          "256": 1,
+          "257": 1,
+          "258": 2,
+          "259": 1,
+          "260": 1,
+          "261": 1,
+          "262": 2,
+          "263": 1,
+          "264": 1,
+          "266": 0,
+          "268": 1,
+          "269": 1,
+          "270": 2,
+          "271": 1,
+          "272": 1,
+          "273": 1,
+          "274": 2,
+          "275": 1,
+          "277": 0,
+          "279": 1,
+          "280": 1,
+          "281": 1,
+          "282": 1,
+          "283": 1,
+          "284": 2,
+          "285": 1,
+          "286": 1,
+          "287": 1,
+          "289": 0,
+          "291": 1,
+          "292": 1,
+          "293": 1,
+          "294": 2,
+          "295": 1,
+          "296": 1,
+          "297": 1,
+          "299": 0,
+          "301": 1,
+          "302": 1,
+          "303": 2,
+          "304": 1,
+          "305": 1,
+          "306": 1,
+          "308": 0,
+          "310": 2,
+          "311": 1,
+          "312": 1,
+          "313": 1,
+          "314": 1,
+          "315": 1,
+          "317": 0,
+          "319": 2,
+          "320": 1,
+          "321": 2,
+          "322": 1,
+          "323": 1,
+          "324": 1,
+          "327": 0,
+          "328": 0
+        },
+        "positive_lines": 230,
+        "zero_lines": 42,
+        "calls": [
+          {
+            "line": 20,
+            "name": "WindowsWrapperTests.setUp",
+            "count": 20
+          },
+          {
+            "line": 39,
+            "name": "WindowsWrapperTests.native_fixture",
+            "count": 47
+          },
+          {
+            "line": 59,
+            "name": "WindowsWrapperTests.read_fixture",
+            "count": 30
+          },
+          {
+            "line": 65,
+            "name": "WindowsWrapperTests.run_wrapper",
+            "count": 23
+          },
+          {
+            "line": 72,
+            "name": "WindowsWrapperTests.run_wrapper.<locals>.producer",
+            "count": 16
+          },
+          {
+            "line": 89,
+            "name": "WindowsWrapperTests.test_complete_synthetic_fixture_preserves_scope_and_pins",
+            "count": 1
+          },
+          {
+            "line": 103,
+            "name": "WindowsWrapperTests.test_missing_failed_or_unverified_producer_never_passes",
+            "count": 1
+          },
+          {
+            "line": 113,
+            "name": "WindowsWrapperTests.test_valid_failed_and_unsupported_producers_are_distinct",
+            "count": 1
+          },
+          {
+            "line": 122,
+            "name": "WindowsWrapperTests.test_build_and_dirty_inputs_prevent_native_execution",
+            "count": 1
+          },
+          {
+            "line": 124,
+            "name": "WindowsWrapperTests.test_build_and_dirty_inputs_prevent_native_execution.<locals>.<genexpr>",
+            "count": 5
+          },
+          {
+            "line": 131,
+            "name": "WindowsWrapperTests.test_source_and_release_drift_override_native_pass",
+            "count": 1
+          },
+          {
+            "line": 142,
+            "name": "WindowsWrapperTests.test_each_supplemented_input_drift_fails",
+            "count": 1
+          },
+          {
+            "line": 148,
+            "name": "WindowsWrapperTests.test_each_supplemented_input_drift_fails.<locals>.<lambda>",
+            "count": 4
+          },
+          {
+            "line": 153,
+            "name": "WindowsWrapperTests.test_tool_missing_or_changed_fails_closed",
+            "count": 1
+          },
+          {
+            "line": 167,
+            "name": "WindowsWrapperTests.test_hosted_parent_order_and_context_are_not_local_credit",
+            "count": 1
+          },
+          {
+            "line": 181,
+            "name": "WindowsWrapperTests.test_closed_shape_and_integral_types",
+            "count": 1
+          },
+          {
+            "line": 203,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding",
+            "count": 1
+          },
+          {
+            "line": 205,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 206,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 207,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 208,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 209,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 210,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 211,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 212,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 213,
+            "name": "WindowsWrapperTests.test_native_pass_denominators_and_receipt_binding.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 220,
+            "name": "WindowsWrapperTests.test_response_method_order_and_outcome",
+            "count": 1
+          },
+          {
+            "line": 232,
+            "name": "WindowsWrapperTests.test_duplicate_nonfinite_and_oversized_receipts",
+            "count": 1
+          },
+          {
+            "line": 242,
+            "name": "WindowsWrapperTests.test_link_receipts_are_rejected_or_explicitly_unavailable",
+            "count": 1
+          },
+          {
+            "line": 254,
+            "name": "WindowsWrapperTests.test_nonregular_artifacts_fail_before_open",
+            "count": 1
+          },
+          {
+            "line": 266,
+            "name": "WindowsWrapperTests.test_unsupported_cannot_invent_native_flags",
+            "count": 1
+          },
+          {
+            "line": 277,
+            "name": "WindowsWrapperTests.test_fixture_mutations_do_not_taint_expected_bindings",
+            "count": 1
+          },
+          {
+            "line": 289,
+            "name": "WindowsWrapperTests.test_existing_output_is_never_replaced",
+            "count": 1
+          },
+          {
+            "line": 299,
+            "name": "WindowsWrapperTests.test_main_publication_error_is_fixed_nonzero",
+            "count": 1
+          },
+          {
+            "line": 308,
+            "name": "WindowsWrapperTests.test_unexpected_input_exception_is_redacted_and_failed",
+            "count": 1
+          },
+          {
+            "line": 317,
+            "name": "WindowsWrapperTests.test_main_forwards_hosted_identifiers_and_build",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "totals": {
+      "function_docs": 183,
+      "functions": 183,
+      "functions_with_primary_thread_calls": 178,
+      "class_docs": 23,
+      "classes": 23,
+      "module_docs": 4,
+      "modules": 4,
+      "positive_lines": 1530,
+      "zero_lines": 444
+    },
+    "qualification": [
+      "exact four-file cohort; all static line zeros and literal undocumented declarations retained",
+      "imports before tracing; only primary thread; child unsupported CLI and worker threads unmeasured",
+      "calls do not imply all branches or function-body statements covered",
+      "fake Win32/HTTP adapter controls only; no Forge/native Windows/browser/OS-denial execution",
+      "all roadmap/human/native/release and final integrated docs gates remain open"
+    ],
+    "native_windows_observed": false,
+    "product_executed": false
+  },
+  "source_delta_doc_audit": {
+    "pin": {
+      "path": "/private/tmp/forge-f04-windows-console-candidate-v5/source-delta-doc-audit-v2.json",
+      "bytes": 5540,
+      "sha256": "3cee6bfece09349018e85e802e11e4153c03ede2fbd848831911794f34cd079f"
+    },
+    "data": {
+      "prior_test_executable_AST": {
+        "added_test_names": [
+          "test_idle_writer_absolute_deadline_is_typed_without_wait_reset",
+          "test_idle_writer_cancellation_exits_without_fault_or_input",
+          "test_idle_writer_queue_empty_is_readiness_not_native_failure",
+          "test_reader_unexpected_error_does_not_claim_pipe_eof",
+          "test_reader_zero_bytes_and_broken_pipe_record_actual_eof",
+          "test_worker_ascii_prefix_accepts_valid_unicode_renderings_only_after_no_echo",
+          "test_worker_ascii_prefix_does_not_accept_malformed_utf8",
+          "test_worker_ascii_prefix_grants_no_input_without_owned_no_echo_mode",
+          "test_worker_prompt_timeout_survives_later_reader_and_cleanup_fault"
+        ],
+        "all_equal": true,
+        "baseline_tests": 34,
+        "doc_only_changed": [
+          "Controls.test_chunked_unicode_prompts_and_vt_controls"
+        ],
+        "equal_tests": 34,
+        "native_coverage_credit": false,
+        "supersedes": "Initial source-delta-doc-audit.json reported51 including17 nested old test helpers. This successor restricts test denominator to34 direct Controls.test_* methods."
+      },
+      "test_workspace_windows_console.py": {
+        "anonymous_lambdas": 0,
+        "changed_or_new_named_function_cohort": [
+          {
+            "documented": true,
+            "line": 348,
+            "name": "TerminalMonitor.finish"
+          },
+          {
+            "documented": true,
+            "line": 724,
+            "name": "read_terminal"
+          },
+          {
+            "documented": true,
+            "line": 746,
+            "name": "write_terminal"
+          },
+          {
+            "documented": true,
+            "line": 799,
+            "name": "worker_campaign"
+          }
+        ],
+        "class_docs": 12,
+        "classes": 12,
+        "module_doc": true,
+        "whole_named_documented": 48,
+        "whole_named_functions": 48
+      },
+      "test_workspace_windows_console_controls.py": {
+        "anonymous_lambdas": 103,
+        "changed_or_new_named_function_cohort": [
+          {
+            "documented": true,
+            "line": 156,
+            "name": "CampaignAdapter.__init__"
+          },
+          {
+            "documented": true,
+            "line": 179,
+            "name": "CampaignAdapter.pseudo_console"
+          },
+          {
+            "documented": true,
+            "line": 184,
+            "name": "CampaignAdapter.create"
+          },
+          {
+            "documented": true,
+            "line": 191,
+            "name": "CampaignAdapter.console_mode"
+          },
+          {
+            "documented": true,
+            "line": 196,
+            "name": "CampaignAdapter.write"
+          },
+          {
+            "documented": true,
+            "line": 201,
+            "name": "CampaignAdapter.thread"
+          },
+          {
+            "documented": true,
+            "line": 203,
+            "name": "CampaignAdapter.thread.start"
+          },
+          {
+            "documented": true,
+            "line": 211,
+            "name": "CampaignAdapter.thread.join"
+          },
+          {
+            "documented": true,
+            "line": 221,
+            "name": "CampaignAdapter.thread.alive"
+          },
+          {
+            "documented": true,
+            "line": 226,
+            "name": "CampaignAdapter.connection"
+          },
+          {
+            "documented": true,
+            "line": 236,
+            "name": "CampaignAdapter.queries"
+          },
+          {
+            "documented": true,
+            "line": 243,
+            "name": "CampaignAdapter.run"
+          },
+          {
+            "documented": true,
+            "line": 321,
+            "name": "Controls.test_chunked_unicode_prompts_and_vt_controls"
+          },
+          {
+            "documented": true,
+            "line": 591,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure"
+          },
+          {
+            "documented": true,
+            "line": 594,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.write"
+          },
+          {
+            "documented": true,
+            "line": 599,
+            "name": "Controls.test_idle_writer_queue_empty_is_readiness_not_native_failure.Inputs.get"
+          },
+          {
+            "documented": true,
+            "line": 612,
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input"
+          },
+          {
+            "documented": true,
+            "line": 617,
+            "name": "Controls.test_idle_writer_cancellation_exits_without_fault_or_input.Inputs.get"
+          },
+          {
+            "documented": true,
+            "line": 626,
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset"
+          },
+          {
+            "documented": true,
+            "line": 631,
+            "name": "Controls.test_idle_writer_absolute_deadline_is_typed_without_wait_reset.Inputs.get"
+          },
+          {
+            "documented": true,
+            "line": 641,
+            "name": "Controls.test_reader_unexpected_error_does_not_claim_pipe_eof"
+          },
+          {
+            "documented": true,
+            "line": 649,
+            "name": "Controls.test_reader_zero_bytes_and_broken_pipe_record_actual_eof"
+          },
+          {
+            "documented": true,
+            "line": 659,
+            "name": "Controls.test_worker_prompt_timeout_survives_later_reader_and_cleanup_fault"
+          },
+          {
+            "documented": true,
+            "line": 669,
+            "name": "Controls.test_worker_ascii_prefix_accepts_valid_unicode_renderings_only_after_no_echo"
+          },
+          {
+            "documented": true,
+            "line": 683,
+            "name": "Controls.test_worker_ascii_prefix_grants_no_input_without_owned_no_echo_mode"
+          },
+          {
+            "documented": true,
+            "line": 692,
+            "name": "Controls.test_worker_ascii_prefix_does_not_accept_malformed_utf8"
+          }
+        ],
+        "class_docs": 10,
+        "classes": 10,
+        "module_doc": true,
+        "whole_named_documented": 96,
+        "whole_named_functions": 96
+      }
+    }
+  },
+  "author_candidate_replay": {
+    "index": {
+      "path": "/private/tmp/forge-f04-windows-console-candidate-v5/index.json",
+      "bytes": 5756,
+      "sha256": "6436832769d25a92ac4a7c9dbe68d17bb79833741845f8c1265a0133824e1c87"
+    },
+    "verified_file_pins": 27
+  },
+  "independent_source_review_replay": {
+    "index": {
+      "path": "/private/tmp/forge-f04-windows-console-v5-independent-review-v1/index.json",
+      "bytes": 12716,
+      "sha256": "8f9bf491ea802c96bdd622c13be2034a9920c1b5f5f6a089997ed9fc82a55e36"
+    },
+    "verified_file_pins": 52
+  },
+  "independent_source_review": {
+    "path": "/private/tmp/forge-f04-windows-console-v5-independent-review-v1/review.json",
+    "bytes": 7168,
+    "sha256": "eedafa8edf00f5e7a9e9ddf36187a88f7597f20902c0722293ed5b6954601bf8"
+  },
+  "independent_startup_diagnosis": {
+    "path": "/private/tmp/forge-f04-windows-startup-independent-diagnosis-v1/index.json",
+    "bytes": 4652,
+    "sha256": "f14f1c467a674ed50675045ae212ec0dda69556e9a3224107822c275cc28c7c3"
+  },
+  "first_failed_hosted_qualification": {
+    "path": "/private/tmp/forge-f04-windows-first-hosted-qualified-v1/qualified.json",
+    "bytes": 62007,
+    "sha256": "5cae1e7899a5c095affda14a9dc9dcaba21254f232dc106bce2b91f5aedd00f9"
+  },
+  "second_failed_hosted_qualification": {
+    "path": "/private/tmp/forge-f04-windows-corrected-hosted-qualified-v1/qualified.json",
+    "bytes": 66620,
+    "sha256": "b2d127e93148cccff472ef66a51d758426290ee2d0375db2a5831fab94aebccf"
+  },
+  "mandatory_commit_hook": null,
+  "fresh_hosted_result": null,
+  "acceptance_eligible": false,
+  "qualification": [
+    "Actual macOS Python3.14.8 standard-library mock controls; source bytes unchanged. No native Windows execution.",
+    "AST docstring inventory and actual primary-thread calls are distinct metrics. Imports preceded tracing; child/native threads and branch/MCDC coverage remain unmeasured.",
+    "All compiler-mapped physical lines and zeros are retained. No function-body or whole-repository coverage claim.",
+    "Earlier EOF=true flags are reported failed-receipt observations, not independently proved EOF: the old reader could set EOF after an unexpected reader error.",
+    "Two failed hosted campaigns are historical. Startup cause and output-code-page/cursor hypotheses remain unproved; byte counts alone do not identify cause.",
+    "No native, full F04, human, dependency-audit, browser-matrix or release acceptance is granted. Full integrated documentation review remains required at roadmap end."
+  ]
+}
