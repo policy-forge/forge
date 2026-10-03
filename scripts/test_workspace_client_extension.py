@@ -255,6 +255,7 @@ class ExtensionControls(unittest.TestCase):
         recorder.outcomes, recorder.request_count, recorder.accounting_failed = {}, 0, False
         self.client = object.__new__(recorder)
         self.client._port, self.client._capability, self.client._next_request_at = 1, "a" * 64, 0.0
+        self.client._api_major, self.client._api_prefix = 1, "/api/v1"
         self.now = 0.0
         self.clock = mock.patch.object(time, "monotonic", side_effect=lambda: self.now)
         self.sleep = mock.patch.object(time, "sleep")

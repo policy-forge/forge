@@ -1,0 +1,11 @@
+{
+  "schema_version": "forge.workspace-index-bundle/1",
+  "content_profile": "index-and-hashes",
+  "index": {
+    "schema_version": "forge.workspace/1",
+    "label": "Synthetic empty index",
+    "resources": []
+  },
+  "index_sha256": "accbe4490d1a340dee569dd2e11274783185c0e48a1a48405a22bc80e046a13d",
+  "pins": []
+}

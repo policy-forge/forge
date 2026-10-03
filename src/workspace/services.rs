@@ -50,11 +50,12 @@ pub(crate) fn validation(valid: bool, resource: Option<&str>) -> Value {
     json!({"state":if valid {"valid"} else {"invalid"},"error_count":diagnostics.len(),"warning_count":0,"diagnostics":diagnostics})
 }
 
+/// Validate captured bytes using intrinsic admission; report structure is not freshness.
 pub(crate) fn validate_bytes(registration: &Resource, bytes: &[u8]) -> bool {
     if registration.role == Role::TraceReport {
         return super::reports::parse(bytes).is_ok_and(|report| report.kind == "trace");
     }
-    if registration.role != Role::PolicySource
+    if !matches!(registration.role, Role::PolicySource | Role::LifecycleSource)
         && contract::parse(bytes, MAX_RESOURCE_BYTES, 64 * 1024).is_err()
     {
         return false;
@@ -86,6 +87,20 @@ pub(crate) fn validate_bytes(registration: &Resource, bytes: &[u8]) -> bool {
         }
         Role::ApplicabilityReport => crate::applicability::parse_stored_report(bytes).is_ok(),
         Role::TraceReport => false,
+        Role::LifecycleRecord => crate::lifecycle::record::parse(bytes).is_ok(),
+        Role::LifecycleSource => bytes.len() <= MAX_RESOURCE_BYTES,
+        Role::OscalProfileArtifact => {
+            validate_oscal(bytes, crate::validate::OscalModelType::Profile)
+        }
+        Role::OscalSspArtifact => {
+            validate_oscal(bytes, crate::validate::OscalModelType::SystemSecurityPlan)
+        }
+        Role::FrameworkImpactManifest => crate::framework::manifest::parse(bytes).is_ok(),
+        Role::SuccessorMap => crate::migration::parse_successor(bytes).is_ok(),
+        Role::FrameworkImpactReport => {
+            crate::framework::analysis::admit_prior_report(bytes).is_ok()
+        }
+        Role::FrameworkImpactDispositions => crate::framework::disposition::parse(bytes).is_ok(),
     }
 }
 
@@ -103,11 +118,31 @@ impl Snapshot {
         Self::capture_with_control(root, &mut NoopControl).map_err(WorkError::into_error)
     }
 
+    /// Capture under the explicit launch major, rejecting unsupported index versions before resource reads.
+    pub(crate) fn capture_for_api(root: &Root, api_major: contract::ApiMajor) -> Result<Self> {
+        match api_major {
+            contract::ApiMajor::V2 => Self::capture(root),
+            contract::ApiMajor::V1 => {
+                Self::capture_with_control_for_api(root, api_major, &mut NoopControl)
+                    .map_err(WorkError::into_error)
+            }
+        }
+    }
+
     /// Capture the entire ordered explicit index, checking before/after bounded
     /// reads and classification. Counts advance only after complete Item install;
     /// derived snapshot work remains indeterminate and preserves interruption.
     pub(crate) fn capture_with_control(
         root: &Root,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<Self> {
+        Self::capture_with_control_for_api(root, contract::ApiMajor::V2, control)
+    }
+
+    /// Fence selected v1 against index2 after parsing and before any resource byte read.
+    pub(crate) fn capture_with_control_for_api(
+        root: &Root,
+        api_major: contract::ApiMajor,
         control: &mut dyn WorkControl,
     ) -> WorkResult<Self> {
         control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
@@ -120,6 +155,14 @@ impl Snapshot {
             .map_or_else(|| Ok(Index::empty()), |captured| Index::parse(&captured.bytes));
         control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
         let index = index?;
+        if api_major == contract::ApiMajor::V1 && index.schema_version != "forge.workspace/1" {
+            return Err(Error::new(
+                "invalid-request",
+                "This workspace index requires --api-major 2.",
+                false,
+            )
+            .into());
+        }
         let total = index.resources.len();
         control
             .checkpoint(Stage::CaptureResource, ProgressUpdate::Capture { completed: 0, total })?;
@@ -152,9 +195,17 @@ impl Snapshot {
                 format!("{id}:{}:{}", captured.identity.0, captured.identity.1).as_bytes(),
             );
             version_input.extend_from_slice(version.as_bytes());
-            let metadata = json!({"resource_id":id, "key":registration.key, "role":registration.role, "path":registration.path,
+            let mut metadata = json!({"resource_id":id, "key":registration.key, "role":registration.role, "path":registration.path,
                 "sha256":captured.sha256, "size_bytes":captured.bytes.len(), "validation_state":if valid {"valid"} else {"invalid"}, "stale":false,"version":version});
-            let checked_metadata = contract::validate("Resource", &metadata);
+            if let Some(profile) = registration.role.validation_profile() {
+                metadata["validation_profile"] = json!(profile);
+            }
+            let metadata_major = if index.schema_version == "forge.workspace/2" {
+                contract::ApiMajor::V2
+            } else {
+                contract::ApiMajor::V1
+            };
+            let checked_metadata = contract::validate_for(metadata_major, "Resource", &metadata);
             control.checkpoint(Stage::ValidateResource, ProgressUpdate::Unchanged)?;
             checked_metadata?;
             items.push(Item {

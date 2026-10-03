@@ -1,0 +1,1034 @@
+{
+  "current_source_pins": [
+    {
+      "bytes": 103322,
+      "matches_v2_during_command_pin": true,
+      "path": "src/cli/mod.rs",
+      "sha256": "c69092d224b416bb38af988675d6d5917a5bd87cd719c2a92d49fe4cc7d0bd30"
+    },
+    {
+      "bytes": 69730,
+      "matches_v2_during_command_pin": true,
+      "path": "src/framework/analysis.rs",
+      "sha256": "b7babf659aaf92a2a1ed96e4d3dd8b70dc7fd82958f4a862c21ec5adbc04bffd"
+    },
+    {
+      "bytes": 12159,
+      "matches_v2_during_command_pin": true,
+      "path": "src/framework/disposition.rs",
+      "sha256": "450e9ae0443189f2b5b322b09b974233f44034315b352b8df8488e74018cfed8"
+    },
+    {
+      "bytes": 2738,
+      "matches_v2_during_command_pin": true,
+      "path": "src/migration/mod.rs",
+      "sha256": "13417e0d282c561d60f25eba5b789c7fd99cbce430e541b3421cf878181bc4f0"
+    },
+    {
+      "bytes": 48418,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/actions.rs",
+      "sha256": "280659047ad5bc050b29e8fc5d1b826ac6f6a8e5cda5c83c79503cb965b474d5"
+    },
+    {
+      "bytes": 2928,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/assets.rs",
+      "sha256": "2cb4805490cb2f6cf6dd333894fa0afa3424897c0c1e169568e10d909aed5f90"
+    },
+    {
+      "bytes": 38740,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/bundles.rs",
+      "sha256": "6709c8f50150f22e5d20fcbac16efa99c6e8c60c2720ce0519ccf6367b030641"
+    },
+    {
+      "bytes": 22628,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/contract.rs",
+      "sha256": "acb957ca2fcdea2d58438fec8455d1d3ce72f11a5afdd935e88cad86e60ff990"
+    },
+    {
+      "bytes": 52283,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/effects.rs",
+      "sha256": "80fa3206c91a3bfe13735466bfecf06040bafd98bb4472dcaf0ec1037d88e34c"
+    },
+    {
+      "bytes": 50281,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/http.rs",
+      "sha256": "daac522321f190ed2124f5170c0960c6e3b455e90268391ea9c07fbba339e8da"
+    },
+    {
+      "bytes": 9787,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/index.rs",
+      "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020"
+    },
+    {
+      "bytes": 1056,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/mod.rs",
+      "sha256": "8ce8802b70074e4ce072939918f2cbc651f3ae17b5772e7bc4dd0b75cc8ed099"
+    },
+    {
+      "bytes": 9459,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/reports.rs",
+      "sha256": "19cb812973503f5cc81737b2e3f812626119bcb2fd9c4b0780ea29ea0261a1ed"
+    },
+    {
+      "bytes": 62397,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/services.rs",
+      "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf"
+    },
+    {
+      "bytes": 70904,
+      "matches_v2_during_command_pin": true,
+      "path": "tests/api_contract_validation.rs",
+      "sha256": "0e0e9ba62834a6f66e1d10a0a3d03785c3dc7a7a527d1e80588db71bb65ab5be"
+    },
+    {
+      "bytes": 143247,
+      "matches_v2_during_command_pin": true,
+      "path": "tests/workspace_cli_test.rs",
+      "sha256": "19ab0860b7c98905665968b37ac15e8a769760ca4406e6d9e607cf1e21945a63"
+    }
+  ],
+  "format": "forge.workspace-api-v2-selected-function-verification/1",
+  "independent_summary": {
+    "actual_llvm_passed": 1958,
+    "format": "forge.api2-final-coverage-summary/2",
+    "historical_checkpoint": "v1 immutable29e9f6be index; no Python/Node rerun or source-denominator change. New LLVMv2 has both added tests and framework-impact suite; reported aggregates not physical-body/branch completion.",
+    "limits": [
+      "Pure retained-data/source readback; own historical Python/native/control correctness excluded. No product/candidate/test/Node/Cargo/native execution or acceptance.",
+      "All16 selected Rust source snapshots match v2 during-command source pins. Old HTTP named function bytes/docs/attrs and old API named declaration bytes preserved; new cfg unit plus final inventory test included.",
+      "Root68 plus producer40 minus3overlaps equals105 lexical adjacent-documented names (56production,12cfg-test,37integration). No whole legacy doc completion.",
+      "Direct header-position aliases/instantiations preserve positive andzero raw records. Positive entry is not wholebody orbranch coverage.",
+      "LLVM file line aggregates are reported totals, not claimed unique physical lines. All generated/unmapped/zero functions/regions/segments remain in full exact externally pinned raw export.",
+      "Integration functions have raw records but no tests file summary/segment entries in this export. Branch/MCDC dimensions zero/absent, no branch credit.",
+      "Fresh isolated CARGO_LLVM_COV_TARGET_DIR overrides receipt ambient cargo_target_dir. Historical LLVMv1/Python59/Node150 remain byte-preserved; no raw-run or source-denominator collapse."
+    ],
+    "node150_selected": "9/9docs9/9positiveentries;wholeasset128/152positive24zeros",
+    "overlap": 3,
+    "producer_documented": "40/40",
+    "python59_core": "119/119docfunctions117ownedbody-positive1389/1416markedphysical27zeros335unmarked",
+    "python_library_docstrings": "12/12functions2/2classes1/1module",
+    "python_library_mock_default_api2_cli": "131/142,95/142,107/142;qualifiedunion140/142zeros162\u2013163",
+    "raw_function_records": 11501,
+    "raw_positive_function_records": 6015,
+    "raw_zero_function_records": 5486,
+    "reported_llvm_totals": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 6395,
+        "covered": 4922,
+        "percent": 76.96637998436279
+      },
+      "instantiations": {
+        "count": 10853,
+        "covered": 5696,
+        "percent": 52.483184372984425
+      },
+      "lines": {
+        "count": 65648,
+        "covered": 51762,
+        "percent": 78.84779429685595
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 111107,
+        "covered": 88571,
+        "notcovered": 22536,
+        "percent": 79.71684952343236
+      }
+    },
+    "role": "Pure retained-data/source readback; own historical Python/native/control correctness excluded. No product/candidate/test/Node/Cargo/native execution or acceptance.",
+    "root_documented": "68/68",
+    "selected_rust_documented": "105/105",
+    "selected_rust_entry_positive": "105/105",
+    "selected_scope_counts": {
+      "cfg-test": 12,
+      "integration-test": 37,
+      "production-lexical": 56
+    },
+    "selected_unmapped": [],
+    "selected_zero_entries": []
+  },
+  "limits": [
+    "Pure retained-data/source readback; own historical Python/native/control correctness excluded. No product/candidate/test/Node/Cargo/native execution or acceptance.",
+    "All16 selected Rust source snapshots match v2 during-command source pins. Old HTTP named function bytes/docs/attrs and old API named declaration bytes preserved; new cfg unit plus final inventory test included.",
+    "Root68 plus producer40 minus3overlaps equals105 lexical adjacent-documented names (56production,12cfg-test,37integration). No whole legacy doc completion.",
+    "Direct header-position aliases/instantiations preserve positive andzero raw records. Positive entry is not wholebody orbranch coverage.",
+    "LLVM file line aggregates are reported totals, not claimed unique physical lines. All generated/unmapped/zero functions/regions/segments remain in full exact externally pinned raw export.",
+    "Integration functions have raw records but no tests file summary/segment entries in this export. Branch/MCDC dimensions zero/absent, no branch credit.",
+    "Fresh isolated CARGO_LLVM_COV_TARGET_DIR overrides receipt ambient cargo_target_dir. Historical LLVMv1/Python59/Node150 remain byte-preserved; no raw-run or source-denominator collapse."
+  ],
+  "retained_full_reader_data": {
+    "path": "/private/tmp/forge-f19-api2-current-coverage-independent-v2/coverage.json",
+    "raw_zero_function_records": 5486,
+    "sha256": "3fb2414a217d4190c58842e96f7237c23e165dc83748c73513dfc69edc1a3058"
+  },
+  "retained_independent_index": {
+    "path": "/private/tmp/forge-f19-api2-current-coverage-independent-v2/index.json",
+    "sha256": "e9ace50abeffa740b78e8574895b557d20c152d401939e6ec0e9a6895f693323"
+  },
+  "retained_raw_llvm": {
+    "path": "/private/tmp/forge-f19-api2-llvm-report-v2.json",
+    "sha256": "2e6d6e9f0dbe7989fd5115d76ef9ec2bf3de6ab37b17e8fc4fed76c1a655fc8c"
+  },
+  "selected_functions": [
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1518,
+      "path": "src/cli/mod.rs",
+      "qualified_name": "crate::cli::execute",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 402,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::admit_prior_report",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 343,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::apply_dispositions",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 426,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::prior_finding_ids",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1746,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::tests::captured_prior_admission_enforces_existing_byte_limit",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1707,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::tests::captured_prior_admission_is_structural_not_a_full_report_schema",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1721,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::tests::captured_prior_admission_rejects_malformed_structure_and_duplicates",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 416,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::validate_prior_header",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 444,
+      "path": "src/framework/analysis.rs",
+      "qualified_name": "crate::framework::analysis::validate_prior_report",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 78,
+      "path": "src/framework/disposition.rs",
+      "qualified_name": "crate::framework::disposition::parse",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 178,
+      "path": "src/workspace/actions.rs",
+      "qualified_name": "crate::workspace::actions::prepare",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 191,
+      "path": "src/workspace/actions.rs",
+      "qualified_name": "crate::workspace::actions::prepare_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 120,
+      "path": "src/workspace/actions.rs",
+      "qualified_name": "crate::workspace::actions::prepare_registration",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 213,
+      "path": "src/workspace/actions.rs",
+      "qualified_name": "crate::workspace::actions::prepare_with_control",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 236,
+      "path": "src/workspace/actions.rs",
+      "qualified_name": "crate::workspace::actions::prepare_with_control_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1016,
+      "path": "src/workspace/actions.rs",
+      "qualified_name": "crate::workspace::actions::tests::selected_major_guards_direct_preparation_before_resource_io",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 14,
+      "path": "src/workspace/assets.rs",
+      "qualified_name": "crate::workspace::assets::shell_for",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 237,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::admit_snapshot_major",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 247,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::bundle_version",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 191,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::decode_bundle",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 196,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::decode_bundle_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 204,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::decode_bundle_with_contract",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 256,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::normalized_index_hash",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 57,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::preview",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 63,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::preview_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 749,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::tests::explicit_v2_metadata_consumers_preserve_complete_denominators",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 804,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::tests::supplied_version_one_comparison_in_v2_retains_registered_only_scope",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 774,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::tests::v2_bundle_pairs_do_not_reinterpret_original_index_or_roles",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 723,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::tests::version_two_fixture",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 113,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::verify_registered",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 119,
+      "path": "src/workspace/bundles.rs",
+      "qualified_name": "crate::workspace::bundles::verify_registered_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 132,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::ApiMajor::canonical_path",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 143,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::ApiMajor::document",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 107,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::ApiMajor::number",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 123,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::ApiMajor::prefix",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 151,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::ApiMajor::registry",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 115,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::ApiMajor::version",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 191,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::Validators::build",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 294,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::operation_request",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 305,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::operation_request_for",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 177,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::resolve_parameter",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 166,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::resolve_parameter_for",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 230,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::validate",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 235,
+      "path": "src/workspace/contract.rs",
+      "qualified_name": "crate::workspace::contract::validate_for",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 375,
+      "path": "src/workspace/effects.rs",
+      "qualified_name": "crate::workspace::effects::Store::commit",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 385,
+      "path": "src/workspace/effects.rs",
+      "qualified_name": "crate::workspace::effects::Store::commit_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 452,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::dispatch",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 222,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::guard",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 432,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::json_response_for",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 111,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::launch",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 371,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::respond",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 443,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::session_view",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 809,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::static_response",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 884,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::tests::browser_state",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 908,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::tests::selected_bootstrap_metadata_assets_and_rejections",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 305,
+      "path": "src/workspace/http.rs",
+      "qualified_name": "crate::workspace::http::unlock_response",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 157,
+      "path": "src/workspace/index.rs",
+      "qualified_name": "crate::workspace::index::Index::bytes",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 122,
+      "path": "src/workspace/index.rs",
+      "qualified_name": "crate::workspace::index::Index::empty",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 131,
+      "path": "src/workspace/index.rs",
+      "qualified_name": "crate::workspace::index::Index::parse",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 53,
+      "path": "src/workspace/index.rs",
+      "qualified_name": "crate::workspace::index::Role::admitted_by",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 71,
+      "path": "src/workspace/index.rs",
+      "qualified_name": "crate::workspace::index::Role::validation_profile",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 211,
+      "path": "src/workspace/index.rs",
+      "qualified_name": "crate::workspace::index::tests::closed_versions_duplicates_and_aliases_fail",
+      "scope": "cfg-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 19,
+      "path": "src/workspace/mod.rs",
+      "qualified_name": "crate::workspace::launch",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 32,
+      "path": "src/workspace/reports.rs",
+      "qualified_name": "crate::workspace::reports::pin_role_relevant",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 122,
+      "path": "src/workspace/services.rs",
+      "qualified_name": "crate::workspace::services::Snapshot::capture_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 135,
+      "path": "src/workspace/services.rs",
+      "qualified_name": "crate::workspace::services::Snapshot::capture_with_control",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 143,
+      "path": "src/workspace/services.rs",
+      "qualified_name": "crate::workspace::services::Snapshot::capture_with_control_for_api",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 54,
+      "path": "src/workspace/services.rs",
+      "qualified_name": "crate::workspace::services::validate_bytes",
+      "scope": "production-lexical"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1470,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::api2_artifact_drift::capability_matrix_covers_the_contract_in_both_directions",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1322,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::api2_artifact_drift::fixtures_validate_against_the_live_contract",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1254,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::api2_artifact_drift::load_openapi",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1260,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::api2_artifact_drift::openapi_document_is_valid_openapi_3_1",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1293,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::api2_artifact_drift::openapi_internal_refs_resolve_and_every_component_schema_compiles",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1246,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::api2_artifact_drift::unlock_operation_id",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1597,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::release_inventory_contains_both_current_api_families",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1164,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_api2_bundle_components_pair_only_matching_index_versions",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 969,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_api2_document",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1016,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_api2_document_namespace_and_bootstrap_do_not_change_api1",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1091,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_api2_index_mirrors_keep_version_roles_and_closed_bounds",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1056,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_api2_register_schema_keeps_null_key_compatibility_and_closed_alternatives",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1195,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_api2_resource_profiles_are_closed_and_role_specific",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 980,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_index2_mirror",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 974,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_index2_schema",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 1008,
+      "path": "tests/api_contract_validation.rs",
+      "qualified_name": "integration::api_contract_validation::s3_api2_contracts::s3_schema_bundle",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2287,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::Server::start_api2",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2978,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_api2_bundle_envelope_and_aggregate_boundaries_are_consumed",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2602,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_bundle",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2406,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_bundle_preview",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2792,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_bundle_two_all_roles_and_legacy_subset_keep_validation_separate",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2887,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_bundle_two_rejects_intrinsic_corruption_before_positive_comparison",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2446,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_bundle_verify",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2847,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_bundle_versions_keep_missing_and_zero_denominators_distinct",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2706,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_closed_registration_alternatives_preserve_bytes",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2391,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_commit",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2262,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_descriptor_keys",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2658,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_explicit_version_admission_and_opaque_source_registration",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2575,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_index",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2374,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_json",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2612,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_legacy_null_key_and_migration_preserve_authorial_index",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2519,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_major_namespaces_and_later_api1_capture_remain_closed",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2747,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_migration_registration_rechecks_index_and_external_source",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2583,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_prepare",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2485,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_raw_duplicates_rejected",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2592,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_reject",
+      "scope": "integration-test"
+    },
+    {
+      "documented": true,
+      "entry_positive": true,
+      "line": 2941,
+      "path": "tests/workspace_cli_test.rs",
+      "qualified_name": "integration::workspace_cli_test::s3_registration_and_bundles::s3_supplied_bundle_two_on_current_one_never_opens_unregistered_paths",
+      "scope": "integration-test"
+    }
+  ]
+}

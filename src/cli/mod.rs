@@ -335,6 +335,9 @@ pub enum Commands {
         machine_session: bool,
         #[arg(long)]
         no_open: bool,
+        /// Select one API major; v2 is explicit and never migrates project files on launch
+        #[arg(long, default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..=2))]
+        api_major: u8,
     },
 
     /// Inspect and validate project configuration (.forge.toml)
@@ -1515,8 +1518,8 @@ fn run_migrate(
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     reject_unsupported_config_selector(cli)?;
     match &cli.command {
-        Commands::Workspace { project, read_only, machine_session, no_open } => {
-            crate::workspace::launch(project, *read_only, *machine_session, *no_open)
+        Commands::Workspace { project, read_only, machine_session, no_open, api_major } => {
+            crate::workspace::launch(project, *read_only, *machine_session, *no_open, *api_major)
         }
         Commands::Convert {
             input,

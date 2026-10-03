@@ -15,7 +15,7 @@ use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
 use serde_json::{Value, json};
 
-use super::contract::{self, Error, Result};
+use super::contract::{self, ApiMajor, Error, Result};
 use super::preparation::{Interruption, ProgressUpdate, Stage, WorkControl, WorkError, WorkResult};
 use super::root::Root;
 use super::services::{Snapshot, filtered, paginate};
@@ -24,7 +24,10 @@ use super::session::{Mode, Session};
 const MAX_BODY: usize = 1024 * 1024;
 const MAX_CONNECTIONS: usize = 16;
 
+/// Session-owned transport, immutable API namespace and bounded preparation stores.
 struct State {
+    /// One launch-selected namespace, never inferred from project files or callers.
+    api_major: ApiMajor,
     root: Root,
     host: String,
     origin: String,
@@ -104,10 +107,17 @@ fn unauthorized() -> Error {
     Error::new("unauthorized", "A valid local session request is required.", false)
 }
 
-pub(super) fn launch(project: &Path, read_only: bool, machine: bool, no_open: bool) -> Result<()> {
+/// Validate selected index compatibility before exposing the loopback session.
+pub(super) fn launch(
+    project: &Path,
+    read_only: bool,
+    machine: bool,
+    no_open: bool,
+    api_major: ApiMajor,
+) -> Result<()> {
     let root = Root::open(project)?;
     // Validate the index and containment before exposing a listener or credentials.
-    Snapshot::capture(&root)?;
+    Snapshot::capture_for_api(&root, api_major)?;
     let mode = if machine { Mode::Machine } else { Mode::Browser };
     let passphrase = if machine { None } else { Some(super::session::prompt()?) };
     let mut session = Session::new(mode, read_only, passphrase)?;
@@ -123,8 +133,9 @@ pub(super) fn launch(project: &Path, read_only: bool, machine: bool, no_open: bo
         let host = listener.local_addr().map_err(|_| internal())?.to_string();
         let origin = format!("http://{host}");
         if let Some(capability) = capability {
-            let descriptor = json!({"base_url":origin,"api_version":contract::VERSION,"session_id":session.id,
+            let mut descriptor = json!({"base_url":origin,"api_version":api_major.version(),"session_id":session.id,
                 "capability":&*capability,"mode":"machine","read_only":read_only,"pid":std::process::id()});
+            if api_major == ApiMajor::V2 { descriptor["api_major"] = json!(2); }
             let mut stdout = std::io::stdout().lock();
             serde_json::to_writer(&mut stdout, &descriptor).map_err(|_| internal())?;
             stdout.write_all(b"\n").and_then(|()| stdout.flush()).map_err(|_| internal())?;
@@ -133,7 +144,7 @@ pub(super) fn launch(project: &Path, read_only: bool, machine: bool, no_open: bo
             eprintln!("Stop with Ctrl-C. Local unlock does not authenticate reviewer identity.");
             if !no_open { open_browser(&origin)?; }
         }
-        let state = Arc::new(State { root, host, origin, session:Mutex::new(session), stopped:AtomicBool::new(false), rate:Mutex::new((Instant::now(),0)),effects:Mutex::new(super::effects::Store::default()),work:Arc::new(tokio::sync::Semaphore::new(2)),jobs:Arc::new(tokio::sync::Semaphore::new(1)) });
+        let state = Arc::new(State { api_major, root, host, origin, session:Mutex::new(session), stopped:AtomicBool::new(false), rate:Mutex::new((Instant::now(),0)),effects:Mutex::new(super::effects::Store::default()),work:Arc::new(tokio::sync::Semaphore::new(2)),jobs:Arc::new(tokio::sync::Semaphore::new(1)) });
         let stop_state = Arc::clone(&state);
         let signal = tokio::spawn(async move {
             if tokio::signal::ctrl_c().await.is_ok() { stop_state.stopped.store(true, Ordering::Release); }
@@ -207,6 +218,7 @@ fn single_header<'a>(request: &'a Request<Incoming>, name: &str) -> Result<Optio
     first.map(|value| value.to_str().map_err(|_| unauthorized())).transpose()
 }
 
+/// Enforce transport, selected namespace and scoped capability before dispatch.
 fn guard(state: &State, request: &Request<Incoming>) -> Result<()> {
     if state.stopped.load(Ordering::Acquire) {
         return Err(Error::new("shutdown-in-progress", "The workspace is stopping.", false));
@@ -274,7 +286,8 @@ fn guard(state: &State, request: &Request<Incoming>) -> Result<()> {
     {
         return Err(Error::invalid());
     }
-    if request.uri().path() == "/api/v1/session/unlock" && request.method() == hyper::Method::POST {
+    let private_path = state.api_major.canonical_path(request.uri().path())?;
+    if private_path == "/api/v1/session/unlock" && request.method() == hyper::Method::POST {
         if !browser {
             return Err(unauthorized());
         }
@@ -282,12 +295,13 @@ fn guard(state: &State, request: &Request<Incoming>) -> Result<()> {
         let token = single_header(request, "authorization")?
             .and_then(|header| header.strip_prefix("Bearer "))
             .ok_or_else(unauthorized)?;
-        let mutation = is_mutation(request.method().as_str(), request.uri().path());
+        let mutation = is_mutation(request.method().as_str(), &private_path);
         state.session.lock().map_err(|_| internal())?.authorize(token, browser, mutation)?;
     }
     Ok(())
 }
 
+/// Build a selected-major Session before minting a browser capability.
 fn unlock_response(
     state: &State,
     query: &[(String, String)],
@@ -295,9 +309,10 @@ fn unlock_response(
     bytes: &[u8],
 ) -> Result<Response<Full<Bytes>>> {
     let mut payload = contract::parse(bytes, 4096, 512).ok();
-    let valid = contract::operation_request(
+    let valid = contract::operation_request_for(
+        state.api_major,
         "POST",
-        "/api/v1/session/unlock",
+        &format!("{}/session/unlock", state.api_major.prefix()),
         query,
         idempotency,
         payload.as_ref(),
@@ -315,14 +330,15 @@ fn unlock_response(
     );
     // Everything that can fail before delivery is built first, so a snapshot or
     // session-view failure can never consume a capability the client never sees.
-    let label = Snapshot::capture(&state.root)?.index.label;
+    let label = Snapshot::capture_for_api(&state.root, state.api_major)?.index.label;
     let session = session_view(state, &label)?;
     let capability = state.session.lock().map_err(|_| internal())?.unlock(if valid {
         &passphrase
     } else {
         ""
     })?;
-    let response = json_response(
+    let response = json_response_for(
+        state.api_major,
         json!({"capability":&*capability,"session":session}),
         "SessionUnlockResponse",
     );
@@ -351,6 +367,7 @@ fn is_mutation(method: &str, path: &str) -> bool {
         )
 }
 
+/// Bound request I/O and route static or admitted selected-major API work.
 async fn respond(
     state: Arc<State>,
     request: Request<Incoming>,
@@ -361,12 +378,14 @@ async fn respond(
         let path = request.uri().path().to_owned();
         let query = request.uri().query().unwrap_or_default().to_owned();
         if !path.starts_with("/api/") {
-            return static_response(&method, &path);
+            return static_response(state.api_major, &method, &path);
         }
         let permit = Arc::clone(&state.work).try_acquire_owned().map_err(|_| {
             Error::new("invalid-request", "The workspace is busy. Retry shortly.", true)
         })?;
-        let body_limit = if method == "POST" && path == "/api/v1/resources/upload" {
+        let body_limit = if method == "POST"
+            && state.api_major.canonical_path(&path)? == "/api/v1/resources/upload"
+        {
             14 * 1024 * 1024
         } else {
             MAX_BODY
@@ -408,17 +427,23 @@ async fn respond(
     })
 }
 
+/// Validate each public response against its launch-selected normative document.
 #[allow(clippy::needless_pass_by_value)] // Release owned response data after serialization.
-fn json_response(value: Value, schema: &str) -> Result<Response<Full<Bytes>>> {
-    contract::validate(schema, &value).map_err(|_| internal())?;
+fn json_response_for(
+    api_major: ApiMajor,
+    value: Value,
+    schema: &str,
+) -> Result<Response<Full<Bytes>>> {
+    contract::validate_for(api_major, schema, &value).map_err(|_| internal())?;
     let bytes = contract::encode(&value, 4 * 1024 * 1024, false)?;
     Ok(response(200, "application/json", bytes))
 }
 
+/// Publish exact immutable negotiation metadata without capability material.
 fn session_view(state: &State, label: &str) -> Result<Value> {
     let session = state.session.lock().map_err(|_| internal())?;
     Ok(json!({"session_id":session.id,"mode":session.mode,"read_only":session.read_only,
-        "api_major":1,"contract_version":contract::VERSION,"project_label":label,"launched_at":session.launched_at}))
+        "api_major":state.api_major.number(),"contract_version":state.api_major.version(),"project_label":label,"launched_at":session.launched_at}))
 }
 
 /// Validate the normative operation and dispatch captured queries or explicit effects.
@@ -432,6 +457,10 @@ fn dispatch(
     idempotency: Option<&str>,
     bytes: &[u8],
 ) -> Result<Response<Full<Bytes>>> {
+    let wire_path = path;
+    let private_path = state.api_major.canonical_path(wire_path)?;
+    let path = private_path.as_str();
+    let json_response = |value, schema| json_response_for(state.api_major, value, schema);
     if method == "GET" && !bytes.is_empty() {
         return Err(Error::invalid());
     }
@@ -449,7 +478,19 @@ fn dispatch(
             if path == "/api/v1/resources/upload" { 13_981_016 } else { 64 * 1024 },
         )?)
     };
-    contract::operation_request(method, path, &query, idempotency, payload.as_ref())?;
+    match state.api_major {
+        ApiMajor::V1 => {
+            contract::operation_request(method, wire_path, &query, idempotency, payload.as_ref())?
+        }
+        ApiMajor::V2 => contract::operation_request_for(
+            state.api_major,
+            method,
+            wire_path,
+            &query,
+            idempotency,
+            payload.as_ref(),
+        )?,
+    };
     if method == "POST" && path == "/api/v1/session/shutdown" {
         state.stopped.store(true, Ordering::Release);
         return json_response(json!({"state":"shutting-down"}), "ShutdownResponse");
@@ -495,7 +536,9 @@ fn dispatch(
     if let Some(key) = idempotency {
         let request = payload.clone().unwrap_or_else(|| json!({}));
         let mut store = state.effects.lock().map_err(|_| internal())?;
-        let reply = if let Some(reply) = store.replay(key, method, path, raw_query, &request)? {
+        let reply = if let Some(reply) =
+            store.replay(key, method, wire_path, raw_query, &request)?
+        {
             reply
         } else {
             let kind = match path {
@@ -536,17 +579,31 @@ fn dispatch(
                         OperationControl { state: &shared, id: &id, deadline, interruption: None };
                     let result = (|| {
                         let mut local = super::effects::Store::default();
-                        let mut snapshot =
-                            Snapshot::capture_with_control(&shared.root, &mut control)?;
-                        let reply = super::actions::prepare_with_control(
-                            &mut local,
+                        let mut snapshot = Snapshot::capture_with_control_for_api(
                             &shared.root,
-                            &mut snapshot,
-                            &method,
-                            &path,
-                            &request,
+                            shared.api_major,
                             &mut control,
                         )?;
+                        let reply = match shared.api_major {
+                            ApiMajor::V1 => super::actions::prepare_with_control(
+                                &mut local,
+                                &shared.root,
+                                &mut snapshot,
+                                &method,
+                                &path,
+                                &request,
+                                &mut control,
+                            )?,
+                            ApiMajor::V2 => super::actions::prepare_with_control_for_api(
+                                &mut local,
+                                &shared.root,
+                                &mut snapshot,
+                                &method,
+                                (shared.api_major, &path),
+                                &request,
+                                &mut control,
+                            )?,
+                        };
                         Ok((local, reply))
                     })();
                     // The final checkpoint also overrides a local safe failure
@@ -566,22 +623,41 @@ fn dispatch(
                 super::effects::Reply { value: operation, schema: "Operation", status: 202 }
             } else if path == "/api/v1/effects/commits" {
                 super::effects::Reply {
-                    value: store.commit(&state.root, &request, &state.stopped)?,
+                    value: match state.api_major {
+                        ApiMajor::V1 => store.commit(&state.root, &request, &state.stopped)?,
+                        ApiMajor::V2 => store.commit_for_api(
+                            &state.root,
+                            &request,
+                            &state.stopped,
+                            state.api_major,
+                        )?,
+                    },
                     schema: "Operation",
                     status: 202,
                 }
             } else {
-                let mut snapshot = Snapshot::capture(&state.root)?;
-                super::actions::prepare(
-                    &mut store,
-                    &state.root,
-                    &mut snapshot,
-                    method,
-                    path,
-                    &request,
-                )?
+                let mut snapshot = Snapshot::capture_for_api(&state.root, state.api_major)?;
+                match state.api_major {
+                    ApiMajor::V1 => super::actions::prepare(
+                        &mut store,
+                        &state.root,
+                        &mut snapshot,
+                        method,
+                        path,
+                        &request,
+                    )?,
+                    ApiMajor::V2 => super::actions::prepare_for_api(
+                        &mut store,
+                        &state.root,
+                        &mut snapshot,
+                        method,
+                        path,
+                        &request,
+                        state.api_major,
+                    )?,
+                }
             };
-            store.remember(key, method, path, raw_query, &request, &reply)?;
+            store.remember(key, method, wire_path, raw_query, &request, &reply)?;
             reply
         };
         let mut response = json_response(reply.value, reply.schema)?;
@@ -589,16 +665,27 @@ fn dispatch(
             hyper::StatusCode::from_u16(reply.status).map_err(|_| internal())?;
         return Ok(response);
     }
-    let mut snapshot = Snapshot::capture(&state.root)?;
+    let mut snapshot = Snapshot::capture_for_api(&state.root, state.api_major)?;
     match (method, path) {
-        ("GET", "/api/v1/project/bundle-preview") => {
-            json_response(super::bundles::preview(&snapshot)?, "ProjectBundlePreview")
-        }
+        ("GET", "/api/v1/project/bundle-preview") => json_response(
+            match state.api_major {
+                ApiMajor::V1 => super::bundles::preview(&snapshot)?,
+                ApiMajor::V2 => super::bundles::preview_for_api(&snapshot, state.api_major)?,
+            },
+            "ProjectBundlePreview",
+        ),
         ("POST", "/api/v1/project/bundle-verifications") => json_response(
-            super::bundles::verify_registered(
-                &snapshot,
-                payload.as_ref().ok_or_else(Error::invalid)?,
-            )?,
+            match state.api_major {
+                ApiMajor::V1 => super::bundles::verify_registered(
+                    &snapshot,
+                    payload.as_ref().ok_or_else(Error::invalid)?,
+                )?,
+                ApiMajor::V2 => super::bundles::verify_registered_for_api(
+                    &snapshot,
+                    payload.as_ref().ok_or_else(Error::invalid)?,
+                    state.api_major,
+                )?,
+            },
             "ProjectBundleVerification",
         ),
         ("GET", "/api/v1/session") => {
@@ -718,12 +805,17 @@ fn dispatch(
     }
 }
 
-fn static_response(method: &str, path: &str) -> Result<Response<Full<Bytes>>> {
+/// Serve content-addressed assets and immutable selected-major bootstrap metadata.
+fn static_response(api_major: ApiMajor, method: &str, path: &str) -> Result<Response<Full<Bytes>>> {
     if method != "GET" {
         return Err(Error::new("not-found", "The requested asset was not found.", false));
     }
     if path == "/" {
-        Ok(response(200, "text/html; charset=utf-8", super::assets::shell().into_bytes()))
+        Ok(response(
+            200,
+            "text/html; charset=utf-8",
+            super::assets::shell_for(api_major).into_bytes(),
+        ))
     } else if path == super::assets::script_path() {
         Ok(response(
             200,
@@ -788,8 +880,10 @@ fn response(status: u16, media_type: &str, bytes: Vec<u8>) -> Response<Full<Byte
 mod tests {
     use super::*;
 
+    /// Preserve explicit v1 negotiation in existing browser capability controls.
     fn browser_state(root: Root, passphrase: &str) -> State {
         State {
+            api_major: ApiMajor::V1,
             root,
             host: "127.0.0.1:1".into(),
             origin: "http://127.0.0.1:1".into(),
@@ -806,6 +900,69 @@ mod tests {
             effects: Mutex::new(super::super::effects::Store::default()),
             work: Arc::new(tokio::sync::Semaphore::new(2)),
             jobs: Arc::new(tokio::sync::Semaphore::new(1)),
+        }
+    }
+
+    /// Both bootstrap majors publish exact immutable metadata and bounded secured asset responses.
+    #[test]
+    fn selected_bootstrap_metadata_assets_and_rejections() {
+        let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        for major in [ApiMajor::V1, ApiMajor::V2] {
+            let shell = static_response(major, "GET", "/").unwrap();
+            assert_eq!(shell.status(), 200);
+            assert_eq!(shell.headers()["content-type"], "text/html; charset=utf-8");
+            assert_eq!(shell.headers()["cache-control"], "no-store");
+            assert_eq!(shell.headers()["x-content-type-options"], "nosniff");
+            assert_eq!(shell.headers()["x-frame-options"], "DENY");
+            assert!(
+                shell.headers()["content-security-policy"]
+                    .to_str()
+                    .unwrap()
+                    .contains("default-src 'none'")
+            );
+            let body = runtime.block_on(shell.into_body().collect()).unwrap().to_bytes();
+            let html = std::str::from_utf8(&body).unwrap();
+            assert_eq!(html.matches("name=\"forge-api-major\"").count(), 1);
+            assert!(
+                html.contains(&format!("name=\"forge-api-major\" content=\"{}\"", major.number()))
+            );
+            assert_eq!(
+                html.matches("name=\"forge-api-contract-version\"").count(),
+                usize::from(major == ApiMajor::V2)
+            );
+            if major == ApiMajor::V2 {
+                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.0.0\""));
+            }
+            assert!(html.contains("id=\"workspace\" hidden"));
+            for (asset_path, expected, media) in [
+                (
+                    super::super::assets::script_path(),
+                    super::super::assets::SCRIPT,
+                    "text/javascript; charset=utf-8",
+                ),
+                (
+                    super::super::assets::style_path(),
+                    super::super::assets::STYLE,
+                    "text/css; charset=utf-8",
+                ),
+            ] {
+                assert!(html.contains(&asset_path));
+                let response = static_response(major, "GET", &asset_path).unwrap();
+                assert_eq!(response.status(), 200);
+                assert_eq!(response.headers()["content-type"], media);
+                assert_eq!(response.headers()["cache-control"], "no-store");
+                let bytes = runtime.block_on(response.into_body().collect()).unwrap().to_bytes();
+                assert_eq!(bytes.as_ref(), expected.as_bytes());
+                assert_eq!(
+                    static_response(major, "POST", &asset_path).unwrap_err().code,
+                    "not-found"
+                );
+            }
+            assert_eq!(
+                static_response(major, "GET", "/assets/unknown.js").unwrap_err().code,
+                "not-found"
+            );
+            assert_eq!(static_response(major, "POST", "/").unwrap_err().code, "not-found");
         }
     }
 

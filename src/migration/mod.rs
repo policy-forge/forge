@@ -9,6 +9,8 @@ mod types;
 use std::path::Path;
 
 pub use formatter::{format_json, format_text};
+/// Consume the existing bounded successor parser for explicitly captured workspace metadata.
+pub(crate) use successor::parse as parse_successor;
 pub use successor::{
     RelationshipType, SUCCESSOR_MAP_SCHEMA_VERSION, SuccessorMap, SuccessorRelationship, load,
 };

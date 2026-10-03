@@ -1,0 +1,5 @@
+{
+  "code": "unauthorized",
+  "message": "Request rejected.",
+  "retryable": false
+}

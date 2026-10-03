@@ -1,0 +1,4873 @@
+{
+  "components": {
+    "parameters": {
+      "Cursor": {
+        "description": "Opaque deterministic cursor from a previous page.next_cursor; stable only for an unchanged underlying resource version.",
+        "in": "query",
+        "name": "cursor",
+        "required": false,
+        "schema": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "ExcerptIdPath": {
+        "description": "Opaque bounded excerpt identifier.",
+        "in": "path",
+        "name": "excerpt_id",
+        "required": true,
+        "schema": {
+          "pattern": "^ex_[0-9a-z]{12,80}$",
+          "type": "string"
+        }
+      },
+      "IdempotencyKey": {
+        "description": "Client-generated key for effect-creating requests (preview, operation, or commit creation). Same key with identical content returns the original result; same key with different content fails with idempotency-key-conflict.",
+        "in": "header",
+        "name": "Idempotency-Key",
+        "required": true,
+        "schema": {
+          "maxLength": 255,
+          "minLength": 16,
+          "type": "string"
+        }
+      },
+      "OperationIdPath": {
+        "description": "Stable operation identifier.",
+        "in": "path",
+        "name": "operation_id",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/OperationId"
+        }
+      },
+      "PageSize": {
+        "description": "Maximum number of items returned in one page (1-200, default 50).",
+        "in": "query",
+        "name": "page_size",
+        "required": false,
+        "schema": {
+          "default": 50,
+          "maximum": 200,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "PreviewIdPath": {
+        "description": "Opaque effect preview identifier.",
+        "in": "path",
+        "name": "preview_id",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PreviewId"
+        }
+      },
+      "ResourceIdPath": {
+        "description": "Opaque registered resource identifier.",
+        "in": "path",
+        "name": "resource_id",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/ResourceId"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "Malformed request (invalid JSON, duplicate object keys, wrong content type, invalid query parameters, or structural bound violations)."
+      },
+      "ConflictVersion": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The observed version does not match the current resource version (version-conflict); the error carries resource_version with the current value. Alternatively an idempotency-key or receipt conflict (see the Error code)."
+      },
+      "ForbiddenReadOnly": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The session capability is read-only; the operation is a mutation. No project file changes."
+      },
+      "NotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The addressed resource or operation does not exist in this session."
+      },
+      "PayloadTooLarge": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The uploaded content exceeds the documented bounded size."
+      },
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "Missing, malformed, or wrong capability, or a rejected Host, Origin, or Fetch Metadata context. Generic rejection with no project-state disclosure."
+      },
+      "UnprocessableValidation": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "The submitted document or content failed domain validation; the error is typed and safe. Fetch full diagnostics through the validation operations."
+      }
+    },
+    "schemas": {
+      "AnalysisResult": {
+        "additionalProperties": false,
+        "description": "Typed terminal result of a succeeded applicability-analysis operation.",
+        "properties": {
+          "classification_counts": {
+            "description": "Reconciled classification totals.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "classification": {
+                  "$ref": "#/components/schemas/GapClassification"
+                },
+                "count": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "classification",
+                "count"
+              ],
+              "type": "object"
+            },
+            "maxItems": 6,
+            "minItems": 0,
+            "type": "array"
+          },
+          "eligible_controls": {
+            "description": "Complete denominator of eligible framework controls.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "report_preview": {
+            "$ref": "#/components/schemas/EffectPreview"
+          },
+          "stale_inputs": {
+            "description": "Whether any analysis input changed since the last committed report.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "classification_counts",
+          "eligible_controls",
+          "stale_inputs",
+          "report_preview"
+        ],
+        "type": "object"
+      },
+      "ApplicabilityDraft": {
+        "additionalProperties": false,
+        "description": "Current applicability manifest draft read from disk.",
+        "properties": {
+          "manifest": {
+            "description": "Complete forge.applicability/1 document exactly as stored on disk. Validated by the shared domain parser (snake_case fields, closed contract, duplicate-key rejection); the API does not redefine the domain schema.",
+            "type": "object"
+          },
+          "validation_summary": {
+            "$ref": "#/components/schemas/DiagnosticSummary"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "version",
+          "manifest",
+          "validation_summary"
+        ],
+        "type": "object"
+      },
+      "ApplicabilityDraftPutRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "manifest": {
+            "description": "Complete proposed forge.applicability/1 document.",
+            "type": "object"
+          },
+          "observed_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "manifest",
+          "observed_version"
+        ],
+        "type": "object"
+      },
+      "ApplicabilityInitializationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "framework_resource_id": {
+            "$ref": "#/components/schemas/ResourceId"
+          },
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          }
+        },
+        "required": [
+          "framework_resource_id",
+          "target_path"
+        ],
+        "type": "object"
+      },
+      "ApplicabilityReportView": {
+        "additionalProperties": false,
+        "description": "Current committed applicability gap report view.",
+        "properties": {
+          "classification_counts": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "classification": {
+                  "$ref": "#/components/schemas/GapClassification"
+                },
+                "count": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "classification",
+                "count"
+              ],
+              "type": "object"
+            },
+            "maxItems": 6,
+            "minItems": 0,
+            "type": "array"
+          },
+          "eligible_controls": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "input_fingerprints": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "matches_current": {
+                  "type": "boolean"
+                },
+                "resource_id": {
+                  "$ref": "#/components/schemas/ResourceId"
+                },
+                "sha256": {
+                  "$ref": "#/components/schemas/Sha256Hex"
+                }
+              },
+              "required": [
+                "resource_id",
+                "sha256",
+                "matches_current"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array"
+          },
+          "stale": {
+            "description": "Whether any input fingerprint no longer matches the registered resource content.",
+            "type": "boolean"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "version",
+          "stale",
+          "input_fingerprints",
+          "classification_counts",
+          "eligible_controls"
+        ],
+        "type": "object"
+      },
+      "CommitEffectRequest": {
+        "additionalProperties": false,
+        "description": "Confirmation submits only the one-time receipt token, the observed resource version, and explicit confirmation intent, plus the Idempotency-Key header.",
+        "properties": {
+          "confirmed": {
+            "description": "Must be the literal true; absent or false is rejected.",
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "observed_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "receipt": {
+            "description": "One-time preview receipt token.",
+            "maxLength": 512,
+            "minLength": 16,
+            "type": "string"
+          }
+        },
+        "required": [
+          "receipt",
+          "observed_version",
+          "confirmed"
+        ],
+        "type": "object"
+      },
+      "CommitResult": {
+        "additionalProperties": false,
+        "description": "Typed terminal result of a succeeded commit operation.",
+        "properties": {
+          "committed_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "new_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "write_committed": {
+            "description": "The exact previewed bytes were atomically written.",
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "write_committed",
+          "committed_sha256",
+          "target_path",
+          "new_version"
+        ],
+        "type": "object"
+      },
+      "ControlInventoryItem": {
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "$ref": "#/components/schemas/GapClassification"
+          },
+          "control_id": {
+            "description": "Stable framework control identifier.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "decision_state": {
+            "$ref": "#/components/schemas/DecisionState"
+          },
+          "has_positive_mapping": {
+            "type": "boolean"
+          },
+          "provenance_ref": {
+            "description": "Opaque anchor for explicit provenance traversal, independent of display identifier length.",
+            "pattern": "^prov_[0-9a-z]{12,80}$",
+            "type": "string"
+          },
+          "review_reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReviewReasonCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "description": "Safe, bounded control title.",
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "control_id",
+          "title",
+          "classification",
+          "decision_state",
+          "has_positive_mapping",
+          "review_reason"
+        ],
+        "type": "object"
+      },
+      "ControlPage": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/ControlInventoryItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "description": "Opaque cursor for the next page; null on the last page.",
+                "oneOf": [
+                  {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "description": "Denominator for the current resource version and applied filters; with no filters it is the unfiltered total.",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "resource_version",
+          "page"
+        ],
+        "type": "object"
+      },
+      "ConversionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "output_kind": {
+            "description": "Which conversion pipeline to prepare.",
+            "enum": [
+              "oscal-catalog",
+              "oscal-component-definition"
+            ],
+            "type": "string"
+          },
+          "source_resource_id": {
+            "$ref": "#/components/schemas/ResourceId"
+          },
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          }
+        },
+        "required": [
+          "source_resource_id",
+          "output_kind",
+          "target_path"
+        ],
+        "type": "object"
+      },
+      "ConversionResult": {
+        "additionalProperties": false,
+        "description": "Typed inspection of a succeeded conversion operation.",
+        "properties": {
+          "operation_id": {
+            "$ref": "#/components/schemas/OperationId"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/EffectPreview"
+          },
+          "products": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "oscal-catalog",
+                    "oscal-component-definition"
+                  ],
+                  "type": "string"
+                },
+                "statement_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "statement_count"
+              ],
+              "type": "object"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "type": "array"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport"
+          }
+        },
+        "required": [
+          "operation_id",
+          "products",
+          "validation",
+          "preview"
+        ],
+        "type": "object"
+      },
+      "DecisionState": {
+        "description": "PRD 056 explicit human applicability states. Omitted controls have under-review semantics; the API never infers a state.",
+        "enum": [
+          "applicable",
+          "not-applicable",
+          "deferred",
+          "under-review"
+        ],
+        "type": "string"
+      },
+      "DiagnosticSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "error_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ValidationState"
+          },
+          "warning_count": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "state",
+          "error_count",
+          "warning_count"
+        ],
+        "type": "object"
+      },
+      "DraftPreviewResponse": {
+        "additionalProperties": false,
+        "description": "Shared response for synchronous preview-producing operations: validation of the complete proposed document plus the bound write preview. Nothing is committed.",
+        "properties": {
+          "preview": {
+            "$ref": "#/components/schemas/EffectPreview"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport"
+          }
+        },
+        "required": [
+          "validation",
+          "preview"
+        ],
+        "type": "object"
+      },
+      "DraftValidationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "manifest": {
+            "description": "Complete proposed forge.applicability/1 or forge.mapping-manifest/1 document.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "manifest"
+        ],
+        "type": "object"
+      },
+      "EffectPreview": {
+        "additionalProperties": false,
+        "description": "Everything a human confirms against: exact target, hashes, validation, semantic summary, escaped text diff, and the one-time receipt.",
+        "properties": {
+          "base_sha256": {
+            "description": "Current target content hash; null when creating a new file.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Sha256Hex"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "diff_text": {
+            "description": "Escaped unified text diff of the exact proposed bytes.",
+            "maxLength": 200000,
+            "type": "string"
+          },
+          "diff_truncated": {
+            "type": "boolean"
+          },
+          "exact_bytes_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "input_hashes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "resource_id": {
+                  "$ref": "#/components/schemas/ResourceId"
+                },
+                "sha256": {
+                  "$ref": "#/components/schemas/Sha256Hex"
+                }
+              },
+              "required": [
+                "resource_id",
+                "sha256"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array"
+          },
+          "operation_type": {
+            "enum": [
+              "workspace-index-update",
+              "resource-upload",
+              "policy-conversion",
+              "applicability-manifest-write",
+              "mapping-manifest-write",
+              "applicability-report-write",
+              "mapping-report-write",
+              "report-export"
+            ],
+            "type": "string"
+          },
+          "preview_id": {
+            "$ref": "#/components/schemas/PreviewId"
+          },
+          "receipt": {
+            "additionalProperties": false,
+            "description": "One-time receipt bound to the session, operation type, destination identity, base hash, input hashes, and exact-byte hash.",
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "token": {
+                "maxLength": 512,
+                "minLength": 16,
+                "type": "string"
+              }
+            },
+            "required": [
+              "token",
+              "expires_at"
+            ],
+            "type": "object"
+          },
+          "semantic_summary": {
+            "description": "Safe, escaped summary of the semantic change.",
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "target": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/components/schemas/ProjectRelativePath"
+              },
+              "status": {
+                "enum": [
+                  "create",
+                  "overwrite"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "status"
+            ],
+            "type": "object"
+          },
+          "target_version": {
+            "description": "Current version of the target resource when overwriting.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResourceVersion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport"
+          }
+        },
+        "required": [
+          "preview_id",
+          "operation_type",
+          "target",
+          "base_sha256",
+          "exact_bytes_sha256",
+          "input_hashes",
+          "validation",
+          "semantic_summary",
+          "diff_text",
+          "diff_truncated",
+          "receipt"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "additionalProperties": false,
+        "description": "Closed error envelope. Prohibited content (enforced by contract and CI): capabilities, absolute paths, raw source excerpts, and Rust debug strings. The code list below is closed in this contract version; additive codes are permitted within v1 only as documented in docs/api/compatibility.md, and the meaning of an existing code never changes within v1.",
+        "examples": [
+          {
+            "code": "version-conflict",
+            "correlation_id": "corr_1f2e3d4c5b6a",
+            "message": "The resource changed since it was read. Reload and retry.",
+            "resource": "res_0f1e2d3c4b5a69788796a5b4",
+            "resource_version": "aa99887766554433",
+            "retryable": true
+          }
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "invalid-request",
+              "unauthorized",
+              "unlock-failed",
+              "unlock-throttled",
+              "read-only-session",
+              "not-found",
+              "unsupported-media-type",
+              "payload-too-large",
+              "resource-containment",
+              "version-conflict",
+              "idempotency-key-conflict",
+              "receipt-expired",
+              "receipt-reused",
+              "receipt-mismatch",
+              "validation-failed",
+              "operation-not-cancellable",
+              "shutdown-in-progress",
+              "internal-error"
+            ],
+            "type": "string"
+          },
+          "correlation_id": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string"
+          },
+          "field": {
+            "description": "Optional JSON pointer into the request document.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "message": {
+            "description": "Safe, human-readable message with no sensitive content.",
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "resource": {
+            "description": "Optional opaque resource or operation identifier the error concerns.",
+            "maxLength": 128,
+            "minLength": 3,
+            "type": "string"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "retryable": {
+            "description": "Whether an identical retry can succeed later.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "type": "object"
+      },
+      "ExportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "default": "static-html",
+            "enum": [
+              "static-html"
+            ],
+            "type": "string"
+          },
+          "redaction_profile": {
+            "default": "strict-default",
+            "description": "Only the strict default redaction profile exists in v1.",
+            "enum": [
+              "strict-default"
+            ],
+            "type": "string"
+          },
+          "report_kind": {
+            "enum": [
+              "applicability-gap",
+              "mapping-collection",
+              "trace"
+            ],
+            "type": "string"
+          },
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          }
+        },
+        "required": [
+          "report_kind",
+          "target_path"
+        ],
+        "type": "object"
+      },
+      "ExportResult": {
+        "additionalProperties": false,
+        "description": "Typed terminal result of a succeeded export operation.",
+        "properties": {
+          "operation_id": {
+            "$ref": "#/components/schemas/OperationId"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/EffectPreview"
+          },
+          "redaction_summary": {
+            "additionalProperties": false,
+            "properties": {
+              "removed_categories": {
+                "items": {
+                  "enum": [
+                    "reviewer-names",
+                    "absolute-paths",
+                    "source-excerpts",
+                    "secrets"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 8,
+                "minItems": 0,
+                "type": "array"
+              }
+            },
+            "required": [
+              "removed_categories"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "operation_id",
+          "preview",
+          "redaction_summary"
+        ],
+        "type": "object"
+      },
+      "GapClassification": {
+        "description": "PRD 056 gap classifications; participation terminology only, never a compliance claim.",
+        "enum": [
+          "applicable-mapped",
+          "applicable-reviewed-no-relationship",
+          "applicable-unmapped",
+          "not-applicable",
+          "deferred",
+          "under-review"
+        ],
+        "type": "string"
+      },
+      "MappingBuildResult": {
+        "additionalProperties": false,
+        "description": "Typed terminal result of a succeeded mapping-build operation.",
+        "properties": {
+          "controls_covered": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "coverage_ratio": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "maps_total": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "no_relationship_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "positive_relationship_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "report_preview": {
+            "$ref": "#/components/schemas/EffectPreview"
+          }
+        },
+        "required": [
+          "maps_total",
+          "positive_relationship_count",
+          "no_relationship_count",
+          "controls_covered",
+          "coverage_ratio",
+          "report_preview"
+        ],
+        "type": "object"
+      },
+      "MappingDraft": {
+        "additionalProperties": false,
+        "properties": {
+          "manifest": {
+            "description": "Complete forge.mapping-manifest/1 document exactly as stored on disk.",
+            "type": "object"
+          },
+          "validation_summary": {
+            "$ref": "#/components/schemas/DiagnosticSummary"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "version",
+          "manifest",
+          "validation_summary"
+        ],
+        "type": "object"
+      },
+      "MappingDraftPutRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "manifest": {
+            "description": "Complete proposed forge.mapping-manifest/1 document.",
+            "type": "object"
+          },
+          "observed_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "manifest",
+          "observed_version"
+        ],
+        "type": "object"
+      },
+      "MappingInitializationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "maps": {
+            "description": "Explicit reviewed PRD-055 MapManifest entries. The existing domain contract requires at least one relationship; none are inferred.",
+            "items": {
+              "type": "object"
+            },
+            "maxItems": 10000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "review": {
+            "additionalProperties": false,
+            "properties": {
+              "collection": {
+                "description": "Complete PRD-055 CollectionManifest, validated by its closed domain parser.",
+                "type": "object"
+              },
+              "provenance": {
+                "description": "Complete PRD-055 ProvenanceManifest supplied by the reviewer and validated by its closed parser.",
+                "type": "object"
+              },
+              "reviewers": {
+                "description": "Explicit PRD-055 reviewer records; asserted provenance, not authenticated identities.",
+                "items": {
+                  "type": "object"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "required": [
+              "collection",
+              "reviewers",
+              "provenance"
+            ],
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "control-only",
+              "control-plus-statement"
+            ],
+            "type": "string"
+          },
+          "source_resource_id": {
+            "$ref": "#/components/schemas/ResourceId"
+          },
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "target_resource_id": {
+            "$ref": "#/components/schemas/ResourceId"
+          }
+        },
+        "required": [
+          "source_resource_id",
+          "target_resource_id",
+          "target_path",
+          "scope",
+          "review",
+          "maps"
+        ],
+        "type": "object"
+      },
+      "MappingSubject": {
+        "additionalProperties": false,
+        "properties": {
+          "fingerprint": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "label": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "provenance_ref": {
+            "description": "Opaque anchor for explicit provenance traversal, independent of display identifier length.",
+            "pattern": "^prov_[0-9a-z]{12,80}$",
+            "type": "string"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/ResourceId"
+          },
+          "side": {
+            "enum": [
+              "policy",
+              "framework"
+            ],
+            "type": "string"
+          },
+          "statement_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "subject_id": {
+            "pattern": "^subj_[0-9a-z]{12,80}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_id",
+          "side",
+          "resource_id",
+          "label",
+          "fingerprint",
+          "statement_count"
+        ],
+        "type": "object"
+      },
+      "Operation": {
+        "additionalProperties": false,
+        "description": "Queryable bounded work. Session-scoped: only the creating session may query or cancel it. After a lost response, state plus result determines whether a write committed; failed operations never convert into partial success.",
+        "properties": {
+          "cancel_requested": {
+            "description": "True once cancellation was requested (state may still be running).",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error",
+            "description": "Safe terminal error; present only when state is failed."
+          },
+          "kind": {
+            "enum": [
+              "conversion",
+              "applicability-analysis",
+              "mapping-build",
+              "commit",
+              "export"
+            ],
+            "type": "string"
+          },
+          "operation_id": {
+            "$ref": "#/components/schemas/OperationId"
+          },
+          "progress": {
+            "description": "Optional measured capture facts for background preparation. Counts fully captured and classified registrations, including invalid classifications, against the full registered set. Null or absent means progress is unmeasured. Clears before domain/output work and at termination; capture completion is not operation completion or write approval. No source identities, percentage or ETA are exposed.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "completed_items": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "total_items": {
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "completed_items",
+                  "total_items"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "result": {
+            "description": "Typed terminal result; present only when state is succeeded.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ConversionResult"
+              },
+              {
+                "$ref": "#/components/schemas/AnalysisResult"
+              },
+              {
+                "$ref": "#/components/schemas/MappingBuildResult"
+              },
+              {
+                "$ref": "#/components/schemas/CommitResult"
+              },
+              {
+                "$ref": "#/components/schemas/ExportResult"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id",
+          "kind",
+          "state",
+          "created_at",
+          "updated_at",
+          "cancel_requested"
+        ],
+        "type": "object"
+      },
+      "OperationId": {
+        "description": "Stable, opaque operation identifier.",
+        "pattern": "^op_[0-9a-z]{12,80}$",
+        "type": "string"
+      },
+      "PreviewId": {
+        "description": "Stable, opaque preview identifier.",
+        "pattern": "^prev_[0-9a-z]{12,80}$",
+        "type": "string"
+      },
+      "ProjectBundlePreview": {
+        "additionalProperties": false,
+        "description": "Complete authorized metadata inspection of an explicitly present index. Missing index returns 404; an explicit empty index returns an empty bundle. This response creates no exported file, effect receipt or approval.",
+        "properties": {
+          "bundle": {
+            "$ref": "#/components/schemas/WorkspaceIndexBundle"
+          },
+          "included_metadata": {
+            "const": [
+              "project-label",
+              "resource-keys",
+              "typed-roles",
+              "project-relative-paths",
+              "sha256-fingerprints",
+              "byte-lengths"
+            ],
+            "type": "array"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "source_content_included": {
+            "const": false,
+            "type": "boolean"
+          },
+          "source_index_present": {
+            "const": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "bundle",
+          "source_index_present",
+          "snapshot_version",
+          "included_metadata",
+          "source_content_included"
+        ],
+        "type": "object"
+      },
+      "ProjectBundleVerification": {
+        "additionalProperties": false,
+        "description": "Complete read-only registered-resource comparison at capture time: matched+unregistered+mismatched=expected=items length=bundle index length. Supplied unregistered paths are never opened. Retry captures current state again; no replay or later stability promise. No index merge, source copying, removal, domain approval or import eligibility.",
+        "properties": {
+          "current_only_resources": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "current_resources": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "expected_index_matches_current": {
+            "description": "Exact normalized index equality includes label and authorial array order; false when current index is absent.",
+            "type": "boolean"
+          },
+          "expected_resources": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectBundleVerificationItem"
+            },
+            "maxItems": 1000,
+            "type": "array"
+          },
+          "matched_resources": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "mismatched_resources": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "scope": {
+            "const": "registered-fingerprints-only",
+            "type": "string"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "source_content_included": {
+            "const": false,
+            "type": "boolean"
+          },
+          "source_index_present": {
+            "type": "boolean"
+          },
+          "state": {
+            "description": "missing-index takes priority. Otherwise matched means all expected fingerprints match; extra current registrations and normalized whole-index equality are exposed separately.",
+            "enum": [
+              "missing-index",
+              "matched",
+              "mismatched"
+            ],
+            "type": "string"
+          },
+          "unregistered_resources": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "scope",
+          "snapshot_version",
+          "source_index_present",
+          "state",
+          "current_resources",
+          "current_only_resources",
+          "expected_index_matches_current",
+          "expected_resources",
+          "matched_resources",
+          "unregistered_resources",
+          "mismatched_resources",
+          "items",
+          "source_content_included"
+        ],
+        "type": "object"
+      },
+      "ProjectBundleVerificationItem": {
+        "additionalProperties": false,
+        "description": "One ordered expected registration comparison. Fingerprint agreement is separate from observed domain validation/staleness and establishes no approval or import readiness.",
+        "properties": {
+          "key": {
+            "description": "Stable local key (1-64 characters, lowercase alphanumeric with interior hyphens, no leading or trailing hyphen), unique within the index, used by API resource metadata and effect previews.",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+            "type": "string"
+          },
+          "observed_resource_validation_state": {
+            "enum": [
+              "valid",
+              "stale",
+              "invalid",
+              "not-registered"
+            ],
+            "type": "string"
+          },
+          "reason_codes": {
+            "items": {
+              "enum": [
+                "registration-not-found",
+                "registration-conflict",
+                "sha256-mismatch",
+                "size-mismatch"
+              ],
+              "type": "string"
+            },
+            "maxItems": 2,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "status": {
+            "enum": [
+              "matched",
+              "not-registered",
+              "mismatched"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "status",
+          "reason_codes",
+          "observed_resource_validation_state"
+        ],
+        "type": "object"
+      },
+      "ProjectConfigStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "issues": {
+            "description": "Bounded, safe issue summaries.",
+            "items": {
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array"
+          },
+          "present": {
+            "description": "Whether a .forge.toml exists beneath the project root.",
+            "type": "boolean"
+          },
+          "valid": {
+            "description": "Whether it parses and validates; false when absent.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "present",
+          "valid"
+        ],
+        "type": "object"
+      },
+      "ProjectRelativePath": {
+        "description": "Project-relative POSIX-style path identical to the forge.workspace/1 path rules; the same rejections apply (absolute paths, traversal, Windows drive prefixes, backslashes, leading-dot segments), and the runtime additionally rejects symlinks and non-regular files.",
+        "maxLength": 512,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$",
+        "type": "string"
+      },
+      "ProjectSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "health": {
+            "description": "Aggregate state distinguishing invalid inputs, stale inputs, unresolved review items, and completed outputs.",
+            "enum": [
+              "setup",
+              "needs-attention",
+              "ready"
+            ],
+            "type": "string"
+          },
+          "next_action": {
+            "description": "Next recommended human action for the golden path.",
+            "enum": [
+              "register-resources",
+              "fix-invalid-inputs",
+              "resolve-review-items",
+              "review-scope",
+              "review-mappings",
+              "regenerate-analysis",
+              "none"
+            ],
+            "type": "string"
+          },
+          "project_label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "resource_counts": {
+            "additionalProperties": false,
+            "properties": {
+              "invalid": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "not_validated": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "stale": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "total": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "valid": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "valid",
+              "invalid",
+              "stale",
+              "not_validated"
+            ],
+            "type": "object"
+          },
+          "review_counts": {
+            "additionalProperties": false,
+            "properties": {
+              "total_open": {
+                "description": "Reconciles with getReviewQueueCounts and the unfiltered queue denominator.",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total_open"
+            ],
+            "type": "object"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "workspace_index_present": {
+            "description": "Whether forge.workspace.json exists; false renders the setup state.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "version",
+          "project_label",
+          "workspace_index_present",
+          "health",
+          "resource_counts",
+          "review_counts",
+          "next_action"
+        ],
+        "type": "object"
+      },
+      "ProvenanceEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "entry_id": {
+            "pattern": "^prov_[0-9a-z]{12,80}$",
+            "type": "string"
+          },
+          "excerpt_refs": {
+            "description": "Bounded excerpt identifiers fetched via getProvenanceExcerpt.",
+            "items": {
+              "pattern": "^ex_[0-9a-z]{12,80}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 0,
+            "type": "array"
+          },
+          "fingerprint": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProvenanceKind"
+          },
+          "label": {
+            "description": "Safe, bounded display label.",
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "refs": {
+            "description": "Edges to related entries for bidirectional traversal.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "maxLength": 128,
+                  "minLength": 3,
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "report-item",
+                    "control",
+                    "applicability-decision",
+                    "mapping-edge",
+                    "policy-subject",
+                    "source-reference",
+                    "resource"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "id"
+              ],
+              "type": "object"
+            },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "entry_id",
+          "kind",
+          "label",
+          "refs"
+        ],
+        "type": "object"
+      },
+      "ProvenanceEntryPage": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/ProvenanceEntry"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "resource_version",
+          "page"
+        ],
+        "type": "object"
+      },
+      "ProvenanceExcerpt": {
+        "additionalProperties": false,
+        "properties": {
+          "end_line": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "excerpt_id": {
+            "pattern": "^ex_[0-9a-z]{12,80}$",
+            "type": "string"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/ResourceId"
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "start_line": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "text": {
+            "description": "Escaped, inert excerpt text.",
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "excerpt_id",
+          "resource_id",
+          "sha256",
+          "start_line",
+          "end_line",
+          "text",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "ProvenanceKind": {
+        "enum": [
+          "report-item",
+          "control",
+          "applicability-decision",
+          "mapping-edge",
+          "policy-subject",
+          "source-reference"
+        ],
+        "type": "string"
+      },
+      "QueueItem": {
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GapClassification"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "control_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence_refs": {
+            "description": "Provenance entry identifiers supporting this item.",
+            "items": {
+              "pattern": "^prov_[0-9a-z]{12,80}$",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          },
+          "item_id": {
+            "pattern": "^qi_[0-9a-z]{12,80}$",
+            "type": "string"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/ReviewReasonCode"
+          },
+          "resource_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResourceId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "description": "Safe, bounded human-readable summary.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "reason_code",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "QueueItemPage": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/QueueItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "resource_version",
+          "page"
+        ],
+        "type": "object"
+      },
+      "RegisterResourceRequest": {
+        "description": "Closed registration alternative or explicit migration-only alternative. Original omitted/null keys preserved; new roles require current index2 or explicit selector before resource read.",
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "role",
+              "path"
+            ],
+            "properties": {
+              "role": {
+                "$ref": "#/components/schemas/WorkspaceRole"
+              },
+              "path": {
+                "$ref": "#/components/schemas/ProjectRelativePath"
+              },
+              "key": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-z0-9][a-z0-9-]{1,63}$",
+                "default": null,
+                "description": "Optional stable local key; the server derives one from the filename when omitted and rejects duplicates."
+              },
+              "index_schema_version": {
+                "type": "string",
+                "const": "forge.workspace/2",
+                "description": "Explicitly create or migrate an authorial index2 in this ordinary conditional index effect; omitted preserves current version."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "migration"
+            ],
+            "properties": {
+              "migration": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "const": "forge.workspace/1"
+                  },
+                  "to": {
+                    "type": "string",
+                    "const": "forge.workspace/2"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Resource": {
+        "additionalProperties": false,
+        "description": "Registered resource metadata with read-time computed facts.",
+        "properties": {
+          "key": {
+            "description": "Stable local key identical to the forge.workspace/1 key rules (1-64 characters, lowercase alphanumeric with interior hyphens).",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+            "type": "string"
+          },
+          "media_type": {
+            "maxLength": 128,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/ResourceId"
+          },
+          "role": {
+            "$ref": "#/components/schemas/WorkspaceRole"
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "size_bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "stale": {
+            "description": "Whether this input changed since the last committed analysis that consumed it.",
+            "type": "boolean"
+          },
+          "validation_state": {
+            "$ref": "#/components/schemas/ValidationState"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "validation_profile": {
+            "type": "string",
+            "enum": [
+              "lifecycle-record-structure",
+              "opaque-fingerprint-bytes",
+              "native-oscal-schema",
+              "framework-impact-manifest",
+              "successor-map",
+              "framework-impact-prior-admission",
+              "framework-impact-dispositions"
+            ],
+            "description": "Optional intrinsic admission profile only for its paired new role. Structure or exact-byte admission does not establish computed freshness, approval or authority."
+          }
+        },
+        "required": [
+          "resource_id",
+          "key",
+          "role",
+          "path",
+          "sha256",
+          "size_bytes",
+          "validation_state",
+          "stale",
+          "version"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "lifecycle-record"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "lifecycle-record-structure"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "lifecycle-source"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "opaque-fingerprint-bytes"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "oscal-profile-artifact"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "native-oscal-schema"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "oscal-ssp-artifact"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "native-oscal-schema"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "framework-impact-manifest"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "framework-impact-manifest"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "successor-map"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "successor-map"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "framework-impact-report"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "framework-impact-prior-admission"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "framework-impact-dispositions"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "validation_profile": {
+                  "const": "framework-impact-dispositions"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "enum": [
+                    "policy-source",
+                    "oscal-catalog-artifact",
+                    "oscal-component-artifact",
+                    "mapping-collection",
+                    "applicability-manifest",
+                    "applicability-report",
+                    "trace-report"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "validation_profile"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ResourceId": {
+        "description": "Opaque registered resource identifier; project objects are never addressed by raw paths.",
+        "pattern": "^res_[0-9a-z]{12,80}$",
+        "type": "string"
+      },
+      "ResourcePage": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/Resource"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "resource_version",
+          "page"
+        ],
+        "type": "object"
+      },
+      "ResourceVersion": {
+        "description": "Opaque strong version (ETag equivalent conveyed in the body) of a mutable resource. Mutations must present the observed version; mismatch returns version-conflict with the current resource_version.",
+        "examples": [
+          "9f4c1b2a3d6e7f80"
+        ],
+        "maxLength": 128,
+        "minLength": 8,
+        "type": "string"
+      },
+      "ReviewQueueCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "by_reason": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "reason_code": {
+                  "$ref": "#/components/schemas/ReviewReasonCode"
+                }
+              },
+              "required": [
+                "reason_code",
+                "count"
+              ],
+              "type": "object"
+            },
+            "maxItems": 7,
+            "minItems": 0,
+            "type": "array"
+          },
+          "total_open": {
+            "description": "Reconciles with the unfiltered queue denominator (total_matching with no filters).",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_open",
+          "by_reason"
+        ],
+        "type": "object"
+      },
+      "ReviewReasonCode": {
+        "description": "Stable review queue reason codes. The first four are the PRD 056 domain queue reasons; the last three cover validation, staleness, and external-change items surfaced in the same queue.",
+        "enum": [
+          "reviewed-no-positive-relationship",
+          "no-reviewed-mapping",
+          "deferred-scope-decision",
+          "scope-decision-required",
+          "invalid-resource",
+          "stale-input",
+          "external-conflict"
+        ],
+        "type": "string"
+      },
+      "Session": {
+        "additionalProperties": false,
+        "description": "Session metadata and API version discovery; no capability material and no absolute paths.",
+        "properties": {
+          "api_major": {
+            "const": 2,
+            "type": "integer"
+          },
+          "contract_version": {
+            "description": "Exact contract version (info.version of the normative OpenAPI document) served by this process.",
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string",
+            "const": "2.0.0"
+          },
+          "launched_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "browser",
+              "machine"
+            ],
+            "type": "string"
+          },
+          "project_label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "pattern": "^sess_[0-9a-z]{8,64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "mode",
+          "read_only",
+          "api_major",
+          "contract_version",
+          "project_label"
+        ],
+        "type": "object"
+      },
+      "SessionUnlockRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "passphrase": {
+            "description": "Per-launch passphrase, 15-128 characters, spaces and Unicode allowed, no composition rules. Never accepted from a command-line argument, environment variable, URL value, or project/workspace file, and never logged or persisted.",
+            "maxLength": 128,
+            "minLength": 15,
+            "type": "string"
+          }
+        },
+        "required": [
+          "passphrase"
+        ],
+        "type": "object"
+      },
+      "SessionUnlockResponse": {
+        "additionalProperties": false,
+        "description": "Returns the browser-scoped capability exactly once; the client must retain it only in page memory.",
+        "properties": {
+          "capability": {
+            "description": "Newly minted memory-only browser-scoped bearer capability (at least 256 bits of cryptographically secure random material, rendered opaquely). Distinct per unlock; never persisted, rotated into logs, reflected into HTML, included in crash output, or sent in a referrer.",
+            "maxLength": 512,
+            "minLength": 32,
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Session"
+          }
+        },
+        "required": [
+          "capability",
+          "session"
+        ],
+        "type": "object"
+      },
+      "Sha256Hex": {
+        "description": "Lowercase hexadecimal SHA-256 digest.",
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "ShutdownResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "const": "shutting-down",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "SubjectPage": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/MappingSubject"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "maxLength": 512,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        },
+        "required": [
+          "resource_version",
+          "page"
+        ],
+        "type": "object"
+      },
+      "UploadResourceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "content_base64": {
+            "contentEncoding": "base64",
+            "description": "Base64-encoded inert file bytes; at most 10 MiB decoded. Validated by declared role, extension/media type, size, parser, and destination rules before a preview is offered.",
+            "maxLength": 13981016,
+            "type": "string"
+          },
+          "filename": {
+            "description": "User-selected local filename for type inference and display only; the source machine path is never sent or retained.",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/WorkspaceRole"
+          },
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          }
+        },
+        "required": [
+          "role",
+          "target_path",
+          "filename",
+          "content_base64"
+        ],
+        "type": "object"
+      },
+      "ValidationDiagnostic": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "Stable domain diagnostic code from the shared validation services.",
+            "maxLength": 100,
+            "minLength": 3,
+            "type": "string"
+          },
+          "field": {
+            "description": "JSON pointer into the validated document.",
+            "maxLength": 256,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "description": "Safe, bounded message.",
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "resource_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResourceId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ValidationReport": {
+        "additionalProperties": false,
+        "description": "Structured, deterministic diagnostics from the shared validation services.",
+        "properties": {
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationDiagnostic"
+            },
+            "maxItems": 500,
+            "minItems": 0,
+            "type": "array"
+          },
+          "error_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "valid",
+              "invalid"
+            ],
+            "type": "string"
+          },
+          "warning_count": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "state",
+          "error_count",
+          "warning_count",
+          "diagnostics"
+        ],
+        "type": "object"
+      },
+      "ValidationRunRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "resource_ids": {
+            "description": "Required when scope is selected.",
+            "items": {
+              "$ref": "#/components/schemas/ResourceId"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "scope": {
+            "enum": [
+              "all",
+              "selected"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "type": "object"
+      },
+      "ValidationState": {
+        "enum": [
+          "valid",
+          "invalid",
+          "not-validated",
+          "stale"
+        ],
+        "type": "string"
+      },
+      "WorkspaceBundleIndex": {
+        "title": "FORGE workspace resource index (forge.workspace/1)",
+        "description": "Closed, versioned schema for the optional forge.workspace.json project resource index consumed by the PRD 062 local web workspace. The file is an index of explicitly registered, supported FORGE resources: it is an index, not a database and not a domain authority. Domain manifests and OSCAL artifacts retain their own provenance contracts; current hashes and validation state are computed at read time and are never stored here. The index must not contain launch tokens, secrets, absolute paths, reviewer credentials, cached source text, UI layout, approval state, or inferred relationships; the closed property set below enforces that by construction.",
+        "$comment": "The authoritative schema_version constant 'forge.workspace/1' lives in this schema. The future Rust parser for forge.workspace.json must match this constant and must also reject duplicate JSON object keys, following src/json_strict.rs and the manifest conventions in src/applicability/manifest.rs and src/mapping/manifest.rs.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "label",
+          "resources"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "forge.workspace/1",
+            "description": "Fixed schema identifier for this index format."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Human-readable project label used for display only. Not a path and not an identity claim."
+          },
+          "resources": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 1000,
+            "description": "Ordered list of explicitly registered supported resources. Array order is the authorial display order and is preserved on write. Keys must be unique across the list (enforced by the parser; see $comment).",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceBundleIndexResource"
+            }
+          }
+        }
+      },
+      "WorkspaceBundleIndexResource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "role",
+          "path"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+            "description": "Stable local key (1-64 characters, lowercase alphanumeric with interior hyphens, no leading or trailing hyphen), unique within the index, used by API resource metadata and effect previews."
+          },
+          "role": {
+            "$ref": "#/components/schemas/WorkspaceBundleIndexRole"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$",
+            "description": "Project-relative POSIX-style path. Every segment must begin with an alphanumeric character, which rejects absolute paths (leading '/'), parent or current directory traversal ('..', '.'), Windows drive prefixes ('C:\\', 'C:/'), backslashes, and leading-dot hidden files. Symlinks and non-regular files are rejected by the runtime, not by this pattern."
+          }
+        }
+      },
+      "WorkspaceBundleIndexRole": {
+        "type": "string",
+        "enum": [
+          "policy-source",
+          "oscal-catalog-artifact",
+          "oscal-component-artifact",
+          "mapping-collection",
+          "applicability-manifest",
+          "applicability-report",
+          "trace-report"
+        ],
+        "description": "Typed role of the registered resource. The PRD 062 role families map to these values as follows: 'policy source' is policy-source (human-authored Markdown conversion input); 'generated OSCAL artifact' is split by model into oscal-catalog-artifact and oscal-component-artifact; 'mapping manifest/collection' is mapping-collection (PRD 055 inputs); 'applicability manifest/report' is split by direction into applicability-manifest (human-authored forge.applicability/1 input) and applicability-report (generated gap-analysis output); 'trace/report output' is trace-report. The enum is closed; adding a role requires a new schema version."
+      },
+      "WorkspaceBundleVerificationRequest": {
+        "additionalProperties": false,
+        "description": "Compare this complete metadata bundle only with currently registered captures. The entire raw JSON request, including this envelope and encoding overhead, is bounded to 1 MiB. No idempotency header, new path reads, preview receipt or file effect.",
+        "properties": {
+          "bundle": {
+            "$ref": "#/components/schemas/WorkspaceIndexBundle"
+          }
+        },
+        "required": [
+          "bundle"
+        ],
+        "type": "object"
+      },
+      "WorkspaceIndexBundle": {
+        "description": "Exactly paired explicit bundle1/index1 or bundle2/index2 in API2; no content authority.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/WorkspaceIndexBundleV1"
+          },
+          {
+            "$ref": "#/components/schemas/WorkspaceIndexBundleV2"
+          }
+        ]
+      },
+      "WorkspaceIndexBundlePin": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "sha256",
+          "size_bytes"
+        ],
+        "description": "One exact-byte resource fingerprint; pins follow the complete authorial index order. No source content or approval state.",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+            "description": "Stable local key (1-64 characters, lowercase alphanumeric with interior hyphens, no leading or trailing hyphen), unique within the index, used by API resource metadata and effect previews."
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10485760
+          }
+        }
+      },
+      "WorkspaceReportEnvelope": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "report_kind": {
+                  "const": "trace"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "summary": {
+                  "$ref": "#/components/schemas/WorkspaceTraceCounts"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "report_kind": {
+                  "const": "mapping-collection"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "summary": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "eligible_controls": {
+                      "maximum": 10000,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "referenced_controls": {
+                      "maximum": 10000,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "eligible_controls",
+                    "referenced_controls"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "report_kind": {
+                  "const": "applicability-gap"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "summary": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "classification": {
+                        "$ref": "#/components/schemas/GapClassification"
+                      },
+                      "count": {
+                        "maximum": 10000,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "classification",
+                      "count"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 6,
+                  "minItems": 6,
+                  "type": "array"
+                }
+              }
+            }
+          }
+        ],
+        "description": "Closed JSON envelope escaped inside canonical workspace static HTML. Runtime also verifies canonical HTML bytes, sorted unique input IDs, and reconciled count invariants. Existing domain report contracts are unchanged.",
+        "properties": {
+          "inputs": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "resource_id": {
+                  "$ref": "#/components/schemas/ResourceId"
+                },
+                "sha256": {
+                  "$ref": "#/components/schemas/Sha256Hex"
+                }
+              },
+              "required": [
+                "resource_id",
+                "sha256"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "report_kind": {
+            "enum": [
+              "trace",
+              "applicability-gap",
+              "mapping-collection"
+            ]
+          },
+          "schema_version": {
+            "const": "forge.workspace-report/1"
+          },
+          "summary": {}
+        },
+        "required": [
+          "schema_version",
+          "report_kind",
+          "inputs",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "WorkspaceRole": {
+        "description": "Closed API2 resource role set: the seven original roles retain their index1 interpretation, and eight additional lifecycle/impact roles require an explicit index2. Lifecycle-source is opaque fingerprint bytes. Framework-impact-report uses limited prior-report admission, not full native report validation or current freshness. Intrinsic admission does not establish dependency closure, authenticated authorship, approval or current computed state. Existing trace-report admission remains canonical forge.workspace-report/1; arbitrary HTML and CLI text tables are not accepted.",
+        "enum": [
+          "policy-source",
+          "oscal-catalog-artifact",
+          "oscal-component-artifact",
+          "mapping-collection",
+          "applicability-manifest",
+          "applicability-report",
+          "trace-report",
+          "lifecycle-record",
+          "lifecycle-source",
+          "oscal-profile-artifact",
+          "oscal-ssp-artifact",
+          "framework-impact-manifest",
+          "successor-map",
+          "framework-impact-report",
+          "framework-impact-dispositions"
+        ],
+        "type": "string"
+      },
+      "WorkspaceTraceCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "asserted_trace_elements": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "current_source_locations": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_elements": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unresolved_elements": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_elements",
+          "asserted_trace_elements",
+          "current_source_locations",
+          "unresolved_elements"
+        ],
+        "type": "object"
+      },
+      "WorkspaceBundleIndexV2": {
+        "title": "FORGE workspace resource index (forge.workspace/2)",
+        "description": "Closed, versioned schema for the optional forge.workspace.json project resource index consumed by the PRD 062 local web workspace. The file is an index of explicitly registered, supported FORGE resources: it is an index, not a database and not a domain authority. Domain manifests and OSCAL artifacts retain their own provenance contracts; current hashes and validation state are computed at read time and are never stored here. The index must not contain launch tokens, secrets, absolute paths, reviewer credentials, cached source text, UI layout, approval state, or inferred relationships; the closed property set below enforces that by construction.",
+        "$comment": "The authoritative schema_version constant forge.workspace/2 lives in this schema. Runtime retains independent forge.workspace/1 admission; duplicates, portable aliases, self-reference and root confinement remain intrinsic/runtime checks.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "label",
+          "resources"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "forge.workspace/2",
+            "description": "Fixed schema identifier for this index format."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Human-readable project label used for display only. Not a path and not an identity claim."
+          },
+          "resources": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 1000,
+            "description": "Ordered list of explicitly registered supported resources. Array order is the authorial display order and is preserved on write. Keys must be unique across the list (enforced by the parser; see $comment).",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceBundleIndexResourceV2"
+            }
+          }
+        }
+      },
+      "WorkspaceBundleIndexResourceV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "role",
+          "path"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+            "description": "Stable local key (1-64 characters, lowercase alphanumeric with interior hyphens, no leading or trailing hyphen), unique within the index, used by API resource metadata and effect previews."
+          },
+          "role": {
+            "$ref": "#/components/schemas/WorkspaceBundleIndexRoleV2"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$",
+            "description": "Project-relative POSIX-style path. Every segment must begin with an alphanumeric character, which rejects absolute paths (leading '/'), parent or current directory traversal ('..', '.'), Windows drive prefixes ('C:\\', 'C:/'), backslashes, and leading-dot hidden files. Symlinks and non-regular files are rejected by the runtime, not by this pattern."
+          }
+        }
+      },
+      "WorkspaceBundleIndexRoleV2": {
+        "type": "string",
+        "enum": [
+          "policy-source",
+          "oscal-catalog-artifact",
+          "oscal-component-artifact",
+          "mapping-collection",
+          "applicability-manifest",
+          "applicability-report",
+          "trace-report",
+          "lifecycle-record",
+          "lifecycle-source",
+          "oscal-profile-artifact",
+          "oscal-ssp-artifact",
+          "framework-impact-manifest",
+          "successor-map",
+          "framework-impact-report",
+          "framework-impact-dispositions"
+        ],
+        "description": "Closed explicit /2 role set. Legacy /1 retains its original seven roles. New lifecycle and framework-impact inputs remain domain-authorial files, not inferred approval or current computed state. lifecycle-source is opaque hash-only bytes; framework-impact-report uses limited prior-report admission, not a full report/freshness/native OSCAL schema claim. Adding another role requires another index schema version."
+      },
+      "WorkspaceIndexBundleV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "content_profile",
+          "index",
+          "index_sha256",
+          "pins"
+        ],
+        "description": "Metadata-only index bundle, bounded to 1 MiB encoded. Runtime additionally enforces exact ordered pin bijection, normalized index hash, portable path uniqueness and checked aggregate declared bytes <=50 MiB including normalized index bytes. Label/key/path/hash metadata can be sensitive correlation information. No content, credentials, timestamps, cached validation or approval claims.",
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "forge.workspace-index-bundle/1"
+          },
+          "content_profile": {
+            "type": "string",
+            "const": "index-and-hashes"
+          },
+          "index": {
+            "$ref": "#/components/schemas/WorkspaceBundleIndex"
+          },
+          "index_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex",
+            "description": "SHA256 of normalized Index::bytes encoding including its final newline; not the original index-file formatting or JCS."
+          },
+          "pins": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceIndexBundlePin"
+            }
+          }
+        }
+      },
+      "WorkspaceIndexBundleV2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "content_profile",
+          "index",
+          "index_sha256",
+          "pins"
+        ],
+        "description": "Explicit index2 metadata-only bundle paired only with forge.workspace/2. Original index1 interpretation is preserved separately. Intrinsic runtime checks retain ordered pin bijection, normalized Index::bytes hash and checked aggregate <=50MiB. Metadata can be sensitive; no source content or authority.",
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "forge.workspace-index-bundle/2"
+          },
+          "content_profile": {
+            "type": "string",
+            "const": "index-and-hashes"
+          },
+          "index": {
+            "$ref": "#/components/schemas/WorkspaceBundleIndexV2"
+          },
+          "index_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex",
+            "description": "SHA256 of normalized Index::bytes encoding including its final newline; not the original index-file formatting or JCS."
+          },
+          "pins": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceIndexBundlePin"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "capabilityBearer": {
+        "bearerFormat": "capability",
+        "description": "Memory-only, per-launch capability delivered exactly once (unlock response for browser sessions; machine-session stdout descriptor otherwise). Not an account, durable identity, role, reviewer attestation, or ambient HTTP Basic credential; never placed in URLs, cookies, browser storage, server-rendered HTML, logs, or crash output; expired on process shutdown. Scoped browser|machine x read|write and bound to session ID, project root, client mode, and scope: cross-mode use is rejected and a read-only capability is rejected on every mutation with the typed read-only-session error. Secrets are compared in constant time. Requests must also carry the exact Host 127.0.0.1:<port>.",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Normative, contract-authored OpenAPI 3.1 description of the PRD 062 local web workspace API. Normative contract ownership is independent of handler/UI implementation; this artifact is the single source of truth for /api/v2 product behavior; handlers, fixtures, generated or type-checked clients, and the bundled UI must not drift from it. Contract ownership and drift enforcement are recorded in docs/adr/0001-openapi-contract-ownership.md (authored in parallel; referenced by path only). The governed product contract is docs/PRD/062-prd-local-web-workspace.md, in particular \"Golden Path and Information Architecture\", \"Workspace, Data, and Authority Model\", \"Trust Model and Security Boundaries\", \"API-First Architecture and Shared Application-Service Boundary\", \"Write Preview and Transaction Model\", and the \"MVP API Capability Matrix\" table.\nTransport rules (normative):\n- The server binds exactly one OS-assigned port on 127.0.0.1 only;\n  never 0.0.0.0, ::, a LAN address, or the hostname localhost, with no\n  configurable host flag. Every request must carry the exact Host value\n  127.0.0.1:<assigned-port>; DNS names, alternate ports, forwarded-host\n  headers, and proxy routing are rejected generically before\n  authorization.\n- No CORS. Browser state-changing requests additionally require the\n  exact session Origin, appropriate Fetch Metadata, and a non-simple\n  JSON content type. All API and project-derived responses use no-store.\n- Static bootstrap assets (locked shell and unlock form) are served\n  outside /api/v2, may be unauthenticated, and contain no project data.\n  The machine bootstrap is a one-line sensitive JSON descriptor printed\n  on stdout by `forge workspace --project <DIR> --machine-session --api-major 2`,\n  also outside /api/v2.\n- Exactly one operation is callable without a bearer capability:\n  POST /api/v2/session/unlock. Everything else requires the scoped\n  capability described by the capabilityBearer security scheme.\n- Versioned project files on disk are authoritative. No hidden\n  database, no arbitrary path read/write endpoints, no shell or\n  subprocess endpoints, no remote fetch of any kind.\n\nCross-cutting semantics (normative, enforced per operation below):\n- Strong versioning: every mutable resource response carries an opaque\n  strong `version` (an ETag equivalent conveyed in the body). Every\n  mutation observes a version and fails with the typed version-conflict\n  error, including the current resource_version, on mismatch.\n  Last-write-wins is prohibited.\n- Idempotency: requests that create a preview, an operation, or commit\n  an effect require a client-generated Idempotency-Key header. A retry\n  with the same key and identical content returns the original preview,\n  operation, or commit result without repeating the effect; reuse of a\n  key with different content fails with idempotency-key-conflict.\n- Two-step effects: material writes happen only through a preview\n  (exact target, create/overwrite status, base/target and input hashes,\n  validation diagnostics, semantic summary, escaped text diff) followed\n  by a commit presenting a one-time receipt bound to the session,\n  operation type, destination identity, base hash, input hashes, and\n  exact-byte hash. Commits revalidate every binding.\n- Operations: bounded long-running work is a queryable Operation with a\n  stable ID, a pending|running|succeeded|failed|cancelled state machine,\n  a typed terminal result, safe cancellation, and enough state to\n  determine whether a write committed after a lost response.\n- Pagination: collections use a deterministic opaque-cursor envelope\n  (page.items, page.next_cursor, page.total_matching) with bounded page\n  size and documented stable sort and filter fields; traversal of an\n  unchanged resource version neither duplicates nor omits items.\n- Errors: a closed envelope with a stable machine-readable code, safe\n  message, optional resource/field pointers, retryability, correlation\n  id, and current resource version when relevant. Errors never contain\n  capabilities, absolute paths, raw source excerpts, or Rust debug\n  strings.\n- Read-only sessions: when the session capability is read-only, every\n  mutation returns the typed read-only-session error and no project\n  file changes.\nExplicit --api-major 2 serves only this namespace. API1 remains available by default in a separate launch. Index1/2 are independently closed; launch never migrates files. Lifecycle/impact roles grant intrinsic registration and metadata only; the later captured read services remain separately gated.",
+    "license": {
+      "name": "MIT"
+    },
+    "title": "FORGE Local Workspace API",
+    "version": "2.0.0"
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v2/applicability/analyses": {
+      "post": {
+        "description": "Runs the shared applicability analysis application service over the currently committed applicability manifest, mapping inputs, and registered framework resources. Creates a bounded Operation (kind applicability-analysis) whose terminal result carries classification counts, the eligible-control denominator, input staleness, and an EffectPreview for the regenerated report file; the report is written only after that preview is committed through commitEffectPreview. Identical retries with the same Idempotency-Key return the original operation.",
+        "operationId": "analyzeApplicability",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Analysis operation created; identical idempotent retries return it unchanged."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Rebuild the deterministic applicability gap analysis",
+        "tags": [
+          "Applicability"
+        ]
+      }
+    },
+    "/api/v2/applicability/controls": {
+      "get": {
+        "description": "Deterministic, cursor-paginated inventory of every eligible framework control with its current classification and explicit decision state. The complete control denominator is observable here: controls omitted from the manifest appear as under-review. Stable sort is by control_id ascending; filters are exact-match. Traversing one unchanged report version neither duplicates nor omits controls.",
+        "operationId": "listApplicabilityControls",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "description": "Filter by gap classification.",
+            "in": "query",
+            "name": "classification",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/GapClassification"
+            }
+          },
+          {
+            "description": "Filter by explicit human decision state.",
+            "in": "query",
+            "name": "decision_state",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/DecisionState"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControlPage"
+                }
+              }
+            },
+            "description": "One page of the control inventory."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "List the complete framework control inventory",
+        "tags": [
+          "Applicability"
+        ]
+      }
+    },
+    "/api/v2/applicability/draft": {
+      "get": {
+        "description": "Returns the on-disk forge.applicability/1 manifest as the current draft, its strong version, and a validation summary computed at read time. Returns not-found when no applicability manifest is registered yet (setup state).",
+        "operationId": "getApplicabilityDraft",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicabilityDraft"
+                }
+              }
+            },
+            "description": "Current applicability manifest draft."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read the current applicability manifest draft",
+        "tags": [
+          "Applicability"
+        ]
+      },
+      "put": {
+        "description": "Submits a complete proposed forge.applicability/1 document plus the observed version of the manifest being replaced. The service parses and validates the whole document through the shared domain parser and, when valid, returns an EffectPreview (operation type applicability-manifest-write) bound to the exact proposed bytes; no file changes until commitEffectPreview. A structurally invalid document returns validation-failed; use validateApplicabilityDraft for diagnostics without a preview. Idempotent retries return the original preview.",
+        "operationId": "putApplicabilityDraft",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicabilityDraftPutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewResponse"
+                }
+              }
+            },
+            "description": "Validation outcome plus the write preview; nothing committed."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Validate a complete proposed applicability manifest and preview its write",
+        "tags": [
+          "Applicability"
+        ]
+      }
+    },
+    "/api/v2/applicability/draft/validation": {
+      "post": {
+        "description": "Pure validation of a complete proposed forge.applicability/1 document. Returns the same structured diagnostics the put and commit paths enforce. Computes only; safe in read-only sessions and never mints a receipt.",
+        "operationId": "validateApplicabilityDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            },
+            "description": "Structured validation report."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Validate a proposed applicability manifest without creating a preview",
+        "tags": [
+          "Applicability"
+        ]
+      }
+    },
+    "/api/v2/applicability/initializations": {
+      "post": {
+        "description": "Binds explicitly selected registered Catalog resources and their current inventories. Creates no inferred decisions or relationships. Returns a single-file preview; registration is a separate explicit operation after commit. Scope decisions and reviewers remain empty. The target must be a new unregistered file. Identical idempotent retries return the original preview. No project file is written by initialization.",
+        "operationId": "initializeApplicabilityDraft",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicabilityInitializationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewResponse"
+                }
+              }
+            },
+            "description": "Initial manifest validation and exact-byte preview."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Prepare an explicit initial decision manifest",
+        "tags": [
+          "Applicability"
+        ]
+      }
+    },
+    "/api/v2/applicability/report": {
+      "get": {
+        "description": "Returns the last committed gap report from disk with its version, the input fingerprints it was generated from, whether any input has changed since (stale), reconciled classification counts, and the eligible-control total. Returns not-found when no report exists yet.",
+        "operationId": "getApplicabilityReport",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicabilityReportView"
+                }
+              }
+            },
+            "description": "Current applicability gap report view."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read the current applicability gap report",
+        "tags": [
+          "Applicability"
+        ]
+      }
+    },
+    "/api/v2/conversions": {
+      "post": {
+        "description": "Prepares Catalog or Component Definition conversion outputs for a registered policy-source resource through the shared conversion application service. Creates a bounded Operation (kind conversion); its terminal result (retrievable via getConversion) lists the derived products with an EffectPreview for the proposed output file. No output is written until commitEffectPreview. Identical retries with the same Idempotency-Key return the original operation.",
+        "operationId": "preparePolicyConversion",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Conversion operation created; identical idempotent retries return it unchanged."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Prepare a Markdown policy conversion",
+        "tags": [
+          "Policy Onboarding"
+        ]
+      }
+    },
+    "/api/v2/conversions/{operation_id}": {
+      "get": {
+        "description": "Typed terminal view of a succeeded conversion operation: derived product summaries, structured validation diagnostics for the proposed outputs, and the EffectPreview carrying target, hashes, semantic summary, diff, and receipt. The operation_id is the ID returned by preparePolicyConversion.",
+        "operationId": "getConversion",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionResult"
+                }
+              }
+            },
+            "description": "Conversion products and preview."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Inspect derived conversion products",
+        "tags": [
+          "Policy Onboarding"
+        ]
+      }
+    },
+    "/api/v2/effects/commits": {
+      "post": {
+        "description": "The only write path. Submits the one-time preview receipt, the observed resource version, and explicit confirmation intent. The service revalidates the session binding, operation type, destination identity, base hash, input hashes, and exact-byte hash; any mismatch, expiry, or reuse invalidates the receipt without a write. A valid commit creates a stable Operation (kind commit) that atomically writes only the previewed bytes and returns the committed fingerprint; after a lost response, an identical retry with the same Idempotency-Key returns the original operation and committed hash without a second write.",
+        "operationId": "commitEffectPreview",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitEffectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Commit operation created; poll getOperation for the terminal result and committed hash."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Version conflict, idempotency key reuse with different content, receipt reuse, or receipt binding mismatch. The error envelope carries resource_version on version-conflict."
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The preview receipt has expired."
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Commit the exact previewed bytes",
+        "tags": [
+          "Effects"
+        ]
+      }
+    },
+    "/api/v2/effects/previews/{preview_id}": {
+      "get": {
+        "description": "Returns the full preview the human is confirming: project-relative target, create/overwrite status, base and input hashes, exact-byte hash, validation diagnostics, semantic summary, escaped text diff, and the one-time receipt with expiry. gone once the receipt has expired.",
+        "operationId": "getEffectPreview",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PreviewIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectPreview"
+                }
+              }
+            },
+            "description": "The stored preview."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The preview receipt has expired."
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Retrieve a preview including its diff",
+        "tags": [
+          "Effects"
+        ]
+      }
+    },
+    "/api/v2/exports": {
+      "post": {
+        "description": "Prepares a self-contained, redacted static HTML export from the same versioned report model used by the CLI renderers. Creates a bounded Operation (kind export); its terminal result carries the redaction summary and an EffectPreview for the export file beneath the project root. The file is written only through commitEffectPreview. Identical retries with the same Idempotency-Key return the original operation.",
+        "operationId": "prepareReportExport",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Export operation created; identical idempotent retries return it unchanged."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Prepare a redacted static report export",
+        "tags": [
+          "Exports"
+        ]
+      }
+    },
+    "/api/v2/exports/{operation_id}/download": {
+      "get": {
+        "description": "Streams the committed export bytes with a safe filename and content type (text/html; charset=utf-8), no-store, and restrictive download headers. Available only after the export commit operation has succeeded; otherwise not-found. The body is inert, escaped content rendered by the same shared service that produced the previewed bytes.",
+        "operationId": "downloadExport",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "contentMediaType": "text/html",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The committed export document."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Download a committed export",
+        "tags": [
+          "Exports"
+        ]
+      }
+    },
+    "/api/v2/mapping/builds": {
+      "post": {
+        "description": "Builds the PRD 055 mapping model from the currently committed mapping manifest and registered inputs through the shared mapping application service. Creates a bounded Operation (kind mapping-build); its terminal result carries participation totals, coverage, and an EffectPreview for the rendered collection report, which is written only through commitEffectPreview. Identical retries with the same Idempotency-Key return the original operation.",
+        "operationId": "buildMapping",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Mapping build operation created; identical idempotent retries return it unchanged."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Build the mapping collection model",
+        "tags": [
+          "Mapping"
+        ]
+      }
+    },
+    "/api/v2/mapping/checks": {
+      "post": {
+        "description": "Runs the shared mapping check service over the currently committed mapping inputs and returns structured diagnostics with stable codes and resource/field pointers. Synchronous, bounded, read-only compute; safe in read-only sessions.",
+        "operationId": "checkMapping",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            },
+            "description": "Mapping check diagnostics."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Run mapping collection consistency checks",
+        "tags": [
+          "Mapping"
+        ]
+      }
+    },
+    "/api/v2/mapping/draft": {
+      "get": {
+        "description": "Returns the on-disk forge.mapping-manifest/1 manifest as the current draft, its strong version, and a validation summary computed at read time. Returns not-found when no mapping manifest is registered yet (setup state).",
+        "operationId": "getMappingDraft",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MappingDraft"
+                }
+              }
+            },
+            "description": "Current mapping manifest draft."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read the current mapping manifest draft",
+        "tags": [
+          "Mapping"
+        ]
+      },
+      "put": {
+        "description": "Submits a complete proposed forge.mapping-manifest/1 document plus the observed version of the manifest being replaced. The service parses and validates the whole document through the shared domain parser and, when valid, returns an EffectPreview (operation type mapping-manifest-write) bound to the exact proposed bytes and exact subject/resource identities; no file changes until commitEffectPreview. A structurally invalid document returns validation-failed; use validateMappingDraft for diagnostics without a preview. Idempotent retries return the original preview.",
+        "operationId": "putMappingDraft",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MappingDraftPutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewResponse"
+                }
+              }
+            },
+            "description": "Validation outcome plus the write preview; nothing committed."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Validate a complete proposed mapping manifest and preview its write",
+        "tags": [
+          "Mapping"
+        ]
+      }
+    },
+    "/api/v2/mapping/draft/validation": {
+      "post": {
+        "description": "Pure validation of a complete proposed forge.mapping-manifest/1 document. Returns the same structured diagnostics the put and commit paths enforce. Computes only; safe in read-only sessions and never mints a receipt.",
+        "operationId": "validateMappingDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            },
+            "description": "Structured validation report."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Validate a proposed mapping manifest without creating a preview",
+        "tags": [
+          "Mapping"
+        ]
+      }
+    },
+    "/api/v2/mapping/initializations": {
+      "post": {
+        "description": "Binds explicitly selected registered Catalog resources and their current inventories. Creates no inferred decisions or relationships. Returns a single-file preview; registration is a separate explicit operation after commit. Required review metadata is supplied by the caller. The target must be a new unregistered file. Identical idempotent retries return the original preview. No project file is written by initialization.",
+        "operationId": "initializeMappingDraft",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MappingInitializationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewResponse"
+                }
+              }
+            },
+            "description": "Initial manifest validation and exact-byte preview."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Prepare an explicit initial decision manifest",
+        "tags": [
+          "Mapping"
+        ]
+      }
+    },
+    "/api/v2/mapping/subjects": {
+      "get": {
+        "description": "Deterministic, cursor-paginated inventory of policy and framework subjects available for mapping decisions, each carrying its exact registered resource identity and content fingerprint. Before a mapping manifest exists, both resource_id and side must be supplied explicitly to inspect a selected Catalog; this selection does not persist a mapping role or infer a relationship. Stable sort is by subject_id ascending. Absence of a relationship is never interpreted as a decision.",
+        "operationId": "listMappingSubjects",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "description": "Filter by subject side.",
+            "in": "query",
+            "name": "side",
+            "required": false,
+            "schema": {
+              "enum": [
+                "policy",
+                "framework"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter to subjects of one registered resource.",
+            "in": "query",
+            "name": "resource_id",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubjectPage"
+                }
+              }
+            },
+            "description": "One page of the subject inventory."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "List policy and framework mapping subjects",
+        "tags": [
+          "Mapping"
+        ]
+      }
+    },
+    "/api/v2/operations/{operation_id}": {
+      "get": {
+        "description": "Returns the operation's stable ID, kind, state, timestamps, progress facts when available, cancellation status, and, when terminal, its typed result or safe error. The result states explicitly whether a write committed and, if so, the committed hash, so a client that lost a commit response can recover exactly. Operations are session-scoped: only the session that created them may query them.",
+        "operationId": "getOperation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Current operation state."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Query an operation",
+        "tags": [
+          "Operations"
+        ]
+      }
+    },
+    "/api/v2/operations/{operation_id}/cancellation": {
+      "post": {
+        "description": "Requests cancellation of a pending or running operation. Cancellation is cooperative and safe: a cancelled operation never leaves a partial write; any effect that already committed is reported truthfully in the terminal result. Sets cancel_requested and returns the current operation state. operation-not-cancellable when the operation already reached a terminal state.",
+        "operationId": "cancelOperation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Cancellation recorded; the operation state is returned."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The operation is already terminal and cannot be cancelled."
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Request safe cancellation of an operation",
+        "tags": [
+          "Operations"
+        ]
+      }
+    },
+    "/api/v2/project/bundle-preview": {
+      "get": {
+        "description": "Authenticated metadata-only inspection, available in read-only sessions. Includes every explicit registration in authorial order, with exact-byte hashes and sizes; no source content, discovery or file publication. Labels, keys, paths and stable hashes can be sensitive correlation data. An absent index returns 404; a present empty index is valid. The bundle is bounded to 1 MiB and the unchanged response limit is 4 MiB. Fail rather than truncate. Snapshot version describes capture time only. No bundled browser action is introduced by this API/headless-client prerequisite.",
+        "operationId": "getProjectBundlePreview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBundlePreview"
+                }
+              }
+            },
+            "description": "Complete metadata preview; no effect or exported file."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Registered resources cannot be captured safely."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Inspect the complete registered index and resource fingerprints",
+        "tags": [
+          "Project"
+        ]
+      }
+    },
+    "/api/v2/project/bundle-verifications": {
+      "post": {
+        "description": "Authenticated read-only computation over current registered Snapshot captures. Never opens supplied unregistered paths. Returns all expected comparison rows and reconciled counts; fingerprint agreement stays separate from stale/invalid domain state, approval and import readiness. The complete raw request envelope is bounded to 1 MiB. Bundle normalized encoding is separately bounded to 1 MiB;1000 registrations are supported without the effect 100-input limit because no effect is prepared. No idempotency header, receipt, store replay or file write. Retrying compares a newly captured snapshot. The browser consumes this metadata-only preview/comparison workflow. Full source-inclusive import/export, publication, native browser qualification and wider S6 acceptance remain separate requirements.",
+        "operationId": "verifyProjectBundle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceBundleVerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBundleVerification"
+                }
+              }
+            },
+            "description": "Complete fingerprint comparison, including mismatches."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "An intrinsic path or registered capture violates containment."
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The request requires application/json."
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Compare a metadata bundle with registered resource fingerprints",
+        "tags": [
+          "Project"
+        ]
+      }
+    },
+    "/api/v2/project/config-status": {
+      "get": {
+        "description": "Reports whether an optional .forge.toml exists beneath the project root, whether it parses and validates, and bounded safe issue summaries. Never returns the raw file contents.",
+        "operationId": "getProjectConfigStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectConfigStatus"
+                }
+              }
+            },
+            "description": "Project configuration status."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read project configuration status",
+        "tags": [
+          "Project"
+        ]
+      }
+    },
+    "/api/v2/project/summary": {
+      "get": {
+        "description": "One authoritative overview distinguishing setup, invalid inputs, stale inputs, unresolved review items, and completed outputs, with counts that link to the exact affected resources through the resource, queue, and provenance APIs, plus the next recommended human action. The Overview navigation view is rendered entirely from this resource and the endpoints it links to.",
+        "operationId": "getProjectSummary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSummary"
+                }
+              }
+            },
+            "description": "Project summary."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read the project overview",
+        "tags": [
+          "Project"
+        ]
+      }
+    },
+    "/api/v2/provenance/entries": {
+      "get": {
+        "description": "Bidirectional traversal among report items, framework controls, applicability decisions, mapping edges, policy subjects, and source references, starting from an opaque anchor identifier obtained from a count, classification, queue item, or report view. Entries carry bounded labels and resource fingerprints; excerpts are fetched separately and bounded by getProvenanceExcerpt. Stable sort is by entry_id ascending. No arbitrary path reads.",
+        "operationId": "listProvenanceEntries",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "description": "Opaque anchor to traverse from (a report item, control, classification, queue item, or excerpt reference).",
+            "in": "query",
+            "name": "anchor",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 3,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter entries by kind.",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProvenanceKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvenanceEntryPage"
+                }
+              }
+            },
+            "description": "One page of provenance entries."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Traverse provenance from an anchor",
+        "tags": [
+          "Provenance"
+        ]
+      }
+    },
+    "/api/v2/provenance/excerpts/{excerpt_id}": {
+      "get": {
+        "description": "Returns one bounded, escaped source excerpt referenced by a provenance entry: the registered resource, its content fingerprint, exact line range, and the escaped text (truncated flag when bounds were applied). Excerpts are inert text; there is no way to read arbitrary file ranges.",
+        "operationId": "getProvenanceExcerpt",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ExcerptIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvenanceExcerpt"
+                }
+              }
+            },
+            "description": "One bounded source excerpt."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read one bounded source excerpt",
+        "tags": [
+          "Provenance"
+        ]
+      }
+    },
+    "/api/v2/resources": {
+      "get": {
+        "description": "Deterministic, cursor-paginated inventory of resources explicitly registered in an admitted forge.workspace/1 or forge.workspace/2 index. Current hashes, sizes and intrinsic validation state are computed from captured bytes. New roles expose their paired admission profile. Stable sort is resource key ascending; no arbitrary discovery or directory scanning is performed.",
+        "operationId": "listResources",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "description": "Filter by resource role.",
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceRole"
+            }
+          },
+          {
+            "description": "Filter by current validation state.",
+            "in": "query",
+            "name": "validation_state",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ValidationState"
+            }
+          },
+          {
+            "description": "Filter by input staleness against the current report.",
+            "in": "query",
+            "name": "stale",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourcePage"
+                }
+              }
+            },
+            "description": "One page of registered resources."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "List registered project resources",
+        "tags": [
+          "Resources"
+        ]
+      }
+    },
+    "/api/v2/resources/register": {
+      "post": {
+        "description": "References an existing regular root-contained supported file without copying it, or explicitly migrates a captured index1 to index2 through the closed migration-only alternative. Omitted index_schema_version preserves the current index; explicit forge.workspace/2 selects index2. New roles require current or explicitly selected index2 before any unregistered path is read. Returns validation and the existing workspace-index-update EffectPreview. The index changes only after exact conditional commitEffectPreview; launch never migrates it. Domain records and human dispositions are unchanged. Idempotent retries retain the original wire request and preview.",
+        "operationId": "registerResource",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterResourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewResponse"
+                }
+              }
+            },
+            "description": "Index-change validation plus preview; nothing committed."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Register an existing root-contained file",
+        "tags": [
+          "Resources"
+        ]
+      }
+    },
+    "/api/v2/resources/upload": {
+      "post": {
+        "description": "Accepts bounded user-selected file bytes (base64 within JSON, at most 10 MiB decoded) for a user-confirmed target beneath the project root; the server neither receives nor retains the source machine path. Content is inert data validated by declared role, extension and media type, size, parser, and destination rules before a preview is offered, and never fetched from or followed to the network. Returns validation plus an EffectPreview (operation type resource-upload); nothing is written until commitEffectPreview. Idempotent retries return the original preview.",
+        "operationId": "uploadResource",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadResourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftPreviewResponse"
+                }
+              }
+            },
+            "description": "Uploaded-content validation plus preview; nothing committed."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Upload bounded bytes to a confirmed root-contained target",
+        "tags": [
+          "Resources"
+        ]
+      }
+    },
+    "/api/v2/resources/{resource_id}": {
+      "get": {
+        "description": "Returns one registered resource's metadata: stable key, typed role, project-relative path (authorized metadata only), current SHA-256 and size computed at read time, validation state, staleness, and strong version.",
+        "operationId": "getResource",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResourceIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                }
+              }
+            },
+            "description": "Registered resource metadata."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Inspect one registered resource",
+        "tags": [
+          "Resources"
+        ]
+      }
+    },
+    "/api/v2/resources/{resource_id}/validation": {
+      "get": {
+        "description": "Recomputes and returns the structured validation diagnostics for one registered resource on demand, deterministically, with stable codes and resource/field pointers. Derived from the same shared validation services the CLI uses; never parsed from terminal output.",
+        "operationId": "getResourceValidation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResourceIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            },
+            "description": "Structured validation report for the resource."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Retrieve structured diagnostics for one resource",
+        "tags": [
+          "Validation"
+        ]
+      }
+    },
+    "/api/v2/review-queue/counts": {
+      "get": {
+        "description": "Counts of open review items grouped by stable reason code, plus the total. Counts always reconcile to the unfiltered denominator exposed by listReviewQueueItems (total_matching with no filters).",
+        "operationId": "getReviewQueueCounts",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueueCounts"
+                }
+              }
+            },
+            "description": "Review queue counts by reason code."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read reconciled review queue counts",
+        "tags": [
+          "Review Queue"
+        ]
+      }
+    },
+    "/api/v2/review-queue/items": {
+      "get": {
+        "description": "Deterministic, cursor-paginated view of unresolved applicability, mapping, validation, stale-input, and conflict items with stable reason codes. Stable sort is by reason-code priority then item_id ascending; filters are exact-match. Each item links to its evidence through provenance entry references. Traversing one unchanged resource version neither duplicates nor omits items.",
+        "operationId": "listReviewQueueItems",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "description": "Filter by stable reason code.",
+            "in": "query",
+            "name": "reason_code",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReviewReasonCode"
+            }
+          },
+          {
+            "description": "Filter by gap classification.",
+            "in": "query",
+            "name": "classification",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/GapClassification"
+            }
+          },
+          {
+            "description": "Filter to items affecting one registered resource.",
+            "in": "query",
+            "name": "resource_id",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueItemPage"
+                }
+              }
+            },
+            "description": "One page of review queue items."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "List, filter, sort, and page review items",
+        "tags": [
+          "Review Queue"
+        ]
+      }
+    },
+    "/api/v2/session": {
+      "get": {
+        "description": "Returns session identity, client mode, read-only scope, the API major and exact contract version supported by the server, and the project label. Clients use this for version discovery and to render the session's capability scope. Contains no absolute paths and no capability material.",
+        "operationId": "getSession",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            },
+            "description": "Session metadata."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Read session metadata and API version",
+        "tags": [
+          "Session"
+        ]
+      }
+    },
+    "/api/v2/session/shutdown": {
+      "post": {
+        "description": "Confirmed in-UI \"Stop workspace\" action. Begins orderly shutdown: the passphrase verifier, all session capabilities, and all in-memory preview receipts are invalidated, in-flight operations finish or cancel safely, and no further requests succeed. Safe to call from a read-only session because it modifies no project file. After this response, clients must treat the process as stopped.",
+        "operationId": "shutdownSession",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShutdownResponse"
+                }
+              }
+            },
+            "description": "Shutdown accepted and in progress."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Stop the workspace",
+        "tags": [
+          "Session"
+        ]
+      }
+    },
+    "/api/v2/session/unlock": {
+      "post": {
+        "description": "The only /api/v2 operation callable without a bearer capability. Accepts the per-launch passphrase over the exact loopback origin; verification uses Argon2id with a per-launch salt. Failures are generic and indistinguishable, with bounded increasing delay after failures. On success, mints and returns once a distinct browser-scoped, memory-only capability; a second browser context must unlock separately and receives a different capability. Neither the response nor failures reveal project state, the passphrase, or its hash.",
+        "operationId": "unlockSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionUnlockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionUnlockResponse"
+                }
+              }
+            },
+            "description": "Unlock succeeded; the capability is returned exactly once and must be retained only in page memory."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Generic unlock failure (wrong or malformed passphrase). Indistinguishable for any wrong value; no project-state disclosure."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unlock throttled after repeated failures; retry after the documented bounded delay."
+          }
+        },
+        "security": [],
+        "summary": "Unlock a browser session with the per-launch passphrase",
+        "tags": [
+          "Session"
+        ]
+      }
+    },
+    "/api/v2/validation/runs": {
+      "post": {
+        "description": "Runs the shared validation services over all registered resources or an explicit selection and returns structured diagnostics with stable codes and resource/field pointers. Synchronous, bounded, read-only compute; safe in read-only sessions. Draft documents are validated through the applicability and mapping draft validation operations.",
+        "operationId": "runValidation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReport"
+                }
+              }
+            },
+            "description": "Structured validation report."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Run structured validation over selected resources",
+        "tags": [
+          "Validation"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "capabilityBearer": []
+    }
+  ],
+  "servers": [
+    {
+      "description": "Loopback-only workspace server. The OS assigns the port at launch; clients append it (http://127.0.0.1:<port>). The exact Host value 127.0.0.1:<port> is required on every request. No other bind address, hostname, or scheme is supported.",
+      "url": "http://127.0.0.1"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Local unlock, session metadata and API version discovery, and orderly shutdown. POST /api/v2/session/unlock is the only unauthenticated /api/v2 operation.",
+      "name": "Session"
+    },
+    {
+      "description": "Project-level summary and configuration status derived from the explicit project root and registered resources. No recursive or arbitrary scanning.",
+      "name": "Project"
+    },
+    {
+      "description": "Registered project resource inventory, inspection, registration, and bounded upload. Addresses resources by opaque registered IDs; project-relative paths appear only in authorized metadata and effect previews.",
+      "name": "Resources"
+    },
+    {
+      "description": "Markdown-to-OSCAL conversion preparation and inspection of derived products. Conversion prepares outputs through the shared conversion application service; writes happen only through the Effects pattern.",
+      "name": "Policy Onboarding"
+    },
+    {
+      "description": "Structured validation of registered resources and proposed drafts with stable codes and resource/field pointers. No terminal-output parsing.",
+      "name": "Validation"
+    },
+    {
+      "description": "PRD 056 framework scope inventory, applicability manifest draft read/validate/save, deterministic gap analysis, and the current report view. Omitted controls remain under-review; the API never infers a decision.",
+      "name": "Applicability"
+    },
+    {
+      "description": "PRD 055 mapping subject inventory, mapping manifest draft read/validate/save, collection build, and consistency checks. Preserves exact resource identity and the positive versus explicit no-relationship distinction.",
+      "name": "Mapping"
+    },
+    {
+      "description": "Stable reason-code review items with deterministic filter, sort, and pagination, plus counts that reconcile to the unfiltered denominator.",
+      "name": "Review Queue"
+    },
+    {
+      "description": "Bidirectional traversal among report items, controls, decisions, mapping edges, policy subjects, and bounded source excerpts with resource fingerprints. No arbitrary path reads.",
+      "name": "Provenance"
+    },
+    {
+      "description": "Preview retrieval (including the escaped text diff) and conditional, idempotent, exact-byte commit. Previews are created by the preview-producing operations in the Resources, Policy Onboarding, Applicability, Mapping, and Exports tags; commits are the only write path.",
+      "name": "Effects"
+    },
+    {
+      "description": "Queryable operation lifecycle: status, typed terminal result, and safe cancellation for bounded work started by conversion, analysis, build, export, and commit requests.",
+      "name": "Operations"
+    },
+    {
+      "description": "Self-contained, redacted static report export preparation and download. No remote publish.",
+      "name": "Exports"
+    }
+  ]
+}

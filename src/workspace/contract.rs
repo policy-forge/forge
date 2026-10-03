@@ -1,4 +1,4 @@
-//! Runtime validation against the single committed API contract.
+//! Runtime validation against the selected committed API contract.
 
 use std::borrow::Cow;
 use std::sync::LazyLock;
@@ -90,70 +90,151 @@ fn rewrite(value: &Value) -> Value {
     }
 }
 
-static VALIDATORS: LazyLock<std::collections::BTreeMap<String, jsonschema::Validator>> =
-    LazyLock::new(|| {
-        let definitions = rewrite(&DOCUMENT["components"]["schemas"]);
-        definitions
-            .as_object()
-            .expect("embedded schema definitions")
-            .keys()
-            .map(|name| {
-                let schema = json!({"$ref": format!("#/$defs/{name}"), "$defs": definitions});
-                let validator = jsonschema::options()
-                    .with_draft(jsonschema::Draft::Draft202012)
-                    .build(&schema)
-                    .expect("embedded component schema is validated by the contract suite");
-                (name.clone(), validator)
-            })
-            .collect()
-    });
-
-/// Additive API revision, identical to the normative API document version.
+/// Original API revision, unchanged for default and explicit v1 launches.
 pub(crate) const VERSION: &str = "1.2.0";
 
-/// Resolve a possibly `$ref`-ed parameter against the embedded contract.
-fn resolve_parameter(definition: &Value) -> &Value {
+/// Immutable per-launch namespace; no public route alias or downgrade is offered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ApiMajor {
+    /// Existing seven-role contract and descriptor.
+    V1,
+    /// Explicit lifecycle/impact registrations with separate closed schemas.
+    V2,
+}
+
+impl ApiMajor {
+    /// Return the exact advertised major selected before launch side effects.
+    pub(crate) const fn number(self) -> u8 {
+        match self {
+            Self::V1 => 1,
+            Self::V2 => 2,
+        }
+    }
+
+    /// Return the exact selected normative contract version.
+    pub(crate) const fn version(self) -> &'static str {
+        match self {
+            Self::V1 => VERSION,
+            Self::V2 => "2.0.0",
+        }
+    }
+
+    /// Return the only public API prefix admitted by this launch.
+    pub(crate) const fn prefix(self) -> &'static str {
+        match self {
+            Self::V1 => "/api/v1",
+            Self::V2 => "/api/v2",
+        }
+    }
+
+    /// Admit an exact namespace before mapping to the private shared dispatch key.
+    /// Callers retain the original wire path for normative validation and replay.
+    pub(crate) fn canonical_path(self, wire_path: &str) -> Result<String> {
+        let suffix = wire_path
+            .strip_prefix(self.prefix())
+            .filter(|suffix| suffix.starts_with('/'))
+            .ok_or_else(|| {
+                Error::new("not-found", "The requested API operation was not found.", false)
+            })?;
+        Ok(format!("/api/v1{suffix}"))
+    }
+
+    /// Resolve the selected immutable normative tree, retaining v1 unchanged.
+    fn document(self) -> &'static Value {
+        match self {
+            Self::V1 => &DOCUMENT,
+            Self::V2 => &DOCUMENT_V2,
+        }
+    }
+
+    /// Use one compiled component/parameter registry for the selected major.
+    fn registry(self) -> &'static Validators {
+        match self {
+            Self::V1 => &VALIDATORS_V1,
+            Self::V2 => &VALIDATORS_V2,
+        }
+    }
+}
+
+/// Independently embedded v2 document; the legacy source bytes remain unchanged.
+static DOCUMENT_V2: LazyLock<Value> = LazyLock::new(|| {
+    serde_yaml::from_str(include_str!("../../docs/api/forge-workspace-v2.openapi.yaml"))
+        .expect("embedded OpenAPI v2 is validated by the contract suite")
+});
+
+/// Resolve a referenced parameter within its own major's normative document.
+fn resolve_parameter_for<'a>(document: &'a Value, definition: &'a Value) -> &'a Value {
     definition
         .get("$ref")
         .and_then(Value::as_str)
         .and_then(|reference| reference.strip_prefix('#'))
-        .and_then(|pointer| DOCUMENT.pointer(pointer))
+        .and_then(|pointer| document.pointer(pointer))
         .unwrap_or(definition)
 }
 
-/// Validators for every declared parameter, compiled once. The request path
-/// looks one up by the declared parameter instead of cloning
-/// `components.schemas` and compiling a fresh schema per parameter per request.
-static PARAMETER_VALIDATORS: LazyLock<std::collections::BTreeMap<String, jsonschema::Validator>> =
-    LazyLock::new(|| {
-        let definitions = rewrite(&DOCUMENT["components"]["schemas"]);
-        let mut validators = std::collections::BTreeMap::new();
-        let paths = DOCUMENT["paths"].as_object().into_iter().flat_map(serde_json::Map::values);
-        for path_item in paths {
-            let operations = path_item.as_object().into_iter().flat_map(serde_json::Map::values);
-            for operation in operations {
-                for parameter in operation["parameters"].as_array().into_iter().flatten() {
-                    let Some(schema) = resolve_parameter(parameter).get("schema") else {
+/// Preserve the original contract test helper without cross-major resolution.
+#[cfg(test)]
+fn resolve_parameter(definition: &Value) -> &Value {
+    resolve_parameter_for(&DOCUMENT, definition)
+}
+
+/// Compiled once per major; requests never clone and recompile component schemas.
+struct Validators {
+    /// Component validators from this major only.
+    components: std::collections::BTreeMap<String, jsonschema::Validator>,
+    /// Declared parameter validators resolved within the same document.
+    parameters: std::collections::BTreeMap<String, jsonschema::Validator>,
+}
+
+impl Validators {
+    /// Compile component and declared parameter schemas from one closed document.
+    fn build(document: &Value) -> Self {
+        let definitions = rewrite(&document["components"]["schemas"]);
+        let components = definitions
+            .as_object()
+            .expect("embedded schema definitions")
+            .keys()
+            .map(|name| {
+                let validator = jsonschema::options()
+                    .with_draft(jsonschema::Draft::Draft202012)
+                    .build(&json!({"$ref": format!("#/$defs/{name}"), "$defs": definitions}))
+                    .expect("embedded component schema is validated by the contract suite");
+                (name.clone(), validator)
+            })
+            .collect();
+        let mut parameters = std::collections::BTreeMap::new();
+        for item in document["paths"].as_object().into_iter().flat_map(serde_json::Map::values) {
+            for operation in item.as_object().into_iter().flat_map(serde_json::Map::values) {
+                for declared in operation["parameters"].as_array().into_iter().flatten() {
+                    let Some(schema) = resolve_parameter_for(document, declared).get("schema")
+                    else {
                         continue;
                     };
-                    let schema = rewrite(schema);
-                    validators.entry(parameter.to_string()).or_insert_with(|| {
+                    parameters.entry(declared.to_string()).or_insert_with(|| {
                         jsonschema::options()
                             .with_draft(jsonschema::Draft::Draft202012)
-                            .build(&json!({
-                                "allOf": [schema],
-                                "$defs": definitions.clone(),
-                            }))
+                            .build(&json!({"allOf": [rewrite(schema)], "$defs": definitions}))
                             .expect("embedded parameter schema is validated by the contract suite")
                     });
                 }
             }
         }
-        validators
-    });
+        Self { components, parameters }
+    }
+}
 
+static VALIDATORS_V1: LazyLock<Validators> = LazyLock::new(|| Validators::build(&DOCUMENT));
+static VALIDATORS_V2: LazyLock<Validators> = LazyLock::new(|| Validators::build(&DOCUMENT_V2));
+
+/// Retain the original v1 default for unchanged internal domain envelopes.
 pub(crate) fn validate(name: &str, value: &Value) -> Result<()> {
-    if VALIDATORS.get(name).is_some_and(|validator| validator.is_valid(value)) {
+    validate_for(ApiMajor::V1, name, value)
+}
+
+/// Validate a public response/request or intrinsic metadata with the chosen schema.
+pub(crate) fn validate_for(api_major: ApiMajor, name: &str, value: &Value) -> Result<()> {
+    if api_major.registry().components.get(name).is_some_and(|validator| validator.is_valid(value))
+    {
         Ok(())
     } else {
         Err(Error::invalid())
@@ -217,7 +298,21 @@ pub(crate) fn operation_request(
     idempotency: Option<&str>,
     body: Option<&Value>,
 ) -> Result<String> {
-    let paths = DOCUMENT["paths"].as_object().ok_or_else(Error::invalid)?;
+    operation_request_for(ApiMajor::V1, method, path, query, idempotency, body)
+}
+
+/// Validate actual wire parameters against the selected major before private dispatch.
+pub(crate) fn operation_request_for(
+    api_major: ApiMajor,
+    method: &str,
+    path: &str,
+    query: &[(String, String)],
+    idempotency: Option<&str>,
+    body: Option<&Value>,
+) -> Result<String> {
+    api_major.canonical_path(path)?;
+    let document = api_major.document();
+    let paths = document["paths"].as_object().ok_or_else(Error::invalid)?;
     let actual: Vec<_> = path.split('/').collect();
     for (template, item) in paths {
         let segments: Vec<_> = template.split('/').collect();
@@ -243,7 +338,7 @@ pub(crate) fn operation_request(
         let mut declared_idempotency = false;
         if let Some(parameters) = operation["parameters"].as_array() {
             for declared in parameters {
-                let parameter = resolve_parameter(declared);
+                let parameter = resolve_parameter_for(document, declared);
                 let name = parameter["name"].as_str().ok_or_else(Error::invalid)?;
                 let location = parameter["in"].as_str().ok_or_else(Error::invalid)?;
                 let value = match location {
@@ -275,7 +370,9 @@ pub(crate) fn operation_request(
                         },
                         _ => json!(value),
                     };
-                    let validator = PARAMETER_VALIDATORS
+                    let validator = api_major
+                        .registry()
+                        .parameters
                         .get(&declared.to_string())
                         .ok_or_else(Error::invalid)?;
                     if !validator.is_valid(&value) {
@@ -300,7 +397,7 @@ pub(crate) fn operation_request(
                 .as_str()
                 .and_then(|reference| reference.strip_prefix("#/components/schemas/"))
                 .ok_or_else(Error::invalid)?;
-            validate(name, value)?;
+            validate_for(api_major, name, value)?;
         } else if body.is_some_and(|value| value != &json!({})) {
             return Err(Error::invalid());
         }

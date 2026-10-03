@@ -15,12 +15,21 @@ pub(crate) mod root;
 pub(crate) mod services;
 pub(crate) mod session;
 
+/// Select a supported major before project capture, prompts, credentials or listening.
 pub(crate) fn launch(
     project: &std::path::Path,
     read_only: bool,
     machine: bool,
     no_open: bool,
+    api_major: u8,
 ) -> Result<(), crate::ForgeError> {
-    http::launch(project, read_only, machine, no_open)
+    let major = match api_major {
+        1 => contract::ApiMajor::V1,
+        2 => contract::ApiMajor::V2,
+        _ => {
+            return Err(crate::ForgeError::InvalidArgument(contract::Error::invalid().to_string()));
+        }
+    };
+    http::launch(project, read_only, machine, no_open, major)
         .map_err(|error| crate::ForgeError::InvalidArgument(error.to_string()))
 }

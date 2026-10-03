@@ -1,0 +1,15 @@
+{
+  "operation_id": "op_7d8c9b0a1f2e3d4c",
+  "kind": "conversion",
+  "state": "failed",
+  "created_at": "2026-09-08T14:07:00Z",
+  "updated_at": "2026-09-08T14:07:03Z",
+  "cancel_requested": false,
+  "error": {
+    "code": "validation-failed",
+    "message": "The policy source failed conversion validation. No output was written.",
+    "resource": "res_0f1e2d3c4b5a69788796a5b4",
+    "retryable": false,
+    "correlation_id": "corr_5b6a7f8e9d0c"
+  }
+}

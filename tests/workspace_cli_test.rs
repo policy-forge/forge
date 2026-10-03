@@ -2245,3 +2245,792 @@ mod checkpoint_http {
         checkpoint_stop(&mut server);
     }
 }
+/// Exercise index-version admission and metadata bundles through authenticated real HTTP.
+mod s3_registration_and_bundles {
+    use super::{
+        Server, bundle_assert_counts, bundle_assert_error, bundle_assert_keys, bundle_fixture,
+        bundle_fixture_index_bytes, bundle_fixture_sha256, bundle_project_files,
+    };
+    use serde_json::{Value, json};
+    use std::fmt::Write as _;
+    use std::io::{BufRead as _, Read as _, Write as _};
+    use std::net::TcpStream;
+    use std::process::{Command, Stdio};
+    use std::time::Duration;
+
+    /// Assert only descriptor keys so failure output never prints capability values.
+    fn s3_descriptor_keys(descriptor: &Value) {
+        let mut fields: Vec<&str> = descriptor
+            .as_object()
+            .expect("API2 descriptor object")
+            .keys()
+            .map(String::as_str)
+            .collect();
+        fields.sort_unstable();
+        assert_eq!(
+            fields,
+            [
+                "api_major",
+                "api_version",
+                "base_url",
+                "capability",
+                "mode",
+                "pid",
+                "read_only",
+                "session_id"
+            ]
+        );
+    }
+
+    impl Server {
+        /// Launch an explicitly selected API2 process without changing legacy arguments, retaining owner cleanup before any bootstrap assertion.
+        fn start_api2(with_resource: bool, read_only: bool) -> Self {
+            let project = tempfile::tempdir().unwrap();
+            std::fs::write(project.path().join("unregistered.md"), "PRIVATE UNREGISTERED CONTENT")
+                .unwrap();
+            if with_resource {
+                std::fs::write(
+                    project.path().join("policy.md"),
+                    "# Example\n\nA human-supplied clause.\n",
+                )
+                .unwrap();
+                let index = json!({"schema_version":"forge.workspace/1","label":"Example project","resources":[{"key":"policy","role":"policy-source","path":"policy.md"}]});
+                std::fs::write(
+                    project.path().join("forge.workspace.json"),
+                    serde_json::to_vec(&index).unwrap(),
+                )
+                .unwrap();
+            }
+            let mut command = Command::new(env!("CARGO_BIN_EXE_forge"));
+            command.args(["workspace", "--project"]).arg(project.path()).args([
+                "--machine-session",
+                "--api-major",
+                "2",
+            ]);
+            if read_only {
+                command.arg("--read-only");
+            }
+            let mut process = command
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .spawn()
+                .unwrap();
+            let stdout = process.stdout.take().unwrap();
+            let mut server =
+                Self { process, host: String::new(), capability: String::new(), project };
+            let (send, receive) = std::sync::mpsc::channel();
+            std::thread::spawn(move || {
+                let mut line = String::new();
+                let result = std::io::BufReader::new(stdout).read_line(&mut line).map(|_| line);
+                let _ = send.send(result);
+            });
+            let result = receive.recv_timeout(Duration::from_secs(20));
+            if result.is_err() {
+                let _ = server.process.kill();
+                let _ = server.process.wait();
+                panic!("API2 workspace launch timed out");
+            }
+            let descriptor: Value = serde_json::from_str(&result.unwrap().unwrap())
+                .expect("API2 machine descriptor JSON");
+            s3_descriptor_keys(&descriptor);
+            assert!(descriptor["api_version"] == "2.0.0", "API2 descriptor version mismatch");
+            assert!(descriptor["api_major"] == 2, "API2 descriptor major mismatch");
+            assert!(descriptor["mode"] == "machine", "API2 descriptor mode mismatch");
+            assert!(descriptor["read_only"] == read_only, "API2 descriptor scope mismatch");
+            let host = descriptor["base_url"]
+                .as_str()
+                .unwrap()
+                .strip_prefix("http://")
+                .unwrap()
+                .to_owned();
+            assert!(host.starts_with("127.0.0.1:"), "API2 descriptor must select loopback");
+            server.host = host;
+            descriptor["capability"].as_str().unwrap().clone_into(&mut server.capability);
+            let (status, session) = s3_json(&server, "GET", "/api/v2/session", None, &json!({}));
+            assert_eq!(status, 200, "{session}");
+            bundle_assert_keys(
+                &session,
+                &[
+                    "session_id",
+                    "mode",
+                    "read_only",
+                    "api_major",
+                    "contract_version",
+                    "project_label",
+                    "launched_at",
+                ],
+            );
+            assert_eq!(session["api_major"], 2);
+            assert_eq!(session["contract_version"], "2.0.0");
+            assert_eq!(session["session_id"], descriptor["session_id"]);
+            assert_eq!(session["mode"], "machine");
+            assert_eq!(session["read_only"], read_only);
+            server
+        }
+    }
+
+    /// Decode one real API2 response without the legacy helper's implicit API1 operation polling.
+    fn s3_json(
+        server: &Server,
+        method: &str,
+        path: &str,
+        key: Option<&str>,
+        value: &Value,
+    ) -> (u16, Value) {
+        let mut headers = String::from("Content-Type: application/json\r\n");
+        if let Some(key) = key {
+            write!(headers, "Idempotency-Key: {key}\r\n").unwrap();
+        }
+        let body = if method == "GET" { String::new() } else { value.to_string() };
+        let (status, _, bytes) = server.request(method, path, true, None, &headers, &body);
+        (status, serde_json::from_slice(&bytes).unwrap())
+    }
+
+    /// Commit the exact API2 receipt and require the existing immediately settled commit contract.
+    fn s3_commit(server: &Server, preview: &Value, key: &str) -> Value {
+        let (status, operation) = s3_json(
+            server,
+            "POST",
+            "/api/v2/effects/commits",
+            Some(key),
+            &json!({"receipt":preview["receipt"]["token"],"observed_version":preview["target_version"],"confirmed":true}),
+        );
+        assert_eq!(status, 202, "{operation}");
+        assert_eq!(operation["kind"], "commit");
+        assert_eq!(operation["state"], "succeeded");
+        operation
+    }
+
+    /// Fetch the actual API2 metadata preview with no receipt, source excerpt or write authority.
+    fn s3_bundle_preview(server: &Server) -> Value {
+        let (status, headers, bytes) =
+            server.request("GET", "/api/v2/project/bundle-preview", true, None, "", "");
+        assert_eq!(status, 200, "{}", String::from_utf8_lossy(&bytes));
+        assert!(headers.contains("cache-control: no-store"));
+        let value: Value = serde_json::from_slice(&bytes).unwrap();
+        bundle_assert_keys(
+            &value,
+            &[
+                "bundle",
+                "source_index_present",
+                "snapshot_version",
+                "included_metadata",
+                "source_content_included",
+            ],
+        );
+        assert_eq!(value["source_index_present"], true);
+        assert_eq!(value["source_content_included"], false);
+        assert_eq!(
+            value["included_metadata"],
+            json!([
+                "project-label",
+                "resource-keys",
+                "typed-roles",
+                "project-relative-paths",
+                "sha256-fingerprints",
+                "byte-lengths"
+            ])
+        );
+        bundle_assert_keys(
+            &value["bundle"],
+            &["schema_version", "content_profile", "index", "index_sha256", "pins"],
+        );
+        for pin in value["bundle"]["pins"].as_array().unwrap() {
+            bundle_assert_keys(pin, &["key", "sha256", "size_bytes"]);
+        }
+        value
+    }
+
+    /// Compare through API2 without a preparation receipt, while retaining every expected row and separate metadata state.
+    fn s3_bundle_verify(server: &Server, bundle: &Value) -> Value {
+        let (status, value) = s3_json(
+            server,
+            "POST",
+            "/api/v2/project/bundle-verifications",
+            None,
+            &json!({"bundle":bundle}),
+        );
+        assert_eq!(status, 200, "{value}");
+        bundle_assert_keys(
+            &value,
+            &[
+                "scope",
+                "snapshot_version",
+                "source_index_present",
+                "state",
+                "current_resources",
+                "current_only_resources",
+                "expected_index_matches_current",
+                "expected_resources",
+                "matched_resources",
+                "unregistered_resources",
+                "mismatched_resources",
+                "items",
+                "source_content_included",
+            ],
+        );
+        assert_eq!(value["scope"], "registered-fingerprints-only");
+        assert_eq!(value["source_content_included"], false);
+        for row in value["items"].as_array().unwrap() {
+            bundle_assert_keys(
+                row,
+                &["key", "status", "reason_codes", "observed_resource_validation_state"],
+            );
+        }
+        value
+    }
+
+    /// Send literal and decoded duplicate keys to API2's raw transport rather than a reserialized Value.
+    fn s3_raw_duplicates_rejected(server: &Server, valid: &Value, pin_hash: &str) {
+        let text = valid.to_string();
+        let property = format!("\"sha256\":\"{pin_hash}\"");
+        let duplicate =
+            text.replacen(&property, &format!("{property},\"sha256\":\"{pin_hash}\""), 1);
+        let decoded =
+            text.replacen(&property, &format!("{property},\"sha\\u003256\":\"{pin_hash}\""), 1);
+        assert_ne!(duplicate, text);
+        assert_ne!(decoded, text);
+        for body in [
+            format!("{{\"bundle\":{},\"bundle\":{}}}", valid["bundle"], valid["bundle"]),
+            format!("{{\"bundle\":{},\"bund\\u006ce\":{}}}", valid["bundle"], valid["bundle"]),
+            duplicate,
+            decoded,
+        ] {
+            let (status, _, response) = server.request(
+                "POST",
+                "/api/v2/project/bundle-verifications",
+                true,
+                None,
+                "Content-Type: application/json\r\n",
+                &body,
+            );
+            assert_eq!(status, 400, "{}", String::from_utf8_lossy(&response));
+            bundle_assert_error(
+                server,
+                &serde_json::from_slice(&response).unwrap(),
+                "invalid-request",
+            );
+        }
+    }
+
+    /// A selected namespace rejects foreign majors before capture; later API1 capture fences an external index2.
+    #[test]
+    fn s3_major_namespaces_and_later_api1_capture_remain_closed() {
+        let two = Server::start_api2(true, false);
+        let before = bundle_project_files(&two);
+        std::fs::write(two.project.path().join("forge.workspace.json"), b"not a valid index")
+            .unwrap();
+        for (method, path, body) in [
+            ("GET", "/api/v1/resources", json!({})),
+            (
+                "POST",
+                "/api/v1/resources/register",
+                json!({"path":"missing.bin","role":"lifecycle-source"}),
+            ),
+            ("GET", "/api/v2x/resources", json!({})),
+        ] {
+            let (status, error) = s3_json(&two, method, path, None, &body);
+            assert_eq!(status, 404, "{error}");
+            bundle_assert_error(&two, &error, "not-found");
+        }
+        std::fs::write(
+            two.project.path().join("forge.workspace.json"),
+            &before.iter().find(|(path, _)| path == "forge.workspace.json").unwrap().1,
+        )
+        .unwrap();
+        assert_eq!(s3_json(&two, "GET", "/api/v2/resources", None, &json!({})).0, 200);
+        assert_eq!(bundle_project_files(&two), before);
+        let one = Server::launch_mode(false, true);
+        let index = json!({"schema_version":"forge.workspace/2","label":"External migration","resources":[{"key":"missing-source","role":"lifecycle-source","path":"missing.bin"}]});
+        let bytes = serde_json::to_vec(&index).unwrap();
+        std::fs::write(one.project.path().join("forge.workspace.json"), &bytes).unwrap();
+        let (status, error) = one.json("GET", "/api/v1/resources", None, &json!({}));
+        assert_eq!(status, 400, "{error}");
+        bundle_assert_error(&one, &error, "invalid-request");
+        assert_eq!(error["message"], "This workspace index requires --api-major 2.");
+        assert_eq!(std::fs::read(one.project.path().join("forge.workspace.json")).unwrap(), bytes);
+    }
+
+    /// Preserve the complete closed role set without claiming domain-valid fixture bytes.
+    const S3_ROLES: [&str; 15] = [
+        "policy-source",
+        "oscal-catalog-artifact",
+        "oscal-component-artifact",
+        "mapping-collection",
+        "applicability-manifest",
+        "applicability-report",
+        "trace-report",
+        "lifecycle-record",
+        "lifecycle-source",
+        "oscal-profile-artifact",
+        "oscal-ssp-artifact",
+        "framework-impact-manifest",
+        "successor-map",
+        "framework-impact-report",
+        "framework-impact-dispositions",
+    ];
+
+    /// Read the authorial index after a real conditional commit, retaining its complete semantic value.
+    fn s3_index(server: &Server) -> Value {
+        serde_json::from_slice(
+            &std::fs::read(server.project.path().join("forge.workspace.json")).unwrap(),
+        )
+        .unwrap()
+    }
+
+    /// Prepare a registration or migration without treating a preview as a persisted write.
+    fn s3_prepare(server: &Server, request: &Value, key: &str) -> Value {
+        let (status, response) =
+            s3_json(server, "POST", "/api/v2/resources/register", Some(key), request);
+        assert_eq!(status, 200, "{response}");
+        assert_eq!(response["preview"]["operation_type"], "workspace-index-update");
+        response["preview"].clone()
+    }
+
+    /// Send a genuine rejected request and require its typed, redacted response and unchanged files.
+    fn s3_reject(server: &Server, request: &Value, key: &str, status: u16, code: &str) {
+        let before = bundle_project_files(server);
+        let (actual, error) =
+            s3_json(server, "POST", "/api/v2/resources/register", Some(key), request);
+        assert_eq!(actual, status, "{error}");
+        bundle_assert_error(server, &error, code);
+        assert_eq!(bundle_project_files(server), before);
+    }
+
+    /// Extend only the test envelope version; original index ordering and original-byte pins stay exact.
+    fn s3_bundle(index: &Value, source_bytes: &[&[u8]]) -> Value {
+        let mut bundle = bundle_fixture(index, source_bytes);
+        if index["schema_version"] == "forge.workspace/2" {
+            bundle["schema_version"] = json!("forge.workspace-index-bundle/2");
+        }
+        bundle
+    }
+
+    /// A legacy null key derives a key, while migration needs exact confirmation and preserves order.
+    #[test]
+    fn s3_legacy_null_key_and_migration_preserve_authorial_index() {
+        let server = Server::start_api2(true, false);
+        let original_files = bundle_project_files(&server);
+        let preview = s3_prepare(
+            &server,
+            &json!({"path":"unregistered.md","role":"policy-source","key":null}),
+            "s3-register-legacy-null",
+        );
+        assert_eq!(bundle_project_files(&server), original_files);
+        s3_commit(&server, &preview, "s3-commit-legacy-null");
+        let legacy = s3_index(&server);
+        assert_eq!(legacy["schema_version"], "forge.workspace/1");
+        assert_eq!(legacy["resources"].as_array().unwrap().len(), 2);
+        assert_eq!(legacy["resources"][0]["key"], "policy");
+        assert_eq!(legacy["resources"][1]["path"], "unregistered.md");
+        assert!(legacy["resources"][1]["key"].as_str().is_some_and(|key| !key.is_empty()));
+        let before = bundle_project_files(&server);
+        let migration = json!({"migration":{"from":"forge.workspace/1","to":"forge.workspace/2"}});
+        let preview = s3_prepare(&server, &migration, "s3-migrate-index");
+        assert_eq!(bundle_project_files(&server), before);
+        // This is the server's literal confirmation guard, not a native UI rejection claim.
+        let (status, error) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/effects/commits",
+            Some("s3-reject-confirmation"),
+            &json!({"receipt":preview["receipt"]["token"],"observed_version":preview["target_version"],"confirmed":false}),
+        );
+        assert_eq!(status, 400, "{error}");
+        bundle_assert_error(&server, &error, "invalid-request");
+        assert_eq!(bundle_project_files(&server), before);
+        s3_commit(&server, &preview, "s3-confirm-migration");
+        let mut expected = legacy;
+        expected["schema_version"] = json!("forge.workspace/2");
+        assert_eq!(s3_index(&server), expected);
+        let bytes = std::fs::read(server.project.path().join("forge.workspace.json")).unwrap();
+        assert_eq!(bytes, bundle_fixture_index_bytes(&expected));
+        assert_eq!(preview["exact_bytes_sha256"], bundle_fixture_sha256(&bytes));
+        for (path, bytes) in before.iter().filter(|(path, _)| path != "forge.workspace.json") {
+            assert_eq!(std::fs::read(server.project.path().join(path)).unwrap(), *bytes);
+        }
+        s3_reject(&server, &migration, "s3-migrate-already-two", 422, "validation-failed");
+    }
+
+    /// Version admission precedes a missing-file read; explicit /2 admits opaque empty and binary sources.
+    #[test]
+    fn s3_explicit_version_admission_and_opaque_source_registration() {
+        let server = Server::start_api2(false, false);
+        let migration = json!({"migration":{"from":"forge.workspace/1","to":"forge.workspace/2"}});
+        s3_reject(&server, &migration, "s3-migrate-absent", 422, "validation-failed");
+        s3_reject(
+            &server,
+            &json!({"path":"missing.bin","role":"lifecycle-source"}),
+            "s3-role-before-missing-read",
+            400,
+            "invalid-request",
+        );
+        std::fs::write(server.project.path().join("empty.bin"), []).unwrap();
+        let preview = s3_prepare(
+            &server,
+            &json!({"path":"empty.bin","role":"lifecycle-source","key":null,"index_schema_version":"forge.workspace/2"}),
+            "s3-explicit-two-empty",
+        );
+        assert!(!server.project.path().join("forge.workspace.json").exists());
+        s3_commit(&server, &preview, "s3-commit-two-empty");
+        let first = s3_index(&server);
+        assert_eq!(first["schema_version"], "forge.workspace/2");
+        assert_eq!(first["resources"][0]["role"], "lifecycle-source");
+        let binary = [0xff, 0x00, 0x80, b'\n'];
+        std::fs::write(server.project.path().join("binary.bin"), binary).unwrap();
+        let preview = s3_prepare(
+            &server,
+            &json!({"path":"binary.bin","role":"lifecycle-source","key":"binary-source"}),
+            "s3-current-two-old-shape",
+        );
+        s3_commit(&server, &preview, "s3-commit-current-two");
+        let (status, resources) = s3_json(&server, "GET", "/api/v2/resources", None, &json!({}));
+        assert_eq!(status, 200, "{resources}");
+        let rows = resources["page"]["items"].as_array().unwrap();
+        assert_eq!(rows.len(), 2);
+        for row in rows {
+            assert_eq!(row["validation_state"], "valid");
+            assert_eq!(row["validation_profile"], "opaque-fingerprint-bytes");
+        }
+        let empty = rows.iter().find(|row| row["path"] == "empty.bin").unwrap();
+        assert_eq!(empty["size_bytes"], 0);
+        assert_eq!(empty["sha256"], bundle_fixture_sha256(&[]));
+        let observed = rows.iter().find(|row| row["path"] == "binary.bin").unwrap();
+        assert_eq!(observed["sha256"], bundle_fixture_sha256(&binary));
+        assert_eq!(std::fs::read(server.project.path().join("binary.bin")).unwrap(), binary);
+    }
+
+    /// Mixed alternatives, unknown fields and null version selectors cannot prepare an index write.
+    #[test]
+    fn s3_closed_registration_alternatives_preserve_bytes() {
+        let server = Server::start_api2(true, false);
+        let migration = json!({"from":"forge.workspace/1","to":"forge.workspace/2"});
+        let invalid = [
+            json!({"path":"unregistered.md","role":"policy-source","index_schema_version":null}),
+            json!({"path":"unregistered.md","role":"policy-source","index_schema_version":"forge.workspace/1"}),
+            json!({"path":"unregistered.md","role":"lifecycle-source"}),
+            json!({"path":"unregistered.md","role":"policy-source","unknown":true}),
+            json!({"migration":migration,"path":"unregistered.md","role":"policy-source"}),
+            json!({"migration":null}),
+            json!({"migration":{"from":"forge.workspace/2","to":"forge.workspace/2"}}),
+            json!({"migration":{"from":"forge.workspace/1","to":"forge.workspace/2","approved":true}}),
+        ];
+        for (number, request) in invalid.iter().enumerate() {
+            s3_reject(
+                &server,
+                request,
+                &format!("s3-invalid-alternative-{number}"),
+                400,
+                "invalid-request",
+            );
+        }
+        s3_reject(
+            &server,
+            &json!({"path":"unregistered.md","role":"lifecycle-record","index_schema_version":"forge.workspace/2","key":"invalid-record"}),
+            "s3-strict-domain-rejection",
+            422,
+            "validation-failed",
+        );
+        let preview = s3_prepare(
+            &server,
+            &json!({"path":"unregistered.md","role":"lifecycle-source","index_schema_version":"forge.workspace/2","key":"new-source"}),
+            "s3-alternative-positive",
+        );
+        s3_commit(&server, &preview, "s3-alternative-positive-commit");
+        assert_eq!(s3_index(&server)["schema_version"], "forge.workspace/2");
+        assert_eq!(s3_index(&server)["resources"].as_array().unwrap().len(), 2);
+    }
+
+    /// Conditional commits retain concurrent index bytes and recheck the exact external source bytes.
+    #[test]
+    fn s3_migration_registration_rechecks_index_and_external_source() {
+        let server = Server::start_api2(true, false);
+        let request = json!({"path":"unregistered.md","role":"lifecycle-source","key":"external-source","index_schema_version":"forge.workspace/2"});
+        let preview = s3_prepare(&server, &request, "s3-drift-preview-index");
+        let mut concurrent = s3_index(&server);
+        concurrent["label"] = json!("Concurrent authorial label");
+        let concurrent_bytes = serde_json::to_vec(&concurrent).unwrap();
+        std::fs::write(server.project.path().join("forge.workspace.json"), &concurrent_bytes)
+            .unwrap();
+        let (status, error) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/effects/commits",
+            Some("s3-drift-index-commit"),
+            &json!({"receipt":preview["receipt"]["token"],"observed_version":preview["target_version"],"confirmed":true}),
+        );
+        assert_eq!(status, 409, "{error}");
+        assert_eq!(
+            std::fs::read(server.project.path().join("forge.workspace.json")).unwrap(),
+            concurrent_bytes
+        );
+        let preview = s3_prepare(&server, &request, "s3-drift-preview-source");
+        std::fs::write(server.project.path().join("unregistered.md"), b"changed opaque source")
+            .unwrap();
+        let (status, error) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/effects/commits",
+            Some("s3-drift-source-commit"),
+            &json!({"receipt":preview["receipt"]["token"],"observed_version":preview["target_version"],"confirmed":true}),
+        );
+        assert_eq!(status, 409, "{error}");
+        assert_eq!(
+            std::fs::read(server.project.path().join("forge.workspace.json")).unwrap(),
+            concurrent_bytes
+        );
+        let preview = s3_prepare(&server, &request, "s3-drift-fresh-preview");
+        s3_commit(&server, &preview, "s3-drift-fresh-commit");
+        assert_eq!(s3_index(&server)["label"], "Concurrent authorial label");
+        let bundle = s3_bundle_preview(&server)["bundle"].clone();
+        assert_eq!(bundle["pins"][1]["sha256"], bundle_fixture_sha256(b"changed opaque source"));
+    }
+
+    /// All fifteen registered roles enter metadata bundles; fingerprint equality never upgrades domain validity.
+    #[test]
+    fn s3_bundle_two_all_roles_and_legacy_subset_keep_validation_separate() {
+        let server = Server::start_api2(false, true);
+        let bytes = b"# Source\n\nPRIVATE BUNDLE SOURCE BYTES\n";
+        let resources: Vec<Value> = S3_ROLES
+            .iter()
+            .enumerate()
+            .map(|(number, role)| {
+                let path = format!("role-{number}.bin");
+                std::fs::write(server.project.path().join(&path), bytes).unwrap();
+                json!({"key":format!("role-{number}"),"role":role,"path":path})
+            })
+            .collect();
+        let index = json!({"schema_version":"forge.workspace/2","label":"All declared roles","resources":resources});
+        std::fs::write(
+            server.project.path().join("forge.workspace.json"),
+            serde_json::to_vec(&index).unwrap(),
+        )
+        .unwrap();
+        let before = bundle_project_files(&server);
+        let preview = s3_bundle_preview(&server);
+        assert_eq!(preview["bundle"], s3_bundle(&index, &[bytes.as_slice(); 15]));
+        let result = s3_bundle_verify(&server, &preview["bundle"]);
+        assert_eq!(result["state"], "matched");
+        assert_eq!(result["expected_index_matches_current"], true);
+        bundle_assert_counts(&result, [15, 15, 0, 0, 15, 0]);
+        let (status, resources) = s3_json(&server, "GET", "/api/v2/resources", None, &json!({}));
+        assert_eq!(status, 200, "{resources}");
+        let observed = resources["page"]["items"].as_array().unwrap();
+        assert_eq!(observed.len(), 15);
+        for row in result["items"].as_array().unwrap() {
+            let metadata = observed.iter().find(|item| item["key"] == row["key"]).unwrap();
+            assert_eq!(row["observed_resource_validation_state"], metadata["validation_state"]);
+        }
+        assert_eq!(
+            observed.iter().find(|row| row["role"] == "lifecycle-source").unwrap()["validation_profile"],
+            "opaque-fingerprint-bytes"
+        );
+        assert_eq!(
+            observed.iter().find(|row| row["role"] == "lifecycle-record").unwrap()["validation_state"],
+            "invalid"
+        );
+        let subset = json!({"schema_version":"forge.workspace/1","label":"All declared roles","resources":[index["resources"][0].clone()]});
+        let legacy = s3_bundle_verify(&server, &s3_bundle(&subset, &[bytes]));
+        assert_eq!(legacy["state"], "matched");
+        assert_eq!(legacy["expected_index_matches_current"], false);
+        bundle_assert_counts(&legacy, [1, 1, 0, 0, 15, 14]);
+        for value in [&preview, &result, &resources, &legacy] {
+            assert!(!value.to_string().contains("PRIVATE BUNDLE SOURCE BYTES"));
+            assert!(!value.to_string().contains("PRIVATE UNREGISTERED CONTENT"));
+        }
+        assert_eq!(bundle_project_files(&server), before);
+    }
+
+    /// Absent indexes differ from authored empty versions; zero subset matches do not imply index equality.
+    #[test]
+    fn s3_bundle_versions_keep_missing_and_zero_denominators_distinct() {
+        let server = Server::start_api2(false, true);
+        let one =
+            json!({"schema_version":"forge.workspace/1","label":"Empty index","resources":[]});
+        let mut two = one.clone();
+        two["schema_version"] = json!("forge.workspace/2");
+        let empty_one = s3_bundle(&one, &[]);
+        let empty_two = s3_bundle(&two, &[]);
+        let (status, error) =
+            s3_json(&server, "GET", "/api/v2/project/bundle-preview", None, &json!({}));
+        assert_eq!(status, 404, "{error}");
+        bundle_assert_error(&server, &error, "not-found");
+        for bundle in [&empty_one, &empty_two] {
+            let result = s3_bundle_verify(&server, bundle);
+            assert_eq!(result["state"], "missing-index");
+            assert_eq!(result["source_index_present"], false);
+            bundle_assert_counts(&result, [0, 0, 0, 0, 0, 0]);
+        }
+        for (index, bundle) in [(&one, &empty_one), (&two, &empty_two)] {
+            std::fs::write(
+                server.project.path().join("forge.workspace.json"),
+                serde_json::to_vec(index).unwrap(),
+            )
+            .unwrap();
+            let before = bundle_project_files(&server);
+            assert_eq!(s3_bundle_preview(&server)["bundle"], *bundle);
+            let result = s3_bundle_verify(&server, bundle);
+            assert_eq!(result["state"], "matched");
+            assert_eq!(result["expected_index_matches_current"], true);
+            bundle_assert_counts(&result, [0, 0, 0, 0, 0, 0]);
+            assert_eq!(bundle_project_files(&server), before);
+        }
+        let cross = s3_bundle_verify(&server, &empty_one);
+        assert_eq!(cross["state"], "matched");
+        assert_eq!(cross["expected_index_matches_current"], false);
+        bundle_assert_counts(&cross, [0, 0, 0, 0, 0, 0]);
+    }
+
+    /// Bundle /2 preserves closed version pairing, ordered pin bijection and duplicate-safe raw transport.
+    #[test]
+    fn s3_bundle_two_rejects_intrinsic_corruption_before_positive_comparison() {
+        let server = Server::start_api2(false, true);
+        let bytes = b"opaque lifecycle source";
+        let index = json!({"schema_version":"forge.workspace/2","label":"Closed two","resources":[
+            {"key":"alpha","role":"lifecycle-source","path":"alpha.bin"},
+            {"key":"beta","role":"lifecycle-source","path":"beta.bin"}]});
+        for path in ["alpha.bin", "beta.bin"] {
+            std::fs::write(server.project.path().join(path), bytes).unwrap();
+        }
+        std::fs::write(
+            server.project.path().join("forge.workspace.json"),
+            serde_json::to_vec(&index).unwrap(),
+        )
+        .unwrap();
+        let before = bundle_project_files(&server);
+        let bundle = s3_bundle(&index, &[bytes, bytes]);
+        let valid = json!({"bundle":bundle});
+        let mut invalid = Vec::new();
+        for (pointer, replacement) in [
+            ("/bundle/schema_version", json!("forge.workspace-index-bundle/1")),
+            ("/bundle/schema_version", json!("forge.workspace-index-bundle/3")),
+            ("/bundle/index/schema_version", json!("forge.workspace/1")),
+            ("/bundle/content_profile", json!("source-inclusive")),
+            ("/bundle/pins/0/size_bytes", json!(10 * 1024 * 1024 + 1)),
+            ("/bundle/pins/0/key", json!("unknown-key")),
+        ] {
+            let mut body = valid.clone();
+            *body.pointer_mut(pointer).unwrap() = replacement;
+            invalid.push(body);
+        }
+        let mut unknown = valid.clone();
+        unknown["bundle"]["approval"] = json!(true);
+        invalid.push(unknown);
+        let mut removed = valid.clone();
+        removed["bundle"]["pins"].as_array_mut().unwrap().pop();
+        invalid.push(removed);
+        let mut swapped = valid.clone();
+        swapped["bundle"]["pins"].as_array_mut().unwrap().swap(0, 1);
+        invalid.push(swapped);
+        let mut duplicate = valid.clone();
+        duplicate["bundle"]["pins"][1] = duplicate["bundle"]["pins"][0].clone();
+        invalid.push(duplicate);
+        for body in invalid {
+            let (status, error) =
+                s3_json(&server, "POST", "/api/v2/project/bundle-verifications", None, &body);
+            assert_eq!(status, 400, "{error}");
+            bundle_assert_error(&server, &error, "invalid-request");
+        }
+        s3_raw_duplicates_rejected(&server, &valid, &bundle_fixture_sha256(bytes));
+        assert_eq!(s3_bundle_verify(&server, &bundle)["state"], "matched");
+        assert_eq!(bundle_project_files(&server), before);
+    }
+    /// Supplied index2 paths are not opened when current index1 lacks their registrations.
+    #[test]
+    fn s3_supplied_bundle_two_on_current_one_never_opens_unregistered_paths() {
+        let server = Server::start_api2(true, true);
+        let directory = server.project.path().join("unregistered-directory");
+        std::fs::create_dir(&directory).unwrap();
+        let before = std::fs::read(server.project.path().join("forge.workspace.json")).unwrap();
+        let supplied = json!({"schema_version":"forge.workspace/2","label":"Supplied registrations","resources":[
+            {"key":"missing-source","role":"lifecycle-source","path":"missing.bin"},
+            {"key":"private-source","role":"lifecycle-source","path":"unregistered.md"},
+            {"key":"nonregular-source","role":"lifecycle-source","path":"unregistered-directory"}]});
+        let bundle = s3_bundle(
+            &supplied,
+            &[b"expected missing bytes", b"different private bytes", b"expected directory bytes"],
+        );
+        let result = s3_bundle_verify(&server, &bundle);
+        assert_eq!(result["state"], "mismatched");
+        assert_eq!(result["expected_index_matches_current"], false);
+        bundle_assert_counts(&result, [3, 0, 3, 0, 1, 1]);
+        for row in result["items"].as_array().unwrap() {
+            assert_eq!(row["status"], "not-registered");
+            assert_eq!(row["observed_resource_validation_state"], "not-registered");
+            assert_eq!(row["reason_codes"], json!(["registration-not-found"]));
+        }
+        assert_eq!(
+            std::fs::read(server.project.path().join("forge.workspace.json")).unwrap(),
+            before
+        );
+        assert_eq!(
+            std::fs::read(server.project.path().join("unregistered.md")).unwrap(),
+            b"PRIVATE UNREGISTERED CONTENT"
+        );
+        assert!(directory.is_dir());
+        assert!(!server.project.path().join("missing.bin").exists());
+        assert!(!result.to_string().contains("PRIVATE UNREGISTERED CONTENT"));
+    }
+
+    /// API2 retains exact raw-envelope and checked declared-byte bounds without reading supplied missing files.
+    #[test]
+    fn s3_api2_bundle_envelope_and_aggregate_boundaries_are_consumed() {
+        let server = Server::start_api2(false, true);
+        let empty =
+            json!({"schema_version":"forge.workspace/2","label":"Budget fixture","resources":[]});
+        std::fs::write(
+            server.project.path().join("forge.workspace.json"),
+            serde_json::to_vec(&empty).unwrap(),
+        )
+        .unwrap();
+        let before = bundle_project_files(&server);
+        let valid = json!({"bundle":s3_bundle(&empty, &[])}).to_string();
+        let limit = 1024 * 1024;
+        let padded = format!("{}{valid}", " ".repeat(limit - valid.len()));
+        assert_eq!(padded.len(), limit);
+        let (status, _, bytes) = server.request(
+            "POST",
+            "/api/v2/project/bundle-verifications",
+            true,
+            None,
+            "Content-Type: application/json\r\n",
+            &padded,
+        );
+        assert_eq!(status, 200, "{}", String::from_utf8_lossy(&bytes));
+        assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap()["state"], "matched");
+        // Header-only oversize avoids relying on a write/reset race after server rejection.
+        let mut stream = TcpStream::connect(&server.host).unwrap();
+        stream.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+        stream.set_write_timeout(Some(Duration::from_secs(10))).unwrap();
+        write!(stream, "POST /api/v2/project/bundle-verifications HTTP/1.1\r\nHost: {}\r\nAuthorization: Bearer {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", server.host, server.capability, limit + 1).unwrap();
+        stream.flush().unwrap();
+        let mut response = String::new();
+        stream.read_to_string(&mut response).unwrap();
+        let (headers, body) = response.split_once("\r\n\r\n").unwrap();
+        assert_eq!(headers.split_whitespace().nth(1).unwrap(), "413");
+        bundle_assert_error(&server, &serde_json::from_str(body).unwrap(), "payload-too-large");
+        let resources: Vec<Value> = (0..5).map(|number| json!({"key":format!("expected-{number}"),"role":"lifecycle-source","path":format!("missing-{number}.bin")})).collect();
+        let index = json!({"schema_version":"forge.workspace/2","label":"Declared byte budget","resources":resources});
+        let mut bundle = s3_bundle(&index, &[b"".as_slice(); 5]);
+        let per_pin = 10 * 1024 * 1024;
+        for pin in bundle["pins"].as_array_mut().unwrap() {
+            pin["size_bytes"] = json!(per_pin);
+        }
+        let (status, error) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-verifications",
+            None,
+            &json!({"bundle":bundle}),
+        );
+        assert_eq!(status, 413, "{error}");
+        bundle_assert_error(&server, &error, "payload-too-large");
+        // These are declared expected-byte counts; no corresponding payload is allocated or supplied path opened.
+        bundle["pins"][4]["size_bytes"] = json!(per_pin - bundle_fixture_index_bytes(&index).len());
+        let result = s3_bundle_verify(&server, &bundle);
+        bundle_assert_counts(&result, [5, 0, 5, 0, 0, 0]);
+        assert_eq!(result["state"], "mismatched");
+        assert_eq!(bundle_project_files(&server), before);
+    }
+}

@@ -139,8 +139,8 @@ This metadata consumer supplies browser preview, an acknowledged local metadata
 download and registered comparison. Receipt-backed server export/publication,
 source-content export, confirmed writable import, reviewed batch input binding
 and retention/capacity qualification remain open. Full PRD 062 S-6 remains open.
-The 100-consumed-input effect cap, closed seven roles and existing
-schema/dependency/approval boundaries are unchanged.
+The 100-consumed-input effect cap and existing dependency/approval boundaries
+are unchanged. API v1 and bundle1 retain their seven-role closed contract.
 
 All six PRD 062 Should-Have acceptance gates, security/privacy, supported-platform
 and interoperability, human keyboard/assistive-technology/WCAG, pilot/release and
@@ -148,3 +148,16 @@ human acceptance remain open where recorded. The scoped
 [browser metadata verification](workspace-bundle-browser-verification.md) is
 development evidence. The final full integrated documentation review/update
 remains open.
+
+## Explicit API v2
+
+With `--api-major 2` (or `Workspace(..., api_major=2)`), the same queries use
+`/api/v2`. A current index1 produces bundle1; a current index2 produces
+`forge.workspace-index-bundle/2` paired with `forge.workspace/2` and fifteen roles.
+The server, maintained client and UI reject mismatched version pairs. V2 can
+compare a supplied bundle1 with current index2 registrations while retaining
+separate expected fingerprints, current-only counts and whole-index equality.
+API v1 accepts only index1 and bundle1. The five metadata fields, complete ordered
+pin bijection, normalized hashing, sensitivity acknowledgment, download/POST/capture
+bounds and registered-only comparison remain the same. New-role admission profiles
+grant no freshness or approval. See [v2 migration guidance](api/migration-v2.md).

@@ -3,7 +3,7 @@
 > **Document Type:** Compatibility Policy
 > **Audience:** Engineering, LLM agents, local client developers, human reviewers
 > **Status:** Draft
-> **Last Updated:** 2026-09-08
+> **Last Updated:** 2026-10-02
 > **Owner:** Brian Luby
 
 ---
@@ -167,3 +167,28 @@ contracts. `forge.workspace-index-bundle/1` is a separate metadata-only wire
 family; label/key/path/hash information can be sensitive. Fingerprint agreement
 does not establish domain-currentness, approval or import readiness. The full
 S-6 browser export/confirmed import workflow remains open. No release is implied.
+
+## Unreleased contract 2.0.0
+
+The successor has its own [OpenAPI document](forge-workspace-v2.openapi.yaml),
+[matrix](capability-matrix-v2.md), [fixtures](fixtures-v2/README.md) and closed
+[index2 schema](../../schemas/forge.workspace-2.schema.json). Expanded closed
+roles require API v2; the original v1 document, matrix, fixtures and index1 schema
+retain their meanings. Select v2 with `--api-major 2`; each launch serves one
+immutable major. Default launches remain v1/1.2.0.
+
+API v2 reads either index version without implicit migration. Explicit index2
+registration or migration uses an ordinary confirmed index-update preview.
+V1 rejects index2 before registered byte reads. Metadata bundle1/index1 and
+bundle2/index2 are independently paired; fingerprint comparison grants no domain
+or import authority. See [migration guidance](migration-v2.md) for launch,
+registration, role-specific admission profiles and maintained-client examples.
+
+Both families' declared archive assets are in
+[release-artifacts.json](release-artifacts.json). One normative document per
+major is checked directly by the same offline meta-schema, complete component,
+fixture and bidirectional matrix gates. The v2 Session is exact 2.0.0; its machine
+descriptor adds `api_major: 2` to the original seven-field descriptor shape.
+V1's descriptor remains unchanged. The existing one-stable-minor support window
+applies. Full lifecycle/impact read views, human/platform/security acceptance and
+product release authorization remain separate gates.

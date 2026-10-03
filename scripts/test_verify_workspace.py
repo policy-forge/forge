@@ -360,7 +360,9 @@ class ReceiptTests(unittest.TestCase):
     def recording_instance(self):
         """Reset shared recorder fixtures and return an unstarted client for accounting controls."""
         self.reset_recording()
-        return object.__new__(client_test.RecordingWorkspace)
+        instance = object.__new__(client_test.RecordingWorkspace)
+        instance._api_prefix = "/api/v1"
+        return instance
 
     def test_unexpected_shutdown_error_is_sticky_after_unchanged_close(self):
         """Exercise unchanged close swallowing a delegated error while accounting still rejects success."""
