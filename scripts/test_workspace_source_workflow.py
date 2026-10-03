@@ -2,7 +2,7 @@
 """Verify real API2.3 source export, durable restore and fresh-session lookup on owned Unix fixtures."""
 from pathlib import Path
 import argparse
-import datetime,hashlib,http.client,json,os,sys,tempfile,uuid
+import datetime,hashlib,http.client,json,os,sys,tempfile,time,uuid
 from workspace_client import Workspace,WorkspaceError
 root=Path(__file__).resolve().parent.parent
 
@@ -84,7 +84,20 @@ def run(args):
                 commit_key=key();accepted=client.commit_source_restore(preview,confirmed=True,idempotency_key=commit_key)
                 assert accepted['operation_id']==operation_id and accepted['state']=='pending' and accepted['write_outcome']=='unmeasured'
                 assert client.commit_source_restore(preview,confirmed=True,idempotency_key=commit_key)==accepted
+                # A durable commit decision can truthfully succeed before native cleanup ends.
+                # This workflow verifies settlement under the same original polling budget.
+                settlement_deadline=time.monotonic()+65
                 outcome=client.wait_source_restore(operation_id)
+                receipt['cleanup_pending_observations']=0
+                while outcome['state']=='succeeded' and outcome['cleanup_state']=='pending':
+                    receipt['cleanup_pending_observations']+=1
+                    remaining=settlement_deadline-time.monotonic()
+                    if remaining<=0:
+                        raise AssertionError('Source cleanup did not settle within the original polling budget')
+                    time.sleep(min(0.01,remaining))
+                    outcome=client.source_restore_status(operation_id)
+                receipt['restore_outcome']={field:outcome[field] for field in ['state','write_outcome','cleanup_state']}
+                receipt['restore_error_code']=(outcome.get('error') or {}).get('code')
                 assert outcome['state']=='succeeded' and outcome['write_outcome']=='committed' and outcome['cleanup_state']=='verified'
                 assert (recipient/'policies/access.md').read_bytes()==source and (recipient/'evidence/source.bin').read_bytes()==opaque
                 index=json.loads((recipient/'forge.workspace.json').read_bytes());assert index['resources']==resources

@@ -15,7 +15,7 @@ cargo build --release
 
 ### From binary release
 
-Download the latest binary for your platform from GitHub Releases. Each release includes SHA-256 checksums and SLSA Level 3 provenance attestation.
+Download the selected published binary for your platform from GitHub Releases. The [release workflow](../.github/workflows/release.yml) is configured to publish SHA-256 checksums and SLSA provenance. Check the evidence attached to the selected published tag for the archive hashes and any verified SLSA level.
 
 Verify your installation:
 

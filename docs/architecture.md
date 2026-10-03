@@ -416,8 +416,7 @@ All errors are represented as `ForgeError` (src/error.rs), a `thiserror` enum wi
 | Exit Code | Category | Examples |
 |-----------|----------|----------|
 | 0 | Success | — |
-| 1 | Input/IO | FileNotFound, PermissionDenied, EmptyInput, FileTooLarge |
-| 2 | Parse/Structure | NoStructureDetected, Parse, CatalogBuild, ParameterExtraction |
-| 3 | Validation/Config | Validation, SchemaValidation, MissingDependency |
-| 4 | Serialization | Serialization errors |
-| 5 | Diff changes | DiffHasChanges (diff detected differences) |
+| 1 | Input/IO, observed changes or review required | FileNotFound, Serialization, DiffHasChanges, LifecycleActionRequired |
+| 2 | Parse, domain or usage | Parse, CatalogBuild, Lifecycle, MissingRequiredArgument |
+| 3 | Validation/Config | Validation, SchemaValidation, Config |
+| 4 | External tool unavailable | OscalCliNotFound, OscalCliNotFunctional |

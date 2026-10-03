@@ -9,7 +9,7 @@ src/
   main.rs                  CLI entry point (anyhow error handling)
   lib.rs                   Public API re-exports
   pipeline.rs              Pipeline orchestration (catalog + component)
-  error.rs                 ForgeError enum (16 variants)
+  error.rs                 Categorized ForgeError enum
   uuid.rs                  Deterministic UUID v5 + stable ID assignment
   citation.rs              URL/reference extraction + deduplication
 
@@ -180,7 +180,7 @@ Output (.json file or stdout)
 
 ### Error Types (`src/error.rs`)
 
-`ForgeError` has 16 variants covering: IO, Parse, Serialization, Validation, CatalogBuild, ComponentDefinitionBuild, BackMatter, Schema, Semantic, and more. Uses `thiserror` for `Display`/`Error` derivation.
+`ForgeError` categorizes input, parsing, serialization, validation and domain workflow failures. See [`src/error.rs`](../src/error.rs) for the current declared variants and exit-code mapping; this reference does not freeze a variant count. It uses `thiserror` for `Display`/`Error` derivation.
 
 ### OSCAL Output
 
@@ -190,7 +190,7 @@ All OSCAL types use `serde::Serialize` for JSON output. Key envelopes:
 
 ## Testing
 
-- **660 total tests** (529 unit + 131 integration), all passing
+- **Historical codemap inventory:** 660 tests (529 unit + 131 integration). This retained count is not a current executed suite result; use the dated [source verification checkpoint](workspace-source-bundle-verification.md) and its exact receipts for separately measured scopes.
 - **Inline unit tests**: `#[cfg(test)]` modules in every source file
 - **Integration tests**: `tests/` directory (pipeline, CLI, adversarial, golden files, traceability)
 - **Benchmarks**: `benches/` (atomize, uuid, pipeline) using Criterion

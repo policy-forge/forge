@@ -6,7 +6,9 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::time::{Duration, Instant};
+#[cfg(unix)]
+use std::time::Duration;
+use std::time::Instant;
 
 use super::super::contract::{Error, Result};
 use super::super::index::{INDEX_PATH, validate_path};
@@ -23,8 +25,10 @@ const MAX_RETAINED_BYTES: usize = 20 * 1024 * 1024;
 /// Conservative bounded metadata reserve within the same retained pool.
 const JOURNAL_RESERVE: usize = 4 * 1024 * 1024;
 /// One shared byte budget for all visible UTF8 diff strings.
+#[cfg(unix)]
 const MAX_DIFF_BYTES: usize = 200_000;
 /// Separate cooperative recovery/rollback attempt; never renews forward authority.
+#[cfg(unix)]
 const SETTLEMENT_SECONDS: u64 = 30;
 
 /// Actual held project identity and opaque binding; no public journal path authority.
@@ -514,6 +518,7 @@ impl JournalRecord {
 
     /// Check immutable ownership and the durable outcome before settlement authority.
     /// A stale pre-decision record cannot roll back a trusted committed generation.
+    #[cfg(unix)]
     pub(super) fn validate_settlement_owner(&self, record: &Self) -> Result<()> {
         if self.nonce != record.nonce
             || self.request_sha256 != record.request_sha256
@@ -614,8 +619,10 @@ impl JournalRecord {
 #[cfg_attr(not(test), allow(dead_code))]
 pub(crate) struct RestoreOutcome {
     /// Complete safe `SourceRestoreOperation` projection or a typed before-acceptance error.
+    #[cfg(unix)]
     pub(crate) operation: Value,
     /// New participating access remains blocked if cleanup/recovery is unresolved.
+    #[cfg(unix)]
     pub(crate) access_blocked: bool,
 }
 
@@ -627,6 +634,7 @@ pub(crate) struct AcceptedRestore {
     /// Exact accepted owner nonce checked against the qualified durable record.
     nonce: u64,
     /// Original runtime deadline including queue; no worker-created renewal.
+    #[cfg(unix)]
     deadline: Instant,
     /// Original exact durable pending reply; no capability or preview token.
     accepted_reply: Vec<u8>,
@@ -669,6 +677,7 @@ struct NativeTarget {
     /// Current generation index within the complete moved input vector, if present.
     base: Option<usize>,
     /// Strong conditional planning version derived from real parent/current facts.
+    #[cfg(unix)]
     version: String,
     /// Held nearest native parent and explicit absence suffix.
     #[cfg(unix)]
@@ -769,6 +778,13 @@ impl AcceptedRestore {
 
 impl Root {
     /// Bind the actual held project directory and original canonical spelling.
+    #[cfg_attr(
+        not(unix),
+        expect(
+            clippy::unused_self,
+            reason = "Keep the shared Root port while the native restore backend fails closed."
+        )
+    )]
     pub(super) fn restore_identity(&self) -> Result<RootIdentity> {
         #[cfg(unix)]
         {
@@ -893,7 +909,7 @@ impl Root {
         }
         #[cfg(not(unix))]
         {
-            let _ = (root, inputs, reserved, identities, control);
+            let _ = (root, proposed, inputs, reserved, identities, control);
             Err(unavailable().into())
         }
     }
@@ -1116,7 +1132,13 @@ impl Root {
             ));
         }
         state.accept(record)?;
-        Ok(AcceptedRestore { operation_id, nonce, deadline, accepted_reply })
+        Ok(AcceptedRestore {
+            operation_id,
+            nonce,
+            #[cfg(unix)]
+            deadline,
+            accepted_reply,
+        })
     }
 }
 
@@ -1166,6 +1188,7 @@ fn same_capture(left: Option<&Captured>, right: Option<&Captured>) -> bool {
 }
 
 /// Re-read an admitted actual original generation before publication authority.
+#[cfg(unix)]
 fn verify_capture(root: &Root, path: &str, expected: &Captured) -> Result<()> {
     if same_capture(root.read_internal(path, file_limit(path))?.as_ref(), Some(expected)) {
         Ok(())
@@ -1192,6 +1215,7 @@ fn ordered_restore_directories(
 }
 
 /// Domain-separated exact old/parent/missing-parent target conditional version.
+#[cfg(unix)]
 fn target_version(
     path: &str,
     parent: (u64, u64),
@@ -1221,6 +1245,7 @@ fn target_version(
 
 /// Bound the total visible textual preview while retaining exact raw hashes elsewhere.
 /// Binary bytes never receive an invented textual diff or content normalization.
+#[cfg(any(unix, test))]
 fn preview_diff(before: &[u8], after: &[u8], remaining: &mut usize) -> (String, bool, bool) {
     let (Ok(old), Ok(new)) = (std::str::from_utf8(before), std::str::from_utf8(after)) else {
         return (String::new(), true, false);
@@ -1423,7 +1448,9 @@ impl Root {
             let _ = persist(state, &mut record);
         }
         Ok(RestoreOutcome {
+            #[cfg(unix)]
             operation: record.safe_outcome()?,
+            #[cfg(unix)]
             access_blocked: !record.is_finished(),
         })
     }
@@ -1433,7 +1460,7 @@ impl Root {
     pub(super) fn recover_restore(
         &self,
         state: &TransactionState,
-        mut record: JournalRecord,
+        record: JournalRecord,
     ) -> Result<()> {
         if self.restore_identity()? != record.root {
             return Err(recovery_required());
@@ -1444,6 +1471,7 @@ impl Root {
             let end = Instant::now()
                 .checked_add(Duration::from_secs(SETTLEMENT_SECONDS))
                 .ok_or_else(recovery_required)?;
+            let mut record = record;
             self.settle_restore(state, &mut record, end)
         }
         #[cfg(not(unix))]
@@ -1455,6 +1483,7 @@ impl Root {
 }
 
 /// Preserve the original first safe cause without rendering private platform errors.
+#[cfg(unix)]
 fn latch_failure(record: &mut JournalRecord, error: &WorkError) {
     use super::super::preparation::Interruption;
     let failure = match error {
@@ -1474,6 +1503,7 @@ fn persist(state: &TransactionState, record: &mut JournalRecord) -> Result<()> {
 }
 
 /// Fence the separate cooperative settlement attempt without resuming forward work.
+#[cfg(unix)]
 fn settlement_check(deadline: Instant) -> Result<()> {
     if Instant::now() >= deadline { Err(recovery_required()) } else { Ok(()) }
 }
@@ -2188,10 +2218,13 @@ fn remove_empty_owned(
 /// Unexecuted controls for moved planning facts, phase safety and owned native semantics.
 #[cfg(test)]
 mod tests {
-    use super::super::super::preparation::{Interruption, NoopControl};
+    #[cfg(unix)]
+    use super::super::super::preparation::Interruption;
+    use super::super::super::preparation::NoopControl;
     use super::*;
 
     /// Canonical pending operation bytes supplied by Root before durable acceptance.
+    #[cfg(unix)]
     fn reply(id: &str) -> Vec<u8> {
         let time = timestamp(unix_seconds().unwrap()).unwrap();
         serde_json::to_vec(&json!({"operation_id":id,"kind":"bundle-restore","state":"pending","created_at":time,"updated_at":time,"cancel_requested":false,"write_outcome":"unmeasured","progress":Value::Null,"result":Value::Null,"error":Value::Null,"cleanup_state":"unmeasured"})).unwrap()
@@ -2222,6 +2255,32 @@ mod tests {
         (project, private, root, state)
     }
 
+    /// A real unsupported-platform Root refuses source restore before target creation or private state authority.
+    #[cfg(not(unix))]
+    #[test]
+    fn unsupported_native_planning_is_typed_unavailable_and_preserves_project_bytes() {
+        let project = tempfile::tempdir().unwrap();
+        let sentinel = project.path().join("sentinel.txt");
+        std::fs::write(&sentinel, b"original sentinel").unwrap();
+        let root = Root::open(project.path()).unwrap();
+        assert_eq!(root.restore_identity().unwrap_err().code, "bundle-restore-unavailable");
+        let result = root.plan_restore_targets(
+            proposed("policy.md", b"new policy"),
+            Vec::new(),
+            &mut NoopControl,
+        );
+        match result {
+            Err(WorkError::Failed(error)) => assert_eq!(error.code, "bundle-restore-unavailable"),
+            _ => panic!(
+                "An unsupported native restore planner must return its typed unavailable error."
+            ),
+        }
+        assert_eq!(std::fs::read(&sentinel).unwrap(), b"original sentinel");
+        assert!(!project.path().join("policy.md").exists());
+        assert!(!project.path().join(INDEX_PATH).exists());
+        assert_eq!(std::fs::read_dir(project.path()).unwrap().count(), 1);
+    }
+
     /// No per-file multiplication of the shared diff byte ceiling and no invalid UTF8 split.
     #[test]
     fn shared_diff_budget_is_utf8_bytes_and_binary_has_no_text() {
@@ -2237,7 +2296,7 @@ mod tests {
         assert!(first.len() + second.len() <= 19);
         let (text, binary, _) = preview_diff(&[255], b"new", &mut remaining);
         assert!(binary);
-        assert!(text.is_empty());
+        assert_eq!(text, "");
     }
 
     /// The same path's old and new generations both consume checked native retention.
@@ -2313,7 +2372,9 @@ mod tests {
     }
 
     /// Forward cooperative interruption is distinct from the separate settlement deadline.
+    #[cfg(unix)]
     struct StopControl;
+    #[cfg(unix)]
     impl WorkControl for StopControl {
         /// Refuse forward work before a syscall or resource-creation phase.
         fn checkpoint(&mut self, _stage: Stage, _progress: ProgressUpdate) -> WorkResult<()> {
@@ -2411,10 +2472,12 @@ mod tests {
     }
 
     /// Observe actual durable progress and cancel only after the first owned publication.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     struct AfterPublish<'a> {
         /// Actual state used by the engine, not a hardcoded checkpoint-count oracle.
         state: &'a TransactionState,
     }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     impl WorkControl for AfterPublish<'_> {
         /// Stop at the next cooperative fence after an actual published target fact.
         fn checkpoint(&mut self, _stage: Stage, _progress: ProgressUpdate) -> WorkResult<()> {

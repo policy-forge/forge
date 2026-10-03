@@ -28,8 +28,10 @@ const MAX_JOURNAL_BYTES: usize = 1024 * 1024;
 /// Native journal name within the independently qualified root namespace.
 const JOURNAL_NAME: &str = "transactions.json";
 /// Exclusive replacement name; an unknown prior partial file blocks recovery.
+#[cfg(unix)]
 const NEXT_NAME: &str = "transactions.next";
 /// Persistent fixed private lock identity, independent of journal replacement.
+#[cfg(unix)]
 const LOCK_NAME: &str = "workspace.lock";
 
 /// Complete private root-bound records; normal API readers see sanitized outcomes.
@@ -93,6 +95,7 @@ impl TransactionState {
 
     /// Qualify OS-selected private state, held no-link ancestry and native durability.
     /// Unsupported ACL/sync ports fail unavailable; no weaker path fallback exists.
+    #[cfg(unix)]
     pub(crate) fn open_qualified(root: &Root) -> Result<Self> {
         let identity = root.restore_identity()?;
         let storage = NativeJournal::open(&identity)?;
@@ -205,6 +208,7 @@ impl TransactionState {
     /// Permit settlement only from the checked actual journal generation and exact
     /// accepted owner. A durable committed decision cannot authorize stale rollback;
     /// blocked owners require a fresh qualified reload before any project effects.
+    #[cfg(unix)]
     pub(super) fn verify_settlement_owner(&self, record: &JournalRecord) -> Result<()> {
         let inner = self.checked_inner()?;
         let old = inner
@@ -304,6 +308,7 @@ fn encode(payload: &JournalPayload) -> Result<Vec<u8>> {
 
 /// Read only the known bounded journal, reject duplicates/unknown fields, and repeat
 /// root/hash/shape checks. Project-supplied JSON never reaches this authority path.
+#[cfg(any(unix, test))]
 fn decode(raw: &[u8], root: &RootIdentity) -> Result<JournalPayload> {
     if raw.len() > MAX_JOURNAL_BYTES {
         return Err(recovery_required());
@@ -379,6 +384,7 @@ pub(super) fn unavailable() -> Error {
 }
 
 /// Actual native journal container; unsupported ports cannot construct a live owner.
+#[cfg(unix)]
 struct NativeJournal {
     /// Held trusted root namespace and exclusive advisory state lock.
     #[cfg(unix)]
@@ -395,6 +401,7 @@ struct NativeJournal {
 }
 
 #[allow(unsafe_code)] // Narrow held-descriptor native journal port, individually documented.
+#[cfg(unix)]
 impl NativeJournal {
     /// Select only OS-private defaults and qualify every existing ancestry component.
     fn open(root: &RootIdentity) -> Result<Self> {
@@ -666,7 +673,6 @@ fn private_default() -> Result<PathBuf> {
 #[cfg(unix)]
 #[allow(unsafe_code)] // No-follow component open/mkdir against a held trusted parent.
 fn qualified_directory(path: &Path) -> Result<(File, Vec<File>)> {
-    use std::os::fd::AsRawFd as _;
     use std::os::unix::{ffi::OsStrExt as _, fs::MetadataExt as _};
     // SAFETY: geteuid has no pointer input or side effect.
     let uid = unsafe { libc::geteuid() };
@@ -689,15 +695,7 @@ fn qualified_directory(path: &Path) -> Result<(File, Vec<File>)> {
         directory = match super::unix_open(&directory, name, true) {
             Ok(file) => file,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                let leaf = std::ffi::CString::new(name.as_bytes()).map_err(|_| unavailable())?;
-                // SAFETY: live held trusted parent, single NUL-terminated component.
-                if unsafe { libc::mkdirat(directory.as_raw_fd(), leaf.as_ptr(), 0o700) } != 0 {
-                    return Err(unavailable());
-                }
-                directory.sync_all().map_err(|_| unavailable())?;
-                let file = super::unix_open(&directory, name, true).map_err(|_| unavailable())?;
-                file.sync_all().map_err(|_| unavailable())?;
-                file
+                create_private_component(&directory, name)?
             }
             Err(_) => return Err(unavailable()),
         };
@@ -711,6 +709,26 @@ fn qualified_directory(path: &Path) -> Result<(File, Vec<File>)> {
         ancestors.push(directory.try_clone().map_err(|_| unavailable())?);
     }
     Ok((directory, ancestors))
+}
+
+/// Create beneath a held qualified parent, or reopen a concurrent mkdir winner.
+/// EEXIST alone permits a no-follow directory reopen; callers still check full
+/// owner/mode/identity ancestry and final private-container qualification.
+#[cfg(unix)]
+#[allow(unsafe_code)] // One exclusive mkdir against the already held trusted parent.
+fn create_private_component(parent: &File, name: &std::ffi::OsStr) -> Result<File> {
+    use std::os::{fd::AsRawFd as _, unix::ffi::OsStrExt as _};
+    let leaf = std::ffi::CString::new(name.as_bytes()).map_err(|_| unavailable())?;
+    // SAFETY: held trusted parent and one bounded NUL-terminated path component.
+    if unsafe { libc::mkdirat(parent.as_raw_fd(), leaf.as_ptr(), 0o700) } != 0
+        && std::io::Error::last_os_error().raw_os_error() != Some(libc::EEXIST)
+    {
+        return Err(unavailable());
+    }
+    parent.sync_all().map_err(|_| unavailable())?;
+    let file = super::unix_open(parent, name, true).map_err(|_| unavailable())?;
+    file.sync_all().map_err(|_| unavailable())?;
+    Ok(file)
 }
 
 /// Open or exclusively create the fixed lock file and hold its exact owner/mode/ID.
@@ -776,6 +794,7 @@ trait JournalStorage {
     fn replace(&self, raw: &[u8], expected: Option<&[u8]>) -> Result<()>;
 }
 
+#[cfg(unix)]
 impl JournalStorage for NativeJournal {
     /// Preserve the production bounded no-follow reader through the storage boundary.
     fn read(&self, name: &str) -> Result<Option<Vec<u8>>> {
@@ -947,5 +966,61 @@ mod tests {
         let root = RootIdentity { volume: 1, object: 2, binding_sha256: "a".repeat(64) };
         assert!(decode(br#"{"schema_version":"public","path":"project"}"#, &root).is_err());
         assert!(decode(br#"{"payload":{},"payload":{},"payload_sha256":"bad"}"#, &root).is_err());
+    }
+
+    /// Concurrent missing-component creators reopen the same real private winner.
+    #[cfg(unix)]
+    #[test]
+    fn concurrent_cold_components_reopen_one_private_winner() {
+        use std::os::unix::fs::MetadataExt as _;
+        let fixture = tempfile::tempdir().unwrap();
+        let parent = File::open(fixture.path()).unwrap();
+        let owner = parent.metadata().unwrap().uid();
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(8));
+        let mut threads = Vec::new();
+        for _ in 0..8 {
+            let parent = parent.try_clone().unwrap();
+            let barrier = std::sync::Arc::clone(&barrier);
+            threads.push(std::thread::spawn(move || {
+                barrier.wait();
+                let file =
+                    create_private_component(&parent, std::ffi::OsStr::new("shared")).unwrap();
+                let metadata = file.metadata().unwrap();
+                assert!(metadata.is_dir());
+                assert_eq!(metadata.uid(), owner);
+                assert_eq!(metadata.mode() & 0o777, 0o700);
+                (metadata.dev(), metadata.ino())
+            }));
+        }
+        let identities: Vec<_> = threads.into_iter().map(|thread| thread.join().unwrap()).collect();
+        assert!(identities.iter().all(|identity| *identity == identities[0]));
+        // This final call deterministically exercises the already-existing winner.
+        let reopened = create_private_component(&parent, std::ffi::OsStr::new("shared")).unwrap();
+        let metadata = reopened.metadata().unwrap();
+        assert_eq!((metadata.dev(), metadata.ino()), identities[0]);
+    }
+
+    /// Existing conflicting files/links and insecure directory modes remain refused.
+    #[cfg(unix)]
+    #[test]
+    fn raced_components_preserve_no_follow_and_private_mode_checks() {
+        use std::os::unix::fs::{PermissionsExt as _, symlink};
+        let fixture_home = std::env::var_os("HOME").expect("native private-state test home");
+        let fixture = tempfile::tempdir_in(fixture_home).unwrap();
+        let parent = File::open(fixture.path()).unwrap();
+        let child = fixture.path().join("shared");
+        std::fs::write(&child, b"conflicting file").unwrap();
+        assert!(create_private_component(&parent, std::ffi::OsStr::new("shared")).is_err());
+        assert!(qualified_directory(&child).is_err());
+        std::fs::remove_file(&child).unwrap();
+        symlink(fixture.path(), &child).unwrap();
+        assert!(create_private_component(&parent, std::ffi::OsStr::new("shared")).is_err());
+        assert!(qualified_directory(&child).is_err());
+        std::fs::remove_file(&child).unwrap();
+        std::fs::create_dir(&child).unwrap();
+        std::fs::set_permissions(&child, std::fs::Permissions::from_mode(0o777)).unwrap();
+        assert!(qualified_directory(&child).is_err());
+        std::fs::set_permissions(&child, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(qualified_directory(&child).is_ok());
     }
 }

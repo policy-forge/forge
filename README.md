@@ -546,6 +546,14 @@ and it is not part of a release. See the
 [local workspace guide](docs/local-workspace.md) for unlock, explicit registration,
 review, preview/commit, recovery, API contracts, bounds, and remaining release gates.
 
+
+Current development snapshots and draft deliveries are tracked in the
+[dated integrated documentation checkpoint](docs/plans/2026-10-03-integrated-documentation-checkpoint.md).
+The captured workspace source publishes API1 1.2.0/39 and API2 2.3.0/57; these
+API versions are not product releases. Separate drafts, local checks and hosted
+checkpoints do not establish full Must/Should, platform, human or release
+acceptance.
+
 ## License
 
 MIT

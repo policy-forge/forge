@@ -27,6 +27,8 @@ impl Server {
         Self::launch_mode(with_resource, true)
     }
 
+    /// Launch one authenticated machine child within 20 seconds; failed construction
+    /// retains bounded redacted diagnostics and always cleans up the owned child.
     fn launch_mode(with_resource: bool, read_only: bool) -> Self {
         let project = tempfile::tempdir().unwrap();
         std::fs::write(project.path().join("unregistered.md"), "PRIVATE UNREGISTERED CONTENT")
@@ -49,36 +51,111 @@ impl Server {
         if read_only {
             command.arg("--read-only");
         }
-        let mut process = command
+        // A regular owned file avoids a stderr pipe filling before the descriptor.
+        let mut stderr = tempfile::tempfile().expect("owned startup stderr sink");
+        let process = command
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(stderr.try_clone().expect("startup stderr descriptor"))
             .spawn()
             .unwrap();
-        let stdout = process.stdout.take().unwrap();
-        // A launch deadline prevents a broken server from hanging the suite.
+        // Install the existing Drop owner before any post-spawn fallible check.
+        let mut server = Self { process, host: String::new(), capability: String::new(), project };
+        let stdout = server.process.stdout.take().expect("machine stdout pipe");
         let (send, receive) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let mut line = String::new();
-            let result = std::io::BufReader::new(stdout).read_line(&mut line).map(|_| line);
+            let result =
+                std::io::BufReader::new(stdout).read_line(&mut line).map(|bytes| (bytes, line));
             let _ = send.send(result);
         });
-        let result = receive.recv_timeout(Duration::from_secs(20));
-        if result.is_err() {
-            let _ = process.kill();
-            let _ = process.wait();
-            panic!("workspace launch timed out");
+        let line = match receive.recv_timeout(Duration::from_secs(20)) {
+            Ok(Ok((0, _))) => server.startup_failure(&mut stderr, "descriptor EOF"),
+            Ok(Ok((_, line))) => line,
+            Ok(Err(_)) => server.startup_failure(&mut stderr, "descriptor read error"),
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                server.startup_failure(&mut stderr, "descriptor deadline exceeded")
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                server.startup_failure(&mut stderr, "descriptor reader disconnected")
+            }
+        };
+        let descriptor: Value = match serde_json::from_str(&line) {
+            Ok(value) => value,
+            Err(_) => server.startup_failure(&mut stderr, "descriptor JSON invalid"),
+        };
+        server.host =
+            match descriptor["base_url"].as_str().and_then(|url| url.strip_prefix("http://")) {
+                Some(host) if host.starts_with("127.0.0.1:") => host.to_owned(),
+                _ => server.startup_failure(&mut stderr, "descriptor loopback URL invalid"),
+            };
+        server.capability = match descriptor["capability"].as_str() {
+            Some(capability) => capability.to_owned(),
+            None => server.startup_failure(&mut stderr, "descriptor capability absent"),
+        };
+        if descriptor["mode"] != "machine" || descriptor["read_only"] != read_only {
+            server.startup_failure(&mut stderr, "descriptor mode or scope mismatch");
         }
-        let line = result.unwrap().unwrap();
-        let descriptor: Value =
-            serde_json::from_str(&line).expect("machine descriptor must be JSON");
-        let host =
-            descriptor["base_url"].as_str().unwrap().strip_prefix("http://").unwrap().to_owned();
-        let capability = descriptor["capability"].as_str().unwrap().to_owned();
-        assert!(host.starts_with("127.0.0.1:"));
-        assert_eq!(descriptor["mode"], "machine");
-        assert_eq!(descriptor["read_only"], read_only);
-        Self { process, host, capability, project }
+        server
+    }
+
+    /// Reap the failed direct child and expose only status plus whitelisted startup
+    /// classifications; never render descriptor bytes, credentials or arbitrary stderr.
+    fn startup_failure(&mut self, stderr: &mut std::fs::File, reason: &str) -> ! {
+        use std::io::Seek as _;
+
+        // EOF can precede the parent's exit notification; briefly collect the actual status.
+        let started = std::time::Instant::now();
+        let mut observed = None;
+        let mut status_error = false;
+        loop {
+            match self.process.try_wait() {
+                Ok(Some(status)) => {
+                    observed = Some(status);
+                    break;
+                }
+                Ok(None) if started.elapsed() < Duration::from_secs(2) => {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                Ok(None) => break,
+                Err(_) => {
+                    status_error = true;
+                    break;
+                }
+            }
+        }
+        let forced_cleanup = observed.is_none();
+        let mut kill_error = false;
+        if forced_cleanup {
+            kill_error = self.process.kill().is_err();
+            match self.process.wait() {
+                Ok(status) => observed = Some(status),
+                Err(_) => status_error = true,
+            }
+        }
+        let status = observed.map_or_else(|| "unavailable".to_owned(), |status| status.to_string());
+        let total_stderr_bytes = stderr.metadata().ok().map(|meta| meta.len());
+        let mut bytes = Vec::new();
+        let stderr_read = stderr
+            .rewind()
+            .and_then(|()| (&mut *stderr).take(16 * 1024 + 1).read_to_end(&mut bytes));
+        let truncated =
+            bytes.len() > 16 * 1024 || total_stderr_bytes.is_some_and(|len| len > 16 * 1024);
+        bytes.truncate(16 * 1024);
+        let text = String::from_utf8_lossy(&bytes);
+        let classification = if text
+            .contains("A qualified source restore transaction is unavailable for this project.")
+        {
+            "qualified source restore unavailable"
+        } else if bytes.is_empty() {
+            "empty"
+        } else {
+            "unrecognized startup stderr redacted"
+        };
+        panic!(
+            "workspace startup failed: reason={reason}; child_status={status}; forced_cleanup={forced_cleanup}; kill_error={kill_error}; status_error={status_error}; stderr_read_ok={}; stderr_bytes={total_stderr_bytes:?}; stderr_truncated={truncated}; stderr_class={classification}",
+            stderr_read.is_ok()
+        );
     }
 
     fn request(
