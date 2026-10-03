@@ -264,7 +264,7 @@ async function postRefreshScreenshotHasNoStaleStep() {
   checkEnvelope(tracker.current(),"metadata-screenshot","timeout");
 }
 
-/** Execute the actual successful continuation and retain the original full-page capture options and following phase. */
+/** Execute the actual successful continuation and retain the viewport capture options and following phase. */
 async function postRefreshScreenshotSuccessKeepsOptionsAndPhase() {
   const source=fs.readFileSync(path.join(__dirname,"workspace.cjs"),"utf8");
   const start=source.indexOf("const metadataConsumerObservation=await verifyMetadataConsumer();");
@@ -275,7 +275,7 @@ async function postRefreshScreenshotSuccessKeepsOptionsAndPhase() {
   const sandbox={failureTracker:tracker,process:{env:{FORGE_TEST_SCREENSHOT:"private screenshot path"}},
     async verifyMetadataConsumer(){tracker.setStage("metadata-refresh");tracker.setAwaitStep("dialog");return observed;},
     page:{async screenshot(options){screenshots++;assert.deepEqual(Object.keys(options),["path","fullPage"]);
-      assert.equal(options.path,"private screenshot path");assert.equal(options.fullPage,true);}}};
+      assert.equal(options.path,"private screenshot path");assert.equal(options.fullPage,false);}}};
   const returned=await vm.runInNewContext(`(async()=>{${source.slice(start,finish)}return metadataConsumerObservation;})()`,sandbox,{timeout:1000});
   assert.equal(returned,observed);assert.equal(screenshots,1);assert.equal(tracker.current(),null);
   checkEnvelope(tracker.capture(new errors.TimeoutError("private following phase fault")),"final-reflow","timeout");
@@ -291,7 +291,73 @@ function screenshotStageRejectsRefreshSteps() {
   tracker.setStage("final-reflow");assert.equal(tracker.capture(new Error("private later fault")),first);
 }
 
+/** Extract the actual guarded private failure capture and its sticky diagnostic catch. */
+function actualFailureCaptureFragment() {
+  const source=fs.readFileSync(path.join(__dirname,"workspace.cjs"),"utf8");
+  const start=source.indexOf("if(page!==null)await page.screenshot(");
+  const marker="} catch(diagnosticError){failureTracker.capture(diagnosticError);}";
+  const finish=source.indexOf(marker,start)+marker.length;
+  assert(start>=0&&finish>start);
+  return `(async()=>{try{${source.slice(start,finish)}})()`;
+}
+
+/** Execute the actual success continuation without a requested private capture or added wait. */
+async function postRefreshViewportCaptureIsOptional() {
+  const source=fs.readFileSync(path.join(__dirname,"workspace.cjs"),"utf8");
+  const start=source.indexOf("const metadataConsumerObservation=await verifyMetadataConsumer();");
+  const marker='failureTracker.setStage("final-reflow");';
+  const finish=source.indexOf(marker,start)+marker.length;
+  assert(start>=0&&finish>start);
+  const tracker=createTracker(errors.TimeoutError),observed={fixed:"mock"};let screenshots=0;
+  const sandbox={failureTracker:tracker,process:{env:{}},
+    async verifyMetadataConsumer(){tracker.setStage("metadata-refresh");tracker.setAwaitStep("dialog");return observed;},
+    page:{async screenshot(){screenshots++;throw new Error("Unrequested capture must not run");}}};
+  const returned=await vm.runInNewContext(`(async()=>{${source.slice(start,finish)}return metadataConsumerObservation;})()`,sandbox,{timeout:1000});
+  assert.equal(returned,observed);assert.equal(screenshots,0);assert.equal(tracker.current(),null);
+  checkEnvelope(tracker.capture(new errors.TimeoutError("private following phase fault")),"final-reflow","timeout");
+}
+
+/** Actual failure capture requests only the owned viewport and retains the first fault through both closes. */
+async function failureViewportCaptureKeepsPrimaryFault() {
+  const fragment=actualFailureCaptureFragment();
+  for(const suppliedPath of [undefined,"private requested screenshot path"]) {
+    const tracker=createTracker(errors.TimeoutError);tracker.setStage("metadata-screenshot");
+    const first=tracker.capture(new Error("private original screenshot fault"));
+    const env=suppliedPath===undefined?{}:{FORGE_TEST_SCREENSHOT:suppliedPath};let screenshots=0;
+    const sandbox={failureTracker:tracker,process:{env},page:{async screenshot(options){
+      screenshots++;assert.deepEqual(Object.keys(options),["path","fullPage"]);
+      assert.equal(options.fullPage,false);
+      assert.equal(options.path,suppliedPath||"/tmp/forge-workspace-browser-failure.png");
+      throw new errors.TimeoutError("private diagnostic capture fault");
+    }}};
+    await vm.runInNewContext(fragment,sandbox,{timeout:1000});
+    assert.equal(screenshots,1);assert.equal(tracker.current(),first);
+    const closes=[],output=[];
+    await reconcileCleanup(tracker,{async close(){closes.push("context");throw new Error("private context close");}},
+      {async close(){closes.push("browser");throw new Error("private browser close");}});
+    assert.equal(publishOutcome(tracker,{mode:"writable"},value=>output.push(value)),false);
+    assert.deepEqual(closes,["context","browser"]);assert.equal(output.length,1);assert.equal(output[0],first);
+    checkEnvelope(output[0],"metadata-screenshot","unclassified");
+    for(const secret of ["private original screenshot fault","private diagnostic capture fault",suppliedPath].filter(Boolean))
+      assert.equal(JSON.stringify(output).includes(secret),false);
+  }
+}
+
+/** Actual failure capture skips an absent page and still publishes the original failure after cleanup. */
+async function failureViewportCaptureSkipsMissingPage() {
+  const tracker=createTracker(errors.TimeoutError);tracker.setStage("metadata-download");
+  const first=tracker.capture(new errors.TimeoutError("private original download fault"));let reads=0;
+  const sandbox={failureTracker:tracker,page:null,process:{env:new Proxy({}, {get(){reads++;throw new Error("Must not inspect capture path");}})}};
+  await vm.runInNewContext(actualFailureCaptureFragment(),sandbox,{timeout:1000});
+  assert.equal(reads,0);assert.equal(tracker.current(),first);
+  const closes=[],output=[];
+  await reconcileCleanup(tracker,{async close(){closes.push("context");}},{async close(){closes.push("browser");}});
+  assert.equal(publishOutcome(tracker,{mode:"read-only"},value=>output.push(value)),false);
+  assert.deepEqual(closes,["context","browser"]);assert.equal(output.length,1);assert.equal(output[0],first);
+  checkEnvelope(output[0],"metadata-download","timeout");
+}
+
 for (const control of [nativeAssertionOperators,actualTimeoutBrand,fakeAssertionBrand,unknownOperator,
   operatorAccessor,proxyReflectionFault,primitiveErrors,privateDataExcluded,firstFaultSticky,stageAllowlist,
   bothClosesAndPrimaryFault,cleanupOnlyFault,cleanSuccessPublication,missingSuccessObservation,
-  actualCjsLaunchFailure,actualCjsUrlFailure,actualCjsOwnedCleanup,refreshAwaitSteps,refreshStepAllowlist,refreshStepReset,refreshStepStickyCleanup,postRefreshScreenshotHasNoStaleStep,postRefreshScreenshotSuccessKeepsOptionsAndPhase,screenshotStageRejectsRefreshSteps]) test(control.name,control);
+  actualCjsLaunchFailure,actualCjsUrlFailure,actualCjsOwnedCleanup,refreshAwaitSteps,refreshStepAllowlist,refreshStepReset,refreshStepStickyCleanup,postRefreshScreenshotHasNoStaleStep,postRefreshScreenshotSuccessKeepsOptionsAndPhase,screenshotStageRejectsRefreshSteps,postRefreshViewportCaptureIsOptional,failureViewportCaptureKeepsPrimaryFault,failureViewportCaptureSkipsMissingPage]) test(control.name,control);

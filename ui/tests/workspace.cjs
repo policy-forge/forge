@@ -546,7 +546,7 @@ let outcomePublished=false;
     }
     const metadataConsumerObservation=await verifyMetadataConsumer();
     failureTracker.setStage("metadata-screenshot");
-   if(process.env.FORGE_TEST_SCREENSHOT)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT,fullPage:true});
+   if(process.env.FORGE_TEST_SCREENSHOT)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT,fullPage:false});
    failureTracker.setStage("final-reflow");
    for(const width of [640,320]){
      await page.setViewportSize({width,height:900});
@@ -588,7 +588,7 @@ let outcomePublished=false;
 
    console.error(error.stack || error.message);console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
    console.error("Focus state:",JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,error:document.getElementById("error")?.outerHTML,viewInert:document.getElementById("view")?.inert,dialogs:[...document.querySelectorAll("dialog[open]")].map(node=>node.outerHTML)}))));
-   if(page!==null)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:true});
+   if(page!==null)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:false});
    } catch(diagnosticError){failureTracker.capture(diagnosticError);}
  } finally {await reconcileCleanup(failureTracker,context,browser);}
  outcomePublished=true;
