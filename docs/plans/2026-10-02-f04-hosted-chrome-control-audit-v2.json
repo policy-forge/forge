@@ -1,0 +1,2987 @@
+{
+  "schema": "forge.f04-hosted-chrome-diagnostic-audit/1",
+  "snapshot": "precommit successor; mandatory hook and fresh hosted browser outcome pending",
+  "applied_head_before_commit": "886f5cef8c3a2f71bdd3c7c76a96d4ae2eed85fa",
+  "local_merge_head": "058bb47b81316c4f6aecc8e855111df4709a34d2",
+  "historical_evidence": [
+    {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/plans/2026-10-02-f04-hosted-chrome-control-audit-v1.json",
+      "bytes": 62107,
+      "sha256": "d42ac3d54bb3c55909f6eef4a794829fb9dcab75b6d3e201e2917a6816ef4f72"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-hosted-verification-v1/index.json",
+      "bytes": 6157,
+      "sha256": "bc2b922bd5b49b236fd6d86e770d854b60d88302fb1be1f102bf743d85497659"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-hosted-verification-v1/qualification.json",
+      "bytes": 12940,
+      "sha256": "bec2e3eddf0880bab9bc8339c16e027f0d3155002e7b4bf5761c4432673de08c"
+    }
+  ],
+  "application": {
+    "schema": "forge.f04-chrome-diagnostic-application/1",
+    "author_replay": {
+      "index": "/private/tmp/forge-f04-hosted-chrome-diagnostics-candidate-v2/index.json",
+      "bytes": 4533,
+      "sha256": "58b5131f02422744f818b20d49b84896df5023b5b3895d317ccd457ab1827737",
+      "verified_pins": 23
+    },
+    "independent_replay": {
+      "index": "/private/tmp/forge-f04-hosted-chrome-diagnostics-independent-review-v1/index.json",
+      "bytes": 8275,
+      "sha256": "fe0762ad54af827f64833e7f0a7adb5fcdf688200949f8529a7813d0fcbb7467",
+      "verified_pins": 44
+    },
+    "before": {
+      "scripts/test_workspace_hosted_chrome.py": {
+        "bytes": 31065,
+        "sha256": "5c04ea02933de92b169a84d4a82771ef0cb9c0bcf482ec5678cd99480a411c09"
+      },
+      "scripts/verify_workspace_hosted_chrome.py": {
+        "bytes": 13881,
+        "sha256": "17b36dec4ade64eff699cdd026a3422a9d9b88c85a35a5b028abe284f707e3fc"
+      },
+      "scripts/test_verify_workspace_hosted_chrome.py": {
+        "bytes": 33274,
+        "sha256": "f10229c6996657dc76313e9c5eeeaeb750cdf9527991ddf0701d910c77401475"
+      }
+    },
+    "after": {
+      "scripts/test_workspace_hosted_chrome.py": {
+        "bytes": 35107,
+        "sha256": "f565062584b59aeac7d978cca19ea3ce239a0929a0c95fd00eed17ad2798e370"
+      },
+      "scripts/verify_workspace_hosted_chrome.py": {
+        "bytes": 14198,
+        "sha256": "7a07b6ee385cf26fc253167131892ed9e19cfc848a3feddfdb91ed231b55432c"
+      },
+      "scripts/test_verify_workspace_hosted_chrome.py": {
+        "bytes": 44872,
+        "sha256": "03a7ad69f5af3b861e1e2effb42211e7345c71e8b6483e7da7ab2a20cb16bb84"
+      }
+    },
+    "unchanged_before": {
+      ".veans.yml": {
+        "bytes": 188,
+        "sha256": "c76d551c107bd3c3e56d496c843726643c36e39559c02bd42d8dcc22978c9e5b"
+      },
+      "ui/package.json": {
+        "bytes": 337,
+        "sha256": "2f64ad726fe0a5ed85bdfbe5effbca856933ffd2ebdaa7ae1479455fa18ec24b"
+      },
+      "ui/package-lock.json": {
+        "bytes": 1861,
+        "sha256": "debf63acded76e173ac02f1bccd22fa883ffd9bbf588988bc3c9c1688762d3d1"
+      },
+      ".github/workflows/workspace-verification.yml": {
+        "bytes": 10373,
+        "sha256": "f60d487c320f74659c9cb819904d635f297238684e8f35603ac7cae64b65d5ed"
+      },
+      "scripts/workspace_browser_fixtures.py": {
+        "bytes": 1010,
+        "sha256": "9d2e68369ded2c1dbb1df94bfa74cec15cddb4cf92b75ecec3569a268c9c1364"
+      },
+      "scripts/workspace_browser_tool_probe.cjs": {
+        "bytes": 6011,
+        "sha256": "a9f5b936bb9484bbcdec035f489f50a7c0ce2da48fd0ab282b0b9aa6c698a2dd"
+      },
+      "ui/tests/workspace.cjs": {
+        "bytes": 53944,
+        "sha256": "b99cf0f5794194034b03ecab81c721a6cc9cc9203d354afdd55a106016e12955"
+      },
+      "scripts/test_workspace_windows_console.py": {
+        "bytes": 53270,
+        "sha256": "409908f748a6ec1ba26935e3deecfc28ebcbb43ca7c13a9202b7f9d5c3fb421c"
+      },
+      "scripts/test_workspace_windows_console_controls.py": {
+        "bytes": 52630,
+        "sha256": "4fe66a7f3152ba1816537d5be6d1dd657c189ee572f1fff6412ab075e57bb6d3"
+      },
+      "docs/plans/2026-10-02-f04-hosted-chrome-control-audit-v1.json": {
+        "bytes": 62107,
+        "sha256": "d42ac3d54bb3c55909f6eef4a794829fb9dcab75b6d3e201e2917a6816ef4f72"
+      },
+      "docs/development-tools/hosted-chrome.json": {
+        "bytes": 5837,
+        "sha256": "7d07c4bc1789df49ac23d384a5e260e11742e5bc050e7132d1c28a8a2bb406be"
+      }
+    },
+    "unchanged_after": {
+      ".veans.yml": {
+        "bytes": 188,
+        "sha256": "c76d551c107bd3c3e56d496c843726643c36e39559c02bd42d8dcc22978c9e5b"
+      },
+      "ui/package.json": {
+        "bytes": 337,
+        "sha256": "2f64ad726fe0a5ed85bdfbe5effbca856933ffd2ebdaa7ae1479455fa18ec24b"
+      },
+      "ui/package-lock.json": {
+        "bytes": 1861,
+        "sha256": "debf63acded76e173ac02f1bccd22fa883ffd9bbf588988bc3c9c1688762d3d1"
+      },
+      ".github/workflows/workspace-verification.yml": {
+        "bytes": 10373,
+        "sha256": "f60d487c320f74659c9cb819904d635f297238684e8f35603ac7cae64b65d5ed"
+      },
+      "scripts/workspace_browser_fixtures.py": {
+        "bytes": 1010,
+        "sha256": "9d2e68369ded2c1dbb1df94bfa74cec15cddb4cf92b75ecec3569a268c9c1364"
+      },
+      "scripts/workspace_browser_tool_probe.cjs": {
+        "bytes": 6011,
+        "sha256": "a9f5b936bb9484bbcdec035f489f50a7c0ce2da48fd0ab282b0b9aa6c698a2dd"
+      },
+      "ui/tests/workspace.cjs": {
+        "bytes": 53944,
+        "sha256": "b99cf0f5794194034b03ecab81c721a6cc9cc9203d354afdd55a106016e12955"
+      },
+      "scripts/test_workspace_windows_console.py": {
+        "bytes": 53270,
+        "sha256": "409908f748a6ec1ba26935e3deecfc28ebcbb43ca7c13a9202b7f9d5c3fb421c"
+      },
+      "scripts/test_workspace_windows_console_controls.py": {
+        "bytes": 52630,
+        "sha256": "4fe66a7f3152ba1816537d5be6d1dd657c189ee572f1fff6412ab075e57bb6d3"
+      },
+      "docs/plans/2026-10-02-f04-hosted-chrome-control-audit-v1.json": {
+        "bytes": 62107,
+        "sha256": "d42ac3d54bb3c55909f6eef4a794829fb9dcab75b6d3e201e2917a6816ef4f72"
+      },
+      "docs/development-tools/hosted-chrome.json": {
+        "bytes": 5837,
+        "sha256": "7d07c4bc1789df49ac23d384a5e260e11742e5bc050e7132d1c28a8a2bb406be"
+      }
+    },
+    "configuration_preserved": true,
+    "producer_schema": "forge.hosted-chrome-smoke/1",
+    "wrapper_schema": "forge.workspace-hosted-chrome-verification/2",
+    "native_execution": false,
+    "mandatory_hook_pending": true
+  },
+  "local_merge_receipt": {
+    "path": "/private/tmp/forge-f04-chrome-windows-v5-local-integration-v2.json",
+    "bytes": 33099,
+    "sha256": "5d5dedaee1e61eff7917c66bfce5e8469286641a31d0db276642de61e5920dd7"
+  },
+  "local_control_receipt": {
+    "path": "/private/tmp/forge-f04-chrome-root-controls-v3/coverage.json",
+    "bytes": 64236,
+    "sha256": "330e87df2ed2d6ff478d50f339ceaa3f8375a3b5b5b7db6834c540236d5331bd"
+  },
+  "raw_control_log": {
+    "path": "/private/tmp/forge-f04-chrome-root-controls-v3/raw-unittest.log",
+    "bytes": 10730,
+    "sha256": "94775b0626e1cf6ec7ee9410854eec000e367dc9f0afe683e4780f006c3bfc97"
+  },
+  "collector": {
+    "path": "/private/tmp/forge-f04-chrome-root-controls-v3.py",
+    "bytes": 6110,
+    "sha256": "63a343224209bbc8f6d67351a41b5009cc910a9f6d51fb3d6db82224035d4387"
+  },
+  "coverage": {
+    "schema": "forge.hosted-chrome-mocked-controls/1",
+    "source_before": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_browser_fixtures.py",
+        "bytes": 1010,
+        "sha256": "9d2e68369ded2c1dbb1df94bfa74cec15cddb4cf92b75ecec3569a268c9c1364"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_hosted_chrome.py",
+        "bytes": 35107,
+        "sha256": "f565062584b59aeac7d978cca19ea3ce239a0929a0c95fd00eed17ad2798e370"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_hosted_chrome.py",
+        "bytes": 14198,
+        "sha256": "7a07b6ee385cf26fc253167131892ed9e19cfc848a3feddfdb91ed231b55432c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_verify_workspace_hosted_chrome.py",
+        "bytes": 44872,
+        "sha256": "03a7ad69f5af3b861e1e2effb42211e7345c71e8b6483e7da7ab2a20cb16bb84"
+      }
+    ],
+    "source_after": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_browser_fixtures.py",
+        "bytes": 1010,
+        "sha256": "9d2e68369ded2c1dbb1df94bfa74cec15cddb4cf92b75ecec3569a268c9c1364"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_hosted_chrome.py",
+        "bytes": 35107,
+        "sha256": "f565062584b59aeac7d978cca19ea3ce239a0929a0c95fd00eed17ad2798e370"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_hosted_chrome.py",
+        "bytes": 14198,
+        "sha256": "7a07b6ee385cf26fc253167131892ed9e19cfc848a3feddfdb91ed231b55432c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_verify_workspace_hosted_chrome.py",
+        "bytes": 44872,
+        "sha256": "03a7ad69f5af3b861e1e2effb42211e7345c71e8b6483e7da7ab2a20cb16bb84"
+      }
+    ],
+    "source_unchanged": true,
+    "python": "3.14.8",
+    "python_executable": {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "bytes": 34640,
+      "sha256": "7ebde552773a4045532637b114d645a313e045ac07b26f5e520bf039f1e34063"
+    },
+    "tests": {
+      "run": 39,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "files": [
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_browser_fixtures.py",
+          "bytes": 1010,
+          "sha256": "9d2e68369ded2c1dbb1df94bfa74cec15cddb4cf92b75ecec3569a268c9c1364"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "synthetic_framework_catalog",
+            "kind": "function",
+            "line": 3,
+            "end_line": 14,
+            "code_start": 3,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "synthetic_long_project_label",
+            "kind": "function",
+            "line": 16,
+            "end_line": 18,
+            "code_start": 16,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "1": 0,
+          "3": 0,
+          "5": 8,
+          "6": 4,
+          "7": 420,
+          "8": 204,
+          "9": 212,
+          "10": 8,
+          "11": 8,
+          "12": 4,
+          "13": 4,
+          "14": 4,
+          "16": 0,
+          "18": 2
+        },
+        "positive_lines": 11,
+        "zero_lines": 3,
+        "calls": [
+          {
+            "line": 3,
+            "name": "synthetic_framework_catalog",
+            "count": 4
+          },
+          {
+            "line": 7,
+            "name": "synthetic_framework_catalog.<locals>.<genexpr>",
+            "count": 208
+          },
+          {
+            "line": 16,
+            "name": "synthetic_long_project_label",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_hosted_chrome.py",
+          "bytes": 35107,
+          "sha256": "f565062584b59aeac7d978cca19ea3ce239a0929a0c95fd00eed17ad2798e370"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "closed",
+            "kind": "function",
+            "line": 29,
+            "end_line": 31,
+            "code_start": 29,
+            "documented": true,
+            "actual_primary_thread_calls": 524
+          },
+          {
+            "name": "strict_json",
+            "kind": "function",
+            "line": 34,
+            "end_line": 47,
+            "code_start": 34,
+            "documented": true,
+            "actual_primary_thread_calls": 41
+          },
+          {
+            "name": "strict_json.unique",
+            "kind": "function",
+            "line": 37,
+            "end_line": 43,
+            "code_start": 37,
+            "documented": true,
+            "actual_primary_thread_calls": 1676
+          },
+          {
+            "name": "strict_json.nonfinite",
+            "kind": "function",
+            "line": 44,
+            "end_line": 46,
+            "code_start": 44,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "integer",
+            "kind": "function",
+            "line": 50,
+            "end_line": 53,
+            "code_start": 50,
+            "documented": true,
+            "actual_primary_thread_calls": 1209
+          },
+          {
+            "name": "clean_environment",
+            "kind": "function",
+            "line": 56,
+            "end_line": 66,
+            "code_start": 56,
+            "documented": true,
+            "actual_primary_thread_calls": 31
+          },
+          {
+            "name": "process_identity",
+            "kind": "function",
+            "line": 69,
+            "end_line": 77,
+            "code_start": 69,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ToolCaptureError",
+            "kind": "class",
+            "line": 85,
+            "end_line": 91,
+            "code_start": 85,
+            "documented": true
+          },
+          {
+            "name": "ToolCaptureError.__init__",
+            "kind": "function",
+            "line": 87,
+            "end_line": 91,
+            "code_start": 87,
+            "documented": true,
+            "actual_primary_thread_calls": 69
+          },
+          {
+            "name": "tool_diagnostic",
+            "kind": "function",
+            "line": 94,
+            "end_line": 97,
+            "code_start": 94,
+            "documented": true,
+            "actual_primary_thread_calls": 30
+          },
+          {
+            "name": "command_failure",
+            "kind": "function",
+            "line": 100,
+            "end_line": 103,
+            "code_start": 100,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "tool_capture_step",
+            "kind": "function",
+            "line": 106,
+            "end_line": 113,
+            "code_start": 106,
+            "documented": true,
+            "actual_primary_thread_calls": 154
+          },
+          {
+            "name": "OwnedTree",
+            "kind": "class",
+            "line": 116,
+            "end_line": 235,
+            "code_start": 116,
+            "documented": true
+          },
+          {
+            "name": "OwnedTree.__init__",
+            "kind": "function",
+            "line": 118,
+            "end_line": 124,
+            "code_start": 118,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "OwnedTree.observe",
+            "kind": "function",
+            "line": 126,
+            "end_line": 154,
+            "code_start": 126,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "OwnedTree.track_process",
+            "kind": "function",
+            "line": 156,
+            "end_line": 159,
+            "code_start": 156,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "OwnedTree.track_child",
+            "kind": "function",
+            "line": 161,
+            "end_line": 164,
+            "code_start": 161,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "OwnedTree.poll_child",
+            "kind": "function",
+            "line": 166,
+            "end_line": 173,
+            "code_start": 166,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "OwnedTree.reap",
+            "kind": "function",
+            "line": 175,
+            "end_line": 183,
+            "code_start": 175,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "OwnedTree.settle",
+            "kind": "function",
+            "line": 185,
+            "end_line": 192,
+            "code_start": 185,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "OwnedTree.stop",
+            "kind": "function",
+            "line": 194,
+            "end_line": 230,
+            "code_start": 194,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "OwnedTree.close",
+            "kind": "function",
+            "line": 232,
+            "end_line": 235,
+            "code_start": 232,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "command",
+            "kind": "function",
+            "line": 238,
+            "end_line": 268,
+            "code_start": 238,
+            "documented": true,
+            "actual_primary_thread_calls": 9
+          },
+          {
+            "name": "validate_packages",
+            "kind": "function",
+            "line": 271,
+            "end_line": 286,
+            "code_start": 271,
+            "documented": true,
+            "actual_primary_thread_calls": 8
+          },
+          {
+            "name": "large_file_pin",
+            "kind": "function",
+            "line": 289,
+            "end_line": 304,
+            "code_start": 289,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "capture_tools",
+            "kind": "function",
+            "line": 307,
+            "end_line": 333,
+            "code_start": 307,
+            "documented": true,
+            "actual_primary_thread_calls": 24
+          },
+          {
+            "name": "capture_tools.check_engine",
+            "kind": "function",
+            "line": 313,
+            "end_line": 316,
+            "code_start": 313,
+            "documented": true,
+            "actual_primary_thread_calls": 20
+          },
+          {
+            "name": "make_fixture",
+            "kind": "function",
+            "line": 336,
+            "end_line": 346,
+            "code_start": 336,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "safe_observation",
+            "kind": "function",
+            "line": 349,
+            "end_line": 380,
+            "code_start": 349,
+            "documented": true,
+            "actual_primary_thread_calls": 14
+          },
+          {
+            "name": "terminal_read",
+            "kind": "function",
+            "line": 383,
+            "end_line": 395,
+            "code_start": 383,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "private_size",
+            "kind": "function",
+            "line": 398,
+            "end_line": 408,
+            "code_start": 398,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "file_limits",
+            "kind": "function",
+            "line": 411,
+            "end_line": 414,
+            "code_start": 411,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "terminal_submit",
+            "kind": "function",
+            "line": 417,
+            "end_line": 424,
+            "code_start": 417,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "exec_forge_child",
+            "kind": "function",
+            "line": 427,
+            "end_line": 434,
+            "code_start": 427,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "failure_code",
+            "kind": "function",
+            "line": 437,
+            "end_line": 441,
+            "code_start": 437,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "campaign",
+            "kind": "function",
+            "line": 444,
+            "end_line": 523,
+            "code_start": 444,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "produce",
+            "kind": "function",
+            "line": 526,
+            "end_line": 543,
+            "code_start": 526,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "main",
+            "kind": "function",
+            "line": 546,
+            "end_line": 552,
+            "code_start": 546,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0,
+          "17": 0,
+          "18": 0,
+          "20": 0,
+          "21": 0,
+          "22": 0,
+          "23": 0,
+          "24": 0,
+          "25": 0,
+          "26": 0,
+          "29": 0,
+          "31": 524,
+          "34": 0,
+          "36": 41,
+          "37": 41,
+          "39": 1676,
+          "40": 8904,
+          "41": 7229,
+          "42": 7228,
+          "43": 1675,
+          "44": 41,
+          "46": 1,
+          "47": 41,
+          "50": 0,
+          "52": 1209,
+          "53": 1204,
+          "56": 0,
+          "58": 31,
+          "59": 2361,
+          "60": 2330,
+          "61": 31,
+          "62": 31,
+          "63": 1,
+          "64": 4,
+          "65": 31,
+          "66": 31,
+          "69": 0,
+          "71": 1,
+          "72": 1,
+          "73": 0,
+          "74": 0,
+          "75": 0,
+          "76": 1,
+          "77": 0,
+          "80": 0,
+          "81": 0,
+          "82": 0,
+          "85": 0,
+          "86": 0,
+          "87": 0,
+          "89": 69,
+          "90": 66,
+          "91": 62,
+          "94": 0,
+          "96": 30,
+          "97": 29,
+          "100": 0,
+          "102": 11,
+          "103": 11,
+          "106": 0,
+          "108": 154,
+          "109": 6,
+          "110": 6,
+          "111": 6,
+          "112": 6,
+          "113": 6,
+          "116": 0,
+          "117": 0,
+          "118": 0,
+          "120": 1,
+          "121": 1,
+          "122": 1,
+          "123": 0,
+          "124": 0,
+          "126": 0,
+          "128": 1,
+          "129": 2,
+          "130": 3,
+          "131": 2,
+          "132": 2,
+          "133": 2,
+          "134": 2,
+          "135": 2,
+          "136": 1,
+          "137": 3,
+          "138": 2,
+          "139": 6,
+          "140": 4,
+          "141": 2,
+          "142": 2,
+          "143": 2,
+          "144": 2,
+          "145": 0,
+          "146": 2,
+          "147": 0,
+          "148": 0,
+          "149": 2,
+          "150": 2,
+          "151": 2,
+          "152": 0,
+          "153": 1,
+          "154": 3,
+          "156": 0,
+          "158": 2,
+          "159": 2,
+          "161": 0,
+          "163": 2,
+          "164": 2,
+          "166": 0,
+          "168": 3,
+          "169": 3,
+          "170": 2,
+          "171": 1,
+          "172": 1,
+          "173": 2,
+          "175": 0,
+          "177": 4,
+          "178": 3,
+          "179": 1,
+          "180": 5,
+          "181": 3,
+          "182": 1,
+          "183": 0,
+          "185": 0,
+          "187": 0,
+          "188": 0,
+          "189": 0,
+          "190": 0,
+          "191": 0,
+          "192": 0,
+          "194": 0,
+          "196": 3,
+          "197": 3,
+          "199": 5,
+          "200": 2,
+          "201": 0,
+          "202": 3,
+          "203": 2,
+          "205": 4,
+          "206": 1,
+          "207": 3,
+          "208": 0,
+          "209": 0,
+          "210": 0,
+          "211": 5,
+          "212": 2,
+          "213": 2,
+          "214": 2,
+          "215": 2,
+          "216": 1,
+          "217": 1,
+          "218": 1,
+          "219": 2,
+          "220": 0,
+          "222": 2,
+          "223": 3,
+          "224": 0,
+          "225": 3,
+          "226": 11,
+          "227": 3,
+          "228": 2,
+          "229": 2,
+          "230": 0,
+          "232": 0,
+          "234": 3,
+          "235": 1,
+          "238": 0,
+          "240": 9,
+          "241": 9,
+          "242": 9,
+          "243": 7,
+          "244": 7,
+          "245": 13,
+          "246": 10,
+          "247": 6,
+          "248": 6,
+          "249": 6,
+          "250": 6,
+          "251": 6,
+          "252": 6,
+          "253": 3,
+          "254": 7,
+          "255": 7,
+          "256": 7,
+          "257": 5,
+          "258": 5,
+          "259": 0,
+          "260": 5,
+          "261": 0,
+          "262": 7,
+          "264": 9,
+          "265": 9,
+          "266": 8,
+          "267": 1,
+          "268": 9,
+          "271": 0,
+          "273": 8,
+          "274": 8,
+          "275": 21,
+          "276": 12,
+          "277": 9,
+          "278": 9,
+          "279": 7,
+          "280": 18,
+          "281": 12,
+          "282": 12,
+          "283": 6,
+          "284": 3,
+          "285": 3,
+          "286": 3,
+          "289": 0,
+          "291": 2,
+          "292": 2,
+          "293": 2,
+          "294": 1,
+          "295": 2,
+          "296": 2,
+          "297": 2,
+          "298": 2,
+          "299": 1,
+          "300": 1,
+          "301": 1,
+          "302": 1,
+          "303": 1,
+          "304": 1,
+          "307": 0,
+          "309": 48,
+          "310": 46,
+          "311": 44,
+          "312": 21,
+          "313": 20,
+          "315": 40,
+          "316": 20,
+          "317": 20,
+          "318": 19,
+          "319": 65,
+          "320": 248,
+          "321": 58,
+          "322": 50,
+          "323": 46,
+          "324": 7,
+          "325": 5,
+          "326": 4,
+          "327": 4,
+          "328": 6,
+          "329": 4,
+          "330": 2,
+          "331": 2,
+          "332": 2,
+          "333": 1,
+          "336": 0,
+          "338": 4,
+          "339": 4,
+          "340": 4,
+          "341": 4,
+          "342": 4,
+          "343": 3,
+          "344": 3,
+          "345": 3,
+          "346": 4,
+          "349": 0,
+          "351": 14,
+          "352": 14,
+          "353": 14,
+          "354": 38,
+          "355": 26,
+          "356": 12,
+          "357": 12,
+          "358": 12,
+          "359": 12,
+          "360": 12,
+          "361": 12,
+          "362": 12,
+          "363": 11,
+          "364": 11,
+          "365": 11,
+          "366": 11,
+          "367": 8,
+          "368": 8,
+          "369": 61,
+          "370": 50,
+          "371": 50,
+          "372": 50,
+          "373": 61,
+          "374": 5,
+          "375": 20,
+          "376": 26,
+          "377": 7,
+          "378": 3,
+          "379": 3,
+          "380": 3,
+          "383": 0,
+          "385": 4,
+          "386": 1,
+          "387": 1,
+          "388": 0,
+          "389": 3,
+          "390": 3,
+          "391": 3,
+          "392": 2,
+          "393": 2,
+          "394": 1,
+          "395": 1,
+          "398": 0,
+          "400": 1,
+          "401": 2,
+          "402": 1,
+          "403": 1,
+          "404": 2,
+          "405": 1,
+          "406": 0,
+          "407": 1,
+          "408": 1,
+          "411": 0,
+          "413": 0,
+          "414": 0,
+          "417": 0,
+          "419": 2,
+          "420": 2,
+          "421": 2,
+          "422": 0,
+          "423": 0,
+          "424": 2,
+          "427": 0,
+          "429": 2,
+          "430": 2,
+          "431": 1,
+          "432": 1,
+          "433": 1,
+          "434": 2,
+          "437": 0,
+          "439": 6,
+          "440": 6,
+          "441": 4,
+          "444": 0,
+          "446": 0,
+          "447": 0,
+          "448": 0,
+          "449": 0,
+          "450": 0,
+          "451": 0,
+          "452": 0,
+          "453": 0,
+          "454": 0,
+          "455": 0,
+          "456": 0,
+          "457": 0,
+          "458": 0,
+          "459": 0,
+          "460": 0,
+          "461": 0,
+          "462": 0,
+          "463": 0,
+          "465": 0,
+          "466": 0,
+          "467": 0,
+          "468": 0,
+          "469": 0,
+          "470": 0,
+          "471": 0,
+          "472": 0,
+          "473": 0,
+          "474": 0,
+          "475": 0,
+          "476": 0,
+          "477": 0,
+          "478": 0,
+          "479": 0,
+          "480": 0,
+          "481": 0,
+          "482": 0,
+          "483": 0,
+          "484": 0,
+          "485": 0,
+          "486": 0,
+          "487": 0,
+          "489": 0,
+          "490": 0,
+          "491": 0,
+          "492": 0,
+          "493": 0,
+          "494": 0,
+          "495": 0,
+          "496": 0,
+          "497": 0,
+          "498": 0,
+          "499": 0,
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "503": 0,
+          "504": 0,
+          "505": 0,
+          "506": 0,
+          "507": 0,
+          "508": 0,
+          "509": 0,
+          "510": 0,
+          "511": 0,
+          "512": 0,
+          "513": 0,
+          "514": 0,
+          "515": 0,
+          "516": 0,
+          "518": 0,
+          "519": 0,
+          "520": 0,
+          "521": 0,
+          "522": 0,
+          "523": 0,
+          "526": 0,
+          "528": 3,
+          "529": 3,
+          "530": 3,
+          "532": 14,
+          "533": 2,
+          "534": 10,
+          "535": 16,
+          "536": 2,
+          "537": 2,
+          "538": 5,
+          "539": 2,
+          "540": 0,
+          "541": 3,
+          "542": 3,
+          "543": 3,
+          "546": 0,
+          "548": 1,
+          "549": 6,
+          "550": 1,
+          "551": 1,
+          "552": 1,
+          "555": 0,
+          "556": 0,
+          "557": 0,
+          "558": 0
+        },
+        "positive_lines": 274,
+        "zero_lines": 175,
+        "calls": [
+          {
+            "line": 29,
+            "name": "closed",
+            "count": 524
+          },
+          {
+            "line": 34,
+            "name": "strict_json",
+            "count": 41
+          },
+          {
+            "line": 37,
+            "name": "strict_json.<locals>.unique",
+            "count": 1676
+          },
+          {
+            "line": 44,
+            "name": "strict_json.<locals>.nonfinite",
+            "count": 1
+          },
+          {
+            "line": 50,
+            "name": "integer",
+            "count": 1209
+          },
+          {
+            "line": 56,
+            "name": "clean_environment",
+            "count": 31
+          },
+          {
+            "line": 69,
+            "name": "process_identity",
+            "count": 1
+          },
+          {
+            "line": 87,
+            "name": "ToolCaptureError.__init__",
+            "count": 69
+          },
+          {
+            "line": 94,
+            "name": "tool_diagnostic",
+            "count": 30
+          },
+          {
+            "line": 100,
+            "name": "command_failure",
+            "count": 11
+          },
+          {
+            "line": 106,
+            "name": "tool_capture_step",
+            "count": 154
+          },
+          {
+            "line": 118,
+            "name": "OwnedTree.__init__",
+            "count": 1
+          },
+          {
+            "line": 126,
+            "name": "OwnedTree.observe",
+            "count": 1
+          },
+          {
+            "line": 156,
+            "name": "OwnedTree.track_process",
+            "count": 2
+          },
+          {
+            "line": 161,
+            "name": "OwnedTree.track_child",
+            "count": 2
+          },
+          {
+            "line": 166,
+            "name": "OwnedTree.poll_child",
+            "count": 3
+          },
+          {
+            "line": 175,
+            "name": "OwnedTree.reap",
+            "count": 2
+          },
+          {
+            "line": 194,
+            "name": "OwnedTree.stop",
+            "count": 3
+          },
+          {
+            "line": 226,
+            "name": "OwnedTree.stop.<locals>.<genexpr>",
+            "count": 7
+          },
+          {
+            "line": 232,
+            "name": "OwnedTree.close",
+            "count": 1
+          },
+          {
+            "line": 238,
+            "name": "command",
+            "count": 9
+          },
+          {
+            "line": 271,
+            "name": "validate_packages",
+            "count": 8
+          },
+          {
+            "line": 289,
+            "name": "large_file_pin",
+            "count": 2
+          },
+          {
+            "line": 307,
+            "name": "capture_tools",
+            "count": 24
+          },
+          {
+            "line": 309,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 24
+          },
+          {
+            "line": 310,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 23
+          },
+          {
+            "line": 311,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 22
+          },
+          {
+            "line": 313,
+            "name": "capture_tools.<locals>.check_engine",
+            "count": 20
+          },
+          {
+            "line": 320,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 58
+          },
+          {
+            "line": 328,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 3
+          },
+          {
+            "line": 329,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 2
+          },
+          {
+            "line": 330,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 331,
+            "name": "capture_tools.<locals>.<lambda>",
+            "count": 1
+          },
+          {
+            "line": 336,
+            "name": "make_fixture",
+            "count": 4
+          },
+          {
+            "line": 349,
+            "name": "safe_observation",
+            "count": 14
+          },
+          {
+            "line": 376,
+            "name": "safe_observation.<locals>.<genexpr>",
+            "count": 14
+          },
+          {
+            "line": 383,
+            "name": "terminal_read",
+            "count": 4
+          },
+          {
+            "line": 398,
+            "name": "private_size",
+            "count": 1
+          },
+          {
+            "line": 417,
+            "name": "terminal_submit",
+            "count": 2
+          },
+          {
+            "line": 427,
+            "name": "exec_forge_child",
+            "count": 2
+          },
+          {
+            "line": 437,
+            "name": "failure_code",
+            "count": 6
+          },
+          {
+            "line": 526,
+            "name": "produce",
+            "count": 3
+          },
+          {
+            "line": 538,
+            "name": "produce.<locals>.<genexpr>",
+            "count": 3
+          },
+          {
+            "line": 546,
+            "name": "main",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_hosted_chrome.py",
+          "bytes": 14198,
+          "sha256": "7a07b6ee385cf26fc253167131892ed9e19cfc848a3feddfdb91ed231b55432c"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "read_bytes",
+            "kind": "function",
+            "line": 20,
+            "end_line": 34,
+            "code_start": 20,
+            "documented": true,
+            "actual_primary_thread_calls": 41
+          },
+          {
+            "name": "read_bytes.identity",
+            "kind": "function",
+            "line": 27,
+            "end_line": 29,
+            "code_start": 27,
+            "documented": true,
+            "actual_primary_thread_calls": 228
+          },
+          {
+            "name": "read_receipt",
+            "kind": "function",
+            "line": 37,
+            "end_line": 83,
+            "code_start": 37,
+            "documented": true,
+            "actual_primary_thread_calls": 40
+          },
+          {
+            "name": "capture_identity",
+            "kind": "function",
+            "line": 86,
+            "end_line": 90,
+            "code_start": 86,
+            "documented": true,
+            "actual_primary_thread_calls": 36
+          },
+          {
+            "name": "native_run",
+            "kind": "function",
+            "line": 93,
+            "end_line": 104,
+            "code_start": 93,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "verify",
+            "kind": "function",
+            "line": 107,
+            "end_line": 139,
+            "code_start": 107,
+            "documented": true,
+            "actual_primary_thread_calls": 21
+          },
+          {
+            "name": "main",
+            "kind": "function",
+            "line": 142,
+            "end_line": 155,
+            "code_start": 142,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "11": 0,
+          "12": 0,
+          "14": 0,
+          "15": 0,
+          "16": 0,
+          "17": 0,
+          "20": 0,
+          "22": 41,
+          "23": 40,
+          "24": 39,
+          "25": 39,
+          "26": 39,
+          "27": 39,
+          "29": 228,
+          "30": 39,
+          "31": 38,
+          "32": 38,
+          "33": 38,
+          "34": 39,
+          "37": 0,
+          "39": 40,
+          "40": 36,
+          "41": 35,
+          "42": 35,
+          "43": 35,
+          "44": 33,
+          "45": 33,
+          "46": 33,
+          "47": 32,
+          "48": 32,
+          "49": 146,
+          "50": 74,
+          "51": 64,
+          "52": 63,
+          "53": 744,
+          "54": 62,
+          "55": 62,
+          "56": 61,
+          "57": 59,
+          "58": 55,
+          "59": 55,
+          "60": 54,
+          "61": 207,
+          "62": 51,
+          "63": 51,
+          "64": 51,
+          "65": 50,
+          "66": 50,
+          "67": 49,
+          "68": 49,
+          "69": 48,
+          "70": 47,
+          "71": 188,
+          "72": 278,
+          "73": 46,
+          "74": 46,
+          "75": 211,
+          "76": 206,
+          "77": 162,
+          "78": 162,
+          "79": 2,
+          "80": 73,
+          "81": 10,
+          "82": 10,
+          "83": 10,
+          "86": 0,
+          "88": 36,
+          "89": 360,
+          "90": 36,
+          "93": 0,
+          "95": 22,
+          "96": 11,
+          "97": 11,
+          "98": 11,
+          "99": 11,
+          "100": 10,
+          "101": 10,
+          "102": 7,
+          "103": 3,
+          "104": 11,
+          "107": 0,
+          "109": 21,
+          "110": 21,
+          "111": 21,
+          "112": 20,
+          "113": 20,
+          "114": 20,
+          "115": 20,
+          "116": 20,
+          "117": 20,
+          "118": 19,
+          "119": 144,
+          "120": 18,
+          "121": 18,
+          "122": 4,
+          "123": 4,
+          "125": 14,
+          "126": 11,
+          "127": 11,
+          "128": 16,
+          "129": 16,
+          "130": 15,
+          "131": 15,
+          "132": 15,
+          "133": 5,
+          "134": 3,
+          "135": 1,
+          "136": 2,
+          "137": 2,
+          "138": 20,
+          "139": 20,
+          "142": 0,
+          "144": 2,
+          "145": 12,
+          "146": 2,
+          "147": 2,
+          "148": 2,
+          "149": 6,
+          "150": 2,
+          "151": 2,
+          "152": 1,
+          "153": 1,
+          "154": 1,
+          "155": 1,
+          "158": 0
+        },
+        "positive_lines": 112,
+        "zero_lines": 21,
+        "calls": [
+          {
+            "line": 20,
+            "name": "read_bytes",
+            "count": 41
+          },
+          {
+            "line": 27,
+            "name": "read_bytes.<locals>.identity",
+            "count": 228
+          },
+          {
+            "line": 37,
+            "name": "read_receipt",
+            "count": 40
+          },
+          {
+            "line": 53,
+            "name": "read_receipt.<locals>.<genexpr>",
+            "count": 372
+          },
+          {
+            "line": 72,
+            "name": "read_receipt.<locals>.<genexpr>",
+            "count": 140
+          },
+          {
+            "line": 80,
+            "name": "read_receipt.<locals>.<genexpr>",
+            "count": 35
+          },
+          {
+            "line": 86,
+            "name": "capture_identity",
+            "count": 36
+          },
+          {
+            "line": 93,
+            "name": "native_run",
+            "count": 11
+          },
+          {
+            "line": 107,
+            "name": "verify",
+            "count": 21
+          },
+          {
+            "line": 119,
+            "name": "verify.<locals>.<genexpr>",
+            "count": 72
+          },
+          {
+            "line": 142,
+            "name": "main",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_verify_workspace_hosted_chrome.py",
+          "bytes": 44872,
+          "sha256": "03a7ad69f5af3b861e1e2effb42211e7345c71e8b6483e7da7ab2a20cb16bb84"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "HostedChromeControls",
+            "kind": "class",
+            "line": 15,
+            "end_line": 468,
+            "code_start": 15,
+            "documented": true
+          },
+          {
+            "name": "HostedChromeControls.setUp",
+            "kind": "function",
+            "line": 17,
+            "end_line": 29,
+            "code_start": 17,
+            "documented": true,
+            "actual_primary_thread_calls": 39
+          },
+          {
+            "name": "HostedChromeControls.package_fixture",
+            "kind": "function",
+            "line": 31,
+            "end_line": 36,
+            "code_start": 31,
+            "documented": true,
+            "actual_primary_thread_calls": 64
+          },
+          {
+            "name": "HostedChromeControls.campaign_fixture",
+            "kind": "function",
+            "line": 38,
+            "end_line": 41,
+            "code_start": 38,
+            "documented": true,
+            "actual_primary_thread_calls": 157
+          },
+          {
+            "name": "HostedChromeControls.producer_fixture",
+            "kind": "function",
+            "line": 43,
+            "end_line": 48,
+            "code_start": 43,
+            "documented": true,
+            "actual_primary_thread_calls": 37
+          },
+          {
+            "name": "HostedChromeControls.read",
+            "kind": "function",
+            "line": 50,
+            "end_line": 53,
+            "code_start": 50,
+            "documented": true,
+            "actual_primary_thread_calls": 27
+          },
+          {
+            "name": "HostedChromeControls.run_outer",
+            "kind": "function",
+            "line": 55,
+            "end_line": 65,
+            "code_start": 55,
+            "documented": true,
+            "actual_primary_thread_calls": 16
+          },
+          {
+            "name": "HostedChromeControls.run_outer.producer",
+            "kind": "function",
+            "line": 58,
+            "end_line": 62,
+            "code_start": 58,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "HostedChromeControls.test_four_campaign_pass_preserves_scope",
+            "kind": "function",
+            "line": 67,
+            "end_line": 71,
+            "code_start": 67,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_producer_exit_reconciliation",
+            "kind": "function",
+            "line": 73,
+            "end_line": 77,
+            "code_start": 73,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_failed_and_incomplete_are_distinct",
+            "kind": "function",
+            "line": 79,
+            "end_line": 83,
+            "code_start": 79,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_build_install_and_dirty_preconditions",
+            "kind": "function",
+            "line": 85,
+            "end_line": 89,
+            "code_start": 85,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_source_and_tool_drift_revoke_pass",
+            "kind": "function",
+            "line": 91,
+            "end_line": 96,
+            "code_start": 91,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_campaign_order_and_complete_denominator",
+            "kind": "function",
+            "line": 98,
+            "end_line": 109,
+            "code_start": 98,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_closed_keys_and_exact_integer_types",
+            "kind": "function",
+            "line": 111,
+            "end_line": 120,
+            "code_start": 111,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_reflow_and_raw_envelope_denominators",
+            "kind": "function",
+            "line": 122,
+            "end_line": 131,
+            "code_start": 122,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_unsupported_cannot_invent_observations",
+            "kind": "function",
+            "line": 133,
+            "end_line": 139,
+            "code_start": 133,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_raw_duplicate_nonfinite_size_and_special_files",
+            "kind": "function",
+            "line": 141,
+            "end_line": 149,
+            "code_start": 141,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_fixture_isolation",
+            "kind": "function",
+            "line": 151,
+            "end_line": 156,
+            "code_start": 151,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_fixture_semantics_and_long_environment",
+            "kind": "function",
+            "line": 158,
+            "end_line": 170,
+            "code_start": 158,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_local_graph_must_be_exact",
+            "kind": "function",
+            "line": 172,
+            "end_line": 182,
+            "code_start": 172,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_terminal_echo_overflow_eof_and_short_submission",
+            "kind": "function",
+            "line": 184,
+            "end_line": 197,
+            "code_start": 184,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_private_artifact_size_and_streamed_pin",
+            "kind": "function",
+            "line": 199,
+            "end_line": 204,
+            "code_start": 199,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_owned_pidfd_cleanup_does_not_signal_recycled_identity",
+            "kind": "function",
+            "line": 206,
+            "end_line": 211,
+            "code_start": 206,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_scan_failure_still_cleans_direct_child_without_false_empty_credit",
+            "kind": "function",
+            "line": 213,
+            "end_line": 226,
+            "code_start": 213,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_scan_failure_still_cleans_direct_child_without_false_empty_credit.poll",
+            "kind": "function",
+            "line": 217,
+            "end_line": 219,
+            "code_start": 217,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "HostedChromeControls.test_scan_failure_still_cleans_direct_child_without_false_empty_credit.killed",
+            "kind": "function",
+            "line": 220,
+            "end_line": 222,
+            "code_start": 220,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_retained_verified_pidfds_survive_later_scan_failure",
+            "kind": "function",
+            "line": 228,
+            "end_line": 242,
+            "code_start": 228,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.cjs_fixture",
+            "kind": "function",
+            "line": 244,
+            "end_line": 249,
+            "code_start": 244,
+            "documented": true,
+            "actual_primary_thread_calls": 8
+          },
+          {
+            "name": "HostedChromeControls.test_actual_cjs_long_reflow_shape_requires_all_six_observations",
+            "kind": "function",
+            "line": 251,
+            "end_line": 261,
+            "code_start": 251,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_failed_fork_exec_always_exits_without_controller_return",
+            "kind": "function",
+            "line": 263,
+            "end_line": 269,
+            "code_start": 263,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_allowlisted_phase_codes_never_publish_arbitrary_exception_text",
+            "kind": "function",
+            "line": 271,
+            "end_line": 279,
+            "code_start": 271,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_reaping_preserves_direct_child_nonzero_and_unknown_status",
+            "kind": "function",
+            "line": 281,
+            "end_line": 295,
+            "code_start": 281,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_reaping_preserves_direct_child_nonzero_and_unknown_status.actual_status",
+            "kind": "function",
+            "line": 285,
+            "end_line": 288,
+            "code_start": 285,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_cjs_projection_never_retains_raw_private_fields",
+            "kind": "function",
+            "line": 297,
+            "end_line": 309,
+            "code_start": 297,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_true_google_chrome_engine_and_exact_tools_required",
+            "kind": "function",
+            "line": 311,
+            "end_line": 317,
+            "code_start": 311,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_final_capture_counts_cannot_exceed_responses",
+            "kind": "function",
+            "line": 319,
+            "end_line": 323,
+            "code_start": 319,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_hosted_wrong_parent_context_stops_before_producer",
+            "kind": "function",
+            "line": 325,
+            "end_line": 330,
+            "code_start": 325,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_producer_drift_and_partial_campaign_failure",
+            "kind": "function",
+            "line": 332,
+            "end_line": 341,
+            "code_start": 332,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_public_helper_main_unsupported_is_fixed_nonzero",
+            "kind": "function",
+            "line": 343,
+            "end_line": 347,
+            "code_start": 343,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_no_replacement_and_publication_failure_are_nonzero",
+            "kind": "function",
+            "line": 349,
+            "end_line": 356,
+            "code_start": 349,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_main_forwards_hosted_context",
+            "kind": "function",
+            "line": 358,
+            "end_line": 363,
+            "code_start": 358,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.tool_command_rows",
+            "kind": "function",
+            "line": 366,
+            "end_line": 368,
+            "code_start": 366,
+            "documented": true,
+            "actual_primary_thread_calls": 18
+          },
+          {
+            "name": "HostedChromeControls.capture_with_mocked_tools",
+            "kind": "function",
+            "line": 370,
+            "end_line": 374,
+            "code_start": 370,
+            "documented": true,
+            "actual_primary_thread_calls": 17
+          },
+          {
+            "name": "HostedChromeControls.test_tool_diagnostics_are_closed_exact_and_output_free",
+            "kind": "function",
+            "line": 376,
+            "end_line": 383,
+            "code_start": 376,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_each_tool_command_failure_keeps_phase_and_actual_exit",
+            "kind": "function",
+            "line": 385,
+            "end_line": 392,
+            "code_start": 385,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_tool_output_validation_keeps_zero_exit_and_exact_phase",
+            "kind": "function",
+            "line": 394,
+            "end_line": 400,
+            "code_start": 394,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_tool_resolution_engine_and_pin_failures_are_phase_bound",
+            "kind": "function",
+            "line": 402,
+            "end_line": 412,
+            "code_start": 402,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_command_unavailable_native_lifecycle_is_typed_before_spawn",
+            "kind": "function",
+            "line": 414,
+            "end_line": 422,
+            "code_start": 414,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_command_failure_discards_bytes_and_preserves_forced_exit",
+            "kind": "function",
+            "line": 424,
+            "end_line": 436,
+            "code_start": 424,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_command_failure_discards_bytes_and_preserves_forced_exit.waited",
+            "kind": "function",
+            "line": 429,
+            "end_line": 431,
+            "code_start": 429,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "HostedChromeControls.test_nonzero_command_and_cleanup_failure_cannot_pass",
+            "kind": "function",
+            "line": 438,
+            "end_line": 448,
+            "code_start": 438,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_wrapper_v2_preflight_diagnostic_never_starts_producer",
+            "kind": "function",
+            "line": 450,
+            "end_line": 460,
+            "code_start": 450,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "HostedChromeControls.test_after_tool_failure_revokes_synthetic_success",
+            "kind": "function",
+            "line": 462,
+            "end_line": 468,
+            "code_start": 462,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "15": 0,
+          "16": 0,
+          "17": 0,
+          "19": 39,
+          "20": 39,
+          "21": 390,
+          "22": 351,
+          "23": 273,
+          "24": 234,
+          "25": 234,
+          "26": 39,
+          "27": 39,
+          "28": 39,
+          "29": 39,
+          "31": 0,
+          "33": 64,
+          "34": 192,
+          "35": 128,
+          "36": 64,
+          "38": 0,
+          "40": 157,
+          "41": 783,
+          "43": 0,
+          "45": 185,
+          "46": 37,
+          "47": 37,
+          "48": 37,
+          "50": 0,
+          "52": 27,
+          "53": 27,
+          "55": 0,
+          "57": 16,
+          "58": 16,
+          "60": 11,
+          "61": 11,
+          "62": 11,
+          "63": 32,
+          "64": 16,
+          "65": 16,
+          "67": 0,
+          "69": 1,
+          "70": 1,
+          "71": 1,
+          "73": 0,
+          "75": 5,
+          "76": 4,
+          "77": 4,
+          "79": 0,
+          "81": 3,
+          "82": 2,
+          "83": 2,
+          "85": 0,
+          "87": 6,
+          "88": 5,
+          "89": 5,
+          "91": 0,
+          "93": 1,
+          "94": 1,
+          "95": 1,
+          "96": 1,
+          "98": 0,
+          "100": 8,
+          "101": 7,
+          "102": 7,
+          "103": 6,
+          "104": 5,
+          "105": 4,
+          "106": 3,
+          "107": 2,
+          "108": 1,
+          "109": 7,
+          "111": 0,
+          "113": 6,
+          "114": 5,
+          "115": 5,
+          "116": 5,
+          "117": 5,
+          "118": 4,
+          "119": 3,
+          "120": 3,
+          "122": 0,
+          "124": 6,
+          "125": 5,
+          "126": 5,
+          "127": 4,
+          "128": 3,
+          "129": 2,
+          "130": 1,
+          "131": 5,
+          "133": 0,
+          "135": 1,
+          "136": 1,
+          "137": 2,
+          "138": 1,
+          "139": 1,
+          "141": 0,
+          "143": 1,
+          "144": 1,
+          "145": 4,
+          "146": 3,
+          "147": 3,
+          "148": 1,
+          "149": 1,
+          "151": 0,
+          "153": 1,
+          "154": 1,
+          "155": 1,
+          "156": 1,
+          "158": 0,
+          "160": 5,
+          "161": 4,
+          "162": 4,
+          "163": 4,
+          "164": 4,
+          "165": 3,
+          "166": 3,
+          "167": 2,
+          "168": 1,
+          "169": 1,
+          "170": 1,
+          "172": 0,
+          "174": 6,
+          "175": 5,
+          "176": 5,
+          "177": 4,
+          "178": 3,
+          "179": 2,
+          "180": 1,
+          "181": 5,
+          "182": 1,
+          "184": 0,
+          "186": 1,
+          "187": 2,
+          "188": 1,
+          "189": 1,
+          "190": 1,
+          "191": 1,
+          "192": 1,
+          "193": 1,
+          "194": 1,
+          "195": 1,
+          "196": 1,
+          "197": 1,
+          "199": 0,
+          "201": 1,
+          "202": 1,
+          "203": 1,
+          "204": 1,
+          "206": 0,
+          "208": 1,
+          "209": 2,
+          "210": 1,
+          "211": 1,
+          "213": 0,
+          "215": 1,
+          "216": 1,
+          "217": 1,
+          "219": 4,
+          "220": 1,
+          "222": 1,
+          "223": 1,
+          "224": 2,
+          "225": 1,
+          "226": 1,
+          "228": 0,
+          "230": 1,
+          "231": 3,
+          "232": 1,
+          "233": 1,
+          "234": 1,
+          "235": 6,
+          "236": 1,
+          "237": 1,
+          "238": 1,
+          "239": 1,
+          "240": 1,
+          "241": 1,
+          "242": 1,
+          "244": 0,
+          "246": 8,
+          "247": 8,
+          "248": 16,
+          "249": 8,
+          "251": 0,
+          "253": 1,
+          "254": 3,
+          "255": 2,
+          "256": 2,
+          "257": 2,
+          "258": 14,
+          "259": 8,
+          "260": 6,
+          "261": 6,
+          "263": 0,
+          "265": 3,
+          "266": 4,
+          "267": 2,
+          "268": 2,
+          "269": 2,
+          "271": 0,
+          "273": 1,
+          "274": 1,
+          "275": 1,
+          "276": 1,
+          "277": 1,
+          "278": 1,
+          "279": 1,
+          "281": 0,
+          "283": 1,
+          "284": 1,
+          "285": 1,
+          "287": 1,
+          "288": 1,
+          "289": 1,
+          "290": 1,
+          "291": 1,
+          "292": 3,
+          "293": 1,
+          "294": 1,
+          "295": 1,
+          "297": 0,
+          "299": 1,
+          "300": 1,
+          "301": 1,
+          "302": 6,
+          "303": 5,
+          "304": 5,
+          "305": 4,
+          "306": 3,
+          "307": 2,
+          "308": 1,
+          "309": 5,
+          "311": 0,
+          "313": 4,
+          "314": 1,
+          "315": 1,
+          "316": 5,
+          "317": 4,
+          "319": 0,
+          "321": 1,
+          "322": 1,
+          "323": 1,
+          "325": 0,
+          "327": 1,
+          "328": 2,
+          "329": 1,
+          "330": 1,
+          "332": 0,
+          "334": 5,
+          "335": 2,
+          "336": 1,
+          "337": 1,
+          "338": 1,
+          "339": 6,
+          "340": 1,
+          "341": 1,
+          "343": 0,
+          "345": 1,
+          "346": 1,
+          "347": 1,
+          "349": 0,
+          "351": 1,
+          "352": 1,
+          "353": 1,
+          "354": 1,
+          "355": 2,
+          "356": 1,
+          "358": 0,
+          "360": 1,
+          "361": 1,
+          "362": 1,
+          "363": 1,
+          "366": 0,
+          "368": 90,
+          "370": 0,
+          "372": 17,
+          "373": 166,
+          "374": 17,
+          "376": 0,
+          "378": 7,
+          "379": 6,
+          "380": 6,
+          "381": 7,
+          "382": 6,
+          "383": 1,
+          "385": 0,
+          "387": 5,
+          "388": 16,
+          "389": 12,
+          "390": 12,
+          "391": 12,
+          "392": 12,
+          "394": 0,
+          "396": 5,
+          "397": 4,
+          "398": 4,
+          "399": 4,
+          "400": 1,
+          "402": 0,
+          "404": 1,
+          "405": 4,
+          "406": 3,
+          "407": 3,
+          "408": 3,
+          "409": 1,
+          "410": 1,
+          "411": 1,
+          "412": 1,
+          "414": 0,
+          "416": 3,
+          "417": 4,
+          "418": 2,
+          "419": 2,
+          "420": 1,
+          "421": 4,
+          "422": 3,
+          "424": 0,
+          "426": 5,
+          "427": 4,
+          "428": 4,
+          "429": 4,
+          "431": 4,
+          "432": 4,
+          "433": 8,
+          "434": 4,
+          "435": 4,
+          "436": 1,
+          "438": 0,
+          "440": 4,
+          "441": 3,
+          "442": 3,
+          "443": 3,
+          "444": 6,
+          "445": 3,
+          "446": 3,
+          "447": 3,
+          "448": 2,
+          "450": 0,
+          "452": 4,
+          "453": 3,
+          "454": 3,
+          "455": 6,
+          "456": 3,
+          "457": 3,
+          "458": 3,
+          "459": 3,
+          "460": 2,
+          "462": 0,
+          "464": 1,
+          "465": 1,
+          "466": 1,
+          "467": 1,
+          "468": 1,
+          "471": 0
+        },
+        "positive_lines": 303,
+        "zero_lines": 62,
+        "calls": [
+          {
+            "line": 17,
+            "name": "HostedChromeControls.setUp",
+            "count": 39
+          },
+          {
+            "line": 31,
+            "name": "HostedChromeControls.package_fixture",
+            "count": 64
+          },
+          {
+            "line": 38,
+            "name": "HostedChromeControls.campaign_fixture",
+            "count": 157
+          },
+          {
+            "line": 43,
+            "name": "HostedChromeControls.producer_fixture",
+            "count": 37
+          },
+          {
+            "line": 50,
+            "name": "HostedChromeControls.read",
+            "count": 27
+          },
+          {
+            "line": 55,
+            "name": "HostedChromeControls.run_outer",
+            "count": 16
+          },
+          {
+            "line": 58,
+            "name": "HostedChromeControls.run_outer.<locals>.producer",
+            "count": 11
+          },
+          {
+            "line": 67,
+            "name": "HostedChromeControls.test_four_campaign_pass_preserves_scope",
+            "count": 1
+          },
+          {
+            "line": 73,
+            "name": "HostedChromeControls.test_producer_exit_reconciliation",
+            "count": 1
+          },
+          {
+            "line": 79,
+            "name": "HostedChromeControls.test_failed_and_incomplete_are_distinct",
+            "count": 1
+          },
+          {
+            "line": 85,
+            "name": "HostedChromeControls.test_build_install_and_dirty_preconditions",
+            "count": 1
+          },
+          {
+            "line": 91,
+            "name": "HostedChromeControls.test_source_and_tool_drift_revoke_pass",
+            "count": 1
+          },
+          {
+            "line": 98,
+            "name": "HostedChromeControls.test_campaign_order_and_complete_denominator",
+            "count": 1
+          },
+          {
+            "line": 111,
+            "name": "HostedChromeControls.test_closed_keys_and_exact_integer_types",
+            "count": 1
+          },
+          {
+            "line": 122,
+            "name": "HostedChromeControls.test_reflow_and_raw_envelope_denominators",
+            "count": 1
+          },
+          {
+            "line": 133,
+            "name": "HostedChromeControls.test_unsupported_cannot_invent_observations",
+            "count": 1
+          },
+          {
+            "line": 141,
+            "name": "HostedChromeControls.test_raw_duplicate_nonfinite_size_and_special_files",
+            "count": 1
+          },
+          {
+            "line": 151,
+            "name": "HostedChromeControls.test_fixture_isolation",
+            "count": 1
+          },
+          {
+            "line": 158,
+            "name": "HostedChromeControls.test_fixture_semantics_and_long_environment",
+            "count": 1
+          },
+          {
+            "line": 172,
+            "name": "HostedChromeControls.test_local_graph_must_be_exact",
+            "count": 1
+          },
+          {
+            "line": 184,
+            "name": "HostedChromeControls.test_terminal_echo_overflow_eof_and_short_submission",
+            "count": 1
+          },
+          {
+            "line": 199,
+            "name": "HostedChromeControls.test_private_artifact_size_and_streamed_pin",
+            "count": 1
+          },
+          {
+            "line": 206,
+            "name": "HostedChromeControls.test_owned_pidfd_cleanup_does_not_signal_recycled_identity",
+            "count": 1
+          },
+          {
+            "line": 213,
+            "name": "HostedChromeControls.test_scan_failure_still_cleans_direct_child_without_false_empty_credit",
+            "count": 1
+          },
+          {
+            "line": 217,
+            "name": "HostedChromeControls.test_scan_failure_still_cleans_direct_child_without_false_empty_credit.<locals>.poll",
+            "count": 4
+          },
+          {
+            "line": 220,
+            "name": "HostedChromeControls.test_scan_failure_still_cleans_direct_child_without_false_empty_credit.<locals>.killed",
+            "count": 1
+          },
+          {
+            "line": 228,
+            "name": "HostedChromeControls.test_retained_verified_pidfds_survive_later_scan_failure",
+            "count": 1
+          },
+          {
+            "line": 235,
+            "name": "HostedChromeControls.test_retained_verified_pidfds_survive_later_scan_failure.<locals>.<lambda>",
+            "count": 4
+          },
+          {
+            "line": 244,
+            "name": "HostedChromeControls.cjs_fixture",
+            "count": 8
+          },
+          {
+            "line": 251,
+            "name": "HostedChromeControls.test_actual_cjs_long_reflow_shape_requires_all_six_observations",
+            "count": 1
+          },
+          {
+            "line": 263,
+            "name": "HostedChromeControls.test_failed_fork_exec_always_exits_without_controller_return",
+            "count": 1
+          },
+          {
+            "line": 271,
+            "name": "HostedChromeControls.test_allowlisted_phase_codes_never_publish_arbitrary_exception_text",
+            "count": 1
+          },
+          {
+            "line": 281,
+            "name": "HostedChromeControls.test_reaping_preserves_direct_child_nonzero_and_unknown_status",
+            "count": 1
+          },
+          {
+            "line": 285,
+            "name": "HostedChromeControls.test_reaping_preserves_direct_child_nonzero_and_unknown_status.<locals>.actual_status",
+            "count": 1
+          },
+          {
+            "line": 297,
+            "name": "HostedChromeControls.test_cjs_projection_never_retains_raw_private_fields",
+            "count": 1
+          },
+          {
+            "line": 311,
+            "name": "HostedChromeControls.test_true_google_chrome_engine_and_exact_tools_required",
+            "count": 1
+          },
+          {
+            "line": 317,
+            "name": "HostedChromeControls.test_true_google_chrome_engine_and_exact_tools_required.<locals>.<lambda>",
+            "count": 3
+          },
+          {
+            "line": 319,
+            "name": "HostedChromeControls.test_final_capture_counts_cannot_exceed_responses",
+            "count": 1
+          },
+          {
+            "line": 325,
+            "name": "HostedChromeControls.test_hosted_wrong_parent_context_stops_before_producer",
+            "count": 1
+          },
+          {
+            "line": 332,
+            "name": "HostedChromeControls.test_producer_drift_and_partial_campaign_failure",
+            "count": 1
+          },
+          {
+            "line": 343,
+            "name": "HostedChromeControls.test_public_helper_main_unsupported_is_fixed_nonzero",
+            "count": 1
+          },
+          {
+            "line": 349,
+            "name": "HostedChromeControls.test_no_replacement_and_publication_failure_are_nonzero",
+            "count": 1
+          },
+          {
+            "line": 358,
+            "name": "HostedChromeControls.test_main_forwards_hosted_context",
+            "count": 1
+          },
+          {
+            "line": 366,
+            "name": "HostedChromeControls.tool_command_rows",
+            "count": 18
+          },
+          {
+            "line": 370,
+            "name": "HostedChromeControls.capture_with_mocked_tools",
+            "count": 17
+          },
+          {
+            "line": 373,
+            "name": "HostedChromeControls.capture_with_mocked_tools.<locals>.<lambda>",
+            "count": 68
+          },
+          {
+            "line": 376,
+            "name": "HostedChromeControls.test_tool_diagnostics_are_closed_exact_and_output_free",
+            "count": 1
+          },
+          {
+            "line": 385,
+            "name": "HostedChromeControls.test_each_tool_command_failure_keeps_phase_and_actual_exit",
+            "count": 1
+          },
+          {
+            "line": 394,
+            "name": "HostedChromeControls.test_tool_output_validation_keeps_zero_exit_and_exact_phase",
+            "count": 1
+          },
+          {
+            "line": 402,
+            "name": "HostedChromeControls.test_tool_resolution_engine_and_pin_failures_are_phase_bound",
+            "count": 1
+          },
+          {
+            "line": 414,
+            "name": "HostedChromeControls.test_command_unavailable_native_lifecycle_is_typed_before_spawn",
+            "count": 1
+          },
+          {
+            "line": 424,
+            "name": "HostedChromeControls.test_command_failure_discards_bytes_and_preserves_forced_exit",
+            "count": 1
+          },
+          {
+            "line": 429,
+            "name": "HostedChromeControls.test_command_failure_discards_bytes_and_preserves_forced_exit.<locals>.waited",
+            "count": 4
+          },
+          {
+            "line": 438,
+            "name": "HostedChromeControls.test_nonzero_command_and_cleanup_failure_cannot_pass",
+            "count": 1
+          },
+          {
+            "line": 450,
+            "name": "HostedChromeControls.test_wrapper_v2_preflight_diagnostic_never_starts_producer",
+            "count": 1
+          },
+          {
+            "line": 462,
+            "name": "HostedChromeControls.test_after_tool_failure_revokes_synthetic_success",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "totals": {
+      "functions": 98,
+      "function_docs": 98,
+      "functions_with_primary_thread_calls": 95,
+      "classes": 3,
+      "class_docs": 3,
+      "modules": 4,
+      "module_docs": 4,
+      "positive_lines": 700,
+      "zero_lines": 261
+    },
+    "qualification": [
+      "Diagnostic successor applied over immutable886 and locally integrated Windows058; full four-file named inventory and every physical mapped zero retained.",
+      "Imports precede tracing; only primary thread; no child/background/native runtime events measured.",
+      "Physical compiler line counts and actual function calls are separate denominators; no branch/MCDC or all-body credit.",
+      "Pure stdlib mocked controls and temporary synthetic file bytes only; no browser, Forge, package probe, install, Git, Cargo or OS-denial execution.",
+      "Node probe JSDoc/syntax inventory is separate with no executed-call or V8 metric.",
+      "Native Linux four campaigns, platform/browser matrix, accessibility/human acceptance, accepted audit, release and final integrated docs remain open."
+    ],
+    "native_browser_observed": false,
+    "product_executed": false
+  },
+  "selected_changed_named_functions": [
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "ToolCaptureError.__init__",
+      "documented": true,
+      "actual_primary_thread_calls": 69
+    },
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "tool_diagnostic",
+      "documented": true,
+      "actual_primary_thread_calls": 30
+    },
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "command_failure",
+      "documented": true,
+      "actual_primary_thread_calls": 11
+    },
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "tool_capture_step",
+      "documented": true,
+      "actual_primary_thread_calls": 154
+    },
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "OwnedTree.__init__",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "command",
+      "documented": true,
+      "actual_primary_thread_calls": 9
+    },
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "capture_tools",
+      "documented": true,
+      "actual_primary_thread_calls": 24
+    },
+    {
+      "file": "test_workspace_hosted_chrome.py",
+      "name": "capture_tools.check_engine",
+      "documented": true,
+      "actual_primary_thread_calls": 20
+    },
+    {
+      "file": "verify_workspace_hosted_chrome.py",
+      "name": "verify",
+      "documented": true,
+      "actual_primary_thread_calls": 21
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.tool_command_rows",
+      "documented": true,
+      "actual_primary_thread_calls": 18
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.capture_with_mocked_tools",
+      "documented": true,
+      "actual_primary_thread_calls": 17
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_tool_diagnostics_are_closed_exact_and_output_free",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_each_tool_command_failure_keeps_phase_and_actual_exit",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_tool_output_validation_keeps_zero_exit_and_exact_phase",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_tool_resolution_engine_and_pin_failures_are_phase_bound",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_command_unavailable_native_lifecycle_is_typed_before_spawn",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_command_failure_discards_bytes_and_preserves_forced_exit",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_command_failure_discards_bytes_and_preserves_forced_exit.waited",
+      "documented": true,
+      "actual_primary_thread_calls": 4
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_nonzero_command_and_cleanup_failure_cannot_pass",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_wrapper_v2_preflight_diagnostic_never_starts_producer",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    },
+    {
+      "file": "test_verify_workspace_hosted_chrome.py",
+      "name": "HostedChromeControls.test_after_tool_failure_revokes_synthetic_success",
+      "documented": true,
+      "actual_primary_thread_calls": 1
+    }
+  ],
+  "denominator_reconciliation": {
+    "schema": "forge.coverage-denominator-reconciliation/1",
+    "root": {
+      "path": "/private/tmp/forge-f04-chrome-root-controls-v3/coverage.json",
+      "bytes": 64236,
+      "sha256": "330e87df2ed2d6ff478d50f339ceaa3f8375a3b5b5b7db6834c540236d5331bd"
+    },
+    "author": {
+      "path": "/private/tmp/forge-f04-hosted-chrome-diagnostics-candidate-v2/controls-profiled-v2/coverage.json",
+      "bytes": 78072,
+      "sha256": "f55241404c87dce0390c2eecf0e539cb6fbdfa33fee85c2736dd4caea3901444"
+    },
+    "root_physical_lines": 961,
+    "author_physical_lines": 957,
+    "positive_lines_both": 700,
+    "root_zero_lines": 261,
+    "author_zero_lines": 257,
+    "root_only_unobserved_docstring_lines": [
+      {
+        "file": "workspace_browser_fixtures.py",
+        "line": 1,
+        "count": 0,
+        "kind": "module-or-class-docstring physical compiler line"
+      },
+      {
+        "file": "test_workspace_hosted_chrome.py",
+        "line": 86,
+        "count": 0,
+        "kind": "module-or-class-docstring physical compiler line"
+      },
+      {
+        "file": "test_workspace_hosted_chrome.py",
+        "line": 117,
+        "count": 0,
+        "kind": "module-or-class-docstring physical compiler line"
+      },
+      {
+        "file": "test_verify_workspace_hosted_chrome.py",
+        "line": 16,
+        "count": 0,
+        "kind": "module-or-class-docstring physical compiler line"
+      }
+    ],
+    "common_observed_line_sets_equal": true,
+    "qualification": "Root recursively retains every positive co_lines physical entry; the author trace helper filters four module/class docstring lines. No zeros were dropped from either preserved receipt."
+  },
+  "independent_schema_review": {
+    "index": "/private/tmp/forge-f04-hosted-chrome-diagnostics-independent-review-v1/index.json",
+    "bytes": 8275,
+    "sha256": "fe0762ad54af827f64833e7f0a7adb5fcdf688200949f8529a7813d0fcbb7467",
+    "verified_pins": 44
+  },
+  "independent_reader_review": {
+    "index": {
+      "path": "/private/tmp/forge-f04-hosted-chrome-diagnostics-receipt-reader-review-v1/index.json",
+      "bytes": 13225,
+      "sha256": "018bed4e87a21d0819c76e649cb8deb232c84385ad7a31d815cdc65455078d53"
+    },
+    "verified_pins": 52
+  },
+  "restored_package_probe_receipt": {
+    "path": "/private/tmp/forge-f19-browser-f04-chrome-restored-package-probe-v1.json",
+    "bytes": 7068,
+    "sha256": "4f608bcd7bad040392539824f5e96924e272e1372176e53722152c8f78cd23c3"
+  },
+  "restored_package_probe_log": {
+    "path": "/private/tmp/forge-f19-browser-f04-chrome-restored-package-probe-v1.log",
+    "bytes": 1010,
+    "sha256": "7b6b7b738038ee1c77843aac7a7a40fee09449791901fa0017ca4537a1191b82"
+  },
+  "historical_application_failure": {
+    "path": "/private/tmp/forge-f04-chrome-diagnostic-application-attempt-one.json",
+    "bytes": 583,
+    "sha256": "06d013a6e37163c5c862f171641d1c067a22b19cf7ebd7c6cdd31b53c64b22c0"
+  },
+  "unapplied_source_control_receipt": {
+    "path": "/private/tmp/forge-f04-chrome-root-controls-v2/coverage.json",
+    "bytes": 53333,
+    "sha256": "78cbfbb35965a12309815736a69787a463bf3ef23dca03b98e5f9d59d61436e2"
+  },
+  "mandatory_commit_hook": null,
+  "fresh_hosted_receipt": null,
+  "acceptance_eligible": false,
+  "qualification": [
+    "Actual applied-source39 mock controls; no Linux/Chrome/Forge/native execution or OS-denial observation.",
+    "Named docstrings, primary-thread entry calls and compiler-mapped physical lines have distinct exact denominators. All261 root zeros retained; imports precede trace; native/subprocess/background/branch/MCDC and whole-repository completeness unmeasured.",
+    "Wrapper /2 adds a closed four-field typed diagnostic or null. Producer /1 and shared API /2 remain unchanged. Raw output, exception strings, project paths, credentials and PIDs are excluded.",
+    "Tool steps retain exact signed32-bit status or null when no status exists; no invented execution or underlying failure cause. Post-capture failure revokes wrapper pass; forced cleanup cannot pass.",
+    "Original30 test ASTs and campaign/owned-tree/pass guard remain unchanged. No package graph, browser-download or dependency approval expansion.",
+    "The first hosted Chrome job failed before producer startup; zero campaigns, no browser identity or underlying-cause inference. Its /1 receipt and raw logs remain historical.",
+    "Full browser/platform matrix, OS network denial, accepted source audit, accessibility/AT/human/pilot/release and final integrated documentation gates remain open."
+  ]
+}

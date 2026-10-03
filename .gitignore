@@ -63,3 +63,6 @@ Thumbs.db
 
 # === OSCAL catalogs (transient downloads via scripts/fetch-oscal-catalogs.sh) ===
 .oscal-catalogs/
+
+# Approved browser development dependencies
+/ui/node_modules/

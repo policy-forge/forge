@@ -1,0 +1,211 @@
+{
+  "schema": "forge.f04-hosted-chrome-control-audit/5",
+  "baseline": "00ea61cfa5a697838527104dd873c4067a5beee2",
+  "snapshot": "TEMP await-step successor before managed application/mandatory hook/fresh hosted run",
+  "protocols": {
+    "failure": 2,
+    "producer": 3,
+    "wrapper": 4,
+    "shared_api": 2,
+    "source_inputs": 28,
+    "await_steps": 8,
+    "byte_bound": 1024
+  },
+  "python": {
+    "tests": {
+      "run": 60,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "totals": {
+      "functions": 134,
+      "function_docs": 134,
+      "functions_with_primary_thread_calls": 132,
+      "classes": 3,
+      "class_docs": 3,
+      "modules": 4,
+      "module_docs": 4,
+      "positive_lines": 1003,
+      "zero_lines": 237
+    },
+    "physical_lines": 1240,
+    "zero_lines": 237,
+    "selected_documented_called": 15,
+    "raw_scope": "primary-thread mocks, imports precede tracing; no native/product/child or background events"
+  },
+  "node": {
+    "tests": 22,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "source_runtime_package_pins": 179,
+    "source_unchanged": true,
+    "selected_docs": 35,
+    "selected_called": 35,
+    "callable_scopes": [
+      {
+        "file": "workspace_failure.cjs",
+        "ast": 10,
+        "v8": 10,
+        "positive": 10,
+        "zero_blocks": 1
+      },
+      {
+        "file": "workspace_failure.test.cjs",
+        "ast": 71,
+        "v8": 71,
+        "positive": 67,
+        "zero_blocks": 6
+      },
+      {
+        "file": "workspace.cjs",
+        "ast": 86,
+        "v8": 56,
+        "positive": 2,
+        "zero_blocks": 59
+      }
+    ],
+    "scope": "pure helper, three CJS startup mocks, exact post-refresh continuation with mock adapters; no native/browser/product"
+  },
+  "preservation": {
+    "browser_assertions": 136,
+    "assertion_ast_and_bytes_equal": true,
+    "await_expressions": 404,
+    "await_ast_and_bytes_equal": true,
+    "prior_python_tests": 54,
+    "prior_python_assert_calls": 240,
+    "prior_js_named_declarations": 20
+  },
+  "qualified_native_history": {
+    "requested_head": "00ea61cfa5a697838527104dd873c4067a5beee2",
+    "run": 37073577361,
+    "passed": 3,
+    "failed": 1,
+    "complete_prerequisite_pass": false,
+    "browser_failure": {
+      "stage": "metadata-refresh",
+      "category": "unclassified",
+      "assertion_operator": null,
+      "node_exit_code": 1
+    },
+    "cause": "unknown"
+  },
+  "mandatory_hook": null,
+  "fresh_hosted_outcome": null,
+  "independent_reviews": "separate frozen packets; source authors excluded from own-source independent acceptance",
+  "full_integrated_end_documentation_review_complete": false,
+  "native_product_browser_executed_locally": false,
+  "evidence": [
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/python-half-final-v1/index.json",
+      "bytes": 5030,
+      "sha256": "1caed54ebf45875a456157647cc5224a5f3b4906faa7f563ec5d9c60c926c2f4"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/python-root-review-v1.json",
+      "bytes": 2549,
+      "sha256": "3945b999686ca3a8144fcc37186468167cc3e0a1eafde0ae9382d1e4c7bbd438"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-python-root-controls-v1/coverage.json",
+      "bytes": 86453,
+      "sha256": "24b28ef27f6bae57253351fa57a0dcfdc7c28206a018b581ff9f223e44102407"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-python-root-controls-v1/raw-unittest.log",
+      "bytes": 16974,
+      "sha256": "da953430fb5ca19545ce3edd66c814086c63bc0936ca8b87c90a715b312091d9"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-node-controls-v2/receipt.json",
+      "bytes": 88728,
+      "sha256": "65ca74b8fd77ccab22702225201dcbb40fedb79395a5a116069b73bd25e32b82"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-node-controls-v2/coverage.json",
+      "bytes": 131387,
+      "sha256": "20bb62a5e2ef8d6bd61a70a929eab44842f7f34bca47cfb39ae238e66e60475e"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-node-controls-v2/controls.stdout.log",
+      "bytes": 2569,
+      "sha256": "9cbfdaac2e3ef2ebe29afc21be319c78891bf597a614c3eb0b9695e3bac59a1b"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/cjs-assertion-ast-comparison-v2.json",
+      "bytes": 456214,
+      "sha256": "bfa335f50ec7635aa169cb963f91745aa8783ccc1dcb4cac7fe6847c068c943d"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/original-await-control-preservation-v2.json",
+      "bytes": 3942,
+      "sha256": "26a4d8111a18fb9497ee4c8ed19a99faac0c19757b35809e33a7fd893c5a29ca"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/derived-ast-restoration-v1.json",
+      "bytes": 810,
+      "sha256": "527ee2dca61cc8a0266618cc46f1a96310f968f79260b9edc81fcdeb0726f484"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-hosted-root-replay-v1.json",
+      "bytes": 897,
+      "sha256": "538eebe971a2b9a9d60f6aa9c00087f075e1afd678dfc77a338330acd73fddff"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-metadata-refresh-diagnosis-v1/index.json",
+      "bytes": 2276,
+      "sha256": "8cf3d226c8e14157306868af6d8a062d5f7d4ae60d62bd7db2098c4a42f7b5d7"
+    }
+  ],
+  "candidate_sources": [
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/ui/tests/workspace.cjs",
+      "bytes": 56062,
+      "sha256": "2166dfc49203a3c9a20a0699941432d7f215b702656a62abffe016fe76cdeed0"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/ui/tests/workspace_failure.cjs",
+      "bytes": 4597,
+      "sha256": "13c716df5fc3df6d24f3954b12770860890eceb12900354e8cf597309ad2b0bf"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/ui/tests/workspace_failure.test.cjs",
+      "bytes": 15025,
+      "sha256": "7e316cd79a0808b5d84db6a9af8dd0fdd1455645c726639c9f9343ecdc879b5a"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/scripts/test_workspace_hosted_chrome.py",
+      "bytes": 38413,
+      "sha256": "b38303dae2a940dbbb75504ad1ba56bf175a73e37c71ff6f9e4fef4cb577806e"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/scripts/verify_workspace_hosted_chrome.py",
+      "bytes": 14557,
+      "sha256": "d2f50edbb7b030f4d7b570af6e1ccb0838737b5f64a2292408d7584dc22cb047"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/scripts/test_verify_workspace_hosted_chrome.py",
+      "bytes": 72346,
+      "sha256": "8d748a2023762b8a821af0d527f70d41d5c5dd34defcbd597e094a3432363aa6"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/docs/development-tools/hosted-chrome.md",
+      "bytes": 12567,
+      "sha256": "c7373514ab07c44201544fdaba7e0a34f04ca07676896fdf5788fa4c6fec0ac1"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-await-diagnostic-candidate-v1/candidate/docs/plans/2026-10-02-f04-hosted-chrome-await-diagnostics.md",
+      "bytes": 6795,
+      "sha256": "5c36ae354340a29c05f928d72d61127c31539347d5041af0b0aaae28e0b0e688"
+    }
+  ],
+  "pending_gates": [
+    "passing-complete-Chrome-set",
+    "normative-browser-platform-architecture-matrix",
+    "full-functional-API",
+    "OS-IP-denial-and-attempt-observation",
+    "AT-human-audit-pilot-release",
+    "final-integrated-documentation-review"
+  ]
+}
