@@ -636,21 +636,18 @@ impl NativeJournal {
 fn private_default() -> Result<PathBuf> {
     #[cfg(target_os = "linux")]
     {
-        let base = match std::env::var_os("XDG_STATE_HOME") {
-            Some(value) => {
-                let path = PathBuf::from(value);
-                if !path.is_absolute() {
-                    return Err(unavailable());
-                }
-                path
+        let base = if let Some(value) = std::env::var_os("XDG_STATE_HOME") {
+            let path = PathBuf::from(value);
+            if !path.is_absolute() {
+                return Err(unavailable());
             }
-            None => {
-                let home = std::env::var_os("HOME").map(PathBuf::from).ok_or_else(unavailable)?;
-                if !home.is_absolute() {
-                    return Err(unavailable());
-                }
-                home.join(".local/state")
+            path
+        } else {
+            let home = std::env::var_os("HOME").map(PathBuf::from).ok_or_else(unavailable)?;
+            if !home.is_absolute() {
+                return Err(unavailable());
             }
+            home.join(".local/state")
         };
         Ok(base.join("forge/source-restores"))
     }

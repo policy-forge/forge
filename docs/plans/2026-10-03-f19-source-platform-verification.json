@@ -1,0 +1,3118 @@
+{
+  "format": "forge.f19-source-platform-followup/1",
+  "basis_commit": "bc1acfd76da00a9f24839de310f1a03eedae253e",
+  "status": "Completed macOS development checks; exact source pins, not hosted acceptance",
+  "changes": [
+    {
+      "path": "src/workspace/transaction_state.rs",
+      "reason": "Equivalent if-let/else replaces a Linux match rejected by single_match_else after passing hosted suites."
+    },
+    {
+      "path": "src/workspace/root_transaction.rs",
+      "reason": "The unsupported-platform path explicitly drops its owned record; Windows restore remains typed unavailable."
+    }
+  ],
+  "source_pins": [
+    {
+      "repository_path": ".github/workflows/release.yml",
+      "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+      "bytes": 8806
+    },
+    {
+      "repository_path": ".github/workflows/workspace-verification.yml",
+      "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+      "bytes": 18264
+    },
+    {
+      "repository_path": "Cargo.lock",
+      "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+      "bytes": 74338
+    },
+    {
+      "repository_path": "Cargo.toml",
+      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+      "bytes": 2344
+    },
+    {
+      "repository_path": "docs/CODEMAPS.md",
+      "sha256": "a85b5b796048ea911916ca1ab22e5f3e73de8e447558d8d07e518afc91cdc175",
+      "bytes": 11262
+    },
+    {
+      "repository_path": "docs/api/capability-matrix-v2.json",
+      "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+      "bytes": 26130
+    },
+    {
+      "repository_path": "docs/api/capability-matrix-v2.md",
+      "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+      "bytes": 13487
+    },
+    {
+      "repository_path": "docs/api/compatibility.md",
+      "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+      "bytes": 15624
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/README.md",
+      "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+      "bytes": 2069
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/index.json",
+      "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+      "bytes": 43616
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+      "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+      "bytes": 378
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+      "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+      "bytes": 739
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+      "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+      "bytes": 374
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+      "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+      "bytes": 379
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+      "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+      "bytes": 412
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+      "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+      "bytes": 735
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+      "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+      "bytes": 739
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+      "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+      "bytes": 163
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+      "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+      "bytes": 148
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+      "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+      "bytes": 151
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+      "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+      "bytes": 153
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+      "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+      "bytes": 123
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+      "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+      "bytes": 570
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+      "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+      "bytes": 570
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+      "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+      "bytes": 2217
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+      "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+      "bytes": 185
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+      "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+      "bytes": 312
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+      "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+      "bytes": 320
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+      "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+      "bytes": 1494
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+      "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+      "bytes": 1531
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+      "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+      "bytes": 481
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+      "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+      "bytes": 674
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+      "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+      "bytes": 213
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+      "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+      "bytes": 334
+    },
+    {
+      "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+      "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+      "bytes": 325449
+    },
+    {
+      "repository_path": "docs/api/migration-v2.md",
+      "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+      "bytes": 9820
+    },
+    {
+      "repository_path": "docs/api/release-artifacts.json",
+      "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+      "bytes": 1529
+    },
+    {
+      "repository_path": "docs/architecture.md",
+      "sha256": "7941a887567e13913ee9f6f8f25242c6477f5bac2e689ef2f6cf5a958c7507ee",
+      "bytes": 28631
+    },
+    {
+      "repository_path": "docs/local-workspace.md",
+      "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+      "bytes": 23381
+    },
+    {
+      "repository_path": "docs/usage-guide.md",
+      "sha256": "c1cdd3f772b0af4c8bdbdcda07f8e2b92cd9831cd510251db74323b643fddf7b",
+      "bytes": 38654
+    },
+    {
+      "repository_path": "docs/workspace-bundle-receipts.md",
+      "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+      "bytes": 11937
+    },
+    {
+      "repository_path": "docs/workspace-index-bundles.md",
+      "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+      "bytes": 14286
+    },
+    {
+      "repository_path": "docs/workspace-lifecycle-impact.md",
+      "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+      "bytes": 5437
+    },
+    {
+      "repository_path": "docs/workspace-source-bundles.md",
+      "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+      "bytes": 12565
+    },
+    {
+      "repository_path": "schemas/forge.workspace-1.schema.json",
+      "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+      "bytes": 4223
+    },
+    {
+      "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+      "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+      "bytes": 11859
+    },
+    {
+      "repository_path": "scripts/test_workspace_bundle_browser.py",
+      "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+      "bytes": 12059
+    },
+    {
+      "repository_path": "scripts/test_workspace_bundle_workflow.py",
+      "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+      "bytes": 14388
+    },
+    {
+      "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+      "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+      "bytes": 2167
+    },
+    {
+      "repository_path": "scripts/test_workspace_lifecycle_client.py",
+      "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+      "bytes": 9592
+    },
+    {
+      "repository_path": "scripts/test_workspace_source_browser.py",
+      "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+      "bytes": 16273
+    },
+    {
+      "repository_path": "scripts/test_workspace_source_bundle_client.py",
+      "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+      "bytes": 34381
+    },
+    {
+      "repository_path": "scripts/test_workspace_source_workflow.py",
+      "sha256": "1b147018ac3f006ec53f1734f810327ff9c848e65a85c9c2f5cfe5e6bbc5de2f",
+      "bytes": 12080
+    },
+    {
+      "repository_path": "scripts/workspace_client.py",
+      "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+      "bytes": 52926
+    },
+    {
+      "repository_path": "src/applicability/mod.rs",
+      "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+      "bytes": 75602
+    },
+    {
+      "repository_path": "src/workspace/contract.rs",
+      "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+      "bytes": 22628
+    },
+    {
+      "repository_path": "src/workspace/effects.rs",
+      "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+      "bytes": 72296
+    },
+    {
+      "repository_path": "src/workspace/http.rs",
+      "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+      "bytes": 83790
+    },
+    {
+      "repository_path": "src/workspace/http_source.rs",
+      "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+      "bytes": 21744
+    },
+    {
+      "repository_path": "src/workspace/index.rs",
+      "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+      "bytes": 9787
+    },
+    {
+      "repository_path": "src/workspace/mod.rs",
+      "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+      "bytes": 1267
+    },
+    {
+      "repository_path": "src/workspace/root.rs",
+      "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+      "bytes": 31066
+    },
+    {
+      "repository_path": "src/workspace/root_transaction.rs",
+      "sha256": "bf2a81356a1a31ea3d15a3487dfa0b7fe26756de00f3edbae8f00dd47d8f1b7a",
+      "bytes": 117878
+    },
+    {
+      "repository_path": "src/workspace/services.rs",
+      "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+      "bytes": 78888
+    },
+    {
+      "repository_path": "src/workspace/source_bundle_effects.rs",
+      "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+      "bytes": 40663
+    },
+    {
+      "repository_path": "src/workspace/source_bundles.rs",
+      "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+      "bytes": 34590
+    },
+    {
+      "repository_path": "src/workspace/source_receipts.rs",
+      "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+      "bytes": 34271
+    },
+    {
+      "repository_path": "src/workspace/source_validation.rs",
+      "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+      "bytes": 31189
+    },
+    {
+      "repository_path": "src/workspace/transaction_state.rs",
+      "sha256": "ab9232a469f87b8fc7a592f4298ffee03246ac6fdeabbfe9caa63b224ef6bfaf",
+      "bytes": 42770
+    },
+    {
+      "repository_path": "tests/api_contract_validation.rs",
+      "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+      "bytes": 92597
+    },
+    {
+      "repository_path": "tests/workspace_cli_test.rs",
+      "sha256": "e93a3d699350c162bcd16a9c905575d2885d42743d8e5a1899fa5715846d4a61",
+      "bytes": 177839
+    },
+    {
+      "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+      "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+      "bytes": 15940
+    },
+    {
+      "repository_path": "ui/tests/workspace-navigation.cjs",
+      "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+      "bytes": 262569
+    },
+    {
+      "repository_path": "ui/tests/workspace-source-browser.cjs",
+      "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+      "bytes": 23786
+    },
+    {
+      "repository_path": "ui/workspace.js",
+      "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+      "bytes": 203307
+    }
+  ],
+  "selected_rust": {
+    "census": {
+      "path": "/private/tmp/forge-f19-pr196-platform-rustdoc-census-v1/census.json",
+      "sha256": "9658f8d8473a500f628e9aacf3361f2f3ab1b762662790e7da96a622972a8383",
+      "bytes": 1292172
+    },
+    "observation": {
+      "path": "/private/tmp/forge-f19-s6-source-final-platform-selected-coverage-v1.json",
+      "sha256": "182dc55c7bc750e9af1680697877c40352adbab7a5d5702540e8fa07180497cf",
+      "bytes": 533051
+    },
+    "functions": 319,
+    "documented_functions": 319,
+    "documented_types": 39,
+    "predecessor_cohort": {
+      "selected": 319,
+      "preserved": 319,
+      "removed": [],
+      "added": []
+    },
+    "scopes": {
+      "cfg-test": {
+        "selected": 101,
+        "documented": 101,
+        "positive": 98,
+        "zero": 2,
+        "unmapped": 1
+      },
+      "integration-test": {
+        "selected": 17,
+        "documented": 17,
+        "positive": 16,
+        "zero": 1,
+        "unmapped": 0
+      },
+      "production-lexical": {
+        "selected": 201,
+        "documented": 201,
+        "positive": 197,
+        "zero": 4,
+        "unmapped": 0
+      }
+    },
+    "positive": 311,
+    "zero": [
+      {
+        "path": "src/workspace/http.rs",
+        "qualified_name": "crate::workspace::http::read_query_response"
+      },
+      {
+        "path": "src/workspace/http_source.rs",
+        "qualified_name": "crate::workspace::http_source::SourceControl::interruption"
+      },
+      {
+        "path": "src/workspace/root_transaction.rs",
+        "qualified_name": "crate::workspace::root_transaction::tests::StopControl::interruption"
+      },
+      {
+        "path": "src/workspace/root_transaction.rs",
+        "qualified_name": "crate::workspace::root_transaction::tests::AfterPublish::interruption"
+      },
+      {
+        "path": "src/workspace/source_validation.rs",
+        "qualified_name": "crate::workspace::source_validation::Sources::native_mapping"
+      },
+      {
+        "path": "src/workspace/transaction_state.rs",
+        "qualified_name": "crate::workspace::transaction_state::capacity"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "qualified_name": "integration::workspace_cli_test::Server::startup_failure"
+      }
+    ],
+    "unmapped": [
+      {
+        "path": "src/workspace/root_transaction.rs",
+        "qualified_name": "crate::workspace::root_transaction::tests::unsupported_native_planning_is_typed_unavailable_and_preserves_project_bytes"
+      }
+    ],
+    "llvm_reported_totals": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 7366,
+        "covered": 6291,
+        "percent": 85.40591908770024
+      },
+      "instantiations": {
+        "count": 12696,
+        "covered": 8799,
+        "percent": 69.30529300567107
+      },
+      "lines": {
+        "count": 76011,
+        "covered": 69500,
+        "percent": 91.43413453315968
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 131907,
+        "covered": 120170,
+        "notcovered": 11737,
+        "percent": 91.10206433320445
+      }
+    },
+    "branch_mcdc_availability": {
+      "branches": "unavailable: zero exported denominator; no coverage percentage inferred",
+      "mcdc": "unavailable: zero exported denominator; no coverage percentage inferred"
+    },
+    "types": 39
+  },
+  "checks": [
+    {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-format-v1.json",
+        "sha256": "1a9fea561ccdec10ed99bf95dfcf8d7ca96d11682ff2cde5e42daae24cb24bf4",
+        "bytes": 30231
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-format-v1.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "cargo",
+        "fmt",
+        "--check"
+      ],
+      "source_pins": [
+        {
+          "repository_path": ".github/workflows/release.yml",
+          "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+          "bytes": 8806
+        },
+        {
+          "repository_path": ".github/workflows/workspace-verification.yml",
+          "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+          "bytes": 18264
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "docs/CODEMAPS.md",
+          "sha256": "a85b5b796048ea911916ca1ab22e5f3e73de8e447558d8d07e518afc91cdc175",
+          "bytes": 11262
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.json",
+          "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+          "bytes": 26130
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.md",
+          "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+          "bytes": 13487
+        },
+        {
+          "repository_path": "docs/api/compatibility.md",
+          "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+          "bytes": 15624
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/README.md",
+          "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+          "bytes": 2069
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/index.json",
+          "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+          "bytes": 43616
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+          "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+          "bytes": 378
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+          "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+          "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+          "bytes": 374
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+          "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+          "bytes": 379
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+          "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+          "bytes": 412
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+          "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+          "bytes": 735
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+          "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+          "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+          "bytes": 163
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+          "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+          "bytes": 148
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+          "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+          "bytes": 151
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+          "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+          "bytes": 153
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+          "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+          "bytes": 123
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+          "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+          "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+          "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+          "bytes": 2217
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+          "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+          "bytes": 185
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+          "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+          "bytes": 312
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+          "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+          "bytes": 320
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+          "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+          "bytes": 1494
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+          "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+          "bytes": 1531
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+          "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+          "bytes": 481
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+          "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+          "bytes": 674
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+          "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+          "bytes": 213
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+          "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+          "bytes": 334
+        },
+        {
+          "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+          "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+          "bytes": 325449
+        },
+        {
+          "repository_path": "docs/api/migration-v2.md",
+          "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+          "bytes": 9820
+        },
+        {
+          "repository_path": "docs/api/release-artifacts.json",
+          "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+          "bytes": 1529
+        },
+        {
+          "repository_path": "docs/architecture.md",
+          "sha256": "7941a887567e13913ee9f6f8f25242c6477f5bac2e689ef2f6cf5a958c7507ee",
+          "bytes": 28631
+        },
+        {
+          "repository_path": "docs/local-workspace.md",
+          "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+          "bytes": 23381
+        },
+        {
+          "repository_path": "docs/usage-guide.md",
+          "sha256": "c1cdd3f772b0af4c8bdbdcda07f8e2b92cd9831cd510251db74323b643fddf7b",
+          "bytes": 38654
+        },
+        {
+          "repository_path": "docs/workspace-bundle-receipts.md",
+          "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+          "bytes": 11937
+        },
+        {
+          "repository_path": "docs/workspace-index-bundles.md",
+          "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+          "bytes": 14286
+        },
+        {
+          "repository_path": "docs/workspace-lifecycle-impact.md",
+          "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+          "bytes": 5437
+        },
+        {
+          "repository_path": "docs/workspace-source-bundle-verification.md",
+          "sha256": "56b795351e5630b13d66c4b6bcff31d95d1e8c7f3887bf6a8e393f7ca96dcdc4",
+          "bytes": 6686
+        },
+        {
+          "repository_path": "docs/workspace-source-bundles.md",
+          "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+          "bytes": 12565
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+          "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+          "bytes": 11859
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_browser.py",
+          "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+          "bytes": 12059
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow.py",
+          "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+          "bytes": 14388
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+          "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+          "bytes": 2167
+        },
+        {
+          "repository_path": "scripts/test_workspace_lifecycle_client.py",
+          "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+          "bytes": 9592
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_browser.py",
+          "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+          "bytes": 16273
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_bundle_client.py",
+          "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+          "bytes": 34381
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_workflow.py",
+          "sha256": "1b147018ac3f006ec53f1734f810327ff9c848e65a85c9c2f5cfe5e6bbc5de2f",
+          "bytes": 12080
+        },
+        {
+          "repository_path": "scripts/workspace_client.py",
+          "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+          "bytes": 52926
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/contract.rs",
+          "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+          "bytes": 22628
+        },
+        {
+          "repository_path": "src/workspace/effects.rs",
+          "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+          "bytes": 72296
+        },
+        {
+          "repository_path": "src/workspace/http.rs",
+          "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+          "bytes": 83790
+        },
+        {
+          "repository_path": "src/workspace/http_source.rs",
+          "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+          "bytes": 21744
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/mod.rs",
+          "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+          "bytes": 1267
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+          "bytes": 31066
+        },
+        {
+          "repository_path": "src/workspace/root_transaction.rs",
+          "sha256": "bf2a81356a1a31ea3d15a3487dfa0b7fe26756de00f3edbae8f00dd47d8f1b7a",
+          "bytes": 117878
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+          "bytes": 78888
+        },
+        {
+          "repository_path": "src/workspace/source_bundle_effects.rs",
+          "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+          "bytes": 40663
+        },
+        {
+          "repository_path": "src/workspace/source_bundles.rs",
+          "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+          "bytes": 34590
+        },
+        {
+          "repository_path": "src/workspace/source_receipts.rs",
+          "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+          "bytes": 34271
+        },
+        {
+          "repository_path": "src/workspace/source_validation.rs",
+          "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+          "bytes": 31189
+        },
+        {
+          "repository_path": "src/workspace/transaction_state.rs",
+          "sha256": "ab9232a469f87b8fc7a592f4298ffee03246ac6fdeabbfe9caa63b224ef6bfaf",
+          "bytes": 42770
+        },
+        {
+          "repository_path": "tests/api_contract_validation.rs",
+          "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+          "bytes": 92597
+        },
+        {
+          "repository_path": "tests/workspace_cli_test.rs",
+          "sha256": "e93a3d699350c162bcd16a9c905575d2885d42743d8e5a1899fa5715846d4a61",
+          "bytes": 177839
+        },
+        {
+          "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+          "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+          "bytes": 15940
+        },
+        {
+          "repository_path": "ui/tests/workspace-navigation.cjs",
+          "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+          "bytes": 262569
+        },
+        {
+          "repository_path": "ui/tests/workspace-source-browser.cjs",
+          "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+          "bytes": 23786
+        },
+        {
+          "repository_path": "ui/workspace.js",
+          "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+          "bytes": 203307
+        }
+      ],
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-strict-clippy-v1.json",
+        "sha256": "2bf5b829dfc08b598b4795770a7b3a554c6f6c783fa399849b521f2733ff1aac",
+        "bytes": 30330
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-strict-clippy-v1.log",
+        "sha256": "e29d6f869f421841044893cd69c9f81407c76a19b29b5441095fed2d835cbe7c",
+        "bytes": 147
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "source_pins": [
+        {
+          "repository_path": ".github/workflows/release.yml",
+          "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+          "bytes": 8806
+        },
+        {
+          "repository_path": ".github/workflows/workspace-verification.yml",
+          "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+          "bytes": 18264
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "docs/CODEMAPS.md",
+          "sha256": "a85b5b796048ea911916ca1ab22e5f3e73de8e447558d8d07e518afc91cdc175",
+          "bytes": 11262
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.json",
+          "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+          "bytes": 26130
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.md",
+          "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+          "bytes": 13487
+        },
+        {
+          "repository_path": "docs/api/compatibility.md",
+          "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+          "bytes": 15624
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/README.md",
+          "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+          "bytes": 2069
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/index.json",
+          "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+          "bytes": 43616
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+          "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+          "bytes": 378
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+          "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+          "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+          "bytes": 374
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+          "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+          "bytes": 379
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+          "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+          "bytes": 412
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+          "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+          "bytes": 735
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+          "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+          "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+          "bytes": 163
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+          "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+          "bytes": 148
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+          "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+          "bytes": 151
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+          "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+          "bytes": 153
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+          "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+          "bytes": 123
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+          "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+          "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+          "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+          "bytes": 2217
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+          "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+          "bytes": 185
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+          "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+          "bytes": 312
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+          "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+          "bytes": 320
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+          "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+          "bytes": 1494
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+          "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+          "bytes": 1531
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+          "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+          "bytes": 481
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+          "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+          "bytes": 674
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+          "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+          "bytes": 213
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+          "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+          "bytes": 334
+        },
+        {
+          "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+          "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+          "bytes": 325449
+        },
+        {
+          "repository_path": "docs/api/migration-v2.md",
+          "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+          "bytes": 9820
+        },
+        {
+          "repository_path": "docs/api/release-artifacts.json",
+          "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+          "bytes": 1529
+        },
+        {
+          "repository_path": "docs/architecture.md",
+          "sha256": "7941a887567e13913ee9f6f8f25242c6477f5bac2e689ef2f6cf5a958c7507ee",
+          "bytes": 28631
+        },
+        {
+          "repository_path": "docs/local-workspace.md",
+          "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+          "bytes": 23381
+        },
+        {
+          "repository_path": "docs/usage-guide.md",
+          "sha256": "c1cdd3f772b0af4c8bdbdcda07f8e2b92cd9831cd510251db74323b643fddf7b",
+          "bytes": 38654
+        },
+        {
+          "repository_path": "docs/workspace-bundle-receipts.md",
+          "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+          "bytes": 11937
+        },
+        {
+          "repository_path": "docs/workspace-index-bundles.md",
+          "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+          "bytes": 14286
+        },
+        {
+          "repository_path": "docs/workspace-lifecycle-impact.md",
+          "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+          "bytes": 5437
+        },
+        {
+          "repository_path": "docs/workspace-source-bundle-verification.md",
+          "sha256": "56b795351e5630b13d66c4b6bcff31d95d1e8c7f3887bf6a8e393f7ca96dcdc4",
+          "bytes": 6686
+        },
+        {
+          "repository_path": "docs/workspace-source-bundles.md",
+          "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+          "bytes": 12565
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+          "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+          "bytes": 11859
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_browser.py",
+          "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+          "bytes": 12059
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow.py",
+          "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+          "bytes": 14388
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+          "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+          "bytes": 2167
+        },
+        {
+          "repository_path": "scripts/test_workspace_lifecycle_client.py",
+          "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+          "bytes": 9592
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_browser.py",
+          "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+          "bytes": 16273
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_bundle_client.py",
+          "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+          "bytes": 34381
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_workflow.py",
+          "sha256": "1b147018ac3f006ec53f1734f810327ff9c848e65a85c9c2f5cfe5e6bbc5de2f",
+          "bytes": 12080
+        },
+        {
+          "repository_path": "scripts/workspace_client.py",
+          "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+          "bytes": 52926
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/contract.rs",
+          "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+          "bytes": 22628
+        },
+        {
+          "repository_path": "src/workspace/effects.rs",
+          "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+          "bytes": 72296
+        },
+        {
+          "repository_path": "src/workspace/http.rs",
+          "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+          "bytes": 83790
+        },
+        {
+          "repository_path": "src/workspace/http_source.rs",
+          "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+          "bytes": 21744
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/mod.rs",
+          "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+          "bytes": 1267
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+          "bytes": 31066
+        },
+        {
+          "repository_path": "src/workspace/root_transaction.rs",
+          "sha256": "bf2a81356a1a31ea3d15a3487dfa0b7fe26756de00f3edbae8f00dd47d8f1b7a",
+          "bytes": 117878
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+          "bytes": 78888
+        },
+        {
+          "repository_path": "src/workspace/source_bundle_effects.rs",
+          "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+          "bytes": 40663
+        },
+        {
+          "repository_path": "src/workspace/source_bundles.rs",
+          "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+          "bytes": 34590
+        },
+        {
+          "repository_path": "src/workspace/source_receipts.rs",
+          "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+          "bytes": 34271
+        },
+        {
+          "repository_path": "src/workspace/source_validation.rs",
+          "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+          "bytes": 31189
+        },
+        {
+          "repository_path": "src/workspace/transaction_state.rs",
+          "sha256": "ab9232a469f87b8fc7a592f4298ffee03246ac6fdeabbfe9caa63b224ef6bfaf",
+          "bytes": 42770
+        },
+        {
+          "repository_path": "tests/api_contract_validation.rs",
+          "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+          "bytes": 92597
+        },
+        {
+          "repository_path": "tests/workspace_cli_test.rs",
+          "sha256": "e93a3d699350c162bcd16a9c905575d2885d42743d8e5a1899fa5715846d4a61",
+          "bytes": 177839
+        },
+        {
+          "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+          "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+          "bytes": 15940
+        },
+        {
+          "repository_path": "ui/tests/workspace-navigation.cjs",
+          "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+          "bytes": 262569
+        },
+        {
+          "repository_path": "ui/tests/workspace-source-browser.cjs",
+          "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+          "bytes": 23786
+        },
+        {
+          "repository_path": "ui/workspace.js",
+          "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+          "bytes": 203307
+        }
+      ],
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-llvm-whole-v1.json",
+        "sha256": "e4f2a8381d3ad649e1c42aeff3b8a9bc3eccb068d29060618a79ef4b4b6fa53b",
+        "bytes": 30494
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-llvm-whole-v1.log",
+        "sha256": "0422980ba255ee34baf3e934b80da1c36428cb4e870af9a3fdfd02b5e9018c3b",
+        "bytes": 251018
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f19-source-final-platform-llvm-1.99.0",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "cargo",
+        "llvm-cov",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f19-s6-source-final-platform-llvm-whole-v1.json"
+      ],
+      "source_pins": [
+        {
+          "repository_path": ".github/workflows/release.yml",
+          "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+          "bytes": 8806
+        },
+        {
+          "repository_path": ".github/workflows/workspace-verification.yml",
+          "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+          "bytes": 18264
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "docs/CODEMAPS.md",
+          "sha256": "a85b5b796048ea911916ca1ab22e5f3e73de8e447558d8d07e518afc91cdc175",
+          "bytes": 11262
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.json",
+          "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+          "bytes": 26130
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.md",
+          "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+          "bytes": 13487
+        },
+        {
+          "repository_path": "docs/api/compatibility.md",
+          "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+          "bytes": 15624
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/README.md",
+          "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+          "bytes": 2069
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/index.json",
+          "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+          "bytes": 43616
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+          "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+          "bytes": 378
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+          "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+          "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+          "bytes": 374
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+          "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+          "bytes": 379
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+          "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+          "bytes": 412
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+          "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+          "bytes": 735
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+          "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+          "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+          "bytes": 163
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+          "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+          "bytes": 148
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+          "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+          "bytes": 151
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+          "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+          "bytes": 153
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+          "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+          "bytes": 123
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+          "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+          "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+          "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+          "bytes": 2217
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+          "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+          "bytes": 185
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+          "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+          "bytes": 312
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+          "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+          "bytes": 320
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+          "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+          "bytes": 1494
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+          "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+          "bytes": 1531
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+          "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+          "bytes": 481
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+          "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+          "bytes": 674
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+          "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+          "bytes": 213
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+          "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+          "bytes": 334
+        },
+        {
+          "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+          "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+          "bytes": 325449
+        },
+        {
+          "repository_path": "docs/api/migration-v2.md",
+          "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+          "bytes": 9820
+        },
+        {
+          "repository_path": "docs/api/release-artifacts.json",
+          "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+          "bytes": 1529
+        },
+        {
+          "repository_path": "docs/architecture.md",
+          "sha256": "7941a887567e13913ee9f6f8f25242c6477f5bac2e689ef2f6cf5a958c7507ee",
+          "bytes": 28631
+        },
+        {
+          "repository_path": "docs/local-workspace.md",
+          "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+          "bytes": 23381
+        },
+        {
+          "repository_path": "docs/usage-guide.md",
+          "sha256": "c1cdd3f772b0af4c8bdbdcda07f8e2b92cd9831cd510251db74323b643fddf7b",
+          "bytes": 38654
+        },
+        {
+          "repository_path": "docs/workspace-bundle-receipts.md",
+          "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+          "bytes": 11937
+        },
+        {
+          "repository_path": "docs/workspace-index-bundles.md",
+          "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+          "bytes": 14286
+        },
+        {
+          "repository_path": "docs/workspace-lifecycle-impact.md",
+          "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+          "bytes": 5437
+        },
+        {
+          "repository_path": "docs/workspace-source-bundle-verification.md",
+          "sha256": "56b795351e5630b13d66c4b6bcff31d95d1e8c7f3887bf6a8e393f7ca96dcdc4",
+          "bytes": 6686
+        },
+        {
+          "repository_path": "docs/workspace-source-bundles.md",
+          "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+          "bytes": 12565
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+          "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+          "bytes": 11859
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_browser.py",
+          "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+          "bytes": 12059
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow.py",
+          "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+          "bytes": 14388
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+          "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+          "bytes": 2167
+        },
+        {
+          "repository_path": "scripts/test_workspace_lifecycle_client.py",
+          "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+          "bytes": 9592
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_browser.py",
+          "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+          "bytes": 16273
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_bundle_client.py",
+          "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+          "bytes": 34381
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_workflow.py",
+          "sha256": "1b147018ac3f006ec53f1734f810327ff9c848e65a85c9c2f5cfe5e6bbc5de2f",
+          "bytes": 12080
+        },
+        {
+          "repository_path": "scripts/workspace_client.py",
+          "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+          "bytes": 52926
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/contract.rs",
+          "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+          "bytes": 22628
+        },
+        {
+          "repository_path": "src/workspace/effects.rs",
+          "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+          "bytes": 72296
+        },
+        {
+          "repository_path": "src/workspace/http.rs",
+          "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+          "bytes": 83790
+        },
+        {
+          "repository_path": "src/workspace/http_source.rs",
+          "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+          "bytes": 21744
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/mod.rs",
+          "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+          "bytes": 1267
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+          "bytes": 31066
+        },
+        {
+          "repository_path": "src/workspace/root_transaction.rs",
+          "sha256": "bf2a81356a1a31ea3d15a3487dfa0b7fe26756de00f3edbae8f00dd47d8f1b7a",
+          "bytes": 117878
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+          "bytes": 78888
+        },
+        {
+          "repository_path": "src/workspace/source_bundle_effects.rs",
+          "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+          "bytes": 40663
+        },
+        {
+          "repository_path": "src/workspace/source_bundles.rs",
+          "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+          "bytes": 34590
+        },
+        {
+          "repository_path": "src/workspace/source_receipts.rs",
+          "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+          "bytes": 34271
+        },
+        {
+          "repository_path": "src/workspace/source_validation.rs",
+          "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+          "bytes": 31189
+        },
+        {
+          "repository_path": "src/workspace/transaction_state.rs",
+          "sha256": "ab9232a469f87b8fc7a592f4298ffee03246ac6fdeabbfe9caa63b224ef6bfaf",
+          "bytes": 42770
+        },
+        {
+          "repository_path": "tests/api_contract_validation.rs",
+          "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+          "bytes": 92597
+        },
+        {
+          "repository_path": "tests/workspace_cli_test.rs",
+          "sha256": "e93a3d699350c162bcd16a9c905575d2885d42743d8e5a1899fa5715846d4a61",
+          "bytes": 177839
+        },
+        {
+          "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+          "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+          "bytes": 15940
+        },
+        {
+          "repository_path": "ui/tests/workspace-navigation.cjs",
+          "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+          "bytes": 262569
+        },
+        {
+          "repository_path": "ui/tests/workspace-source-browser.cjs",
+          "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+          "bytes": 23786
+        },
+        {
+          "repository_path": "ui/workspace.js",
+          "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+          "bytes": 203307
+        }
+      ],
+      "test_summaries": {
+        "summaries": 68,
+        "passed": 2933,
+        "failed": 0,
+        "ignored": 3
+      }
+    },
+    {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-native-llvm-v1.json",
+        "sha256": "d8b83ff778aa2198f899eac2357c4c4c8dd377e82b26c8607ad2bf63f7743bf2",
+        "bytes": 30587
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-native-llvm-v1.log",
+        "sha256": "e8fc2f29f333080d305cb1b1dbe790922ac237cb39c0014a7cbf992d6d4cc3fa",
+        "bytes": 130
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "LLVM_PROFILE_FILE=/private/tmp/forge-f19-source-final-platform-llvm-1.99.0/forge-%p-%m.profraw",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-source-final-platform-native-trace-v1",
+        "scripts/test_workspace_source_workflow.py",
+        "--forge",
+        "/private/tmp/forge-f19-source-final-platform-llvm-1.99.0/debug/forge",
+        "--out",
+        "/private/tmp/forge-f19-s6-source-final-platform-native-llvm-v1"
+      ],
+      "source_pins": [
+        {
+          "repository_path": ".github/workflows/release.yml",
+          "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+          "bytes": 8806
+        },
+        {
+          "repository_path": ".github/workflows/workspace-verification.yml",
+          "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+          "bytes": 18264
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "docs/CODEMAPS.md",
+          "sha256": "a85b5b796048ea911916ca1ab22e5f3e73de8e447558d8d07e518afc91cdc175",
+          "bytes": 11262
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.json",
+          "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+          "bytes": 26130
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.md",
+          "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+          "bytes": 13487
+        },
+        {
+          "repository_path": "docs/api/compatibility.md",
+          "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+          "bytes": 15624
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/README.md",
+          "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+          "bytes": 2069
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/index.json",
+          "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+          "bytes": 43616
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+          "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+          "bytes": 378
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+          "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+          "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+          "bytes": 374
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+          "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+          "bytes": 379
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+          "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+          "bytes": 412
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+          "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+          "bytes": 735
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+          "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+          "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+          "bytes": 163
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+          "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+          "bytes": 148
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+          "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+          "bytes": 151
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+          "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+          "bytes": 153
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+          "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+          "bytes": 123
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+          "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+          "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+          "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+          "bytes": 2217
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+          "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+          "bytes": 185
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+          "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+          "bytes": 312
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+          "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+          "bytes": 320
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+          "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+          "bytes": 1494
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+          "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+          "bytes": 1531
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+          "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+          "bytes": 481
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+          "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+          "bytes": 674
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+          "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+          "bytes": 213
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+          "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+          "bytes": 334
+        },
+        {
+          "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+          "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+          "bytes": 325449
+        },
+        {
+          "repository_path": "docs/api/migration-v2.md",
+          "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+          "bytes": 9820
+        },
+        {
+          "repository_path": "docs/api/release-artifacts.json",
+          "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+          "bytes": 1529
+        },
+        {
+          "repository_path": "docs/architecture.md",
+          "sha256": "7941a887567e13913ee9f6f8f25242c6477f5bac2e689ef2f6cf5a958c7507ee",
+          "bytes": 28631
+        },
+        {
+          "repository_path": "docs/local-workspace.md",
+          "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+          "bytes": 23381
+        },
+        {
+          "repository_path": "docs/usage-guide.md",
+          "sha256": "c1cdd3f772b0af4c8bdbdcda07f8e2b92cd9831cd510251db74323b643fddf7b",
+          "bytes": 38654
+        },
+        {
+          "repository_path": "docs/workspace-bundle-receipts.md",
+          "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+          "bytes": 11937
+        },
+        {
+          "repository_path": "docs/workspace-index-bundles.md",
+          "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+          "bytes": 14286
+        },
+        {
+          "repository_path": "docs/workspace-lifecycle-impact.md",
+          "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+          "bytes": 5437
+        },
+        {
+          "repository_path": "docs/workspace-source-bundle-verification.md",
+          "sha256": "56b795351e5630b13d66c4b6bcff31d95d1e8c7f3887bf6a8e393f7ca96dcdc4",
+          "bytes": 6686
+        },
+        {
+          "repository_path": "docs/workspace-source-bundles.md",
+          "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+          "bytes": 12565
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+          "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+          "bytes": 11859
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_browser.py",
+          "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+          "bytes": 12059
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow.py",
+          "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+          "bytes": 14388
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+          "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+          "bytes": 2167
+        },
+        {
+          "repository_path": "scripts/test_workspace_lifecycle_client.py",
+          "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+          "bytes": 9592
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_browser.py",
+          "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+          "bytes": 16273
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_bundle_client.py",
+          "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+          "bytes": 34381
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_workflow.py",
+          "sha256": "1b147018ac3f006ec53f1734f810327ff9c848e65a85c9c2f5cfe5e6bbc5de2f",
+          "bytes": 12080
+        },
+        {
+          "repository_path": "scripts/workspace_client.py",
+          "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+          "bytes": 52926
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/contract.rs",
+          "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+          "bytes": 22628
+        },
+        {
+          "repository_path": "src/workspace/effects.rs",
+          "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+          "bytes": 72296
+        },
+        {
+          "repository_path": "src/workspace/http.rs",
+          "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+          "bytes": 83790
+        },
+        {
+          "repository_path": "src/workspace/http_source.rs",
+          "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+          "bytes": 21744
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/mod.rs",
+          "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+          "bytes": 1267
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+          "bytes": 31066
+        },
+        {
+          "repository_path": "src/workspace/root_transaction.rs",
+          "sha256": "bf2a81356a1a31ea3d15a3487dfa0b7fe26756de00f3edbae8f00dd47d8f1b7a",
+          "bytes": 117878
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+          "bytes": 78888
+        },
+        {
+          "repository_path": "src/workspace/source_bundle_effects.rs",
+          "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+          "bytes": 40663
+        },
+        {
+          "repository_path": "src/workspace/source_bundles.rs",
+          "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+          "bytes": 34590
+        },
+        {
+          "repository_path": "src/workspace/source_receipts.rs",
+          "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+          "bytes": 34271
+        },
+        {
+          "repository_path": "src/workspace/source_validation.rs",
+          "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+          "bytes": 31189
+        },
+        {
+          "repository_path": "src/workspace/transaction_state.rs",
+          "sha256": "ab9232a469f87b8fc7a592f4298ffee03246ac6fdeabbfe9caa63b224ef6bfaf",
+          "bytes": 42770
+        },
+        {
+          "repository_path": "tests/api_contract_validation.rs",
+          "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+          "bytes": 92597
+        },
+        {
+          "repository_path": "tests/workspace_cli_test.rs",
+          "sha256": "e93a3d699350c162bcd16a9c905575d2885d42743d8e5a1899fa5715846d4a61",
+          "bytes": 177839
+        },
+        {
+          "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+          "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+          "bytes": 15940
+        },
+        {
+          "repository_path": "ui/tests/workspace-navigation.cjs",
+          "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+          "bytes": 262569
+        },
+        {
+          "repository_path": "ui/tests/workspace-source-browser.cjs",
+          "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+          "bytes": 23786
+        },
+        {
+          "repository_path": "ui/workspace.js",
+          "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+          "bytes": 203307
+        }
+      ],
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-cold-native-v1.json",
+        "sha256": "8df7d69f69b29b2bf520a59e609d55a8cfa114817e2b1b57a0103b1d5e95dbd8",
+        "bytes": 30554
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-cold-native-v1.log",
+        "sha256": "830c3e07232ad7fb8c1484ca56a7184790288a1624195e1bbc40ca19c94ea50c",
+        "bytes": 145
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "LLVM_PROFILE_FILE=/private/tmp/forge-f19-source-final-platform-llvm-1.99.0/forge-%p-%m.profraw",
+        "python3",
+        "-B",
+        "/private/tmp/forge-f19-cold-private-startup-v2.py",
+        "--forge",
+        "/private/tmp/forge-f19-source-final-platform-llvm-1.99.0/debug/forge",
+        "--source-root",
+        "/Users/bluby/.codex/worktrees/current-stable-clippy/forge",
+        "--out",
+        "/private/tmp/forge-f19-s6-source-final-platform-cold-native-v1"
+      ],
+      "source_pins": [
+        {
+          "repository_path": ".github/workflows/release.yml",
+          "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+          "bytes": 8806
+        },
+        {
+          "repository_path": ".github/workflows/workspace-verification.yml",
+          "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+          "bytes": 18264
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "docs/CODEMAPS.md",
+          "sha256": "a85b5b796048ea911916ca1ab22e5f3e73de8e447558d8d07e518afc91cdc175",
+          "bytes": 11262
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.json",
+          "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+          "bytes": 26130
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.md",
+          "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+          "bytes": 13487
+        },
+        {
+          "repository_path": "docs/api/compatibility.md",
+          "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+          "bytes": 15624
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/README.md",
+          "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+          "bytes": 2069
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/index.json",
+          "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+          "bytes": 43616
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+          "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+          "bytes": 378
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+          "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+          "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+          "bytes": 374
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+          "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+          "bytes": 379
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+          "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+          "bytes": 412
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+          "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+          "bytes": 735
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+          "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+          "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+          "bytes": 163
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+          "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+          "bytes": 148
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+          "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+          "bytes": 151
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+          "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+          "bytes": 153
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+          "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+          "bytes": 123
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+          "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+          "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+          "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+          "bytes": 2217
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+          "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+          "bytes": 185
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+          "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+          "bytes": 312
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+          "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+          "bytes": 320
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+          "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+          "bytes": 1494
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+          "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+          "bytes": 1531
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+          "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+          "bytes": 481
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+          "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+          "bytes": 674
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+          "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+          "bytes": 213
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+          "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+          "bytes": 334
+        },
+        {
+          "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+          "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+          "bytes": 325449
+        },
+        {
+          "repository_path": "docs/api/migration-v2.md",
+          "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+          "bytes": 9820
+        },
+        {
+          "repository_path": "docs/api/release-artifacts.json",
+          "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+          "bytes": 1529
+        },
+        {
+          "repository_path": "docs/architecture.md",
+          "sha256": "7941a887567e13913ee9f6f8f25242c6477f5bac2e689ef2f6cf5a958c7507ee",
+          "bytes": 28631
+        },
+        {
+          "repository_path": "docs/local-workspace.md",
+          "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+          "bytes": 23381
+        },
+        {
+          "repository_path": "docs/usage-guide.md",
+          "sha256": "c1cdd3f772b0af4c8bdbdcda07f8e2b92cd9831cd510251db74323b643fddf7b",
+          "bytes": 38654
+        },
+        {
+          "repository_path": "docs/workspace-bundle-receipts.md",
+          "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+          "bytes": 11937
+        },
+        {
+          "repository_path": "docs/workspace-index-bundles.md",
+          "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+          "bytes": 14286
+        },
+        {
+          "repository_path": "docs/workspace-lifecycle-impact.md",
+          "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+          "bytes": 5437
+        },
+        {
+          "repository_path": "docs/workspace-source-bundle-verification.md",
+          "sha256": "56b795351e5630b13d66c4b6bcff31d95d1e8c7f3887bf6a8e393f7ca96dcdc4",
+          "bytes": 6686
+        },
+        {
+          "repository_path": "docs/workspace-source-bundles.md",
+          "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+          "bytes": 12565
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+          "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+          "bytes": 11859
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_browser.py",
+          "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+          "bytes": 12059
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow.py",
+          "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+          "bytes": 14388
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+          "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+          "bytes": 2167
+        },
+        {
+          "repository_path": "scripts/test_workspace_lifecycle_client.py",
+          "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+          "bytes": 9592
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_browser.py",
+          "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+          "bytes": 16273
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_bundle_client.py",
+          "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+          "bytes": 34381
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_workflow.py",
+          "sha256": "1b147018ac3f006ec53f1734f810327ff9c848e65a85c9c2f5cfe5e6bbc5de2f",
+          "bytes": 12080
+        },
+        {
+          "repository_path": "scripts/workspace_client.py",
+          "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+          "bytes": 52926
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/contract.rs",
+          "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+          "bytes": 22628
+        },
+        {
+          "repository_path": "src/workspace/effects.rs",
+          "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+          "bytes": 72296
+        },
+        {
+          "repository_path": "src/workspace/http.rs",
+          "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+          "bytes": 83790
+        },
+        {
+          "repository_path": "src/workspace/http_source.rs",
+          "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+          "bytes": 21744
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/mod.rs",
+          "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+          "bytes": 1267
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+          "bytes": 31066
+        },
+        {
+          "repository_path": "src/workspace/root_transaction.rs",
+          "sha256": "bf2a81356a1a31ea3d15a3487dfa0b7fe26756de00f3edbae8f00dd47d8f1b7a",
+          "bytes": 117878
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+          "bytes": 78888
+        },
+        {
+          "repository_path": "src/workspace/source_bundle_effects.rs",
+          "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+          "bytes": 40663
+        },
+        {
+          "repository_path": "src/workspace/source_bundles.rs",
+          "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+          "bytes": 34590
+        },
+        {
+          "repository_path": "src/workspace/source_receipts.rs",
+          "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+          "bytes": 34271
+        },
+        {
+          "repository_path": "src/workspace/source_validation.rs",
+          "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+          "bytes": 31189
+        },
+        {
+          "repository_path": "src/workspace/transaction_state.rs",
+          "sha256": "ab9232a469f87b8fc7a592f4298ffee03246ac6fdeabbfe9caa63b224ef6bfaf",
+          "bytes": 42770
+        },
+        {
+          "repository_path": "tests/api_contract_validation.rs",
+          "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+          "bytes": 92597
+        },
+        {
+          "repository_path": "tests/workspace_cli_test.rs",
+          "sha256": "e93a3d699350c162bcd16a9c905575d2885d42743d8e5a1899fa5715846d4a61",
+          "bytes": 177839
+        },
+        {
+          "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+          "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+          "bytes": 15940
+        },
+        {
+          "repository_path": "ui/tests/workspace-navigation.cjs",
+          "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+          "bytes": 262569
+        },
+        {
+          "repository_path": "ui/tests/workspace-source-browser.cjs",
+          "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+          "bytes": 23786
+        },
+        {
+          "repository_path": "ui/workspace.js",
+          "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+          "bytes": 203307
+        }
+      ],
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-llvm-combined-v1.json",
+        "sha256": "ea903b1fce3f7807ec16c7d683c835a0a543050e5626abc3dda4a91ef42a92fd",
+        "bytes": 30453
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-final-platform-llvm-combined-v1.log",
+        "sha256": "62884e2b1ebf12ace0abd9f310ac81c6bb443685a7c0b09f65cd810db39866b0",
+        "bytes": 100
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f19-source-final-platform-llvm-1.99.0",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "cargo",
+        "llvm-cov",
+        "report",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f19-s6-source-final-platform-llvm-combined-v1.json"
+      ],
+      "source_pins": [
+        {
+          "repository_path": ".github/workflows/release.yml",
+          "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+          "bytes": 8806
+        },
+        {
+          "repository_path": ".github/workflows/workspace-verification.yml",
+          "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+          "bytes": 18264
+        },
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "docs/CODEMAPS.md",
+          "sha256": "a85b5b796048ea911916ca1ab22e5f3e73de8e447558d8d07e518afc91cdc175",
+          "bytes": 11262
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.json",
+          "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+          "bytes": 26130
+        },
+        {
+          "repository_path": "docs/api/capability-matrix-v2.md",
+          "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+          "bytes": 13487
+        },
+        {
+          "repository_path": "docs/api/compatibility.md",
+          "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+          "bytes": 15624
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/README.md",
+          "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+          "bytes": 2069
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/index.json",
+          "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+          "bytes": 43616
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+          "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+          "bytes": 378
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+          "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+          "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+          "bytes": 374
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+          "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+          "bytes": 379
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+          "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+          "bytes": 412
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+          "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+          "bytes": 735
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+          "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+          "bytes": 739
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+          "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+          "bytes": 163
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+          "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+          "bytes": 148
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+          "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+          "bytes": 151
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+          "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+          "bytes": 153
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+          "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+          "bytes": 123
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+          "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+          "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+          "bytes": 570
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+          "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+          "bytes": 2217
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+          "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+          "bytes": 185
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+          "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+          "bytes": 312
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+          "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+          "bytes": 320
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+          "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+          "bytes": 1494
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+          "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+          "bytes": 1531
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+          "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+          "bytes": 481
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+          "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+          "bytes": 674
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+          "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+          "bytes": 213
+        },
+        {
+          "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+          "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+          "bytes": 334
+        },
+        {
+          "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+          "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+          "bytes": 325449
+        },
+        {
+          "repository_path": "docs/api/migration-v2.md",
+          "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+          "bytes": 9820
+        },
+        {
+          "repository_path": "docs/api/release-artifacts.json",
+          "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+          "bytes": 1529
+        },
+        {
+          "repository_path": "docs/architecture.md",
+          "sha256": "7941a887567e13913ee9f6f8f25242c6477f5bac2e689ef2f6cf5a958c7507ee",
+          "bytes": 28631
+        },
+        {
+          "repository_path": "docs/local-workspace.md",
+          "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+          "bytes": 23381
+        },
+        {
+          "repository_path": "docs/usage-guide.md",
+          "sha256": "c1cdd3f772b0af4c8bdbdcda07f8e2b92cd9831cd510251db74323b643fddf7b",
+          "bytes": 38654
+        },
+        {
+          "repository_path": "docs/workspace-bundle-receipts.md",
+          "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+          "bytes": 11937
+        },
+        {
+          "repository_path": "docs/workspace-index-bundles.md",
+          "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+          "bytes": 14286
+        },
+        {
+          "repository_path": "docs/workspace-lifecycle-impact.md",
+          "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+          "bytes": 5437
+        },
+        {
+          "repository_path": "docs/workspace-source-bundle-verification.md",
+          "sha256": "56b795351e5630b13d66c4b6bcff31d95d1e8c7f3887bf6a8e393f7ca96dcdc4",
+          "bytes": 6686
+        },
+        {
+          "repository_path": "docs/workspace-source-bundles.md",
+          "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+          "bytes": 12565
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+          "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+          "bytes": 11859
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_browser.py",
+          "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+          "bytes": 12059
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow.py",
+          "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+          "bytes": 14388
+        },
+        {
+          "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+          "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+          "bytes": 2167
+        },
+        {
+          "repository_path": "scripts/test_workspace_lifecycle_client.py",
+          "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+          "bytes": 9592
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_browser.py",
+          "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+          "bytes": 16273
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_bundle_client.py",
+          "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+          "bytes": 34381
+        },
+        {
+          "repository_path": "scripts/test_workspace_source_workflow.py",
+          "sha256": "1b147018ac3f006ec53f1734f810327ff9c848e65a85c9c2f5cfe5e6bbc5de2f",
+          "bytes": 12080
+        },
+        {
+          "repository_path": "scripts/workspace_client.py",
+          "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+          "bytes": 52926
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/contract.rs",
+          "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+          "bytes": 22628
+        },
+        {
+          "repository_path": "src/workspace/effects.rs",
+          "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+          "bytes": 72296
+        },
+        {
+          "repository_path": "src/workspace/http.rs",
+          "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+          "bytes": 83790
+        },
+        {
+          "repository_path": "src/workspace/http_source.rs",
+          "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+          "bytes": 21744
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/mod.rs",
+          "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+          "bytes": 1267
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+          "bytes": 31066
+        },
+        {
+          "repository_path": "src/workspace/root_transaction.rs",
+          "sha256": "bf2a81356a1a31ea3d15a3487dfa0b7fe26756de00f3edbae8f00dd47d8f1b7a",
+          "bytes": 117878
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+          "bytes": 78888
+        },
+        {
+          "repository_path": "src/workspace/source_bundle_effects.rs",
+          "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+          "bytes": 40663
+        },
+        {
+          "repository_path": "src/workspace/source_bundles.rs",
+          "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+          "bytes": 34590
+        },
+        {
+          "repository_path": "src/workspace/source_receipts.rs",
+          "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+          "bytes": 34271
+        },
+        {
+          "repository_path": "src/workspace/source_validation.rs",
+          "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+          "bytes": 31189
+        },
+        {
+          "repository_path": "src/workspace/transaction_state.rs",
+          "sha256": "ab9232a469f87b8fc7a592f4298ffee03246ac6fdeabbfe9caa63b224ef6bfaf",
+          "bytes": 42770
+        },
+        {
+          "repository_path": "tests/api_contract_validation.rs",
+          "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+          "bytes": 92597
+        },
+        {
+          "repository_path": "tests/workspace_cli_test.rs",
+          "sha256": "e93a3d699350c162bcd16a9c905575d2885d42743d8e5a1899fa5715846d4a61",
+          "bytes": 177839
+        },
+        {
+          "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+          "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+          "bytes": 15940
+        },
+        {
+          "repository_path": "ui/tests/workspace-navigation.cjs",
+          "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+          "bytes": 262569
+        },
+        {
+          "repository_path": "ui/tests/workspace-source-browser.cjs",
+          "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+          "bytes": 23786
+        },
+        {
+          "repository_path": "ui/workspace.js",
+          "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+          "bytes": 203307
+        }
+      ],
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    }
+  ],
+  "native": {
+    "receipt": {
+      "path": "/private/tmp/forge-f19-s6-source-final-platform-native-llvm-v1/receipt.json",
+      "sha256": "9f43bcc8d719fb54400c039d715bf64dce09616fdd6e3e7bda2e69187fa237bd",
+      "bytes": 2051
+    },
+    "binary": {
+      "sha256": "1240c790a6abcb04551893f75cd165bb2fc5e9b767f14cb1c4e862e347148b35",
+      "bytes": 64484688
+    },
+    "checks": [
+      "source-export-original202-replay",
+      "source-export-preview-no-write",
+      "source-export-exact-committed-download",
+      "source-download-normative-header-and-exact-bytes",
+      "private-source-family-and-original-inputs-preserved",
+      "complete-source-preview-replay-and-explicit-directories-no-write",
+      "preallocated-id-before-acceptance-not-found",
+      "durable-original-pending202-and-one-time-replay",
+      "exact-source-and-complete-index-replacement",
+      "removed-registrations-retain-files",
+      "terminal-cancel-preserves-committed-facts",
+      "fresh-same-root-read-only-outcome-no-old-authority",
+      "fresh-writable-session-does-not-revive-old-receipt"
+    ],
+    "check_count": 13,
+    "normal_session_exits": 4,
+    "cleanup_pending_observations": 1,
+    "outcome": {
+      "operation_id": "op_3e6401a2d451ea92dd3c5bcc34347dd1dcd3e9a335d7eadc5032715c72c373a6",
+      "state": "succeeded",
+      "write_outcome": "committed",
+      "cleanup_state": "verified"
+    }
+  },
+  "cold_startup": {
+    "receipt": {
+      "path": "/private/tmp/forge-f19-s6-source-final-platform-cold-native-v1/receipt.json",
+      "sha256": "18788402fe57415148c6de786aa5a21ddf03f7f1d300551c53676dd6b712f6d5",
+      "bytes": 16182
+    },
+    "rounds": 4,
+    "workers": 16,
+    "launches": 64,
+    "failures": 0,
+    "authenticated_normal_zero_exits": 64,
+    "forced_cleanup": 0
+  },
+  "preserved_predecessors": [
+    {
+      "repository_path": "docs/plans/2026-10-03-f19-source-startup-verification.json",
+      "sha256": "13a2d9f2e091718bc6f87533c01fc93087f174078cdc0cfa084e5a08a6b92521",
+      "bytes": 64463
+    },
+    {
+      "repository_path": "docs/plans/2026-10-03-f19-source-bundle-verification.json",
+      "sha256": "3762a4bb0a3031b2c9d70058d3b0bcd80f628d4e81e7692c285649286e124625",
+      "bytes": 70904
+    }
+  ],
+  "hosted_previous_head": {
+    "commit": "bc1acfd76da00a9f24839de310f1a03eedae253e",
+    "ci_run": 37146303661,
+    "workspace_run": 37146303650,
+    "passed": [
+      "Test macOS",
+      "Workspace API Linux",
+      "Workspace API macOS",
+      "Workspace API Windows",
+      "Linux installed Chrome",
+      "Windows console"
+    ],
+    "failed": [
+      "Test Linux: single_match_else after test suites",
+      "Test Windows: needless_pass_by_value after test suites",
+      "Dependency audit: inherited approval gate",
+      "Linux OS denial: inherited qualification gate"
+    ],
+    "raw_failed_jobs": [
+      {
+        "path": "/private/tmp/forge-f19-s6-source-startup-ci-linux-direct-log-v1.log",
+        "sha256": "da5daab9a4b2826fac15e48cb1231683019b73f1d19ed0177c2bebb23b60abfc",
+        "bytes": 1054171
+      },
+      {
+        "path": "/private/tmp/forge-f19-s6-source-startup-ci-windows-direct-log-v1.log",
+        "sha256": "787d34595c38ba7b4020eeaab25de500e87a05089fdf47c20199df1e6ab83ea9",
+        "bytes": 1019050
+      }
+    ]
+  },
+  "limits": [
+    "Direct first-kind-zero header-associated function entry observations only; positive entry counts do not establish whole function-body, physical-line, branch or MC/DC execution.",
+    "Qualified lexical source occurrences are matched by path suffix, header line and byte column; native monomorphization/platform aliases and all matched zero records remain visible. This is not a complete compiler AST or exhaustive native/source symbol census.",
+    "Selected documentation and entry denominators cover the explicitly pinned 15 Rust files relative to the recorded basis; they are not whole-repository production coverage or acceptance.",
+    "Native LLVM aggregate totals include generated, anonymous, test and production records across the actual instrumented export. They remain separate from the selected source cohort.",
+    "Every selected zero and unmapped header is retained. Platform-conditioned functions absent from the export receive no positive credit. Raw generated and out-of-cohort records remain in the pinned LLVM export.",
+    "Optional receipts bind only matching selected Rust source pins, with missing paths explicit. Unrelated Python, documentation and dirty files may change without being represented as Rust drift; this does not invent final-binary or before/after executable attestation.",
+    "No execution, own-code correctness approval, platform, browser, human, AT, full S6 or final-documentation acceptance is conferred by this derivation.",
+    "All fresh checks use macOS and Rust 1.99.0; the Windows-specific ownership repair still requires new-head hosted compilation.",
+    "Hosted predecessor results remain bound to their previous commit; new-head hosted outcomes must be read back after pushing.",
+    "Selected entry observations and LLVM totals are different denominators; line totals include production, generated and test code. Three ignored tests receive no credit.",
+    "Earlier browser, Python and native metadata evidence remains bound to predecessor bytes. No final-binary browser, Windows restore, AT, human, full S6, goal or release acceptance is claimed.",
+    "Full integrated documentation review remains open; no PR merge or release publication authorization.",
+    "Each command retains all original command-time source and documentation context. The guide was updated after checks; its predecessor hash remains in those immutable job receipts. Top-level source pins omit that edited guide, avoiding a circular self-pin."
+  ],
+  "retained_llvm_inputs": {
+    "path": "/private/tmp/forge-f19-s6-source-final-platform-llvm-preserved-v1/index.json",
+    "sha256": "e38708bcdb7801c9c481ecfa25db5a5aa4eec4d57f2090f4669c5bf670d62206",
+    "bytes": 586557
+  }
+}

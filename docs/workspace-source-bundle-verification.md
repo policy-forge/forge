@@ -16,7 +16,7 @@ reap the owned child. Windows restore remains typed unavailable; platform-specif
 code and tests are conditioned accordingly, without granting Windows restore
 authority.
 
-| Repaired-source check | Observed result | Scope |
+| Startup-repair checkpoint check | Observed result | Scope |
 | --- | --- | --- |
 | Rust 1.99 strict Clippy | Passed | Locked, all targets and all features on macOS |
 | Fresh instrumented Rust suite | 2,933 passed, 0 failed, 3 ignored | 68 summaries; ignored cases receive no credit |
@@ -53,6 +53,25 @@ it did not record the failing outcome, so its exact cause remains unconfirmed.
 Two later diagnostic runs and the corrected maintained workflow retain their
 own results. A zero-test command caused by an incorrect module filter also
 remains incomplete; the corrected command actually executed all four controls.
+
+## Platform lint follow-up
+
+The [platform follow-up receipt](plans/2026-10-03-f19-source-platform-verification.json)
+binds fresh checks after two Clippy corrections. At the preceding commit
+`bc1acfd76da00a9f24839de310f1a03eedae253e`, hosted Linux and Windows tests
+passed before strict Clippy rejected one platform-specific expression each.
+Linux now uses an equivalent `if let` branch; the unsupported Windows path
+explicitly releases its owned record. Windows restore remains unavailable.
+
+Fresh macOS Rust 1.99 checks passed formatting, strict Clippy, 2,933 instrumented
+tests, 13 native workflow checks and 64 cold starts. The exact-source census
+retains all 319 documented selected functions. Entry observations remain
+311 positive, 7 zero and 1 unmapped; aggregate lines remain 69,500/76,011
+and native functions 6,291/7,366. The native workflow and all cold launches use
+the newly recorded instrumented binary and exit normally without forced cleanup.
+The table above retains the startup-repair checkpoint; its receipt and the
+original source receipt are preserved. New-commit hosted outcomes remain a
+separate gate, including Windows compilation, audit and Linux OS denial.
 
 ## Preserved source checkpoint
 

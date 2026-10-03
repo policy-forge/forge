@@ -1477,6 +1477,7 @@ impl Root {
         #[cfg(not(unix))]
         {
             let _ = state;
+            drop(record);
             Err(unavailable())
         }
     }
