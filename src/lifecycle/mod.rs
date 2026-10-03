@@ -2,6 +2,9 @@
 
 pub mod record;
 
+/// Crate-internal pure status projection over validated captured lifecycle facts.
+pub(crate) mod status;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::path::{Component, Path, PathBuf};
@@ -19,6 +22,7 @@ use record::{
     PolicyIdentity, PolicyReference, ReviewSchedule, RoleRequirement, SCHEMA_VERSION,
     SeparationRules, TimezonePolicy, TransitionEvent,
 };
+use status::{CurrentArtifacts, StatusReport, status_from_captured};
 
 const TRUST_BOUNDARY: &str =
     "actor identities and authority are declared locally and are not authenticated by FORGE";
@@ -64,27 +68,6 @@ pub struct TransitionOptions<'a> {
 
 #[derive(Debug, Serialize)]
 #[serde(deny_unknown_fields)]
-struct StatusReport {
-    schema_version: &'static str,
-    policy_key: String,
-    version_key: String,
-    state: LifecycleState,
-    derived_status: String,
-    owner_keys: Vec<String>,
-    next_review_date: NaiveDate,
-    as_of: Option<NaiveDate>,
-    blockers: Vec<String>,
-    current_fingerprints: FingerprintSet,
-    approved_fingerprints: Option<FingerprintSet>,
-    artifact_identity_changes: Vec<String>,
-    event_ids: Vec<String>,
-    impact_finding_ids: Vec<String>,
-    replaced_by: Option<PolicyReference>,
-    trust_boundary: &'static str,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(deny_unknown_fields)]
 struct QueueReport {
     schema_version: &'static str,
     as_of: NaiveDate,
@@ -124,11 +107,6 @@ struct ApprovalAttestation {
     next_review_date: NaiveDate,
     unsigned: bool,
     trust_boundary: &'static str,
-}
-
-struct CurrentArtifacts {
-    fingerprints: FingerprintSet,
-    identity_changes: Vec<String>,
 }
 
 /// Create a closed, versioned draft record tied to current artifact bytes.
@@ -636,78 +614,16 @@ fn confined_join(base: &Path, raw: &str) -> Result<PathBuf, ForgeError> {
     Ok(base.join(raw))
 }
 
-fn approved_fingerprints(record: &LifecycleRecord) -> Option<FingerprintSet> {
-    record
-        .history
-        .iter()
-        .rev()
-        .find(|event| event.next_state == LifecycleState::Approved)
-        .map(|event| event.fingerprints.clone())
-}
-
+/// Capture current confined artifact facts before using the pure status projector.
+///
+/// Existing check, status, and queue callers continue to perform all ordinary file reads here.
 fn status_report(
     path: &Path,
     record: &LifecycleRecord,
     as_of: Option<NaiveDate>,
 ) -> Result<StatusReport, ForgeError> {
     let current = current_artifacts(path, record)?;
-    let approved = approved_fingerprints(record);
-    let mut blockers = Vec::new();
-    if record.state == LifecycleState::Approved
-        && (approved.as_ref().is_some_and(|value| value != &current.fingerprints)
-            || !current.identity_changes.is_empty())
-    {
-        blockers.push("approved-drifted".to_string());
-    }
-    if !current.identity_changes.is_empty() {
-        blockers.push("artifact-identity-changed".to_string());
-    }
-    let derived_status = if blockers.iter().any(|item| item == "approved-drifted") {
-        "approved-drifted".to_string()
-    } else {
-        match as_of {
-            Some(as_of) if as_of > record.review.next_review_date => {
-                blockers.push("overdue".to_string());
-                "overdue".to_string()
-            }
-            Some(as_of) => {
-                let due_soon_boundary = as_of
-                    .checked_add_days(chrono::Days::new(u64::from(record.review.due_soon_days)))
-                    .ok_or_else(|| error("due-soon date calculation overflowed"))?;
-                if record.review.next_review_date <= due_soon_boundary {
-                    blockers.push("due-soon".to_string());
-                    "due-soon".to_string()
-                } else {
-                    record.state.as_str().to_string()
-                }
-            }
-            None => record.state.as_str().to_string(),
-        }
-    };
-    Ok(StatusReport {
-        schema_version: STATUS_SCHEMA_VERSION,
-        policy_key: record.policy.policy_key.clone(),
-        version_key: record.policy.version_key.clone(),
-        state: record.state,
-        derived_status,
-        owner_keys: record.policy.owner_keys.clone(),
-        next_review_date: record.review.next_review_date,
-        as_of,
-        blockers,
-        current_fingerprints: current.fingerprints,
-        approved_fingerprints: approved,
-        artifact_identity_changes: current.identity_changes,
-        event_ids: record.history.iter().map(|event| event.event_id.clone()).collect(),
-        impact_finding_ids: record
-            .history
-            .iter()
-            .flat_map(|event| event.impact_finding_ids.iter().cloned())
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect(),
-        replaced_by: record.replaced_by.clone(),
-        trust_boundary: TRUST_BOUNDARY,
-    })
+    status_from_captured(record, &current, as_of)
 }
 
 fn gate_action_required(reports: &[StatusReport], gate: &LifecycleGate) -> bool {
