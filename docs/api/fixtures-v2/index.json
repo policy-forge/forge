@@ -1008,6 +1008,447 @@
       "schema": "openapi:components/schemas/Error",
       "expectation": "valid",
       "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-staged-source/bundle-index1-empty-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-index2-empty-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-opaque-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-tag3-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-profile3-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-no-source-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-upperhex-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-oddhex-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-index1-new-role-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-pin-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-content-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-pin-sha-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: exact decoded content hash differs"
+    },
+    {
+      "file": "project-staged-source/bundle-index-sha-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: ordered normalized index hash differs"
+    },
+    {
+      "file": "project-staged-source/bundle-missing-content-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: index/pin/content key bijection differs"
+    },
+    {
+      "file": "project-staged-source/bundle-short-nonfinal-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: nonfinal content chunk is not32768 bytes"
+    },
+    {
+      "file": "project-staged-source/create-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-logical-max-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-ack-false-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-size-bool-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-size-over-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-part-size-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-count-over-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-hash-upper-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-ceil-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: chunk_count differs from ceil(actual declared length/32768)"
+    },
+    {
+      "file": "project-staged-source/chunk-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-inclusive-max-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-empty-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-upper-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-over-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-odd-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-sha-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: decoded part SHA differs"
+    },
+    {
+      "file": "project-staged-source/stage-receiving-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-ready-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-preparing-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-prepared-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-discarded-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-unknown-state-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-id-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-bool-counter-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-extra-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/ack-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferChunkAck",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/ack-ordinal-over-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferChunkAck",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-index1-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-index2-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-bundle-field-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/discard-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferDiscarded",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/discard-false-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferDiscarded",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-tag-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-source-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-empty-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-ceil-native-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: declared ceil relationship differs"
+    },
+    {
+      "file": "project-staged-source/stream-chunk-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stream-chunk-id-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stream-chunk-odd-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stream-chunk-sha-native-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: decoded returned part SHA differs"
+    },
+    {
+      "file": "project-staged-source/prepare-response-shape-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectSourceBundleImportPreview",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
     }
   ]
 }

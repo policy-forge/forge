@@ -1,7 +1,9 @@
 # Confirmed metadata bundles and index replacement
 
 This guide describes metadata receipts introduced in workspace API **2.2.0 / 51
-operations**, also available in **2.3.0 / 57**. Select API v2 explicitly at launch.
+operations**, also admitted in **2.3.0 / 57** and the separately captured
+**2.4.0 / 65** working-tree successor under integration. No compiled, merged or
+hosted result for that successor is inferred here. Select API v2 explicitly at launch.
 API v1 remains **1.2.0 / 39 operations**. The three metadata operations and their
 existing semantics are distinct from the six opt-in source operations in 2.3.0. This contract version does not announce a product
 release or establish execution, platform, accessibility or human acceptance.

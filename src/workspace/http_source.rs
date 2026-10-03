@@ -121,7 +121,7 @@ pub(super) fn export_response(
             false,
         )
     })?;
-    let (reply, bytes, permit) = {
+    let (reply, bytes, permit, local) = {
         let mut store = state.effects.lock().map_err(|_| internal())?;
         if state.stopped.load(Ordering::Acquire) || Instant::now() >= deadline {
             return Err(Error::new(
@@ -137,13 +137,32 @@ pub(super) fn export_response(
             Error::new("invalid-request", "Another operation is running. Retry shortly.", true)
         })?;
         let (reply, bytes) = store.accept_source_export(key, wire_path, raw_query, request)?;
-        (reply, bytes, permit)
+        let id = reply.value["operation_id"].as_str().ok_or_else(internal)?;
+        let local = match store.operation_preparation_store(id) {
+            Ok(local) => Some(local),
+            Err(error) => {
+                store.finish(id, Err(error), false)?;
+                None
+            }
+        };
+        (reply, bytes, permit, local)
+    };
+    let Some(claimed_local) = local else {
+        return Ok(response(202, "application/json", bytes));
     };
     let id = reply.value["operation_id"].as_str().ok_or_else(internal)?.to_owned();
     let shared = Arc::clone(state);
     let request = request.clone();
     tokio::task::spawn_blocking(move || {
         let _permit = permit;
+        let mut owner = OperationWorkerOwner {
+            state: Arc::clone(&shared),
+            operation_id: id.clone(),
+            local: Some(claimed_local),
+            acceptance: Some(reply),
+            request: Some(request),
+            finished: false,
+        };
         let proceed = shared
             .effects
             .lock()
@@ -160,21 +179,27 @@ pub(super) fn export_response(
             interruption: None,
         };
         let result = (|| {
+            let mut local = owner.local.take().ok_or_else(internal)?;
+            let request = owner.request.as_ref().ok_or_else(internal)?;
+            let acceptance = owner.acceptance.as_ref().ok_or_else(internal)?;
             control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
-            let mut local = super::super::effects::Store::default();
             let completed =
-                prepare_export(&shared, &mut local, &request, &reply.value, &mut control)?;
+                prepare_export(&shared, &mut local, request, &acceptance.value, &mut control)?;
             Ok((local, completed))
         })();
         let result = match control.checkpoint(Stage::RetainPrepared, ProgressUpdate::Clear) {
             Ok(()) => result,
-            Err(error) => Err(error),
+            Err(error) => {
+                drop(result);
+                Err(error)
+            }
         };
         if let Ok(mut store) = shared.effects.lock() {
             let cancelled = control.interruption().is_some()
                 || shared.stopped.load(Ordering::Acquire)
                 || Instant::now() >= deadline;
-            let _ = store.finish(&id, result.map_err(WorkError::into_error), cancelled);
+            owner.finished =
+                store.finish(&id, result.map_err(WorkError::into_error), cancelled).is_ok();
         }
     });
     Ok(response(202, "application/json", bytes))
@@ -198,7 +223,7 @@ pub(super) fn import_response(
     // A port that cannot preserve trusted accepted/recovery state has no restore
     // capability; preparation never substitutes a weaker path-copy fallback.
     let _qualified = transactions(state)?;
-    let (nonce, _permit) = {
+    let (nonce, _permit, reserved_local) = {
         let mut store = state.effects.lock().map_err(|_| internal())?;
         control
             .checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)
@@ -213,10 +238,19 @@ pub(super) fn import_response(
         let permit = Arc::clone(&state.jobs).try_acquire_owned().map_err(|_| {
             Error::new("invalid-request", "Another operation is running. Retry shortly.", true)
         })?;
-        (store.reserve(key, "POST", wire_path, raw_query, request)?, permit)
+        let nonce = store.reserve(key, "POST", wire_path, raw_query, request)?;
+        let local = match store.preparation_store(key, &nonce) {
+            Ok(local) => local,
+            Err(error) => {
+                store.release_reservation(key, &nonce);
+                return Err(error);
+            }
+        };
+        (nonce, permit, local)
     };
-    let reservation = ReservationGuard { state, key, nonce };
+    let mut reservation = ReservationGuard { state, key, nonce, local: Some(reserved_local) };
     let prepared: WorkResult<_> = (|| {
+        let mut local = reservation.local.take().ok_or_else(internal)?;
         control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
         let raw = contract::encode(
             &request["bundle"],
@@ -238,7 +272,6 @@ pub(super) fn import_response(
             &mut control,
         )?;
         control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
-        let mut local = super::super::effects::Store::default();
         let (preview, replacement) = local.preview_source_restore(plan)?;
         let reply = super::super::effects::Reply {
             value: json!({"validation":super::super::services::validation(true,None),"preview":preview,"replacement":replacement}),
@@ -353,6 +386,12 @@ pub(super) fn commit_response(
                     &acceptance.reservation_nonce,
                 );
             }
+            let operation_id = acceptance.operation_id.clone();
+            let nonce = acceptance.reservation_nonce.clone();
+            drop(acceptance);
+            if let Ok(mut store) = state.effects.lock() {
+                store.source_worker_released(&operation_id, &nonce);
+            }
             return Err(error);
         }
     };
@@ -372,9 +411,45 @@ pub(super) fn commit_response(
             );
         }
     }
-    dispatch_restore(state, acceptance.operation_id, acceptance.plan, accepted, permit, deadline);
+    let super::super::effects::SourceAcceptance {
+        operation_id,
+        plan,
+        reservation_nonce,
+        accepted_reply,
+        reply,
+        request_sha256,
+        exact_manifest_sha256,
+        native_nonce: _,
+    } = acceptance;
+    // These temporary public/encoded copies drop before the worker can release its private reservation.
+    drop((accepted_reply, reply, request_sha256, exact_manifest_sha256));
+    dispatch_restore(state, operation_id, reservation_nonce, plan, accepted, permit, deadline);
     retained?;
     Ok(response(202, "application/json", original))
+}
+
+/// Own actual native plan/accepted handles until every normal or unwinding worker exit.
+struct RestoreWorkerOwner {
+    /// Shared Store used only after physical native holders have been dropped.
+    state: Arc<State>,
+    /// Exact accepted operation ID, never a new lookup-derived publication authority.
+    operation_id: String,
+    /// Exact consumed request generation prevents stale release of any newer owner.
+    nonce: String,
+    /// Actual sealed captured plan; Option permits its one consuming native move.
+    plan: Option<crate::workspace::root::RestoreTargetPlan>,
+    /// Actual durable accepted handle, including its original encoded reply.
+    accepted: Option<crate::workspace::root::AcceptedRestore>,
+}
+impl Drop for RestoreWorkerOwner {
+    /// Drop real holders before releasing only this worker's reserved entity; native authority is never erased.
+    fn drop(&mut self) {
+        drop(self.plan.take());
+        drop(self.accepted.take());
+        if let Ok(mut store) = self.state.effects.lock() {
+            store.source_worker_released(&self.operation_id, &self.nonce);
+        }
+    }
 }
 
 /// Own accepted work through eventual project leasing or durable recovery deferral.
@@ -382,6 +457,7 @@ pub(super) fn commit_response(
 fn dispatch_restore(
     state: &Arc<State>,
     operation_id: String,
+    nonce: String,
     plan: crate::workspace::root::RestoreTargetPlan,
     accepted: crate::workspace::root::AcceptedRestore,
     permit: tokio::sync::OwnedSemaphorePermit,
@@ -390,6 +466,13 @@ fn dispatch_restore(
     let shared = Arc::clone(state);
     tokio::task::spawn_blocking(move || {
         let _permit = permit;
+        let mut owner = RestoreWorkerOwner {
+            state: Arc::clone(&shared),
+            operation_id: operation_id.clone(),
+            nonce,
+            plan: Some(plan),
+            accepted: Some(accepted),
+        };
         let mut control = SourceControl {
             state: &shared,
             operation_id: &operation_id,
@@ -410,8 +493,10 @@ fn dispatch_restore(
                             Instant::now().checked_add(Duration::from_secs(30))
                         });
                         if end.is_none_or(|end| Instant::now() >= end) {
-                            if let Some(native) = shared.restores.as_ref() {
-                                let _ = shared.root.defer_restore_recovery(native, &accepted);
+                            if let (Some(native), Some(accepted)) =
+                                (shared.restores.as_ref(), owner.accepted.as_ref())
+                            {
+                                let _ = shared.root.defer_restore_recovery(native, accepted);
                             }
                             return;
                         }
@@ -419,8 +504,10 @@ fn dispatch_restore(
                     std::thread::sleep(Duration::from_millis(5));
                 }
                 Err(std::sync::TryLockError::Poisoned(_)) => {
-                    if let Some(native) = shared.restores.as_ref() {
-                        let _ = shared.root.defer_restore_recovery(native, &accepted);
+                    if let (Some(native), Some(accepted)) =
+                        (shared.restores.as_ref(), owner.accepted.as_ref())
+                    {
+                        let _ = shared.root.defer_restore_recovery(native, accepted);
                     }
                     return;
                 }
@@ -429,7 +516,9 @@ fn dispatch_restore(
         if let Some(native) = shared.restores.as_ref() {
             // Native journal decides terminal truth, never this worker's fallible
             // return or a generic Operation finish transition after publication.
-            let _ = shared.root.run_restore(plan, native, accepted, &mut control);
+            if let (Some(plan), Some(accepted)) = (owner.plan.take(), owner.accepted.take()) {
+                let _ = shared.root.run_restore(plan, native, accepted, &mut control);
+            }
         }
     });
 }

@@ -140,7 +140,7 @@ def run(args):
             if len(driver_raw)>131072:raise RuntimeError("Browser receipt bound exceeded")
             observed=json.loads(driver_raw)
             version=observed.get("contract_version")
-            if version in ("2.2.0","2.3.0") and type(observed.get("api_major")) is int and observed["api_major"]==2:
+            if version in ("2.2.0","2.3.0","2.4.0") and type(observed.get("api_major")) is int and observed["api_major"]==2:
                 receipt["contract_version"]=version
             elif result.returncode==0:raise RuntimeError("Browser did not establish a supported metadata contract")
             # Keep the native PTY open and discard bounded shutdown output until actual reap.
@@ -148,7 +148,7 @@ def run(args):
                                time.monotonic()+5,drainage)
             if status is not None:
                 receipt["server_wait_status"]=status;receipt["normal_server_exit"]=os.waitstatus_to_exitcode(status)==0
-            if result.returncode==0 and receipt["normal_server_exit"] and observed.get("status")=="passed" and receipt["contract_version"] in ("2.2.0","2.3.0"):
+            if result.returncode==0 and receipt["normal_server_exit"] and observed.get("status")=="passed" and receipt["contract_version"] in ("2.2.0","2.3.0","2.4.0"):
                 receipt["status"]="passed"
         except Exception as error:
             receipt["error_class"]=type(error).__name__

@@ -72,7 +72,7 @@ const sourceCSS = fs.readFileSync(path.join(root, 'ui/workspace.css'));
 const before = inventory(project);
 const donorBefore = inventory(donor);
 const receipt = { format: 'forge.s6-source-native-browser/1', status: 'failed', stage,
-  api_major: 2, api_version: '2.3.0', phase: 'launch',
+  api_major: 2, api_version: null, phase: 'launch',
   driver_sha256: sha(fs.readFileSync(__filename)), source_js_sha256: sha(sourceJS),
   source_css_sha256: sha(sourceCSS), node_version: process.version, fixture_before: before,
   focus_observations: [], reflow: [], screenshots: [], requests: [], restore_commit_requests: 0,
@@ -205,7 +205,8 @@ const receipt = { format: 'forge.s6-source-native-browser/1', status: 'failed', 
     assert.deepEqual(await (await asset).body(), sourceJS);
     assert.deepEqual(await (await style).body(), sourceCSS);
     assert.equal(await page.locator('meta[name="forge-api-major"]').getAttribute('content'), '2');
-    assert.equal(await page.locator('meta[name="forge-api-contract-version"]').getAttribute('content'), '2.3.0');
+    const negotiated = await page.locator('meta[name="forge-api-contract-version"]').getAttribute('content');
+    assert(['2.3.0','2.4.0'].includes(negotiated));receipt.api_version=negotiated;
     const unlock = page.getByLabel('Workspace passphrase');
     await focused(unlock, 'startup-passphrase');
     await unlock.fill(passphrase);

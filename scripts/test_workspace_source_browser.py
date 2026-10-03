@@ -224,6 +224,9 @@ def campaign(args, stage, project, donor, fixture_root, deadline):
             raise RuntimeError("driver-receipt-budget")
         browser = json.loads(raw)
         row["driver_receipt_sha256"] = hashlib.sha256(raw).hexdigest()
+        if browser.get("api_major") != 2 or browser.get("api_version") not in ("2.3.0", "2.4.0"):
+            raise RuntimeError("driver-contract-unverified")
+        row["api_version"] = browser["api_version"]
         if row["node_exit"] == 0 and row["forge_exit"] == 0 and browser.get("status") == "passed":
             row["status"] = "passed"
     except Exception as error:
@@ -305,7 +308,7 @@ def run(args):
                  "ui/node_modules/playwright-core/package.json"]:
         inputs[name] = digest(Path(args.source_root) / name)
     receipt = {"format": "forge.s6-source-native-browser-launch/1", "status": "failed",
-               "api_major": 2, "api_version": "2.3.0", "inputs": inputs, "campaigns": [],
+               "api_major": 2, "api_version": None, "inputs": inputs, "campaigns": [],
                "node_wrapper": "rtk-proxy" if args.rtk else "direct-node",
                "limitations": ["Source-only preparation is not an executed result.",
                    "Successful direct-child closure does not measure an empty descendant tree.",
@@ -317,7 +320,9 @@ def run(args):
         receipt["campaigns"].append(row)
         if row["status"] != "passed":
             break
-    if len(receipt["campaigns"]) == 3 and all(row["status"] == "passed" for row in receipt["campaigns"]):
+    versions = {row.get("api_version") for row in receipt["campaigns"]}
+    if len(receipt["campaigns"]) == 3 and len(versions) == 1 and versions <= {"2.3.0", "2.4.0"} and all(row["status"] == "passed" for row in receipt["campaigns"]):
+        receipt["api_version"] = next(iter(versions))
         receipt["status"] = "passed"
     for name, expected in inputs.items():
         target = (__file__ if name == "launcher" else

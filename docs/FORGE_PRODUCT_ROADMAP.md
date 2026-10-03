@@ -13,7 +13,7 @@
 ## Dated development checkpoint
 
 The following reconciliation, counts and status tables retain the 2026-09-11
-checkpoint. The [2026-10-03 integrated documentation checkpoint](plans/2026-10-03-integrated-documentation-checkpoint.md)
+checkpoint. The [2026-10-03 integrated documentation successor](plans/2026-10-03-integrated-documentation-staged-successor.md)
 separately records current captured source, draft separation and all 327
 Must/Should acceptance gates. Technical work, draft PRs and tests do not update
 these historical statuses or supply human, audit or release acceptance.

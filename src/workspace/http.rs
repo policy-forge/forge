@@ -24,6 +24,9 @@ use super::session::{Mode, Session};
 #[path = "http_source.rs"]
 mod source;
 
+#[path = "http_staged.rs"]
+mod staged;
+
 const MAX_BODY: usize = 1024 * 1024;
 const MAX_CONNECTIONS: usize = 16;
 const READ_QUERY_BUDGET: Duration = Duration::from_secs(10);
@@ -191,6 +194,36 @@ fn bundle_preparation_error(error: WorkError) -> Error {
     }
 }
 
+/// Own every actual ordinary worker copy until settlement and physical release, including unwind exits.
+struct OperationWorkerOwner {
+    /// Shared Store used after all held private data have physically dropped.
+    state: Arc<State>,
+    /// Exact accepted operation identity, not a new request generation.
+    operation_id: String,
+    /// Claimed local receipt/result pool, taken once by the actual preparation body.
+    local: Option<super::effects::Store>,
+    /// Optional original pending acceptance Value used by the source-export producer.
+    acceptance: Option<super::effects::Reply>,
+    /// Actual accepted request copy charged separately for the worker's complete lifetime.
+    request: Option<Value>,
+    /// True only after Store finish successfully installs a queryable terminal outcome.
+    finished: bool,
+}
+impl Drop for OperationWorkerOwner {
+    /// Drop actual result/request/reply holders before fallback settlement and exact worker-release credit.
+    fn drop(&mut self) {
+        drop(self.local.take());
+        drop(self.acceptance.take());
+        drop(self.request.take());
+        if let Ok(mut store) = self.state.effects.lock() {
+            if !self.finished {
+                let _ = store.finish(&self.operation_id, Err(internal()), false);
+            }
+            store.release_operation_worker(&self.operation_id);
+        }
+    }
+}
+
 /// Release one off-lock preparation generation on every ordinary or unwinding exit.
 struct ReservationGuard<'a> {
     /// Shared session Store; no producer I/O occurs while its lock is held.
@@ -199,11 +232,14 @@ struct ReservationGuard<'a> {
     key: &'a str,
     /// This worker's unique owner generation, never a newer reservation.
     nonce: String,
+    /// Actual claimed local holder before the producer takes it; drop precedes any reservation credit.
+    local: Option<super::effects::Store>,
 }
 
 impl Drop for ReservationGuard<'_> {
     /// A ready reply is immutable; release only a still-pending matching owner.
     fn drop(&mut self) {
+        drop(self.local.take());
         if let Ok(mut store) = self.state.effects.lock() {
             store.release_reservation(self.key, &self.nonce);
         }
@@ -224,7 +260,7 @@ fn bundle_import_response(
         .checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)
         .map_err(bundle_preparation_error)?;
     let _io = source::project_read(state)?;
-    let (nonce, _permit) = {
+    let (nonce, _permit, reserved_local) = {
         let mut store = state.effects.lock().map_err(|_| internal())?;
         control
             .checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)
@@ -240,10 +276,18 @@ fn bundle_import_response(
             Error::new("invalid-request", "Another operation is running. Retry shortly.", true)
         })?;
         let nonce = store.reserve(key, "POST", wire_path, raw_query, request)?;
-        (nonce, permit)
+        let local = match store.preparation_store(key, &nonce) {
+            Ok(local) => local,
+            Err(error) => {
+                store.release_reservation(key, &nonce);
+                return Err(error);
+            }
+        };
+        (nonce, permit, local)
     };
-    let reservation = ReservationGuard { state, key, nonce };
+    let mut reservation = ReservationGuard { state, key, nonce, local: Some(reserved_local) };
     let prepared: WorkResult<_> = (|| {
+        let mut local = reservation.local.take().ok_or_else(internal)?;
         control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
         let incoming = super::bundles::decode_bundle_for_api(&request["bundle"], state.api_major)?;
         control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
@@ -257,7 +301,6 @@ fn bundle_import_response(
             super::bundle_effects::prepare_import(&state.root, &snapshot, request, &mut control)?;
         let replacement = plan.replacement.take().ok_or_else(internal)?;
         control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
-        let mut local = super::effects::Store::default();
         let preview = local.preview_bundle(plan)?;
         let reply = super::effects::Reply {
             value: json!({"validation":super::services::validation(true,None),
@@ -274,7 +317,10 @@ fn bundle_import_response(
     // This fence includes Store-lock contention; no fallible response work follows retention.
     let prepared = match control.checkpoint(Stage::RetainPrepared, ProgressUpdate::Clear) {
         Ok(()) => prepared,
-        Err(error) => Err(error),
+        Err(error) => {
+            drop(prepared);
+            Err(error)
+        }
     };
     match prepared {
         Ok((local, reply, response)) => {
@@ -719,6 +765,15 @@ fn is_mutation(method: &str, path: &str) -> bool {
         )
 }
 
+/// Classify only transport budgets/body parsing; public operation admission still precedes dispatch.
+fn staged_transport_family(api_major: ApiMajor, wire_path: &str) -> bool {
+    api_major == ApiMajor::V2
+        && (wire_path == "/api/v2/project/source-transfer-stages"
+            || wire_path.starts_with("/api/v2/project/source-transfer-stages/")
+            || wire_path == "/api/v2/project/source-stream-exports"
+            || wire_path.starts_with("/api/v2/project/source-stream-exports/"))
+}
+
 /// Bound request I/O and route static or admitted selected-major API work.
 async fn respond(
     state: Arc<State>,
@@ -732,6 +787,8 @@ async fn respond(
         if !path.starts_with("/api/") {
             return static_response(state.api_major, &method, &path);
         }
+        // This immutable admission timestamp precedes body I/O and blocking queue wait.
+        let admitted_at = Instant::now();
         let permit = Arc::clone(&state.work).try_acquire_owned().map_err(|_| {
             Error::new("invalid-request", "The workspace is busy. Retry shortly.", true)
         })?;
@@ -752,7 +809,16 @@ async fn respond(
         let idempotency = single_header(&request, "idempotency-key")?.map(str::to_owned);
         // Direct bundle preparation counts bounded body reading and blocking queue wait.
         let private_path = state.api_major.canonical_path(&path)?;
-        let bundle_deadline = if method == "POST"
+        let bundle_deadline = if state.api_major == ApiMajor::V2
+            && staged_transport_family(state.api_major, &path)
+        {
+            let budget = if method == "POST" && path == "/api/v2/project/source-stream-exports" {
+                Duration::from_secs(30)
+            } else {
+                READ_QUERY_BUDGET
+            };
+            Some(admitted_at.checked_add(budget))
+        } else if method == "POST"
             && state.api_major == ApiMajor::V2
             && (private_path == "/api/v1/project/source-bundle-exports"
                 || private_path.starts_with("/api/v1/project/bundle-restores/")
@@ -846,7 +912,8 @@ fn dispatch(
     let private_path = state.api_major.canonical_path(wire_path)?;
     let path = private_path.as_str();
     let json_response = |value, schema| json_response_for(state.api_major, value, schema);
-    if method == "GET" && !bytes.is_empty() {
+    let staged_route = staged_transport_family(state.api_major, wire_path);
+    if method == "GET" && !bytes.is_empty() && !staged_route {
         return Err(Error::invalid());
     }
     let query: Vec<(String, String)> =
@@ -876,6 +943,20 @@ fn dispatch(
             payload.as_ref(),
         )?,
     };
+    // Reclaim only retired unconfirmed transport after normative request admission.
+    // Actual outstanding raw leases remain charged; accepted native authorities are separate.
+    state.effects.lock().map_err(|_| internal())?.sweep_source_stages(Instant::now())?;
+    if staged_route && staged::handles(method, wire_path) {
+        return staged::dispatch(
+            state,
+            method,
+            wire_path,
+            raw_query,
+            idempotency,
+            payload.as_ref(),
+            read_deadline,
+        );
+    }
     if method == "POST" && path == "/api/v1/session/shutdown" {
         state.stopped.store(true, Ordering::Release);
         return json_response(json!({"state":"shutting-down"}), "ShutdownResponse");
@@ -1060,120 +1141,182 @@ fn dispatch(
                         true,
                     )
                 })?;
-                let operation = store.begin(kind)?;
+                let (accepted, _bytes) = store.accept_operation(
+                    super::effects::OperationRequestIdentity {
+                        key,
+                        method,
+                        wire_path,
+                        raw_query,
+                        request: &request,
+                    },
+                    kind,
+                )?;
+                let operation = accepted.value.clone();
                 let accepted_at = Instant::now();
                 let deadline = accepted_at.checked_add(Duration::from_secs(30));
                 let id = operation["operation_id"].as_str().ok_or_else(internal)?.to_owned();
+                let local = store.operation_preparation_store(&id);
                 let shared = Arc::clone(state);
                 let method = method.to_owned();
                 let path = path.to_owned();
                 let request = request.clone();
-                tokio::task::spawn_blocking(move || {
-                    let _permit = permit;
-                    let proceed = shared
-                        .effects
-                        .lock()
-                        .ok()
-                        .and_then(|mut store| store.running(&id).ok())
-                        .unwrap_or(false);
-                    if !proceed {
-                        return;
+                match local {
+                    Err(error) => {
+                        store.finish(&id, Err(error), false)?;
                     }
-                    let mut control =
-                        OperationControl { state: &shared, id: &id, deadline, interruption: None };
-                    let result = (|| {
-                        let _io = source::project_read(&shared)?;
-                        let mut local = super::effects::Store::default();
-                        let mut snapshot = if shared.api_major == ApiMajor::V2
-                            && path == "/api/v1/project/bundle-exports"
-                        {
-                            Snapshot::capture_bundle_effect_with_control(
-                                &shared.root,
-                                shared.api_major,
-                                None,
-                                &mut control,
-                            )?
-                        } else {
-                            Snapshot::capture_with_control_for_api(
-                                &shared.root,
-                                shared.api_major,
-                                &mut control,
-                            )?
-                        };
-                        let reply = match shared.api_major {
-                            ApiMajor::V1 => super::actions::prepare_with_control(
-                                &mut local,
-                                &shared.root,
-                                &mut snapshot,
-                                &method,
-                                &path,
-                                &request,
-                                &mut control,
-                            )?,
-                            ApiMajor::V2 => super::actions::prepare_with_control_for_api(
-                                &mut local,
-                                &shared.root,
-                                &mut snapshot,
-                                &method,
-                                (shared.api_major, &path),
-                                &request,
-                                &mut control,
-                            )?,
-                        };
-                        Ok((local, reply))
-                    })();
-                    // The final checkpoint also overrides a local safe failure
-                    // when a stop arrives before any receipts can be transferred.
-                    let result =
-                        match control.checkpoint(Stage::RetainPrepared, ProgressUpdate::Clear) {
-                            Ok(()) => result,
-                            Err(error) => Err(error),
-                        };
-                    if let Ok(mut store) = shared.effects.lock() {
-                        let cancelled = control.interruption().is_some()
-                            || shared.stopped.load(Ordering::Acquire)
-                            || budget_expired(deadline, Instant::now());
-                        let _ = store.finish(&id, result.map_err(WorkError::into_error), cancelled);
+                    Ok(claimed_local) => {
+                        tokio::task::spawn_blocking(move || {
+                            let _permit = permit;
+                            let mut owner = OperationWorkerOwner {
+                                state: Arc::clone(&shared),
+                                operation_id: id.clone(),
+                                local: Some(claimed_local),
+                                acceptance: None,
+                                request: Some(request),
+                                finished: false,
+                            };
+                            let proceed = shared
+                                .effects
+                                .lock()
+                                .ok()
+                                .and_then(|mut store| store.running(&id).ok())
+                                .unwrap_or(false);
+                            if !proceed {
+                                return;
+                            }
+                            let mut control = OperationControl {
+                                state: &shared,
+                                id: &id,
+                                deadline,
+                                interruption: None,
+                            };
+                            let result = (|| {
+                                let mut local = owner.local.take().ok_or_else(internal)?;
+                                let request = owner.request.as_ref().ok_or_else(internal)?;
+                                let _io = source::project_read(&shared)?;
+                                let mut snapshot = if shared.api_major == ApiMajor::V2
+                                    && path == "/api/v1/project/bundle-exports"
+                                {
+                                    Snapshot::capture_bundle_effect_with_control(
+                                        &shared.root,
+                                        shared.api_major,
+                                        None,
+                                        &mut control,
+                                    )?
+                                } else {
+                                    Snapshot::capture_with_control_for_api(
+                                        &shared.root,
+                                        shared.api_major,
+                                        &mut control,
+                                    )?
+                                };
+                                let reply = match shared.api_major {
+                                    ApiMajor::V1 => super::actions::prepare_with_control(
+                                        &mut local,
+                                        &shared.root,
+                                        &mut snapshot,
+                                        &method,
+                                        &path,
+                                        request,
+                                        &mut control,
+                                    )?,
+                                    ApiMajor::V2 => super::actions::prepare_with_control_for_api(
+                                        &mut local,
+                                        &shared.root,
+                                        &mut snapshot,
+                                        &method,
+                                        (shared.api_major, &path),
+                                        request,
+                                        &mut control,
+                                    )?,
+                                };
+                                Ok((local, reply))
+                            })();
+                            // The final checkpoint also overrides a local safe failure
+                            // when a stop arrives before any receipts can be transferred.
+                            let result = match control
+                                .checkpoint(Stage::RetainPrepared, ProgressUpdate::Clear)
+                            {
+                                Ok(()) => result,
+                                Err(error) => {
+                                    drop(result);
+                                    Err(error)
+                                }
+                            };
+                            if let Ok(mut store) = shared.effects.lock() {
+                                let cancelled = control.interruption().is_some()
+                                    || shared.stopped.load(Ordering::Acquire)
+                                    || budget_expired(deadline, Instant::now());
+                                owner.finished = store
+                                    .finish(&id, result.map_err(WorkError::into_error), cancelled)
+                                    .is_ok();
+                            }
+                        });
                     }
-                });
-                super::effects::Reply { value: operation, schema: "Operation", status: 202 }
+                }
+                accepted
             } else if path == "/api/v1/effects/commits" {
-                super::effects::Reply {
-                    value: match state.api_major {
-                        ApiMajor::V1 => store.commit(&state.root, &request, &state.stopped)?,
-                        ApiMajor::V2 => store.commit_for_api(
+                store.commit_replayed(
+                    &state.root,
+                    &state.stopped,
+                    state.api_major,
+                    super::effects::OperationRequestIdentity {
+                        key,
+                        method,
+                        wire_path,
+                        raw_query,
+                        request: &request,
+                    },
+                )?
+            } else {
+                let nonce = store.reserve(key, method, wire_path, raw_query, &request)?;
+                let local = match store.preparation_store(key, &nonce) {
+                    Ok(local) => local,
+                    Err(error) => {
+                        store.release_reservation(key, &nonce);
+                        return Err(error);
+                    }
+                };
+                // Synchronous local retention stays within the same claimed pool; failure drops it before release.
+                let prepared = (|| {
+                    let mut local = local;
+                    let mut snapshot = Snapshot::capture_for_api(&state.root, state.api_major)?;
+                    let reply = match state.api_major {
+                        ApiMajor::V1 => super::actions::prepare(
+                            &mut local,
                             &state.root,
+                            &mut snapshot,
+                            method,
+                            path,
                             &request,
-                            &state.stopped,
+                        )?,
+                        ApiMajor::V2 => super::actions::prepare_for_api(
+                            &mut local,
+                            &state.root,
+                            &mut snapshot,
+                            method,
+                            path,
+                            &request,
                             state.api_major,
                         )?,
-                    },
-                    schema: "Operation",
-                    status: 202,
-                }
-            } else {
-                let mut snapshot = Snapshot::capture_for_api(&state.root, state.api_major)?;
-                match state.api_major {
-                    ApiMajor::V1 => super::actions::prepare(
-                        &mut store,
-                        &state.root,
-                        &mut snapshot,
-                        method,
-                        path,
-                        &request,
-                    )?,
-                    ApiMajor::V2 => super::actions::prepare_for_api(
-                        &mut store,
-                        &state.root,
-                        &mut snapshot,
-                        method,
-                        path,
-                        &request,
-                        state.api_major,
-                    )?,
+                    };
+                    Ok((local, reply))
+                })();
+                match prepared {
+                    Ok((local, reply)) => {
+                        if let Err(error) = store.retain_reserved(key, &nonce, local, &reply) {
+                            store.release_reservation(key, &nonce);
+                            return Err(error);
+                        }
+                        reply
+                    }
+                    Err(error) => {
+                        store.release_reservation(key, &nonce);
+                        return Err(error);
+                    }
                 }
             };
-            store.remember(key, method, wire_path, raw_query, &request, &reply)?;
+            // Every branch has retained the original replay before publication/dispatch; no fallible post-write remember.
             reply
         };
         return effect_reply_response(state.api_major, reply);
@@ -1530,7 +1673,7 @@ mod tests {
                 usize::from(major == ApiMajor::V2)
             );
             if major == ApiMajor::V2 {
-                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.3.0\""));
+                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.4.0\""));
             }
             assert!(html.contains("id=\"workspace\" hidden"));
             for (asset_path, expected, media) in [
@@ -1780,7 +1923,9 @@ mod tests {
         let nonce =
             state.effects.lock().unwrap().reserve("key", "POST", "/route", "", &request).unwrap();
         let stopped = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _reservation = ReservationGuard { state: &state, key: "key", nonce };
+            let local = state.effects.lock().unwrap().preparation_store("key", &nonce).unwrap();
+            let _reservation =
+                ReservationGuard { state: &state, key: "key", nonce, local: Some(local) };
             panic!("synthetic producer unwind");
         }));
         assert!(stopped.is_err());

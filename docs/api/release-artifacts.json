@@ -18,7 +18,7 @@
     },
     {
       "api_major": 2,
-      "contract_version": "2.3.0",
+      "contract_version": "2.4.0",
       "document": "docs/api/forge-workspace-v2.openapi.yaml",
       "capability_matrix": [
         "docs/api/capability-matrix-v2.json",
@@ -30,7 +30,8 @@
         "schemas/forge.workspace-2.schema.json"
       ],
       "source_bundle_schemas": [
-        "schemas/forge.workspace-source-bundle-3.schema.json"
+        "schemas/forge.workspace-source-bundle-3.schema.json",
+        "schemas/forge.workspace-source-bundle-4.schema.json"
       ]
     }
   ],
@@ -38,7 +39,8 @@
     "docs/api",
     "schemas/forge.workspace-1.schema.json",
     "schemas/forge.workspace-2.schema.json",
-    "schemas/forge.workspace-source-bundle-3.schema.json"
+    "schemas/forge.workspace-source-bundle-3.schema.json",
+    "schemas/forge.workspace-source-bundle-4.schema.json"
   ],
   "invariants": [
     "Single selected namespace per launch; API1 remains default",

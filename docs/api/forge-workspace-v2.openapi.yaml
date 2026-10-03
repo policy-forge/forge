@@ -82,6 +82,26 @@
           "minLength": 1,
           "maxLength": 256
         }
+      },
+      "SourceTransferStageIdPath": {
+        "name": "stage_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/SourceTransferStageId"
+        },
+        "description": "Closed session-local transfer identifier."
+      },
+      "SourceTransferChunkOrdinalPath": {
+        "name": "chunk_ordinal",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 319
+        },
+        "description": "Zero-based exact 32 KiB artifact part ordinal; native stage/manifest bounds also apply."
       }
     },
     "responses": {
@@ -2250,7 +2270,7 @@
             "maxLength": 32,
             "minLength": 1,
             "type": "string",
-            "const": "2.3.0"
+            "const": "2.4.0"
           },
           "launched_at": {
             "format": "date-time",
@@ -6025,6 +6045,473 @@
           }
         },
         "description": "Complete source-restore index replacement disclosure. Both full index objects, normalized hashes, every ordered removal and complete admitted path count are disclosed without truncation. Removed registrations do not authorize deletion of their files. Source data and metadata are sensitive; admission is not reviewer or lifecycle authority."
+      },
+      "WorkspaceSourceBundle4": {
+        "title": "Explicit staged source-containing workspace bundle (forge.workspace-index-bundle/4)",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "profile",
+          "source_content_included",
+          "index",
+          "index_sha256",
+          "pins",
+          "contents"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "forge.workspace-index-bundle/4"
+          },
+          "profile": {
+            "const": "index-and-source-hex-staged"
+          },
+          "source_content_included": {
+            "const": true
+          },
+          "index": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/WorkspaceBundleIndex"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WorkspaceBundleIndexV2"
+                  }
+                ]
+              },
+              {
+                "properties": {
+                  "resources": {
+                    "maxItems": 99
+                  }
+                }
+              }
+            ]
+          },
+          "index_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "pins": {
+            "type": "array",
+            "maxItems": 99,
+            "items": {
+              "$ref": "#/components/schemas/SourceBundlePin"
+            }
+          },
+          "contents": {
+            "type": "array",
+            "maxItems": 99,
+            "items": {
+              "$ref": "#/components/schemas/SourceBundleContent"
+            }
+          }
+        },
+        "$comment": "Native intrinsic checks require exact index/pin/content authorial bijection/order, canonical content chunks, decoded size/SHA, normalized index SHA and complete proposed closure. Original raw artifact<=10485760 bytes. Transport declaration and JSON Schema alone prove none of these relationships. Existing Index1/2 and Bundle3 schemas are unchanged.",
+        "description": "Explicit source opt-in staged profile with complete exact index/pins/source content. Logical artifact<=10MiB; at most99 indexed resources and320 canonical content chunks per file, with native file/capture/shared-retention caps also applied. Raw duplicate-safe decoder and full proposed-domain admission are separate. No archive, compression, default source inclusion or authority from transport."
+      },
+      "CreateSourceTransferStageRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "profile",
+          "artifact_sha256",
+          "artifact_size_bytes",
+          "chunk_size_bytes",
+          "chunk_count",
+          "acknowledge_sensitive_metadata",
+          "acknowledge_source_content"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "forge.workspace-index-bundle/4",
+            "type": "string",
+            "description": "Explicit separate Bundle4 wire version; Bundle3 interpretation remains unchanged."
+          },
+          "profile": {
+            "const": "index-and-source-hex-staged",
+            "type": "string",
+            "description": "Explicit staged source profile; not an archive, compression or metadata-only profile."
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Lowercase SHA-256 of the complete exact original artifact bytes, not normalized JSON."
+          },
+          "artifact_size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760,
+            "description": "Complete exact artifact length; declaration/raw codec ceiling, not promised restore capacity."
+          },
+          "chunk_size_bytes": {
+            "const": 32768,
+            "type": "integer",
+            "description": "Fixed decoded transport part size of32768 bytes; final part is the exact remainder."
+          },
+          "chunk_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 320,
+            "description": "Native admission additionally requires exact ceil(artifact_size_bytes/32768)."
+          },
+          "acknowledge_sensitive_metadata": {
+            "const": true,
+            "type": "boolean",
+            "description": "Required explicit metadata-sensitivity acknowledgment; no reviewer authority."
+          },
+          "acknowledge_source_content": {
+            "const": true,
+            "type": "boolean",
+            "description": "Required explicit sensitive source-content acknowledgment; no domain approval."
+          }
+        },
+        "description": "Explicit sensitive/source opt-in whole-artifact declaration; reservation is not native admission or authority."
+      },
+      "SourceTransferStage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage_id",
+          "schema_version",
+          "profile",
+          "artifact_sha256",
+          "artifact_size_bytes",
+          "chunk_size_bytes",
+          "chunk_count",
+          "received_chunk_count",
+          "received_bytes",
+          "state",
+          "expires_at"
+        ],
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "pattern": "^bst_[0-9a-z]{12,80}$",
+            "description": "Opaque current-session stage identifier; not durable restore authority."
+          },
+          "schema_version": {
+            "const": "forge.workspace-index-bundle/4",
+            "type": "string",
+            "description": "Explicit separate Bundle4 wire version; Bundle3 interpretation remains unchanged."
+          },
+          "profile": {
+            "const": "index-and-source-hex-staged",
+            "type": "string",
+            "description": "Explicit staged source profile; not an archive, compression or metadata-only profile."
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Lowercase SHA-256 of the complete exact original artifact bytes, not normalized JSON."
+          },
+          "artifact_size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760,
+            "description": "Complete exact artifact length; declaration/raw codec ceiling, not promised restore capacity."
+          },
+          "chunk_size_bytes": {
+            "const": 32768,
+            "type": "integer",
+            "description": "Fixed decoded transport part size of32768 bytes; final part is the exact remainder."
+          },
+          "chunk_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 320,
+            "description": "Native admission additionally requires exact ceil(artifact_size_bytes/32768)."
+          },
+          "received_chunk_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 320,
+            "description": "Number of actually retained distinct acknowledged ordinals, never a prefix-completion promise."
+          },
+          "received_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10485760,
+            "description": "Original accepted transport byte progress; counters survive raw storage release. This is not currently held shared memory, native validity or restore writes."
+          },
+          "state": {
+            "enum": [
+              "receiving",
+              "ready",
+              "preparing",
+              "prepared",
+              "discarded"
+            ],
+            "type": "string",
+            "description": "New transport-only phase enum; existing Operation and restore enums are unchanged."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Original stage expiry; part/replay/status activity never renews it."
+          }
+        },
+        "description": "Current-session retained transport observations; state/counters do not establish native closure or accepted restore."
+      },
+      "SourceTransferChunkRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sha256",
+          "size_bytes",
+          "hex"
+        ],
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Lowercase SHA-256 of this part's exact decoded bytes; native equality check is required."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32768,
+            "description": "Exact decoded part length; native equality with hex and ordinal remainder is required."
+          },
+          "hex": {
+            "type": "string",
+            "pattern": "^(?:[a-f0-9]{2})+$",
+            "maxLength": 65536,
+            "description": "Canonical lowercase even hex for exactly the declared part; raw bytes can contain sensitive source content."
+          }
+        },
+        "description": "Exact decoded part declaration; native checks prove SHA/size/ordinal/remainder and stage binding."
+      },
+      "SourceTransferChunkAck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage_id",
+          "chunk_ordinal",
+          "sha256",
+          "size_bytes",
+          "received_chunk_count",
+          "received_bytes",
+          "expires_at"
+        ],
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "pattern": "^bst_[0-9a-z]{12,80}$",
+            "description": "Opaque current-session stage identifier; not durable restore authority."
+          },
+          "chunk_ordinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 319,
+            "description": "Zero-based exact transport part ordinal; also bound to the current stage/manifest count."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Lowercase SHA-256 of this part's exact decoded bytes; native equality check is required."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32768,
+            "description": "Exact decoded part length; native equality with hex and ordinal remainder is required."
+          },
+          "received_chunk_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 320,
+            "description": "Number of actually retained distinct acknowledged ordinals, never a prefix-completion promise."
+          },
+          "received_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760,
+            "description": "Original accepted transport byte progress; counters survive raw storage release. This is not currently held shared memory, native validity or restore writes."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Original stage expiry; part/replay/status activity never renews it."
+          }
+        },
+        "description": "Original bounded intrinsic ordinal acknowledgment; identical retry does not renew lifetime."
+      },
+      "PrepareStagedSourceRestoreRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_index_schema_version",
+          "acknowledge_index_replacement",
+          "acknowledge_source_content",
+          "acknowledge_replace_files"
+        ],
+        "properties": {
+          "target_index_schema_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "description": "Explicit preserve1 or upgrade1to2 choice; native current/incoming checks refuse downgrade."
+          },
+          "acknowledge_index_replacement": {
+            "const": true,
+            "type": "boolean",
+            "description": "Required review of complete replacement rather than an implicit index merge."
+          },
+          "acknowledge_source_content": {
+            "const": true,
+            "type": "boolean",
+            "description": "Required explicit sensitive source-content acknowledgment; no domain approval."
+          },
+          "acknowledge_replace_files": {
+            "const": true,
+            "type": "boolean",
+            "description": "Required complete source target replacement acknowledgment; confirmation remains separate."
+          }
+        },
+        "description": "Explicit complete source/index/file replacement intent; strict staged artifact and native closure are admitted before returning an unconfirmed preview."
+      },
+      "SourceTransferDiscarded": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage_id",
+          "discarded"
+        ],
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "pattern": "^bst_[0-9a-z]{12,80}$",
+            "description": "Opaque current-session stage identifier; not durable restore authority."
+          },
+          "discarded": {
+            "const": true,
+            "type": "boolean",
+            "description": "Stage retirement only; a held preparer's bytes remain charged until actual release."
+          }
+        },
+        "description": "Unconfirmed stage retirement fact only; no accepted restore cancellation, rollback or no-write claim."
+      },
+      "SourceStreamManifest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "schema_version",
+          "profile",
+          "source_content_included",
+          "artifact_sha256",
+          "artifact_size_bytes",
+          "chunk_size_bytes",
+          "chunk_count"
+        ],
+        "properties": {
+          "operation_id": {
+            "$ref": "#/components/schemas/OperationId",
+            "description": "Existing same-session export operation identifier; not a supplied file path."
+          },
+          "schema_version": {
+            "const": "forge.workspace-index-bundle/4",
+            "type": "string",
+            "description": "Explicit separate Bundle4 wire version; Bundle3 interpretation remains unchanged."
+          },
+          "profile": {
+            "const": "index-and-source-hex-staged",
+            "type": "string",
+            "description": "Explicit staged source profile; not an archive, compression or metadata-only profile."
+          },
+          "source_content_included": {
+            "const": true,
+            "type": "boolean",
+            "description": "Explicit true source opt-in, never the metadata/default profile."
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Lowercase SHA-256 of the complete exact original artifact bytes, not normalized JSON."
+          },
+          "artifact_size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760,
+            "description": "Complete exact artifact length; declaration/raw codec ceiling, not promised restore capacity."
+          },
+          "chunk_size_bytes": {
+            "const": 32768,
+            "type": "integer",
+            "description": "Fixed decoded transport part size of32768 bytes; final part is the exact remainder."
+          },
+          "chunk_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 320,
+            "description": "Native admission additionally requires exact ceil(artifact_size_bytes/32768)."
+          }
+        },
+        "description": "Observed exact same-session committed staged-source family artifact identity; complete target revalidation precedes response."
+      },
+      "SourceStreamChunk": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "artifact_sha256",
+          "chunk_ordinal",
+          "sha256",
+          "size_bytes",
+          "hex"
+        ],
+        "properties": {
+          "operation_id": {
+            "$ref": "#/components/schemas/OperationId",
+            "description": "Existing same-session export operation identifier; not a supplied file path."
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Lowercase SHA-256 of the complete exact original artifact bytes, not normalized JSON."
+          },
+          "chunk_ordinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 319,
+            "description": "Zero-based exact transport part ordinal; also bound to the current stage/manifest count."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Lowercase SHA-256 of this part's exact decoded bytes; native equality check is required."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32768,
+            "description": "Exact decoded part length; native equality with hex and ordinal remainder is required."
+          },
+          "hex": {
+            "type": "string",
+            "pattern": "^(?:[a-f0-9]{2})+$",
+            "maxLength": 65536,
+            "description": "Canonical lowercase even hex for exactly the declared part; raw bytes can contain sensitive source content."
+          }
+        },
+        "description": "Exact bounded committed-artifact part identity and bytes; full artifact was recaptured/revalidated before response."
+      },
+      "SourceTransferStageId": {
+        "type": "string",
+        "pattern": "^bst_[0-9a-z]{12,80}$"
+      },
+      "SourceTransferChunkOrdinal": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 319
       }
     },
     "securitySchemes": {
@@ -6042,7 +6529,7 @@
       "name": "MIT"
     },
     "title": "FORGE Local Workspace API",
-    "version": "2.3.0"
+    "version": "2.4.0"
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "openapi": "3.1.0",
@@ -8604,7 +9091,7 @@
       "post": {
         "operationId": "prepareProjectBundleExport",
         "summary": "Prepare an acknowledged metadata JSON export",
-        "description": "API 2.2 writable preparation only; Idempotency-Key is required and query parameters are forbidden. Reuses the existing export Operation and 30-second accepted-operation budget; terminal ExportResult contains a report-export EffectPreview and removed_categories:[source-excerpts]. Metadata labels, keys, paths, hashes and sizes remain disclosed, not blanket-redacted. The whole consumed physical-file union is<=100 and 50 MiB; raw index/current captures/distinct existing destination count before admission. Existing 20 MiB/256-record/600-second retained bounds apply. Index and registered-source output targets are rejected before destination reads. A server-private metadata-JSON family binds the receipt; publication occurs only through the existing commitEffectPreview flow. No archive/source-content export.",
+        "description": "API 2.2 writable preparation only; Idempotency-Key is required and query parameters are forbidden. Reuses the existing export Operation and 30-second accepted-operation budget; terminal ExportResult contains a report-export EffectPreview and removed_categories:[source-excerpts]. Metadata labels, keys, paths, hashes and sizes remain disclosed, not blanket-redacted. The whole consumed physical-file union is<=100 and 50 MiB; raw index/current captures/distinct existing destination count before admission. Existing 20 MiB/256-record/600-second retained bounds apply. Index and registered-source output targets are rejected before destination reads. A server-private metadata-JSON family binds the receipt; publication occurs only through the existing commitEffectPreview flow. No archive/source-content export. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -8684,7 +9171,7 @@
       "get": {
         "operationId": "downloadProjectBundleExport",
         "summary": "Download the exact committed metadata JSON export",
-        "description": "API 2.2 authenticated selected-major read, including read-only scope. No request body, query or Idempotency-Key. Return only the exact unchanged confined bytes of a committed same-session/major metadata-JSON receipt; reject HTML-family/uncommitted/foreign receipts. Content-Type application/json, attachment filename forge-workspace-index-and-hashes.json, no-store/nosniff and restrictive headers. No serialization, family inference from filename or remote publication. The existing HTML download route independently rejects metadata-JSON receipts. Selected metadata can contain sensitive correlation data.",
+        "description": "API 2.2 authenticated selected-major read, including read-only scope. No request body, query or Idempotency-Key. Return only the exact unchanged confined bytes of a committed same-session/major metadata-JSON receipt; reject HTML-family/uncommitted/foreign receipts. Content-Type application/json, attachment filename forge-workspace-index-and-hashes.json, no-store/nosniff and restrictive headers. No serialization, family inference from filename or remote publication. The existing HTML download route independently rejects metadata-JSON receipts. Selected metadata can contain sensitive correlation data. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -8752,7 +9239,7 @@
       "post": {
         "operationId": "prepareProjectBundleImport",
         "summary": "Prepare complete acknowledged index replacement",
-        "description": "API 2.2 writable direct preparation; required Idempotency-Key and no query parameters. The sticky 10-second budget starts before bounded body read and includes queueing, capture, validation, full response construction and final retention admission. It does not promise parser/syscall preemption or response delivery by the deadline. Matching pending reservation returns retryable 409 bundle-preparation-in-progress; a different request under that key retains idempotency-key-conflict. Ready retries replay the original response/receipt without extending lifetime. Pending+ready <=256. Preparation occurs off Store lock under the existing one-job semaphore. Full response is built and validated before final owner/deadline/shutdown recheck and atomic local receipt/replay transfer. Failures release only their own reservation and retain nothing. Whole consumed physical-file union <=100 and 50 MiB includes present raw index/current captures/incoming files; aliases reject. Existing 20 MiB retention conservatively charges complete wrapped response, preview, proposed/base and private captures. Every incoming role uses its existing intrinsic admission profile; fingerprint agreement does not prove native schema, freshness or reviewer authority. Complete index replacement is disclosed in the wrapped response; only later conditional single-file Root.commit changes the index. Confirmation rechecks exact index presence/raw bytes/hash/length/identity, current snapshot and every external file identity/hash/length. No merge/source restore/multi-file transaction/cancel endpoint. Read-only preparation is rejected while old preview/query routes remain available. API1 is unchanged.",
+        "description": "API 2.2 writable direct preparation; required Idempotency-Key and no query parameters. The sticky 10-second budget starts before bounded body read and includes queueing, capture, validation, full response construction and final retention admission. It does not promise parser/syscall preemption or response delivery by the deadline. Matching pending reservation returns retryable 409 bundle-preparation-in-progress; a different request under that key retains idempotency-key-conflict. Ready retries replay the original response/receipt without extending lifetime. Pending+ready <=256. Preparation occurs off Store lock under the existing one-job semaphore. Full response is built and validated before final owner/deadline/shutdown recheck and atomic local receipt/replay transfer. Failures release only their own reservation and retain nothing. Whole consumed physical-file union <=100 and 50 MiB includes present raw index/current captures/incoming files; aliases reject. Existing 20 MiB retention conservatively charges complete wrapped response, preview, proposed/base and private captures. Every incoming role uses its existing intrinsic admission profile; fingerprint agreement does not prove native schema, freshness or reviewer authority. Complete index replacement is disclosed in the wrapped response; only later conditional single-file Root.commit changes the index. Confirmation rechecks exact index presence/raw bytes/hash/length/identity, current snapshot and every external file identity/hash/length. No merge/source restore/multi-file transaction/cancel endpoint. Read-only preparation is rejected while old preview/query routes remain available. API1 is unchanged. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -8842,7 +9329,7 @@
       "post": {
         "operationId": "prepareProjectSourceBundleExport",
         "summary": "Prepare an explicitly acknowledged exact source bundle",
-        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable preparation requires both sensitivity and source-content acknowledgments. Uses existing export Operation/ExportResult with report-export preview, removed_categories:[] and a private SourceBundleJson family; source bytes and metadata are intentionally retained. Complete confined registrations are captured once; no native validity/freshness or authority is inferred merely by export. Whole100 admitted files/50MiB union,10MiB file cap,1MiB artifact/147 envelope and20MiB/256-record/600-second shared retention are enforced without prefixing or cap increases. Guarded destination rejects index/registered input before its read. The existing single-file commit publishes this exported artifact only; it does not perform a restore. Source export planning conservatively counts the selected output target even when absent, plus the index target and all current registered paths, before project resource or output reads. A distinct output and present index permit at most 98 registered resources; the codec limit of 99 does not guarantee every export fits. Old metadata export accounting is unchanged.",
+        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable preparation requires both sensitivity and source-content acknowledgments. Uses existing export Operation/ExportResult with report-export preview, removed_categories:[] and a private SourceBundleJson family; source bytes and metadata are intentionally retained. Complete confined registrations are captured once; no native validity/freshness or authority is inferred merely by export. Whole100 admitted files/50MiB union,10MiB file cap,1MiB artifact/147 envelope and20MiB/256-record/600-second shared retention are enforced without prefixing or cap increases. Guarded destination rejects index/registered input before its read. The existing single-file commit publishes this exported artifact only; it does not perform a restore. Source export planning conservatively counts the selected output target even when absent, plus the index target and all current registered paths, before project resource or output reads. A distinct output and present index permit at most 98 registered resources; the codec limit of 99 does not guarantee every export fits. Old metadata export accounting is unchanged. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -8932,7 +9419,7 @@
       "get": {
         "operationId": "downloadProjectSourceBundleExport",
         "summary": "Download exact committed opt-in source JSON",
-        "description": "Authenticated API2.3 same-creating-session/major read including read-only capability. No query, body or Idempotency-Key. Only a committed, unchanged SourceBundleJson private-family artifact qualifies; HTML/metadata-family, uncommitted, foreign and drifted artifacts reject. Exact file bytes are returned without reserialization with the fixed safe filename forge-workspace-index-and-source-content.json, no-store/nosniff/security headers. Source content and metadata are sensitive.",
+        "description": "Authenticated API2.3 same-creating-session/major read including read-only capability. No query, body or Idempotency-Key. Only a committed, unchanged SourceBundleJson private-family artifact qualifies; HTML/metadata-family, uncommitted, foreign and drifted artifacts reject. Exact file bytes are returned without reserialization with the fixed safe filename forge-workspace-index-and-source-content.json, no-store/nosniff/security headers. Source content and metadata are sensitive. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -9017,7 +9504,7 @@
       "post": {
         "operationId": "prepareProjectSourceBundleImport",
         "summary": "Inspect complete exact source restore before confirmation",
-        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable direct preparation under one immutable10-second budget admitted before body read/queue/capture; all decode/domain/response/retention fences consume it. No parser/syscall preemption guarantee. bundle/3 raw bytes<=1048429 and147 canonical wrapper bytes keep request<=1MiB; duplicated or escaped duplicate keys reject before reconstruction. Explicit numeric index selector preserves1 or upgrades1to2; current/supplied2 cannot downgrade. Complete current/incoming/base path union<=100 is admitted before resource reads, capture<=50MiB and shared conservative retention<=20MiB; no100-prefix. Incoming bytes are inert until the complete proposed registered dependency closure is independently admitted. Missing/stale/unadmitted closure fails; ApplicabilityReport fallback, if needed, must equal PROPOSED analysis exactly, never current Snapshot.analysis. Existing/new directory intents<=100 are included. Ready idempotent retries replay original receipt without lifetime extension; matching pending uses existing bundle-preparation-in-progress. Preparation returns a preknown nonauthorizing outcome ID but persists no accepted intent. Source-content and metadata sensitivity acknowledgments do not confer reviewer authority.",
+        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable direct preparation under one immutable10-second budget admitted before body read/queue/capture; all decode/domain/response/retention fences consume it. No parser/syscall preemption guarantee. bundle/3 raw bytes<=1048429 and147 canonical wrapper bytes keep request<=1MiB; duplicated or escaped duplicate keys reject before reconstruction. Explicit numeric index selector preserves1 or upgrades1to2; current/supplied2 cannot downgrade. Complete current/incoming/base path union<=100 is admitted before resource reads, capture<=50MiB and shared conservative retention<=20MiB; no100-prefix. Incoming bytes are inert until the complete proposed registered dependency closure is independently admitted. Missing/stale/unadmitted closure fails; ApplicabilityReport fallback, if needed, must equal PROPOSED analysis exactly, never current Snapshot.analysis. Existing/new directory intents<=100 are included. Ready idempotent retries replay original receipt without lifetime extension; matching pending uses existing bundle-preparation-in-progress. Preparation returns a preknown nonauthorizing outcome ID but persists no accepted intent. Source-content and metadata sensitivity acknowledgments do not confer reviewer authority. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -9107,7 +9594,7 @@
       "post": {
         "operationId": "commitProjectSourceBundleRestore",
         "summary": "Confirm an exact bounded multi-file source restore",
-        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable one-time same-session receipt and observed_batch_version plus explicit exact-restore acknowledgment authorize only the disclosed opaque owned plan. Complete source/input/absence/identity/parent/current snapshot bindings revalidate under exclusive Root project-data barrier. Durable accepted intent and the preknown operation_id/outcome slot exist BEFORE202; matching retry never repeats effects or replaces its deadline. Forward budget30seconds from acceptance; separate settlement30seconds cannot reenable forward work. Qualified private per-user state is checked before credential/listener startup; no public state path, permission weakening or untrusted fallback. Stage exact new bytes and exact old backups; record ownership and explicit directories; publish resources in authorial order,index last; verify whole proposed generations before durable committed decision/result. Before decision failure/cancel/deadline performs conditional rollback of owned instances only; never overwrite a foreign replacement. Only verified rollback can claim none/failed/cancelled. After committed decision report committed with separate cleanup status, never pretend no write. Unknown ownership/durability/rollback or unreconciled cleanup blocks workspace project-data access and reports recovery-required. Captures/commits inside workspace share barrier; external CLI/editor readers may observe mixed whole-file generations, not a globally atomic transaction. Larger transfers and cross-platform crash/rollback qualification remain required follow-through.",
+        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable one-time same-session receipt and observed_batch_version plus explicit exact-restore acknowledgment authorize only the disclosed opaque owned plan. Complete source/input/absence/identity/parent/current snapshot bindings revalidate under exclusive Root project-data barrier. Durable accepted intent and the preknown operation_id/outcome slot exist BEFORE202; matching retry never repeats effects or replaces its deadline. Forward budget30seconds from acceptance; separate settlement30seconds cannot reenable forward work. Qualified private per-user state is checked before credential/listener startup; no public state path, permission weakening or untrusted fallback. Stage exact new bytes and exact old backups; record ownership and explicit directories; publish resources in authorial order,index last; verify whole proposed generations before durable committed decision/result. Before decision failure/cancel/deadline performs conditional rollback of owned instances only; never overwrite a foreign replacement. Only verified rollback can claim none/failed/cancelled. After committed decision report committed with separate cleanup status, never pretend no write. Unknown ownership/durability/rollback or unreconciled cleanup blocks workspace project-data access and reports recovery-required. Captures/commits inside workspace share barrier; external CLI/editor readers may observe mixed whole-file generations, not a globally atomic transaction. Larger transfers and cross-platform crash/rollback qualification remain required follow-through. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -9200,7 +9687,7 @@
       "get": {
         "operationId": "getProjectSourceBundleRestore",
         "summary": "Recover a source restore outcome by preknown identifier",
-        "description": "Authenticated selectedAPI2.3 read, including read-only scope. No body,query or Idempotency-Key. Before durable accepted intent the preallocated nonauthorizing ID returns404. Accepted/persisted sanitized outcomes require fresh same-qualified-root and current session read authority after a lost202 or restart. Old receipt/token/session authority is never revived. Pending numeric progress is only fully verified staged files; terminal monotonic state separates write_outcome and cleanup. Verified rollback reports none; durable commit reports committed; ambiguity remains unknown/recovery-required. Finished outcome retention is bounded600seconds/256slots; unresolved cleanup/journal material holds reserved bounded capacity and is never silently evicted. Not-found/expiry cannot prove no write or justify automatic reexecution.",
+        "description": "Authenticated selectedAPI2.3 read, including read-only scope. No body,query or Idempotency-Key. Before durable accepted intent the preallocated nonauthorizing ID returns404. Accepted/persisted sanitized outcomes require fresh same-qualified-root and current session read authority after a lost202 or restart. Old receipt/token/session authority is never revived. Pending numeric progress is only fully verified staged files; terminal monotonic state separates write_outcome and cleanup. Verified rollback reports none; durable commit reports committed; ambiguity remains unknown/recovery-required. Finished outcome retention is bounded600seconds/256slots; unresolved cleanup/journal material holds reserved bounded capacity and is never silently evicted. Not-found/expiry cannot prove no write or justify automatic reexecution. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -9264,7 +9751,7 @@
       "post": {
         "operationId": "cancelProjectSourceBundleRestore",
         "summary": "Request safe cancellation before the restore decision",
-        "description": "Authenticated selectedAPI2.3 writable request with no body,query or Idempotency-Key. Cancellation is sticky before the durable committed decision; acknowledgment can remain pending/running and is not terminal no-write proof. Worker clears numeric progress outside measured staging, enters separately bounded settlement and conditionally restores owned old generations. Only verified rollback settles cancelled/write_outcome none. After commit decision return409 operation-not-cancellable; late requests never change committed outcome or terminal state. Unverified rollback/cleanup remains recovery-required with current outcome facts.",
+        "description": "Authenticated selectedAPI2.3 writable request with no body,query or Idempotency-Key. Cancellation is sticky before the durable committed decision; acknowledgment can remain pending/running and is not terminal no-write proof. Worker clears numeric progress outside measured staging, enters separately bounded settlement and conditionally restores owned old generations. Only verified rollback settles cancelled/write_outcome none. After commit decision return409 operation-not-cancellable; late requests never change committed outcome or terminal state. Unverified rollback/cleanup remains recovery-required with current outcome facts. Existing feature admission in the consumed2.4 successor includes2.4.0 alongside its original supported minor; no old DTO/role/effect enum changes.",
         "tags": [
           "Project"
         ],
@@ -9336,6 +9823,653 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ]
+      }
+    },
+    "/api/v2/project/source-transfer-stages": {
+      "post": {
+        "operationId": "createProjectSourceTransferStage",
+        "summary": "createProjectSourceTransferStage",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Reserve the whole declared raw artifact before accepting any part. chunk_count must equal ceil(size/32768). Tools and source bytes are not inferred from declarations. Idempotent replay returns the original stage/lifetime; wrong wire/body fails closed.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Complete closed SourceTransferStage response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceTransferStage"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Strict bounded application/json only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSourceTransferStageRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/source-transfer-stages/{stage_id}/chunks/{chunk_ordinal}": {
+      "put": {
+        "operationId": "putProjectSourceTransferChunk",
+        "summary": "putProjectSourceTransferChunk",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Exact decoded part size, lowercase-even hex, part SHA and ordinal must match this stage's declaration. All nonfinal parts are32768 bytes. Identical ordinal+bytes+hash replays the original acknowledgment without lifetime extension; conflicting bytes return idempotency-key-conflict. No separate Idempotency-Key header is admitted. Never admit a prefix.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete closed SourceTransferChunkAck response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceTransferChunkAck"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Strict bounded application/json only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SourceTransferStageIdPath"
+          },
+          {
+            "$ref": "#/components/parameters/SourceTransferChunkOrdinalPath"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceTransferChunkRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/source-transfer-stages/{stage_id}": {
+      "get": {
+        "operationId": "getProjectSourceTransferStage",
+        "summary": "getProjectSourceTransferStage",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Authenticated current-session status only. received_chunk_count and received_bytes record original accepted part progress, which survives raw storage release; they do not measure currently held shared memory, native admission, freshness or accepted restore. Unknown/expired ID returns not-found. No-requestBody permits absent or exactly {}.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete closed SourceTransferStage response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceTransferStage"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SourceTransferStageIdPath"
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "discardProjectSourceTransferStage",
+        "summary": "discardProjectSourceTransferStage",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Discard unconfirmed transport/preparation state only; a live off-lock holder retains and charges its actual raw bytes until drop. Cannot evict/cancel an accepted restore or establish rollback/no-write. Missing/expired ID returns not-found. No-requestBody permits absent or exactly {}. No Idempotency-Key header.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete closed SourceTransferDiscarded response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceTransferDiscarded"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SourceTransferStageIdPath"
+          }
+        ]
+      }
+    },
+    "/api/v2/project/source-transfer-stages/{stage_id}/preview": {
+      "post": {
+        "operationId": "prepareProjectStagedSourceRestore",
+        "summary": "prepareProjectStagedSourceRestore",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Under one immutable10-second admission deadline, acquire a generation/lease, retain raw bytes through off-Store strict Bundle4 decode and complete proposed domain closure/capture/preparation. Missing parts/full SHA mismatch refuse. Release/retain fences recheck cancellation, expiry, generation and whole shared usage atomically. Complete previous/proposed targets/directories/index are returned with preknown nonauthorizing operation_id. Nothing is accepted or published until existing explicit source-restore confirmation. Numeric index selector preserves1 or explicitly upgrades1to2; never downgrade. Ready retry returns the original receipt; matching active preparation uses bundle-preparation-in-progress.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete closed ProjectSourceBundleImportPreview response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSourceBundleImportPreview"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Strict bounded application/json only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SourceTransferStageIdPath"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareStagedSourceRestoreRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/source-stream-exports": {
+      "post": {
+        "operationId": "prepareProjectSourceStreamExport",
+        "summary": "prepareProjectSourceStreamExport",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Asynchronous existing Operation under immutable30-second accepted-work budget. Complete index/current/output planned union includes absent output slot before resource/target IO. Exact Bundle4 private JSON family uses existing preview/commit. Completed preparation alone is not a downloadable committed artifact or source approval.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Complete closed Operation response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Strict bounded application/json only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareProjectSourceBundleExportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/source-stream-exports/{operation_id}/manifest": {
+      "get": {
+        "operationId": "getProjectSourceStreamExportManifest",
+        "summary": "getProjectSourceStreamExportManifest",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Only the same-session committed private staged-source-JSON family bound to this operation is served. Each read captures the exact committed registered producer target generation under project IO fence and verifies complete artifact SHA/length before serving; no supplied path IO, streaming-prefix proof, HTML/source3 family fallback or new authority. No-requestBody permits absent or exactly {}.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete closed SourceStreamManifest response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceStreamManifest"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ]
+      }
+    },
+    "/api/v2/project/source-stream-exports/{operation_id}/chunks/{chunk_ordinal}": {
+      "get": {
+        "operationId": "getProjectSourceStreamExportChunk",
+        "summary": "getProjectSourceStreamExportChunk",
+        "description": "Explicit selected API2 contract2.4.0 only. Existing scoped capability, Host/Origin/Fetch Metadata, media, closed query/path/body and raw duplicate-safe admission apply. No query parameters; no CORS or remote bind. Source and metadata acknowledgments do not grant reviewer or import authority. Existing ordinary1MiB raw request cap is unchanged. The logical artifact cap10MiB is not a promised usable restore size: complete shared20MiB conservative raw/native/preview/replay reservations may refuse smaller artifacts. Aggregate256 retained entities, complete100 planned paths, 50MiB capture and600-second nonrenewing lifetimes remain. No parser/syscall preemption. Same committed-family/generation/full-artifact SHA and length verification as manifest. Return one bounded exact ordinal part with its own SHA/size and manifest artifact SHA; the last part is the exact remainder. No arbitrary file-range reads or partial artifact validation. No-requestBody permits absent or exactly {}.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Closed version/replay/preparation conflict; no partial authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Existing typed cooperative interruption or qualified restore unavailability/recovery; no partial response, fallback or timeout-as-no-write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete closed SourceStreamChunk response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceStreamChunk"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          },
+          {
+            "$ref": "#/components/parameters/SourceTransferChunkOrdinalPath"
           }
         ]
       }

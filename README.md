@@ -548,9 +548,11 @@ review, preview/commit, recovery, API contracts, bounds, and remaining release g
 
 
 Current development snapshots and draft deliveries are tracked in the
-[dated integrated documentation checkpoint](docs/plans/2026-10-03-integrated-documentation-checkpoint.md).
-The captured workspace source publishes API1 1.2.0/39 and API2 2.3.0/57; these
-API versions are not product releases. Separate drafts, local checks and hosted
+[integrated documentation successor](docs/plans/2026-10-03-integrated-documentation-staged-successor.md).
+The captured committed checkpoint declares API1 1.2.0/39 and API2 2.3.0/57.
+The separately captured working tree declares API2 2.4.0/65 for staged source
+transfer under integration; it supplies no merged, hosted or release result.
+These API versions are not product releases. Separate drafts, local checks and hosted
 checkpoints do not establish full Must/Should, platform, human or release
 acceptance.
 

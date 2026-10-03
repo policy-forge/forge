@@ -925,10 +925,13 @@ state remain separate. Queries keep the complete expected denominator up to
 1,000 within byte limits and prepare no 100-input effect.
 
 See [Workspace index bundles](workspace-index-bundles.md) for the Python example,
-normalized index hash versus original resource hashes and safe errors. Explicit
-API2.2 or 2.3 sessions separately offer [confirmed metadata receipts and index
-replacement](workspace-bundle-receipts.md); API2.3 adds [opt-in exact-source export
-and complete source restore](workspace-source-bundles.md). These writes require
+normalized index hash versus original resource hashes and safe errors.
+Negotiated API2.2, 2.3 or 2.4 sessions offer [confirmed metadata receipts and index
+replacement](workspace-bundle-receipts.md); API2.3 and 2.4 admit [opt-in exact-source
+export and complete source restore](workspace-source-bundles.md). The separately
+captured API2.4 working-tree [staged proposal](workspace-staged-source-bundles.md)
+adds bounded part transfer; this compatibility description supplies no runtime,
+merged or hosted result. These writes require
 preparation and a separate confirmation, with distinct known-ID recovery for
 source restore. Full S-6 capacity, larger transfer and platform/crash/batch
 qualification, human acceptance and the final integrated documentation review

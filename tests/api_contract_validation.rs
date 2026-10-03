@@ -1017,11 +1017,11 @@ mod s3_api2_contracts {
         let one = load_openapi();
         let two = s3_api2_document();
         assert_eq!(one["info"]["version"], "1.2.0");
-        assert_eq!(two["info"]["version"], "2.3.0");
+        assert_eq!(two["info"]["version"], "2.4.0");
         let first = operations(&one);
         let second = operations(&two);
         assert_eq!(first.len(), 39);
-        assert_eq!(second.len(), 57);
+        assert_eq!(second.len(), 65);
         let mut left: Vec<_> = first
             .iter()
             .map(|operation| {
@@ -1612,11 +1612,12 @@ fn release_inventory_contains_both_current_api_families() {
             "docs/api",
             "schemas/forge.workspace-1.schema.json",
             "schemas/forge.workspace-2.schema.json",
-            "schemas/forge.workspace-source-bundle-3.schema.json"
+            "schemas/forge.workspace-source-bundle-3.schema.json",
+            "schemas/forge.workspace-source-bundle-4.schema.json"
         ]
     );
     for (family, (major, version, index_version)) in
-        families.iter().zip([(1, "1.2.0", "forge.workspace/1"), (2, "2.3.0", "forge.workspace/2")])
+        families.iter().zip([(1, "1.2.0", "forge.workspace/1"), (2, "2.4.0", "forge.workspace/2")])
     {
         assert_eq!(family["api_major"], major);
         assert_eq!(family["contract_version"], version);
@@ -1625,7 +1626,7 @@ fn release_inventory_contains_both_current_api_families() {
         let document = load_yaml_as_json(&repo_path(document_path));
         assert_eq!(document["info"]["version"], version);
         let declared_operations = operations(&document);
-        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 57 });
+        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 65 });
         assert!(
             declared_operations
                 .iter()
@@ -1665,7 +1666,10 @@ fn release_inventory_contains_both_current_api_families() {
         if major == 2 {
             assert_eq!(
                 family["source_bundle_schemas"],
-                json!(["schemas/forge.workspace-source-bundle-3.schema.json"])
+                json!([
+                    "schemas/forge.workspace-source-bundle-3.schema.json",
+                    "schemas/forge.workspace-source-bundle-4.schema.json"
+                ])
             );
             assets.extend(
                 family["source_bundle_schemas"]
@@ -2155,5 +2159,117 @@ mod standalone_source_bundle_schema {
         let mut trailing = raw;
         trailing.extend_from_slice(b"\n{}");
         assert!(read_json_strict(&trailing, "second raw document").is_err());
+    }
+}
+
+/// Compile the separately packaged Bundle4 and every new closed staged wire fixture offline.
+mod staged_source_schema_contract {
+    use super::{
+        component_validator, load_yaml_as_json, read_json_strict, repo_path, rewrite_component_refs,
+    };
+    use serde_json::Value;
+    use std::fs;
+
+    /// Read one actual shipping proposal asset through the duplicate-safe fixture parser.
+    fn staged_json(relative: &str) -> Value {
+        read_json_strict(&fs::read(repo_path(relative)).unwrap(), relative).unwrap()
+    }
+
+    /// Compile the shipped staged bundle schema independently from the embedded API component.
+    fn staged_schema_pair() -> (Value, Value, jsonschema::Validator, jsonschema::Validator) {
+        let standalone = staged_json("schemas/forge.workspace-source-bundle-4.schema.json");
+        let api = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+        let shipping = jsonschema::validator_for(&standalone).unwrap();
+        let embedded = component_validator(&api, "WorkspaceSourceBundle4");
+        (standalone, api, shipping, embedded)
+    }
+
+    /// Require exact root and reachable-definition parity, retaining original component constraints.
+    #[test]
+    fn shipping_staged_source_schema_matches_exact_embedded_graph() {
+        let (standalone, api, _, _) = staged_schema_pair();
+        assert_eq!(standalone["$id"], "urn:forge:workspace-source-bundle:4");
+        let mut root = standalone.clone();
+        for key in ["$schema", "$id", "$defs"] {
+            assert!(root.as_object_mut().unwrap().remove(key).is_some());
+        }
+        assert_eq!(
+            root,
+            rewrite_component_refs(&api["components"]["schemas"]["WorkspaceSourceBundle4"])
+        );
+        for (name, schema) in standalone["$defs"].as_object().unwrap() {
+            assert_eq!(
+                *schema,
+                rewrite_component_refs(&api["components"]["schemas"][name]),
+                "{name}"
+            );
+        }
+        assert_eq!(
+            api["components"]["schemas"]["WorkspaceSourceBundle3"]["properties"]["schema_version"]
+                ["const"],
+            "forge.workspace-index-bundle/3"
+        );
+        assert_eq!(
+            api["components"]["schemas"]["WorkspaceSourceBundle4"]["properties"]["profile"]["const"],
+            "index-and-source-hex-staged"
+        );
+    }
+
+    /// Exercise the whole new parser-valid fixture partition without conflating native hash admission.
+    #[test]
+    fn staged_wire_and_shipping_schema_keep_exact_fixture_partition() {
+        let (_, api, shipping, embedded) = staged_schema_pair();
+        let index = staged_json("docs/api/fixtures-v2/index.json");
+        let rows: Vec<_> = index["fixtures"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["file"].as_str().unwrap().starts_with("project-staged-source/"))
+            .collect();
+        assert_eq!(rows.len(), 63);
+        let mut bundle_count = 0;
+        for row in rows {
+            let name = row["file"].as_str().unwrap();
+            let schema = row["schema"]
+                .as_str()
+                .unwrap()
+                .strip_prefix("openapi:components/schemas/")
+                .unwrap();
+            let fixture = staged_json(&format!("docs/api/fixtures-v2/{name}"));
+            let expected = row["expectation"] == "valid";
+            assert_eq!(component_validator(&api, schema).is_valid(&fixture), expected, "{name}");
+            if schema == "WorkspaceSourceBundle4" {
+                bundle_count += 1;
+                assert_eq!(shipping.is_valid(&fixture), expected, "shipping {name}");
+                assert_eq!(embedded.is_valid(&fixture), expected, "embedded {name}");
+            }
+        }
+        assert_eq!(bundle_count, 16);
+    }
+
+    /// Keep schema-valid wrong-hash/ceil/bijection examples valid until actual native admission.
+    #[test]
+    fn staged_schema_does_not_approve_native_relationships() {
+        let (_, api, shipping, _) = staged_schema_pair();
+        for name in [
+            "bundle-pin-sha-native-invalid",
+            "bundle-index-sha-native-invalid",
+            "bundle-missing-content-native-invalid",
+            "bundle-short-nonfinal-native-invalid",
+        ] {
+            let value =
+                staged_json(&format!("docs/api/fixtures-v2/project-staged-source/{name}.json"));
+            assert!(shipping.is_valid(&value), "schema has no content/hash authority for {name}");
+        }
+        for (name, schema) in [
+            ("create-ceil-native-invalid", "CreateSourceTransferStageRequest"),
+            ("chunk-sha-native-invalid", "SourceTransferChunkRequest"),
+            ("manifest-ceil-native-invalid", "SourceStreamManifest"),
+            ("stream-chunk-sha-native-invalid", "SourceStreamChunk"),
+        ] {
+            let value =
+                staged_json(&format!("docs/api/fixtures-v2/project-staged-source/{name}.json"));
+            assert!(component_validator(&api, schema).is_valid(&value), "{name}");
+        }
     }
 }

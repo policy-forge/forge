@@ -1,7 +1,9 @@
 # Export and restore exact workspace sources
 
-This guide describes the bounded source workflow in a build publishing workspace
-API **2.3.0 / 57 operations**. Select `--api-major 2` at launch. API v1 remains
+This guide describes the bounded inline source workflow introduced by workspace
+API **2.3.0 / 57 operations**, also admitted by the separately captured
+**2.4.0 / 65** working-tree successor under integration. This text supplies no
+compiled, merged or hosted result for that successor. Select `--api-major 2` at launch. API v1 remains
 **1.2.0 / 39 operations**. Contract versions describe the local API, not a product
 release. The metadata-only prerequisite retains its historical **2.2.0 / 51**
 verification records.
@@ -91,7 +93,7 @@ review after an uncertain attempt cannot resend the receipt.
 
 Use **Check source restore status**, or enter the ID under **Source restore
 outcome operation ID** and select **Look up source restore outcome**. After a lost
-reply or restart, use a fresh same-project API2.3 session and that known ID.
+reply or restart, use a fresh same-project API2.3 or 2.4 session and that known ID.
 Credentials, preview tokens and old session authority are never revived. A 404
 may mean no accepted intent or an unavailable/expired outcome; **it does not prove
 that no files changed and never justifies blind reexecution**.
@@ -171,7 +173,7 @@ not automatic reconfirmation.
 
 ## API and maintained client
 
-All six routes are selected API2.3 only, with existing scoped authorization,
+All six inline routes require selected API major2 and negotiated 2.3.0 or 2.4.0, with existing scoped authorization,
 Host/Origin/Fetch Metadata and read-only checks. GETs use no idempotency key;
 preparation and confirmation require one. Cancellation accepts the existing
 client's empty-object POST convention and no idempotency key.
@@ -193,8 +195,10 @@ The maintained `Workspace` client adds `prepare_source_bundle_export`,
 Keep credentials, source bytes and preview tokens out of logs.
 
 Matching numeric major-2 bootstrap negotiation remains separate from feature
-gates: inspection admits 2.1.0/2.2.0/2.3.0; metadata receipts admit 2.2.0/2.3.0;
-source routes require exactly 2.3.0. The original API1 surface remains available.
+gates: inspection admits 2.1.0/2.2.0/2.3.0/2.4.0; metadata receipts admit
+2.2.0/2.3.0/2.4.0; inline source routes admit 2.3.0/2.4.0. The separately
+captured staged methods require exactly 2.4.0; see the [staged proposal](workspace-staged-source-bundles.md).
+The original API1 surface remains available.
 
 This bounded implementation does not close larger staged transfers, complete
 capacity and cross-platform crash/rollback qualification, security/audit,

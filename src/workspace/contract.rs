@@ -115,7 +115,7 @@ impl ApiMajor {
     pub(crate) const fn version(self) -> &'static str {
         match self {
             Self::V1 => VERSION,
-            Self::V2 => "2.3.0",
+            Self::V2 => "2.4.0",
         }
     }
 
@@ -574,6 +574,73 @@ mod tests {
             assert_eq!(
                 name, IDEMPOTENCY_HEADER,
                 "{name} is declared in the contract but not implemented by the runtime"
+            );
+        }
+    }
+
+    /// Exercise the actual public path wire-to-integer seam for both staged part routes.
+    /// The standalone DTO reference stays reusable while this parameter declares its wire conversion.
+    #[test]
+    fn staged_chunk_ordinals_are_admitted_as_wire_integers() {
+        let body = serde_json::json!({"sha256":"0".repeat(64),"size_bytes":1,"hex":"00"});
+        for ordinal in ["0", "1", "319"] {
+            let put = format!(
+                "/api/v2/project/source-transfer-stages/bst_0123456789abcdef/chunks/{ordinal}"
+            );
+            let get = format!(
+                "/api/v2/project/source-stream-exports/op_0123456789abcdef/chunks/{ordinal}"
+            );
+            assert!(
+                crate::workspace::contract::operation_request_for(
+                    crate::workspace::contract::ApiMajor::V2,
+                    "PUT",
+                    &put,
+                    &[],
+                    None,
+                    Some(&body),
+                )
+                .is_ok()
+            );
+            assert!(
+                crate::workspace::contract::operation_request_for(
+                    crate::workspace::contract::ApiMajor::V2,
+                    "GET",
+                    &get,
+                    &[],
+                    None,
+                    None,
+                )
+                .is_ok()
+            );
+        }
+        for ordinal in ["320", "-1", "x"] {
+            let put = format!(
+                "/api/v2/project/source-transfer-stages/bst_0123456789abcdef/chunks/{ordinal}"
+            );
+            let get = format!(
+                "/api/v2/project/source-stream-exports/op_0123456789abcdef/chunks/{ordinal}"
+            );
+            assert!(
+                crate::workspace::contract::operation_request_for(
+                    crate::workspace::contract::ApiMajor::V2,
+                    "PUT",
+                    &put,
+                    &[],
+                    None,
+                    Some(&body),
+                )
+                .is_err()
+            );
+            assert!(
+                crate::workspace::contract::operation_request_for(
+                    crate::workspace::contract::ApiMajor::V2,
+                    "GET",
+                    &get,
+                    &[],
+                    None,
+                    None,
+                )
+                .is_err()
             );
         }
     }

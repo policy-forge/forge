@@ -227,9 +227,11 @@ After preparation, the component pipeline:
 ## Local workspace runtime
 
 `workspace::launch` selects one API major before capture, credentials or listening.
-The current source publishes API v1 **1.2.0 / 39 operations** and API v2
-**2.3.0 / 57 operations**. The source workflow adds six v2 routes to the retained
-metadata and inspection surfaces; it does not move v1 callers to v2. These local
+The captured committed checkpoint declares API v1 **1.2.0 / 39 operations** and
+API v2 **2.3.0 / 57 operations**. The separately captured working tree declares
+API2 **2.4.0 / 65 operations** under integration, adding eight staged-source
+operations to those retained surfaces. This source description establishes no
+compiled, merged or hosted result and does not move v1 callers to v2. These local
 contract versions are separate from the product release version. See the
 [workspace codemap](CODEMAPS.md#workspace-source-bundle-paths) and
 [API compatibility policy](api/compatibility.md).
@@ -292,7 +294,11 @@ not revived. The Windows native restore port returns typed unavailable rather
 than using a weaker publication fallback.
 
 The [source workflow guide](workspace-source-bundles.md) defines the finite inline
-profile and whole planning/capture/retention limits. Larger staged transfers,
+profile and whole planning/capture/retention limits. In the separately captured
+working tree, `http_staged.rs`, `source_transfers.rs` and `source_stream_reads.rs`
+provide the staged adapter, session transport and committed private-part reader
+proposals described in the [staged guide](workspace-staged-source-bundles.md).
+Their presence does not establish runtime or capacity qualification. Larger capacity,
 cross-platform crash/rollback qualification, human acceptance and the final
 integrated documentation gate remain open; this architectural description supplies
 no execution or acceptance result.

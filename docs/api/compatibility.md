@@ -201,7 +201,7 @@ The closed successor DTOs distinguish complete counts, filtered pages, captured 
 
 ## Unreleased contract 2.2.0
 
-Adds three acknowledged metadata receipt operations, bringing API2 to 51 operations: export preparation, authenticated committed JSON download and direct index-replacement preparation. At the metadata receipt checkpoint, API2 Session, descriptor and bundled assets advertised exact 2.2.0. API1 remains 1.2.0 with 39 operations. The maintained client retains numeric-major bootstrap. Current inspection admits exactly 2.1.0, 2.2.0 or 2.3.0; metadata receipt methods admit 2.2.0 or 2.3.0.
+Adds three acknowledged metadata receipt operations, bringing API2 to 51 operations: export preparation, authenticated committed JSON download and direct index-replacement preparation. At the metadata receipt checkpoint, API2 Session, descriptor and bundled assets advertised exact 2.2.0. API1 remains 1.2.0 with 39 operations. The maintained client retains numeric-major bootstrap. At the metadata checkpoint, inspection admitted exactly 2.1.0, 2.2.0 or 2.3.0; metadata receipt methods admit 2.2.0 or 2.3.0.
 
 A direct import returns validation, an ordinary effect preview and complete previous/proposed index membership before confirmation. The numeric index selector makes migration explicit and refuses downgrade. Export and import preparation write nothing; subsequent conditional confirmation writes one export target or the index. JSON and HTML receipts retain separate private artifact families. The complete current/incoming/present-index file union is bounded before registered reads, with the existing capture and retention caps. See [the receipt guide](../workspace-bundle-receipts.md) for raw-byte bounds, sensitive metadata, idempotency recovery and confirmation semantics.
 
@@ -212,8 +212,8 @@ These changes do not restore source contents or establish multi-file transaction
 Adds six explicit source operations for acknowledged source export preparation,
 authenticated exact JSON download, complete source-restore preparation, separate
 batch confirmation, known-ID outcome lookup and cancellation. API2 now declares
-57 operations. Session, descriptor and assets advertise exact 2.3.0; API1 remains
-1.2.0/39. Source methods require exactly 2.3.0, while the existing inspection and
+57 operations. At that checkpoint, Session, descriptor and assets advertised exact 2.3.0; API1 remains
+1.2.0/39. Source methods at that checkpoint required exactly 2.3.0, while the existing inspection and
 metadata methods retain their documented 2.1/2.2 compatibility. Numeric-major
 bootstrap acceptance alone grants no newer feature surface.
 
@@ -238,3 +238,13 @@ Historical versions/fixtures/verification records preserve their exact scope.
 This additive API contract does not establish larger staged-transfer support,
 complete platform/crash/capacity qualification, security/audit, accessibility,
 human workflow acceptance, a release or the final integrated documentation gate.
+
+## API2.4.0 working-tree integration checkpoint
+
+The captured working tree declares API2.4.0 with eight staged-source operations and 65 total. The captured committed checkpoint `2064e293` still declares 2.3.0/57; working source is not merged, hosted or release qualification. API1 stays1.2.0/39; historical2.3/57 and its receipts remain bound to their original bytes. Matching numeric-major2 descriptor/Session bootstrap still does not imply a feature gate. The consumed successor must explicitly admit S3 on2.1/2.2/2.3/2.4, metadata receipts on2.2/2.3/2.4, inline source on2.3/2.4, and staged methods only on2.4. Earlier gate paragraphs above describe their captured checkpoints.
+
+Bundle4 (`forge.workspace-index-bundle/4`, `index-and-source-hex-staged`) is separately closed alongside unchanged Bundle3, metadata bundles1/2 and indices1/2. Its logical raw artifact ceiling is10MiB; ordinary requests remain1MiB, exact parts<=32768bytes (canonical lowercase hex), at most320parts. Declared part count, exact ordinal/remainder, per-part/full SHA and size, raw duplicate/escaped-duplicate rejection, pin/content/index bijection and full native closure are separate consumed checks. JSON Schema alone does not establish these facts.
+
+Stage create/PUT/status/preview/discard never confirms a restore. Whole reservations and actual held raw bytes remain charged until release under shared20MiB and aggregate256-entity retention;600-second stage/replay lifetimes do not renew. Source export counts its output slot; all complete planned paths<=100 and capture<=50MiB retain their original boundaries. Smaller artifacts may be refused by complete conservative preparation peaks. No second pool, hidden capacity increase, partial admission or accepted-authority eviction is authorized.
+
+Staged preview returns the existing complete source restore DTO and preknown nonauthorizing ID. Existing explicit confirmation, durable accepted intent before202, known-ID recovery, no automatic uncertain resend and404-not-no-write rules remain. Manifest/part reads require the same-session committed private staged-source family and recapture/verify the complete exact target every time. No arbitrary path, default source inclusion, writable import from transport status or family fallback. See [the staged proposal guide](../workspace-staged-source-bundles.md). The working-tree declaration is an integration checkpoint, not evidence that all eight routes and consumers have passed actual conformance or that a product/hosted release advertises 2.4. Larger finite capacity, Windows native transaction, crash/interruption, accessibility, security/audit, human, release and final integrated documentation gates remain separate.

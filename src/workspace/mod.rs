@@ -21,7 +21,10 @@ pub(crate) mod session;
 
 pub(crate) mod source_bundle_effects;
 pub(crate) mod source_bundles;
+pub(crate) mod source_stream_reads;
+pub(crate) mod source_transfers;
 pub(crate) mod source_validation;
+pub(crate) mod staged_source_bundles;
 
 /// Select a supported major before project capture, prompts, credentials or listening.
 pub(crate) fn launch(

@@ -334,7 +334,7 @@ mod tests {
             .unwrap();
         assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap(), reply.value);
         assert_eq!(store.operation_count(), 1);
-        assert!(store.retained_bytes >= bytes.len() * 4);
+        assert!(store.non_stage_retention().unwrap().bytes >= bytes.len() * 4);
         assert_eq!(
             store
                 .replay("key", "POST", "/api/v2/project/source-bundle-exports", "", &json!({}))
@@ -343,6 +343,118 @@ mod tests {
                 .value,
             reply.value
         );
+    }
+    /// The exact source confirmation reserves separate job/replay/native owners before moving its real sealed plan.
+    #[test]
+    fn shared_source_confirmation_worker_release_keeps_native_outcome_authority() {
+        let (project, mut store, preview, _) = preview_fixture();
+        let acceptance = take(&mut store, &preview);
+        assert_eq!(store.retained_entity_count().unwrap(), 5);
+        store.source_accepted("confirm", &acceptance).unwrap();
+        let id = acceptance.operation_id.clone();
+        let nonce = acceptance.reservation_nonce.clone();
+        store.source_worker_released(&id, "stale");
+        assert_eq!(store.retained_entity_count().unwrap(), 5);
+        let bytes = store.non_stage_retention().unwrap().bytes;
+        drop(acceptance);
+        store.source_worker_released(&id, &nonce);
+        assert_eq!(store.retained_entity_count().unwrap(), 4);
+        assert_eq!(bytes - store.non_stage_retention().unwrap().bytes, 4096);
+        assert!(store.retention_claims.contains_key(&RetentionOwner::Source(id)));
+        assert!(store.replays.contains_key("confirm"));
+        assert!(!project.path().join("forge.workspace.json").exists());
+    }
+
+    /// Source confirmation cannot bypass shared old reply occupancy or publish pending authority after refusal.
+    #[test]
+    fn shared_source_confirmation_refuses_complete_entity_overflow_before_plan_move() {
+        let (project, mut store, preview, _) = preview_fixture();
+        for ordinal in 0..252 {
+            let reply = Reply {
+                value: json!({"state":"shutting-down"}),
+                schema: "ShutdownResponse",
+                status: 200,
+            };
+            store
+                .remember(
+                    &format!("source-fill-{ordinal}"),
+                    "POST",
+                    "/accounting-control",
+                    "",
+                    &json!({}),
+                    &reply,
+                )
+                .unwrap();
+        }
+        assert_eq!(store.retained_entity_count().unwrap(), 253);
+        let id = preview["preview_id"].as_str().unwrap();
+        let request = confirmation(&preview);
+        assert_eq!(
+            store
+                .take_source_confirmation(
+                    id,
+                    "confirm",
+                    &format!("/api/v2/project/bundle-restores/{id}/commit"),
+                    "",
+                    &request
+                )
+                .err()
+                .unwrap()
+                .code,
+            "invalid-request"
+        );
+        assert!(store.sources.receipts[id].plan.is_some());
+        assert!(store.sources.jobs.is_empty());
+        assert!(store.pending_replays.is_empty());
+        assert!(store.retention_claims.is_empty());
+        assert_eq!(store.retained_entity_count().unwrap(), 253);
+        assert!(!project.path().join("forge.workspace.json").exists());
+    }
+
+    /// Claimed local preparation is exchanged for the complete wrapper and original replay, without renewing its generation.
+    #[test]
+    fn shared_source_prepared_reply_is_atomic_and_replayable_after_claim_release() {
+        let (project, mut fixture, preview, replacement) = preview_fixture();
+        let mut store = Store::default();
+        let request = json!({});
+        let nonce = store
+            .reserve(
+                "source-prepare",
+                "POST",
+                "/api/v2/project/source-bundle-imports",
+                "",
+                &request,
+            )
+            .unwrap();
+        let mut local = store.preparation_store("source-prepare", &nonce).unwrap();
+        local.retained_bytes = fixture.retained_bytes;
+        local.sources.receipts.append(&mut fixture.sources.receipts);
+        drop(fixture);
+        let reply = Reply {
+            value: json!({"validation":super::super::super::services::validation(true,None),"preview":preview,"replacement":replacement}),
+            schema: "ProjectSourceBundleImportPreview",
+            status: 200,
+        };
+        store.retain_source_reserved("source-prepare", &nonce, local, &reply).unwrap();
+        store.release_reservation("source-prepare", &nonce);
+        assert!(store.pending_replays.is_empty());
+        assert!(store.retention_claims.is_empty());
+        assert_eq!(store.retained_entity_count().unwrap(), 2);
+        assert_eq!(
+            store
+                .replay(
+                    "source-prepare",
+                    "POST",
+                    "/api/v2/project/source-bundle-imports",
+                    "",
+                    &request
+                )
+                .unwrap()
+                .unwrap()
+                .value,
+            reply.value
+        );
+        assert!(!project.path().join("forge.workspace.json").exists());
     }
 }
 
@@ -412,9 +524,26 @@ fn recovery_required() -> Error {
     )
 }
 
+/// Bound the complete source terminal/control DTO using exact sealed path/hash/size membership.
+/// This over-approximation includes committed recovery plus progress and all bounded safe Error fields.
+fn source_control_charge(preview: &Value, pending: &Value) -> Result<usize> {
+    let targets=preview["targets"].as_array().ok_or_else(Error::invalid)?.iter().map(|target|
+        json!({"path":target["path"],"sha256":target["exact_bytes_sha256"],"size":target["size"]})).collect::<Vec<_>>();
+    let mut bound = pending.clone();
+    bound["state"] = json!("recovery-required");
+    bound["write_outcome"] = json!("committed");
+    bound["cleanup_state"] = json!("unverified");
+    bound["updated_at"] = json!("0".repeat(40));
+    bound["cancel_requested"] = json!(true);
+    bound["progress"] = json!({"completed_files":100,"total_files":100});
+    bound["result"] = json!({"write_committed":true,"exact_manifest_sha256":preview["exact_manifest_sha256"],
+        "committed_targets":targets,"cleanup_state":"unverified"});
+    bound["error"] = control_error_bound();
+    staged_value_charge(&bound)?.checked_mul(2).ok_or_else(capacity)
+}
+
 impl Store {
-    /// Atomically retain a complete ordinary source-export acceptance and replay
-    /// before dispatch; failures publish no operation or receipt authority.
+    /// Retain the accepted ordinary job and distinct ready replay together, with failure/worker allowance reserved.
     pub(crate) fn accept_source_export(
         &mut self,
         key: &str,
@@ -422,34 +551,57 @@ impl Store {
         raw_query: &str,
         request: &Value,
     ) -> Result<(Reply, Vec<u8>)> {
-        if self.operation_count() >= MAX_RETAINED
-            || self.replay(key, "POST", wire_path, raw_query, request)?.is_some()
-        {
-            return Err(capacity());
+        self.accept_operation(
+            OperationRequestIdentity { key, method: "POST", wire_path, raw_query, request },
+            "export",
+        )
+    }
+    /// Atomically accept an ordinary job and original ready reply before dispatch; no partial operation on quota refusal.
+    pub(crate) fn accept_operation(
+        &mut self,
+        identity: OperationRequestIdentity<'_>,
+        kind: &str,
+    ) -> Result<(Reply, Vec<u8>)> {
+        let OperationRequestIdentity { key, method, wire_path, raw_query, request } = identity;
+        if self.replay(key, method, wire_path, raw_query, request)?.is_some() {
+            return Err(idempotency_conflict());
         }
         let mut local = Self::default();
-        let operation = local.begin("export")?;
-        let reply = Reply { value: operation, schema: "Operation", status: 202 };
-        contract::validate_for(contract::ApiMajor::V2, reply.schema, &reply.value)?;
+        let value = local.begin(kind)?;
+        let reply = Reply { value, schema: "Operation", status: 202 };
+        contract::validate("Operation", &reply.value)?;
         let bytes = contract::encode(&reply.value, 1024 * 1024, false)?;
-        local.charge_reply(&reply)?;
-        let retained =
-            self.retained_bytes.checked_add(local.retained_bytes).ok_or_else(capacity)?;
-        if retained > MAX_PREVIEW_BYTES {
-            return Err(capacity());
-        }
-        let hash = request_hash("POST", wire_path, raw_query, request)?;
-        self.replays.insert(
-            key.to_owned(),
-            Replay {
-                request_hash: hash,
-                value: reply.value.clone(),
-                schema: reply.schema,
-                status: reply.status,
-            },
+        let input_bytes = staged_value_charge(request)?;
+        let owner = RetentionOwner::Ordinary(
+            reply.value["operation_id"].as_str().ok_or_else(Error::invalid)?.into(),
         );
+        let claim = local.retention_claims.get_mut(&owner).ok_or_else(capacity)?;
+        claim.bytes = claim.bytes.checked_add(input_bytes).ok_or_else(capacity)?;
+        claim.input_bytes = input_bytes;
+        let usage = local.non_stage_retention()?;
+        let current = self.non_stage_retention()?;
+        self.admit_shared_retention(OtherPoolUsage {
+            bytes: current
+                .bytes
+                .checked_add(usage.bytes)
+                .and_then(|sum| sum.checked_add(staged_value_charge(&reply.value).ok()?))
+                .and_then(|sum| sum.checked_add(4096))
+                .ok_or_else(capacity)?,
+            records: current
+                .records
+                .checked_add(usage.records)
+                .and_then(|sum| sum.checked_add(1))
+                .ok_or_else(capacity)?,
+        })?;
+        let ready_record = Replay {
+            request_hash: request_hash(method, wire_path, raw_query, request)?,
+            value: reply.value.clone(),
+            schema: reply.schema,
+            status: 202,
+        };
         self.operations.append(&mut local.operations);
-        self.retained_bytes = retained;
+        self.retention_claims.append(&mut local.retention_claims);
+        self.replays.insert(key.into(), ready_record);
         Ok((reply, bytes))
     }
 
@@ -478,11 +630,7 @@ impl Store {
             charge = charge.checked_add(bytes).ok_or_else(capacity)?;
         }
         let retained = self.retained_bytes.checked_add(charge).ok_or_else(capacity)?;
-        if retained > MAX_PREVIEW_BYTES
-            || self.operation_count().saturating_add(recovered.len()) > MAX_RETAINED
-        {
-            return Err(capacity());
-        }
+        self.admit_growth(charge, 0, recovered.len())?;
         if !self.sources.recovered.is_empty() {
             return Err(recovery_required());
         }
@@ -537,9 +685,7 @@ impl Store {
             .and_then(|sum| sum.checked_add(plan.reserved_private_bytes))
             .ok_or_else(capacity)?;
         let retained = self.retained_bytes.checked_add(charge).ok_or_else(capacity)?;
-        if retained > MAX_PREVIEW_BYTES {
-            return Err(capacity());
-        }
+        self.admit_growth(charge, staged_value_charge(&preview)?, 1)?;
         self.sources.receipts.insert(
             preview_id,
             SourceReceipt {
@@ -553,8 +699,7 @@ impl Store {
         Ok((preview, plan.replacement))
     }
 
-    /// Move complete source receipts with the same atomic reservation/replay rule
-    /// used by metadata imports. The caller checks its deadline under this lock.
+    /// Atomically exchange the exact preparation allowance for complete source receipts and distinct ready reply.
     pub(crate) fn retain_source_reserved(
         &mut self,
         key: &str,
@@ -563,37 +708,56 @@ impl Store {
         reply: &Reply,
     ) -> Result<()> {
         let pending = self.pending_replays.get(key).ok_or_else(idempotency_conflict)?;
-        if pending.nonce != nonce || self.replays.contains_key(key) {
+        if pending.kind != PendingKind::Preparation
+            || pending.nonce != nonce
+            || self.replays.contains_key(key)
+        {
             return Err(idempotency_conflict());
         }
-        let retained =
-            self.retained_bytes.checked_add(local.retained_bytes).ok_or_else(capacity)?;
-        if retained > MAX_PREVIEW_BYTES
-            || self.receipt_count().saturating_add(local.receipt_count()) > MAX_RETAINED
-            || !local.receipts.is_empty()
+        if !local.receipts.is_empty()
             || !local.operations.is_empty()
             || !local.replays.is_empty()
             || !local.pending_replays.is_empty()
+            || !local.retention_claims.is_empty()
             || local.sources.operation_count() != 0
+            || local.transfers.retained_records() != 0
             || local.sources.receipts.keys().any(|id| self.sources.receipts.contains_key(id))
         {
             return Err(capacity());
         }
-        let retained_response = Replay {
+        let owner = RetentionOwner::Preparation(nonce.into());
+        let base = self.usage_without_claim(&owner)?;
+        let usage = local.non_stage_retention()?;
+        self.admit_shared_retention(OtherPoolUsage {
+            bytes: base
+                .bytes
+                .checked_add(usage.bytes)
+                .and_then(|sum| sum.checked_add(staged_value_charge(&reply.value).ok()?))
+                .ok_or_else(capacity)?,
+            records: base.records.checked_add(usage.records).ok_or_else(capacity)?,
+        })?;
+        let retained =
+            self.retained_bytes.checked_add(local.retained_bytes).ok_or_else(capacity)?;
+        let ready_record = Replay {
             request_hash: pending.request_hash.clone(),
             value: reply.value.clone(),
             schema: reply.schema,
             status: reply.status,
         };
         self.sources.receipts.append(&mut local.sources.receipts);
-        self.retained_bytes = retained;
-        self.replays.insert(key.to_owned(), retained_response);
+        self.replays.insert(key.into(), ready_record);
         self.pending_replays.remove(key);
+        self.retention_claims.remove(&owner);
+        self.retained_bytes = retained;
         Ok(())
     }
 
     /// Admit path/token/version/acknowledgment and charge the original pending
     /// reply before moving its sealed plan to the durable acceptance boundary.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep capability consumption, exact request identity, complete pre-admission and native plan transfer in one audited acceptance boundary."
+    )]
     pub(crate) fn take_source_confirmation(
         &mut self,
         preview_id: &str,
@@ -654,13 +818,27 @@ impl Store {
         let accepted_reply = contract::encode(&value, 1024 * 1024, false)?;
         let charge = accepted_reply.len().checked_mul(4).ok_or_else(capacity)?;
         let retained = self.retained_bytes.checked_add(charge).ok_or_else(capacity)?;
-        if retained > MAX_PREVIEW_BYTES {
-            return Err(capacity());
-        }
+        let control = source_control_charge(&self.sources.receipts[preview_id].preview, &value)?;
+        let replay_floor = staged_value_charge(&value)?;
         let request_sha256 = request_hash("POST", wire_path, raw_query, request)?;
-        let nonce = self.reserve(key, "POST", wire_path, raw_query, request)?;
-        self.pending_replays.get_mut(key).ok_or_else(recovery_required)?.kind =
-            PendingKind::Restore;
+        if self.replay(key, "POST", wire_path, raw_query, request)?.is_some() {
+            return Err(idempotency_conflict());
+        }
+        let nonce = id("prep")?;
+        // Job + pending-to-ready replay + held native worker + retained native outcome owner.
+        // Native raw/plan reservation was already admitted with the receipt and is not refunded by its move.
+        let future = charge
+            .checked_add(control)
+            .and_then(|sum| sum.checked_add(replay_floor))
+            .and_then(|sum| sum.checked_add(4096))
+            .ok_or_else(capacity)?;
+        self.admit_growth(future, control / 2, 4)?;
+        let claim_bytes = control.checked_add(replay_floor).ok_or_else(capacity)?;
+        let pending = PendingReplay {
+            kind: PendingKind::Restore,
+            request_hash: request_sha256.clone(),
+            nonce: nonce.clone(),
+        };
         let nonce_digest = crate::hashing::sha256_hex(nonce.as_bytes());
         let native_nonce =
             u64::from_str_radix(&nonce_digest[..16], 16).map_err(|_| Error::invalid())?;
@@ -672,6 +850,20 @@ impl Store {
             .plan
             .take()
             .ok_or_else(unavailable)?;
+        self.pending_replays.insert(key.into(), pending);
+        self.retention_claims.insert(
+            RetentionOwner::Source(operation_id.clone()),
+            RetentionClaim {
+                nonce: nonce.clone(),
+                bytes: claim_bytes,
+                records: 2,
+                control_bytes: control,
+                input_bytes: 0,
+                fallback: None,
+                worker: true,
+                allocated: true,
+            },
+        );
         self.sources.jobs.insert(
             operation_id.clone(),
             SourceJob {
@@ -723,6 +915,19 @@ impl Store {
         );
         self.pending_replays.remove(key);
         Ok(())
+    }
+
+    /// Release the exact native worker only after its real plan and accepted handle have physically dropped.
+    /// Durable outcome/control/replay reservations remain; this never grants cancellation or rollback proof.
+    pub(crate) fn source_worker_released(&mut self, operation_id: &str, nonce: &str) {
+        if let Some(claim) =
+            self.retention_claims.get_mut(&RetentionOwner::Source(operation_id.into()))
+        {
+            if claim.nonce == nonce && claim.worker {
+                claim.worker = false;
+                claim.records = claim.records.saturating_sub(1);
+            }
+        }
     }
 
     /// A durable acceptance error is uncertain: retain its reservation and
@@ -816,5 +1021,620 @@ impl Store {
         }
         contract::validate_for(contract::ApiMajor::V2, "SourceRestoreOperation", &durable)?;
         Ok(durable)
+    }
+}
+
+// APPEND INSIDE effects::source_receipts (same privacy context), not a new module.
+// ROOT adds Store.transfers: crate::workspace::source_transfers::SourceTransfers.
+use crate::workspace::source_transfers::{
+    DecodedPart, OtherPoolUsage, PreparationLease, PreparationTicket, SourceTransfers, StageRequest,
+};
+
+/// Ephemeral producer-owned identity for one committed staged export, never a public path.
+pub(crate) struct StagedExportDescriptor {
+    /// Exact confined target originally selected and confirmed by the export producer.
+    pub(crate) path: String,
+    /// Original exact artifact hash from the bound preview.
+    pub(crate) sha256: String,
+    /// Original exact private byte count, capped independently at ten MiB.
+    pub(crate) bytes: usize,
+}
+
+/// Actual admitted wire identity, retained without canonicalizing away method/path/query facts.
+#[derive(Clone, Copy)]
+pub(crate) struct StageRequestIdentity<'a> {
+    /// Original same-session idempotency key validated by the selected operation contract.
+    pub(crate) key: &'a str,
+    /// Actual selected-major public path, including this stage identity for preview preparation.
+    pub(crate) wire_path: &'a str,
+    /// Actual admitted raw query string, never silently dropped from replay identity.
+    pub(crate) raw_query: &'a str,
+    /// Closed original request Value after strict raw duplicate/encoding/body admission.
+    pub(crate) request: &'a Value,
+}
+
+/// Bound one actual retained JSON copy conservatively; never ignore encode failure.
+pub(super) fn staged_value_charge(value: &Value) -> Result<usize> {
+    contract::encode(value, 4 * 1024 * 1024, false)?.len().checked_mul(4).ok_or_else(capacity)
+}
+
+/// Stop complete retained-value enumeration as soon as its conservative floor exceeds the pool.
+pub(super) fn staged_charge_sum(sum: usize, value: &Value) -> Result<usize> {
+    let next = sum.checked_add(staged_value_charge(value)?).ok_or_else(capacity)?;
+    if next > MAX_PREVIEW_BYTES {
+        return Err(capacity());
+    }
+    Ok(next)
+}
+
+impl SourceStore {
+    /// Charge every source Value, with the accepted complete control/result floor reserved before acceptance.
+    fn staged_public_charge(
+        &self,
+        claims: &BTreeMap<RetentionOwner, RetentionClaim>,
+    ) -> Result<usize> {
+        let previews = self
+            .receipts
+            .values()
+            .map(|record| &record.preview)
+            .try_fold(0_usize, staged_charge_sum)?;
+        self.jobs.iter().try_fold(previews, |sum, (id, job)| {
+            let floor = claims
+                .get(&RetentionOwner::Source(id.clone()))
+                .map_or(0, |claim| claim.control_bytes / 2);
+            sum.checked_add(staged_value_charge(&job.value)?.max(floor)).ok_or_else(capacity)
+        })
+    }
+}
+
+impl Store {
+    /// Count retained entities once; separately stored replay Values remain separate entities.
+    /// `capture_progress` and recovered IDs already represented by jobs are alias indexes.
+    pub(crate) fn retained_entity_count(&self) -> Result<usize> {
+        [
+            self.receipt_count(),
+            self.operation_count(),
+            self.replays.len(),
+            self.pending_replays.len(),
+            self.transfers.retained_records(),
+            self.retention_claims.values().try_fold(0_usize, |sum, claim| {
+                sum.checked_add(claim.records).ok_or_else(capacity)
+            })?,
+        ]
+        .into_iter()
+        .try_fold(0_usize, |sum, count| sum.checked_add(count).ok_or_else(capacity))
+    }
+
+    /// Add a complete conservative wire-copy floor to the old private/generation ledger.
+    /// The intentionally duplicated charge lowers usability; it is not a new pool or RSS bound.
+    pub(crate) fn non_stage_retention(&self) -> Result<OtherPoolUsage> {
+        let records = self
+            .retained_entity_count()?
+            .checked_sub(self.transfers.retained_records())
+            .ok_or_else(capacity)?;
+        if records > MAX_RETAINED {
+            return Err(capacity());
+        }
+        let ordinary = self
+            .receipts
+            .values()
+            .map(|record| &record.preview)
+            .chain(self.replays.values().map(|record| &record.value))
+            .try_fold(0_usize, staged_charge_sum)?;
+        // This finite reserve covers bounded identifiers/map metadata separately from Values.
+        // All returned local Stores and accepted native workers reserve additional complete claims here.
+        let metadata = records.checked_mul(4096).ok_or_else(capacity)?;
+        let operations = self.operations.iter().try_fold(0_usize, |sum, (id, value)| {
+            let floor = self
+                .retention_claims
+                .get(&RetentionOwner::Ordinary(id.clone()))
+                .map_or(0, |claim| claim.control_bytes / 2);
+            sum.checked_add(staged_value_charge(value)?.max(floor)).ok_or_else(capacity)
+        })?;
+        let claims = self
+            .retention_claims
+            .values()
+            .try_fold(0_usize, |sum, claim| sum.checked_add(claim.bytes).ok_or_else(capacity))?
+            .checked_add(self.retention_claims.len().checked_mul(4096).ok_or_else(capacity)?)
+            .ok_or_else(capacity)?;
+        let bytes = self
+            .retained_bytes
+            .checked_add(claims)
+            .and_then(|sum| sum.checked_add(ordinary))
+            .and_then(|sum| sum.checked_add(operations))
+            .and_then(|sum| {
+                sum.checked_add(self.sources.staged_public_charge(&self.retention_claims).ok()?)
+            })
+            .and_then(|sum| sum.checked_add(metadata))
+            .ok_or_else(capacity)?;
+        Ok(OtherPoolUsage { bytes, records })
+    }
+
+    /// Check prospective complete usage before an old or new admission mutates retained state.
+    /// The caller includes future complete wire copies/reservations, not only private Vec growth.
+    pub(crate) fn admit_shared_retention(&self, non_stage: OtherPoolUsage) -> Result<()> {
+        let bytes =
+            non_stage.bytes.checked_add(self.transfers.retained_bytes()?).ok_or_else(capacity)?;
+        let records = non_stage
+            .records
+            .checked_add(self.transfers.retained_records())
+            .ok_or_else(capacity)?;
+        if bytes > MAX_PREVIEW_BYTES
+            || records > MAX_RETAINED
+            || self.local_limit.is_some_and(|limit| bytes > limit.bytes || records > limit.records)
+        {
+            return Err(capacity());
+        }
+        Ok(())
+    }
+
+    /// Create one private stage and its original ready replay atomically under the Store lock.
+    /// The parent strictly admits the original raw request and checks its original deadline first.
+    pub(crate) fn create_source_stage(
+        &mut self,
+        identity: StageRequestIdentity<'_>,
+        admitted: StageRequest,
+        observed: Instant,
+        utc: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(Reply, Vec<u8>)> {
+        let StageRequestIdentity { key, wire_path, raw_query, request } = identity;
+        if let Some(reply) = self.replay(key, "POST", wire_path, raw_query, request)? {
+            let bytes = contract::encode(&reply.value, 1024 * 1024, false)?;
+            return Ok((reply, bytes));
+        }
+        if !admitted.matches(request)? {
+            return Err(Error::invalid());
+        }
+        let current = self.non_stage_retention()?;
+        let mut local = SourceTransfers::default();
+        let total_existing = OtherPoolUsage {
+            bytes: current
+                .bytes
+                .checked_add(self.transfers.retained_bytes()?)
+                .ok_or_else(capacity)?,
+            records: current
+                .records
+                .checked_add(self.transfers.retained_records())
+                .ok_or_else(capacity)?,
+        };
+        let stage_id = id("bst")?;
+        let value = local.create(&stage_id, admitted, observed, utc, total_existing)?;
+        let reply = Reply { value, schema: "SourceTransferStage", status: 201 };
+        contract::validate_for(contract::ApiMajor::V2, reply.schema, &reply.value)?;
+        let bytes = contract::encode(&reply.value, 1024 * 1024, false)?;
+        let charge = staged_value_charge(&reply.value)?;
+        let retained = self.retained_bytes.checked_add(charge).ok_or_else(capacity)?;
+        // The monotonic charge and actual retained replay copy are both conservatively charged.
+        let future = OtherPoolUsage {
+            bytes: current
+                .bytes
+                .checked_add(charge)
+                .and_then(|sum| sum.checked_add(charge))
+                .and_then(|sum| sum.checked_add(4096))
+                .ok_or_else(capacity)?,
+            records: current.records.checked_add(1).ok_or_else(capacity)?,
+        };
+        let ready_record = Replay {
+            request_hash: request_hash("POST", wire_path, raw_query, request)?,
+            value: reply.value.clone(),
+            schema: reply.schema,
+            status: reply.status,
+        };
+        // All fallible validation, encoding, charging and collision checks precede either map move.
+        self.transfers.retain_created(future, local)?;
+        self.replays.insert(key.to_owned(), ready_record);
+        self.retained_bytes = retained;
+        Ok((reply, bytes))
+    }
+
+    /// Install already decoded bytes without parser/WorkControl or project I/O under this lock.
+    pub(crate) fn put_source_stage(
+        &mut self,
+        stage_id: &str,
+        ordinal: usize,
+        part: &DecodedPart,
+        observed: Instant,
+    ) -> Result<Value> {
+        self.transfers.put(stage_id, ordinal, part, observed)
+    }
+
+    /// Observe actual counters without extending the original stage lifetime.
+    pub(crate) fn source_stage(&mut self, stage_id: &str, observed: Instant) -> Result<Value> {
+        self.transfers.status(stage_id, observed)
+    }
+
+    /// Discard unconfirmed transport only; held raw allocations remain in shared accounting.
+    pub(crate) fn discard_source_stage(
+        &mut self,
+        stage_id: &str,
+        observed: Instant,
+    ) -> Result<Value> {
+        self.transfers.discard(stage_id, observed)
+    }
+
+    /// Acquire one fresh attempt generation; the caller immediately releases the Store lock.
+    pub(crate) fn lease_source_stage(
+        &mut self,
+        stage_id: &str,
+        observed: Instant,
+    ) -> Result<PreparationLease> {
+        self.transfers.begin_preparation(stage_id, observed)
+    }
+
+    /// Abandon only the exact released lease ticket, never a newer preparation attempt.
+    pub(crate) fn abandon_source_stage(
+        &mut self,
+        ticket: &PreparationTicket,
+        observed: Instant,
+    ) -> Result<()> {
+        self.transfers.abandon_preparation(ticket, observed)
+    }
+
+    /// Observe retirement outside callback-owned Store locks; held lease bytes remain charged.
+    pub(crate) fn source_stage_preparation_active(
+        &self,
+        ticket: &PreparationTicket,
+        observed: Instant,
+    ) -> Result<bool> {
+        self.transfers.preparation_active(ticket, observed)
+    }
+
+    /// Transfer a fully prepared local source receipt and ready replay in one shared mutation.
+    /// No optimistic raw-drop credit is taken; a retained closure has no fallible post-insertion work.
+    pub(crate) fn retain_staged_source_reserved(
+        &mut self,
+        ticket: &PreparationTicket,
+        observed: Instant,
+        identity: StageRequestIdentity<'_>,
+        nonce: &str,
+        mut local: Self,
+        reply: &Reply,
+    ) -> Result<()> {
+        let StageRequestIdentity { key, wire_path, raw_query, request } = identity;
+        let pending = self.pending_replays.get(key).ok_or_else(idempotency_conflict)?;
+        if pending.kind != PendingKind::Preparation
+            || pending.nonce != nonce
+            || wire_path
+                != format!("/api/v2/project/source-transfer-stages/{}/preview", ticket.stage_id())
+            || pending.request_hash != request_hash("POST", wire_path, raw_query, request)?
+            || self.replays.contains_key(key)
+        {
+            return Err(idempotency_conflict());
+        }
+        if !local.receipts.is_empty()
+            || !local.operations.is_empty()
+            || !local.replays.is_empty()
+            || !local.pending_replays.is_empty()
+            || !local.retention_claims.is_empty()
+            || local.sources.operation_count() != 0
+            || local.sources.receipt_count() != 1
+            || local.transfers.retained_records() != 0
+            || local.sources.receipts.keys().any(|id| self.sources.receipts.contains_key(id))
+            || reply.status != 200
+            || reply.schema != "ProjectSourceBundleImportPreview"
+        {
+            return Err(capacity());
+        }
+        contract::validate_for(contract::ApiMajor::V2, reply.schema, &reply.value)?;
+        let owner = RetentionOwner::Preparation(nonce.into());
+        let old = self.usage_without_claim(&owner)?;
+        let local_usage = local.non_stage_retention()?;
+        let plan_bytes = local_usage
+            .bytes
+            .checked_add(staged_value_charge(&reply.value)?)
+            .ok_or_else(capacity)?;
+        // The existing pending entity is replaced by one replay, so its count does not grow.
+        let plan_records = local_usage.records;
+        let retained =
+            self.retained_bytes.checked_add(local.retained_bytes).ok_or_else(capacity)?;
+        let ready_record = Replay {
+            request_hash: pending.request_hash.clone(),
+            value: reply.value.clone(),
+            schema: reply.schema,
+            status: reply.status,
+        };
+        let Self {
+            transfers,
+            sources,
+            replays,
+            pending_replays,
+            retained_bytes,
+            retention_claims,
+            ..
+        } = self;
+        transfers.retain_prepared(ticket, observed, old, plan_bytes, plan_records, || {
+            sources.receipts.append(&mut local.sources.receipts);
+            replays.insert(key.to_owned(), ready_record);
+            pending_replays.remove(key);
+            retention_claims.remove(&owner);
+            *retained_bytes = retained;
+            Ok(())
+        })
+    }
+
+    /// Reconcile actual unconfirmed storage drops during ordinary Store housekeeping.
+    /// Accepted/native authorities elsewhere are never swept, cancelled or credited here.
+    pub(crate) fn sweep_source_stages(&mut self, observed: Instant) -> Result<()> {
+        self.transfers.sweep(observed)
+    }
+
+    /// Copy only bounded descriptor facts under Store; actual target I/O happens outside it.
+    /// Old inline getters keep selecting their original private family and cannot serve Bundle4.
+    pub(crate) fn staged_export_descriptor(
+        &self,
+        operation_id: &str,
+        observed: Instant,
+    ) -> Result<StagedExportDescriptor> {
+        let operation = self.operations.get(operation_id).ok_or_else(unavailable)?;
+        if operation["kind"] != "export" {
+            return Err(unavailable());
+        }
+        let id = operation["result"]["preview"]["preview_id"].as_str().ok_or_else(unavailable)?;
+        let receipt = self.receipts.get(id).ok_or_else(unavailable)?;
+        if !receipt.committed
+            || receipt.artifact_family != Some(ArtifactFamily::StagedSourceBundleJson)
+            || observed
+                .checked_duration_since(receipt.issued)
+                .is_none_or(|elapsed| elapsed >= RECEIPT_LIFETIME)
+            || receipt.bytes.is_empty()
+            || receipt.bytes.len() > crate::workspace::source_transfers::MAX_ARTIFACT_BYTES
+        {
+            return Err(unavailable());
+        }
+        let sha256 = receipt.preview["exact_bytes_sha256"].as_str().ok_or_else(unavailable)?;
+        Ok(StagedExportDescriptor {
+            path: receipt.target.path.clone(),
+            sha256: sha256.into(),
+            bytes: receipt.bytes.len(),
+        })
+    }
+}
+
+/// Proposed actual-method Store controls; no HTTP/native/confirmation acceptance is inferred.
+#[cfg(test)]
+mod staged_adapter_tests {
+    use super::*;
+    use crate::workspace::preparation::NoopControl;
+    use crate::workspace::source_transfers::PART_BYTES;
+
+    /// Describe one exact inert raw artifact with both explicit sensitivity acknowledgments.
+    fn declaration(raw: &[u8]) -> Value {
+        json!({"schema_version":"forge.workspace-index-bundle/4",
+            "profile":"index-and-source-hex-staged","artifact_sha256":crate::hashing::sha256_hex(raw),
+            "artifact_size_bytes":raw.len(),"chunk_size_bytes":PART_BYTES,
+            "chunk_count":raw.len().div_ceil(PART_BYTES),"acknowledge_sensitive_metadata":true,
+            "acknowledge_source_content":true})
+    }
+
+    /// Enter through the actual atomic stage/replay adapter, returning its original public facts.
+    fn create(store: &mut Store, raw: &[u8], observed: Instant) -> (Reply, Vec<u8>) {
+        let request = declaration(raw);
+        store
+            .create_source_stage(
+                StageRequestIdentity {
+                    key: "stage-create-control-0001",
+                    wire_path: "/api/v2/project/source-transfer-stages",
+                    raw_query: "",
+                    request: &request,
+                },
+                StageRequest::parse(&request).unwrap(),
+                observed,
+                chrono::Utc::now(),
+            )
+            .unwrap()
+    }
+
+    /// Install genuine byte transport through the actual decoder and Store PUT method.
+    fn ready(store: &mut Store, raw: &[u8], observed: Instant) -> String {
+        let (reply, _) = create(store, raw, observed);
+        let stage_id = reply.value["stage_id"].as_str().unwrap().to_owned();
+        for (ordinal, bytes) in raw.chunks(PART_BYTES).enumerate() {
+            use std::fmt::Write as _;
+            let mut hex = String::new();
+            for byte in bytes {
+                write!(hex, "{byte:02x}").unwrap();
+            }
+            let part = DecodedPart::parse(
+                &json!({"sha256":crate::hashing::sha256_hex(bytes),
+                "size_bytes":bytes.len(),"hex":hex}),
+                &mut NoopControl,
+            )
+            .unwrap();
+            store.put_source_stage(&stage_id, ordinal, &part, observed).unwrap();
+        }
+        stage_id
+    }
+
+    /// Same key/body returns the exact original ready bytes and never creates a second stage.
+    #[test]
+    fn create_replay_is_original_and_changed_request_retains_no_new_stage() {
+        let mut store = Store::default();
+        let observed = Instant::now();
+        let (first, first_bytes) = create(&mut store, b"{}", observed);
+        let (again, again_bytes) = create(&mut store, b"{}", observed + Duration::from_secs(1));
+        assert_eq!(first.value, again.value);
+        assert_eq!(first_bytes, again_bytes);
+        assert_eq!(store.retained_entity_count().unwrap(), 2);
+        let changed = declaration(b"[]");
+        let error = store
+            .create_source_stage(
+                StageRequestIdentity {
+                    key: "stage-create-control-0001",
+                    wire_path: "/api/v2/project/source-transfer-stages",
+                    raw_query: "",
+                    request: &changed,
+                },
+                StageRequest::parse(&changed).unwrap(),
+                observed,
+                chrono::Utc::now(),
+            )
+            .err()
+            .unwrap();
+        assert_eq!(error.code, "idempotency-key-conflict");
+        assert_eq!(store.transfers.retained_records(), 1);
+    }
+
+    /// Distinct retained Values count separately; an alias capture index does not add an entity.
+    /// Synthetic values isolate accounting and are not advertised as authentic Operation DTOs.
+    #[test]
+    fn aggregate_entities_refuse_before_stage_or_replay_insertion() {
+        let mut store = Store::default();
+        for ordinal in 0..MAX_RETAINED {
+            store.operations.insert(format!("op_fixture_{ordinal}"), json!({}));
+        }
+        store.capture_progress.insert("op_fixture_0".into(), (0, 1));
+        assert_eq!(store.retained_entity_count().unwrap(), MAX_RETAINED);
+        let request = declaration(b"{}");
+        let before = store.retained_bytes;
+        let result = store.create_source_stage(
+            StageRequestIdentity {
+                key: "stage-create-control-0001",
+                wire_path: "/api/v2/project/source-transfer-stages",
+                raw_query: "",
+                request: &request,
+            },
+            StageRequest::parse(&request).unwrap(),
+            Instant::now(),
+            chrono::Utc::now(),
+        );
+        assert!(result.is_err());
+        assert_eq!(store.retained_bytes, before);
+        assert!(store.replays.is_empty());
+        assert_eq!(store.transfers.retained_records(), 0);
+    }
+
+    /// A different pre-admitted descriptor cannot be bound to this actual replay request.
+    #[test]
+    fn create_refuses_cross_request_admission_before_any_retention() {
+        let mut store = Store::default();
+        let request = declaration(b"{}");
+        let other = declaration(b"[]");
+        let result = store.create_source_stage(
+            StageRequestIdentity {
+                key: "stage-create-control-0001",
+                wire_path: "/api/v2/project/source-transfer-stages",
+                raw_query: "",
+                request: &request,
+            },
+            StageRequest::parse(&other).unwrap(),
+            Instant::now(),
+            chrono::Utc::now(),
+        );
+        assert!(result.is_err());
+        assert_eq!(store.transfers.retained_records(), 0);
+        assert!(store.replays.is_empty());
+    }
+
+    /// Actual held raw bytes remain charged across discard until the final lease releases them.
+    #[test]
+    fn discarded_held_raw_storage_has_no_optimistic_shared_credit() {
+        let mut store = Store::default();
+        let observed = Instant::now();
+        let raw = vec![b' '; PART_BYTES + 7];
+        let id = ready(&mut store, &raw, observed);
+        let lease = store.lease_source_stage(&id, observed).unwrap();
+        let before = store.transfers.retained_bytes().unwrap();
+        store.discard_source_stage(&id, observed).unwrap();
+        store.sweep_source_stages(observed).unwrap();
+        assert_eq!(store.transfers.retained_bytes().unwrap(), before);
+        assert!(!store.source_stage_preparation_active(lease.ticket(), observed).unwrap());
+        drop(lease);
+        store.sweep_source_stages(observed).unwrap();
+        assert_eq!(before - store.transfers.retained_bytes().unwrap(), raw.len());
+    }
+
+    /// Future old-route additions cannot ignore currently held staging storage.
+    #[test]
+    fn whole_shared_bytes_refuse_an_other_pool_overfill() {
+        let mut store = Store::default();
+        create(&mut store, b"{}", Instant::now());
+        let stage_bytes = store.transfers.retained_bytes().unwrap();
+        assert!(
+            store
+                .admit_shared_retention(OtherPoolUsage {
+                    bytes: MAX_PREVIEW_BYTES - stage_bytes + 1,
+                    records: 1
+                })
+                .is_err()
+        );
+        assert!(
+            store
+                .admit_shared_retention(OtherPoolUsage {
+                    bytes: MAX_PREVIEW_BYTES - stage_bytes,
+                    records: 1
+                })
+                .is_ok()
+        );
+    }
+
+    /// A malformed local handoff cannot consume the pending owner or publish a receipt/replay.
+    #[test]
+    fn invalid_staged_handoff_is_atomic_and_preserves_the_preparation_owner() {
+        let mut store = Store::default();
+        let observed = Instant::now();
+        let id = ready(&mut store, b"{}", observed);
+        let request = json!({"target_index_schema_version":2,"acknowledge_index_replacement":true,
+            "acknowledge_source_content":true,"acknowledge_replace_files":true});
+        let path = format!("/api/v2/project/source-transfer-stages/{id}/preview");
+        let nonce =
+            store.reserve("stage-preview-control-0001", "POST", &path, "", &request).unwrap();
+        let ticket = store.lease_source_stage(&id, observed).unwrap().into_ticket();
+        let reply =
+            Reply { value: json!({}), schema: "ProjectSourceBundleImportPreview", status: 200 };
+        assert!(
+            store
+                .retain_staged_source_reserved(
+                    &ticket,
+                    observed,
+                    StageRequestIdentity {
+                        key: "stage-preview-control-0001",
+                        wire_path: &path,
+                        raw_query: "",
+                        request: &request
+                    },
+                    &nonce,
+                    Store::default(),
+                    &reply
+                )
+                .is_err()
+        );
+        assert_eq!(store.source_stage(&id, observed).unwrap()["state"], "preparing");
+        assert!(store.pending_replays.contains_key("stage-preview-control-0001"));
+        assert!(!store.replays.contains_key("stage-preview-control-0001"));
+        assert_eq!(store.sources.receipt_count(), 0);
+        store.abandon_source_stage(&ticket, observed).unwrap();
+    }
+
+    /// A ticket for one stage cannot settle a reservation made for another public stage path.
+    #[test]
+    fn stage_ticket_and_wire_reservation_must_name_the_same_stage() {
+        let mut store = Store::default();
+        let observed = Instant::now();
+        let id = ready(&mut store, b"{}", observed);
+        let request = json!({"target_index_schema_version":2,"acknowledge_index_replacement":true,
+            "acknowledge_source_content":true,"acknowledge_replace_files":true});
+        let wrong_path = "/api/v2/project/source-transfer-stages/bst_0123456789ab/preview";
+        let nonce =
+            store.reserve("stage-preview-control-0002", "POST", wrong_path, "", &request).unwrap();
+        let ticket = store.lease_source_stage(&id, observed).unwrap().into_ticket();
+        let reply =
+            Reply { value: json!({}), schema: "ProjectSourceBundleImportPreview", status: 200 };
+        let result = store.retain_staged_source_reserved(
+            &ticket,
+            observed,
+            StageRequestIdentity {
+                key: "stage-preview-control-0002",
+                wire_path: wrong_path,
+                raw_query: "",
+                request: &request,
+            },
+            &nonce,
+            Store::default(),
+            &reply,
+        );
+        assert_eq!(result.err().unwrap().code, "idempotency-key-conflict");
+        assert!(store.pending_replays.contains_key("stage-preview-control-0002"));
+        assert_eq!(store.source_stage(&id, observed).unwrap()["state"], "preparing");
+        store.abandon_source_stage(&ticket, observed).unwrap();
     }
 }

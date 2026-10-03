@@ -51,7 +51,7 @@ def run(args):
             donor_inputs={name:pin(donor/name) for name in ['forge.workspace.json','policies/access.md','evidence/source.bin']}
             old_recipient={name:pin(recipient/name) for name in ['forge.workspace.json','local.md','leave.bin']}
             with Workspace(binary,donor,read_only=False,api_major=2) as client:
-                assert client._contract_version=='2.3.0';export_key=key()
+                assert client._contract_version in ('2.3.0','2.4.0');receipt['api_version']=client._contract_version;export_key=key()
                 operation=client.prepare_source_bundle_export('source.json',acknowledge_sensitive_metadata=True,acknowledge_source_content=True,idempotency_key=export_key)
                 replay=client.prepare_source_bundle_export('source.json',acknowledge_sensitive_metadata=True,acknowledge_source_content=True,idempotency_key=export_key)
                 assert replay==operation;checks.append('source-export-original202-replay')

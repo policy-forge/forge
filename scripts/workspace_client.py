@@ -16,12 +16,17 @@ import subprocess
 import threading
 import time
 from calendar import monthrange
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote, urlencode, urlsplit
 
 MAX_RESPONSE = 4 * 1024 * 1024
 # The unchanged1MiB request leaves147 bytes for the explicit source import envelope.
 MAX_SOURCE_BUNDLE = 1_048_429
+# Separate explicit2.4 transport limits; the inline147-byte envelope remains unchanged.
+MAX_STAGED_SOURCE_BUNDLE = 10 * 1024 * 1024
+STAGED_PART_BYTES = 32768
+MAX_STAGED_PARTS = 320
 SOURCE_LEGACY_ROLES = frozenset(("policy-source", "oscal-catalog-artifact", "oscal-component-artifact",
     "mapping-collection", "applicability-manifest", "applicability-report", "trace-report"))
 SOURCE_ROLES = frozenset(("policy-source", "oscal-catalog-artifact", "oscal-component-artifact",
@@ -111,15 +116,15 @@ class Workspace:
         if not path.startswith(self._api_prefix + "/") or "#" in path or any(ord(char) < 32 for char in path):
             raise ValueError("Use a documented route for the selected API major")
         if raw_json_body is not None:
-            metadata = self._contract_version in ("2.2.0", "2.3.0") and path == self.api_path("/project/bundle-imports")
-            source = self._contract_version == "2.3.0" and path == self.api_path("/project/source-bundle-imports")
+            metadata = self._contract_version in ("2.2.0", "2.3.0", "2.4.0") and path == self.api_path("/project/bundle-imports")
+            source = self._contract_version in ("2.3.0", "2.4.0") and path == self.api_path("/project/source-bundle-imports")
             if (self._api_major != 2 or method != "POST" or not (metadata or source) or body is not None
                 or type(raw_json_body) is not bytes or len(raw_json_body) > 1024 * 1024 or not idempotency_key):
                 raise ValueError("Unsupported raw metadata import request")
         if expected_media_type is not None:
-            metadata = self._contract_version in ("2.2.0", "2.3.0") and re.fullmatch(
+            metadata = self._contract_version in ("2.2.0", "2.3.0", "2.4.0") and re.fullmatch(
                 re.escape(self._api_prefix) + r"/project/bundle-exports/op_[0-9a-z]{12,80}/download", path)
-            source = self._contract_version == "2.3.0" and re.fullmatch(
+            source = self._contract_version in ("2.3.0", "2.4.0") and re.fullmatch(
                 re.escape(self._api_prefix) + r"/project/source-bundle-exports/op_[0-9a-z]{12,80}/download", path)
             if (expected_media_type != "application/json" or not raw or method != "GET" or self._api_major != 2
                 or not (metadata or source) or body is not None or idempotency_key):
@@ -189,8 +194,8 @@ class Workspace:
         introduced. Each cursor belongs to its unchanged capture/filter/date.
         The server retains whole-domain validation and count authority.
         """
-        if self._api_major != 2 or self._contract_version not in ("2.1.0", "2.2.0", "2.3.0"):
-            raise ValueError("Lifecycle and impact reads require an explicitly negotiated API2 2.1.0, 2.2.0 or 2.3.0 session")
+        if self._api_major != 2 or self._contract_version not in ("2.1.0", "2.2.0", "2.3.0", "2.4.0"):
+            raise ValueError("Lifecycle and impact reads require an explicitly negotiated API2 2.1.0, 2.2.0, 2.3.0 or 2.4.0 session")
         if required_date and query.get("as_of") is None:
             raise ValueError("An explicit as_of date is required")
         values = {}
@@ -274,9 +279,9 @@ class Workspace:
                              page_size=page_size, cursor=cursor)
 
     def _s6_supported(self):
-        """Gate metadata effects to2.2/2.3 while preserving numeric-major bootstrap and older reads."""
-        if self._api_major != 2 or self._contract_version not in ("2.2.0", "2.3.0"):
-            raise ValueError("Metadata bundle effects require API2 contract2.2.0 or2.3.0")
+        """Gate metadata effects to2.2/2.3/2.4 while preserving numeric-major bootstrap and older reads."""
+        if self._api_major != 2 or self._contract_version not in ("2.2.0", "2.3.0", "2.4.0"):
+            raise ValueError("Metadata bundle effects require API2 contract2.2.0,2.3.0 or2.4.0")
 
     def prepare_bundle_export(self, target_path, *, acknowledge_sensitive_metadata, idempotency_key):
         """Prepare an explicit metadata output; returned export work is not a confirmed write."""
@@ -314,9 +319,9 @@ class Workspace:
         return raw
 
     def _source_supported(self):
-        """Require explicit source API2.3; never translate older namespaces or feature gates."""
-        if self._api_major != 2 or self._contract_version != "2.3.0":
-            raise ValueError("Source bundle effects require API2 contract2.3.0")
+        """Require explicit inline source API2.3/2.4; never translate older namespaces or feature gates."""
+        if self._api_major != 2 or self._contract_version not in ("2.3.0", "2.4.0"):
+            raise ValueError("Source bundle effects require API2 contract2.3.0 or2.4.0")
 
     @staticmethod
     def _source_closed(value, required, optional=()):
@@ -759,6 +764,356 @@ class Workspace:
             if operation["state"] not in ("pending", "running"):
                 return operation
             time.sleep(min(0.1, max(0, deadline - time.monotonic())))
+
+
+    def _staged_supported(self):
+        """Require exact negotiated2.4; numeric-major bootstrap alone grants no staged feature."""
+        if self._api_major != 2 or self._contract_version != "2.4.0":
+            raise ValueError("Staged source transfer requires API2 contract2.4.0")
+
+    @staticmethod
+    def _staged_pairs(pairs):
+        """Reject decoded and escaped duplicate object keys without displaying supplied names."""
+        value = {}
+        for key, child in pairs:
+            if key in value:
+                raise ValueError("The staged artifact contains duplicate object keys")
+            value[key] = child
+        return value
+
+    @staticmethod
+    def _staged_constant(_value):
+        """Reject nonfinite JSON tokens without retaining their spelling in a public exception."""
+        raise ValueError("The staged artifact contains unsupported JSON scalars")
+
+    @staticmethod
+    def _staged_time(value):
+        """Check a bounded offset-bearing timestamp, without treating expiry text as a local authority."""
+        if (type(value) is not str or len(value) > 40
+            or not re.fullmatch(r"\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})", value)):
+            raise RuntimeError("The staged timestamp is unsupported")
+        try:
+            parsed = datetime.fromisoformat(value.replace("t", "T").replace("z", "+00:00").replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                raise ValueError
+        except ValueError:
+            raise RuntimeError("The staged timestamp is unsupported") from None
+        return value
+
+    @classmethod
+    def _staged_identity(cls, value):
+        """Check the closed Bundle4 tag/profile and exact logical artifact/part declaration."""
+        if (value["schema_version"] != "forge.workspace-index-bundle/4"
+            or value["profile"] != "index-and-source-hex-staged"):
+            raise RuntimeError("The staged artifact profile is unsupported")
+        cls._source_hash(value["artifact_sha256"])
+        size = cls._source_integer(value["artifact_size_bytes"], MAX_STAGED_SOURCE_BUNDLE)
+        count = cls._source_integer(value["chunk_count"], MAX_STAGED_PARTS)
+        if (size == 0 or type(value["chunk_size_bytes"]) is not int or value["chunk_size_bytes"] != STAGED_PART_BYTES
+            or count != (size + STAGED_PART_BYTES - 1) // STAGED_PART_BYTES):
+            raise RuntimeError("The staged artifact size and part count disagree")
+        return value
+
+    @classmethod
+    def _staged_bundle(cls, raw):
+        """Inspect exact bounded raw Bundle4 bytes without re-encoding them or approving native closure.
+
+        Original-byte SHA remains separate from the normalized index hash. These
+        structural/hash checks establish neither native domain admission nor
+        current freshness or a literal decoder heap bound.
+        """
+        if type(raw) is not bytes or not 1 <= len(raw) <= MAX_STAGED_SOURCE_BUNDLE or raw.startswith(b"\xef\xbb\xbf"):
+            raise ValueError("Select bounded exact staged source bytes without a BOM")
+        try:
+            value = json.loads(raw.decode("utf-8"), object_pairs_hook=cls._staged_pairs, parse_constant=cls._staged_constant)
+        except (ValueError, UnicodeError, RecursionError):
+            raise ValueError("The staged artifact is not one strict UTF8 JSON document") from None
+        cls._source_closed(value, ("schema_version", "profile", "source_content_included", "index", "index_sha256", "pins", "contents"))
+        if (value["schema_version"] != "forge.workspace-index-bundle/4" or value["profile"] != "index-and-source-hex-staged"
+            or value["source_content_included"] is not True):
+            raise ValueError("Select the explicit staged source profile")
+        index = cls._source_index(value["index"])
+        if len(index["resources"]) > 99:
+            raise ValueError("The staged artifact exceeds complete index membership")
+        cls._source_hash(value["index_sha256"])
+        if cls._source_index_hash(index) != value["index_sha256"]:
+            raise RuntimeError("The staged normalized index hash disagrees")
+        if (type(value["pins"]) is not list or type(value["contents"]) is not list
+            or len(value["pins"]) != len(index["resources"]) or len(value["contents"]) != len(index["resources"])):
+            raise RuntimeError("The staged index pin and content membership disagree")
+        for resource, pin, content in zip(index["resources"], value["pins"], value["contents"]):
+            cls._source_closed(pin, ("key", "sha256", "size"))
+            cls._source_closed(content, ("key", "encoding", "chunks"))
+            cls._source_hash(pin["sha256"])
+            size = cls._source_integer(pin["size"], MAX_STAGED_SOURCE_BUNDLE)
+            if (pin["key"] != resource["key"] or content["key"] != resource["key"] or content["encoding"] != "hex"
+                or type(content["chunks"]) is not list or len(content["chunks"]) > MAX_STAGED_PARTS):
+                raise RuntimeError("The staged authorial pin and content order disagree")
+            hasher, decoded = hashlib.sha256(), 0
+            for ordinal, text in enumerate(content["chunks"]):
+                part = cls._staged_hex(text)
+                if ordinal + 1 < len(content["chunks"]) and len(part) != STAGED_PART_BYTES:
+                    raise RuntimeError("The staged nonfinal content part is incomplete")
+                hasher.update(part); decoded += len(part)
+            if decoded != size or hasher.hexdigest() != pin["sha256"]:
+                raise RuntimeError("The staged content size or hash disagrees")
+        return raw
+
+    @staticmethod
+    def _staged_hex(value):
+        """Decode only finite canonical lowercase-even hex; reject empty or oversized parts first."""
+        if (type(value) is not str or not 2 <= len(value) <= STAGED_PART_BYTES * 2
+            or not re.fullmatch(r"(?:[a-f0-9]{2})+", value)):
+            raise RuntimeError("The staged part encoding is unsupported")
+        return bytes.fromhex(value)
+
+
+    @classmethod
+    def _staged_received(cls, count, received, size, parts, *, acknowledged_ordinal=None):
+        """Require a byte total from actual full-part/final-remainder membership, not arbitrary counters."""
+        cls._source_integer(count, parts)
+        cls._source_integer(received, size)
+        last = size - (parts - 1) * STAGED_PART_BYTES
+        possible = {0} if count == 0 else {count * STAGED_PART_BYTES, (count - 1) * STAGED_PART_BYTES + last}
+        if acknowledged_ordinal is not None:
+            if count == 0:
+                raise RuntimeError("The staged acknowledgment contains no observed part")
+            if acknowledged_ordinal == parts - 1:
+                possible = {(count - 1) * STAGED_PART_BYTES + last}
+            elif count == 1:
+                possible = {STAGED_PART_BYTES}
+        if received not in possible or (count == parts and received != size):
+            raise RuntimeError("The staged received total cannot represent exact retained parts")
+
+    @classmethod
+    def _staged_stage(cls, value, *, stage_id=None, expected=None):
+        """Validate complete closed transport counters without claiming native readiness or renewal."""
+        cls._source_closed(value, ("stage_id", "schema_version", "profile", "artifact_sha256", "artifact_size_bytes",
+                                 "chunk_size_bytes", "chunk_count", "received_chunk_count", "received_bytes", "state", "expires_at"))
+        cls._staged_identity(value)
+        cls._source_id(value["stage_id"], "bst")
+        cls._staged_time(value["expires_at"])
+        count = cls._source_integer(value["received_chunk_count"], value["chunk_count"])
+        received = cls._source_integer(value["received_bytes"], value["artifact_size_bytes"])
+        cls._staged_received(count, received, value["artifact_size_bytes"], value["chunk_count"])
+        if (value["state"] not in ("receiving", "ready", "preparing", "prepared", "discarded")
+            or (value["state"] == "receiving" and count == value["chunk_count"])
+            or (value["state"] in ("ready", "preparing", "prepared")
+                and (count != value["chunk_count"] or received != value["artifact_size_bytes"]))):
+            raise RuntimeError("The staged transport counters disagree")
+        if stage_id is not None and value["stage_id"] != stage_id:
+            raise RuntimeError("The staged response identifier disagrees")
+        if expected is not None and any(value[key] != expected[key] for key in expected):
+            raise RuntimeError("The staged artifact declaration or original lifetime changed")
+        return value
+
+    @classmethod
+    def _staged_ack(cls, value, stage, ordinal, raw):
+        """Bind original acknowledgment to exact stage/ordinal/part; old replay counters may remain old."""
+        cls._source_closed(value, ("stage_id", "chunk_ordinal", "sha256", "size_bytes", "received_chunk_count", "received_bytes", "expires_at"))
+        cls._source_hash(value["sha256"])
+        cls._source_integer(value["chunk_ordinal"], MAX_STAGED_PARTS - 1)
+        count = cls._source_integer(value["received_chunk_count"], stage["chunk_count"])
+        received = cls._source_integer(value["received_bytes"], stage["artifact_size_bytes"])
+        size = cls._source_integer(value["size_bytes"], STAGED_PART_BYTES)
+        cls._staged_time(value["expires_at"])
+        cls._staged_received(count, received, stage["artifact_size_bytes"], stage["chunk_count"], acknowledged_ordinal=ordinal)
+        if (value["stage_id"] != stage["stage_id"] or value["chunk_ordinal"] != ordinal or size != len(raw)
+            or value["sha256"] != hashlib.sha256(raw).hexdigest() or received < size
+            or value["expires_at"] != stage["expires_at"]):
+            raise RuntimeError("The staged acknowledgment disagrees with exact sent bytes or lifetime")
+        return value
+
+
+    @staticmethod
+    def _staged_read_file(path):
+        """Read one selected regular file with10MiB cap and stable observed instance; never display its path."""
+        descriptor = None
+        try:
+            flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0)
+            descriptor = os.open(path, flags)
+            before = os.fstat(descriptor)
+            if not stat.S_ISREG(before.st_mode) or not 1 <= before.st_size <= MAX_STAGED_SOURCE_BUNDLE:
+                raise ValueError("Select a bounded regular staged artifact")
+            stream = os.fdopen(descriptor, "rb")
+            descriptor = None
+            with stream:
+                raw = stream.read(MAX_STAGED_SOURCE_BUNDLE + 1)
+                after = os.fstat(stream.fileno())
+                identity = ("st_dev", "st_ino", "st_size", "st_mtime_ns")
+                if (len(raw) != before.st_size or len(raw) > MAX_STAGED_SOURCE_BUNDLE
+                    or any(getattr(before, key) != getattr(after, key) for key in identity)):
+                    raise ValueError("The selected staged artifact changed or exceeds its bound")
+        except OSError:
+            raise ValueError("The selected staged artifact could not be read") from None
+        finally:
+            if descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    raise ValueError("The selected staged artifact cleanup could not be verified") from None
+        return raw
+
+    def create_source_transfer_stage_file(self, path, **acknowledgments):
+        """Admit stable bounded selected-file bytes before creating any session-local transport record."""
+        self._staged_supported()
+        return self.create_source_transfer_stage(self._staged_read_file(path), **acknowledgments)
+
+    def upload_source_transfer_stage_file(self, stage, path, *, timeout=60):
+        """Re-read a bounded selected file and match its original full hash before any part dispatch."""
+        self._staged_supported()
+        return self.upload_source_transfer_stage(stage, self._staged_read_file(path), timeout=timeout)
+
+    def create_source_transfer_stage(self, bundle_bytes, *, acknowledge_sensitive_metadata, acknowledge_source_content, idempotency_key):
+        """Create one acknowledged declaration from exact strict bytes; no implicit upload or confirmation."""
+        self._staged_supported()
+        self._source_key(idempotency_key)
+        if acknowledge_sensitive_metadata is not True or acknowledge_source_content is not True:
+            raise ValueError("Both staged source sensitivity acknowledgments are required")
+        raw = self._staged_bundle(bundle_bytes)
+        declaration = {"schema_version":"forge.workspace-index-bundle/4", "profile":"index-and-source-hex-staged",
+                       "artifact_sha256":hashlib.sha256(raw).hexdigest(), "artifact_size_bytes":len(raw),
+                       "chunk_size_bytes":STAGED_PART_BYTES, "chunk_count":(len(raw) + STAGED_PART_BYTES - 1) // STAGED_PART_BYTES}
+        value = self.request("POST", self.api_path("/project/source-transfer-stages"),
+                             {**declaration, "acknowledge_sensitive_metadata":True, "acknowledge_source_content":True},
+                             idempotency_key=idempotency_key)
+        return self._staged_stage(value, expected=declaration)
+
+    def put_source_transfer_chunk(self, stage, chunk_ordinal, chunk_bytes):
+        """Send one exact part once; an explicit identical retry replays without renewing lifetime."""
+        self._staged_supported()
+        self._staged_stage(stage)
+        ordinal = self._source_integer(chunk_ordinal, stage["chunk_count"] - 1)
+        size = min(STAGED_PART_BYTES, stage["artifact_size_bytes"] - ordinal * STAGED_PART_BYTES)
+        if type(chunk_bytes) is not bytes or len(chunk_bytes) != size:
+            raise ValueError("Send the exact declared staged part length")
+        value = self.request("PUT", self.api_path("/project/source-transfer-stages/" + stage["stage_id"] + "/chunks/" + str(ordinal)),
+                             {"sha256":hashlib.sha256(chunk_bytes).hexdigest(), "size_bytes":size, "hex":chunk_bytes.hex()})
+        return self._staged_ack(value, stage, ordinal, chunk_bytes)
+
+    def source_transfer_status(self, stage_id):
+        """Read current-session transport only;404 grants neither no-write proof nor renewed authority."""
+        self._staged_supported()
+        self._source_id(stage_id, "bst")
+        return self._staged_stage(self.request("GET", self.api_path("/project/source-transfer-stages/" + stage_id)), stage_id=stage_id)
+
+    def upload_source_transfer_stage(self, stage, bundle_bytes, *, timeout=60):
+        """Send each exact ordinal once and return actual status; never retry a failed response automatically.
+
+        Explicit re-invocation may replay identical parts. The one caller deadline
+        is checked between paced network calls; it does not preempt a syscall.
+        """
+        self._staged_supported()
+        self._staged_stage(stage)
+        raw = self._staged_bundle(bundle_bytes)
+        if len(raw) != stage["artifact_size_bytes"] or hashlib.sha256(raw).hexdigest() != stage["artifact_sha256"]:
+            raise ValueError("The original staged artifact changed")
+        if type(timeout) not in (int, float) or not 0 < timeout <= 600:
+            raise ValueError("Choose a finite staged upload budget up to600seconds")
+        deadline = time.monotonic() + timeout
+        for ordinal in range(stage["chunk_count"]):
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Read stage status before explicitly recovering the upload")
+            self.put_source_transfer_chunk(stage, ordinal, raw[ordinal * STAGED_PART_BYTES:(ordinal + 1) * STAGED_PART_BYTES])
+        if time.monotonic() >= deadline:
+            raise TimeoutError("Read stage status before explicitly recovering the upload")
+        value = self.source_transfer_status(stage["stage_id"])
+        expected = {key:stage[key] for key in ("schema_version", "profile", "artifact_sha256", "artifact_size_bytes", "chunk_size_bytes", "chunk_count", "expires_at")}
+        return self._staged_stage(value, expected=expected)
+
+    def discard_source_transfer_stage(self, stage_id):
+        """Retire only an unconfirmed stage once; never infer accepted restore cancellation or rollback."""
+        self._staged_supported()
+        self._source_id(stage_id, "bst")
+        value = self.request("DELETE", self.api_path("/project/source-transfer-stages/" + stage_id), {})
+        self._source_closed(value, ("stage_id", "discarded"))
+        if value["stage_id"] != stage_id or value["discarded"] is not True:
+            raise RuntimeError("The stage retirement response disagrees")
+        return value
+
+    def prepare_staged_source_restore(self, stage_id, *, target_index_schema_version, acknowledge_index_replacement,
+                                      acknowledge_source_content, acknowledge_replace_files, idempotency_key):
+        """Read the complete native preview and preknown ID; existing explicit confirmation remains separate."""
+        self._staged_supported()
+        self._source_id(stage_id, "bst")
+        self._source_key(idempotency_key)
+        if (type(target_index_schema_version) is not int or target_index_schema_version not in (1, 2)
+            or acknowledge_index_replacement is not True or acknowledge_source_content is not True or acknowledge_replace_files is not True):
+            raise ValueError("Select an index version and every staged restore acknowledgment")
+        response = self.request("POST", self.api_path("/project/source-transfer-stages/" + stage_id + "/preview"),
+                                {"target_index_schema_version":target_index_schema_version, "acknowledge_index_replacement":True,
+                                 "acknowledge_source_content":True, "acknowledge_replace_files":True}, idempotency_key=idempotency_key)
+        self._source_closed(response, ("validation", "preview", "replacement"))
+        self._source_validation(response["validation"])
+        preview = self._source_preview(response["preview"])
+        if response["validation"] != preview["validation"]:
+            raise RuntimeError("The staged preview validation envelopes disagree")
+        self._source_replacement(response["replacement"], preview, target_index_schema_version)
+        return response
+
+    def prepare_source_stream_export(self, target_path, *, acknowledge_sensitive_metadata, acknowledge_source_content, idempotency_key):
+        """Prepare an acknowledged staged-profile export through the unchanged Operation/preview/commit workflow."""
+        self._staged_supported()
+        self._source_path(target_path)
+        self._source_key(idempotency_key)
+        if acknowledge_sensitive_metadata is not True or acknowledge_source_content is not True:
+            raise ValueError("Both staged source sensitivity acknowledgments are required")
+        return self.request("POST", self.api_path("/project/source-stream-exports"),
+                            {"target_path":target_path, "acknowledge_sensitive_metadata":True, "acknowledge_source_content":True},
+                            idempotency_key=idempotency_key)
+
+    def source_stream_manifest(self, operation_id, *, expected_sha256):
+        """Read one exact committed private family manifest; preparation alone cannot earn download authority."""
+        self._staged_supported()
+        self._source_id(operation_id, "op")
+        self._source_hash(expected_sha256)
+        value = self.request("GET", self.api_path("/project/source-stream-exports/" + operation_id + "/manifest"))
+        self._source_closed(value, ("operation_id", "schema_version", "profile", "source_content_included", "artifact_sha256",
+                                   "artifact_size_bytes", "chunk_size_bytes", "chunk_count"))
+        self._staged_identity(value)
+        if value["operation_id"] != operation_id or value["artifact_sha256"] != expected_sha256 or value["source_content_included"] is not True:
+            raise RuntimeError("The committed staged manifest identity disagrees")
+        return value
+
+    def source_stream_chunk(self, manifest, chunk_ordinal):
+        """Read one exact ordinal with manifest/full/part identity checks; never a supplied path or range."""
+        self._staged_supported()
+        self._source_closed(manifest, ("operation_id", "schema_version", "profile", "source_content_included", "artifact_sha256",
+                                      "artifact_size_bytes", "chunk_size_bytes", "chunk_count"))
+        self._staged_identity(manifest)
+        self._source_id(manifest["operation_id"], "op")
+        if manifest["source_content_included"] is not True:
+            raise ValueError("Select an explicit source manifest")
+        ordinal = self._source_integer(chunk_ordinal, manifest["chunk_count"] - 1)
+        value = self.request("GET", self.api_path("/project/source-stream-exports/" + manifest["operation_id"] + "/chunks/" + str(ordinal)))
+        self._source_closed(value, ("operation_id", "artifact_sha256", "chunk_ordinal", "sha256", "size_bytes", "hex"))
+        self._source_hash(value["sha256"])
+        self._source_integer(value["chunk_ordinal"], MAX_STAGED_PARTS - 1)
+        size = self._source_integer(value["size_bytes"], STAGED_PART_BYTES)
+        part = self._staged_hex(value["hex"])
+        expected_size = min(STAGED_PART_BYTES, manifest["artifact_size_bytes"] - ordinal * STAGED_PART_BYTES)
+        if (value["operation_id"] != manifest["operation_id"] or value["artifact_sha256"] != manifest["artifact_sha256"]
+            or value["chunk_ordinal"] != ordinal or size != expected_size or len(part) != size
+            or hashlib.sha256(part).hexdigest() != value["sha256"]):
+            raise RuntimeError("The committed staged part identity or exact bytes disagree")
+        return value
+
+    def download_source_stream_export(self, operation_id, *, expected_sha256, timeout=60):
+        """Reconstruct exact committed Bundle4 bytes and full hash; no local publication or import confirmation."""
+        self._staged_supported()
+        if type(timeout) not in (int, float) or not 0 < timeout <= 600:
+            raise ValueError("Choose a finite staged download budget up to600seconds")
+        deadline = time.monotonic() + timeout
+        manifest = self.source_stream_manifest(operation_id, expected_sha256=expected_sha256)
+        result = bytearray()
+        for ordinal in range(manifest["chunk_count"]):
+            if time.monotonic() >= deadline:
+                raise TimeoutError("The staged download budget expired without a complete artifact")
+            value = self.source_stream_chunk(manifest, ordinal)
+            result.extend(self._staged_hex(value["hex"]))
+        if time.monotonic() >= deadline or len(result) != manifest["artifact_size_bytes"] or hashlib.sha256(result).hexdigest() != expected_sha256:
+            raise RuntimeError("The complete committed staged artifact is unverified")
+        return self._staged_bundle(bytes(result))
 
     def wait(self, operation, timeout=35):
         """Poll retained IDs in the same negotiated session without restarting an effect."""

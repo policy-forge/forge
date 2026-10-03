@@ -1,0 +1,6 @@
+{
+  "target_index_schema_version": 1,
+  "acknowledge_index_replacement": true,
+  "acknowledge_source_content": true,
+  "acknowledge_replace_files": true
+}

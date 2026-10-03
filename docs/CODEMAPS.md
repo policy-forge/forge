@@ -97,17 +97,19 @@ declared with `#[path]`; the map does not establish platform or PRD acceptance.
 
 | Entry point | Responsibility |
 | --- | --- |
-| [`http.rs`](../src/workspace/http.rs), [`http::source`](../src/workspace/http_source.rs) | Selected-major admission, original deadlines, project leases, six source-route adapters and status/cancellation reads |
+| [`http.rs`](../src/workspace/http.rs), [`http::source`](../src/workspace/http_source.rs), [`http::staged`](../src/workspace/http_staged.rs) | Selected-major admission, original deadlines, project leases, six retained inline source routes and eight staged routes in the separately captured API2.4 working tree |
 | [`services.rs`](../src/workspace/services.rs), [`root.rs`](../src/workspace/root.rs) | Complete planned-path preflight, captured registered generations and held-object confinement |
 | [`source_bundles.rs`](../src/workspace/source_bundles.rs) | Strict bounded Bundle3 codec with ordered pin/content/index bijection and exact source bytes |
 | [`source_validation.rs`](../src/workspace/source_validation.rs) | Intrinsic role admission and complete proposed registered dependency closure; not universal freshness or human approval |
 | [`source_bundle_effects.rs`](../src/workspace/source_bundle_effects.rs) | Off-Store source export and restore planning, full replacement projection and preallocated nonauthorizing outcome ID |
 | [`effects.rs`](../src/workspace/effects.rs), [`effects::source_receipts`](../src/workspace/source_receipts.rs) | Shared bounded retention, one-time session receipts, exact-request replay and separate private download families |
 | [`root::root_transaction`](../src/workspace/root_transaction.rs), [`root::transaction_state`](../src/workspace/transaction_state.rs) | Qualified Unix durable intent, index-last publication, owned conditional rollback, recovery and safe persisted outcomes |
+| [`effects::source_transfers`](../src/workspace/source_transfers.rs), [`source_stream_reads.rs`](../src/workspace/source_stream_reads.rs) | Separately captured API2.4 WIP: session-owned raw stages and same-session committed private manifest/part reads; presence is not execution qualification |
 
 The [source workflow guide](workspace-source-bundles.md) covers explicit opt-in,
 all six routes, confirmation, known-ID recovery and finite capacity. The native
-Windows restore port is unavailable; larger staged transfers and full
+Windows restore port is unavailable. See the [staged guide](workspace-staged-source-bundles.md)
+for the separately captured API2.4 working-tree proposal; larger capacity and full
 cross-platform qualification remain open.
 
 ## Data Flow

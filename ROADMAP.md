@@ -15,7 +15,7 @@ post-v1.1.0 product roadmap.
 ## Dated development checkpoint
 
 The status and WI-1–WI-50 tables below retain their 2026-09-11 reconciliation.
-Use the [2026-10-03 integrated documentation checkpoint](docs/plans/2026-10-03-integrated-documentation-checkpoint.md)
+Use the [2026-10-03 integrated documentation successor](docs/plans/2026-10-03-integrated-documentation-staged-successor.md)
 for the separately captured development source and outstanding integration
 gates. The full scope remains 327 Must/Should requirements across PRDs 055–069;
 checked boxes and draft delivery are distinct from acceptance. No current

@@ -1,0 +1,14 @@
+{
+  "stage_id": "bst_0123456789abcdef",
+  "schema_version": "forge.workspace-index-bundle/4",
+  "profile": "index-and-source-hex-staged",
+  "artifact_sha256": "25024d4b0611b96930ab76204ff19a531d9abdae01f533b2e9692c65d598eda2",
+  "artifact_size_bytes": 744,
+  "chunk_size_bytes": 32768,
+  "chunk_count": 1,
+  "received_chunk_count": 0,
+  "received_bytes": 0,
+  "state": "receiving",
+  "expires_at": "2026-10-03T12:00:00Z",
+  "unexpected": true
+}

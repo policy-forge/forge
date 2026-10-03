@@ -13,7 +13,7 @@ class MetadataCompanionVersionTests(unittest.TestCase):
 
     def test_supported_versions_return_the_exact_observed_version(self):
         """Both supported selected-major tuples retain their actual version without rewriting it."""
-        for version in ("2.2.0", "2.3.0"):
+        for version in ("2.2.0", "2.3.0", "2.4.0"):
             with self.subTest(version=version):
                 client = SimpleNamespace(_api_major=2, _contract_version=version)
                 self.assertEqual(companion.require_metadata_version(client), version)

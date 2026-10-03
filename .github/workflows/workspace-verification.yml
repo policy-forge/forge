@@ -66,6 +66,9 @@ jobs:
       - name: Test source bundle client controls
         run: python -B scripts/test_workspace_source_bundle_client.py
 
+      - name: Test staged source client controls
+        run: python -B scripts/test_workspace_staged_source_client.py
+
       - name: Test metadata workflow version controls
         run: python -B scripts/test_workspace_bundle_workflow_controls.py
 
@@ -90,6 +93,22 @@ jobs:
           FORGE_TEST_BINARY: target/release/forge
         shell: bash
         run: python -B scripts/test_workspace_source_workflow.py --forge "$FORGE_TEST_BINARY" --out workspace-source-flow
+
+      - name: Verify native Unix staged source transfer and confirmed restore
+        if: runner.os != 'Windows'
+        env:
+          FORGE_TEST_BINARY: target/release/forge
+        shell: bash
+        run: python -B scripts/test_workspace_staged_source_workflow.py --forge "$FORGE_TEST_BINARY" --out workspace-staged-source-flow
+
+      - name: Retain native Unix staged source flow outcome
+        if: ${{ always() && runner.os != 'Windows' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-staged-source-flow-${{ matrix.os }}-${{ github.sha }}
+          path: workspace-staged-source-flow/receipt.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Retain native Unix source flow outcome
         if: ${{ always() && runner.os != 'Windows' }}
@@ -313,6 +332,30 @@ jobs:
             source-browser-evidence/*/launch-receipt.json
             source-browser-evidence/*/browser/receipt.json
             source-browser-evidence/*/browser/*.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify installed-Chrome staged source export, restore and read-only lookup
+        id: staged-source-browser
+        if: ${{ always() && steps.release-build.outcome == 'success' && steps.browser-tools.outcome == 'success' }}
+        shell: bash
+        run: |
+          node_bin="$(command -v node)"
+          python -B scripts/test_workspace_staged_source_browser.py \
+            --forge target/release/forge --node "$node_bin" --chrome /opt/google/chrome/chrome \
+            --driver ui/tests/workspace-staged-source-browser.cjs \
+            --source-root "$GITHUB_WORKSPACE" --out staged-source-browser-evidence
+
+      - name: Retain staged source browser receipts and synthetic screenshots
+        if: ${{ always() && steps.staged-source-browser.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-staged-source-browser-${{ github.sha }}
+          path: |
+            staged-source-browser-evidence/receipt.json
+            staged-source-browser-evidence/*/launch-receipt.json
+            staged-source-browser-evidence/*/browser/receipt.json
+            staged-source-browser-evidence/*/browser/*.png
           if-no-files-found: error
           retention-days: 14
 

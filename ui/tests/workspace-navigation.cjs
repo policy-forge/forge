@@ -3883,3 +3883,334 @@ test("Source2.3 selected oversized file refuses before reading or dispatch and p
   assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);assert.equal(app.byId("preview-dialog").open,false);assert.equal(app.run("requestRows.size"),0);
   assert.match(parts.panel.textContent,/No source preparation was confirmed.*retry explicitly/);
 });
+
+
+// Staged API2.4 controls consume the complete production asset with authored HTTP DTOs.
+// Exact local bytes and transport interactions are checked; no native admission or browser proof is inferred.
+
+/** Construct an exact Bundle4 pin/content bijection and consistent complete preview for synthetic transport. */
+function staged24Fixture(size = 65537) {
+  const reply = source23Reply();
+  const index = reply.replacement.proposed_index;
+  const sources = [Buffer.from("# Captured policy\n\nExact synthetic bytes.\n"), Buffer.from("# New policy\n\nSecond exact synthetic source.\n")];
+  const indexBytes = Buffer.from(JSON.stringify(index, null, 2) + "\n");
+  const bundle = {schema_version:"forge.workspace-index-bundle/4", profile:"index-and-source-hex-staged",
+    source_content_included:true, index, index_sha256:source23IndexHash(index),
+    pins:index.resources.map((row, i) => ({key:row.key, sha256:createHash("sha256").update(sources[i]).digest("hex"), size:sources[i].length})),
+    contents:index.resources.map((row, i) => ({key:row.key, encoding:"hex", chunks:[sources[i].toString("hex")]}))};
+  const encoded = Buffer.from(JSON.stringify(bundle));
+  assert(encoded.length < size, "The finite fixture must leave room for exact trailing JSON whitespace");
+  const bytes = Buffer.concat([encoded, Buffer.alloc(size - encoded.length, 32)]);
+  for (let i = 0; i < index.resources.length; i++) {
+    const pin = bundle.pins[i];
+    reply.preview.targets[i].exact_bytes_sha256 = pin.sha256;
+    reply.preview.targets[i].size = pin.size;
+    const binding = reply.preview.input_bindings.find(row => row.path === index.resources[i].path);
+    binding.proposed.sha256 = pin.sha256;
+    binding.proposed.size = pin.size;
+  }
+  reply.preview.targets.at(-1).size = indexBytes.length;
+  reply.preview.input_bindings.at(-1).proposed.size = indexBytes.length;
+  const stageId = "bst_synthetic0123456789";
+  const expiresAt = "2026-10-03T01:10:00Z";
+  const hash = createHash("sha256").update(bytes).digest("hex");
+  const create = {schema_version:bundle.schema_version, profile:bundle.profile, artifact_sha256:hash,
+    artifact_size_bytes:bytes.length, chunk_size_bytes:32768, chunk_count:Math.ceil(bytes.length / 32768),
+    acknowledge_sensitive_metadata:true, acknowledge_source_content:true};
+  const parts = Array.from({length:create.chunk_count}, (_, ordinal) => {
+    const raw = bytes.subarray(ordinal * 32768, (ordinal + 1) * 32768);
+    return {sha256:createHash("sha256").update(raw).digest("hex"), size_bytes:raw.length, hex:raw.toString("hex")};
+  });
+  return {reply, bundle, bytes, stageId, expiresAt, hash, create, parts};
+}
+
+/** Describe live transport status independently from original cached per-part acknowledgment counters. */
+function staged24Status(fixture, count = fixture.create.chunk_count, state = "ready", receivedBytes) {
+  const bytes = receivedBytes ?? fixture.parts.slice(0, count).reduce((sum, row) => sum + row.size_bytes, 0);
+  return {stage_id:fixture.stageId, schema_version:fixture.create.schema_version, profile:fixture.create.profile,
+    artifact_sha256:fixture.hash, artifact_size_bytes:fixture.bytes.length, chunk_size_bytes:32768,
+    chunk_count:fixture.create.chunk_count, received_chunk_count:count, received_bytes:bytes,
+    state, expires_at:fixture.expiresAt};
+}
+
+/** Model immutable create/part replies while retaining exact accepted bytes for explicit same-upload retry. */
+function staged24Transport(fixture) {
+  const accepted = new Map();
+  const cached = new Map();
+  const base = "/project/source-transfer-stages/" + fixture.stageId;
+  const routes = {
+    "/project/source-transfer-stages":() => staged24Status(fixture, 0, "receiving"),
+    [base]:(_url, options) => options.method === "DELETE"
+      ? {stage_id:fixture.stageId, discarded:true}
+      : staged24Status(fixture, accepted.size, accepted.size === fixture.parts.length ? "ready" : "receiving"),
+    [base + "/preview"]:() => fixture.reply,
+  };
+  for (let ordinal = 0; ordinal < fixture.parts.length; ordinal++) {
+    /** Admit the actual request body, preserving an original historical acknowledgment for each exact part. */
+    function acceptPart(_url, options) {
+      assert.equal(options.method, "PUT");
+      const body = JSON.parse(options.body);
+      assert.deepEqual(body, fixture.parts[ordinal]);
+      if (accepted.has(ordinal)) assert.deepEqual(accepted.get(ordinal), body);
+      else accepted.set(ordinal, body);
+      if (!cached.has(ordinal)) cached.set(ordinal, {stage_id:fixture.stageId, chunk_ordinal:ordinal,
+        sha256:body.sha256, size_bytes:body.size_bytes, received_chunk_count:accepted.size,
+        received_bytes:Array.from(accepted.values()).reduce((sum, row) => sum + row.size_bytes, 0), expires_at:fixture.expiresAt});
+      return cached.get(ordinal);
+    }
+    routes[base + "/chunks/" + ordinal] = acceptPart;
+  }
+  return {routes, accepted, cached, base};
+}
+
+/** Unlock the actual2.4 panel with finite exact-byte stage routes and caller-controlled transport faults. */
+async function staged24App(overrides = {}, readOnly = false, fixture = staged24Fixture()) {
+  const transport = staged24Transport(fixture);
+  const app = await source23App({...transport.routes, ...overrides}, readOnly, "2.4.0");
+  return {app, fixture, transport};
+}
+
+/** Resolve the explicit staged controls without treating their existence as a new effect authority. */
+function staged24Parts(app) {
+  const parts = source23Parts(app);
+  return {...parts, profile:app.byLabel("Source transfer profile"), stageId:app.byLabel("Unconfirmed source transfer stage ID"),
+    retry:app.byButton("Retry the same staged upload", parts.panel), checkStage:app.byButton("Check source stage status", parts.panel),
+    discard:app.byButton("Discard unconfirmed source stage", parts.panel), status:parts.panel.querySelector('[role="status"]')};
+}
+
+/** Opt into the staged profile before selecting exact file bytes and freshly acknowledging all restore effects. */
+async function staged24Choose(app, fixture, read) {
+  const parts = staged24Parts(app);
+  parts.profile.value = "staged";
+  await parts.profile.fire("change");
+  await source23Choose(app, fixture.bytes, 2, read);
+  return parts;
+}
+
+/** Require absence of confirmation requests while a stage is only uploaded or a preview awaits explicit review. */
+function staged24Unconfirmed(app) {
+  assert.equal(app.requests.some(row => row.route.endsWith("/commit") || row.route === "/effects/commits"), false);
+}
+
+/** Describe only the finite committed stream generation tied to the same exact prepared artifact hash. */
+function staged24Manifest(fixture) {
+  return {operation_id:operationId, schema_version:fixture.create.schema_version, profile:fixture.create.profile,
+    artifact_sha256:fixture.hash, artifact_size_bytes:fixture.bytes.length, chunk_size_bytes:32768,
+    chunk_count:fixture.parts.length, source_content_included:true};
+}
+
+/** Bind a stream part to its generation, ordinal, exact final size and byte digest. */
+function staged24Part(fixture, ordinal) {
+  return {operation_id:operationId, artifact_sha256:fixture.hash, chunk_ordinal:ordinal, ...fixture.parts[ordinal]};
+}
+
+/** Prepare and explicitly confirm the actual generic export receipt before exposing its staged download. */
+async function staged24DownloadApp(overrides = {}, fixture = staged24Fixture()) {
+  const preview = {...proposedWrite(), operation_type:"report-export", target:{status:"create", path:"exports/source4.json"}, exact_bytes_sha256:fixture.hash};
+  const base = "/project/source-stream-exports/" + operationId;
+  const routes = {
+    "/project/source-stream-exports":() => operation("succeeded", {kind:"export", result:{preview}}),
+    ["/effects/previews/" + preview.preview_id]:() => preview,
+    "/effects/commits":() => operation("pending", {kind:"commit"}),
+    [operationRoute]:() => s6Committed(preview),
+    [base + "/manifest"]:() => staged24Manifest(fixture),
+  };
+  for (let ordinal = 0; ordinal < fixture.parts.length; ordinal++) routes[base + "/chunks/" + ordinal] = () => staged24Part(fixture, ordinal);
+  const {app} = await staged24App({...routes, ...overrides}, false, fixture);
+  const parts = staged24Parts(app);parts.profile.value = "staged";await parts.profile.fire("change");
+  parts.target.value = "exports/source4.json";await parts.target.fire("input");
+  parts.exportAck.checked = true;await parts.exportAck.fire("change");
+  parts.export.focus();await parts.export.fire("click");
+  assert.equal(app.byId("preview-dialog").open, true);
+  await app.byButton("Confirm this exact write", app.byId("preview-dialog")).fire("click");
+  return {app, fixture, preview, base, download:app.byButton("Download committed staged source bundle")};
+}
+
+/** Keep unchanged inline behavior unless the user explicitly selects the2.4 staged profile. */
+test("Staged2.4 profile is explicit and leaves the existing inline source request unchanged", async () => {
+  const {app, fixture} = await staged24App();const parts = staged24Parts(app);
+  assert.equal(parts.profile.children[0].value, "inline");
+  assert.equal(parts.profile.children[1].value, "staged");
+  const inline = Buffer.from(JSON.stringify({...fixture.bundle, schema_version:"forge.workspace-index-bundle/3", profile:"index-and-source-hex"}));
+  await source23Choose(app, inline);await parts.prepare.fire("click");
+  const sent = app.requests.filter(row => row.route === "/project/source-bundle-imports");assert.equal(sent.length, 1);
+  const raw = Buffer.from(await sent[0].options.body.arrayBuffer());
+  const prefix = Buffer.from('{"bundle":');
+  assert.deepEqual(raw.subarray(prefix.length, prefix.length + inline.length), inline);
+  assert.equal(app.requests.some(row => row.route.startsWith("/project/source-transfer-stages")), false);
+  staged24Unconfirmed(app);
+});
+
+/** Exercise the real staged create, exact parts and live status before complete preview without confirmation. */
+test("Staged2.4 explicit upload sends all exact parts and opens only the complete unconfirmed restore review", async () => {
+  const {app, fixture, transport} = await staged24App();const parts = await staged24Choose(app, fixture);
+  parts.prepare.focus();await parts.prepare.fire("click");
+  const create = app.requests.find(row => row.route === "/project/source-transfer-stages");assert(create);
+  assert.deepEqual(JSON.parse(create.options.body), fixture.create);assert.match(create.options.headers["Idempotency-Key"], /^[a-f0-9-]{36}$/);
+  const uploads = app.requests.filter(row => row.options.method === "PUT");assert.equal(uploads.length, 3);
+  assert.deepEqual(uploads.map(row => JSON.parse(row.options.body)), fixture.parts);
+  assert.equal(transport.accepted.size, 3);assert.equal(fixture.parts.at(-1).size_bytes, 1);
+  assert.equal(parts.stageId.value, fixture.stageId);assert.match(parts.status.textContent, /ready; received 3\/3 parts, 65537\/65537 bytes/);
+  const preview = app.requests.find(row => row.route === transport.base + "/preview");assert(preview);
+  assert.deepEqual(JSON.parse(preview.options.body), {target_index_schema_version:2, acknowledge_index_replacement:true, acknowledge_source_content:true, acknowledge_replace_files:true});
+  assert.equal(app.byId("preview-dialog").open, true);assert.match(app.byId("preview-content").textContent, /Review complete exact source restore/);
+  assert.equal(parts.retry.hidden, true);staged24Unconfirmed(app);
+  await app.byButton("Keep editing", app.byId("preview-dialog")).fire("click");
+  assert.equal(app.document.activeElement === parts.prepare, true, "Dismissal returns to the connected preparation invoker");
+});
+
+/** A missing create response retains the original declaration/key and dispatches nothing until explicit retry. */
+test("Staged2.4 lost create retries the exact original declaration and key only on manual activation", async () => {
+  const fixture = staged24Fixture();let attempts = 0;
+  const {app} = await staged24App({"/project/source-transfer-stages":() => {
+    attempts++;if (attempts === 1) throw new Error("Authored lost create response");
+    return staged24Status(fixture, 0, "receiving");
+  }}, false, fixture);
+  const parts = await staged24Choose(app, fixture);parts.prepare.focus();await parts.prepare.fire("click");
+  assert.equal(attempts, 1);assert.equal(app.requests.some(row => row.options.method === "PUT"), false);
+  assert.equal(parts.retry.hidden, false);assert.match(parts.error.textContent, /local workspace is unavailable/);
+  await settle();assert.equal(attempts, 1);staged24Unconfirmed(app);
+  await parts.retry.fire("click");
+  const creates = app.requests.filter(row => row.route === "/project/source-transfer-stages");assert.equal(creates.length, 2);
+  assert.equal(creates[0].options.body, creates[1].options.body);
+  assert.equal(creates[0].options.headers["Idempotency-Key"], creates[1].options.headers["Idempotency-Key"]);
+  assert.deepEqual(JSON.parse(creates[1].options.body), fixture.create);
+  assert.equal(app.requests.filter(row => row.options.method === "PUT").length, 3);staged24Unconfirmed(app);
+});
+
+/** Cached part replies remain legal historical facts; only the final fresh GET becomes displayed current progress. */
+test("Staged2.4 lost PUT replays exact original parts without presenting cached counters as current", async () => {
+  const fixture = staged24Fixture();const transport = staged24Transport(fixture);let lost = false;
+  const faultRoute = transport.base + "/chunks/1";const original = transport.routes[faultRoute];
+  transport.routes[faultRoute] = (url, options) => {
+    const ack = original(url, options);if (!lost) {lost = true;throw new Error("Authored accepted-part response loss");}return ack;
+  };
+  const {app} = await staged24App(transport.routes, false, fixture);const parts = await staged24Choose(app, fixture);
+  await parts.prepare.fire("click");assert.equal(transport.accepted.size, 2);assert.equal(parts.retry.hidden, false);
+  assert.equal(app.requests.some(row => row.route.endsWith("/preview") && row.route.includes("source-transfer")), false);
+  assert.match(parts.status.textContent, /No source preparation was confirmed/);
+  assert.equal(parts.status.textWrites.some(value => /receiving; received 0\/3 parts, 0\/65537 bytes/.test(value)), true);
+  staged24Unconfirmed(app);
+  await parts.retry.fire("click");
+  const uploads = app.requests.filter(row => row.options.method === "PUT");assert.deepEqual(uploads.map(row => row.route.split("/").at(-1)), ["0", "1", "0", "1", "2"]);
+  assert.equal(uploads[0].options.body, uploads[2].options.body);assert.equal(uploads[1].options.body, uploads[3].options.body);
+  assert.equal(app.requests.filter(row => row.route === "/project/source-transfer-stages").length, 1);
+  assert.equal(transport.cached.get(0).received_chunk_count, 1);assert.equal(transport.cached.get(1).received_chunk_count, 2);
+  assert.equal(parts.status.textWrites.some(value => /received [12]\/3 parts/.test(value)), false);
+  assert.match(parts.status.textContent, /ready; received 3\/3 parts, 65537\/65537 bytes/);staged24Unconfirmed(app);
+});
+
+/** Lost preview retains its original prepared-request replay after local upload bytes have been released. */
+test("Staged2.4 lost preview retries one original request without restaging or auto-confirming", async () => {
+  const fixture = staged24Fixture();const base = "/project/source-transfer-stages/" + fixture.stageId;let attempts = 0;
+  const {app} = await staged24App({[base + "/preview"]:() => ++attempts === 1
+    ? {status:503, body:{code:"query-budget-exceeded", message:"Authored lost preview response.", retryable:true}}
+    : fixture.reply}, false, fixture);
+  const parts = await staged24Choose(app, fixture);await parts.prepare.fire("click");
+  assert.equal(app.byId("preview-dialog").open, false);assert.equal(parts.retry.hidden, true);assert.equal(attempts, 1);
+  const recovery = requestParts(app);assert(recovery.row.isConnected);staged24Unconfirmed(app);
+  await settle();assert.equal(attempts, 1);
+  await app.byButton("Retry the same request", recovery.row).fire("click");
+  const previews = app.requests.filter(row => row.route === base + "/preview");assert.equal(previews.length, 2);
+  assert.equal(previews[0].options.body, previews[1].options.body);assert.equal(previews[0].options.headers["Idempotency-Key"], previews[1].options.headers["Idempotency-Key"]);
+  assert.equal(app.requests.filter(row => row.options.method === "PUT").length, 3);assert.equal(app.requests.filter(row => row.route === "/project/source-transfer-stages").length, 1);
+  staged24Unconfirmed(app);
+});
+
+/** Read-only users can inspect a known stage but cannot upload, preview, discard or confirm it. */
+test("Staged2.4 readonly stage lookup has query-only transport and no effect authority", async () => {
+  const fixture = staged24Fixture();const base = "/project/source-transfer-stages/" + fixture.stageId;
+  const {app} = await staged24App({[base]:() => staged24Status(fixture)}, true, fixture);
+  const parts = await staged24Choose(app, fixture);parts.stageId.value = fixture.stageId;await parts.stageId.fire("input");
+  await parts.prepare.fire("click");await parts.retry.fire("click");await parts.discard.fire("click");await parts.checkStage.fire("click");
+  const stageCalls = app.requests.filter(row => row.route.startsWith("/project/source-transfer-stages"));
+  assert.deepEqual(stageCalls.map(row => [row.route, row.options.method]), [[base, "GET"]]);
+  assert.match(parts.status.textContent, /Transport progress does not establish a restore outcome/);
+  assert.equal(parts.discard.getAttribute("aria-disabled"), "true");assert.equal(app.byId("preview-dialog").open, false);staged24Unconfirmed(app);
+});
+
+/** Discard retires only the supplied unconfirmed transport and never converts it into restore cancellation. */
+test("Staged2.4 explicit discard names the unconfirmed stage and does not cancel or confirm a restore", async () => {
+  const {app, fixture, transport} = await staged24App();const parts = staged24Parts(app);
+  parts.stageId.value = fixture.stageId;await parts.stageId.fire("input");await parts.discard.fire("click");
+  const sent = app.requests.filter(row => row.route === transport.base);assert.equal(sent.length, 1);assert.equal(sent[0].options.method, "DELETE");assert.equal(sent[0].options.body, "{}");
+  assert.match(parts.status.textContent, /does not cancel a restore receipt or accepted operation/);staged24Unconfirmed(app);
+  assert.equal(app.requests.some(row => row.route.endsWith("/cancel")), false);
+});
+
+/** Overbound file declarations are rejected before local file IO, hashing, or stage dispatch. */
+test("Staged2.4 declaration over10MiB refuses before file read and retains local error focus", async () => {
+  const {app, fixture} = await staged24App();let reads = 0;const parts = await staged24Choose(app, fixture);
+  parts.file.files = [{name:"overbound.json", size:10485761, arrayBuffer:async () => {reads++;return new ArrayBuffer(0);}}];
+  await parts.file.fire("change");for (const ack of [parts.indexAck, parts.sourceAck, parts.filesAck]) {ack.checked = true;await ack.fire("change");}
+  parts.prepare.focus();await parts.prepare.fire("click");assert.equal(reads, 0);
+  assert.equal(app.requests.some(row => row.route.startsWith("/project/source-transfer-stages")), false);
+  assert.match(parts.error.textContent, /10 MiB/);assert.equal(app.document.activeElement === parts.error, true);staged24Unconfirmed(app);
+});
+
+/** A late accepted create cannot dispatch parts after a newer selected file retires its installed ownership. */
+test("Staged2.4 changed selection retires an in-flight create before any old part or preview dispatch", async () => {
+  const fixture = staged24Fixture();const waiting = deferred();const entered = deferred();
+  const {app} = await staged24App({"/project/source-transfer-stages":() => {entered.resolve();return waiting.promise;}}, false, fixture);
+  const parts = await staged24Choose(app, fixture);const preparing = parts.prepare.fire("click");await entered.promise;
+  assert.equal(app.requests.filter(row => row.route === "/project/source-transfer-stages").length, 1);
+  await source23Choose(app, Buffer.from('{"new":true}'));waiting.resolve(staged24Status(fixture, 0, "receiving"));await preparing;
+  assert.equal(app.requests.some(row => row.options.method === "PUT"), false);assert.equal(app.byId("preview-dialog").open, false);
+  assert.equal(parts.panel.getAttribute("aria-busy"), "false");assert.equal(parts.retry.hidden, true);staged24Unconfirmed(app);
+});
+
+/** The committed stream downloader must reconstruct the exact finite generation before publishing a fixed filename. */
+test("Staged2.4 committed stream download reconstructs full bytes and revokes its URL on navigation", async () => {
+  const {app, fixture, download, base} = await staged24DownloadApp();download.focus();await download.fire("click");
+  const reads = app.requests.filter(row => row.route.startsWith(base));
+  assert.deepEqual(reads.map(row => row.route), [base + "/manifest", base + "/chunks/0", base + "/chunks/1", base + "/chunks/2"]);
+  assert(reads.every(row => row.options.method === "GET" && row.options.credentials === "omit" && row.options.redirect === "error" && /^Bearer /.test(row.options.headers.Authorization)));
+  assert.equal(app.document.downloads.length, 1);const saved = app.document.downloads[0];
+  assert.equal(saved.filename, "forge-workspace-staged-index-and-source-content.json");
+  assert.deepEqual(Buffer.from(await app.objectURLs.get(saved.url).arrayBuffer()), fixture.bytes);oneExactCommit(app);
+  await app.run('dirty=false;navigate("Overview")');assert.equal(app.objectURLs.size, 0);assert(app.revokedURLs.includes(saved.url));
+});
+
+// Each fault changes one complete DTO fact; raw zero/publication absence is asserted without native credit.
+for (const defect of ["manifest-hash", "manifest-count", "part-ordinal", "part-hash", "part-hex", "full-hash"]) {
+  /** Corrupt generations and part facts must fail before Blob publication and never cause another commit. */
+  test("Staged2.4 committed stream rejects " + defect + " without publishing or recommitting", async () => {
+    const fixture = staged24Fixture();const base = "/project/source-stream-exports/" + operationId;const overrides = {};
+    if (defect.startsWith("manifest")) overrides[base + "/manifest"] = () => ({...staged24Manifest(fixture),
+      ...(defect === "manifest-hash" ? {artifact_sha256:"f".repeat(64)} : {chunk_count:2})});
+    else if (defect === "full-hash") {
+      const changed = Buffer.from(fixture.bytes);changed[0] ^= 1;
+      for (let ordinal = 0; ordinal < fixture.parts.length; ordinal++) overrides[base + "/chunks/" + ordinal] = () => {
+        const bytes = changed.subarray(ordinal * 32768, (ordinal + 1) * 32768);
+        return {...staged24Part(fixture, ordinal), sha256:createHash("sha256").update(bytes).digest("hex"), hex:bytes.toString("hex")};
+      };
+    } else overrides[base + "/chunks/0"] = () => ({...staged24Part(fixture, 0),
+      ...(defect === "part-ordinal" ? {chunk_ordinal:1} : defect === "part-hash" ? {sha256:"e".repeat(64)} : {hex:fixture.parts[0].hex.toUpperCase()})});
+    const {app, download} = await staged24DownloadApp(overrides, fixture);await download.fire("click");
+    assert.equal(app.document.downloads.length, 0);assert.equal(app.objectURLs.size, 0);oneExactCommit(app);
+    assert.equal(app.byId("error").hidden, false);assert.equal(app.document.activeElement === app.byId("error"), true);
+    if (defect.startsWith("manifest")) assert.equal(app.requests.some(row => row.route.startsWith(base + "/chunks/")), false);
+  });
+}
+
+/** A pending stream part loses publication ownership when navigation replaces its view. */
+test("Staged2.4 delayed stream part retires on navigation before later reads or Blob publication", async () => {
+  const fixture = staged24Fixture();const waiting = deferred();const entered = deferred();const base = "/project/source-stream-exports/" + operationId;
+  const {app, download} = await staged24DownloadApp({[base + "/chunks/0"]:() => {entered.resolve();return waiting.promise;}}, fixture);
+  const action = download.fire("click");await entered.promise;assert.equal(app.requests.filter(row => row.route === base + "/chunks/0").length, 1);
+  await app.run('dirty=false;navigate("Overview")');const errors = app.byId("error").textContent;const focus = app.document.activeElement;
+  waiting.resolve(staged24Part(fixture, 0));await action;
+  assert.equal(app.requests.some(row => row.route === base + "/chunks/1"), false);assert.equal(app.document.downloads.length, 0);assert.equal(app.objectURLs.size, 0);
+  assert.equal(app.byId("error").textContent, errors);assert.equal(app.document.activeElement === focus, true);oneExactCommit(app);
+});
+
+
+/** Old2.3 sessions retain the existing inline panel without staged selection or stage transport controls. */
+test("Staged2.4 selection stays absent from the unchanged2.3 source panel", async () => {
+  const app = await source23App();const parts = source23Parts(app);
+  assert.equal(app.run("stagedSourceEffectsSupported()"), false);
+  assert.equal(parts.panel.textContent.includes("Staged source bundle (up to 10 MiB declaration)"), false);
+  assert.equal(parts.panel.textContent.includes("Retry the same staged upload"), false);
+  assert.equal(app.requests.some(row => row.route.startsWith("/project/source-transfer-stages")), false);
+  staged24Unconfirmed(app);
+});

@@ -1,11 +1,11 @@
 # Select workspace API v2
 
 API v2 adds explicit lifecycle and framework-impact registrations, versioned
-metadata bundles and captured read views. For a build publishing contract 2.3.0,
+metadata bundles and captured read views. For a build publishing contract 2.4.0,
 it retains acknowledged metadata export and complete index-replacement
-preparation and adds explicit source export and reviewed multi-file source restore. It is selected once at launch. API v1 remains the default, with its
+preparation and explicit source export and reviewed multi-file source restore. Contract 2.4.0 additionally supplies the staged transfer proposal below. It is selected once at launch. API v1 remains the default, with its
 original seven roles and contract 1.2.0. These are unreleased implementations;
-contract 2.3.0 does not announce a product release. The initial 2.0.0 foundation is
+contract 2.4.0 does not announce a product release. The initial 2.0.0 foundation is
 retained in PR #193, and the 2.1.0 captured inspection delivery in PR #194, with
 their historical versions and verification receipts.
 
@@ -20,8 +20,8 @@ python3 scripts/workspace_client.py --forge ./target/debug/forge --project ./exa
 
 A launch serves only its selected `/api/v1/` or `/api/v2/` namespace. Restart to
 select another major; credentials and retained previews belong to the original
-session. For a build publishing 2.3.0, API v2 reports `api_major: 2` and
-`api_version: "2.3.0"` in the sensitive machine descriptor, and the same major and exact `contract_version` in Session.
+session. For a build publishing 2.4.0, API v2 reports `api_major: 2` and
+`api_version: "2.4.0"` in the sensitive machine descriptor, and the same major and exact `contract_version` in Session.
 Keep the descriptor and capability out of logs. The bundled shell and maintained
 client verify this negotiation before project operations. Foreign-major paths
 return a typed 404 before authorization, replay, resource reads or effects.
@@ -139,13 +139,11 @@ The [v2 OpenAPI document](forge-workspace-v2.openapi.yaml),
 [v2 capability matrix](capability-matrix-v2.md), [v2 fixtures](fixtures-v2/README.md)
 and [index2 schema](../../schemas/forge.workspace-2.schema.json) are independently
 versioned alongside the unchanged v1 family. API1/1.2.0 declares 39 operations.
-API2/2.3.0 declares 57: the initial 39, nine captured read queries introduced in
+Historical API2/2.3.0 declares 57: the initial 39, nine captured read queries introduced in
 2.1.0, three metadata receipt operations introduced in 2.2.0 and six source
 export/restore operations introduced in 2.3.0. Historical 2.2.0 declares 51. The maintained
 client preserves matching numeric API-major-2 descriptor/Session bootstrap
-negotiation. The inspection methods and navigation explicitly admit 2.1.0, 2.2.0 or 2.3.0;
-metadata receipt surfaces admit 2.2.0 or 2.3.0; source surfaces require exactly
-2.3.0. An accepted future major-2 bootstrap version alone does not grant these
+negotiation. The consumed2.4 successor must explicitly admit inspection on2.1.0/2.2.0/2.3.0/2.4.0, metadata receipts on2.2.0/2.3.0/2.4.0 and inline source on2.3.0/2.4.0. Staged source requires exactly2.4.0. An accepted future major-2 bootstrap version alone does not grant these
 feature surfaces.
 Historical 2.0.0/39 and 2.1.0/48 receipts remain bound to those contracts.
 
@@ -155,3 +153,7 @@ existence, versions, fixtures and matrix relationships. Release packaging stages
 current assets outside the cached build tree. A nonpublishing archive rehearsal
 checks membership and bytes; it does not establish a published release, supported
 Windows runtime or final signed release provenance.
+
+## Staged source transfer in2.4
+
+The separately captured working-tree contract is 2.4.0/65, under integration: eight operations beyond2.3/57. Bundle4 is separately packaged at [the standalone schema](../../schemas/forge.workspace-source-bundle-4.schema.json). Bundle3 and API1 bytes/interpretations remain unchanged. Follow [the staged guide](../workspace-staged-source-bundles.md) for full-artifact/part hashes, bounded staging, idempotent response-loss recovery, unconfirmed discard, complete preview and subsequent explicit restore confirmation. Numeric-major bootstrap is preserved; no automatic source write or transfer fallback is implied. The captured committed checkpoint `2064e293` remains 2.3.0/57. Working-tree declaration and route presence establish no compiled, merged, hosted or release result; Root owns actual conformance and delivery.

@@ -20,7 +20,7 @@ def require(condition, message):
 def require_metadata_version(client):
     """Return the observed supported metadata version only for an explicitly selected API2 session."""
     version=client._contract_version
-    require(client._api_major==2 and version in ("2.2.0", "2.3.0"),"Metadata companion requires selected API2 2.2.0 or 2.3.0")
+    require(client._api_major==2 and version in ("2.2.0", "2.3.0", "2.4.0"),"Metadata companion requires selected API2 2.2.0, 2.3.0 or 2.4.0")
     return version
 
 

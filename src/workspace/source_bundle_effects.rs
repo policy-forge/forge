@@ -434,6 +434,18 @@ pub(crate) fn prepare_import(
     control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
     admit_request(request, "PrepareProjectSourceBundleImportRequest")?;
     same_decoded(request, &decoded, control)?;
+    prepare_import_admitted(root, snapshot, decoded, request, control)
+}
+
+/// Share the unchanged native preparation core after each transport's own strict admission.
+/// This is not a public codec bypass: only admitted inline or staged producers call it.
+fn prepare_import_admitted(
+    root: &Root,
+    snapshot: Snapshot,
+    decoded: DecodedSourceBundle,
+    request: &Value,
+    control: &mut dyn WorkControl,
+) -> WorkResult<PreparedSourceRestore> {
     let proposed = proposed_index(&snapshot, &decoded.index, request)?;
     let paths = planned_paths(&snapshot.index, &proposed)?;
     let old_bytes = admit_snapshot(&snapshot)?;
@@ -487,6 +499,47 @@ pub(crate) fn prepare_import(
         semantic_summary: "Replace the complete selected resource index and each explicitly listed file with the exact source bundle bytes. Source content and metadata may be sensitive. Removed registrations do not delete their files. Native intrinsic/registered proposed-closure admission is not human approval or universal freshness. Previewed directories and owned rollback/recovery are required; external CLI/editor readers can see mixed whole-file generations. No write or durable accepted intent exists until this separate receipt is confirmed.".into(),
         plan,
     })
+}
+
+/// Prepare Bundle4 with the original exact output guard and complete source planning rule.
+/// The caller admits selected2.4 and holds the same participating project read lease.
+pub(crate) fn prepare_staged_export(
+    root: &Root,
+    snapshot: &Snapshot,
+    request: &Value,
+    control: &mut dyn WorkControl,
+) -> WorkResult<PreparedBundle> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    admit_request(request, "PrepareProjectSourceBundleExportRequest")?;
+    let path = request["target_path"].as_str().ok_or_else(Error::invalid)?;
+    let planned_count = planned_export_paths(snapshot, path)?.len();
+    admit_snapshot(snapshot)?;
+    let bytes = super::staged_source_bundles::encode(snapshot, control)?;
+    let internal = json!({"target_path":path,"acknowledge_sensitive_metadata":true});
+    let mut plan = bundle_effects::prepare_export(root, snapshot, &internal, control)?;
+    plan.bytes = bytes;
+    plan.consumed_file_count = planned_count;
+    plan.artifact_family = Some(ArtifactFamily::StagedSourceBundleJson);
+    plan.semantic_summary = "Export the complete explicit index and exact registered source bytes as the staged Bundle4 profile. Source content and metadata are intentionally included and may be sensitive. The output path occupies one of the unchanged whole100 planned paths even when absent. This profile has a10MiB raw artifact ceiling but complete shared retention may refuse smaller artifacts. No write exists before the existing export receipt confirmation; manifest/part reads require the exact committed generation. No blanket redaction, native validity, freshness or human authority is inferred.".into();
+    control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
+    Ok(plan)
+}
+
+/// Prepare only a genuine decoded staged artifact under the unchanged native closure/plan core.
+/// ROOT passes the exact consumed lease decode; no original raw hash is invented from a Value.
+pub(crate) fn prepare_staged_import(
+    root: &Root,
+    snapshot: Snapshot,
+    decoded: DecodedSourceBundle,
+    request: &Value,
+    control: &mut dyn WorkControl,
+) -> WorkResult<PreparedSourceRestore> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    admit_request(request, "PrepareStagedSourceRestoreRequest")?;
+    if decoded.index_sha256 != crate::hashing::sha256_hex(&decoded.index.bytes()?) {
+        return Err(Error::invalid().into());
+    }
+    prepare_import_admitted(root, snapshot, decoded, request, control)
 }
 
 /// Authored unexecuted controls using actual bounded fixture files and consumed ports.
