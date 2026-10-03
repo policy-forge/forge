@@ -1721,5 +1721,235 @@ class ToolDiagnosticControls(unittest.TestCase):
         self.assertEqual((value["status"],value["failure"]),("failed","verification-input-invalid"));self.assertEqual(value["tool_stability"],"unverified")
 
 
+class FixedAdministrativePathControls(unittest.TestCase):
+    """Exercise fixed administrative selection through real capture/verify code, with no tools or native experiment."""
+
+    def test_fixed_administrative_map_rejects_item_override(self):
+        """The private three-selector policy has exact defaults and cannot accept an item override."""
+        expected = {"python": "/usr/bin/python3", "ip": "/usr/bin/ip", "sudo": "/usr/bin/sudo"}
+        self.assertEqual(dict(wrapper._ADMINISTRATIVE_PATHS), expected)
+        for name in expected:
+            with self.subTest(name=name), self.assertRaises(TypeError):
+                wrapper._ADMINISTRATIVE_PATHS[name] = "/PRIVATE/attacker/tool"
+        self.assertEqual(dict(wrapper._ADMINISTRATIVE_PATHS), expected)
+
+    def test_actual_capture_ignores_admin_path_and_binds_qualified_targets(self):
+        """Fixed selectors ignore hostile PATH while versions/hashes use qualified leaves and ordinary identity stays separate."""
+        root = Path("/mock/root")
+        selectors = [Path("/usr/bin/python3"), Path("/usr/bin/ip"), Path("/usr/bin/sudo")]
+        targets = {selectors[0]: Path("/usr/bin/python3.12"),
+                   selectors[1]: Path("/usr/libexec/qualified-ip"),
+                   selectors[2]: Path("/usr/libexec/qualified-sudo")}
+        pins = {targets[path]: {"bytes": index + 4, "sha256": character * 64}
+                for index, (path, character) in enumerate(zip(selectors, "abc"))}
+        ordinary = {"cargo": "1.99.0", "rustc": "1.99.0", "rust_host": "x86_64-unknown-linux-gnu"}
+        with ToolDiagnosticControls.capture_context(self, ordinary=ordinary) as calls, \
+             mock.patch.dict(wrapper.os.environ, {"PATH": "/PRIVATE/attacker:/bin:/sbin"}), \
+             mock.patch.object(wrapper.shutil, "which", return_value="/PRIVATE/attacker/tool") as discovery:
+            calls["paths"].side_effect = lambda path: targets[path]
+            calls["hash"].side_effect = lambda path: pins[path]
+            tools, paths = wrapper.capture_tools(root, 100)
+            discovery.assert_not_called()
+            self.assertEqual(calls["paths"].call_args_list, [mock.call(path) for path in selectors])
+            self.assertEqual(paths, {"python": targets[selectors[0]], "ip": targets[selectors[1]], "sudo": targets[selectors[2]]})
+            self.assertEqual(calls["command"].call_args_list,
+                             [mock.call([str(targets[selectors[0]]), "-I", "-S", "-B", "-c", wrapper.PYTHON_PROBE], root, 10),
+                              mock.call([str(targets[selectors[1]]), "-V"], root, 10),
+                              mock.call([str(targets[selectors[2]]), "--version"], root, 10)])
+            self.assertEqual(calls["hash"].call_args_list, [mock.call(targets[path]) for path in selectors])
+            calls["ordinary"].assert_called_once_with(root, 10)
+            calls["inventory"].assert_called_once_with(["/mock/stdlib", "/mock/stdlib/lib-dynload"], 100)
+        self.assertEqual(tools["ordinary"], ordinary)
+        self.assertEqual(tools["privileged_python"], {"pin": pins[targets[selectors[0]]], "version": "3.11.9",
+                                                     "root_trust": True, "stdlib_pin": plan()["release_pin"], "stdlib_entries": 10})
+        self.assertEqual(tools["ip"], {"pin": pins[targets[selectors[1]]], "version": "6.17.0", "root_trust": True})
+        self.assertEqual(tools["sudo"], {"pin": pins[targets[selectors[2]]], "version": "1.9.15p5", "root_trust": True})
+
+    def test_actual_verify_missing_fixed_ip_or_sudo_never_dispatches(self):
+        """Actual missing-file predicates reach incomplete/not-run publication despite an available hostile PATH alternative."""
+        selectors = [Path("/usr/bin/python3"), Path("/usr/bin/ip"), Path("/usr/bin/sudo")]
+        actual_administration = wrapper.administration_tool
+        original_exists, original_lstat, original_resolve = wrapper.Path.exists, wrapper.Path.lstat, wrapper.Path.resolve
+        for component, missing in (("ip", selectors[1]), ("sudo", selectors[2])):
+            seen = []
+            def exists(path):
+                """Model only the three selector files and delegate private publication paths to ordinary temporary storage."""
+                if path in selectors:
+                    seen.append(path)
+                    return path != missing
+                return original_exists(path)
+            def metadata(path):
+                """Supply trusted synthetic executable/ancestor records without observing the host's tool tree."""
+                if path in selectors:
+                    return types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFREG | 0o755)
+                if path in (Path("/"), Path("/usr"), Path("/usr/bin")):
+                    return types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFDIR | 0o755)
+                return original_lstat(path)
+            def resolve(path, *args, **kwargs):
+                """Keep synthetic selectors canonical while retaining normal private-output path behavior."""
+                return path if path in selectors else original_resolve(path, *args, **kwargs)
+            with self.subTest(component=component), tempfile.TemporaryDirectory() as private, \
+                 ToolDiagnosticControls.capture_context(self) as calls, \
+                 mock.patch.dict(wrapper.os.environ, {"PATH": "/PRIVATE/attacker:/bin:/sbin"}), \
+                 mock.patch.object(wrapper.shutil, "which", return_value="/PRIVATE/attacker/" + component) as discovery, \
+                 mock.patch.object(wrapper.Path, "exists", new=exists), \
+                 mock.patch.object(wrapper.Path, "lstat", new=metadata), \
+                 mock.patch.object(wrapper.Path, "resolve", new=resolve), \
+                 mock.patch.object(wrapper.os, "access", return_value=True), \
+                 mock.patch.object(wrapper, "capture_identity", side_effect=[{"tracked_source_clean": True}, {"tracked_source_clean": True}]), \
+                 mock.patch.object(wrapper.shared, "checkout_binding", return_value={}), \
+                 mock.patch.object(wrapper, "native_run") as dispatch:
+                calls["paths"].side_effect = actual_administration
+                output = Path(private) / "output"
+                value = wrapper.verify(Path(private), Path(private) / "forge", output, build_outcome="success")
+                raw = (output / wrapper.OUTPUT).read_bytes()
+                self.assertEqual(raw, wrapper.shared.canonical_bytes(value))
+                expected_order = selectors[:selectors.index(missing) + 1]
+                self.assertEqual(calls["paths"].call_args_list, [mock.call(path) for path in expected_order])
+                self.assertEqual(seen, expected_order)
+                discovery.assert_not_called()
+                dispatch.assert_not_called()
+                calls["command"].assert_not_called()
+                calls["inventory"].assert_not_called()
+                calls["ordinary"].assert_not_called()
+                calls["hash"].assert_not_called()
+            self.assertEqual((value["status"], value["failure"]), ("incomplete", "tool-unavailable"))
+            self.assertEqual(value["diagnostic"], {"phase": component + "-path", "reason": "missing", "exit_code": None})
+            self.assertEqual(value["producer"], {"status": "not-run", "exit_code": None, "failure": None, "receipt": None, "receipt_pin": None})
+            self.assertEqual(value["cleanup"], {"state": "verified-not-created", "forced": False})
+            self.assertEqual(value["input_stability"], "unchanged")
+            self.assertEqual(value["tool_stability"], "unverified")
+            self.assertIsNone(value["tools"])
+            self.assertEqual(value["attempted_egress"], {"state": "unmeasured", "count": None})
+            self.assertFalse(value["acceptance_eligible"])
+            self.assertNotIn(b"/PRIVATE", raw)
+            self.assertNotIn(b"/usr/bin", raw)
+
+    def test_fixed_ip_leaf_still_rejects_untrusted_ancestor_with_original_priority(self):
+        """Actual fixed ip qualification follows the allowed leaf but rejects its ancestor by UID, mode, then link priority."""
+        actual_administration = wrapper.administration_tool
+        target = Path("/usr/libexec/qualified-ip")
+        good_file = types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFREG | 0o755)
+        good_directory = types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFDIR | 0o755)
+        ip_link = types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o777)
+        cases = ((types.SimpleNamespace(st_uid=1001, st_mode=stat.S_IFLNK | 0o777), "not-root-owned"),
+                 (types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o777), "worker-writable"),
+                 (types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o755), "unsupported-link"),
+                 (types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFDIR | 0o777), "worker-writable"))
+        for bad_ancestor, reason in cases:
+            def metadata(path):
+                """Expose the ip-only target ancestor fault while the preceding fixed Python selector remains trusted."""
+                if path == Path("/usr/libexec"):
+                    return bad_ancestor
+                if path == Path("/usr/bin/ip"):
+                    return ip_link
+                return good_file if path == Path("/usr/bin/python3") or path == target else good_directory
+            with self.subTest(reason=reason), ToolDiagnosticControls.capture_context(self) as calls, \
+                 mock.patch.object(wrapper.Path, "exists", return_value=True), \
+                 mock.patch.object(wrapper.Path, "lstat", new=metadata), \
+                 mock.patch.object(wrapper.Path, "resolve", new=lambda path, **kwargs: path), \
+                 mock.patch.object(wrapper.os, "readlink", return_value=str(target)) as links, \
+                 mock.patch.object(wrapper.os, "access", return_value=True), \
+                 mock.patch.object(wrapper.shutil, "which", side_effect=AssertionError("administrative discovery forbidden")) as discovery:
+                calls["paths"].side_effect = actual_administration
+                with self.assertRaises(wrapper.GateError) as caught:
+                    wrapper.capture_tools(Path("/mock/root"), 100)
+                self.assertEqual(calls["paths"].call_args_list, [mock.call(Path("/usr/bin/python3")), mock.call(Path("/usr/bin/ip"))])
+                links.assert_called_once_with(Path("/usr/bin/ip"))
+                discovery.assert_not_called()
+                calls["command"].assert_not_called()
+                calls["inventory"].assert_not_called()
+                calls["ordinary"].assert_not_called()
+            self.assertEqual((caught.exception.code, caught.exception.incomplete), ("tool-untrusted", False))
+            self.assertEqual(caught.exception.diagnostic, {"phase": "ip-path", "reason": reason, "exit_code": None})
+            self.assertNotIn(b"/usr", wrapper.shared.canonical_bytes(caught.exception.diagnostic))
+
+    def test_fixed_capture_keeps_version_and_hash_failures_closed(self):
+        """Fixed names cannot qualify malformed versions or an unreadable canonical tool hash."""
+        with ToolDiagnosticControls.capture_context(self) as calls, \
+             mock.patch.object(wrapper.shutil, "which", side_effect=AssertionError("administrative discovery forbidden")) as discovery:
+            calls["command"].side_effect = [
+                {"exit_code": 0, "failure": None, "output": wrapper.shared.canonical_bytes({"version": "3.11.9", "paths": ["/mock/stdlib", "/mock/stdlib/lib-dynload"]})},
+                {"exit_code": 0, "failure": None, "output": b"PRIVATE malformed ip version\n"}]
+            with self.assertRaises(wrapper.GateError) as caught:
+                wrapper.capture_tools(Path("/mock/root"), 100)
+            discovery.assert_not_called()
+            self.assertEqual(calls["command"].call_count, 2)
+            self.assertEqual(calls["command"].call_args_list[-1].args[0], ["/usr/bin/ip", "-V"])
+            self.assertEqual(calls["hash"].call_args_list, [mock.call(Path("/usr/bin/python3"))])
+        self.assertEqual((caught.exception.code, caught.exception.incomplete), ("tool-unavailable", True))
+        self.assertEqual(caught.exception.diagnostic, {"phase": "ip-version", "reason": "version-invalid", "exit_code": 0})
+        def hash_tool(path):
+            """Fail the actual fixed ip hashing step after successful version parsing, without returning private text."""
+            if path == Path("/usr/bin/ip"):
+                raise OSError("PRIVATE unreadable canonical ip hash")
+            return plan()["release_pin"]
+        with ToolDiagnosticControls.capture_context(self) as calls:
+            calls["hash"].side_effect = hash_tool
+            with self.assertRaises(wrapper.GateError) as caught:
+                wrapper.capture_tools(Path("/mock/root"), 100)
+            self.assertEqual(calls["hash"].call_args_list, [mock.call(Path("/usr/bin/python3")), mock.call(Path("/usr/bin/ip"))])
+            self.assertEqual(calls["command"].call_count, 2)
+        self.assertEqual((caught.exception.code, caught.exception.incomplete), ("verification-input-invalid", False))
+        self.assertEqual(caught.exception.diagnostic, {"phase": "ip-version", "reason": "identity-observation-unverified", "exit_code": None})
+        self.assertNotIn(b"PRIVATE", wrapper.shared.canonical_bytes(caught.exception.diagnostic))
+
+    def test_fixed_capture_exact_deadline_abstains_before_all_observation(self):
+        """An exact expired budget blocks selectors and PATH discovery before any tool or namespace dispatch."""
+        with ToolDiagnosticControls.capture_context(self, clock=100) as calls, \
+             mock.patch.object(wrapper.shutil, "which", return_value="/PRIVATE/attacker/ip") as discovery, \
+             mock.patch.object(wrapper, "native_run") as dispatch:
+            with self.assertRaises(wrapper.GateError) as caught:
+                wrapper.capture_tools(Path("/mock/root"), 100)
+            discovery.assert_not_called()
+            dispatch.assert_not_called()
+            for name in ("paths", "command", "inventory", "ordinary", "hash"):
+                calls[name].assert_not_called()
+        self.assertEqual((caught.exception.code, caught.exception.incomplete), ("command-timeout", True))
+        self.assertEqual(caught.exception.diagnostic, {"phase": "qualification-budget", "reason": "deadline-expired", "exit_code": None})
+
+    def test_actual_verify_fixed_selectors_still_revoke_changed_canonical_target(self):
+        """Two real captures of fixed selectors compare canonical targets and revoke pass even when all hashes/versions match."""
+        observed = []
+        def qualified_path(path):
+            """Keep selectors fixed but model a different qualified ip leaf in the post-experiment observation."""
+            observed.append(path)
+            if path == Path("/usr/bin/ip") and len(observed) > 3:
+                return Path("/usr/libexec/qualified-ip-after")
+            return path
+        identity = {"tracked_source_clean": True, "mock": "stable"}
+        producer = {"status": "passed", "failure": None, "exit_code": 0,
+                    "receipt": {"cleanup": {"state": "verified", "forced": False}}, "receipt_pin": None}
+        with tempfile.TemporaryDirectory() as private, ToolDiagnosticControls.capture_context(self) as calls, \
+             mock.patch.object(wrapper.shutil, "which", side_effect=AssertionError("administrative discovery forbidden")) as discovery, \
+             mock.patch.object(wrapper, "capture_identity", side_effect=[identity, dict(identity)]), \
+             mock.patch.object(wrapper.shared, "checkout_binding", return_value={}), \
+             mock.patch.object(wrapper, "native_run", return_value=producer) as dispatch:
+            calls["paths"].side_effect = qualified_path
+            calls["command"].side_effect = [
+                {"exit_code": 0, "failure": None, "output": wrapper.shared.canonical_bytes({"version": "3.11.9", "paths": ["/mock/stdlib", "/mock/stdlib/lib-dynload"]})},
+                {"exit_code": 0, "failure": None, "output": b"ip utility, iproute2-6.17.0\n"},
+                {"exit_code": 0, "failure": None, "output": b"Sudo version 1.9.15p5\n"}] * 2
+            output = Path(private) / "output"
+            value = wrapper.verify(Path(private), Path(private) / "forge", output, build_outcome="success")
+            raw = (output / wrapper.OUTPUT).read_bytes()
+            self.assertEqual(raw, wrapper.shared.canonical_bytes(value))
+            discovery.assert_not_called()
+            dispatch.assert_called_once()
+            self.assertEqual(dispatch.call_args.args[3], {"python": Path("/usr/bin/python3"), "ip": Path("/usr/bin/ip"), "sudo": Path("/usr/bin/sudo")})
+            self.assertEqual(observed, [Path("/usr/bin/python3"), Path("/usr/bin/ip"), Path("/usr/bin/sudo")] * 2)
+            self.assertEqual(calls["command"].call_count, 6)
+            self.assertEqual(calls["ordinary"].call_count, 2)
+            self.assertEqual(calls["command"].call_args_list[4].args[0], ["/usr/libexec/qualified-ip-after", "-V"])
+            self.assertEqual(calls["hash"].call_args_list[4], mock.call(Path("/usr/libexec/qualified-ip-after")))
+        self.assertEqual((value["status"], value["failure"]), ("failed", "tool-identity-changed"))
+        self.assertEqual(value["input_stability"], "unchanged")
+        self.assertEqual(value["tool_stability"], "changed")
+        self.assertEqual(value["cleanup"], {"state": "verified", "forced": False})
+        self.assertIsNone(value["diagnostic"])
+        self.assertFalse(value["acceptance_eligible"])
+        self.assertEqual(value["attempted_egress"], {"state": "unmeasured", "count": None})
+
+
 if __name__ == "__main__":
     unittest.main()

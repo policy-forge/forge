@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from types import MappingProxyType
 
 import verify_workspace as shared
 
@@ -26,6 +27,10 @@ CLIENT_OUTPUT = "client-verification.json"
 MAX_CAPTURE = 262144
 MAX_ENTRIES = 20000
 MAX_STDLIB_BYTES = 268435456
+# Private fixed administrative names; availability and every existing trust gate remain mandatory.
+_ADMINISTRATIVE_PATHS = MappingProxyType({
+    "python": "/usr/bin/python3", "ip": "/usr/bin/ip", "sudo": "/usr/bin/sudo",
+})
 SOURCE_KEYS = ("scripts/test_workspace_client.py", "scripts/workspace_client.py",
                "scripts/verify_workspace.py", "docs/api/forge-workspace-v1.openapi.yaml")
 EXTRA_INPUTS = ("scripts/test_workspace_os_denial.py", "scripts/verify_workspace_os_denial.py",
@@ -484,14 +489,14 @@ def capture_tool_version(name, executable, root, deadline):
 
 
 def capture_tools(root, deadline):
-    """Qualify only existing Linux tools and complete trusted distro stdlib; setup-Python is separate ordinary evidence."""
+    """Qualify fixed existing administrative paths and complete trusted distro stdlib; ordinary PATH evidence stays separate."""
     tool_budget(deadline)
     if sys.platform != "linux" or os.uname().machine != "x86_64":
         raise GateError("unsupported-platform", True)
     if os.getuid() == 0 or os.geteuid() != os.getuid() or os.getegid() != os.getgid():
         raise GateError("privilege-unavailable", True)
-    python = tool_step("python-path", administration_tool, Path("/usr/bin/python3"))
-    resolved = {name: tool_step(name + "-path", administration_tool, Path(shutil.which(name) or "/nonexistent/" + name)) for name in ("ip", "sudo")}
+    python = tool_step("python-path", administration_tool, Path(_ADMINISTRATIVE_PATHS["python"]))
+    resolved = {name: tool_step(name + "-path", administration_tool, Path(_ADMINISTRATIVE_PATHS[name])) for name in ("ip", "sudo")}
     observed = tool_step("python-probe", command, [str(python), "-I", "-S", "-B", "-c", PYTHON_PROBE], root, min(deadline, time.monotonic() + 10))
     if observed["failure"] is not None or observed["exit_code"] != 0:
         raise GateError("tool-unavailable", True, diagnostic=command_diagnostic("python-probe", observed))
