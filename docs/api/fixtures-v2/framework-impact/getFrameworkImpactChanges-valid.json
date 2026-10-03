@@ -1,0 +1,36 @@
+{
+  "availability": "available",
+  "comparison_id": "res_11111111111111111111111111111111",
+  "comparison_version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "counts": {
+    "matching_changes": 1,
+    "total_changes": 1
+  },
+  "page": {
+    "items": [
+      {
+        "change_class": "content-changed",
+        "migration": null,
+        "new_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "new_subjects": [
+          {
+            "id": "ac-1",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "old_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "old_subjects": [
+          {
+            "id": "ac-1",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        ],
+        "subject_id": "ac-1"
+      }
+    ],
+    "next_cursor": null,
+    "total_matching": 1
+  },
+  "resource_version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "snapshot_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

@@ -515,7 +515,16 @@
       "initializeApplicabilityDraft",
       "initializeMappingDraft",
       "getProjectBundlePreview",
-      "verifyProjectBundle"
+      "verifyProjectBundle",
+      "getLifecycleRecords",
+      "getLifecycleRecord",
+      "getLifecycleHistory",
+      "getLifecycleQueue",
+      "getFrameworkImpactComparisons",
+      "getFrameworkImpactComparison",
+      "getFrameworkImpactChanges",
+      "getFrameworkImpactFindings",
+      "getFrameworkImpactPriorDispositions"
     ],
     "authorization": "browser-write",
     "notes": "US-13 completeness entry: a write-capable session (browser or machine) can perform the entire golden path with only these operations (AC-18). This entry intentionally lists every operationId as the exhaustive coverage denominator for CI."
@@ -575,5 +584,42 @@
     ],
     "authorization": "browser-read",
     "notes": "API, maintained headless client and Trace & Reports browser comparison in either session mode. The chosen file is at most 1,048,565 bytes; its original bytes plus the 11-byte wrapper fit the 1 MiB read-only POST bound. Complete expected denominator up to 1,000; supplied unregistered paths are never opened. Fingerprints, observed validation/staleness, whole-index equality and import readiness remain separate. No receipt, idempotency key, hidden prefix or server publication."
+  },
+  {
+    "id": "CM-40",
+    "action": "Inspect lifecycle status, history and owner review queue",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-1",
+      "US-6",
+      "US-13"
+    ],
+    "operations": [
+      "getLifecycleRecords",
+      "getLifecycleRecord",
+      "getLifecycleHistory",
+      "getLifecycleQueue"
+    ],
+    "authorization": "browser-read",
+    "notes": "Lifecycle & Impact view in API2.1 sessions. Explicit dates, complete portfolio validation, captured artifact drift, asserted owners/history and bound paging. Recorded lifecycle finding references remain unresolved without comparison context. No transition, approval or save action."
+  },
+  {
+    "id": "CM-41",
+    "action": "Inspect captured framework comparisons, changes, findings and prior dispositions",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-1",
+      "US-6",
+      "US-13"
+    ],
+    "operations": [
+      "getFrameworkImpactComparisons",
+      "getFrameworkImpactComparison",
+      "getFrameworkImpactChanges",
+      "getFrameworkImpactFindings",
+      "getFrameworkImpactPriorDispositions"
+    ],
+    "authorization": "browser-read",
+    "notes": "Lifecycle & Impact view in API2.1 sessions. Shared current analysis, complete counts, five exact AND filters, bound paging and limited prior admission. No disposition write, migration apply, source excerpt or automatic approval."
   }
 ]

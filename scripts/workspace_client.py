@@ -12,8 +12,9 @@ import re
 import subprocess
 import threading
 import time
+from calendar import monthrange
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlencode, urlsplit
 
 MAX_RESPONSE = 4 * 1024 * 1024
 
@@ -29,10 +30,11 @@ class WorkspaceError(RuntimeError):
 class Workspace:
     """Own one loopback workspace process and explicitly negotiated API namespace."""
     def __init__(self, forge, project, read_only=True, *, api_major=1):
-        """Launch the requested single API major; default v1 arguments and behavior remain unchanged."""
+        """Launch one major; retain a matching numeric API2 descriptor and Session version."""
         if type(api_major) is not int or api_major not in (1, 2):
             raise ValueError("Select API major 1 or 2 explicitly")
         self._api_major = api_major
+        self._contract_version = None
         self._api_prefix = "/api/v" + str(api_major)
         args = [str(Path(forge).resolve()), "workspace", "--project", str(Path(project).resolve()), "--machine-session"]
         if api_major == 2:
@@ -73,6 +75,7 @@ class Workspace:
                     or session.get("contract_version") != descriptor["api_version"] or session.get("session_id") != descriptor["session_id"]
                     or session.get("mode") != "machine" or session.get("read_only") is not read_only):
                     raise ValueError("Unsupported selected API session")
+                self._contract_version = session["contract_version"]
         except Exception:
             self.close()
             raise RuntimeError("The local workspace could not be started.") from None
@@ -135,6 +138,104 @@ class Workspace:
         current state again and create no effect or replay receipt.
         """
         return self.request("POST", self.api_path("/project/bundle-verifications"), {"bundle": bundle})
+
+    def _s3_resource(self, resource_id):
+        """Accept only a registered opaque resource identifier for a selected S3 read."""
+        if not isinstance(resource_id, str) or not re.fullmatch(r"res_[0-9a-z]{12,80}", resource_id):
+            raise ValueError("Select an exact registered resource identifier")
+        return quote(resource_id, safe="")
+
+    def _s3_read(self, path, *, required_date=False, **query):
+        """Issue one bounded API2-only GET; never fall back to API1 or create an effect.
+
+        Query values are explicit, encoded once and checked before the existing
+        paced transport. Dates are supplied by the caller; no clock default is
+        introduced. Each cursor belongs to its unchanged capture/filter/date.
+        The server retains whole-domain validation and count authority.
+        """
+        if self._api_major != 2 or self._contract_version != "2.1.0":
+            raise ValueError("Lifecycle and impact reads require an explicitly negotiated API2 2.1.0 session")
+        if required_date and query.get("as_of") is None:
+            raise ValueError("An explicit as_of date is required")
+        values = {}
+        for name, value in query.items():
+            if value is None:
+                continue
+            if name == "page_size":
+                if type(value) is not int or not 1 <= value <= 200:
+                    raise ValueError("Use an integer page_size from 1 to 200")
+            elif not isinstance(value, str) or not value or len(value.encode("utf-8")) > (256 if name == "cursor" else 65536):
+                raise ValueError("Use nonempty bounded query strings")
+            if name == "as_of":
+                if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+                    raise ValueError("Use an explicit YYYY-MM-DD date")
+                try:
+                    year, month, day = (int(part) for part in value.split("-"))
+                    if not 1 <= day <= monthrange(year, month)[1]:
+                        raise ValueError("Invalid day")
+                except ValueError:
+                    raise ValueError("Use an explicit calendar date") from None
+            values[name] = value
+        suffix = "?" + urlencode(values) if values else ""
+        return self.request("GET", self.api_path(path) + suffix)
+
+    def lifecycle_records(self, *, as_of=None, owner=None, state=None, page_size=50, cursor=None):
+        """Read recorded inventory; derived status requires a caller-supplied date.
+
+        Counts distinguish registered, matching and unavailable records. A next
+        cursor must retain this exact date/filter tuple and page size; a conflict
+        requires a new first-page read. Returned declarations are not approval.
+        """
+        return self._s3_read("/lifecycle/records", as_of=as_of, owner=owner, state=state,
+                             page_size=page_size, cursor=cursor)
+
+    def lifecycle_record(self, record_id, *, as_of):
+        """Read one registered record's captured status at an explicit date.
+
+        Redacted fingerprints, declared owners and blockers do not authenticate
+        actors or authorize a transition. Impact references remain unresolved.
+        """
+        return self._s3_read("/lifecycle/records/" + self._s3_resource(record_id),
+                             required_date=True, as_of=as_of)
+
+    def lifecycle_history(self, record_id, *, page_size=50, cursor=None):
+        """Read bounded recorded transition metadata without claiming current freshness."""
+        return self._s3_read("/lifecycle/records/" + self._s3_resource(record_id) + "/history",
+                             page_size=page_size, cursor=cursor)
+
+    def lifecycle_queue(self, *, as_of, owner=None, page_size=50, cursor=None):
+        """Read owner placements at an explicit date, preserving distinct record/group counts."""
+        return self._s3_read("/lifecycle/queue", required_date=True, as_of=as_of, owner=owner,
+                             page_size=page_size, cursor=cursor)
+
+    def framework_impact_comparisons(self, *, page_size=50, cursor=None):
+        """Read declared old/new comparison metadata; inventory is not a computed analysis."""
+        return self._s3_read("/framework-impact/comparisons", page_size=page_size, cursor=cursor)
+
+    def framework_impact_comparison(self, comparison_id):
+        """Read the captured comparison's complete unfiltered summary and redacted provenance."""
+        return self._s3_read("/framework-impact/comparisons/" + self._s3_resource(comparison_id))
+
+    def framework_impact_changes(self, comparison_id, *, change_class=None, page_size=50, cursor=None):
+        """Read bounded change rows; matching rows do not replace the complete change count."""
+        return self._s3_read("/framework-impact/comparisons/" + self._s3_resource(comparison_id) + "/changes",
+                             change_class=change_class, page_size=page_size, cursor=cursor)
+
+    def framework_impact_findings(self, comparison_id, *, group=None, decision_state=None,
+                                  policy_source=None, priority=None, owner=None, page_size=50, cursor=None):
+        """Read exact AND-filtered findings within one old/new pair and capture context.
+
+        The full summary and gates remain unfiltered; matched finding and emitted
+        disposition counts have distinct scopes. No mutation or approval occurs.
+        """
+        return self._s3_read("/framework-impact/comparisons/" + self._s3_resource(comparison_id) + "/findings",
+                             group=group, decision_state=decision_state, policy_source=policy_source,
+                             priority=priority, owner=owner, page_size=page_size, cursor=cursor)
+
+    def framework_impact_prior_dispositions(self, comparison_id, *, page_size=50, cursor=None):
+        """Read prior-only disposition metadata; limited admission is not current finding coverage."""
+        return self._s3_read("/framework-impact/comparisons/" + self._s3_resource(comparison_id) + "/prior-dispositions",
+                             page_size=page_size, cursor=cursor)
 
     def wait(self, operation, timeout=35):
         """Poll retained IDs in the same negotiated session without restarting an effect."""

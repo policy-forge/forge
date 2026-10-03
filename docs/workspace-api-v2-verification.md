@@ -1,5 +1,7 @@
 # Workspace API v2 development verification
 
+This historical API2/2.0.0 foundation checkpoint belongs to PR #193. Its source pins and coverage receipts remain unchanged. The current API2/2.1.0 inspection successor is described in [the lifecycle and impact guide](workspace-lifecycle-impact.md); this checkpoint does not measure those added functions.
+
 The explicit API v2 registration and metadata foundation is implemented against
 stacked base `80aa2869ea8823e85638f42345b8ca8e491029ae`. Default launches remain
 API v1/1.2.0; `--api-major 2` selects only API v2/2.0.0. This is an unreleased
@@ -10,8 +12,7 @@ confirmed index migration, role-specific admission and version-paired bundles.
 The [source and coverage audit](plans/2026-10-02-f19-api-v2-verification.json)
 records exact source, command, log and raw-export fingerprints. The separate
 [selected-function audit](plans/2026-10-02-f19-api-v2-selected-function-verification.json)
-binds the final independent documentation and function-entry census to current
-source. The source snapshots precede the verification documents and enabled commit hook. Delivery
+binds the final independent documentation and function-entry census to the exact foundation source snapshots. The source snapshots precede the verification documents and enabled commit hook. Delivery
 and hosted outcomes must be bound separately to the eventual immutable commit.
 
 ## Executed checks — 2026-10-02
@@ -98,7 +99,4 @@ versioned evidence. The clean browser successor preserves original predicates;
 temporary diagnostic assertions and incomplete/terminated runs receive no final
 control credit. Historical API1 and earlier evidence bytes remain unchanged.
 
-The nine captured lifecycle/impact read queries, complete S-3 views, S-6 confirmed
-export/import, current-head hosted platform/CI outcomes, native accessibility,
-security/product/pilot and human acceptance, dependency audit/owner decisions,
-release provenance and **full final integrated documentation review** remain open.
+At this foundation checkpoint, the nine captured lifecycle/impact queries and S-3 views remained unimplemented. The [inspection successor](workspace-lifecycle-impact-verification.md) records their later development checks. Full S-3 acceptance, S-6 confirmed export/import, current-head hosted platform/CI outcomes, native accessibility, security/product/pilot and human acceptance, dependency audit/owner decisions, release provenance and **full final integrated documentation review** remain open.

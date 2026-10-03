@@ -54,6 +54,12 @@ jobs:
       - name: Test maintained-client extension controls
         run: python -B scripts/test_workspace_client_extension.py
 
+      - name: Test maintained-client version controls
+        run: python -B scripts/test_workspace_client_versions.py
+
+      - name: Test lifecycle and impact client controls
+        run: python -B scripts/test_workspace_lifecycle_client.py
+
       # Provisioning may use the network. Subsequent Cargo checks use only these
       # locked inputs. This does not establish OS runtime network denial.
       - name: Fetch locked Cargo inputs

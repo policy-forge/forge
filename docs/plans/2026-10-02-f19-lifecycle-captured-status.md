@@ -52,7 +52,4 @@ and the independent bounded source review. It is a pre-commit checkpoint; the en
 hook, exact commit and draft PR are recorded separately. Static source equality and development
 fixtures establish neither branch coverage nor human approval.
 
-Full PRD 062 S-3 includes lifecycle and impact registration, capture services, freshness and
-read-only views. Those integrations, their platform/browser and human gates, and the final
-integrated documentation review remain open. This prerequisite receives no full S-3 acceptance
-credit. See the [scoped guide](../lifecycle-captured-status.md).
+Full PRD 062 S-3 includes lifecycle and impact registration, capture services, freshness and read-only views. Those integrations were open at this prerequisite checkpoint; their later development evidence is in the [inspection successor](../workspace-lifecycle-impact-verification.md). Platform/browser and human acceptance gates, and the final integrated documentation review remain open. This prerequisite receives no full S-3 acceptance credit. See the [scoped guide](../lifecycle-captured-status.md).

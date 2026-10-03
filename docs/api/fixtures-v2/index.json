@@ -371,6 +371,195 @@
       "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
       "expectation": "invalid",
       "description": "Existing index roles are unchanged and closed."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecords-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecords-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecords-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecord-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordDetail",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecord-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordDetail",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecord-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordDetail",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "lifecycle/getLifecycleHistory-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleHistoryPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleHistory-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleHistoryPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleHistory-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleHistoryPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "lifecycle/getLifecycleQueue-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleQueuePage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleQueue-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleQueuePage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleQueue-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleQueuePage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparisons-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparisons-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparisons-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparison-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonDetail",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparison-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonDetail",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparison-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonDetail",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactChanges-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactChangePage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactChanges-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactChangePage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactChanges-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactChangePage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactFindings-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactFindingPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactFindings-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactFindingPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactFindings-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactFindingPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactPriorDispositions-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactPriorDispositionPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactPriorDispositions-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactPriorDispositionPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactPriorDispositions-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactPriorDispositionPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
     }
   ]
 }

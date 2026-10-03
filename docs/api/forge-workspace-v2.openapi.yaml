@@ -71,6 +71,17 @@
         "schema": {
           "$ref": "#/components/schemas/ResourceId"
         }
+      },
+      "ReadCursor": {
+        "description": "Opaque cursor bound to the captured version, endpoint, selected resource, exact date/filter tuple and page size.",
+        "in": "query",
+        "name": "cursor",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
       }
     },
     "responses": {
@@ -143,6 +154,26 @@
           }
         },
         "description": "The submitted document or content failed domain validation; the error is typed and safe. Fetch full diagnostics through the validation operations."
+      },
+      "QueryInterrupted": {
+        "description": "The read stopped before a complete response. A query-budget-exceeded or query-interrupted error returns no partial result. Checkpoints are cooperative and do not preempt an internal parser or syscall.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ContainedReferenceRejected": {
+        "description": "A captured dependency cannot be resolved safely to an explicitly registered resource of an admitted role. No unregistered path is opened.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       }
     },
     "schemas": {
@@ -753,7 +784,7 @@
       },
       "Error": {
         "additionalProperties": false,
-        "description": "Closed error envelope. Prohibited content (enforced by contract and CI): capabilities, absolute paths, raw source excerpts, and Rust debug strings. The code list below is closed in this contract version; additive codes are permitted within v1 only as documented in docs/api/compatibility.md, and the meaning of an existing code never changes within v1.",
+        "description": "Closed safe error envelope for the advertised contract revision. Existing code meanings are preserved. API2.1 adds typed cooperative read interruption errors; no capability, absolute path, source excerpt or debug text is retained.",
         "examples": [
           {
             "code": "version-conflict",
@@ -784,7 +815,9 @@
               "validation-failed",
               "operation-not-cancellable",
               "shutdown-in-progress",
-              "internal-error"
+              "internal-error",
+              "query-budget-exceeded",
+              "query-interrupted"
             ],
             "type": "string"
           },
@@ -2210,7 +2243,7 @@
             "maxLength": 32,
             "minLength": 1,
             "type": "string",
-            "const": "2.0.0"
+            "const": "2.1.0"
           },
           "launched_at": {
             "format": "date-time",
@@ -2952,6 +2985,2024 @@
             }
           }
         }
+      },
+      "FrameworkImpactChangePage": {
+        "additionalProperties": false,
+        "description": "No partial-prefix success. Whole encoded response must fit the inclusive 4 MiB ceiling; page version binds this exact query and snapshot.",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/S3FamilyAvailability"
+          },
+          "comparison_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "comparison_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "matching_changes": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "total_changes": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total_changes",
+              "matching_changes"
+            ],
+            "type": "object"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/S3ImpactChangeItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S3Cursor"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "availability",
+          "page",
+          "counts",
+          "comparison_id",
+          "comparison_version"
+        ],
+        "type": "object"
+      },
+      "FrameworkImpactComparisonDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "comparison_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "freshness": {
+            "const": "captured-current",
+            "type": "string"
+          },
+          "new": {
+            "$ref": "#/components/schemas/S3ResourceFingerprint"
+          },
+          "old": {
+            "$ref": "#/components/schemas/S3ResourceFingerprint"
+          },
+          "prior_report_admission": {
+            "oneOf": [
+              {
+                "const": "limited-structural",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prior_report_sha256": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3Sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/S3CapturedProvenance"
+            },
+            "maxItems": 1000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/S3ImpactSummary"
+          },
+          "trust_boundary": {
+            "const": "review dispositions and migration assertions are declared locally; FORGE does not authenticate reviewers or approve risk",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "comparison_id",
+          "resource_id",
+          "freshness",
+          "old",
+          "new",
+          "summary",
+          "provenance",
+          "prior_report_sha256",
+          "prior_report_admission",
+          "trust_boundary"
+        ],
+        "type": "object"
+      },
+      "FrameworkImpactComparisonPage": {
+        "additionalProperties": false,
+        "description": "No partial-prefix success. Whole encoded response must fit the inclusive 4 MiB ceiling; page version binds this exact query and snapshot.",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/S3FamilyAvailability"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "registered_comparisons": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "unavailable_comparisons": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "registered_comparisons",
+              "unavailable_comparisons"
+            ],
+            "type": "object"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/S3ImpactComparisonItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S3Cursor"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "availability",
+          "page",
+          "counts"
+        ],
+        "type": "object"
+      },
+      "FrameworkImpactFindingPage": {
+        "additionalProperties": false,
+        "description": "No partial-prefix success. Whole encoded response must fit the inclusive 4 MiB ceiling; page version binds this exact query and snapshot.",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/S3FamilyAvailability"
+          },
+          "comparison_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "comparison_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "matching_findings": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "total_findings": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total_findings",
+              "matching_findings"
+            ],
+            "type": "object"
+          },
+          "emitted_dispositions": {
+            "$ref": "#/components/schemas/S3EmittedDispositionCounts"
+          },
+          "full_summary": {
+            "$ref": "#/components/schemas/S3ImpactSummary"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/S3ImpactFindingItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S3Cursor"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "availability",
+          "page",
+          "counts",
+          "comparison_id",
+          "comparison_version",
+          "full_summary",
+          "emitted_dispositions"
+        ],
+        "type": "object"
+      },
+      "FrameworkImpactPriorDispositionPage": {
+        "additionalProperties": false,
+        "description": "No partial-prefix success. Whole encoded response must fit the inclusive 4 MiB ceiling; page version binds this exact query and snapshot.",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/S3FamilyAvailability"
+          },
+          "comparison_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "comparison_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "total_prior_dispositions": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total_prior_dispositions"
+            ],
+            "type": "object"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/S3ImpactDisposition"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S3Cursor"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "availability",
+          "page",
+          "counts",
+          "comparison_id",
+          "comparison_version"
+        ],
+        "type": "object"
+      },
+      "LifecycleHistoryPage": {
+        "additionalProperties": false,
+        "description": "No partial-prefix success. Whole encoded response must fit the inclusive 4 MiB ceiling; page version binds this exact query and snapshot.",
+        "properties": {
+          "as_of": {
+            "type": "null"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/S3FamilyAvailability"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "total_events": {
+                "maximum": 1024,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total_events"
+            ],
+            "type": "object"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/S3LifecycleHistoryItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S3Cursor"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "maximum": 1024,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "record_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "availability",
+          "page",
+          "counts",
+          "record_id",
+          "as_of"
+        ],
+        "type": "object"
+      },
+      "LifecycleQueuePage": {
+        "additionalProperties": false,
+        "description": "No partial-prefix success. Whole encoded response must fit the inclusive 4 MiB ceiling; page version binds this exact query and snapshot.",
+        "properties": {
+          "as_of": {
+            "$ref": "#/components/schemas/S3Date"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/S3FamilyAvailability"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "distinct_records": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "matching_groups": {
+                "maximum": 64000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "matching_owner_placements": {
+                "maximum": 64000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "total_groups": {
+                "maximum": 64000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "total_owner_placements": {
+                "maximum": 64000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "distinct_records",
+              "total_owner_placements",
+              "matching_owner_placements",
+              "total_groups",
+              "matching_groups"
+            ],
+            "type": "object"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/S3LifecycleQueueItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S3Cursor"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "maximum": 64000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "availability",
+          "page",
+          "counts",
+          "as_of"
+        ],
+        "type": "object"
+      },
+      "LifecycleRecordDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "approved_fingerprints": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3LifecycleFingerprintSet"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artifact_identity_changes": {
+            "items": {
+              "$ref": "#/components/schemas/S3DeclaredArtifactPath"
+            },
+            "maxItems": 128,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "as_of": {
+            "$ref": "#/components/schemas/S3Date"
+          },
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/S3LifecycleBlocker"
+            },
+            "maxItems": 4,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "current_fingerprints": {
+            "$ref": "#/components/schemas/S3LifecycleFingerprintSet"
+          },
+          "derived_status": {
+            "$ref": "#/components/schemas/S3DerivedLifecycleStatus"
+          },
+          "impact_references": {
+            "items": {
+              "$ref": "#/components/schemas/S3UnresolvedImpactReference"
+            },
+            "maxItems": 131072,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "next_review_date": {
+            "$ref": "#/components/schemas/S3RecordedDate"
+          },
+          "owner_keys": {
+            "items": {
+              "$ref": "#/components/schemas/S3LifecycleToken"
+            },
+            "maxItems": 64,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "policy_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/S3CapturedProvenance"
+            },
+            "maxItems": 1000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "record_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "replaced_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3PolicyReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replacement_record_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3ResourceId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "state": {
+            "$ref": "#/components/schemas/S3LifecycleState"
+          },
+          "trust_boundary": {
+            "const": "actor identities and authority are declared locally and are not authenticated by FORGE",
+            "type": "string"
+          },
+          "version_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "record_id",
+          "resource_id",
+          "policy_key",
+          "version_key",
+          "as_of",
+          "state",
+          "derived_status",
+          "owner_keys",
+          "next_review_date",
+          "blockers",
+          "current_fingerprints",
+          "approved_fingerprints",
+          "artifact_identity_changes",
+          "replaced_by",
+          "replacement_record_id",
+          "impact_references",
+          "provenance",
+          "trust_boundary"
+        ],
+        "type": "object"
+      },
+      "LifecycleRecordPage": {
+        "additionalProperties": false,
+        "description": "No partial-prefix success. Whole encoded response must fit the inclusive 4 MiB ceiling; page version binds this exact query and snapshot.",
+        "properties": {
+          "as_of": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3Date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "availability": {
+            "$ref": "#/components/schemas/S3FamilyAvailability"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "matching_records": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "registered_records": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "unavailable_records": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "registered_records",
+              "matching_records",
+              "unavailable_records"
+            ],
+            "type": "object"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "$ref": "#/components/schemas/S3LifecycleRecordItem"
+                },
+                "maxItems": 200,
+                "minItems": 0,
+                "type": "array"
+              },
+              "next_cursor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S3Cursor"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "total_matching": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "items",
+              "next_cursor",
+              "total_matching"
+            ],
+            "type": "object"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "resource_version",
+          "snapshot_version",
+          "availability",
+          "page",
+          "counts",
+          "as_of"
+        ],
+        "type": "object"
+      },
+      "S3ActorAssertion": {
+        "additionalProperties": false,
+        "properties": {
+          "actor_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          },
+          "declared_role": {
+            "$ref": "#/components/schemas/S3DeclaredRole"
+          }
+        },
+        "required": [
+          "actor_key",
+          "declared_role"
+        ],
+        "type": "object"
+      },
+      "S3CapturedProvenance": {
+        "additionalProperties": false,
+        "description": "Captured classification is separate from the selected domain proof. Registration names/paths and contents are omitted.",
+        "properties": {
+          "resource_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "role": {
+            "$ref": "#/components/schemas/S3ResourceRole"
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "size_bytes": {
+            "maximum": 10485760,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "validation_state": {
+            "$ref": "#/components/schemas/S3ValidationState"
+          }
+        },
+        "required": [
+          "resource_id",
+          "role",
+          "sha256",
+          "size_bytes",
+          "validation_state"
+        ],
+        "type": "object"
+      },
+      "S3ChangeClass": {
+        "enum": [
+          "added",
+          "removed",
+          "content-changed",
+          "identity-migrated",
+          "unchanged"
+        ],
+        "type": "string"
+      },
+      "S3Cursor": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      },
+      "S3Date": {
+        "format": "date",
+        "maxLength": 10,
+        "minLength": 1,
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "type": "string"
+      },
+      "S3DecisionState": {
+        "enum": [
+          "applicable",
+          "not-applicable",
+          "deferred",
+          "under-review"
+        ],
+        "type": "string"
+      },
+      "S3DeclaredArtifactPath": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "S3DeclaredRole": {
+        "enum": [
+          "author",
+          "reviewer",
+          "approver",
+          "owner",
+          "custodian"
+        ],
+        "type": "string"
+      },
+      "S3DerivedLifecycleStatus": {
+        "enum": [
+          "draft",
+          "in-review",
+          "approved",
+          "superseded",
+          "retired",
+          "due-soon",
+          "overdue",
+          "approved-drifted"
+        ],
+        "type": "string"
+      },
+      "S3DispositionStatus": {
+        "enum": [
+          "resolved",
+          "accepted-risk",
+          "still-open"
+        ],
+        "type": "string"
+      },
+      "S3EmittedDispositionCounts": {
+        "additionalProperties": false,
+        "description": "Separate counts for the complete filtered finding set, not merely this page.",
+        "properties": {
+          "accepted_risk": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "resolved": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "still_open": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "undispositioned": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resolved",
+          "accepted_risk",
+          "still_open",
+          "undispositioned"
+        ],
+        "type": "object"
+      },
+      "S3FamilyAvailability": {
+        "enum": [
+          "absent-index",
+          "index-upgrade-required",
+          "empty",
+          "available",
+          "needs-attention"
+        ],
+        "type": "string"
+      },
+      "S3FindingPriority": {
+        "enum": [
+          "blocking",
+          "review-required",
+          "informational"
+        ],
+        "type": "string"
+      },
+      "S3GapClassification": {
+        "enum": [
+          "applicable-mapped",
+          "applicable-reviewed-no-relationship",
+          "applicable-unmapped",
+          "not-applicable",
+          "deferred",
+          "under-review"
+        ],
+        "type": "string"
+      },
+      "S3ImpactChangeItem": {
+        "additionalProperties": false,
+        "properties": {
+          "change_class": {
+            "$ref": "#/components/schemas/S3ChangeClass"
+          },
+          "migration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3MigrationAssertion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "new_sha256": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3Sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "new_subjects": {
+            "items": {
+              "$ref": "#/components/schemas/S3SubjectFingerprint"
+            },
+            "maxItems": 100000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "old_sha256": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3Sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "old_subjects": {
+            "items": {
+              "$ref": "#/components/schemas/S3SubjectFingerprint"
+            },
+            "maxItems": 100000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/S3MetadataToken"
+          }
+        },
+        "required": [
+          "subject_id",
+          "change_class",
+          "old_sha256",
+          "new_sha256",
+          "old_subjects",
+          "new_subjects",
+          "migration"
+        ],
+        "type": "object"
+      },
+      "S3ImpactComparisonItem": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/S3RowAvailability"
+          },
+          "comparison_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "diagnostic_code": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3ImpactDiagnostic"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "freshness": {
+            "const": "not-computed",
+            "type": "string"
+          },
+          "manifest_sha256": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "new": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3ResourceFingerprint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "old": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3ResourceFingerprint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          }
+        },
+        "required": [
+          "comparison_id",
+          "resource_id",
+          "manifest_sha256",
+          "old",
+          "new",
+          "availability",
+          "diagnostic_code",
+          "freshness"
+        ],
+        "type": "object"
+      },
+      "S3ImpactDiagnostic": {
+        "enum": [
+          "invalid-impact-manifest",
+          "impact-input-unavailable"
+        ],
+        "type": "string"
+      },
+      "S3ImpactDisposition": {
+        "additionalProperties": false,
+        "description": "Prior report/hash/pair admission precedes use. No rationale or risk-approval authority is projected.",
+        "properties": {
+          "decided_at": {
+            "$ref": "#/components/schemas/S3Timestamp"
+          },
+          "decided_by": {
+            "$ref": "#/components/schemas/S3MetadataToken"
+          },
+          "finding_id": {
+            "$ref": "#/components/schemas/S3DeclaredFindingUuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/S3DispositionStatus"
+          }
+        },
+        "required": [
+          "finding_id",
+          "status",
+          "decided_by",
+          "decided_at"
+        ],
+        "type": "object"
+      },
+      "S3ImpactFindingItem": {
+        "additionalProperties": false,
+        "properties": {
+          "affected_artifact_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3MetadataToken"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "change_class": {
+            "$ref": "#/components/schemas/S3ChangeClass"
+          },
+          "comparison_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "comparison_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "dependency_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3MetadataToken"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disposition": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3ImpactDisposition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finding_id": {
+            "$ref": "#/components/schemas/S3Uuid"
+          },
+          "framework_groups": {
+            "items": {
+              "$ref": "#/components/schemas/S3MetadataToken"
+            },
+            "maxItems": 100000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "migration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3MigrationAssertion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "new_sha256": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3Sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "new_subjects": {
+            "items": {
+              "$ref": "#/components/schemas/S3SubjectFingerprint"
+            },
+            "maxItems": 100000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "old_sha256": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3Sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "old_subjects": {
+            "items": {
+              "$ref": "#/components/schemas/S3SubjectFingerprint"
+            },
+            "maxItems": 100000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "owner": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3MetadataToken"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policy_resource_identity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3MetadataToken"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policy_sources": {
+            "items": {
+              "$ref": "#/components/schemas/S3MetadataToken"
+            },
+            "maxItems": 100000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "prior_decision_state": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3DecisionState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prior_gap_classification": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3GapClassification"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "$ref": "#/components/schemas/S3FindingPriority"
+          },
+          "reason_code": {
+            "$ref": "#/components/schemas/S3ImpactReason"
+          },
+          "required_action": {
+            "$ref": "#/components/schemas/S3RequiredAction"
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/S3MetadataToken"
+          }
+        },
+        "required": [
+          "finding_id",
+          "comparison_id",
+          "comparison_version",
+          "priority",
+          "reason_code",
+          "required_action",
+          "subject_id",
+          "change_class",
+          "old_sha256",
+          "new_sha256",
+          "old_subjects",
+          "new_subjects",
+          "migration",
+          "framework_groups",
+          "affected_artifact_id",
+          "dependency_id",
+          "policy_resource_identity",
+          "prior_gap_classification",
+          "prior_decision_state",
+          "owner",
+          "policy_sources",
+          "disposition"
+        ],
+        "type": "object"
+      },
+      "S3ImpactReason": {
+        "enum": [
+          "control_added",
+          "control_removed",
+          "control_content_changed",
+          "mapping_reference_removed",
+          "mapping_subject_changed",
+          "applicability_decision_removed",
+          "applicability_decision_changed",
+          "applicability_decision_migrated",
+          "identity_migration_declared",
+          "mapping_subject_migrated",
+          "resource_metadata_changed",
+          "migration_evidence_missing"
+        ],
+        "type": "string"
+      },
+      "S3ImpactSummary": {
+        "additionalProperties": false,
+        "description": "All unfiltered findings and disposition states; page filters do not remove blocking/review counts.",
+        "properties": {
+          "added": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "blocking": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content_changed": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "dispositioned_accepted_risk": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "dispositioned_resolved": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "dispositioned_still_open": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "findings": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "identity_migrated": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "informational": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "new_controls": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "old_controls": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "removed": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "review_required": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unchanged": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "undispositioned": {
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "old_controls",
+          "new_controls",
+          "added",
+          "removed",
+          "content_changed",
+          "identity_migrated",
+          "unchanged",
+          "findings",
+          "blocking",
+          "review_required",
+          "informational",
+          "dispositioned_resolved",
+          "dispositioned_accepted_risk",
+          "dispositioned_still_open",
+          "undispositioned"
+        ],
+        "type": "object"
+      },
+      "S3LifecycleBlocker": {
+        "enum": [
+          "approved-drifted",
+          "artifact-identity-changed",
+          "overdue",
+          "due-soon"
+        ],
+        "type": "string"
+      },
+      "S3LifecycleDiagnostic": {
+        "enum": [
+          "invalid-lifecycle-record",
+          "lifecycle-input-unavailable",
+          "invalid-lifecycle-portfolio"
+        ],
+        "type": "string"
+      },
+      "S3LifecycleFingerprintSet": {
+        "additionalProperties": false,
+        "description": "Complete ordered generated-path bijection, with no file contents or authenticated approval.",
+        "properties": {
+          "generated_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/S3NamedHash"
+            },
+            "maxItems": 128,
+            "minItems": 0,
+            "type": "array"
+          },
+          "source_sha256": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "source_sha256",
+          "generated_artifacts"
+        ],
+        "type": "object"
+      },
+      "S3LifecycleHistoryItem": {
+        "additionalProperties": false,
+        "properties": {
+          "actor_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          },
+          "assertions": {
+            "items": {
+              "$ref": "#/components/schemas/S3ActorAssertion"
+            },
+            "maxItems": 64,
+            "minItems": 0,
+            "type": "array"
+          },
+          "declared_role": {
+            "$ref": "#/components/schemas/S3DeclaredRole"
+          },
+          "event_id": {
+            "$ref": "#/components/schemas/S3Uuid"
+          },
+          "impact_references": {
+            "items": {
+              "$ref": "#/components/schemas/S3UnresolvedImpactReference"
+            },
+            "maxItems": 128,
+            "minItems": 0,
+            "type": "array"
+          },
+          "next_state": {
+            "$ref": "#/components/schemas/S3LifecycleState"
+          },
+          "previous_state": {
+            "$ref": "#/components/schemas/S3LifecycleState"
+          },
+          "replacement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3PolicyReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sequence": {
+            "maximum": 1024,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "timestamp": {
+            "$ref": "#/components/schemas/S3Timestamp"
+          }
+        },
+        "required": [
+          "event_id",
+          "sequence",
+          "timestamp",
+          "previous_state",
+          "next_state",
+          "actor_key",
+          "declared_role",
+          "assertions",
+          "impact_references",
+          "replacement"
+        ],
+        "type": "object"
+      },
+      "S3LifecycleQueueItem": {
+        "additionalProperties": false,
+        "properties": {
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/S3LifecycleBlocker"
+            },
+            "maxItems": 4,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "derived_status": {
+            "$ref": "#/components/schemas/S3DerivedLifecycleStatus"
+          },
+          "next_review_date": {
+            "$ref": "#/components/schemas/S3RecordedDate"
+          },
+          "owner_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          },
+          "policy_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          },
+          "record_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "state": {
+            "$ref": "#/components/schemas/S3LifecycleState"
+          },
+          "version_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          }
+        },
+        "required": [
+          "record_id",
+          "resource_id",
+          "owner_key",
+          "next_review_date",
+          "policy_key",
+          "version_key",
+          "state",
+          "derived_status",
+          "blockers"
+        ],
+        "type": "object"
+      },
+      "S3LifecycleRecordItem": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/S3RowAvailability"
+          },
+          "derived_status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3DerivedLifecycleStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "diagnostic_code": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3LifecycleDiagnostic"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_review_date": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3RecordedDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "owner_keys": {
+            "items": {
+              "$ref": "#/components/schemas/S3LifecycleToken"
+            },
+            "maxItems": 64,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "policy_key": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3LifecycleToken"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "record_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "record_version": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "state": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3LifecycleState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validation_state": {
+            "$ref": "#/components/schemas/S3ValidationState"
+          },
+          "version_key": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3LifecycleToken"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "record_id",
+          "record_version",
+          "resource_id",
+          "policy_key",
+          "version_key",
+          "state",
+          "derived_status",
+          "owner_keys",
+          "next_review_date",
+          "availability",
+          "diagnostic_code",
+          "validation_state"
+        ],
+        "type": "object"
+      },
+      "S3LifecycleState": {
+        "enum": [
+          "draft",
+          "in-review",
+          "approved",
+          "superseded",
+          "retired"
+        ],
+        "type": "string"
+      },
+      "S3LifecycleToken": {
+        "maxLength": 4096,
+        "minLength": 1,
+        "type": "string"
+      },
+      "S3MetadataToken": {
+        "maxLength": 65536,
+        "minLength": 1,
+        "type": "string"
+      },
+      "S3MigrationAssertion": {
+        "additionalProperties": false,
+        "description": "Locally declared assertion; rationale omitted and authority not authenticated.",
+        "properties": {
+          "approved_at": {
+            "$ref": "#/components/schemas/S3Timestamp"
+          },
+          "approved_by": {
+            "$ref": "#/components/schemas/S3MetadataToken"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/S3MigrationRelationship"
+          }
+        },
+        "required": [
+          "relationship",
+          "approved_by",
+          "approved_at"
+        ],
+        "type": "object"
+      },
+      "S3MigrationRelationship": {
+        "enum": [
+          "successor",
+          "split",
+          "merge"
+        ],
+        "type": "string"
+      },
+      "S3NamedHash": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "$ref": "#/components/schemas/S3DeclaredArtifactPath"
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "S3PolicyReference": {
+        "additionalProperties": false,
+        "description": "A locally declared policy/version replacement; portfolio validation must resolve it uniquely.",
+        "properties": {
+          "policy_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          },
+          "version_key": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          }
+        },
+        "required": [
+          "policy_key",
+          "version_key"
+        ],
+        "type": "object"
+      },
+      "S3RecordedDate": {
+        "description": "Canonical chrono NaiveDate recorded spelling includes negative four-digit and expanded signed years; intrinsic parser validates the actual calendar. Query/as_of stays four-digit-year S3Date.",
+        "maxLength": 13,
+        "minLength": 10,
+        "pattern": "^(?:[0-9]{4}|-[0-9]{4,6}|\\+[0-9]{5,6})-[0-9]{2}-[0-9]{2}$",
+        "type": "string"
+      },
+      "S3RequiredAction": {
+        "enum": [
+          "review-applicability",
+          "review-framework-removal",
+          "review-control-change",
+          "repair-or-approve-mapping",
+          "reapprove-mapping-rationale",
+          "review-applicability-decision",
+          "review-identity-migration",
+          "review-resource-metadata"
+        ],
+        "type": "string"
+      },
+      "S3ResourceFingerprint": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "else": {
+              "properties": {
+                "resolved_catalog_resource_id": {
+                  "$ref": "#/components/schemas/S3ResourceId"
+                },
+                "resolved_catalog_sha256": {
+                  "$ref": "#/components/schemas/S3Sha256"
+                }
+              }
+            },
+            "if": {
+              "properties": {
+                "resource_type": {
+                  "const": "catalog"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "resolved_catalog_resource_id": {
+                  "type": "null"
+                },
+                "resolved_catalog_sha256": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ],
+        "description": "Declared identity in inventory; computed detail confirms complete captured closure. No href is exposed.",
+        "properties": {
+          "document_version": {
+            "$ref": "#/components/schemas/S3MetadataToken"
+          },
+          "oscal_version": {
+            "const": "1.2.3",
+            "type": "string"
+          },
+          "raw_sha256": {
+            "$ref": "#/components/schemas/S3Sha256"
+          },
+          "resolved_catalog_resource_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3ResourceId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolved_catalog_sha256": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/S3Sha256"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/S3ResourceId"
+          },
+          "resource_type": {
+            "enum": [
+              "catalog",
+              "profile"
+            ],
+            "type": "string"
+          },
+          "root_uuid": {
+            "$ref": "#/components/schemas/S3Uuid"
+          }
+        },
+        "required": [
+          "resource_id",
+          "resource_type",
+          "raw_sha256",
+          "root_uuid",
+          "document_version",
+          "oscal_version",
+          "resolved_catalog_sha256",
+          "resolved_catalog_resource_id"
+        ],
+        "type": "object"
+      },
+      "S3ResourceId": {
+        "maxLength": 84,
+        "minLength": 1,
+        "pattern": "^res_[0-9a-z]{12,80}$",
+        "type": "string"
+      },
+      "S3ResourceRole": {
+        "enum": [
+          "policy-source",
+          "oscal-catalog-artifact",
+          "oscal-component-artifact",
+          "mapping-collection",
+          "applicability-manifest",
+          "applicability-report",
+          "trace-report",
+          "lifecycle-record",
+          "lifecycle-source",
+          "oscal-profile-artifact",
+          "oscal-ssp-artifact",
+          "framework-impact-manifest",
+          "successor-map",
+          "framework-impact-report",
+          "framework-impact-dispositions"
+        ],
+        "type": "string"
+      },
+      "S3RowAvailability": {
+        "enum": [
+          "valid",
+          "invalid",
+          "unavailable"
+        ],
+        "type": "string"
+      },
+      "S3Sha256": {
+        "maxLength": 64,
+        "minLength": 1,
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "S3SubjectFingerprint": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/S3MetadataToken"
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/S3Sha256"
+          }
+        },
+        "required": [
+          "id",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "S3Timestamp": {
+        "format": "date-time",
+        "maxLength": 4096,
+        "minLength": 1,
+        "type": "string"
+      },
+      "S3UnresolvedImpactReference": {
+        "additionalProperties": false,
+        "description": "Recorded impact identifier lacks an exact comparison pair; it is never joined to a guessed report.",
+        "properties": {
+          "binding": {
+            "const": "unresolved",
+            "type": "string"
+          },
+          "finding_id": {
+            "$ref": "#/components/schemas/S3LifecycleToken"
+          }
+        },
+        "required": [
+          "finding_id",
+          "binding"
+        ],
+        "type": "object"
+      },
+      "S3Uuid": {
+        "format": "uuid",
+        "maxLength": 36,
+        "minLength": 1,
+        "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+        "type": "string"
+      },
+      "S3ValidationState": {
+        "enum": [
+          "valid",
+          "invalid",
+          "stale",
+          "not-validated"
+        ],
+        "type": "string"
+      },
+      "S3DeclaredFindingUuid": {
+        "description": "Exact finding_id spelling admitted by uuid 1.26.1 parse_str in the declared prior/disposition path: simple, hyphenated, braced or lowercase urn:uuid prefix. Preserved verbatim, never normalized; no authenticated judgment. Computed finding IDs remain S3Uuid. No uuid format assertion is attached because some validators restrict it to hyphenated spelling.",
+        "maxLength": 45,
+        "minLength": 32,
+        "pattern": "^(?:[0-9A-Fa-f]{32}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|\\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\\}|urn:uuid:[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$",
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -2969,7 +5020,7 @@
       "name": "MIT"
     },
     "title": "FORGE Local Workspace API",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "openapi": "3.1.0",
@@ -4807,6 +6858,725 @@
           "Validation"
         ]
       }
+    },
+    "/api/v2/lifecycle/records": {
+      "get": {
+        "operationId": "getLifecycleRecords",
+        "summary": "getLifecycleRecords",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "tags": [
+          "Lifecycle"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "description": "Explicit real calendar date, YYYY-MM-DD; no implicit clock is sampled. Invalid calendar dates fail before capture.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "minLength": 10,
+              "maxLength": 10
+            }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "description": "Exact trimmed declared metadata token, at most 4096 UTF8 bytes, without control characters; combined with other filters using AND semantics. Schema character bounds do not replace runtime byte admission.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Exact recorded lifecycle state.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "in-review",
+                "approved",
+                "superseded",
+                "retired"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/ReadCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifecycleRecordPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/lifecycle/records/{record_id}": {
+      "get": {
+        "operationId": "getLifecycleRecord",
+        "summary": "getLifecycleRecord",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "tags": [
+          "Lifecycle"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "record_id",
+            "in": "path",
+            "required": true,
+            "description": "Exact opaque registered resource identity; paths, policy labels and finding IDs are not aliases.",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": true,
+            "description": "Explicit real calendar date, YYYY-MM-DD; no implicit clock is sampled. Invalid calendar dates fail before capture.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "minLength": 10,
+              "maxLength": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifecycleRecordDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/lifecycle/records/{record_id}/history": {
+      "get": {
+        "operationId": "getLifecycleHistory",
+        "summary": "getLifecycleHistory",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "tags": [
+          "Lifecycle"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "record_id",
+            "in": "path",
+            "required": true,
+            "description": "Exact opaque registered resource identity; paths, policy labels and finding IDs are not aliases.",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/ReadCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifecycleHistoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/lifecycle/queue": {
+      "get": {
+        "operationId": "getLifecycleQueue",
+        "summary": "getLifecycleQueue",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "tags": [
+          "Lifecycle"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": true,
+            "description": "Explicit real calendar date, YYYY-MM-DD; no implicit clock is sampled. Invalid calendar dates fail before capture.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "minLength": 10,
+              "maxLength": 10
+            }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "description": "Exact trimmed declared metadata token, at most 4096 UTF8 bytes, without control characters; combined with other filters using AND semantics. Schema character bounds do not replace runtime byte admission.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/ReadCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifecycleQueuePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/framework-impact/comparisons": {
+      "get": {
+        "operationId": "getFrameworkImpactComparisons",
+        "summary": "getFrameworkImpactComparisons",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "tags": [
+          "Framework Impact"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/ReadCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkImpactComparisonPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/framework-impact/comparisons/{comparison_id}": {
+      "get": {
+        "operationId": "getFrameworkImpactComparison",
+        "summary": "getFrameworkImpactComparison",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "tags": [
+          "Framework Impact"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comparison_id",
+            "in": "path",
+            "required": true,
+            "description": "Exact opaque registered resource identity; paths, policy labels and finding IDs are not aliases.",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkImpactComparisonDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/framework-impact/comparisons/{comparison_id}/changes": {
+      "get": {
+        "operationId": "getFrameworkImpactChanges",
+        "summary": "getFrameworkImpactChanges",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "tags": [
+          "Framework Impact"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comparison_id",
+            "in": "path",
+            "required": true,
+            "description": "Exact opaque registered resource identity; paths, policy labels and finding IDs are not aliases.",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          },
+          {
+            "name": "change_class",
+            "in": "query",
+            "required": false,
+            "description": "Exact change class; complete unfiltered counts remain separate.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "added",
+                "removed",
+                "content-changed",
+                "identity-migrated",
+                "unchanged"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/ReadCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkImpactChangePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/framework-impact/comparisons/{comparison_id}/findings": {
+      "get": {
+        "operationId": "getFrameworkImpactFindings",
+        "summary": "getFrameworkImpactFindings",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "tags": [
+          "Framework Impact"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comparison_id",
+            "in": "path",
+            "required": true,
+            "description": "Exact opaque registered resource identity; paths, policy labels and finding IDs are not aliases.",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "required": false,
+            "description": "Exact trimmed declared metadata token, at most 4096 UTF8 bytes, without control characters; combined with other filters using AND semantics. Schema character bounds do not replace runtime byte admission.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "decision_state",
+            "in": "query",
+            "required": false,
+            "description": "Exact prior applicability decision state; no inferred decision.",
+            "schema": {
+              "$ref": "#/components/schemas/S3DecisionState"
+            }
+          },
+          {
+            "name": "policy_source",
+            "in": "query",
+            "required": false,
+            "description": "Exact trimmed declared metadata token, at most 4096 UTF8 bytes, without control characters; combined with other filters using AND semantics. Schema character bounds do not replace runtime byte admission.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "description": "Exact finding priority, combined with other filters using AND semantics.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "blocking",
+                "review-required",
+                "informational"
+              ]
+            }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "description": "Exact trimmed declared metadata token, at most 4096 UTF8 bytes, without control characters; combined with other filters using AND semantics. Schema character bounds do not replace runtime byte admission.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/ReadCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkImpactFindingPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/framework-impact/comparisons/{comparison_id}/prior-dispositions": {
+      "get": {
+        "operationId": "getFrameworkImpactPriorDispositions",
+        "summary": "getFrameworkImpactPriorDispositions",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "tags": [
+          "Framework Impact"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comparison_id",
+            "in": "path",
+            "required": true,
+            "description": "Exact opaque registered resource identity; paths, policy labels and finding IDs are not aliases.",
+            "schema": {
+              "$ref": "#/components/schemas/ResourceId"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/ReadCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded captured result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameworkImpactPriorDispositionPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ContainedReferenceRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
     }
   },
   "security": [
@@ -4868,6 +7638,14 @@
     {
       "description": "Self-contained, redacted static report export preparation and download. No remote publish.",
       "name": "Exports"
+    },
+    {
+      "name": "Lifecycle",
+      "description": "Read-only captured metadata with explicit dates, complete counts and bound provenance. Recorded actors and dispositions are asserted metadata, not authenticated human approval."
+    },
+    {
+      "name": "Framework Impact",
+      "description": "Read-only captured metadata with explicit dates, complete counts and bound provenance. Recorded actors and dispositions are asserted metadata, not authenticated human approval."
     }
   ]
 }
