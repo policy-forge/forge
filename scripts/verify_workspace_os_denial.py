@@ -17,7 +17,7 @@ import time
 import verify_workspace as shared
 
 sys.dont_write_bytecode = True
-SCHEMA = "forge.workspace-os-denial-verification/1"
+SCHEMA = "forge.workspace-os-denial-verification/2"
 NATIVE_SCHEMA = "forge.packaged-runtime-os-denial/1"
 SCOPE = "linux-headless-ip-network-denial-prerequisite"
 OUTPUT = "workspace-os-denial-verification.json"
@@ -42,6 +42,29 @@ PENDING = ("full-F04-Must-and-Should-acceptance", "runtime-attempted-egress-obse
     "browser-and-remaining-platform-matrix", "manual-assistive-technology-and-human-acceptance",
     "D069-accepted-source-audits", "release-qualification", "final-integrated-documentation-review")
 OUTER_FAILURES = FAILURES | frozenset(("build-not-qualified", "tracked-source-unclean", "tool-identity-changed", "verification-input-invalid"))
+# Fixed diagnostic vocabulary contains no filesystem names, arbitrary messages or raw observations.
+PATH_REASONS = ("missing", "not-absolute", "not-root-owned", "worker-writable", "unsupported-link",
+                "not-directory", "not-regular", "link-bound", "not-executable", "path-observation-unverified")
+COMMAND_REASONS = ("command-failed", "command-timeout", "output-bound", "command-cleanup-unverified")
+TOOL_PHASE_REASONS = {
+    "python-path": PATH_REASONS, "ip-path": PATH_REASONS, "sudo-path": PATH_REASONS,
+    "python-probe": COMMAND_REASONS + ("probe-json-invalid", "probe-shape-invalid", "version-invalid"),
+    "stdlib-roots": ("root-shape-invalid", "missing-root", "not-root-owned", "worker-writable", "unsupported-link",
+                     "not-directory", "not-regular", "dynload-missing", "path-observation-unverified"),
+    "stdlib-entry": ("not-root-owned", "worker-writable", "unsupported-link", "not-directory", "not-regular",
+                     "unsupported-kind", "entry-bound", "depth-bound", "byte-bound", "entry-observation-unverified"),
+    "ip-version": COMMAND_REASONS + ("version-invalid", "identity-observation-unverified"),
+    "sudo-version": COMMAND_REASONS + ("version-invalid", "identity-observation-unverified"),
+    "ordinary-tools": ("required-identity-missing", "identity-observation-unverified"),
+    "qualification-budget": ("deadline-expired",),
+}
+TOOL_DEFAULT_REASON = {"python-path": "path-observation-unverified", "ip-path": "path-observation-unverified",
+    "sudo-path": "path-observation-unverified", "python-probe": "command-failed",
+    "stdlib-roots": "path-observation-unverified", "stdlib-entry": "entry-observation-unverified",
+    "ip-version": "identity-observation-unverified", "sudo-version": "identity-observation-unverified",
+    "ordinary-tools": "identity-observation-unverified", "qualification-budget": "deadline-expired"}
+TOOL_COMMAND_PHASES = frozenset(("python-probe", "ip-version", "sudo-version"))
+TOOL_REASONS = frozenset(reason for reasons in TOOL_PHASE_REASONS.values() for reason in reasons)
 PROBE_ORDER = tuple((phase, family, role) for phase in ("before", "after")
     for family in ("ipv4", "ipv6") for role in ("calibration-external", "dut-external", "dut-loopback"))
 PYTHON_PROBE = ("import json,sys;print(json.dumps({'version':'.'.join(map(str,sys.version_info[:3])),"
@@ -67,13 +90,84 @@ sys.argv=[p,'--plan-stdin'];exec(compile(b,p,'exec'),{'__name__':'__main__','__f
 class GateError(ValueError):
     """Carry one fixed public phase failure without retaining arbitrary exception text or private paths."""
 
-    def __init__(self, code, incomplete=False):
-        """Retain only a known fixed code and whether execution had not yet created any resources."""
+    def __init__(self, code, incomplete=False, *, tool_reason=None, diagnostic=None):
+        """Keep the existing code/resource classification and optional fixed reason/closed diagnostic, never private text."""
         if code not in OUTER_FAILURES:
             raise ValueError("unknown failure code")
+        if tool_reason is not None and (type(tool_reason) is not str or tool_reason not in TOOL_REASONS):
+            raise ValueError("unknown tool reason")
         self.code = code
         self.incomplete = incomplete
+        self.tool_reason = tool_reason
+        self.diagnostic = validate_tool_diagnostic(diagnostic)
         super().__init__(code)
+
+
+def validate_tool_diagnostic(value):
+    """Accept null or one exact fixed phase/reason/status tuple; reject bools, unknown pairs and private fields."""
+    if value is None:
+        return None
+    if type(value) is not dict or set(value) != {"phase", "reason", "exit_code"}:
+        raise ValueError("invalid tool diagnostic")
+    phase, reason, code = value["phase"], value["reason"], value["exit_code"]
+    if type(phase) is not str or phase not in TOOL_PHASE_REASONS or type(reason) is not str or reason not in TOOL_PHASE_REASONS[phase]:
+        raise ValueError("invalid tool diagnostic pair")
+    if code is not None and (type(code) is not int or not -255 <= code <= 255):
+        raise ValueError("invalid tool diagnostic status")
+    if code is not None and phase not in TOOL_COMMAND_PHASES:
+        raise ValueError("status outside command phase")
+    if reason in ("probe-json-invalid", "probe-shape-invalid", "version-invalid") and code not in (None, 0):
+        raise ValueError("invalid parsed observation status")
+    return dict(value)
+
+
+def tool_diagnostic(phase, reason, exit_code=None):
+    """Construct a validated public tuple from authored constants and an optional actual child status."""
+    return validate_tool_diagnostic({"phase": phase, "reason": reason, "exit_code": exit_code})
+
+
+def observed_exit(value):
+    """Retain only a signed bounded exact integer; absent or malformed internal status is unobserved, never coerced."""
+    return value if type(value) is int and -255 <= value <= 255 else None
+
+
+def tool_step(phase, callback, *args, reason=None, exit_code=None):
+    """Call the unchanged adapter signature and attach a safe first qualification fault without changing its status code."""
+    if type(phase) is not str or phase not in TOOL_PHASE_REASONS or reason is not None and reason not in TOOL_PHASE_REASONS[phase]:
+        raise ValueError("invalid tool step")
+    try:
+        return callback(*args)
+    except GateError as error:
+        if error.diagnostic is None:
+            selected = error.tool_reason or reason or TOOL_DEFAULT_REASON[phase]
+            if selected not in TOOL_PHASE_REASONS[phase]:
+                selected = TOOL_DEFAULT_REASON[phase]
+            error.diagnostic = tool_diagnostic(phase, selected, observed_exit(exit_code))
+        raise
+    except Exception:
+        # These faults previously reached verify's generic failed/verification-input-invalid branch.
+        raise GateError("verification-input-invalid", diagnostic=tool_diagnostic(
+            phase, reason or TOOL_DEFAULT_REASON[phase], observed_exit(exit_code))) from None
+
+
+def tool_budget(deadline):
+    """Mark the existing absolute qualification expiry boundary without renewing it or dispatching new work."""
+    if time.monotonic() >= deadline:
+        raise GateError("command-timeout", True, diagnostic=tool_diagnostic("qualification-budget", "deadline-expired"))
+
+
+def command_diagnostic(phase, observation):
+    """Map existing command failures to fixed reasons while preserving the relevant observed return status only."""
+    reasons = {"command-timeout": "command-timeout", "output-bound": "output-bound",
+               "cleanup-unverified": "command-cleanup-unverified"}
+    return tool_diagnostic(phase, reasons.get(observation["failure"], "command-failed"),
+                           observed_exit(observation["exit_code"]))
+
+
+def retain_tool_diagnostic(receipt, error):
+    """Keep the first typed qualification diagnostic while later observations retain all original failure overrides."""
+    if receipt["diagnostic"] is None and isinstance(error, GateError) and error.diagnostic is not None:
+        receipt["diagnostic"] = validate_tool_diagnostic(error.diagnostic)
 
 
 def closed(value, keys):
@@ -169,17 +263,21 @@ def root_trusted(path, directory=False):
     """Require the canonical target and every ancestor to be root-owned and not worker-writable."""
     path = Path(path)
     if not path.is_absolute():
-        raise GateError("tool-untrusted")
+        raise GateError("tool-untrusted", tool_reason="not-absolute")
     item = path
     while True:
         info = item.lstat()
-        if info.st_uid != 0 or info.st_mode & 0o022 or stat.S_ISLNK(info.st_mode):
-            raise GateError("tool-untrusted")
+        if info.st_uid != 0:
+            raise GateError("tool-untrusted", tool_reason="not-root-owned")
+        if info.st_mode & 0o022:
+            raise GateError("tool-untrusted", tool_reason="worker-writable")
+        if stat.S_ISLNK(info.st_mode):
+            raise GateError("tool-untrusted", tool_reason="unsupported-link")
         if item == path:
             if directory and not stat.S_ISDIR(info.st_mode) or not directory and not stat.S_ISREG(info.st_mode):
-                raise GateError("tool-untrusted")
+                raise GateError("tool-untrusted", tool_reason="not-directory" if directory else "not-regular")
         elif not stat.S_ISDIR(info.st_mode):
-            raise GateError("tool-untrusted")
+            raise GateError("tool-untrusted", tool_reason="not-directory")
         if item.parent == item:
             break
         item = item.parent
@@ -190,28 +288,30 @@ def administration_tool(path):
     """Resolve only an already-present tool through root-trusted link ancestors, with no install or fallback."""
     path = Path(path)
     if not path.exists():
-        raise GateError("tool-unavailable", True)
+        raise GateError("tool-unavailable", True, tool_reason="missing")
     # A fixed executable symlink may resolve to another trusted root-owned file; directory trees do not follow links.
     link = path.lstat()
-    if link.st_uid != 0 or link.st_mode & 0o022 and not stat.S_ISLNK(link.st_mode):
-        raise GateError("tool-untrusted", True)
+    if link.st_uid != 0:
+        raise GateError("tool-untrusted", True, tool_reason="not-root-owned")
+    if link.st_mode & 0o022 and not stat.S_ISLNK(link.st_mode):
+        raise GateError("tool-untrusted", True, tool_reason="worker-writable")
     root_trusted(path.parent, True)
     current = path
     for _link in range(16):
         root_trusted(current.parent, True)
         info = current.lstat()
         if info.st_uid != 0:
-            raise GateError("tool-untrusted", True)
+            raise GateError("tool-untrusted", True, tool_reason="not-root-owned")
         if not stat.S_ISLNK(info.st_mode):
             break
         target = Path(os.readlink(current))
         current = target if target.is_absolute() else current.parent / target
     else:
-        raise GateError("tool-untrusted", True)
+        raise GateError("tool-untrusted", True, tool_reason="link-bound")
     actual = current.resolve(strict=True)
     root_trusted(actual)
     if not os.access(actual, os.X_OK):
-        raise GateError("tool-untrusted", True)
+        raise GateError("tool-untrusted", True, tool_reason="not-executable")
     return actual
 
 
@@ -316,19 +416,19 @@ def command(argv, root, deadline, input_bytes=None, privileged=False):
 def stdlib_inventory(paths, deadline):
     """Stream complete root-trusted stdlib roots with entry/depth/byte caps, rejecting unsupported links and special files."""
     if type(paths) is not list or not 2 <= len(paths) <= 8 or len(paths) != len(set(paths)) or any(type(path) is not str or not Path(path).is_absolute() for path in paths):
-        raise GateError("tool-untrusted", True)
+        raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-roots", "root-shape-invalid"))
     roots = []
     for value in paths:
         path = Path(value)
         if not path.exists():
             if path.suffix != ".zip":
-                raise GateError("tool-untrusted", True)
-            root_trusted(path.parent, True)
+                raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-roots", "missing-root"))
+            tool_step("stdlib-roots", root_trusted, path.parent, True)
             continue
-        root_trusted(path, True)
+        tool_step("stdlib-roots", root_trusted, path, True)
         roots.append(path)
     if len(roots) < 2 or not any(path.name == "lib-dynload" for path in roots):
-        raise GateError("tool-untrusted", True)
+        raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-roots", "dynload-missing"))
     rows = []
     count = 0
     total = 0
@@ -336,72 +436,79 @@ def stdlib_inventory(paths, deadline):
         """Cap every streamed directory entry before retaining it or recursing into another trusted directory."""
         nonlocal count, total
         if level > 32:
-            raise GateError("tool-untrusted", True)
-        root_trusted(directory, True)
+            raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "depth-bound"))
+        tool_step("stdlib-entry", root_trusted, directory, True)
         with os.scandir(directory) as entries:
             for entry in entries:
-                if time.monotonic() >= deadline:
-                    raise GateError("command-timeout", True)
+                tool_budget(deadline)
                 count += 1
                 if count > MAX_ENTRIES:
-                    raise GateError("tool-untrusted", True)
+                    raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "entry-bound"))
                 path = Path(entry.path)
                 info = entry.stat(follow_symlinks=False)
-                if info.st_uid != 0 or info.st_mode & 0o022 or stat.S_ISLNK(info.st_mode):
-                    raise GateError("tool-untrusted", True)
+                if info.st_uid != 0:
+                    raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "not-root-owned"))
+                if info.st_mode & 0o022:
+                    raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "worker-writable"))
+                if stat.S_ISLNK(info.st_mode):
+                    raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "unsupported-link"))
                 relative = path.relative_to(root).as_posix()
                 if stat.S_ISDIR(info.st_mode):
                     rows.append([index, relative, "directory", info.st_mode & 0o7777, None])
-                    visit(root, path, level + 1, index)
+                    tool_step("stdlib-entry", visit, root, path, level + 1, index)
                 elif stat.S_ISREG(info.st_mode):
                     total += info.st_size
                     if total > MAX_STDLIB_BYTES:
-                        raise GateError("tool-untrusted", True)
+                        raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "byte-bound"))
                     rows.append([index, relative, "file", info.st_mode & 0o7777, shared.hash_file(path)])
                 else:
-                    raise GateError("tool-untrusted", True)
+                    raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "unsupported-kind"))
     for index, root in enumerate(roots):
-        visit(root, root, 0, index)
+        tool_step("stdlib-entry", visit, root, root, 0, index)
     if count == 0:
-        raise GateError("tool-untrusted", True)
+        raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "entry-observation-unverified"))
     return {"pin": pin_bytes(shared.canonical_bytes(sorted(rows))), "entries": count}
+
+
+def capture_tool_version(name, executable, root, deadline):
+    """Keep the existing fixed command, regex and hash gate, with status-bound diagnostics for that component only."""
+    phase = name + "-version"
+    observed = tool_step(phase, command, [str(executable), "-V" if name == "ip" else "--version"], root, min(deadline, time.monotonic() + 10))
+    pattern = rb"ip utility, iproute2-([0-9]+(?:\.[0-9]+){1,2}(?:-[A-Za-z0-9.]+)?)(?:, [A-Za-z0-9., -]+)?" if name == "ip" else rb"Sudo version ([0-9]+(?:\.[0-9]+){1,2}(?:p[0-9]+)?)"
+    line = observed["output"].split(b"\n", 1)[0]
+    match = re.fullmatch(pattern, line)
+    if observed["failure"] is not None or observed["exit_code"] != 0 or match is None:
+        diagnostic = command_diagnostic(phase, observed) if observed["failure"] is not None or observed["exit_code"] != 0 else tool_diagnostic(phase, "version-invalid", observed_exit(observed["exit_code"]))
+        raise GateError("tool-unavailable", True, diagnostic=diagnostic)
+    return {"pin": tool_step(phase, shared.hash_file, executable), "version": match[1].decode("ascii"), "root_trust": True}
 
 
 def capture_tools(root, deadline):
     """Qualify only existing Linux tools and complete trusted distro stdlib; setup-Python is separate ordinary evidence."""
-    if time.monotonic() >= deadline:
-        raise GateError("command-timeout", True)
+    tool_budget(deadline)
     if sys.platform != "linux" or os.uname().machine != "x86_64":
         raise GateError("unsupported-platform", True)
     if os.getuid() == 0 or os.geteuid() != os.getuid() or os.getegid() != os.getgid():
         raise GateError("privilege-unavailable", True)
-    python = administration_tool(Path("/usr/bin/python3"))
-    resolved = {name: administration_tool(Path(shutil.which(name) or "/nonexistent/" + name)) for name in ("ip", "sudo")}
-    observed = command([str(python), "-I", "-S", "-B", "-c", PYTHON_PROBE], root, min(deadline, time.monotonic() + 10))
+    python = tool_step("python-path", administration_tool, Path("/usr/bin/python3"))
+    resolved = {name: tool_step(name + "-path", administration_tool, Path(shutil.which(name) or "/nonexistent/" + name)) for name in ("ip", "sudo")}
+    observed = tool_step("python-probe", command, [str(python), "-I", "-S", "-B", "-c", PYTHON_PROBE], root, min(deadline, time.monotonic() + 10))
     if observed["failure"] is not None or observed["exit_code"] != 0:
-        raise GateError("tool-unavailable", True)
-    observation = strict_json(observed["output"])
-    closed(observation, ("version", "paths"))
+        raise GateError("tool-unavailable", True, diagnostic=command_diagnostic("python-probe", observed))
+    observation = tool_step("python-probe", strict_json, observed["output"], reason="probe-json-invalid", exit_code=observed["exit_code"])
+    tool_step("python-probe", closed, observation, ("version", "paths"), reason="probe-shape-invalid", exit_code=observed["exit_code"])
     if type(observation["version"]) is not str or not re.fullmatch(r"3\.[0-9]{1,2}\.[0-9]{1,3}", observation["version"]) or tuple(map(int, observation["version"].split("."))) < (3, 11, 0):
-        raise GateError("tool-untrusted", True)
-    inventory = stdlib_inventory(observation["paths"], deadline)
-    if time.monotonic() >= deadline:
-        raise GateError("command-timeout", True)
-    tools = {"ordinary": shared.tool_versions(root, max(0.1, min(10, deadline - time.monotonic()))),
-        "privileged_python": {"pin": shared.hash_file(python), "version": observation["version"], "root_trust": True,
+        raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("python-probe", "version-invalid", observed_exit(observed["exit_code"])))
+    inventory = tool_step("stdlib-roots", stdlib_inventory, observation["paths"], deadline)
+    tool_budget(deadline)
+    tools = {"ordinary": tool_step("ordinary-tools", shared.tool_versions, root, max(0.1, min(10, deadline - time.monotonic()))),
+        "privileged_python": {"pin": tool_step("python-path", shared.hash_file, python), "version": observation["version"], "root_trust": True,
             "stdlib_pin": inventory["pin"], "stdlib_entries": inventory["entries"]}}
     for name, executable in resolved.items():
-        observed = command([str(executable), "-V" if name == "ip" else "--version"], root, min(deadline, time.monotonic() + 10))
-        pattern = rb"ip utility, iproute2-([0-9]+(?:\.[0-9]+){1,2}(?:-[A-Za-z0-9.]+)?)(?:, [A-Za-z0-9., -]+)?" if name == "ip" else rb"Sudo version ([0-9]+(?:\.[0-9]+){1,2}(?:p[0-9]+)?)"
-        line = observed["output"].split(b"\n", 1)[0]
-        match = re.fullmatch(pattern, line)
-        if observed["failure"] is not None or observed["exit_code"] != 0 or match is None:
-            raise GateError("tool-unavailable", True)
-        tools[name] = {"pin": shared.hash_file(executable), "version": match[1].decode("ascii"), "root_trust": True}
+        tools[name] = tool_step(name + "-version", capture_tool_version, name, executable, root, deadline)
     if any(tools["ordinary"].get(name) is None for name in ("cargo", "rustc", "rust_host")):
-        raise GateError("tool-unavailable", True)
-    if time.monotonic() >= deadline:
-        raise GateError("command-timeout", True)
+        raise GateError("tool-unavailable", True, diagnostic=tool_diagnostic("ordinary-tools", "required-identity-missing"))
+    tool_budget(deadline)
     return tools, {"python": python, **resolved}
 
 
@@ -558,7 +665,7 @@ def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecor
     os.chmod(destination, 0o700)
     deadline = time.monotonic() + 600
     receipt = {"schema_version": SCHEMA, "scope": SCOPE, "truth_state": "synthetic-development", "acceptance_eligible": False,
-        "status": "failed", "failure": "execution-unverified", "identity": None, "checkout": None, "tools": None,
+        "status": "failed", "failure": "execution-unverified", "diagnostic": None, "identity": None, "checkout": None, "tools": None,
         "build": {"outcome": build_outcome, "profile": "release", "features": "default", "locked": True, "offline": True, "binding": "workflow-step-assertion"},
         "input_stability": "unverified", "tool_stability": "unverified",
         "producer": {"status": "not-run", "exit_code": None, "failure": None, "receipt": None, "receipt_pin": None},
@@ -593,8 +700,10 @@ def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecor
         elif producer["status"] == "passed":
             raise GateError("execution-unverified")
     except GateError as error:
+        retain_tool_diagnostic(receipt, error)
         receipt.update(status="incomplete" if error.incomplete and not dispatched else "failed", failure=error.code)
-    except Exception:
+    except Exception as error:
+        retain_tool_diagnostic(receipt, error)
         receipt.update(status="failed", failure="verification-input-invalid")
     try:
         after = capture_identity(root, forge, max(0.1, min(30, deadline - time.monotonic())))
@@ -608,7 +717,8 @@ def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecor
             receipt.update(status="failed", failure="tool-identity-changed")
         if receipt["status"] == "passed" and (not dispatched or receipt["producer"]["status"] != "passed" or receipt["cleanup"] != {"state": "verified", "forced": False} or receipt["input_stability"] != "unchanged" or receipt["tool_stability"] != "unchanged"):
             receipt.update(status="failed", failure="execution-unverified")
-    except Exception:
+    except Exception as error:
+        retain_tool_diagnostic(receipt, error)
         receipt.update(status="failed", failure="verification-input-invalid")
     if len(shared.canonical_bytes(receipt)) > MAX_CAPTURE:
         raise ValueError("outer bound")

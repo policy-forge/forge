@@ -4,6 +4,7 @@
 These controls call real controller, reader and publication bodies. Native
 operations are replaced explicitly; successful mocks do not calibrate a network.
 """
+import contextlib
 import copy
 import ctypes
 import errno
@@ -14,6 +15,7 @@ import os
 from pathlib import Path
 import select
 import signal
+import stat
 import sys
 import tempfile
 import time
@@ -1320,6 +1322,403 @@ class WrapperCommandCleanupControls(unittest.TestCase):
         self.assertEqual(closes["stdout"], 1)
         self.assertEqual(closes["stderr"], 1)
         self.assertFalse(child.killed)
+
+
+class ToolDiagnosticControls(unittest.TestCase):
+    """Exercise real ordinary-wrapper qualification seams with synthetic metadata and no native/tool execution."""
+
+    def phase_pairs(self):
+        """Supply independent closed vocabulary expectations rather than deriving expected pairs from the candidate."""
+        paths=("missing","not-absolute","not-root-owned","worker-writable","unsupported-link","not-directory","not-regular","link-bound","not-executable","path-observation-unverified")
+        commands=("command-failed","command-timeout","output-bound","command-cleanup-unverified")
+        return {"python-path":paths,"ip-path":paths,"sudo-path":paths,
+            "python-probe":commands+("probe-json-invalid","probe-shape-invalid","version-invalid"),
+            "stdlib-roots":("root-shape-invalid","missing-root","not-root-owned","worker-writable","unsupported-link","not-directory","not-regular","dynload-missing","path-observation-unverified"),
+            "stdlib-entry":("not-root-owned","worker-writable","unsupported-link","not-directory","not-regular","unsupported-kind","entry-bound","depth-bound","byte-bound","entry-observation-unverified"),
+            "ip-version":commands+("version-invalid","identity-observation-unverified"),
+            "sudo-version":commands+("version-invalid","identity-observation-unverified"),
+            "ordinary-tools":("required-identity-missing","identity-observation-unverified"),
+            "qualification-budget":("deadline-expired",)}
+
+    def failed_step(self, phase, callback, *args, **kwargs):
+        """Call the actual fixed-component adapter and return its typed failure for exact consequence assertions."""
+        with self.assertRaises(wrapper.GateError) as caught:
+            wrapper.tool_step(phase,callback,*args,**kwargs)
+        return caught.exception
+
+    @contextlib.contextmanager
+    def capture_context(self, *, observations=None, path_fault=None, inventory_fault=None,
+                        ordinary=None, hash_fault=None, clock=0):
+        """Replace every ordinary executable/identity observation while retaining actual qualification control flow."""
+        pin=plan()["release_pin"]
+        if observations is None:
+            observations=[{"exit_code":0,"failure":None,"output":wrapper.shared.canonical_bytes({"version":"3.11.9","paths":["/mock/stdlib","/mock/stdlib/lib-dynload"]})},
+                {"exit_code":0,"failure":None,"output":b"ip utility, iproute2-6.17.0\n"},
+                {"exit_code":0,"failure":None,"output":b"Sudo version 1.9.15p5\n"}]
+        if ordinary is None:ordinary={"cargo":"1.99.0","rustc":"1.99.0","rust_host":"x86_64-unknown-linux-gnu"}
+        def path_check(path):
+            """Return a synthetic existing executable or fail only the explicitly selected component."""
+            component="python" if path.name=="python3" else path.name
+            if path_fault is not None and component==path_fault[0]:raise path_fault[1]
+            return path
+        with contextlib.ExitStack() as stack:
+            for target,name,value in ((wrapper.sys,"platform","linux"),(wrapper.os,"uname",types.SimpleNamespace(machine="x86_64")),
+                                      (wrapper.os,"getuid",1001),(wrapper.os,"geteuid",1001),(wrapper.os,"getgid",1001),(wrapper.os,"getegid",1001)):
+                stack.enter_context(mock.patch.object(target,name,return_value=value) if name!="platform" else mock.patch.object(target,name,value))
+            stack.enter_context(mock.patch.object(wrapper.time,"monotonic",side_effect=clock if callable(clock) else None,return_value=clock if not callable(clock) else None))
+            stack.enter_context(mock.patch.object(wrapper.shutil,"which",side_effect=lambda name:"/mock/"+name))
+            paths=stack.enter_context(mock.patch.object(wrapper,"administration_tool",side_effect=path_check))
+            command=stack.enter_context(mock.patch.object(wrapper,"command",side_effect=observations))
+            inventory=stack.enter_context(mock.patch.object(wrapper,"stdlib_inventory",side_effect=inventory_fault,return_value={"pin":pin,"entries":10}))
+            ordinary_call=stack.enter_context(mock.patch.object(wrapper.shared,"tool_versions",return_value=ordinary))
+            hashed=stack.enter_context(mock.patch.object(wrapper.shared,"hash_file",side_effect=hash_fault,return_value=pin))
+            yield {"command":command,"paths":paths,"inventory":inventory,"ordinary":ordinary_call,"hash":hashed}
+
+    @contextlib.contextmanager
+    def inventory_context(self, entries, *, max_entries=None, max_bytes=None, scandir_fault=None):
+        """Supply actual traversal code with qualified synthetic roots and explicit fake directory entries only."""
+        def scan(path):
+            """Expose one root inventory and an empty dynload directory without scanning the host."""
+            if scandir_fault is not None:raise scandir_fault
+            return contextlib.nullcontext(iter(entries if path==Path("/mock/stdlib") else []))
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(wrapper.Path,"exists",return_value=True))
+            stack.enter_context(mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path))
+            stack.enter_context(mock.patch.object(wrapper.time,"monotonic",return_value=0))
+            scanned=stack.enter_context(mock.patch.object(wrapper.os,"scandir",side_effect=scan))
+            hashed=stack.enter_context(mock.patch.object(wrapper.shared,"hash_file",return_value=plan()["release_pin"]))
+            if max_entries is not None:stack.enter_context(mock.patch.object(wrapper,"MAX_ENTRIES",max_entries))
+            if max_bytes is not None:stack.enter_context(mock.patch.object(wrapper,"MAX_STDLIB_BYTES",max_bytes))
+            yield scanned,hashed
+
+    def verify_faults(self, *, first_fault=None, after_identity_fault=None, after_tool_fault=None, build="success"):
+        """Publish actual ordinary-wrapper bytes using only independent synthetic identity/tool/native adapters."""
+        identity={"tracked_source_clean":True,"mock":"stable"}
+        producer={"status":"passed","failure":None,"exit_code":0,"receipt":{"cleanup":{"state":"verified","forced":False}},"receipt_pin":None}
+        tools={"mock":"stable"};identities=[identity,after_identity_fault or dict(identity)]
+        captures=first_fault if first_fault is not None else [(tools,{}),after_tool_fault if after_tool_fault is not None else (dict(tools),{})]
+        with tempfile.TemporaryDirectory() as private, mock.patch.object(wrapper,"capture_identity",side_effect=identities), \
+             mock.patch.object(wrapper.shared,"checkout_binding",return_value={}),mock.patch.object(wrapper.sys,"platform","linux"), \
+             mock.patch.object(wrapper,"capture_tools",side_effect=captures) as capture,mock.patch.object(wrapper,"native_run",return_value=producer) as native_run:
+            output=Path(private)/"output"
+            value=wrapper.verify(Path(private),Path(private)/"forge",output,build_outcome=build)
+            raw=(output/wrapper.OUTPUT).read_bytes()
+            self.assertEqual(raw,wrapper.shared.canonical_bytes(value))
+        return value,raw,capture,native_run
+
+    def test_all_fixed_diagnostic_pairs_are_closed_copied_and_nullable(self):
+        """Validate every independently enumerated pair and keep public output to exactly three fixed fields."""
+        expected=self.phase_pairs();self.assertEqual(wrapper.TOOL_PHASE_REASONS,expected);self.assertEqual(len(expected),10)
+        self.assertIsNone(wrapper.validate_tool_diagnostic(None))
+        for phase,reasons in expected.items():
+            for reason in reasons:
+                original={"phase":phase,"reason":reason,"exit_code":None}
+                value=wrapper.validate_tool_diagnostic(original)
+                self.assertEqual(value,original);self.assertIsNot(value,original)
+                self.assertEqual(wrapper.tool_diagnostic(phase,reason),value)
+                original["reason"]="PRIVATE exception path"
+                self.assertEqual(value,{"phase":phase,"reason":reason,"exit_code":None})
+
+    def test_diagnostic_refuses_open_fields_wrong_pairs_bool_and_status_coercion(self):
+        """Reject private fields and unknown stage/reason/type combinations instead of coercing hostile metadata."""
+        base={"phase":"python-probe","reason":"command-failed","exit_code":None}
+        for field,value in (("phase","PRIVATE"),("phase",True),("reason","missing"),("reason",[]),("exit_code",True),("exit_code",1.0),("exit_code",-256),("exit_code",256),("private","PRIVATE")):
+            record=dict(base);record[field]=value
+            with self.subTest(field=field),self.assertRaises(ValueError):wrapper.validate_tool_diagnostic(record)
+        for field in base:
+            record=dict(base);del record[field]
+            with self.subTest(missing=field),self.assertRaises(ValueError):wrapper.validate_tool_diagnostic(record)
+        for value in (False,[],"PRIVATE",1):
+            with self.assertRaises(ValueError):wrapper.validate_tool_diagnostic(value)
+        for phase,reasons in self.phase_pairs().items():
+            if phase not in {"python-probe","ip-version","sudo-version"}:
+                with self.assertRaises(ValueError):wrapper.tool_diagnostic(phase,reasons[0],0)
+
+    def test_command_status_bounds_and_parsed_zero_status_are_distinct(self):
+        """Only actual bounded exact command statuses survive; parsed-output faults cannot claim nonzero status."""
+        for phase in ("python-probe","ip-version","sudo-version"):
+            for code in (-255,-9,0,1,255):
+                self.assertEqual(wrapper.tool_diagnostic(phase,"command-failed",code)["exit_code"],code)
+            for code in (None,False,True,1.0,-256,256):self.assertIsNone(wrapper.observed_exit(code))
+            for reason in (("probe-json-invalid","probe-shape-invalid","version-invalid") if phase=="python-probe" else ("version-invalid",)):
+                self.assertIsNone(wrapper.tool_diagnostic(phase,reason)["exit_code"])
+                self.assertEqual(wrapper.tool_diagnostic(phase,reason,0)["exit_code"],0)
+                for code in (-9,1):
+                    with self.assertRaises(ValueError):wrapper.tool_diagnostic(phase,reason,code)
+
+    def test_duplicate_nonfinite_nested_diagnostic_json_never_becomes_safe_fact(self):
+        """Apply the actual strict parser before typed validation so duplicate/nonfinite public fields cannot be selected."""
+        for raw in (b'{"diagnostic":{"phase":"python-probe","phase":"ip-version","reason":"command-failed","exit_code":1}}',
+                    b'{"diagnostic":{"phase":"python-probe","reason":"command-failed","exit_code":NaN}}'):
+            with self.assertRaises(ValueError):wrapper.strict_json(raw)
+        raw=wrapper.shared.canonical_bytes({"diagnostic":{"phase":"python-probe","reason":"command-failed","exit_code":1,"private":"PRIVATE"}})
+        with self.assertRaises(ValueError):wrapper.validate_tool_diagnostic(wrapper.strict_json(raw)["diagnostic"])
+
+    def test_gate_error_and_successful_step_keep_existing_callback_contract(self):
+        """The original two-argument error and unchanged callback signature stay usable without diagnostics or dispatch."""
+        error=wrapper.GateError("tool-unavailable",True)
+        self.assertEqual((error.code,error.incomplete,str(error)),("tool-unavailable",True,"tool-unavailable"))
+        self.assertIsNone(error.diagnostic);self.assertIsNone(error.tool_reason)
+        marker=object();callback=mock.Mock(return_value=marker)
+        self.assertIs(wrapper.tool_step("python-path",callback,1,2),marker);callback.assert_called_once_with(1,2)
+        for phase,reason in (("PRIVATE",None),("python-path","version-invalid")):
+            callback.reset_mock()
+            with self.assertRaises(ValueError):wrapper.tool_step(phase,callback,reason=reason)
+            callback.assert_not_called()
+
+    def test_typed_step_retains_error_identity_status_and_first_component(self):
+        """An attached first fault survives nested qualification while mismatched internal reasons use fixed defaults."""
+        error=wrapper.GateError("tool-untrusted",True,tool_reason="not-root-owned")
+        callback=mock.Mock(side_effect=error);caught=self.failed_step("python-path",callback,Path("/mock/tool"))
+        self.assertIs(caught,error);self.assertEqual((caught.code,caught.incomplete),("tool-untrusted",True))
+        self.assertEqual(caught.diagnostic,{"phase":"python-path","reason":"not-root-owned","exit_code":None})
+        caught=self.failed_step("ordinary-tools",mock.Mock(side_effect=error))
+        self.assertEqual(caught.diagnostic,{"phase":"python-path","reason":"not-root-owned","exit_code":None})
+        wrong=wrapper.GateError("tool-untrusted",True,tool_reason="byte-bound")
+        self.assertEqual(self.failed_step("sudo-path",mock.Mock(side_effect=wrong)).diagnostic,{"phase":"sudo-path","reason":"path-observation-unverified","exit_code":None})
+
+    def test_unknown_step_faults_stay_failed_and_redacted(self):
+        """Unclassified callback faults keep generic failed classification and never leak exception text or chains."""
+        for phase in self.phase_pairs():
+            error=self.failed_step(phase,mock.Mock(side_effect=RuntimeError("PRIVATE path token credential")))
+            self.assertEqual(error.code,"verification-input-invalid");self.assertFalse(error.incomplete)
+            self.assertEqual(error.diagnostic["phase"],phase);self.assertIsNone(error.diagnostic["exit_code"])
+            self.assertNotIn("PRIVATE",str(error));self.assertNotIn(b"PRIVATE",wrapper.shared.canonical_bytes(error.diagnostic))
+            self.assertTrue(error.__suppress_context__)
+
+    def test_actual_root_trust_predicates_keep_fixed_priority(self):
+        """Exercise original root/mode/link/kind gates through synthetic lstat records without reading host ownership."""
+        good=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFREG|0o755)
+        directory=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFDIR|0o755)
+        cases=((types.SimpleNamespace(st_uid=1001,st_mode=stat.S_IFLNK|0o777),False,"not-root-owned"),
+               (types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFLNK|0o777),False,"worker-writable"),
+               (types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFLNK|0o755),False,"unsupported-link"),
+               (good,True,"not-directory"),(directory,False,"not-regular"))
+        for info,wants_directory,reason in cases:
+            with mock.patch.object(wrapper.Path,"lstat",return_value=info):
+                error=self.failed_step("python-path",wrapper.root_trusted,Path("/mock/tool"),wants_directory)
+            self.assertEqual(error.diagnostic,{"phase":"python-path","reason":reason,"exit_code":None});self.assertEqual(error.code,"tool-untrusted");self.assertFalse(error.incomplete)
+        with mock.patch.object(wrapper.Path,"lstat") as observed:
+            error=self.failed_step("ip-path",wrapper.root_trusted,Path("relative"))
+        observed.assert_not_called();self.assertEqual(error.diagnostic["reason"],"not-absolute")
+        with mock.patch.object(wrapper.Path,"lstat",side_effect=[good,directory,directory]):
+            self.assertEqual(wrapper.root_trusted(Path("/mock/tool")),Path("/mock/tool"))
+
+    def test_actual_administration_missing_owner_mode_and_exec_gates(self):
+        """Component diagnostics preserve already-present executable trust failures and abstain from running tools."""
+        good=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFREG|0o755)
+        cases=((False,good,True,"missing","tool-unavailable"),(True,types.SimpleNamespace(st_uid=1001,st_mode=stat.S_IFREG|0o755),True,"not-root-owned","tool-untrusted"),
+               (True,types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFREG|0o777),True,"worker-writable","tool-untrusted"),(True,good,False,"not-executable","tool-untrusted"))
+        for exists,info,executable,reason,code in cases:
+            with mock.patch.object(wrapper.Path,"exists",return_value=exists),mock.patch.object(wrapper.Path,"lstat",return_value=info), \
+                 mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path),mock.patch.object(wrapper.Path,"resolve",return_value=Path("/mock/tool")),mock.patch.object(wrapper.os,"access",return_value=executable):
+                error=self.failed_step("sudo-path",wrapper.administration_tool,Path("/mock/tool"))
+            self.assertEqual(error.code,code);self.assertTrue(error.incomplete);self.assertEqual(error.diagnostic,{"phase":"sudo-path","reason":reason,"exit_code":None})
+
+    def test_actual_administration_link_bound_and_observation_failure(self):
+        """Resolve at most the fixed link bound and classify unreadable metadata without exposing a path."""
+        link=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFLNK|0o777)
+        with mock.patch.object(wrapper.Path,"exists",return_value=True),mock.patch.object(wrapper.Path,"lstat",return_value=link), \
+             mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path),mock.patch.object(wrapper.os,"readlink",return_value="/mock/tool") as readlink,mock.patch.object(wrapper.os,"access") as access:
+            error=self.failed_step("ip-path",wrapper.administration_tool,Path("/mock/tool"))
+        self.assertEqual(readlink.call_count,16);access.assert_not_called();self.assertEqual(error.diagnostic["reason"],"link-bound")
+        with mock.patch.object(wrapper.Path,"exists",side_effect=OSError("PRIVATE path")):
+            error=self.failed_step("python-path",wrapper.administration_tool,Path("/mock/tool"))
+        self.assertEqual(error.code,"verification-input-invalid");self.assertFalse(error.incomplete);self.assertEqual(error.diagnostic["reason"],"path-observation-unverified")
+
+    def test_actual_capture_paths_stop_before_probe_and_native_dispatch(self):
+        """All three caller-selected executable phases remain distinct and fail before later command observations."""
+        for component in ("python","ip","sudo"):
+            error=wrapper.GateError("tool-untrusted",True,tool_reason="not-root-owned")
+            with self.capture_context(path_fault=(component,error)) as calls:
+                with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),100)
+                calls["command"].assert_not_called();calls["inventory"].assert_not_called();calls["ordinary"].assert_not_called()
+            self.assertEqual(caught.exception.diagnostic,{"phase":component+"-path","reason":"not-root-owned","exit_code":None})
+
+    def test_actual_capture_probe_malformed_shape_and_version_zero_status(self):
+        """Successful command status cannot qualify invalid JSON/keys/version and each unchanged rejection stays typed."""
+        cases=((b'PRIVATE',"probe-json-invalid","verification-input-invalid",False),
+               (b'{"version":"3.11.9","version":"3.11.9","paths":[]}',"probe-json-invalid","execution-unverified",False),
+               (b'{"version":"3.11.9","paths":NaN}',"probe-json-invalid","execution-unverified",False),
+               (b'{"version":"3.11.9","paths":[],"private":"PRIVATE"}',"probe-shape-invalid","execution-unverified",False),
+               (wrapper.shared.canonical_bytes({"version":"3.10.9","paths":[]}),"version-invalid","tool-untrusted",True))
+        for raw,reason,code,incomplete in cases:
+            with self.capture_context(observations=[{"exit_code":0,"failure":None,"output":raw}]) as calls:
+                with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),100)
+                calls["inventory"].assert_not_called();calls["ordinary"].assert_not_called()
+            self.assertEqual((caught.exception.code,caught.exception.incomplete),(code,incomplete))
+            self.assertEqual(caught.exception.diagnostic,{"phase":"python-probe","reason":reason,"exit_code":0})
+            self.assertNotIn(b"PRIVATE",wrapper.shared.canonical_bytes(caught.exception.diagnostic))
+
+    def test_actual_python_probe_selector_failure_never_claims_json_observation(self):
+        """A real command adapter failure before spawn/parse retains generic failure and a null observed status."""
+        actual_command = wrapper.command
+        with self.capture_context() as calls, \
+             mock.patch.object(wrapper.selectors, "DefaultSelector", side_effect=RuntimeError("PRIVATE selector path")) as selector, \
+             mock.patch.object(wrapper.subprocess, "Popen") as spawn, \
+             mock.patch.object(wrapper, "strict_json") as parse, \
+             mock.patch.object(wrapper, "native_run") as native_run:
+            calls["command"].side_effect = actual_command
+            with self.assertRaises(wrapper.GateError) as caught:
+                wrapper.capture_tools(Path("/mock"), 100)
+            selector.assert_called_once_with()
+            spawn.assert_not_called()
+            parse.assert_not_called()
+            native_run.assert_not_called()
+            calls["inventory"].assert_not_called()
+            calls["ordinary"].assert_not_called()
+            self.assertEqual(calls["command"].call_count, 1)
+        self.assertEqual((caught.exception.code, caught.exception.incomplete), ("verification-input-invalid", False))
+        self.assertEqual(caught.exception.diagnostic, {"phase": "python-probe", "reason": "command-failed", "exit_code": None})
+        self.assertNotIn(b"PRIVATE", wrapper.shared.canonical_bytes(caught.exception.diagnostic))
+        self.assertTrue(caught.exception.__suppress_context__)
+
+    def test_actual_version_commands_keep_exit_failure_and_stdout_binding(self):
+        """Both fixed version commands retain actual nonzero/timeout/bound/cleanup facts without publishing output."""
+        for name,flag in (("ip","-V"),("sudo","--version")):
+            for failure,code,reason in ((None,-9,"command-failed"),("command-timeout",None,"command-timeout"),("output-bound",0,"output-bound"),("cleanup-unverified",0,"command-cleanup-unverified")):
+                with mock.patch.object(wrapper,"command",return_value={"failure":failure,"exit_code":code,"output":b"PRIVATE path credential"}) as command,mock.patch.object(wrapper.time,"monotonic",return_value=0),mock.patch.object(wrapper.shared,"hash_file") as hashed:
+                    with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tool_version(name,Path("/mock/"+name),Path("/mock"),100)
+                self.assertEqual(command.call_args.args[0],["/mock/"+name,flag]);hashed.assert_not_called()
+                self.assertEqual(caught.exception.diagnostic,{"phase":name+"-version","reason":reason,"exit_code":code})
+                self.assertEqual((caught.exception.code,caught.exception.incomplete),("tool-unavailable",True))
+                self.assertNotIn(b"PRIVATE",wrapper.shared.canonical_bytes(caught.exception.diagnostic))
+            with mock.patch.object(wrapper,"command",return_value={"failure":None,"exit_code":0,"output":b"PRIVATE"}),mock.patch.object(wrapper.time,"monotonic",return_value=0):
+                with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tool_version(name,Path("/mock/"+name),Path("/mock"),100)
+            self.assertEqual(caught.exception.diagnostic,{"phase":name+"-version","reason":"version-invalid","exit_code":0})
+
+    def test_actual_capture_command_faults_include_python_probe_actual_status(self):
+        """The initial Python command independently retains all four allowlisted lifecycle/output failures."""
+        for failure,code,reason in ((None,-9,"command-failed"),("command-timeout",None,"command-timeout"),("output-bound",0,"output-bound"),("cleanup-unverified",0,"command-cleanup-unverified")):
+            with self.capture_context(observations=[{"failure":failure,"exit_code":code,"output":b"PRIVATE"}]) as calls:
+                with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),100)
+                calls["inventory"].assert_not_called();calls["ordinary"].assert_not_called()
+            self.assertEqual(caught.exception.diagnostic,{"phase":"python-probe","reason":reason,"exit_code":code})
+
+    def test_actual_stdlib_root_shape_missing_dynload_and_owner_faults(self):
+        """Root inventories preserve exact shape/existence/dynload/trust predicates without scanning host directories."""
+        for paths in (None,[],["/mock/a"],["relative","/mock/lib-dynload"],["/mock/a","/mock/a"]):
+            with mock.patch.object(wrapper.Path,"exists") as exists:
+                with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(paths,100)
+            exists.assert_not_called();self.assertEqual(caught.exception.diagnostic["reason"],"root-shape-invalid")
+        with mock.patch.object(wrapper.Path,"exists",return_value=False):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/a","/mock/lib-dynload"],100)
+        self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-roots","reason":"missing-root","exit_code":None})
+        with mock.patch.object(wrapper.Path,"exists",return_value=True),mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path),mock.patch.object(wrapper.os,"scandir") as scan:
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/a","/mock/b"],100)
+        scan.assert_not_called();self.assertEqual(caught.exception.diagnostic["reason"],"dynload-missing")
+        with mock.patch.object(wrapper.Path,"exists",return_value=True),mock.patch.object(wrapper,"root_trusted",side_effect=wrapper.GateError("tool-untrusted",tool_reason="not-root-owned")):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/a","/mock/lib-dynload"],100)
+        self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-roots","reason":"not-root-owned","exit_code":None})
+
+    def test_actual_stdlib_entry_predicates_keep_owner_mode_link_kind_priority(self):
+        """Apply real streamed entry checks to synthetic metadata and forbid hashing unqualified private paths."""
+        cases=((1001,stat.S_IFLNK|0o777,"not-root-owned"),(0,stat.S_IFLNK|0o777,"worker-writable"),
+               (0,stat.S_IFLNK|0o755,"unsupported-link"),(0,stat.S_IFIFO|0o600,"unsupported-kind"))
+        for uid,mode,reason in cases:
+            entry=types.SimpleNamespace(path="/mock/stdlib/private.py",stat=mock.Mock(return_value=types.SimpleNamespace(st_uid=uid,st_mode=mode,st_size=1)))
+            with self.inventory_context([entry]) as (scan,hashed):
+                with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
+            hashed.assert_not_called();entry.stat.assert_called_once_with(follow_symlinks=False)
+            self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":reason,"exit_code":None});self.assertTrue(caught.exception.incomplete)
+
+    def test_actual_stdlib_entry_and_byte_bounds_stop_before_hashing(self):
+        """Both configured bounds fail before retaining an over-limit file hash or claiming a qualified inventory."""
+        entry=types.SimpleNamespace(path="/mock/stdlib/private.py",stat=mock.Mock(return_value=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFREG|0o644,st_size=64)))
+        with self.inventory_context([entry],max_entries=0) as (scan,hashed):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
+        entry.stat.assert_not_called();hashed.assert_not_called();self.assertEqual(caught.exception.diagnostic["reason"],"entry-bound")
+        with self.inventory_context([entry],max_bytes=63) as (scan,hashed):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
+        hashed.assert_not_called();self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":"byte-bound","exit_code":None})
+
+    def test_actual_stdlib_depth_and_visibility_faults_are_bounded_redacted(self):
+        """Bound synthetic deep recursion and retain unknown directory observations as failed/unverified metadata."""
+        def scan(directory):
+            """Create only one synthetic descendant per level to reach the exact fixed depth rejection."""
+            entry=types.SimpleNamespace(path=str(directory/"deeper"),stat=mock.Mock(return_value=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFDIR|0o755,st_size=0)))
+            return contextlib.nullcontext(iter([entry]))
+        with mock.patch.object(wrapper.Path,"exists",return_value=True),mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path), \
+             mock.patch.object(wrapper.os,"scandir",side_effect=scan) as scanned,mock.patch.object(wrapper.time,"monotonic",return_value=0):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
+        self.assertEqual(scanned.call_count,33);self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":"depth-bound","exit_code":None})
+        with self.inventory_context([],scandir_fault=OSError("PRIVATE directory entry")):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
+        self.assertEqual(caught.exception.code,"verification-input-invalid");self.assertFalse(caught.exception.incomplete)
+        self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":"entry-observation-unverified","exit_code":None})
+
+    def test_actual_capture_ordinary_identity_and_final_budget_gates_remain_required(self):
+        """A missing ordinary identity and an expired final clock still reject otherwise successful tool observations."""
+        with self.capture_context(ordinary={"cargo":None,"rustc":"1.99.0","rust_host":"x86_64-unknown-linux-gnu"}):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),100)
+        self.assertEqual(caught.exception.diagnostic,{"phase":"ordinary-tools","reason":"required-identity-missing","exit_code":None})
+        with self.capture_context(hash_fault=RuntimeError("PRIVATE hash path")):
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),100)
+        self.assertEqual(caught.exception.diagnostic,{"phase":"python-path","reason":"path-observation-unverified","exit_code":None})
+        with mock.patch.object(wrapper.time,"monotonic",return_value=10),mock.patch.object(wrapper,"administration_tool") as paths,mock.patch.object(wrapper,"command") as command:
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),10)
+        paths.assert_not_called();command.assert_not_called();self.assertEqual(caught.exception.diagnostic,{"phase":"qualification-budget","reason":"deadline-expired","exit_code":None})
+        self.assertEqual((caught.exception.code,caught.exception.incomplete),("command-timeout",True))
+        expired=[False]
+        def ordinary_finished(*args):
+            """Reach the unchanged final deadline using successful synthetic ordinary and version observations."""
+            expired[0]=True
+            return {"cargo":"1.99.0","rustc":"1.99.0","rust_host":"x86_64-unknown-linux-gnu"}
+        with self.capture_context(clock=lambda:100 if expired[0] else 0) as calls:
+            calls["ordinary"].side_effect=ordinary_finished
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),100)
+        self.assertEqual(calls["command"].call_count,3)
+        self.assertEqual(caught.exception.diagnostic,{"phase":"qualification-budget","reason":"deadline-expired","exit_code":None})
+        with self.capture_context() as calls:
+            calls["ordinary"].side_effect=RuntimeError("PRIVATE ordinary identity")
+            with self.assertRaises(wrapper.GateError) as caught:wrapper.capture_tools(Path("/mock"),100)
+        self.assertEqual(caught.exception.code,"verification-input-invalid");self.assertFalse(caught.exception.incomplete)
+        self.assertEqual(caught.exception.diagnostic,{"phase":"ordinary-tools","reason":"identity-observation-unverified","exit_code":None})
+
+    def test_retention_keeps_first_safe_diagnostic_and_copies_its_fields(self):
+        """Later typed and unclassified failures cannot erase or mutate a retained fixed first diagnostic."""
+        first=wrapper.GateError("tool-untrusted",diagnostic=wrapper.tool_diagnostic("python-path","not-root-owned"))
+        second=wrapper.GateError("tool-unavailable",True,diagnostic=wrapper.tool_diagnostic("sudo-version","command-failed",-9))
+        receipt={"diagnostic":None};wrapper.retain_tool_diagnostic(receipt,RuntimeError("PRIVATE"));self.assertIsNone(receipt["diagnostic"])
+        wrapper.retain_tool_diagnostic(receipt,first);expected=dict(first.diagnostic)
+        self.assertIsNot(receipt["diagnostic"],first.diagnostic);first.diagnostic["reason"]="PRIVATE"
+        wrapper.retain_tool_diagnostic(receipt,second);wrapper.retain_tool_diagnostic(receipt,RuntimeError("PRIVATE"))
+        self.assertEqual(receipt["diagnostic"],expected);self.assertNotIn(b"PRIVATE",wrapper.shared.canonical_bytes(receipt))
+
+    def test_actual_outer_pass_and_unrelated_failure_require_null_diagnostic(self):
+        """The new outer schema adds only a null slot to old pass and unrelated build-gate outcomes."""
+        value,raw,capture,native_run=self.verify_faults()
+        self.assertEqual(value["schema_version"],"forge.workspace-os-denial-verification/2");self.assertIsNone(value["diagnostic"])
+        self.assertEqual(value["status"],"passed");native_run.assert_called_once();self.assertFalse(value["acceptance_eligible"])
+        self.assertEqual(value["attempted_egress"],{"state":"unmeasured","count":None})
+        self.assertEqual(wrapper.NATIVE_SCHEMA,"forge.packaged-runtime-os-denial/1")
+        value,raw,capture,native_run=self.verify_faults(build="failure")
+        native_run.assert_not_called();capture.assert_not_called();self.assertIsNone(value["diagnostic"]);self.assertEqual((value["status"],value["failure"]),("failed","build-not-qualified"))
+
+    def test_actual_outer_tool_failure_never_dispatches_or_publishes_private_output(self):
+        """Every fixed component reaches actual outer publication only as unqualified no-dispatch metadata."""
+        for phase,reasons in self.phase_pairs().items():
+            diagnostic=wrapper.tool_diagnostic(phase,reasons[0])
+            code="command-timeout" if phase=="qualification-budget" else "tool-untrusted" if phase in {"stdlib-roots","stdlib-entry"} else "tool-unavailable"
+            error=wrapper.GateError(code,True,diagnostic=diagnostic)
+            value,raw,capture,native_run=self.verify_faults(first_fault=error)
+            native_run.assert_not_called();self.assertEqual(capture.call_count,1)
+            self.assertEqual(value["diagnostic"],diagnostic);self.assertEqual((value["status"],value["failure"]),("incomplete",code))
+            self.assertIsNone(value["tools"]);self.assertEqual(value["tool_stability"],"unverified")
+            self.assertEqual(value["producer"]["status"],"not-run");self.assertEqual(value["cleanup"],{"state":"verified-not-created","forced":False})
+            self.assertEqual(value["attempted_egress"],{"state":"unmeasured","count":None});self.assertFalse(value["acceptance_eligible"])
+            self.assertEqual(set(value["diagnostic"]),{"phase","reason","exit_code"});self.assertNotIn(b"/mock",wrapper.shared.canonical_bytes(value["diagnostic"]))
+
+    def test_actual_outer_first_diagnostic_survives_later_failure_override(self):
+        """Post-check errors still revoke status while the earlier safe diagnostic remains immutable and output-free."""
+        first=wrapper.GateError("tool-untrusted",True,diagnostic=wrapper.tool_diagnostic("stdlib-entry","byte-bound"))
+        value,raw,capture,native_run=self.verify_faults(first_fault=first,after_identity_fault=RuntimeError("PRIVATE token path"))
+        native_run.assert_not_called();self.assertEqual(value["diagnostic"],{"phase":"stdlib-entry","reason":"byte-bound","exit_code":None})
+        self.assertEqual((value["status"],value["failure"]),("failed","verification-input-invalid"));self.assertNotIn(b"PRIVATE",raw)
+        secondary=wrapper.GateError("tool-unavailable",True,diagnostic=wrapper.tool_diagnostic("ip-version","command-failed",-9))
+        value,raw,capture,native_run=self.verify_faults(after_tool_fault=secondary)
+        native_run.assert_called_once();self.assertEqual(value["diagnostic"],secondary.diagnostic)
+        self.assertEqual((value["status"],value["failure"]),("failed","verification-input-invalid"));self.assertEqual(value["tool_stability"],"unverified")
 
 
 if __name__ == "__main__":

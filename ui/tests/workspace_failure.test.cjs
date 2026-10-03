@@ -17,7 +17,7 @@ function actualAssertion(operation) {
 
 /** Require exactly the public fixed envelope, without retaining private error text. */
 function checkEnvelope(record, stage, category, operator = null, step = null) {
-  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/2",stage,
+  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/3",stage,
     category,assertion_operator:operator,await_step:step});
   assert.equal(Object.isFrozen(record),true);
 }
@@ -108,7 +108,7 @@ function firstFaultSticky() {
 /** Unsupported stages never enter the public protocol or mutate a valid tracker stage. */
 function stageAllowlist() {
   const tracker = createTracker(errors.TimeoutError);
-  assert.equal(STAGES.length,23);assert.equal(new Set(STAGES).size,23);
+  assert.equal(STAGES.length,24);assert.equal(new Set(STAGES).size,24);
   assert.throws(()=>tracker.setStage("private project label"),TypeError);
   assert.throws(()=>failureRecord("private path",new Error(),errors.TimeoutError),TypeError);
   tracker.capture(new Error("private"));
@@ -174,7 +174,7 @@ async function mockedStartup(chromium,url="http://127.0.0.1:1234") {
 /** Actual CJS startup failure emits one redacted record before any browser is owned. */
 async function actualCjsLaunchFailure() {
   const record=await mockedStartup({async launch(){throw new errors.TimeoutError("private launch arguments");}});
-  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/2",stage:"browser-setup",
+  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/3",stage:"browser-setup",
     category:"timeout",assertion_operator:null,await_step:null});
 }
 
@@ -183,7 +183,7 @@ async function actualCjsUrlFailure() {
   let launches=0;
   const record=await mockedStartup({async launch(){launches++;throw new Error();}},"https://private.example");
   assert.equal(launches,0);
-  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/2",stage:"browser-setup",
+  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/3",stage:"browser-setup",
     category:"assertion",assertion_operator:"match",await_step:null});
 }
 
@@ -196,7 +196,7 @@ async function actualCjsOwnedCleanup() {
     async close(){calls.push("browser");throw new Error("private browser");},
   };}});
   assert.deepEqual(calls,["context","browser"]);
-  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/2",stage:"browser-setup",
+  assert.deepEqual(record,{schema_version:"forge.workspace-browser-failure/3",stage:"browser-setup",
     category:"timeout",assertion_operator:null,await_step:null});
 }
 
@@ -248,7 +248,7 @@ async function refreshStepStickyCleanup() {
   checkEnvelope(output[0],"metadata-refresh","assertion","strictEqual","acknowledgment");
 }
 
-/** Actual post-refresh continuation clears the completed dialog step before a private screenshot can fail. */
+/** Actual post-refresh continuation clears the completed step and identifies a private screenshot fault separately. */
 async function postRefreshScreenshotHasNoStaleStep() {
   const source=fs.readFileSync(path.join(__dirname,"workspace.cjs"),"utf8");
   const start=source.indexOf("const metadataConsumerObservation=await verifyMetadataConsumer();");
@@ -261,10 +261,37 @@ async function postRefreshScreenshotHasNoStaleStep() {
   try {await vm.runInNewContext(`(async()=>{${source.slice(start,finish)}})()`,sandbox,{timeout:1000});}
   catch(error){tracker.capture(error);}
   assert.equal(screenshots,1);
-  checkEnvelope(tracker.current(),"metadata-refresh","timeout");
+  checkEnvelope(tracker.current(),"metadata-screenshot","timeout");
+}
+
+/** Execute the actual successful continuation and retain the original full-page capture options and following phase. */
+async function postRefreshScreenshotSuccessKeepsOptionsAndPhase() {
+  const source=fs.readFileSync(path.join(__dirname,"workspace.cjs"),"utf8");
+  const start=source.indexOf("const metadataConsumerObservation=await verifyMetadataConsumer();");
+  const marker='failureTracker.setStage("final-reflow");';
+  const finish=source.indexOf(marker,start)+marker.length;
+  assert(start>=0&&finish>start);
+  const tracker=createTracker(errors.TimeoutError),observed={fixed:"mock"};let screenshots=0;
+  const sandbox={failureTracker:tracker,process:{env:{FORGE_TEST_SCREENSHOT:"private screenshot path"}},
+    async verifyMetadataConsumer(){tracker.setStage("metadata-refresh");tracker.setAwaitStep("dialog");return observed;},
+    page:{async screenshot(options){screenshots++;assert.deepEqual(Object.keys(options),["path","fullPage"]);
+      assert.equal(options.path,"private screenshot path");assert.equal(options.fullPage,true);}}};
+  const returned=await vm.runInNewContext(`(async()=>{${source.slice(start,finish)}return metadataConsumerObservation;})()`,sandbox,{timeout:1000});
+  assert.equal(returned,observed);assert.equal(screenshots,1);assert.equal(tracker.current(),null);
+  checkEnvelope(tracker.capture(new errors.TimeoutError("private following phase fault")),"final-reflow","timeout");
+}
+
+/** A separate screenshot stage rejects every refresh step and cannot retain a stale or private step. */
+function screenshotStageRejectsRefreshSteps() {
+  const tracker=createTracker(errors.TimeoutError);tracker.setStage("metadata-refresh");tracker.setAwaitStep("dialog");
+  tracker.setStage("metadata-screenshot");
+  for(const step of AWAIT_STEPS)assert.throws(()=>tracker.setAwaitStep(step),TypeError);
+  const first=tracker.capture(new Error("private screenshot values"));
+  checkEnvelope(first,"metadata-screenshot","unclassified");
+  tracker.setStage("final-reflow");assert.equal(tracker.capture(new Error("private later fault")),first);
 }
 
 for (const control of [nativeAssertionOperators,actualTimeoutBrand,fakeAssertionBrand,unknownOperator,
   operatorAccessor,proxyReflectionFault,primitiveErrors,privateDataExcluded,firstFaultSticky,stageAllowlist,
   bothClosesAndPrimaryFault,cleanupOnlyFault,cleanSuccessPublication,missingSuccessObservation,
-  actualCjsLaunchFailure,actualCjsUrlFailure,actualCjsOwnedCleanup,refreshAwaitSteps,refreshStepAllowlist,refreshStepReset,refreshStepStickyCleanup,postRefreshScreenshotHasNoStaleStep]) test(control.name,control);
+  actualCjsLaunchFailure,actualCjsUrlFailure,actualCjsOwnedCleanup,refreshAwaitSteps,refreshStepAllowlist,refreshStepReset,refreshStepStickyCleanup,postRefreshScreenshotHasNoStaleStep,postRefreshScreenshotSuccessKeepsOptionsAndPhase,screenshotStageRejectsRefreshSteps]) test(control.name,control);

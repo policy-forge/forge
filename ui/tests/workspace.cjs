@@ -545,7 +545,7 @@ let outcomePublished=false;
         scope:"actual GET/POST and local download; synthetic external File via native input; no OS chooser, writable import or full S6 acceptance"};
     }
     const metadataConsumerObservation=await verifyMetadataConsumer();
-    failureTracker.setStage("metadata-refresh");
+    failureTracker.setStage("metadata-screenshot");
    if(process.env.FORGE_TEST_SCREENSHOT)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT,fullPage:true});
    failureTracker.setStage("final-reflow");
    for(const width of [640,320]){

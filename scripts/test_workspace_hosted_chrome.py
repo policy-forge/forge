@@ -18,7 +18,7 @@ import verify_workspace as shared
 from workspace_browser_fixtures import synthetic_framework_catalog, synthetic_long_project_label
 
 sys.dont_write_bytecode=True
-SCHEMA="forge.hosted-chrome-smoke/3"
+SCHEMA="forge.hosted-chrome-smoke/4"
 OUTPUT="hosted-chrome-smoke.json"
 CAMPAIGNS=("default-read-only","default-writable","long-read-only","long-writable")
 PASSPHRASE=b"synthetic browser verification passphrase 062"
@@ -26,8 +26,8 @@ MAX_OUTPUT=262144
 ROOT=Path(__file__).resolve().parents[1]
 
 # Failure protocol enums mirror the consumed pure CJS helper and are pinned/drift-checked by controls.
-BROWSER_FAILURE_SCHEMA="forge.workspace-browser-failure/2"
-BROWSER_FAILURE_STAGES=frozenset(("browser-setup","asset-binding","input-style-binding","unlock","navigation-recovery","resource-authoring","conversion-recovery","framework-workflow","decision-authoring","trace-export","metadata-preview","metadata-long-label","metadata-download","metadata-file-selection","metadata-comparison","metadata-duplicate","metadata-refresh","final-reflow","storage-checks","session-shutdown","counter-correlation","request-page-errors","browser-cleanup"))
+BROWSER_FAILURE_SCHEMA="forge.workspace-browser-failure/3"
+BROWSER_FAILURE_STAGES=frozenset(("browser-setup","asset-binding","input-style-binding","unlock","navigation-recovery","resource-authoring","conversion-recovery","framework-workflow","decision-authoring","trace-export","metadata-preview","metadata-long-label","metadata-download","metadata-file-selection","metadata-comparison","metadata-duplicate","metadata-refresh","metadata-screenshot","final-reflow","storage-checks","session-shutdown","counter-correlation","request-page-errors","browser-cleanup"))
 BROWSER_FAILURE_AWAIT_STEPS=frozenset(("prepare","activate","response","ready","acknowledgment","download-state","focus","dialog"))
 BROWSER_FAILURE_CATEGORIES=frozenset(("assertion","timeout","unclassified"))
 BROWSER_FAILURE_OPERATORS=frozenset(("strictEqual","deepStrictEqual","match","=="))
@@ -35,7 +35,7 @@ CAPTURE_INPUTS=("ui/workspace.js","ui/workspace.css","ui/tests/workspace.cjs","u
 
 
 def validate_browser_failure(value):
-    """Validate closed failed-row facts and a nullable fixed refresh await; diagnostics never qualify a pass."""
+    """Validate closed failed-row facts; refresh alone permits fixed awaits and screenshot requires null."""
     closed(value,("stage","category","assertion_operator","node_exit_code","await_step"))
     if type(value["stage"]) is not str or value["stage"] not in BROWSER_FAILURE_STAGES:raise ValueError("browser-failure-stage")
     if type(value["category"]) is not str or value["category"] not in BROWSER_FAILURE_CATEGORIES:raise ValueError("browser-failure-category")

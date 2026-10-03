@@ -455,7 +455,7 @@ class HostedChromeControls(unittest.TestCase):
             destination=self.root/f"diagnostic-{index}"
             with mock.patch.object(wrapper.sys,"platform","linux"),mock.patch.object(wrapper.shared,"capture_identity",return_value=self.identity),mock.patch.object(wrapper.shared,"tool_versions",return_value=self.rust),mock.patch.object(browser,"capture_tools",side_effect=error),mock.patch.object(wrapper,"native_run") as native:
                 value=wrapper.verify(self.root,self.forge,self.root/"node",self.root/"npm",self.root/"chrome",destination,build_outcome="success",npm_outcome="success")
-            self.assertEqual(value["schema_version"],"forge.workspace-hosted-chrome-verification/4");self.assertEqual(value["status"],"failed");native.assert_not_called()
+            self.assertEqual(value["schema_version"],"forge.workspace-hosted-chrome-verification/5");self.assertEqual(value["status"],"failed");native.assert_not_called()
             self.assertEqual(value["producer"]["status"],"not-run");self.assertIsNone(value["browser_tools"]);self.assertNotIn("PRIVATE",(destination/wrapper.OUTPUT).read_text())
             if index==0:self.assertEqual(value["diagnostic"],{"phase":"browser-tool-capture","step":"package-probe","reason":"tool-exit-nonzero","exit_code":23});self.assertEqual(value["failure"],"browser-tool-capture-failed")
             else:self.assertIsNone(value["diagnostic"]);self.assertEqual(value["failure"],"verification-input-invalid")
@@ -566,8 +566,8 @@ class HostedChromeControls(unittest.TestCase):
 
 
     def browser_failure_fixture(self,*,stage="metadata-file-selection",category="assertion",operator="strictEqual",await_step=None):
-        """Provide independent failure/2 facts with a nullable fixed await, without importing the CJS helper."""
-        return {"schema_version":"forge.workspace-browser-failure/2","stage":stage,"category":category,"assertion_operator":operator,"await_step":await_step}
+        """Provide independent failure/3 facts with a nullable fixed await, without importing the CJS helper."""
+        return {"schema_version":"forge.workspace-browser-failure/3","stage":stage,"category":category,"assertion_operator":operator,"await_step":await_step}
 
     def failed_browser_receipt(self,diagnostic=None):
         """Keep the complete four-row failed denominator while attaching only explicitly synthetic safe facts."""
@@ -768,10 +768,92 @@ class HostedChromeControls(unittest.TestCase):
         helper=(Path(browser.__file__).resolve().parents[1]/"ui/tests/workspace_failure.cjs").read_text()
         body=re.search(r"const AWAIT_STEPS = Object\.freeze\(\[(.*?)\]\);",helper,re.S).group(1)
         self.assertEqual(set(re.findall(r'"([^"\n]+)"',body)),set(browser.BROWSER_FAILURE_AWAIT_STEPS))
-        self.assertIn('schema_version: "forge.workspace-browser-failure/2"',helper)
+        self.assertIn('schema_version: "forge.workspace-browser-failure/3"',helper)
         self.assertIn("await_step: awaitStep",helper)
-        self.assertEqual(browser.SCHEMA,"forge.hosted-chrome-smoke/3")
-        self.assertEqual(wrapper.SCHEMA,"forge.workspace-hosted-chrome-verification/4")
+        self.assertEqual(browser.SCHEMA,"forge.hosted-chrome-smoke/4")
+        self.assertEqual(wrapper.SCHEMA,"forge.workspace-hosted-chrome-verification/5")
+
+
+    def test_screenshot_stage_is_distinct_and_requires_null_at_all_exit_bounds(self):
+        """Decode the separate fixed screenshot phase only with null step and an actual signed nonzero exit."""
+        self.assertEqual(len(browser.BROWSER_FAILURE_STAGES),24)
+        self.assertIn("metadata-screenshot",browser.BROWSER_FAILURE_STAGES)
+        for category,operator in (("timeout",None),("unclassified",None),("assertion","strictEqual")):
+            raw=wrapper.shared.canonical_bytes(self.browser_failure_fixture(stage="metadata-screenshot",category=category,operator=operator))
+            for code in (-2147483648,-9,1,2147483647):
+                self.assertEqual(browser.decode_browser_failure(raw,code),{"stage":"metadata-screenshot","category":category,"assertion_operator":operator,"node_exit_code":code,"await_step":None})
+            for code in (0,True,None,1.0,-2147483649,2147483648):
+                self.assertIsNone(browser.decode_browser_failure(raw,code))
+
+    def test_actual_failed_campaign_forwards_screenshot_null_step_and_owned_cleanup(self):
+        """Consume real campaign code with fake processes and preserve failure, redaction and actual exit binding."""
+        for category,operator in (("timeout",None),("unclassified",None),("assertion","match")):
+            raw=wrapper.shared.canonical_bytes(self.browser_failure_fixture(stage="metadata-screenshot",category=category,operator=operator))
+            row,tree,process,spawn,submitted,closed=self.exercise_failed_browser_campaign(raw,exit_code=-9)
+            self.assertEqual(row["browser_failure"],{"stage":"metadata-screenshot","category":category,"assertion_operator":operator,"node_exit_code":-9,"await_step":None})
+            self.assertEqual((row["status"],row["failure"]),("failed","browser-failed"));self.assertIsNone(row["observation"])
+            self.assertEqual(row["cleanup"],{"forge_exit_zero":False,"node_exit_zero":False,"tree_empty":True,"terminal_eof":False,"forced":True})
+            self.assertNotIn("SECRET",json.dumps(row));self.assertEqual(submitted.call_count,2)
+            tree.stop.assert_called_once();tree.close.assert_called_once();process.wait.assert_called_once_with(timeout=5)
+            process.stdout.close.assert_called_once();process.stderr.close.assert_called_once();spawn.assert_called_once()
+            self.assertEqual(sum(call.args==(23,) for call in closed.call_args_list),1)
+
+    def test_actual_failed_campaign_drops_each_screenshot_refresh_step(self):
+        """Every refresh-only step is unavailable at screenshot without weakening the original campaign failure."""
+        for step in (*sorted(browser.BROWSER_FAILURE_AWAIT_STEPS),"PRIVATE screenshot URL",True,1,[],{}):
+            raw=wrapper.shared.canonical_bytes(self.browser_failure_fixture(stage="metadata-screenshot",category="timeout",operator=None,await_step=step))
+            row,tree,process,*_=self.exercise_failed_browser_campaign(raw,exit_code=17)
+            self.assertIsNone(row["browser_failure"]);self.assertIsNone(row["observation"])
+            self.assertEqual((row["status"],row["failure"]),("failed","browser-failed"))
+            self.assertTrue(row["cleanup"]["forced"]);self.assertFalse(row["cleanup"]["node_exit_zero"])
+            self.assertNotIn("PRIVATE",json.dumps(row))
+            tree.stop.assert_called_once();tree.close.assert_called_once();process.wait.assert_called_once_with(timeout=5)
+
+    def test_screenshot_reader_reconciles_only_closed_failed_rows(self):
+        """Read actual private receipt bytes and refuse stale steps, false exits, open fields and success attachments."""
+        diagnostic={"stage":"metadata-screenshot","category":"timeout","assertion_operator":None,"node_exit_code":-9,"await_step":None}
+        value,_=self.read(self.failed_browser_receipt(diagnostic),1)
+        self.assertEqual(value["schema_version"],"forge.hosted-chrome-smoke/4")
+        self.assertEqual(value["campaigns"][0]["browser_failure"],diagnostic)
+        self.assertFalse(value["acceptance_eligible"]);self.assertIsNone(value["campaigns"][0]["observation"])
+        for field,wrong in (("await_step","dialog"),("await_step",False),("node_exit_code",0),("node_exit_code",True),("private","PRIVATE")):
+            row=copy.deepcopy(diagnostic);row[field]=wrong
+            with self.subTest(field=field),self.assertRaises(ValueError):self.read(self.failed_browser_receipt(row),1)
+        for field in diagnostic:
+            row=copy.deepcopy(diagnostic);del row[field]
+            with self.subTest(missing=field),self.assertRaises(ValueError):self.read(self.failed_browser_receipt(row),1)
+        value=self.producer_fixture();value["campaigns"][0]["browser_failure"]=diagnostic
+        with self.assertRaises(ValueError):self.read(value)
+        value=self.failed_browser_receipt(diagnostic);value["campaigns"][0]["cleanup"]["node_exit_zero"]=True
+        with self.assertRaises(ValueError):self.read(value,1)
+
+    def test_outer_failed_screenshot_forwards_five_fields_without_acceptance_credit(self):
+        """Exercise the ordinary wrapper and real reader while producer execution stays explicitly mocked."""
+        diagnostic={"stage":"metadata-screenshot","category":"timeout","assertion_operator":None,"node_exit_code":17,"await_step":None}
+        producer=self.failed_browser_receipt(diagnostic)
+        with mock.patch.object(self,"producer_fixture",return_value=producer):value,count=self.run_outer(status="failed",code=1)
+        self.assertEqual(count,1);self.assertEqual(value["schema_version"],"forge.workspace-hosted-chrome-verification/5")
+        self.assertEqual(value["status"],"failed");self.assertFalse(value["acceptance_eligible"])
+        self.assertEqual(value["producer"]["status"],"failed");self.assertEqual(value["producer"]["producer_exit_code"],1)
+        nested=value["producer"]["receipt"];self.assertEqual(nested["schema_version"],"forge.hosted-chrome-smoke/4")
+        self.assertEqual(nested["campaigns"][0]["browser_failure"],diagnostic)
+        self.assertIsNone(nested["campaigns"][0]["observation"])
+        self.assertEqual(set(nested["campaigns"][0]["browser_failure"]),{"stage","category","assertion_operator","node_exit_code","await_step"})
+        self.assertNotIn("PRIVATE",(self.output/wrapper.OUTPUT).read_text())
+
+    def test_immediate_previous_failure_and_producer_protocols_are_rejected(self):
+        """Reject earlier envelopes even when their five-field shape or four-campaign facts otherwise look valid."""
+        for stage in ("metadata-refresh","metadata-screenshot"):
+            for version in ("forge.workspace-browser-failure/1","forge.workspace-browser-failure/2"):
+                failure=self.browser_failure_fixture(stage=stage,category="timeout",operator=None);failure["schema_version"]=version
+                raw=wrapper.shared.canonical_bytes(failure)
+                self.assertIsNone(browser.decode_browser_failure(raw,1))
+                row,*_=self.exercise_failed_browser_campaign(raw)
+                self.assertIsNone(row["browser_failure"]);self.assertEqual((row["status"],row["failure"]),("failed","browser-failed"))
+                self.assertIsNone(row["observation"]);self.assertTrue(row["cleanup"]["forced"])
+        for version in ("forge.hosted-chrome-smoke/1","forge.hosted-chrome-smoke/2","forge.hosted-chrome-smoke/3"):
+            value=self.producer_fixture();value["schema_version"]=version
+            with self.subTest(schema=version),self.assertRaises(ValueError):self.read(value)
 
 
 if __name__=="__main__":unittest.main()

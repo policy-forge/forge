@@ -12,7 +12,7 @@ import verify_workspace as shared
 import test_workspace_hosted_chrome as browser
 
 sys.dont_write_bytecode=True
-SCHEMA="forge.workspace-hosted-chrome-verification/4"
+SCHEMA="forge.workspace-hosted-chrome-verification/5"
 OUTPUT="workspace-hosted-chrome-verification.json"
 EXTRA_INPUTS=("ui/tests/workspace.cjs","ui/tests/workspace_failure.cjs","ui/tests/workspace_failure.test.cjs","ui/package.json","ui/package-lock.json","scripts/workspace_browser_fixtures.py","scripts/workspace_browser_tool_probe.cjs","scripts/test_workspace_hosted_chrome.py","scripts/verify_workspace_hosted_chrome.py","scripts/test_verify_workspace_hosted_chrome.py","docs/development-tools/hosted-chrome.json")
 
@@ -35,7 +35,7 @@ def read_bytes(path):
 
 
 def read_receipt(path,exit_code,tools):
-    """Retain closed producer/3 fixed await diagnostics only on failed rows; actual exit and all pass gates remain required."""
+    """Retain closed producer/4 diagnostics only on failed rows, including screenshot with a null await step."""
     raw=read_bytes(path);value=browser.strict_json(raw)
     browser.closed(value,("schema_version","scope","truth_state","acceptance_eligible","status","failure","tools","input_stability","campaigns"))
     if value["schema_version"]!=browser.SCHEMA or value["scope"]!="installed-google-chrome-linux-prerequisite" or value["truth_state"]!="synthetic-development" or value["acceptance_eligible"] is not False:raise ValueError("scope")
