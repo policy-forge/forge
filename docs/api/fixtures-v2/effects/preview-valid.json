@@ -1,0 +1,41 @@
+{
+  "preview_id": "prev_1a2b3c4d5e6f7081",
+  "operation_type": "applicability-manifest-write",
+  "target": {
+    "path": "applicability/decisions.json",
+    "status": "overwrite"
+  },
+  "base_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "target_version": "0f1e2d3c4b5a6978",
+  "exact_bytes_sha256": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+  "input_hashes": [
+    {
+      "resource_id": "res_0f1e2d3c4b5a69788796a5b4",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "resource_id": "res_112233445566778899aabbcc",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    }
+  ],
+  "validation": {
+    "state": "valid",
+    "error_count": 0,
+    "warning_count": 1,
+    "diagnostics": [
+      {
+        "code": "rationale-length",
+        "severity": "warning",
+        "message": "Rationale is shorter than the recommended length.",
+        "field": "/decisions/3/rationale"
+      }
+    ]
+  },
+  "semantic_summary": "Records 2 new applicability decisions (ac-1 applicable, ac-2 deferred) and leaves 3 controls under review.",
+  "diff_text": "--- a/applicability/decisions.json\n+++ b/applicability/decisions.json\n@@ -12,6 +12,14 @@\n   \"decisions\": [\n+    {\n+      \"control_id\": \"ac-1\",\n+      \"state\": \"applicable\",\n+      \"rationale\": \"Customer data is processed.\",\n+      \"reviewer_key\": \"r-1\"\n+    },\n+    {\n+      \"control_id\": \"ac-2\",\n+      \"state\": \"deferred\",\n+      \"revisit_date\": \"2026-12-01\"\n+    }\n   ]\n }\n",
+  "diff_truncated": false,
+  "receipt": {
+    "token": "rcpt_9f8e7d6c5b4a3f2e1d0c",
+    "expires_at": "2026-09-08T14:20:00Z"
+  }
+}

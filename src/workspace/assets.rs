@@ -10,11 +10,17 @@ pub(crate) fn style_path() -> String {
     format!("/assets/{}.css", crate::hashing::sha256_hex(STYLE.as_bytes()))
 }
 
-pub(crate) fn shell() -> String {
+/// Render only immutable launch metadata; project state remains behind capability admission.
+pub(crate) fn shell_for(api_major: super::contract::ApiMajor) -> String {
+    let contract_meta = if api_major == super::contract::ApiMajor::V2 {
+        format!("<meta name=\"forge-api-contract-version\" content=\"{}\">", api_major.version())
+    } else {
+        String::new()
+    };
     format!(
         r##"<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="forge-api-major" content="1"><meta name="forge-asset-contract" content="1">
+<meta name="forge-api-major" content="{}"><meta name="forge-asset-contract" content="1">{}
 <title>FORGE · Local workspace</title><link rel="stylesheet" href="{}"><script type="module" src="{}"></script></head>
 <body><a class="skip" href="#main">Skip to content</a>
 <header><strong class="brand">FORGE<span>LOCAL WORKSPACE</span></strong><span id="connection">Locked</span><button id="stop" hidden>Stop workspace</button></header>
@@ -28,6 +34,8 @@ pub(crate) fn shell() -> String {
 <dialog id="preview-dialog" aria-labelledby="preview-title"><div id="preview-content"></div></dialog>
 <dialog id="stop-dialog" aria-labelledby="stop-title"><h2 id="stop-title">Stop this workspace?</h2><p>Unconfirmed form changes will be discarded. Completed writes remain saved.</p><button id="keep-working">Keep working</button><button id="confirm-stop">Stop workspace</button></dialog>
 </main><footer>Explicit decisions · Traceable sources · Local files</footer></body></html>"##,
+        api_major.number(),
+        contract_meta,
         style_path(),
         script_path()
     )

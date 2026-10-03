@@ -1,0 +1,25 @@
+{
+  "bundle": {
+    "schema_version": "forge.workspace-index-bundle/2",
+    "content_profile": "index-and-hashes",
+    "index": {
+      "schema_version": "forge.workspace/1",
+      "label": "Synthetic bundle fixture",
+      "resources": [
+        {
+          "key": "policy",
+          "role": "policy-source",
+          "path": "policy.md"
+        }
+      ]
+    },
+    "index_sha256": "84a0766a0fe82ad070f3bde4fcce837621e1b49a2cf1fb51986c8ed16d09ab88",
+    "pins": [
+      {
+        "key": "policy",
+        "sha256": "0939a83a654a38b97bf020c8f563f1714108b8292b229eb8abc65d025271e8d6",
+        "size_bytes": 19
+      }
+    ]
+  }
+}

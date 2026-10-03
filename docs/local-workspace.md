@@ -11,6 +11,7 @@ release gates.
 ```sh
 forge workspace --project ./example
 forge workspace --project ./example --read-only --no-open
+forge workspace --project ./example --api-major 2 --read-only --no-open
 ```
 
 Choose and confirm a 15–128 character passphrase in the terminal. Input is not
@@ -44,6 +45,14 @@ resources. It never scans the directory. The closed `forge.workspace/1` index
 contains a project label and stable key, typed role, and portable relative path
 for each resource. See [the schema](../schemas/forge.workspace-1.schema.json).
 No applicability or mapping decisions belong in the index.
+
+Explicit `--api-major 2` additionally accepts the independently closed
+`forge.workspace/2` index with lifecycle and framework-impact roles. Choose the
+index2 selector or migration-only action in **Policies & Artifacts**, inspect
+the exact index-update preview and confirm it. Launch never migrates files.
+API v1 stays the default and rejects index2 before registered reads. Admission
+profiles express structure or bounded fingerprints, not current domain freshness
+or human approval. See [API v2 migration](api/migration-v2.md).
 
 **Policies & Artifacts** can register an existing file, upload a local file, or
 convert a registered Markdown policy using the existing conversion engine.
@@ -229,7 +238,7 @@ Python cannot guarantee physical zeroization of immutable strings.
 
 The normative contract is [OpenAPI](api/forge-workspace-v1.openapi.yaml), with
 [compatibility policy](api/compatibility.md) and [capability matrix](api/capability-matrix.md).
-The additive unreleased contract is 1.2.0. It includes closed initialization,
+Default launches use additive unreleased contract 1.2.0; explicit v2 launches use [contract 2.0.0](api/forge-workspace-v2.openapi.yaml). It includes closed initialization,
 optional provenance references and read-only index-bundle queries. Existing domain
 `/1` meanings remain unchanged.
 The public Rust `Commands::Workspace` variant extends an exhaustive enum and
@@ -284,9 +293,10 @@ retention/capacity qualification and full S-6 acceptance remain open.
 Rust contract, domain, security, transaction, and headless workflow tests run
 through `cargo test --locked`. Browser tests in `ui/tests/workspace.cjs` exercise
 the embedded assets through the published API; the POSIX harness is
-`scripts/test_workspace_browser.py`. Playwright is development-only. The browser
-harness runs locally only: it is not executed by CI, and installing the browser
-test dependencies in CI remains pending. These tests check request coverage,
+`scripts/test_workspace_browser.py`. Playwright is development-only. The original POSIX browser harness remains local. A separate hosted Chrome
+verification job uses the approved development tools and runner-installed Chrome;
+see [hosted verification](plans/2026-10-02-f04-workspace-verification.md) and
+[approved tooling](development-tools/hosted-chrome.md). These tests check request coverage,
 blocked non-loopback page traffic, storage absence, workflow behavior, and
 narrow-viewport reflow. This is not proof that all browser background traffic or
 all OS processes are network-denied.

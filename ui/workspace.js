@@ -1,6 +1,11 @@
 // @ts-check
 // The document contains no project data. All reads use the supported local API.
 const element = (id) => document.getElementById(id);
+// Only a server-selected supported major can own this page's local requests.
+const declaredApiMajor = document.querySelector('meta[name="forge-api-major"]')?.getAttribute("content");
+const apiMajor = declaredApiMajor === "1" ? 1 : declaredApiMajor === "2" ? 2 : null;
+const apiContractVersion = document.querySelector('meta[name="forge-api-contract-version"]')?.getAttribute("content");
+const apiPrefix = `/api/v${apiMajor}`;
 let capability = "";
 let activeView = "Overview";
 let stopped = false;
@@ -39,8 +44,9 @@ function showError(error) {
   box.focus();
 }
 
-/** Preserve ordinary JSON requests while allowing one documented bounded raw-file query. */
+/** Send only the declared supported major; preserve ordinary JSON and bounded raw-file generation fences. */
 async function api(path, method = "GET", body, key, rawBody, rawIsCurrent) {
+  if (![1, 2].includes(apiMajor) || apiMajor === 2 && apiContractVersion !== "2.0.0") throw new Error("This page requires matching supported workspace API assets. Relaunch with the selected API major.");
   if (rawBody !== undefined && (path !== "/project/bundle-verifications" || method !== "POST" || !(rawBody instanceof Blob) || rawBody.size > 1024 * 1024)) throw new Error("Unsupported raw metadata comparison request.");
   const now=performance.now();const reserved=Math.max(now,nextRequestAt);nextRequestAt=reserved+60;
   if(reserved>now)await new Promise(resolve=>setTimeout(resolve,reserved-now));
@@ -52,7 +58,7 @@ async function api(path, method = "GET", body, key, rawBody, rawIsCurrent) {
   if (key) headers["Idempotency-Key"] = key;
   let response;
   try {
-    response = await fetch(`/api/v1${path}`, {method, headers, body: method === "GET" ? undefined : rawBody ?? JSON.stringify(body ?? {}), cache: "no-store", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer"});
+    response = await fetch(`${apiPrefix}${path}`, {method, headers, body: method === "GET" ? undefined : rawBody ?? JSON.stringify(body ?? {}), cache: "no-store", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer"});
   } catch {
     throw new Error("The local workspace is unavailable. Check its terminal before retrying.");
   }
@@ -220,7 +226,7 @@ async function renderView(isCurrent = () => true) {
       const rows = await collection("/resources");
       const visible=rows.filter(row=>(!viewFilters.validation_state||row.validation_state===viewFilters.validation_state)&&(!viewFilters.stale||String(row.stale)===viewFilters.stale));
       if(Object.keys(viewFilters).length)fragment.append(node("p",`Showing ${visible.length} matching resources of ${rows.length} registered.`),button("Show all resources",()=>navigate("Policies & Artifacts")));
-      fragment.append(visible.length ? table("Registered project files", [["Key","key"],["Role","role"],["Path","path"],["Validation","validation_state"]], visible) : node("p", "No matching registered files. Unregistered files are never scanned.", "empty"));
+      fragment.append(visible.length ? table("Registered project files", [["Key","key"],["Role","role"],["Path","path"],["Validation","validation_state"],...(apiMajor === 2 ? [["Admission profile","validation_profile"]] : [])], visible) : node("p", "No matching registered files. Unregistered files are never scanned.", "empty"));
       fragment.append(evidenceList(visible.map(row=>({...row,label:row.key,provenance_ref:row.resource_id}))));
       fragment.append(resourceActions(rows));
     } else if (activeView === "Review Queue") {
@@ -284,7 +290,7 @@ async function submitUnlock(event) {
     const response = await api("/session/unlock", "POST", {passphrase: field.value});
     field.value = "";
     if (stopped) return;
-    if (response.session.api_major !== 1) throw new Error("This UI requires API version 1. Install matching workspace assets.");
+    if (response.session.api_major !== apiMajor || apiMajor === 2 && response.session.contract_version !== apiContractVersion) throw new Error(apiMajor === 1 ? "This UI requires API version 1. Install matching workspace assets." : "This UI requires the selected API version 2. Install matching workspace assets.");
     capability = response.capability;
     readOnly = response.session.read_only;
     element("unlock-panel").hidden = true;
@@ -363,14 +369,16 @@ function confirmDiscard() {
   });
 }
 
-/** An action returning false cancelled navigation: reenable and refocus its invoker. */
+/** Keep the invoking control focused while busy; guard duplicate activation and restore cancelled navigation. */
 function button(label, action) {
   const control = node("button", label); control.type = "button";
+  control.setAttribute("aria-disabled", "false");
   control.addEventListener("click", async () => {
-    control.disabled = true;
+    if (control.getAttribute("aria-disabled") === "true") return;
+    control.setAttribute("aria-disabled", "true"); control.setAttribute("aria-busy", "true");
     let cancelled = false;
     try {cancelled = await action() === false;} catch(error) {showError(error);}
-    finally {control.disabled = false;if(cancelled && control.isConnected)control.focus();}
+    finally {control.setAttribute("aria-disabled", "false");control.setAttribute("aria-busy", "false");if(cancelled && control.isConnected)control.focus();}
   });
   return control;
 }
@@ -664,9 +672,9 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
     table("Bound input hashes",[["Resource","resource_id"],["SHA-256","sha256"]],current.input_hashes),Object.assign(node("pre",current.diff_text),{tabIndex:0}));
   if(current.diff_truncated) content.append(node("p","The text diff reached its display bound. The hash binds the complete proposed bytes."));
   const key = crypto.randomUUID();
-  /** Download only a confirmed export's bound bytes through the existing authenticated route. */
+  /** Download only confirmed bound export bytes through this page's selected authenticated major. */
   async function downloadCommittedExport() {
-    const response=await fetch(`/api/v1/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
+    const response=await fetch(`${apiPrefix}/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
     if(!response.ok)throw new Error("The committed export is no longer available or its bytes changed.");
     const blob=await response.blob();if(blob.size>4*1024*1024)throw new Error("The export exceeds the download bound.");
     const url=URL.createObjectURL(blob);const link=node("a","Download report");link.href=url;link.download="forge-redacted-report.html";document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -708,16 +716,35 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
   content.append(button("Keep editing", dismissPreview), button("Confirm this exact write", confirmWrite));
   dialog.showModal();content.querySelector("h2").tabIndex=-1;content.querySelector("h2").focus();return true;
 }
+/** List closed registration roles for an explicit index version; /1 retains its original families. */
+function workspaceRoles(version) {
+  const original = ["policy-source", "oscal-catalog-artifact", "oscal-component-artifact", "mapping-collection", "applicability-manifest", "applicability-report", "trace-report"];
+  if (version === "forge.workspace/1") return original;
+  if (version === "forge.workspace/2") return [...original, "lifecycle-record", "lifecycle-source", "oscal-profile-artifact", "oscal-ssp-artifact", "framework-impact-manifest", "successor-map", "framework-impact-report", "framework-impact-dispositions"];
+  return [];
+}
+
+/** Prepare bounded registrations or an explicit version migration through ordinary exact-write confirmation. */
 function resourceActions(resources) {
   const region = node("section");region.append(node("h2","Project files"));
   region.append(button("Validate registered resources",async () => { const report = await api("/validation/runs","POST",{scope:"all"});element("status").textContent = `Validation: ${report.state}. ${report.error_count} errors.`; }));
   if(readOnly) {region.append(node("p","This session is read-only."));return region;}
-  const roles = ["policy-source","oscal-catalog-artifact","oscal-component-artifact","mapping-collection","applicability-manifest","applicability-report","trace-report"].map(value=>[value,value.replaceAll("-"," ")]);
+  const roles = workspaceRoles(apiMajor === 2 ? "forge.workspace/2" : "forge.workspace/1").map(value=>[value,value.replaceAll("-"," ")]);
   const register = node("form");register.append(node("h3","Register an existing project file"));
   const role = field(register,"Resource role","select",roles);
   const path = field(register,"Project-relative file path");
   const key = field(register,"Stable resource key");
-  register.append(button("Preview registration",async () => {if(!register.reportValidity())return;await effect("/resources/register","POST",{role:role.value,path:path.value,key:key.value});}));
+  const indexVersion = apiMajor === 2 ? field(register,"Index version for this registration","select",[["preserve","Preserve current index version"],["forge.workspace/2","Explicitly use workspace index /2"]]) : null;
+  if (apiMajor === 2) register.append(node("p","Lifecycle and framework-impact roles require an explicit /2 index. Admission profiles describe structure or fingerprints; they do not establish current freshness, dependency closure or reviewer authority."));
+  register.append(button("Preview registration",async () => {
+    if(!register.reportValidity())return;
+    const request = {role:role.value,path:path.value,key:key.value};
+    if(indexVersion?.value === "forge.workspace/2") request.index_schema_version = indexVersion.value;
+    await effect("/resources/register","POST",request);
+  }));
+  if (apiMajor === 2) register.append(button("Preview migration to workspace index /2",async () => {
+    await effect("/resources/register","POST",{migration:{from:"forge.workspace/1",to:"forge.workspace/2"}});
+  }));
   register.addEventListener("submit",event=>event.preventDefault());
   const upload = node("form");upload.append(node("h3","Upload a local file"));
   const file = field(upload,"Choose a file","file"); const uploadRole = field(upload,"Uploaded resource role","select",roles);const target = field(upload,"Destination path within project");
@@ -882,7 +909,7 @@ function bundleClosedObject(value, keys) {
     Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 
-/** Validate complete metadata before retaining a local downloadable bundle. */
+/** Validate complete same-version /1 or /2 metadata before retaining a local downloadable bundle. */
 function checkedBundlePreview(value) {
   /** Reject unsupported preview metadata before it can become a local file. */
   const fail = () => { throw new Error("The metadata preview returned an unsupported response. Preview metadata again."); };
@@ -892,14 +919,14 @@ function checkedBundlePreview(value) {
       JSON.stringify(value.included_metadata) !== JSON.stringify(["project-label", "resource-keys", "typed-roles", "project-relative-paths", "sha256-fingerprints", "byte-lengths"])) fail();
   const bundle = value.bundle;
   if (!bundleClosedObject(bundle, ["schema_version", "content_profile", "index", "index_sha256", "pins"]) ||
-      bundle.schema_version !== "forge.workspace-index-bundle/1" || bundle.content_profile !== "index-and-hashes" ||
+      !(apiMajor === 2 ? ["forge.workspace-index-bundle/1", "forge.workspace-index-bundle/2"] : ["forge.workspace-index-bundle/1"]).includes(bundle.schema_version) || bundle.content_profile !== "index-and-hashes" ||
       typeof bundle.index_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(bundle.index_sha256) ||
-      !bundleClosedObject(bundle.index, ["schema_version", "label", "resources"]) || bundle.index.schema_version !== "forge.workspace/1" ||
+      !bundleClosedObject(bundle.index, ["schema_version", "label", "resources"]) || bundle.index.schema_version !== (bundle.schema_version === "forge.workspace-index-bundle/1" ? "forge.workspace/1" : "forge.workspace/2") ||
       typeof bundle.index.label !== "string" || [...bundle.index.label].length < 1 || [...bundle.index.label].length > 200 ||
       !Array.isArray(bundle.index.resources) || bundle.index.resources.length > 1000 ||
       !Array.isArray(bundle.pins) || bundle.pins.length !== bundle.index.resources.length) fail();
   const keys = new Set(); const paths = new Set();
-  const roles = ["policy-source", "oscal-catalog-artifact", "oscal-component-artifact", "mapping-collection", "applicability-manifest", "applicability-report", "trace-report"];
+  const roles = workspaceRoles(bundle.index.schema_version);
   for (let index = 0; index < bundle.index.resources.length; index++) {
     const resource = bundle.index.resources[index]; const pin = bundle.pins[index];
     if (!bundleClosedObject(resource, ["key", "role", "path"]) || typeof resource.key !== "string" ||

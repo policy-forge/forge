@@ -28,9 +28,19 @@ pub(crate) struct Pin {
 ///
 /// Pinning every registration made exports impossible in any project with more than
 /// 100 registrations, since the envelope is closed at 100 inputs.
+/// Preserve existing report input families; new registrations never broaden old report authority.
 fn pin_role_relevant(kind: &str, role: Role) -> bool {
     match role {
-        Role::TraceReport | Role::ApplicabilityReport => false,
+        Role::TraceReport
+        | Role::ApplicabilityReport
+        | Role::LifecycleRecord
+        | Role::LifecycleSource
+        | Role::OscalProfileArtifact
+        | Role::OscalSspArtifact
+        | Role::FrameworkImpactManifest
+        | Role::SuccessorMap
+        | Role::FrameworkImpactReport
+        | Role::FrameworkImpactDispositions => false,
         Role::OscalCatalogArtifact | Role::OscalComponentArtifact => true,
         Role::MappingCollection => matches!(kind, "mapping-collection" | "applicability-gap"),
         Role::ApplicabilityManifest => kind == "applicability-gap",

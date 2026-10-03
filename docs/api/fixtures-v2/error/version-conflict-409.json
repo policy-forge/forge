@@ -1,0 +1,8 @@
+{
+  "code": "version-conflict",
+  "message": "The resource changed since it was read. Reload the current version, review the change, and try again.",
+  "resource": "res_3344556677889900aabbccd1",
+  "retryable": true,
+  "correlation_id": "corr_1f2e3d4c5b6a",
+  "resource_version": "aa99887766554433"
+}

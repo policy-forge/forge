@@ -371,11 +371,23 @@ impl Store {
         self.operations.insert(operation_id, op.clone());
         Ok(op)
     }
+    /// Preserve the original v1 publication boundary for existing internal callers.
     pub(crate) fn commit(
         &mut self,
         root: &Root,
         request: &Value,
         stopped: &std::sync::atomic::AtomicBool,
+    ) -> Result<Value> {
+        self.commit_for_api(root, request, stopped, contract::ApiMajor::V1)
+    }
+
+    /// Revalidate publication using the session's immutable index-major boundary.
+    pub(crate) fn commit_for_api(
+        &mut self,
+        root: &Root,
+        request: &Value,
+        stopped: &std::sync::atomic::AtomicBool,
+        api_major: contract::ApiMajor,
     ) -> Result<Value> {
         if self.operations.len() >= MAX_RETAINED {
             return Err(capacity());
@@ -432,7 +444,7 @@ impl Store {
                     false,
                 ));
             }
-            if Snapshot::capture(root)?.version != receipt.snapshot_version {
+            if Snapshot::capture_for_api(root, api_major)?.version != receipt.snapshot_version {
                 return Err(conflict());
             }
             for (path, expected) in &receipt.external {

@@ -1,0 +1,44 @@
+{
+  "schema_version": "forge.workspace-api-release-artifacts/1",
+  "product_release_target": "2.0.0",
+  "publication": "separately authorized; no release run claimed",
+  "api_majors": [
+    {
+      "api_major": 1,
+      "contract_version": "1.2.0",
+      "document": "docs/api/forge-workspace-v1.openapi.yaml",
+      "capability_matrix": [
+        "docs/api/capability-matrix.json",
+        "docs/api/capability-matrix.md"
+      ],
+      "fixtures": "docs/api/fixtures",
+      "index_schemas": [
+        "schemas/forge.workspace-1.schema.json"
+      ]
+    },
+    {
+      "api_major": 2,
+      "contract_version": "2.0.0",
+      "document": "docs/api/forge-workspace-v2.openapi.yaml",
+      "capability_matrix": [
+        "docs/api/capability-matrix-v2.json",
+        "docs/api/capability-matrix-v2.md"
+      ],
+      "fixtures": "docs/api/fixtures-v2",
+      "index_schemas": [
+        "schemas/forge.workspace-1.schema.json",
+        "schemas/forge.workspace-2.schema.json"
+      ]
+    }
+  ],
+  "package_paths": [
+    "docs/api",
+    "schemas/forge.workspace-1.schema.json",
+    "schemas/forge.workspace-2.schema.json"
+  ],
+  "invariants": [
+    "Single selected namespace per launch; API1 remains default",
+    "Separate closed original index1 and expanded index2",
+    "Intrinsic metadata admission does not establish current freshness or human acceptance"
+  ]
+}

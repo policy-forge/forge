@@ -289,8 +289,15 @@ class FakeNode {
 
 /** Construct the static shell nodes production initializes on module load. */
 class FakeDocument {
-  /** Assemble a connected shell with the same view, dialog, and status identifiers. */
-  constructor() {
+  /** Assemble unchanged body targets and explicit server-selected head metadata before asset initialization. */
+  constructor(bootstrap = {"forge-api-major":"1"}) {
+    this.head = new FakeNode(this, "head");
+    for (const [name, content] of Object.entries(bootstrap)) {
+      const meta = this.createElement("meta");
+      meta.setAttribute("name", name);
+      if (content !== null) meta.setAttribute("content", content);
+      this.head.append(meta);
+    }
     this.body = new FakeNode(this, "body");
     this.activeElement = this.body;
     this.focusHistory = [];
@@ -351,13 +358,13 @@ class FakeDocument {
     return visit(this.body);
   }
 
-  /** Query the connected body tree for modal and error targets. */
-  querySelector(selector) { return this.body.querySelector(selector); }
+  /** Resolve declared head metadata before body modal targets; metadata never joins the focus tree. */
+  querySelector(selector) { return this.head.querySelector(selector) ?? this.body.querySelector(selector); }
 }
 
-/** Execute the entire selected source file in an isolated realm without transformation. */
-function harness(overrides = {}) {
-  const document = new FakeDocument();
+/** Execute the unchanged whole asset with explicit shell metadata and synthetic JSON or binary transport fixtures. */
+function harness(overrides = {}, bootstrap = {"forge-api-major":"1"}) {
+  const document = new FakeDocument(bootstrap);
   const requests = [];
   const objectURLs = new Map(); const revokedURLs = [];
   /** Track Blob URL lifetimes without mutating the host URL implementation. */
@@ -395,14 +402,17 @@ function harness(overrides = {}) {
       return timers.length;
     },
     URLSearchParams, URL:HarnessURL, Blob, console,
+    /** Record exact selected-major URLs while substituting only authored JSON or binary transport observations. */
     fetch: async (url, options) => {
       const parsed = new URL(url, "http://127.0.0.1:1");
-      const route = parsed.pathname.replace(/^\/api\/v1/, "");
+      const route = parsed.pathname.replace(/^\/api\/v[12](?=\/)/, "");
       requests.push({ route, url, options });
       assert.equal(typeof routes[route], "function", "Unexpected API route: " + route);
       const value = await routes[route](parsed, options);
       const status = value.status ?? 200;
-      return { ok: status >= 200 && status < 300, json: async () => value.body ?? value };
+      return { ok: status >= 200 && status < 300, json: async () => value.body ?? value,
+        /** Supply only an explicitly authored binary download response; ordinary JSON remains unchanged. */
+        blob: async () => { assert(value.download_blob instanceof Blob, "Missing binary download fixture"); return value.download_blob; } };
     },
   });
   new vm.Script(productionSource, { filename: productionPath }).runInContext(context);
@@ -2331,4 +2341,552 @@ test("a failed provenance transition retires disclosure while the retained metad
   assert.equal(parts.panel.isConnected,true);assert.equal(parts.acknowledgment.checked,false);assert.equal(parts.download.getAttribute("aria-disabled"),"true");
   parts.preview.focus();await parts.preview.fire("click");assert.equal(app.document.activeElement,parts.preview);assert.match(parts.previewStatus.textContent,/1 registered resources/);
   assert.equal(app.document.downloads.length,0);
+});
+
+
+// API2 source controls retain the original API1 callback bytes above. All new
+// replies are synthetic transport observations, not native admission or acceptance.
+const lifecycleBootstrap2 = {"forge-api-major":"2", "forge-api-contract-version":"2.0.0"};
+const lifecycleOriginalRoles = ["policy-source", "oscal-catalog-artifact", "oscal-component-artifact", "mapping-collection", "applicability-manifest", "applicability-report", "trace-report"];
+const lifecycleProfiles = {
+  "lifecycle-record":"lifecycle-record-structure",
+  "lifecycle-source":"opaque-fingerprint-bytes",
+  "oscal-profile-artifact":"native-oscal-schema",
+  "oscal-ssp-artifact":"native-oscal-schema",
+  "framework-impact-manifest":"framework-impact-manifest",
+  "successor-map":"successor-map",
+  "framework-impact-report":"framework-impact-prior-admission",
+  "framework-impact-dispositions":"framework-impact-dispositions",
+};
+
+/** Author the exact current API2 Session envelope without altering historical API1 fixtures. */
+function lifecycleSession(readOnly = true, overrides = {}) {
+  return {capability:"synthetic-api2-capability-32-characters", session:{
+    session_id:"sess_synthetic002", mode:"browser", api_major:2, read_only:readOnly,
+    contract_version:"2.0.0", project_label:"Synthetic API2 project", launched_at:"2026-10-02T00:00:00Z",
+    ...overrides,
+  }};
+}
+
+/** Render declared role/profile observations; these fixtures do not validate domain content. */
+function lifecycleResources() {
+  return [...lifecycleOriginalRoles, ...Object.keys(lifecycleProfiles)].map((role, number) => ({
+    resource_id:`res_lifecycle000${number}`, key:`life-${number}`, role, path:`life-${number}.json`,
+    sha256:"a".repeat(64), size_bytes:role === "lifecycle-source" ? 0 : 1,
+    validation_state:role === "framework-impact-report" ? "stale" : role === "lifecycle-record" ? "invalid" : "valid",
+    stale:role === "framework-impact-report", version:"synthetic-version-1",
+    ...(Object.hasOwn(lifecycleProfiles, role) ? {validation_profile:lifecycleProfiles[role]} : {}),
+  }));
+}
+
+/** Build complete paired synthetic metadata, preserving role order and zero-byte fingerprints. */
+function lifecycleBundle(indexVersion = "forge.workspace/2", count) {
+  assert(["forge.workspace/1", "forge.workspace/2"].includes(indexVersion));
+  const roles = indexVersion === "forge.workspace/1" ? lifecycleOriginalRoles : [...lifecycleOriginalRoles, ...Object.keys(lifecycleProfiles)];
+  const preview = metadataPreview(0);
+  const index = {schema_version:indexVersion, label:"API2 metadata <script> literal label",
+    resources:Array.from({length:count ?? roles.length}, (_, number) => ({key:`life-${number}`, role:roles[number % roles.length], path:`life-${number}.json`}))};
+  preview.bundle = {schema_version:indexVersion === "forge.workspace/1" ? "forge.workspace-index-bundle/1" : "forge.workspace-index-bundle/2",
+    content_profile:"index-and-hashes", index, index_sha256:createHash("sha256").update(JSON.stringify(index, null, 2)+"\n").digest("hex"),
+    pins:index.resources.map(resource => ({key:resource.key, sha256:"a".repeat(64), size_bytes:resource.role === "lifecycle-source" ? 0 : 1}))};
+  return preview;
+}
+
+/** Unlock through real production handlers before issuing API2 project reads in the fake transport. */
+async function lifecycleBrowserApp(overrides = {}, readOnly = true) {
+  const app = harness({
+    /** Return a matching synthetic Session so capability ownership is acquired through the real unlock path. */
+    "/session/unlock":() => lifecycleSession(readOnly),
+    ...overrides,
+  }, lifecycleBootstrap2);
+  await beginUnlock(app).action;
+  assert.equal(app.run("capability"), "synthetic-api2-capability-32-characters");
+  return app;
+}
+
+/** Install the actual API2 metadata panel without automatic preview, comparison or disclosure. */
+async function lifecycleMetadataApp(preview = lifecycleBundle(), overrides = {}) {
+  const app = await lifecycleBrowserApp({
+    /** Supply the complete paired metadata fixture only after explicit Preview metadata activation. */
+    "/project/bundle-preview":() => preview,
+    /** Return complete synthetic fingerprint observations without asserting domain approval. */
+    "/project/bundle-verifications":() => metadataComparison(preview),
+    ...overrides,
+  });
+  await app.run('navigate("Trace & Reports")');
+  return app;
+}
+
+/** Prepare a normal receipt-backed index write; no synthetic response can itself confirm it. */
+async function lifecycleWriteApp(major = 2, overrides = {}) {
+  const preview = {...proposedWrite(), operation_type:"workspace-index-update",
+    target:{status:"replace", path:"forge.workspace.json"}, semantic_summary:"Synthetic index-version preparation."};
+  const app = harness({
+    /** Use each major's original Session shape; API1's historical version fixture remains unchanged. */
+    "/session/unlock":() => major === 2 ? lifecycleSession(false) : unlockedSession(false),
+    /** Preparation returns the documented draft envelope, requiring a separate receipt read and confirmation. */
+    "/resources/register":() => ({validation:preview.validation, preview}),
+    /** Bind the ordinary preview dialog to the same synthetic receipt and proposed target. */
+    "/effects/previews/prev_synthetic000001":() => preview,
+    /** Acknowledge a synthetic commit; publication is observed separately through its operation ID. */
+    "/effects/commits":() => operation("pending", {kind:"commit"}),
+    /** Supply the exact target of the synthetic verified write only when confirmation triggers its observation. */
+    [operationRoute]:() => committedWrite("forge.workspace.json"),
+    ...overrides,
+  }, major === 2 ? lifecycleBootstrap2 : {"forge-api-major":"1"});
+  await beginUnlock(app).action;
+  await app.run('navigate("Policies & Artifacts")');
+  return app;
+}
+
+/** Set real labelled registration controls and preserve dirty values through preview-only work. */
+async function lifecycleRegistrationFields(app, role, indexVersion = "preserve") {
+  const resourceRole = app.byLabel("Resource role"); resourceRole.value = role;
+  const path = app.byLabel("Project-relative file path"); path.value = "chosen-source.md"; await path.fire("input");
+  const key = app.byLabel("Stable resource key"); key.value = "chosen-source"; await key.fire("input");
+  if (app.run("apiMajor") === 2) app.byLabel("Index version for this registration").value = indexVersion;
+  return {resourceRole, path, key};
+}
+
+/** Every observed request must retain its selected namespace; only unlock is sent without a capability. */
+function lifecycleRequestOwnership(app, major) {
+  assert(app.requests.length > 0);
+  for (const request of app.requests) {
+    assert.equal(new URL(request.url, "http://127.0.0.1:1").pathname.startsWith(`/api/v${major}/`), true);
+    assert.equal(request.options.credentials, "omit");
+    assert.equal(request.options.cache, "no-store");
+    assert.equal(request.options.redirect, "error");
+    assert.equal(request.options.referrerPolicy, "no-referrer");
+    assert.equal(request.options.headers.Authorization, request.route === "/session/unlock" ? undefined
+      : `Bearer ${major === 2 ? "synthetic-api2-capability-32-characters" : "synthetic-test-capability-32-characters"}`);
+  }
+}
+
+for (const major of [1, 2]) {
+  /** Supported exact bootstrap and matching Session acquire capability before any project request. */
+  test(`exact API${major} bootstrap unlocks into its own namespace without changing initial focus`, async () => {
+    const app = harness({
+      /** Return a matching Session only after observing the unauthenticated unlock request. */
+      "/session/unlock":() => major === 2 ? lifecycleSession() : unlockedSession(),
+    }, major === 2 ? lifecycleBootstrap2 : {"forge-api-major":"1"});
+    assert.equal(app.requests.length, 0);
+    assert.equal(app.document.activeElement, app.byId("passphrase"));
+    const attempt = beginUnlock(app); await attempt.action;
+    assert.equal(attempt.field.value, "");
+    assert.equal(app.byId("unlock-panel").hidden, true);
+    assert.equal(app.document.activeElement, app.byId("main"));
+    assert.equal(app.requests.filter(request => request.route === "/session/unlock").length, 1);
+    assert.equal(app.requests.filter(request => request.route === "/project/summary").length, 1);
+    lifecycleRequestOwnership(app, major);
+  });
+}
+
+for (const fixture of [
+  {name:"missing major", bootstrap:{}},
+  {name:"major meta without content", bootstrap:{"forge-api-major":null}},
+  {name:"empty major", bootstrap:{"forge-api-major":""}},
+  {name:"unsupported major", bootstrap:{"forge-api-major":"3"}},
+  {name:"decimal-coerced major", bootstrap:{...lifecycleBootstrap2, "forge-api-major":"2.0"}},
+  {name:"exponent-coerced major", bootstrap:{...lifecycleBootstrap2, "forge-api-major":"2e0"}},
+  {name:"whitespace-coerced major", bootstrap:{...lifecycleBootstrap2, "forge-api-major":" 2 "}},
+  {name:"missing API2 version", bootstrap:{"forge-api-major":"2"}},
+  {name:"unsupported current API2 version", bootstrap:{...lifecycleBootstrap2, "forge-api-contract-version":"2.9.9"}},
+  {name:"whitespace API2 version", bootstrap:{...lifecycleBootstrap2, "forge-api-contract-version":"2.0.0 "}},
+]) {
+  /** Reject malformed shell selection before sending a passphrase or granting capability ownership. */
+  test(`bootstrap rejects ${fixture.name} before every transport request`, async () => {
+    const app = harness({}, fixture.bootstrap);
+    const initialWorkspaceHidden = app.byId("workspace").hidden;
+    const attempt = beginUnlock(app); await attempt.action;
+    assert.equal(app.requests.length, 0);
+    assert.equal(app.run("capability"), "");
+    assert.equal(app.byId("unlock-panel").hidden, false);
+    assert.equal(app.byId("workspace").hidden, initialWorkspaceHidden);
+    assert.equal(attempt.field.value, "");
+    assert.equal(app.run("unlockPending"), false);
+    assert.equal(attempt.form.getAttribute("aria-busy"), "false");
+    assert.equal(app.document.activeElement, app.byId("error"));
+    assert.match(app.byId("error").textContent, /matching supported workspace API assets/);
+  });
+}
+
+for (const fixture of [
+  {name:"foreign major", session:{api_major:1, contract_version:"1.2.0"}},
+  {name:"string major", session:{api_major:"2", contract_version:"2.0.0"}},
+  {name:"unsupported Session version", session:{api_major:2, contract_version:"2.0.1"}},
+  {name:"missing Session version", session:{api_major:2, contract_version:undefined}},
+]) {
+  /** A mismatched Session response cannot authorize a project read or become a successful unlock. */
+  test(`API2 rejects ${fixture.name} before retaining the returned capability`, async () => {
+    const app = harness({
+      /** Return the selected mismatch as an unlock observation without granting project authority. */
+      "/session/unlock":() => lifecycleSession(true, fixture.session),
+    }, lifecycleBootstrap2);
+    const hidden = app.byId("workspace").hidden;
+    const attempt = beginUnlock(app); await attempt.action;
+    assert.equal(app.requests.length, 1);
+    assert.equal(app.requests[0].options.headers.Authorization, undefined);
+    assert.equal(app.run("capability"), "");
+    assert.equal(app.byId("workspace").hidden, hidden);
+    assert.equal(app.byId("unlock-panel").hidden, false);
+    assert.equal(app.document.activeElement, app.byId("error"));
+    assert.match(app.byId("error").textContent, /requires the selected API version/);
+    assert.equal(attempt.field.value, "");
+    assert.equal(attempt.submit.getAttribute("aria-disabled"), "false");
+  });
+}
+
+/** Original-major pages also reject a foreign Session before acquiring its capability. */
+test("API1 refuses an API2 Session while preserving the original locked state", async () => {
+  const app = harness({/** Return a foreign Session through the original-major unlock route. */ "/session/unlock":() => lifecycleSession()});
+  await beginUnlock(app).action;
+  assert.equal(app.requests.length, 1);
+  assert.equal(app.requests[0].url, "/api/v1/session/unlock");
+  assert.equal(app.run("capability"), "");
+  assert.equal(app.byId("unlock-panel").hidden, false);
+  assert.equal(app.document.activeElement, app.byId("error"));
+});
+
+/** API2 displays all declared admission profiles without converting invalid or stale observations into approval. */
+test("API2 read-only resources display fifteen roles and paired profiles without write controls", async () => {
+  const rows = lifecycleResources();
+  const app = await lifecycleBrowserApp({
+    /** Return exact synthetic Resource observations; content is never parsed by this source fixture. */
+    "/resources":() => ({resource_version:"synthetic-version-1", page:{items:rows, total_matching:rows.length, next_cursor:null}}),
+  });
+  await app.run('navigate("Policies & Artifacts")');
+  const table = app.byId("view").querySelector('[aria-label="Registered project files"]').querySelector("table");
+  assert.deepEqual(table.querySelectorAll("th").map(cell => cell.textContent), ["Key", "Role", "Path", "Validation", "Admission profile"]);
+  const displayed = table.querySelector("tbody").children;
+  assert.equal(displayed.length, 15);
+  for (let number = 0; number < rows.length; number++) {
+    const row = rows[number];
+    assert.deepEqual(displayed[number].children.map(cell => cell.textContent), [row.key, row.role, row.path, row.validation_state, row.validation_profile ?? "—"]);
+  }
+  assert.equal(app.byId("view").querySelectorAll("form").length, 0);
+  assert.match(app.byId("view").textContent, /This session is read-only/);
+  assert.equal(app.requests.some(request => request.route === "/resources/register" || request.route === "/effects/commits"), false);
+  lifecycleRequestOwnership(app, 2);
+});
+
+/** Writable API2 selectors include eight explicit new roles while original-major selectors stay seven-role only. */
+test("API2 registration and upload selectors expose fifteen roles without altering API1 choices", async () => {
+  for (const major of [1, 2]) {
+    const app = await lifecycleWriteApp(major);
+    const expected = major === 2 ? [...lifecycleOriginalRoles, ...Object.keys(lifecycleProfiles)] : lifecycleOriginalRoles;
+    for (const label of ["Resource role", "Uploaded resource role"]) {
+      assert.deepEqual(app.byLabel(label).querySelectorAll("option").map(option => option.value), expected);
+    }
+    const hasMigration = app.byId("view").querySelectorAll("button").some(button => button.textContent === "Preview migration to workspace index /2");
+    assert.equal(hasMigration, major === 2);
+    assert.equal(app.byId("view").querySelectorAll("label").some(label => label.textContent === "Index version for this registration"), major === 2);
+    if (major === 2) assert.match(app.byId("view").textContent, /do not establish current freshness, dependency closure or reviewer authority/);
+    assert.equal(app.requests.some(request => request.route === "/resources/register"), false);
+  }
+});
+
+for (const fixture of [
+  {name:"original API1 body", major:1, role:"policy-source", index:"preserve"},
+  {name:"API2 preserves current index", major:2, role:"policy-source", index:"preserve"},
+  {name:"API2 explicitly selects index2", major:2, role:"lifecycle-source", index:"forge.workspace/2"},
+]) {
+  /** User selection changes only the explicit request variant; preparation itself cannot confirm a write. */
+  test(`registration ${fixture.name} uses the normal receipt preview and leaves edits unsaved`, async () => {
+    const app = await lifecycleWriteApp(fixture.major);
+    const fields = await lifecycleRegistrationFields(app, fixture.role, fixture.index);
+    const invoker = app.byButton("Preview registration"); invoker.focus(); await invoker.fire("click");
+    const writes = app.requests.filter(request => request.route === "/resources/register");
+    assert.equal(writes.length, 1); assert.equal(writes[0].options.method, "POST");
+    const expected = {role:fixture.role, path:"chosen-source.md", key:"chosen-source"};
+    if (fixture.index === "forge.workspace/2") expected.index_schema_version = "forge.workspace/2";
+    assert.deepEqual(JSON.parse(writes[0].options.body), expected);
+    assert.match(writes[0].options.headers["Idempotency-Key"], /^[a-f0-9-]{36}$/);
+    const dialog = app.byId("preview-dialog"); assert.equal(dialog.open, true);
+    assert.equal(app.document.activeElement, dialog.querySelector("h2"));
+    assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+    assert.equal(app.run("dirty"), true); assert.doesNotMatch(app.byId("status").textContent, /^Saved /);
+    await app.byButton("Keep editing", dialog).fire("click");
+    assert.equal(fields.path.isConnected, true); assert.equal(fields.path.value, "chosen-source.md");
+    assert.equal(fields.key.value, "chosen-source"); assert.equal(app.run("dirty"), true);
+    assert.equal(app.document.activeElement === invoker, true,
+      "Keep editing must restore the connected initiating registration control.");
+    lifecycleRequestOwnership(app, fixture.major);
+  });
+}
+
+/** Migration sends only its closed variant, then waits for an exact receipt confirmation and verified result. */
+test("API2 migration ignores registration fields and cannot publish Saved before exact confirmation", async () => {
+  const app = await lifecycleWriteApp();
+  await lifecycleRegistrationFields(app, "lifecycle-source", "forge.workspace/2");
+  const migration = app.byButton("Preview migration to workspace index /2"); migration.focus(); await migration.fire("click");
+  const request = app.requests.find(request => request.route === "/resources/register");
+  assert.deepEqual(JSON.parse(request.options.body), {migration:{from:"forge.workspace/1", to:"forge.workspace/2"}});
+  assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+  assert.equal(app.run("dirty"), true);
+  app.document.holdCloseEvents = true;
+  const confirm = app.byButton("Confirm this exact write", app.byId("preview-dialog")); confirm.focus();
+  const write = confirm.fire("click"); await settle();
+  assert.equal(app.document.closeEvents.length, 1);
+  assert.doesNotMatch(app.byId("status").textContent, /^Saved /);
+  app.document.closeEvents.shift()(); await write;
+  oneExactCommit(app);
+  assert.equal(app.run("dirty"), false);
+  assert.equal(app.byId("status").textContent, "Saved forge.workspace.json.");
+  assert.equal(app.document.activeElement, app.byId("view-title"));
+  lifecycleRequestOwnership(app, 2);
+});
+
+for (const fixture of [
+  {version:"forge.workspace/1", count:7},
+  {version:"forge.workspace/2", count:15},
+  {version:"forge.workspace/2", count:1000},
+  {version:"forge.workspace/2", count:0},
+]) {
+  /** API2 preserves complete paired versions, including an explicit empty index, through local acknowledgment and download. */
+  test(`API2 metadata ${fixture.version} with ${fixture.count} resources requires fresh acknowledgment`, async () => {
+    const expected = lifecycleBundle(fixture.version, fixture.count);
+    const app = await lifecycleMetadataApp(expected); const parts = metadataParts(app);
+    app.run("dirty = true"); const status = app.byId("status").textContent;
+    parts.preview.focus(); await parts.preview.fire("click");
+    assert.equal(app.document.activeElement, parts.preview);
+    assert.match(parts.previewStatus.textContent, new RegExp(`${fixture.count} registered resources`));
+    assert.equal(parts.acknowledgment.checked, false);
+    await parts.download.fire("click"); assert.equal(app.document.downloads.length, 0);
+    assert.equal(parts.panel.querySelector('[data-bundle-metadata]').querySelector("tbody").children.length, fixture.count);
+    assert.match(parts.panel.textContent, /API2 metadata <script> literal label/);
+    assert.equal(parts.panel.querySelectorAll("script").length, 0);
+    parts.acknowledgment.checked = true; await parts.acknowledgment.fire("change");
+    parts.download.focus(); await parts.download.fire("click");
+    assert.equal(app.document.activeElement, parts.download);
+    assert.equal(app.document.downloads.length, 1);
+    const download = app.document.downloads[0]; assert.equal(download.filename, "forge-workspace-index-and-hashes.json");
+    assert.equal(await app.objectURLs.get(download.url).text(), JSON.stringify(expected.bundle));
+    assert.equal(app.run("dirty"), true); assert.equal(app.byId("status").textContent, status);
+    assert.equal(app.requests.some(request => /effects\/commits|\/exports|\/resources\/register/.test(request.route)), false);
+    await parts.preview.fire("click");
+    assert.equal(parts.acknowledgment.checked, false); assert.equal(parts.download.getAttribute("aria-disabled"), "true");
+    assert.equal(app.objectURLs.has(download.url), false);
+    assert.deepEqual(app.revokedURLs, [download.url]);
+    lifecycleRequestOwnership(app, 2);
+  });
+}
+
+for (const defect of ["default-major-bundle2", "bundle1-index2", "bundle2-index1", "index1-new-role", "unknown-role", "unknown-field", "wrong-profile", "pin-order", "index3", "1001-registrations"]) {
+  /** Invalid version pairing or closed metadata cannot become local disclosure authority or a partial download. */
+  test(`metadata rejects ${defect} without retaining acknowledgment or downloadable bytes`, async () => {
+    const expected = lifecycleBundle(defect === "index1-new-role" ? "forge.workspace/1" : "forge.workspace/2", defect === "1001-registrations" ? 1001 : undefined);
+    if (defect === "bundle1-index2") expected.bundle.schema_version = "forge.workspace-index-bundle/1";
+    if (defect === "bundle2-index1") expected.bundle.index.schema_version = "forge.workspace/1";
+    if (defect === "index1-new-role") expected.bundle.index.resources[0].role = "lifecycle-record";
+    if (defect === "unknown-role") expected.bundle.index.resources[0].role = "unapproved-role";
+    if (defect === "unknown-field") expected.bundle.index.resources[0].validation_profile = "opaque-fingerprint-bytes";
+    if (defect === "wrong-profile") expected.bundle.content_profile = "source-content";
+    if (defect === "pin-order") expected.bundle.pins.reverse();
+    if (defect === "index3") expected.bundle.index.schema_version = "forge.workspace/3";
+    let app;
+    if (defect === "default-major-bundle2") {
+      app = harness({
+        /** Acquire original-major capability through the unchanged unlock handler before the version rejection probe. */
+        "/session/unlock":() => unlockedSession(),
+        /** Supply bundle2 to an original-major panel so the closed version guard must reject it. */
+        "/project/bundle-preview":() => expected,
+      });
+      await beginUnlock(app).action;
+      await app.run('navigate("Trace & Reports")');
+    } else app = await lifecycleMetadataApp(expected);
+    const parts = metadataParts(app); parts.preview.focus(); await parts.preview.fire("click");
+    assert.equal(app.document.activeElement, parts.previewError);
+    assert.match(parts.previewError.textContent, /unsupported response/);
+    assert.equal(parts.acknowledgment.checked, false);
+    assert.equal(parts.download.getAttribute("aria-disabled"), "true");
+    assert.equal(parts.panel.querySelector('[data-bundle-metadata]').children.length, 0);
+    parts.acknowledgment.checked = true; await parts.acknowledgment.fire("change"); await parts.download.fire("click");
+    assert.equal(parts.acknowledgment.checked, false);
+    assert.equal(app.document.downloads.length, 0); assert.equal(app.objectURLs.size, 0);
+    assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+  });
+}
+
+/** API2 raw comparisons keep decoder-invalid bytes intact and retry a fresh read without an idempotency key. */
+test("API2 comparison wraps the exact chosen bytes and keeps raw-parser failures local", async () => {
+  const bodies = [];
+  const app = await lifecycleMetadataApp(lifecycleBundle(), {
+    /** Observe exact transport bytes and return a strict-parser failure without reflecting supplied content. */
+    "/project/bundle-verifications":async (_url, options) => {
+      bodies.push(Buffer.from(await options.body.arrayBuffer()));
+      return {status:400, body:{code:"invalid-request", message:"Synthetic API2 raw parser rejection.", retryable:false}};
+    },
+  });
+  const parts = metadataParts(app);
+  const bytes = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf, 0xff]), Buffer.from('{"schema_version":"forge.workspace-index-bundle/2","schema_version":2,"\\u006b":1,"k":2}')]);
+  await chooseMetadataBytes(app, bytes, "selected-api2.json");
+  parts.compare.focus(); await parts.compare.fire("click");
+  const expected = Buffer.concat([Buffer.from('{"bundle":'), bytes, Buffer.from('}')]);
+  assert.deepEqual(bodies, [expected]);
+  assert.equal(app.document.activeElement, parts.comparisonError);
+  assert.match(parts.comparisonError.textContent, /Synthetic API2 raw parser rejection/);
+  parts.compare.focus(); await parts.compare.fire("click"); assert.deepEqual(bodies, [expected, expected]);
+  const requests = app.requests.filter(request => request.route === "/project/bundle-verifications");
+  assert.equal(requests.length, 2);
+  assert(requests.every(request => request.options.method === "POST" && request.options.headers["Content-Type"] === "application/json" && !request.options.headers["Idempotency-Key"]));
+  assert.equal(app.document.downloads.length, 0); assert.equal(app.byId("error").hidden, true);
+  lifecycleRequestOwnership(app, 2);
+});
+
+/** Supplied index1 matches only expected fingerprints while extra current index2 registrations remain distinct from approval. */
+test("API2 comparison separates old-bundle subset matches, new-role extras and invalid content observations", async () => {
+  const expected = lifecycleBundle("forge.workspace/1");
+  const app = await lifecycleMetadataApp(lifecycleBundle(), {
+    /** Observe seven expected matches and eight current-only registrations without asserting whole-index equality. */
+    "/project/bundle-verifications":() => metadataComparison(expected, 8, "invalid"),
+  });
+  const parts = metadataParts(app); const status = app.byId("status").textContent;
+  await chooseMetadataBytes(app, Buffer.from(JSON.stringify(expected.bundle)), "old-version.json");
+  parts.compare.focus(); await parts.compare.fire("click");
+  assert.equal(app.document.activeElement, parts.compare);
+  assert.match(parts.comparison.textContent, /Comparison state: matched\. Whole index matches: no/);
+  assert.match(parts.comparison.textContent, /invalid/);
+  assert.match(parts.comparisonStatus.textContent, /7 matched.*of 7 expected.*Current-only registrations: 8/);
+  assert.equal(parts.comparison.querySelector("tbody").children.length, 7);
+  assert.equal(app.byId("status").textContent, status); assert.equal(parts.acknowledgment.checked, false);
+  assert.equal(app.document.downloads.length, 0);
+  lifecycleRequestOwnership(app, 2);
+});
+
+/** An obsolete API2 file read and finally cannot send bytes or unlock a newer comparison lane. */
+test("API2 changing files fences old reads while newer comparison owns busy state", async () => {
+  const obsolete = deferred(); const fresh = deferred(); let posts = 0;
+  const expected = lifecycleBundle();
+  const app = await lifecycleMetadataApp(expected, {
+    /** Hold the current comparison response while the prior selected file's read remains unresolved. */
+    "/project/bundle-verifications":() => { posts++; return fresh.promise; },
+  });
+  const parts = metadataParts(app); const bytes = Buffer.from(JSON.stringify(expected.bundle));
+  await chooseMetadataBytes(app, bytes, "obsolete-v2.json", () => obsolete.promise);
+  parts.compare.focus(); const oldRead = parts.compare.fire("click"); await settle();
+  await chooseMetadataBytes(app, bytes, "current-v2.json"); const currentRead = parts.compare.fire("click"); await settle();
+  assert.equal(posts, 1); const status = parts.comparisonStatus.textContent;
+  obsolete.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset+bytes.byteLength)); await oldRead;
+  assert.equal(posts, 1); assert.equal(parts.comparisonStatus.textContent, status);
+  assert.equal(parts.compare.getAttribute("aria-disabled"), "true");
+  await parts.compare.fire("click"); assert.equal(posts, 1);
+  fresh.resolve(metadataComparison(expected)); await currentRead;
+  assert.equal(parts.compare.getAttribute("aria-disabled"), "false");
+  assert.match(parts.comparisonStatus.textContent, /15 matched/);
+  lifecycleRequestOwnership(app, 2);
+});
+
+for (const transition of ["navigation", "stop"]) {
+  /** Current-major selection cannot revive metadata, acknowledgment or focus after its installed view is retired. */
+  test(`API2 late preview and comparison after ${transition} cannot publish or steal focus`, async () => {
+    const previewReply = deferred(); const comparisonReply = deferred(); const expected = lifecycleBundle();
+    const app = await lifecycleMetadataApp(expected, {
+      /** Delay the preview across the chosen session or view transition. */
+      "/project/bundle-preview":() => previewReply.promise,
+      /** Delay a complete registered comparison across the same transition. */
+      "/project/bundle-verifications":() => comparisonReply.promise,
+      /** Acknowledge synthetic shutdown through API2 without adding a project effect. */
+      "/session/shutdown":() => ({}),
+    });
+    const parts = metadataParts(app);
+    parts.preview.focus(); const previewRead = parts.preview.fire("click"); await settle();
+    await chooseMetadataBytes(app, Buffer.from(JSON.stringify(expected.bundle)), "late-api2.json");
+    parts.compare.focus(); const comparisonRead = parts.compare.fire("click"); await settle();
+    if (transition === "navigation") await app.run('navigate("Overview")');
+    else { await app.byId("stop").fire("click"); await app.byId("confirm-stop").fire("click"); }
+    const focus = app.document.activeElement; const focusCount = app.document.focusHistory.length;
+    const status = app.byId("status").textContent; const requests = app.requests.length;
+    previewReply.resolve(expected); comparisonReply.resolve(metadataComparison(expected));
+    await previewRead; await comparisonRead;
+    assert.equal(app.document.activeElement, focus); assert.equal(app.document.focusHistory.length, focusCount);
+    assert.equal(app.byId("status").textContent, status); assert.equal(app.requests.length, requests);
+    assert.equal(parts.acknowledgment.checked, false); assert.equal(parts.download.getAttribute("aria-disabled"), "true");
+    assert.equal(parts.comparison.children.length, 0); assert.equal(app.document.downloads.length, 0);
+    if (transition === "stop") assert.equal(app.run("capability"), "");
+    lifecycleRequestOwnership(app, 2);
+  });
+}
+
+/** Cancelling an unsaved transition preserves API2 disclosure ownership; explicit discard retires it and returns destination focus. */
+test("API2 dirty navigation cancellation retains the installed acknowledged metadata preview", async () => {
+  const app = await lifecycleMetadataApp(); const parts = metadataParts(app);
+  await parts.preview.fire("click"); parts.acknowledgment.checked = true; await parts.acknowledgment.fire("change");
+  app.run("dirty = true"); const invoker = app.byButton("Overview", app.byId("navigation")); invoker.focus();
+  const cancelled = invoker.fire("click"); await settle();
+  await app.byButton("Keep editing", app.document.querySelector("dialog[open]")).fire("click"); await cancelled;
+  assert.equal(parts.panel.isConnected, true); assert.equal(parts.acknowledgment.checked, true);
+  assert.equal(parts.download.getAttribute("aria-disabled"), "false"); assert.equal(app.run("dirty"), true);
+  assert.equal(app.document.activeElement, invoker);
+  const discarded = invoker.fire("click"); await settle();
+  await app.byButton("Discard edits", app.document.querySelector("dialog[open]")).fire("click"); await discarded;
+  assert.equal(parts.panel.isConnected, false); assert.equal(parts.acknowledgment.checked, false);
+  assert.equal(app.run("dirty"), false); assert.equal(app.document.activeElement, app.byId("view-title"));
+  assert.equal(app.byId("view-title").textContent, "Overview"); assert.equal(app.document.downloads.length, 0);
+  lifecycleRequestOwnership(app, 2);
+});
+
+/** Confirmed report downloads must keep the selected API2 namespace and the existing authenticated binary transport options. */
+test("API2 confirmed redacted export download never falls back to the foreign API1 namespace", async () => {
+  const report = new Blob(["synthetic redacted report"], {type:"text/html"});
+  const exportPreview = {...proposedWrite(), operation_type:"report-export", target:{status:"create", path:"synthetic-output.html"}};
+  const app = await lifecycleWriteApp(2, {
+    /** Supply a normal succeeded export preparation containing its receipt-bound preview, without confirming bytes. */
+    "/exports":() => operation("succeeded", {kind:"export", result:{operation_id:operationId, preview:exportPreview,
+      redaction_summary:{removed_categories:["reviewer-names", "absolute-paths", "source-excerpts", "secrets"]}}}),
+    /** Return the same prepared export when the actual operation row opens its receipt dialog. */
+    "/effects/previews/prev_synthetic000001":() => exportPreview,
+    /** Observe the confirmed synthetic HTML target only after the actual receipt confirmation request. */
+    [operationRoute]:() => committedWrite("synthetic-output.html"),
+    /** Return only an explicit bounded binary fixture at the selected major's confirmed export download route. */
+    [`/exports/${operationId}/download`]:() => ({download_blob:report}),
+  });
+  await app.run('navigate("Trace & Reports")');
+  app.byLabel("Report").value = "trace";
+  const target = app.byLabel("Report destination within project"); target.value = "synthetic-output.html"; await target.fire("input");
+  const invoker = app.byButton("Prepare export"); invoker.focus(); await invoker.fire("click");
+  assert.deepEqual(JSON.parse(app.requests.find(request => request.route === "/exports").options.body),
+    {report_kind:"trace", target_path:"synthetic-output.html", format:"static-html", redaction_profile:"strict-default"});
+  assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+  await app.byButton("Confirm this exact write", app.byId("preview-dialog")).fire("click");
+  oneExactCommit(app);
+  assert.equal(app.requests.some(request => request.route.endsWith("/download")), false);
+  const download = app.byButton("Download committed redacted report"); download.focus(); await download.fire("click");
+  const requests = app.requests.filter(request => request.route.endsWith("/download"));
+  assert.equal(requests.length, 1); assert.equal(requests[0].url, `/api/v2/exports/${operationId}/download`);
+  assert.equal(requests[0].options.headers.Authorization, "Bearer synthetic-api2-capability-32-characters");
+  assert.equal(app.document.activeElement === download, true,
+    "Authenticated download must retain its connected initiating control focus.");
+  assert.equal(app.document.downloads.length, 1);
+  const retained = app.document.downloads[0]; assert.equal(retained.filename, "forge-redacted-report.html");
+  assert.equal(app.objectURLs.get(retained.url), report);
+  lifecycleRequestOwnership(app, 2);
+});
+
+/** A pending registration keeps its native trigger focused and rejects repeated activation before any second effect request. */
+test("busy registration preserves trigger focus and blocks duplicate preparation until its exact preview arrives", async () => {
+  const pending = deferred();
+  const app = await lifecycleWriteApp(2, {
+    /** Hold the actual registration reply while repeat activation exercises the production busy guard. */
+    "/resources/register":() => pending.promise,
+  });
+  await lifecycleRegistrationFields(app, "lifecycle-source", "forge.workspace/2");
+  const trigger = app.byButton("Preview registration"); trigger.focus();
+  const first = trigger.fire("click"); await settle();
+  assert.equal(trigger.disabled, false);
+  assert.equal(trigger.getAttribute("aria-disabled"), "true");
+  assert.equal(trigger.getAttribute("aria-busy"), "true");
+  assert.equal(app.document.activeElement === trigger, true, "pending trigger retains focus");
+  await trigger.fire("click");
+  assert.equal(app.requests.filter(request => request.route === "/resources/register").length, 1);
+  const preview = app.routes["/effects/previews/prev_synthetic000001"]();
+  pending.resolve({validation:preview.validation, preview}); await first;
+  assert.equal(trigger.getAttribute("aria-disabled"), "false");
+  assert.equal(trigger.getAttribute("aria-busy"), "false");
+  const dialog = app.byId("preview-dialog"); assert.equal(dialog.open, true);
+  await app.byButton("Keep editing", dialog).fire("click");
+  assert.equal(dialog.open, false);
+  assert.equal(app.document.activeElement === trigger, true, "dismissal restores the connected trigger");
+  assert.equal(app.run("dirty"), true);
+  assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
 });

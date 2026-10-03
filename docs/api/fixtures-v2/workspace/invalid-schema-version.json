@@ -1,0 +1,11 @@
+{
+  "schema_version": "forge.workspace/2",
+  "label": "Acme ISMS project",
+  "resources": [
+    {
+      "key": "pol-acceptable-use",
+      "role": "policy-source",
+      "path": "policies/POL-01_Acceptable_Use_Policy.md"
+    }
+  ]
+}
