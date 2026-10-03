@@ -274,6 +274,9 @@ jobs:
       - name: Check closed OS-denial receipt and ownership controls
         run: python -B scripts/test_verify_workspace_os_denial.py
 
+      - name: Check separate stdlib-gate observation controls
+        run: python -B scripts/test_observe_workspace_stdlib_gate.py
+
       # Host provisioning remains network-enabled. There is no ip/sudo/package
       # installation or administrative fallback; absence yields an incomplete
       # uncreated experiment. Cargo offline does not establish runtime denial.
@@ -285,6 +288,7 @@ jobs:
         run: cargo build --locked --offline --release
 
       - name: Verify calibrated headless denial with the unchanged client
+        id: headless-denial-verification
         if: always()
         env:
           FORGE_TEST_COMMIT: ${{ github.sha }}
@@ -308,5 +312,29 @@ jobs:
         with:
           name: workspace-headless-ip-denial-${{ github.sha }}
           path: headless-ip-denial-evidence/workspace-os-denial-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+      # A separate ordinary-user observation cannot retry or downgrade the failed
+      # native verification, qualify stdlib inventory, or change its receipt.
+      - name: Observe one rejected stdlib stat predicate
+        id: stdlib-gate-observation
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' }}
+        timeout-minutes: 11
+        env:
+          FORGE_TEST_REQUESTED: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          python -B scripts/observe_workspace_stdlib_gate.py \
+            --output-dir stdlib-gate-evidence \
+            --requested-commit "$FORGE_TEST_REQUESTED" --tested-commit "$FORGE_TEST_COMMIT"
+
+      - name: Retain separate bounded stat-predicate sidecar
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-stdlib-gate-${{ github.sha }}
+          path: stdlib-gate-evidence/stdlib-gate-observation.json
           if-no-files-found: error
           retention-days: 14
