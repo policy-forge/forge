@@ -1,0 +1,5433 @@
+{
+  "schema": "forge.stdlib-observer-root-precommit-checks/4",
+  "checkpoint": "Before mandatory commit hook, push, draft PR or hosted sidecar",
+  "base_commit": "3594b1c4d3185adbcaaf470b870e7258cc86cf90",
+  "base_parent": "e52ae8cc5c52ff6734fb47bc5dc17436b5bd9a55",
+  "branch": "codex/f04-stdlib-observation",
+  "task": {
+    "project_id": 3,
+    "id": 1433,
+    "index": 38,
+    "parent_id": 1394
+  },
+  "author_index_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-gate-observation-candidate-v2/index.json",
+    "bytes": 32628,
+    "sha256": "fcae47d642cd83659eadb3be44dbea90a73a1c38b6c21c4a204f9ec54d4b273d"
+  },
+  "author_literal_pins_checked": 157,
+  "historical_index_pins_checked": 3,
+  "application_receipt_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-observer-six-path-application-v1.json",
+    "bytes": 741209,
+    "sha256": "fb37874e5ab16a92caac57d905e2469d55a42c70bdf14fd36444b572a07fbed6"
+  },
+  "applied_six_path_checkpoint": [
+    {
+      "repository_path": "scripts/observe_workspace_stdlib_gate.py",
+      "bytes": 28113,
+      "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9"
+    },
+    {
+      "repository_path": "scripts/test_observe_workspace_stdlib_gate.py",
+      "bytes": 39679,
+      "sha256": "24c1960b4f25100e9c97e3d8ba3e57b6f9f14f6ae08b297361a558dcc92093f2"
+    },
+    {
+      "repository_path": ".github/workflows/workspace-verification.yml",
+      "bytes": 14919,
+      "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e"
+    },
+    {
+      "repository_path": "docs/workspace-stdlib-gate-observation.md",
+      "bytes": 5548,
+      "sha256": "2cb75697dc1755f060cb6fd35c08b45331c0e9db5e8db284fdf6d11e5b692490"
+    },
+    {
+      "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+      "bytes": 4784,
+      "sha256": "7455cfe22a8b0209f9ece7535238ea5e10e5b62899b549c9970741994e11ffb4"
+    },
+    {
+      "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation-static-audit-v2.json",
+      "bytes": 59577,
+      "sha256": "7ad5b645016591303175232d1d1bfb78500d6be70b7502bed4cd37f659f7a890"
+    }
+  ],
+  "other1282_tracked_preserved_at_application": true,
+  "config_pin": {
+    "bytes": 188,
+    "sha256": "c76d551c107bd3c3e56d496c843726643c36e39559c02bd42d8dcc22978c9e5b"
+  },
+  "hook_pin": {
+    "bytes": 131,
+    "sha256": "faa755fdb37f65a60682c4bde2863db0e785e35067b67cf4af3f2d4b726b2dd3"
+  },
+  "root_control_addition": {
+    "schema": "forge.stdlib-observer-added-control/1",
+    "repository_path": "scripts/test_observe_workspace_stdlib_gate.py",
+    "before": {
+      "bytes": 36170,
+      "sha256": "4cd046751108319d79a85df53f6ef7d563ff59ae061dbf5ff63368a6e16a8a0b"
+    },
+    "after": {
+      "bytes": 39679,
+      "sha256": "24c1960b4f25100e9c97e3d8ba3e57b6f9f14f6ae08b297361a558dcc92093f2"
+    },
+    "added_controls": 1,
+    "subcases": 10,
+    "production_changed": false,
+    "tests_run": null,
+    "historical_raw29_control_receipt_preserved": true
+  },
+  "root_control_addition_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-observer-administrative-control-application-v1.json",
+    "bytes": 512,
+    "sha256": "081d1902d8609120fbde816808e207cb4cf4df2accf8dfe5cddb96bed2716469"
+  },
+  "production_bytes_unchanged_from_frozen_candidate": true,
+  "latest_coverage_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-observer-root-controls-v2/coverage.json",
+    "bytes": 57529,
+    "sha256": "2cb0f69a027ca4dfc4ab430c60261521f95a657187dbcb0434c4eb444b3dfa24"
+  },
+  "latest_raw_log_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-observer-root-controls-v2/raw-unittest.log",
+    "bytes": 8067,
+    "sha256": "cfe982e0c17e7882d5b6ec5ee5812bb0d11276ba2735ed66def66bf0d2a25a07"
+  },
+  "latest_literal_coverage": {
+    "schema": "forge.stdlib-observer-mocked-controls/1",
+    "started_utc": "2026-10-03T03:20:04.716996+00:00",
+    "finished_utc": "2026-10-03T03:20:06.575262+00:00",
+    "source_before": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/observe_workspace_stdlib_gate.py",
+        "bytes": 28113,
+        "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_observe_workspace_stdlib_gate.py",
+        "bytes": 39679,
+        "sha256": "24c1960b4f25100e9c97e3d8ba3e57b6f9f14f6ae08b297361a558dcc92093f2"
+      }
+    ],
+    "source_after": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/observe_workspace_stdlib_gate.py",
+        "bytes": 28113,
+        "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_observe_workspace_stdlib_gate.py",
+        "bytes": 39679,
+        "sha256": "24c1960b4f25100e9c97e3d8ba3e57b6f9f14f6ae08b297361a558dcc92093f2"
+      }
+    ],
+    "source_unchanged": true,
+    "support_before": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_os_denial.py",
+        "bytes": 44351,
+        "sha256": "1b15a062772ec6b0ac8e584992aa9201ede8e35c4704100d37c4e8e0af9dd30c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_os_denial.py",
+        "bytes": 68516,
+        "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace.py",
+        "bytes": 31135,
+        "sha256": "0d26035645ad18e9e18a81eb3197190aa55a4c4c1d7332f6b345fad043b55ae2"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/.github/workflows/workspace-verification.yml",
+        "bytes": 14919,
+        "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.toml",
+        "bytes": 2344,
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.lock",
+        "bytes": 74338,
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+      }
+    ],
+    "support_after": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_os_denial.py",
+        "bytes": 44351,
+        "sha256": "1b15a062772ec6b0ac8e584992aa9201ede8e35c4704100d37c4e8e0af9dd30c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_os_denial.py",
+        "bytes": 68516,
+        "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace.py",
+        "bytes": 31135,
+        "sha256": "0d26035645ad18e9e18a81eb3197190aa55a4c4c1d7332f6b345fad043b55ae2"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/.github/workflows/workspace-verification.yml",
+        "bytes": 14919,
+        "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.toml",
+        "bytes": 2344,
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.lock",
+        "bytes": 74338,
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+      }
+    ],
+    "python": "3.14.8",
+    "python_executable": {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "bytes": 34640,
+      "sha256": "7ebde552773a4045532637b114d645a313e045ac07b26f5e520bf039f1e34063"
+    },
+    "collector_pin": {
+      "path": "/private/tmp/forge-f04-stdlib-observer-root-collector-v2.py",
+      "bytes": 6810,
+      "sha256": "664d2811a6d32c7fdf6f760cf8e2eea9c778b270c575a70b288a42b3cb384dfa"
+    },
+    "tests": {
+      "run": 30,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "files": [
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/observe_workspace_stdlib_gate.py",
+          "bytes": 28113,
+          "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "ObservationStop",
+            "kind": "class",
+            "line": 53,
+            "end_line": 59,
+            "code_start": 53,
+            "documented": true
+          },
+          {
+            "name": "ObservationStop.__init__",
+            "kind": "function",
+            "line": 56,
+            "end_line": 59,
+            "code_start": 56,
+            "documented": true,
+            "actual_primary_thread_calls": 50
+          },
+          {
+            "name": "canonical_bytes",
+            "kind": "function",
+            "line": 62,
+            "end_line": 64,
+            "code_start": 62,
+            "documented": true,
+            "actual_primary_thread_calls": 36
+          },
+          {
+            "name": "empty_observation",
+            "kind": "function",
+            "line": 67,
+            "end_line": 70,
+            "code_start": 67,
+            "documented": true,
+            "actual_primary_thread_calls": 133
+          },
+          {
+            "name": "unavailable",
+            "kind": "function",
+            "line": 73,
+            "end_line": 75,
+            "code_start": 73,
+            "documented": true,
+            "actual_primary_thread_calls": 41
+          },
+          {
+            "name": "budget",
+            "kind": "function",
+            "line": 78,
+            "end_line": 81,
+            "code_start": 78,
+            "documented": true,
+            "actual_primary_thread_calls": 40255
+          },
+          {
+            "name": "metadata",
+            "kind": "function",
+            "line": 84,
+            "end_line": 87,
+            "code_start": 84,
+            "documented": true,
+            "actual_primary_thread_calls": 86
+          },
+          {
+            "name": "object_kind",
+            "kind": "function",
+            "line": 90,
+            "end_line": 95,
+            "code_start": 90,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "reject_object",
+            "kind": "function",
+            "line": 98,
+            "end_line": 117,
+            "code_start": 98,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "root_trusted",
+            "kind": "function",
+            "line": 120,
+            "end_line": 143,
+            "code_start": 120,
+            "documented": true,
+            "actual_primary_thread_calls": 37
+          },
+          {
+            "name": "administrative_tool",
+            "kind": "function",
+            "line": 146,
+            "end_line": 169,
+            "code_start": 146,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "command",
+            "kind": "function",
+            "line": 172,
+            "end_line": 267,
+            "code_start": 172,
+            "documented": true,
+            "actual_primary_thread_calls": 8
+          },
+          {
+            "name": "strict_json",
+            "kind": "function",
+            "line": 271,
+            "end_line": 299,
+            "code_start": 271,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "strict_json.pairs",
+            "kind": "function",
+            "line": 275,
+            "end_line": 281,
+            "code_start": 275,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "strict_json.constant",
+            "kind": "function",
+            "line": 282,
+            "end_line": 284,
+            "code_start": 282,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "strict_json.depth",
+            "kind": "function",
+            "line": 291,
+            "end_line": 297,
+            "code_start": 291,
+            "documented": true,
+            "actual_primary_thread_calls": 33
+          },
+          {
+            "name": "probe_paths",
+            "kind": "function",
+            "line": 302,
+            "end_line": 319,
+            "code_start": 302,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "stdlib_walk",
+            "kind": "function",
+            "line": 322,
+            "end_line": 370,
+            "code_start": 322,
+            "documented": true,
+            "actual_primary_thread_calls": 18
+          },
+          {
+            "name": "stdlib_walk.visit",
+            "kind": "function",
+            "line": 340,
+            "end_line": 367,
+            "code_start": 340,
+            "documented": true,
+            "actual_primary_thread_calls": 47
+          },
+          {
+            "name": "read_source",
+            "kind": "function",
+            "line": 373,
+            "end_line": 392,
+            "code_start": 373,
+            "documented": true,
+            "actual_primary_thread_calls": 12
+          },
+          {
+            "name": "capture_identity",
+            "kind": "function",
+            "line": 395,
+            "end_line": 413,
+            "code_start": 395,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "validate_observation",
+            "kind": "function",
+            "line": 416,
+            "end_line": 446,
+            "code_start": 416,
+            "documented": true,
+            "actual_primary_thread_calls": 41
+          },
+          {
+            "name": "observe",
+            "kind": "function",
+            "line": 449,
+            "end_line": 472,
+            "code_start": 449,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "publish",
+            "kind": "function",
+            "line": 475,
+            "end_line": 486,
+            "code_start": 475,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "main",
+            "kind": "function",
+            "line": 489,
+            "end_line": 503,
+            "code_start": 489,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "16": 0,
+          "17": 0,
+          "18": 0,
+          "19": 0,
+          "20": 0,
+          "21": 0,
+          "22": 0,
+          "23": 0,
+          "24": 0,
+          "26": 0,
+          "27": 0,
+          "28": 0,
+          "30": 0,
+          "31": 0,
+          "33": 0,
+          "34": 0,
+          "36": 0,
+          "37": 0,
+          "39": 0,
+          "40": 0,
+          "41": 0,
+          "42": 0,
+          "44": 0,
+          "46": 0,
+          "47": 0,
+          "48": 0,
+          "49": 0,
+          "53": 0,
+          "54": 0,
+          "56": 0,
+          "58": 50,
+          "59": 50,
+          "62": 0,
+          "64": 36,
+          "67": 0,
+          "69": 399,
+          "70": 1197,
+          "73": 0,
+          "75": 41,
+          "78": 0,
+          "80": 40255,
+          "81": 2,
+          "84": 0,
+          "86": 172,
+          "87": 86,
+          "90": 0,
+          "92": 6,
+          "93": 5,
+          "94": 5,
+          "95": 1,
+          "98": 0,
+          "100": 11,
+          "101": 3,
+          "102": 8,
+          "103": 8,
+          "104": 8,
+          "105": 1,
+          "106": 1,
+          "107": 7,
+          "108": 1,
+          "109": 6,
+          "110": 12,
+          "111": 6,
+          "112": 6,
+          "113": 12,
+          "114": 6,
+          "115": 6,
+          "116": 6,
+          "117": 6,
+          "120": 0,
+          "122": 37,
+          "123": 37,
+          "124": 0,
+          "125": 37,
+          "126": 107,
+          "127": 107,
+          "128": 107,
+          "129": 107,
+          "130": 1,
+          "131": 106,
+          "132": 2,
+          "133": 104,
+          "134": 0,
+          "135": 104,
+          "136": 34,
+          "137": 1,
+          "138": 70,
+          "139": 0,
+          "140": 103,
+          "141": 33,
+          "142": 70,
+          "143": 33,
+          "146": 0,
+          "148": 10,
+          "149": 10,
+          "150": 10,
+          "151": 9,
+          "152": 9,
+          "153": 8,
+          "154": 7,
+          "155": 6,
+          "156": 24,
+          "157": 23,
+          "158": 23,
+          "159": 23,
+          "160": 23,
+          "161": 23,
+          "162": 18,
+          "163": 18,
+          "165": 1,
+          "166": 5,
+          "167": 5,
+          "168": 4,
+          "169": 3,
+          "172": 0,
+          "174": 8,
+          "175": 2,
+          "176": 6,
+          "177": 6,
+          "178": 6,
+          "179": 6,
+          "180": 6,
+          "181": 6,
+          "182": 6,
+          "183": 6,
+          "184": 6,
+          "185": 6,
+          "186": 1,
+          "187": 1,
+          "188": 10,
+          "189": 5,
+          "190": 5,
+          "191": 15,
+          "192": 10,
+          "193": 10,
+          "194": 5,
+          "195": 1,
+          "196": 1,
+          "197": 11,
+          "198": 8,
+          "199": 8,
+          "200": 1,
+          "201": 1,
+          "202": 21,
+          "203": 15,
+          "204": 15,
+          "205": 1,
+          "206": 1,
+          "207": 1,
+          "208": 0,
+          "209": 0,
+          "210": 0,
+          "211": 0,
+          "212": 0,
+          "213": 0,
+          "214": 0,
+          "215": 0,
+          "216": 0,
+          "217": 0,
+          "219": 14,
+          "220": 14,
+          "221": 0,
+          "222": 0,
+          "223": 14,
+          "224": 6,
+          "226": 8,
+          "227": 8,
+          "228": 2,
+          "229": 6,
+          "230": 4,
+          "231": 4,
+          "232": 1,
+          "233": 1,
+          "234": 1,
+          "235": 0,
+          "236": 0,
+          "237": 4,
+          "238": 0,
+          "239": 4,
+          "240": 4,
+          "241": 4,
+          "242": 4,
+          "243": 4,
+          "244": 1,
+          "245": 1,
+          "246": 0,
+          "247": 0,
+          "248": 0,
+          "249": 0,
+          "250": 0,
+          "251": 1,
+          "252": 1,
+          "254": 6,
+          "255": 6,
+          "256": 6,
+          "257": 1,
+          "258": 1,
+          "259": 6,
+          "260": 20,
+          "261": 15,
+          "262": 11,
+          "263": 11,
+          "264": 3,
+          "265": 3,
+          "266": 6,
+          "267": 2,
+          "271": 0,
+          "273": 10,
+          "274": 0,
+          "275": 10,
+          "277": 6,
+          "278": 17,
+          "279": 13,
+          "280": 11,
+          "281": 4,
+          "282": 10,
+          "284": 1,
+          "285": 10,
+          "286": 10,
+          "287": 5,
+          "288": 3,
+          "289": 2,
+          "290": 2,
+          "291": 5,
+          "293": 33,
+          "294": 32,
+          "295": 13,
+          "296": 28,
+          "297": 23,
+          "298": 5,
+          "299": 4,
+          "302": 0,
+          "304": 10,
+          "305": 10,
+          "306": 27,
+          "307": 19,
+          "308": 8,
+          "309": 8,
+          "310": 8,
+          "311": 4,
+          "312": 4,
+          "313": 4,
+          "314": 3,
+          "315": 1,
+          "316": 2,
+          "317": 1,
+          "318": 1,
+          "319": 1,
+          "322": 0,
+          "324": 85,
+          "325": 6,
+          "326": 12,
+          "327": 36,
+          "328": 24,
+          "329": 24,
+          "330": 24,
+          "331": 0,
+          "332": 0,
+          "333": 0,
+          "334": 24,
+          "335": 24,
+          "336": 50,
+          "337": 1,
+          "338": 11,
+          "339": 11,
+          "340": 11,
+          "343": 47,
+          "344": 46,
+          "345": 92,
+          "346": 40047,
+          "347": 40041,
+          "348": 40041,
+          "349": 40041,
+          "350": 40040,
+          "351": 40040,
+          "352": 40040,
+          "353": 1,
+          "354": 1,
+          "355": 40039,
+          "356": 1,
+          "357": 40038,
+          "358": 1,
+          "359": 40037,
+          "360": 1,
+          "361": 40036,
+          "362": 33,
+          "363": 40003,
+          "364": 40002,
+          "365": 40002,
+          "367": 1,
+          "368": 17,
+          "369": 3,
+          "370": 2,
+          "373": 0,
+          "375": 12,
+          "376": 12,
+          "377": 0,
+          "378": 12,
+          "379": 12,
+          "380": 12,
+          "381": 12,
+          "382": 12,
+          "383": 67,
+          "384": 67,
+          "385": 67,
+          "386": 55,
+          "387": 12,
+          "388": 0,
+          "389": 12,
+          "390": 12,
+          "392": 12,
+          "395": 0,
+          "397": 4,
+          "398": 18,
+          "399": 0,
+          "400": 3,
+          "401": 3,
+          "402": 0,
+          "403": 3,
+          "404": 3,
+          "405": 3,
+          "406": 2,
+          "407": 10,
+          "408": 8,
+          "409": 8,
+          "410": 5,
+          "411": 4,
+          "412": 1,
+          "413": 1,
+          "416": 0,
+          "418": 41,
+          "419": 40,
+          "420": 39,
+          "421": 39,
+          "422": 38,
+          "423": 38,
+          "424": 32,
+          "425": 184,
+          "426": 30,
+          "427": 146,
+          "428": 117,
+          "429": 172,
+          "430": 34,
+          "431": 22,
+          "432": 20,
+          "433": 17,
+          "434": 14,
+          "435": 14,
+          "436": 13,
+          "437": 11,
+          "438": 9,
+          "439": 9,
+          "440": 8,
+          "441": 8,
+          "443": 180,
+          "444": 11,
+          "445": 15,
+          "446": 15,
+          "449": 0,
+          "451": 5,
+          "452": 5,
+          "453": 5,
+          "454": 5,
+          "455": 5,
+          "456": 4,
+          "457": 4,
+          "458": 1,
+          "459": 4,
+          "460": 4,
+          "461": 0,
+          "462": 0,
+          "463": 5,
+          "464": 5,
+          "465": 5,
+          "466": 4,
+          "467": 4,
+          "468": 1,
+          "469": 1,
+          "470": 1,
+          "471": 5,
+          "472": 5,
+          "475": 0,
+          "477": 6,
+          "478": 6,
+          "479": 6,
+          "480": 5,
+          "481": 5,
+          "482": 10,
+          "483": 5,
+          "484": 5,
+          "486": 5,
+          "489": 0,
+          "491": 5,
+          "492": 5,
+          "493": 5,
+          "494": 5,
+          "495": 5,
+          "496": 5,
+          "497": 5,
+          "498": 4,
+          "499": 2,
+          "500": 2,
+          "501": 2,
+          "502": 3,
+          "503": 3,
+          "506": 0,
+          "507": 0
+        },
+        "positive_lines": 323,
+        "zero_lines": 97,
+        "calls": [
+          {
+            "line": 56,
+            "name": "ObservationStop.__init__",
+            "count": 50
+          },
+          {
+            "line": 62,
+            "name": "canonical_bytes",
+            "count": 36
+          },
+          {
+            "line": 67,
+            "name": "empty_observation",
+            "count": 133
+          },
+          {
+            "line": 73,
+            "name": "unavailable",
+            "count": 41
+          },
+          {
+            "line": 78,
+            "name": "budget",
+            "count": 40255
+          },
+          {
+            "line": 84,
+            "name": "metadata",
+            "count": 86
+          },
+          {
+            "line": 90,
+            "name": "object_kind",
+            "count": 6
+          },
+          {
+            "line": 98,
+            "name": "reject_object",
+            "count": 11
+          },
+          {
+            "line": 120,
+            "name": "root_trusted",
+            "count": 37
+          },
+          {
+            "line": 146,
+            "name": "administrative_tool",
+            "count": 10
+          },
+          {
+            "line": 172,
+            "name": "command",
+            "count": 8
+          },
+          {
+            "line": 271,
+            "name": "strict_json",
+            "count": 10
+          },
+          {
+            "line": 275,
+            "name": "strict_json.<locals>.pairs",
+            "count": 6
+          },
+          {
+            "line": 282,
+            "name": "strict_json.<locals>.constant",
+            "count": 1
+          },
+          {
+            "line": 291,
+            "name": "strict_json.<locals>.depth",
+            "count": 33
+          },
+          {
+            "line": 302,
+            "name": "probe_paths",
+            "count": 10
+          },
+          {
+            "line": 322,
+            "name": "stdlib_walk",
+            "count": 18
+          },
+          {
+            "line": 324,
+            "name": "stdlib_walk.<locals>.<genexpr>",
+            "count": 43
+          },
+          {
+            "line": 336,
+            "name": "stdlib_walk.<locals>.<genexpr>",
+            "count": 36
+          },
+          {
+            "line": 340,
+            "name": "stdlib_walk.<locals>.visit",
+            "count": 47
+          },
+          {
+            "line": 373,
+            "name": "read_source",
+            "count": 12
+          },
+          {
+            "line": 395,
+            "name": "capture_identity",
+            "count": 4
+          },
+          {
+            "line": 398,
+            "name": "capture_identity.<locals>.<genexpr>",
+            "count": 9
+          },
+          {
+            "line": 416,
+            "name": "validate_observation",
+            "count": 41
+          },
+          {
+            "line": 425,
+            "name": "validate_observation.<locals>.<genexpr>",
+            "count": 93
+          },
+          {
+            "line": 429,
+            "name": "validate_observation.<locals>.<genexpr>",
+            "count": 87
+          },
+          {
+            "line": 443,
+            "name": "validate_observation.<locals>.<genexpr>",
+            "count": 84
+          },
+          {
+            "line": 449,
+            "name": "observe",
+            "count": 5
+          },
+          {
+            "line": 475,
+            "name": "publish",
+            "count": 6
+          },
+          {
+            "line": 489,
+            "name": "main",
+            "count": 5
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_observe_workspace_stdlib_gate.py",
+          "bytes": 39679,
+          "sha256": "24c1960b4f25100e9c97e3d8ba3e57b6f9f14f6ae08b297361a558dcc92093f2"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "info",
+            "kind": "function",
+            "line": 24,
+            "end_line": 27,
+            "code_start": 24,
+            "documented": true,
+            "actual_primary_thread_calls": 20183
+          },
+          {
+            "name": "identity",
+            "kind": "function",
+            "line": 30,
+            "end_line": 34,
+            "code_start": 30,
+            "documented": true,
+            "actual_primary_thread_calls": 43
+          },
+          {
+            "name": "rejected",
+            "kind": "function",
+            "line": 37,
+            "end_line": 42,
+            "code_start": 37,
+            "documented": true,
+            "actual_primary_thread_calls": 32
+          },
+          {
+            "name": "capture",
+            "kind": "function",
+            "line": 45,
+            "end_line": 47,
+            "code_start": 45,
+            "documented": true,
+            "actual_primary_thread_calls": 9
+          },
+          {
+            "name": "Entry",
+            "kind": "class",
+            "line": 50,
+            "end_line": 65,
+            "code_start": 50,
+            "documented": true
+          },
+          {
+            "name": "Entry.__init__",
+            "kind": "function",
+            "line": 53,
+            "end_line": 58,
+            "code_start": 53,
+            "documented": true,
+            "actual_primary_thread_calls": 20041
+          },
+          {
+            "name": "Entry.stat",
+            "kind": "function",
+            "line": 60,
+            "end_line": 65,
+            "code_start": 60,
+            "documented": true,
+            "actual_primary_thread_calls": 40040
+          },
+          {
+            "name": "Scandir",
+            "kind": "class",
+            "line": 68,
+            "end_line": 81,
+            "code_start": 68,
+            "documented": true
+          },
+          {
+            "name": "Scandir.__init__",
+            "kind": "function",
+            "line": 71,
+            "end_line": 73,
+            "code_start": 71,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "Scandir.__enter__",
+            "kind": "function",
+            "line": 75,
+            "end_line": 77,
+            "code_start": 75,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "Scandir.__exit__",
+            "kind": "function",
+            "line": 79,
+            "end_line": 81,
+            "code_start": 79,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "Stream",
+            "kind": "class",
+            "line": 84,
+            "end_line": 101,
+            "code_start": 84,
+            "documented": true
+          },
+          {
+            "name": "Stream.__init__",
+            "kind": "function",
+            "line": 87,
+            "end_line": 91,
+            "code_start": 87,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "Stream.fileno",
+            "kind": "function",
+            "line": 93,
+            "end_line": 95,
+            "code_start": 93,
+            "documented": true,
+            "actual_primary_thread_calls": 25
+          },
+          {
+            "name": "Stream.close",
+            "kind": "function",
+            "line": 97,
+            "end_line": 101,
+            "code_start": 97,
+            "documented": true,
+            "actual_primary_thread_calls": 12
+          },
+          {
+            "name": "Child",
+            "kind": "class",
+            "line": 104,
+            "end_line": 128,
+            "code_start": 104,
+            "documented": true
+          },
+          {
+            "name": "Child.__init__",
+            "kind": "function",
+            "line": 107,
+            "end_line": 114,
+            "code_start": 107,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "Child.poll",
+            "kind": "function",
+            "line": 116,
+            "end_line": 118,
+            "code_start": 116,
+            "documented": true,
+            "actual_primary_thread_calls": 17
+          },
+          {
+            "name": "Child.kill",
+            "kind": "function",
+            "line": 120,
+            "end_line": 123,
+            "code_start": 120,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Child.wait",
+            "kind": "function",
+            "line": 125,
+            "end_line": 128,
+            "code_start": 125,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "Selector",
+            "kind": "class",
+            "line": 131,
+            "end_line": 160,
+            "code_start": 131,
+            "documented": true
+          },
+          {
+            "name": "Selector.__init__",
+            "kind": "function",
+            "line": 134,
+            "end_line": 138,
+            "code_start": 134,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "Selector.register",
+            "kind": "function",
+            "line": 140,
+            "end_line": 142,
+            "code_start": 140,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "Selector.unregister",
+            "kind": "function",
+            "line": 144,
+            "end_line": 146,
+            "code_start": 144,
+            "documented": true,
+            "actual_primary_thread_calls": 7
+          },
+          {
+            "name": "Selector.get_map",
+            "kind": "function",
+            "line": 148,
+            "end_line": 150,
+            "code_start": 148,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "Selector.select",
+            "kind": "function",
+            "line": 152,
+            "end_line": 154,
+            "code_start": 152,
+            "documented": true,
+            "actual_primary_thread_calls": 7
+          },
+          {
+            "name": "Selector.close",
+            "kind": "function",
+            "line": 156,
+            "end_line": 160,
+            "code_start": 156,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "command_seam",
+            "kind": "function",
+            "line": 164,
+            "end_line": 178,
+            "code_start": 163,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "command_seam.read",
+            "kind": "function",
+            "line": 169,
+            "end_line": 171,
+            "code_start": 169,
+            "documented": true,
+            "actual_primary_thread_calls": 14
+          },
+          {
+            "name": "walk_seam",
+            "kind": "function",
+            "line": 182,
+            "end_line": 197,
+            "code_start": 181,
+            "documented": true,
+            "actual_primary_thread_calls": 24
+          },
+          {
+            "name": "walk_seam.scan",
+            "kind": "function",
+            "line": 185,
+            "end_line": 188,
+            "code_start": 185,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "observe_seam",
+            "kind": "function",
+            "line": 201,
+            "end_line": 216,
+            "code_start": 200,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "ObservationControls",
+            "kind": "class",
+            "line": 219,
+            "end_line": 593,
+            "code_start": 219,
+            "documented": true
+          },
+          {
+            "name": "ObservationControls.stop",
+            "kind": "function",
+            "line": 222,
+            "end_line": 226,
+            "code_start": 222,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "ObservationControls.assert_unavailable",
+            "kind": "function",
+            "line": 228,
+            "end_line": 235,
+            "code_start": 228,
+            "documented": true,
+            "actual_primary_thread_calls": 43
+          },
+          {
+            "name": "ObservationControls.test_closed_rejection_and_size",
+            "kind": "function",
+            "line": 237,
+            "end_line": 244,
+            "code_start": 237,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_record_types_pairs_and_predicates_closed",
+            "kind": "function",
+            "line": 246,
+            "end_line": 269,
+            "code_start": 246,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_source_identity_closed_and_protected",
+            "kind": "function",
+            "line": 271,
+            "end_line": 282,
+            "code_start": 271,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_unavailable_and_no_rejection_are_not_pass",
+            "kind": "function",
+            "line": 284,
+            "end_line": 295,
+            "code_start": 284,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_strict_probe_decoding",
+            "kind": "function",
+            "line": 297,
+            "end_line": 303,
+            "code_start": 297,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_deadline_fences_never_spawn_expired_commands",
+            "kind": "function",
+            "line": 305,
+            "end_line": 316,
+            "code_start": 305,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_stable_recheck_redacts_object_identity",
+            "kind": "function",
+            "line": 318,
+            "end_line": 329,
+            "code_start": 318,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_replaced_or_unobserved_object_revokes_facts",
+            "kind": "function",
+            "line": 331,
+            "end_line": 337,
+            "code_start": 331,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_original_entry_uid_mode_kind_order",
+            "kind": "function",
+            "line": 339,
+            "end_line": 350,
+            "code_start": 339,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_ancestor_mode_precedes_link_and_admin_has_no_object",
+            "kind": "function",
+            "line": 352,
+            "end_line": 359,
+            "code_start": 352,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_size_bound_and_no_content_read",
+            "kind": "function",
+            "line": 361,
+            "end_line": 368,
+            "code_start": 361,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_streamed_entry_bound_before_excess_stat",
+            "kind": "function",
+            "line": 370,
+            "end_line": 377,
+            "code_start": 370,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_root_shape_dynload_empty_and_stat_failure",
+            "kind": "function",
+            "line": 379,
+            "end_line": 388,
+            "code_start": 379,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_depth_bound_before_deeper_scan",
+            "kind": "function",
+            "line": 390,
+            "end_line": 396,
+            "code_start": 390,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_administrative_tool_trust_and_link_bounds",
+            "kind": "function",
+            "line": 398,
+            "end_line": 438,
+            "code_start": 398,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_administrative_tool_trust_and_link_bounds.observed",
+            "kind": "function",
+            "line": 404,
+            "end_line": 413,
+            "code_start": 404,
+            "documented": true,
+            "actual_primary_thread_calls": 137
+          },
+          {
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo",
+            "kind": "function",
+            "line": 441,
+            "end_line": 450,
+            "code_start": 441,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo.qualified",
+            "kind": "function",
+            "line": 443,
+            "end_line": 445,
+            "code_start": 443,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe",
+            "kind": "function",
+            "line": 452,
+            "end_line": 461,
+            "code_start": 452,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe.qualified",
+            "kind": "function",
+            "line": 455,
+            "end_line": 458,
+            "code_start": 455,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private",
+            "kind": "function",
+            "line": 463,
+            "end_line": 474,
+            "code_start": 463,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_separate_streams_and_full_eof",
+            "kind": "function",
+            "line": 476,
+            "end_line": 484,
+            "code_start": 476,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_stderr_bound_discards_stdout",
+            "kind": "function",
+            "line": 486,
+            "end_line": 489,
+            "code_start": 486,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_independent_close_and_first_fault",
+            "kind": "function",
+            "line": 491,
+            "end_line": 502,
+            "code_start": 491,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_timeout_owned_wait_and_discard",
+            "kind": "function",
+            "line": 504,
+            "end_line": 511,
+            "code_start": 504,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_observe_retains_first_rejection_only_with_unchanged_sources",
+            "kind": "function",
+            "line": 513,
+            "end_line": 520,
+            "code_start": 513,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_changed_or_unverified_sources_revoke_object_claims",
+            "kind": "function",
+            "line": 522,
+            "end_line": 529,
+            "code_start": 522,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_no_rejection_and_unsupported_host_remain_unqualified",
+            "kind": "function",
+            "line": 531,
+            "end_line": 539,
+            "code_start": 531,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_real_public_source_hashes_and_tested_head_fence",
+            "kind": "function",
+            "line": 541,
+            "end_line": 557,
+            "code_start": 541,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_identity_expiry_prevents_command",
+            "kind": "function",
+            "line": 559,
+            "end_line": 563,
+            "code_start": 559,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_private_canonical_no_replacement_publication",
+            "kind": "function",
+            "line": 565,
+            "end_line": 575,
+            "code_start": 565,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_main_exit_classes_and_generic_private_fault",
+            "kind": "function",
+            "line": 577,
+            "end_line": 585,
+            "code_start": 577,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_post_link_cleanup_fault_cannot_earn_availability",
+            "kind": "function",
+            "line": 587,
+            "end_line": 593,
+            "code_start": 587,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0,
+          "17": 0,
+          "18": 0,
+          "19": 0,
+          "20": 0,
+          "21": 0,
+          "24": 0,
+          "26": 40366,
+          "27": 20183,
+          "30": 0,
+          "32": 215,
+          "33": 43,
+          "34": 43,
+          "37": 0,
+          "39": 32,
+          "40": 64,
+          "41": 32,
+          "42": 32,
+          "45": 0,
+          "47": 9,
+          "50": 0,
+          "51": 0,
+          "53": 0,
+          "55": 20041,
+          "56": 20041,
+          "57": 20041,
+          "58": 20041,
+          "60": 0,
+          "62": 40040,
+          "63": 40040,
+          "64": 1,
+          "65": 40039,
+          "68": 0,
+          "69": 0,
+          "71": 0,
+          "73": 46,
+          "75": 0,
+          "77": 46,
+          "79": 0,
+          "81": 46,
+          "84": 0,
+          "85": 0,
+          "87": 0,
+          "89": 11,
+          "90": 11,
+          "91": 11,
+          "93": 0,
+          "95": 25,
+          "97": 0,
+          "99": 12,
+          "100": 12,
+          "101": 4,
+          "104": 0,
+          "105": 0,
+          "107": 0,
+          "109": 5,
+          "110": 5,
+          "111": 5,
+          "112": 5,
+          "113": 5,
+          "114": 5,
+          "116": 0,
+          "118": 17,
+          "120": 0,
+          "122": 1,
+          "123": 1,
+          "125": 0,
+          "127": 5,
+          "128": 5,
+          "131": 0,
+          "132": 0,
+          "134": 0,
+          "136": 6,
+          "137": 6,
+          "138": 6,
+          "140": 0,
+          "142": 11,
+          "144": 0,
+          "146": 7,
+          "148": 0,
+          "150": 11,
+          "152": 0,
+          "154": 22,
+          "156": 0,
+          "158": 6,
+          "159": 6,
+          "160": 1,
+          "163": 0,
+          "164": 0,
+          "166": 5,
+          "167": 5,
+          "168": 5,
+          "169": 5,
+          "171": 14,
+          "172": 10,
+          "173": 5,
+          "174": 5,
+          "175": 5,
+          "176": 5,
+          "177": 5,
+          "178": 5,
+          "181": 0,
+          "182": 0,
+          "184": 12,
+          "185": 12,
+          "187": 46,
+          "188": 46,
+          "189": 24,
+          "190": 12,
+          "191": 12,
+          "192": 12,
+          "193": 12,
+          "194": 12,
+          "195": 12,
+          "196": 4,
+          "197": 12,
+          "200": 0,
+          "201": 0,
+          "203": 5,
+          "204": 5,
+          "205": 10,
+          "206": 5,
+          "207": 5,
+          "208": 5,
+          "209": 5,
+          "210": 5,
+          "211": 5,
+          "212": 5,
+          "213": 5,
+          "214": 5,
+          "215": 5,
+          "216": 5,
+          "219": 0,
+          "220": 0,
+          "222": 0,
+          "224": 92,
+          "225": 46,
+          "226": 46,
+          "228": 0,
+          "230": 43,
+          "231": 344,
+          "232": 301,
+          "233": 258,
+          "234": 43,
+          "235": 33,
+          "237": 0,
+          "239": 1,
+          "240": 1,
+          "241": 1,
+          "242": 1,
+          "243": 1,
+          "244": 1,
+          "246": 0,
+          "248": 1,
+          "251": 11,
+          "252": 20,
+          "253": 10,
+          "254": 20,
+          "255": 10,
+          "256": 1,
+          "257": 1,
+          "258": 1,
+          "259": 1,
+          "260": 1,
+          "261": 1,
+          "262": 6,
+          "267": 5,
+          "268": 10,
+          "269": 5,
+          "271": 0,
+          "273": 7,
+          "274": 12,
+          "275": 6,
+          "276": 6,
+          "277": 5,
+          "278": 4,
+          "279": 3,
+          "280": 2,
+          "281": 1,
+          "282": 6,
+          "284": 0,
+          "286": 1,
+          "287": 1,
+          "288": 1,
+          "289": 1,
+          "290": 1,
+          "291": 1,
+          "292": 1,
+          "293": 1,
+          "294": 1,
+          "295": 1,
+          "297": 0,
+          "299": 6,
+          "300": 10,
+          "301": 5,
+          "302": 5,
+          "303": 1,
+          "305": 0,
+          "307": 3,
+          "308": 4,
+          "309": 2,
+          "310": 2,
+          "311": 2,
+          "312": 1,
+          "313": 1,
+          "314": 1,
+          "315": 2,
+          "316": 1,
+          "318": 0,
+          "320": 1,
+          "321": 2,
+          "322": 1,
+          "323": 1,
+          "324": 1,
+          "325": 1,
+          "326": 1,
+          "327": 1,
+          "328": 1,
+          "329": 1,
+          "331": 0,
+          "333": 3,
+          "334": 4,
+          "335": 2,
+          "336": 2,
+          "337": 2,
+          "339": 0,
+          "341": 2,
+          "342": 1,
+          "343": 1,
+          "344": 1,
+          "345": 5,
+          "346": 4,
+          "347": 8,
+          "348": 4,
+          "349": 4,
+          "350": 4,
+          "352": 0,
+          "354": 1,
+          "355": 2,
+          "356": 1,
+          "357": 1,
+          "358": 1,
+          "359": 1,
+          "361": 0,
+          "363": 3,
+          "364": 2,
+          "365": 4,
+          "366": 2,
+          "367": 1,
+          "368": 2,
+          "370": 0,
+          "372": 20002,
+          "373": 2,
+          "374": 1,
+          "375": 20003,
+          "376": 1,
+          "377": 1,
+          "379": 0,
+          "381": 16,
+          "382": 6,
+          "383": 2,
+          "384": 1,
+          "385": 2,
+          "386": 1,
+          "387": 2,
+          "388": 1,
+          "390": 0,
+          "392": 1,
+          "393": 34,
+          "394": 33,
+          "395": 2,
+          "396": 1,
+          "398": 0,
+          "400": 1,
+          "401": 1,
+          "402": 11,
+          "403": 20,
+          "404": 10,
+          "406": 137,
+          "407": 33,
+          "408": 32,
+          "409": 31,
+          "410": 10,
+          "411": 7,
+          "412": 104,
+          "413": 100,
+          "414": 10,
+          "415": 10,
+          "416": 20,
+          "417": 10,
+          "418": 10,
+          "419": 10,
+          "420": 10,
+          "421": 10,
+          "422": 10,
+          "423": 10,
+          "424": 10,
+          "425": 10,
+          "426": 3,
+          "427": 3,
+          "428": 3,
+          "429": 3,
+          "431": 21,
+          "432": 14,
+          "433": 7,
+          "434": 7,
+          "435": 1,
+          "436": 1,
+          "437": 10,
+          "438": 10,
+          "441": 0,
+          "443": 1,
+          "445": 3,
+          "446": 2,
+          "447": 1,
+          "448": 4,
+          "449": 1,
+          "450": 1,
+          "452": 0,
+          "454": 3,
+          "455": 2,
+          "457": 5,
+          "458": 3,
+          "459": 4,
+          "460": 2,
+          "461": 2,
+          "463": 0,
+          "465": 1,
+          "467": 4,
+          "468": 15,
+          "469": 3,
+          "470": 3,
+          "471": 3,
+          "472": 5,
+          "473": 20,
+          "474": 4,
+          "476": 0,
+          "478": 2,
+          "479": 1,
+          "480": 1,
+          "481": 1,
+          "482": 1,
+          "483": 1,
+          "484": 1,
+          "486": 0,
+          "488": 2,
+          "489": 1,
+          "491": 0,
+          "493": 1,
+          "494": 1,
+          "495": 2,
+          "496": 1,
+          "497": 1,
+          "498": 1,
+          "499": 1,
+          "500": 1,
+          "501": 2,
+          "502": 1,
+          "504": 0,
+          "506": 1,
+          "507": 2,
+          "508": 1,
+          "509": 1,
+          "510": 1,
+          "511": 1,
+          "513": 0,
+          "515": 1,
+          "516": 2,
+          "517": 1,
+          "518": 1,
+          "519": 1,
+          "520": 1,
+          "522": 0,
+          "524": 1,
+          "525": 3,
+          "526": 4,
+          "527": 2,
+          "528": 2,
+          "529": 2,
+          "531": 0,
+          "533": 2,
+          "534": 1,
+          "535": 1,
+          "536": 1,
+          "537": 2,
+          "538": 1,
+          "539": 1,
+          "541": 0,
+          "543": 2,
+          "544": 1,
+          "545": 5,
+          "546": 4,
+          "547": 4,
+          "548": 1,
+          "549": 2,
+          "550": 1,
+          "551": 1,
+          "552": 5,
+          "553": 4,
+          "554": 1,
+          "555": 1,
+          "556": 2,
+          "557": 1,
+          "559": 0,
+          "561": 2,
+          "562": 1,
+          "563": 1,
+          "565": 0,
+          "567": 2,
+          "568": 1,
+          "569": 1,
+          "570": 1,
+          "571": 1,
+          "572": 1,
+          "573": 1,
+          "574": 1,
+          "575": 1,
+          "577": 0,
+          "579": 4,
+          "580": 6,
+          "581": 3,
+          "582": 3,
+          "583": 2,
+          "584": 1,
+          "585": 1,
+          "587": 0,
+          "589": 2,
+          "590": 1,
+          "591": 2,
+          "592": 1,
+          "593": 1,
+          "596": 0,
+          "597": 0
+        },
+        "positive_lines": 353,
+        "zero_lines": 93,
+        "calls": [
+          {
+            "line": 24,
+            "name": "info",
+            "count": 20183
+          },
+          {
+            "line": 30,
+            "name": "identity",
+            "count": 43
+          },
+          {
+            "line": 37,
+            "name": "rejected",
+            "count": 32
+          },
+          {
+            "line": 45,
+            "name": "capture",
+            "count": 9
+          },
+          {
+            "line": 53,
+            "name": "Entry.__init__",
+            "count": 20041
+          },
+          {
+            "line": 60,
+            "name": "Entry.stat",
+            "count": 40040
+          },
+          {
+            "line": 71,
+            "name": "Scandir.__init__",
+            "count": 46
+          },
+          {
+            "line": 75,
+            "name": "Scandir.__enter__",
+            "count": 46
+          },
+          {
+            "line": 79,
+            "name": "Scandir.__exit__",
+            "count": 46
+          },
+          {
+            "line": 87,
+            "name": "Stream.__init__",
+            "count": 11
+          },
+          {
+            "line": 93,
+            "name": "Stream.fileno",
+            "count": 25
+          },
+          {
+            "line": 97,
+            "name": "Stream.close",
+            "count": 12
+          },
+          {
+            "line": 107,
+            "name": "Child.__init__",
+            "count": 5
+          },
+          {
+            "line": 116,
+            "name": "Child.poll",
+            "count": 17
+          },
+          {
+            "line": 120,
+            "name": "Child.kill",
+            "count": 1
+          },
+          {
+            "line": 125,
+            "name": "Child.wait",
+            "count": 5
+          },
+          {
+            "line": 134,
+            "name": "Selector.__init__",
+            "count": 6
+          },
+          {
+            "line": 140,
+            "name": "Selector.register",
+            "count": 11
+          },
+          {
+            "line": 144,
+            "name": "Selector.unregister",
+            "count": 7
+          },
+          {
+            "line": 148,
+            "name": "Selector.get_map",
+            "count": 11
+          },
+          {
+            "line": 152,
+            "name": "Selector.select",
+            "count": 7
+          },
+          {
+            "line": 156,
+            "name": "Selector.close",
+            "count": 6
+          },
+          {
+            "line": 163,
+            "name": "command_seam",
+            "count": 10
+          },
+          {
+            "line": 169,
+            "name": "command_seam.<locals>.read",
+            "count": 14
+          },
+          {
+            "line": 181,
+            "name": "walk_seam",
+            "count": 24
+          },
+          {
+            "line": 185,
+            "name": "walk_seam.<locals>.scan",
+            "count": 46
+          },
+          {
+            "line": 200,
+            "name": "observe_seam",
+            "count": 10
+          },
+          {
+            "line": 222,
+            "name": "ObservationControls.stop",
+            "count": 46
+          },
+          {
+            "line": 228,
+            "name": "ObservationControls.assert_unavailable",
+            "count": 43
+          },
+          {
+            "line": 237,
+            "name": "ObservationControls.test_closed_rejection_and_size",
+            "count": 1
+          },
+          {
+            "line": 246,
+            "name": "ObservationControls.test_record_types_pairs_and_predicates_closed",
+            "count": 1
+          },
+          {
+            "line": 271,
+            "name": "ObservationControls.test_source_identity_closed_and_protected",
+            "count": 1
+          },
+          {
+            "line": 284,
+            "name": "ObservationControls.test_unavailable_and_no_rejection_are_not_pass",
+            "count": 1
+          },
+          {
+            "line": 297,
+            "name": "ObservationControls.test_strict_probe_decoding",
+            "count": 1
+          },
+          {
+            "line": 305,
+            "name": "ObservationControls.test_deadline_fences_never_spawn_expired_commands",
+            "count": 1
+          },
+          {
+            "line": 318,
+            "name": "ObservationControls.test_stable_recheck_redacts_object_identity",
+            "count": 1
+          },
+          {
+            "line": 331,
+            "name": "ObservationControls.test_replaced_or_unobserved_object_revokes_facts",
+            "count": 1
+          },
+          {
+            "line": 339,
+            "name": "ObservationControls.test_original_entry_uid_mode_kind_order",
+            "count": 1
+          },
+          {
+            "line": 352,
+            "name": "ObservationControls.test_ancestor_mode_precedes_link_and_admin_has_no_object",
+            "count": 1
+          },
+          {
+            "line": 361,
+            "name": "ObservationControls.test_size_bound_and_no_content_read",
+            "count": 1
+          },
+          {
+            "line": 370,
+            "name": "ObservationControls.test_streamed_entry_bound_before_excess_stat",
+            "count": 1
+          },
+          {
+            "line": 375,
+            "name": "ObservationControls.test_streamed_entry_bound_before_excess_stat.<locals>.<genexpr>",
+            "count": 20002
+          },
+          {
+            "line": 379,
+            "name": "ObservationControls.test_root_shape_dynload_empty_and_stat_failure",
+            "count": 1
+          },
+          {
+            "line": 390,
+            "name": "ObservationControls.test_depth_bound_before_deeper_scan",
+            "count": 1
+          },
+          {
+            "line": 398,
+            "name": "ObservationControls.test_actual_administrative_tool_trust_and_link_bounds",
+            "count": 1
+          },
+          {
+            "line": 404,
+            "name": "ObservationControls.test_actual_administrative_tool_trust_and_link_bounds.<locals>.observed",
+            "count": 137
+          },
+          {
+            "line": 441,
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo",
+            "count": 1
+          },
+          {
+            "line": 443,
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo.<locals>.qualified",
+            "count": 3
+          },
+          {
+            "line": 452,
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe",
+            "count": 1
+          },
+          {
+            "line": 455,
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe.<locals>.qualified",
+            "count": 5
+          },
+          {
+            "line": 463,
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private",
+            "count": 1
+          },
+          {
+            "line": 468,
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private.<locals>.<lambda>",
+            "count": 9
+          },
+          {
+            "line": 473,
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private.<locals>.<lambda>",
+            "count": 12
+          },
+          {
+            "line": 476,
+            "name": "ObservationControls.test_actual_command_separate_streams_and_full_eof",
+            "count": 1
+          },
+          {
+            "line": 486,
+            "name": "ObservationControls.test_actual_command_stderr_bound_discards_stdout",
+            "count": 1
+          },
+          {
+            "line": 491,
+            "name": "ObservationControls.test_actual_command_independent_close_and_first_fault",
+            "count": 1
+          },
+          {
+            "line": 504,
+            "name": "ObservationControls.test_actual_command_timeout_owned_wait_and_discard",
+            "count": 1
+          },
+          {
+            "line": 513,
+            "name": "ObservationControls.test_observe_retains_first_rejection_only_with_unchanged_sources",
+            "count": 1
+          },
+          {
+            "line": 522,
+            "name": "ObservationControls.test_changed_or_unverified_sources_revoke_object_claims",
+            "count": 1
+          },
+          {
+            "line": 531,
+            "name": "ObservationControls.test_no_rejection_and_unsupported_host_remain_unqualified",
+            "count": 1
+          },
+          {
+            "line": 541,
+            "name": "ObservationControls.test_real_public_source_hashes_and_tested_head_fence",
+            "count": 1
+          },
+          {
+            "line": 559,
+            "name": "ObservationControls.test_identity_expiry_prevents_command",
+            "count": 1
+          },
+          {
+            "line": 565,
+            "name": "ObservationControls.test_private_canonical_no_replacement_publication",
+            "count": 1
+          },
+          {
+            "line": 577,
+            "name": "ObservationControls.test_main_exit_classes_and_generic_private_fault",
+            "count": 1
+          },
+          {
+            "line": 587,
+            "name": "ObservationControls.test_post_link_cleanup_fault_cannot_earn_availability",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "totals": {
+      "functions": 86,
+      "function_docs": 86,
+      "functions_with_primary_thread_calls": 86,
+      "classes": 7,
+      "class_docs": 7,
+      "modules": 2,
+      "module_docs": 2,
+      "positive_lines": 676,
+      "zero_lines": 190
+    },
+    "qualification": [
+      "Imports precede tracing; primary thread only; every physical compiler zero is retained.",
+      "Actual observer bodies consume mocked process/stat/tool/Git seams and synthetic temporary inputs.",
+      "Fixed ip/sudo/Python probe, native denial, Forge, browser and network do not execute.",
+      "Actual named calls, compiler physical line events, whole bodies and branches have different denominators.",
+      "Branch and MC/DC coverage is unmeasured; no complete Linux qualification or cause claim.",
+      "Hosted, matrix, human, D069, release and final integrated documentation gates remain open."
+    ],
+    "native_os_denial_executed": false,
+    "product_executed": false,
+    "attempted_egress_measured": false
+  },
+  "latest_literal_unittest_log": "test_actual_administrative_tool_trust_and_link_bounds (test_observe_workspace_stdlib_gate.ObservationControls.test_actual_administrative_tool_trust_and_link_bounds)\nExercise real fixed-path admission, ancestors, relative/absolute links and closed failure reasons without tool execution. ... ok\ntest_actual_command_independent_close_and_first_fault (test_observe_workspace_stdlib_gate.ObservationControls.test_actual_command_independent_close_and_first_fault)\nAttempt every owned pipe close after selector failure and retain an earlier bound failure over cleanup detail. ... ok\ntest_actual_command_separate_streams_and_full_eof (test_observe_workspace_stdlib_gate.ObservationControls.test_actual_command_separate_streams_and_full_eof)\nExercise the real command loop with private stderr and require both EOFs while returning only stdout. ... ok\ntest_actual_command_stderr_bound_discards_stdout (test_observe_workspace_stdlib_gate.ObservationControls.test_actual_command_stderr_bound_discards_stdout)\nKeep aggregate accounting across both pipes and erase otherwise-valid stdout when stderr exceeds the cap. ... ok\ntest_actual_command_timeout_owned_wait_and_discard (test_observe_workspace_stdlib_gate.ObservationControls.test_actual_command_timeout_owned_wait_and_discard)\nRequire the original fake owner kill/wait observation after expiry and never infer cleanup from the signal alone. ... ok\ntest_ancestor_mode_precedes_link_and_admin_has_no_object (test_observe_workspace_stdlib_gate.ObservationControls.test_ancestor_mode_precedes_link_and_admin_has_no_object)\nKeep ancestor ordering identical and prevent an administrative path rejection from inventing a stdlib identifier. ... ok\ntest_changed_or_unverified_sources_revoke_object_claims (test_observe_workspace_stdlib_gate.ObservationControls.test_changed_or_unverified_sources_revoke_object_claims)\nA changed pin or failed post-observation source capture must erase first-rejection facts and retain explicit identity state. ... ok\ntest_closed_rejection_and_size (test_observe_workspace_stdlib_gate.ObservationControls.test_closed_rejection_and_size)\nAccept one bound synthetic record, preserve exact twelve fields and keep its canonical bytes within 2KiB. ... ok\ntest_deadline_fences_never_spawn_expired_commands (test_observe_workspace_stdlib_gate.ObservationControls.test_deadline_fences_never_spawn_expired_commands)\nTreat equality as expiry both before selector allocation and immediately before the actual spawn seam. ... ok\ntest_depth_bound_before_deeper_scan (test_observe_workspace_stdlib_gate.ObservationControls.test_depth_bound_before_deeper_scan)\nReject depth 33 before scanning that directory while consuming only bounded fake owned entries. ... ok\ntest_fixed_probe_ignores_path_and_never_executes_ip_sudo (test_observe_workspace_stdlib_gate.ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo)\nRequire all fixed administrative qualifications and dispatch only the isolated fixed-Python probe once. ... ok\ntest_identity_expiry_prevents_command (test_observe_workspace_stdlib_gate.ObservationControls.test_identity_expiry_prevents_command)\nAn already-expired source observation cannot dispatch even the ordinary Git identity command. ... ok\ntest_main_exit_classes_and_generic_private_fault (test_observe_workspace_stdlib_gate.ObservationControls.test_main_exit_classes_and_generic_private_fault)\nRequire availability-only exit0, unqualified exit2, and generic exit1 without printing private failure details. ... ok\ntest_missing_ip_sudo_stops_before_probe (test_observe_workspace_stdlib_gate.ObservationControls.test_missing_ip_sudo_stops_before_probe)\nProve a missing prerequisite is unavailable and cannot trigger Python, sudo, ip or a fallback command. ... ok\ntest_no_rejection_and_unsupported_host_remain_unqualified (test_observe_workspace_stdlib_gate.ObservationControls.test_no_rejection_and_unsupported_host_remain_unqualified)\nThe empty diagnostic alternative is not a pass, and unsupported ordinary hosts dispatch no Python probe. ... ok\ntest_observe_retains_first_rejection_only_with_unchanged_sources (test_observe_workspace_stdlib_gate.ObservationControls.test_observe_retains_first_rejection_only_with_unchanged_sources)\nLet the actual source fence retain the first stat tuple only after both source observations agree. ... ok\ntest_original_entry_uid_mode_kind_order (test_observe_workspace_stdlib_gate.ObservationControls.test_original_entry_uid_mode_kind_order)\nExercise the real streamed predicate order on competing non-root, writable and symlink facts. ... ok\ntest_post_link_cleanup_fault_cannot_earn_availability (test_observe_workspace_stdlib_gate.ObservationControls.test_post_link_cleanup_fault_cannot_earn_availability)\nKeep actual nonzero producer status authoritative when an unlink fault leaves a canonical-looking hardlink behind. ... ok\ntest_private_canonical_no_replacement_publication (test_observe_workspace_stdlib_gate.ObservationControls.test_private_canonical_no_replacement_publication)\nCreate one private canonical sidecar and reject an existing output directory without replacing its bytes. ... ok\ntest_probe_faults_closed_and_output_private (test_observe_workspace_stdlib_gate.ObservationControls.test_probe_faults_closed_and_output_private)\nKeep invalid JSON/shape/version and command failure in the exact unavailable vocabulary with no private output. ... ok\ntest_real_public_source_hashes_and_tested_head_fence (test_observe_workspace_stdlib_gate.ObservationControls.test_real_public_source_hashes_and_tested_head_fence)\nUse real bounded public-source file reads with mocked Git, then revoke identity on protected-byte or HEAD mismatch. ... ok\ntest_record_types_pairs_and_predicates_closed (test_observe_workspace_stdlib_gate.ObservationControls.test_record_types_pairs_and_predicates_closed)\nReject booleans masquerading as counters, private fields and inconsistent first-predicate facts. ... ok\ntest_replaced_or_unobserved_object_revokes_facts (test_observe_workspace_stdlib_gate.ObservationControls.test_replaced_or_unobserved_object_revokes_facts)\nDiscard all identifiers when the original instance changes or the second stat cannot be established. ... ok\ntest_root_shape_dynload_empty_and_stat_failure (test_observe_workspace_stdlib_gate.ObservationControls.test_root_shape_dynload_empty_and_stat_failure)\nReject unsupported root sets, missing dynload, empty observations and stat faults without object facts. ... ok\ntest_size_bound_and_no_content_read (test_observe_workspace_stdlib_gate.ObservationControls.test_size_bound_and_no_content_read)\nAccept the exact aggregate stat-size bound and reject one byte over without opening regular stdlib content. ... ok\ntest_source_identity_closed_and_protected (test_observe_workspace_stdlib_gate.ObservationControls.test_source_identity_closed_and_protected)\nReject malformed hashes/types, source-map extras and changed or missing protected identity before publishing facts. ... ok\ntest_stable_recheck_redacts_object_identity (test_observe_workspace_stdlib_gate.ObservationControls.test_stable_recheck_redacts_object_identity)\nRetain only a digest/coarse stat tuple after the actual lstat metadata matches the original instance. ... ok\ntest_streamed_entry_bound_before_excess_stat (test_observe_workspace_stdlib_gate.ObservationControls.test_streamed_entry_bound_before_excess_stat)\nExercise the actual inclusive 20,000-entry cap with no stat of the 20,001st fake entry. ... ok\ntest_strict_probe_decoding (test_observe_workspace_stdlib_gate.ObservationControls.test_strict_probe_decoding)\nReject nested/escaped duplicates, nonfinite scalars, malformed UTF-8 and decoded depth beyond the original bound. ... ok\ntest_unavailable_and_no_rejection_are_not_pass (test_observe_workspace_stdlib_gate.ObservationControls.test_unavailable_and_no_rejection_are_not_pass)\nKeep incomplete alternatives free of object claims and require unchanged identity only for the no-rejection alternative. ... ok\n\n----------------------------------------------------------------------\nRan 30 tests in 1.814s\n\nOK\n",
+  "exact30_executed_control_names": [
+    "test_actual_administrative_tool_trust_and_link_bounds",
+    "test_actual_command_independent_close_and_first_fault",
+    "test_actual_command_separate_streams_and_full_eof",
+    "test_actual_command_stderr_bound_discards_stdout",
+    "test_actual_command_timeout_owned_wait_and_discard",
+    "test_ancestor_mode_precedes_link_and_admin_has_no_object",
+    "test_changed_or_unverified_sources_revoke_object_claims",
+    "test_closed_rejection_and_size",
+    "test_deadline_fences_never_spawn_expired_commands",
+    "test_depth_bound_before_deeper_scan",
+    "test_fixed_probe_ignores_path_and_never_executes_ip_sudo",
+    "test_identity_expiry_prevents_command",
+    "test_main_exit_classes_and_generic_private_fault",
+    "test_missing_ip_sudo_stops_before_probe",
+    "test_no_rejection_and_unsupported_host_remain_unqualified",
+    "test_observe_retains_first_rejection_only_with_unchanged_sources",
+    "test_original_entry_uid_mode_kind_order",
+    "test_post_link_cleanup_fault_cannot_earn_availability",
+    "test_private_canonical_no_replacement_publication",
+    "test_probe_faults_closed_and_output_private",
+    "test_real_public_source_hashes_and_tested_head_fence",
+    "test_record_types_pairs_and_predicates_closed",
+    "test_replaced_or_unobserved_object_revokes_facts",
+    "test_root_shape_dynload_empty_and_stat_failure",
+    "test_size_bound_and_no_content_read",
+    "test_source_identity_closed_and_protected",
+    "test_stable_recheck_redacts_object_identity",
+    "test_streamed_entry_bound_before_excess_stat",
+    "test_strict_probe_decoding",
+    "test_unavailable_and_no_rejection_are_not_pass"
+  ],
+  "historical_first_run_coverage_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-observer-root-controls-v1/coverage.json",
+    "bytes": 55722,
+    "sha256": "caaf74844bba998d5983505962e7528c5e78750ea68da75ed17dc30db99e5448"
+  },
+  "historical_first_run_literal_coverage": {
+    "schema": "forge.stdlib-observer-mocked-controls/1",
+    "started_utc": "2026-10-03T03:18:33.884668+00:00",
+    "finished_utc": "2026-10-03T03:18:35.702792+00:00",
+    "source_before": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/observe_workspace_stdlib_gate.py",
+        "bytes": 28113,
+        "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_observe_workspace_stdlib_gate.py",
+        "bytes": 36170,
+        "sha256": "4cd046751108319d79a85df53f6ef7d563ff59ae061dbf5ff63368a6e16a8a0b"
+      }
+    ],
+    "source_after": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/observe_workspace_stdlib_gate.py",
+        "bytes": 28113,
+        "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_observe_workspace_stdlib_gate.py",
+        "bytes": 36170,
+        "sha256": "4cd046751108319d79a85df53f6ef7d563ff59ae061dbf5ff63368a6e16a8a0b"
+      }
+    ],
+    "source_unchanged": true,
+    "support_before": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_os_denial.py",
+        "bytes": 44351,
+        "sha256": "1b15a062772ec6b0ac8e584992aa9201ede8e35c4704100d37c4e8e0af9dd30c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_os_denial.py",
+        "bytes": 68516,
+        "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace.py",
+        "bytes": 31135,
+        "sha256": "0d26035645ad18e9e18a81eb3197190aa55a4c4c1d7332f6b345fad043b55ae2"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/.github/workflows/workspace-verification.yml",
+        "bytes": 14919,
+        "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.toml",
+        "bytes": 2344,
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.lock",
+        "bytes": 74338,
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+      }
+    ],
+    "support_after": [
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace_os_denial.py",
+        "bytes": 44351,
+        "sha256": "1b15a062772ec6b0ac8e584992aa9201ede8e35c4704100d37c4e8e0af9dd30c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_os_denial.py",
+        "bytes": 68516,
+        "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/verify_workspace.py",
+        "bytes": 31135,
+        "sha256": "0d26035645ad18e9e18a81eb3197190aa55a4c4c1d7332f6b345fad043b55ae2"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/.github/workflows/workspace-verification.yml",
+        "bytes": 14919,
+        "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.toml",
+        "bytes": 2344,
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      },
+      {
+        "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.lock",
+        "bytes": 74338,
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+      }
+    ],
+    "python": "3.14.8",
+    "python_executable": {
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "bytes": 34640,
+      "sha256": "7ebde552773a4045532637b114d645a313e045ac07b26f5e520bf039f1e34063"
+    },
+    "collector_pin": {
+      "path": "/private/tmp/forge-f04-stdlib-observer-root-collector-v1.py",
+      "bytes": 6810,
+      "sha256": "64f87545b2026a31fef6c078f9fa7d4d294155b915c3241b5fe92dfc566fa949"
+    },
+    "tests": {
+      "run": 29,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "files": [
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/observe_workspace_stdlib_gate.py",
+          "bytes": 28113,
+          "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "ObservationStop",
+            "kind": "class",
+            "line": 53,
+            "end_line": 59,
+            "code_start": 53,
+            "documented": true
+          },
+          {
+            "name": "ObservationStop.__init__",
+            "kind": "function",
+            "line": 56,
+            "end_line": 59,
+            "code_start": 56,
+            "documented": true,
+            "actual_primary_thread_calls": 43
+          },
+          {
+            "name": "canonical_bytes",
+            "kind": "function",
+            "line": 62,
+            "end_line": 64,
+            "code_start": 62,
+            "documented": true,
+            "actual_primary_thread_calls": 36
+          },
+          {
+            "name": "empty_observation",
+            "kind": "function",
+            "line": 67,
+            "end_line": 70,
+            "code_start": 67,
+            "documented": true,
+            "actual_primary_thread_calls": 126
+          },
+          {
+            "name": "unavailable",
+            "kind": "function",
+            "line": 73,
+            "end_line": 75,
+            "code_start": 73,
+            "documented": true,
+            "actual_primary_thread_calls": 34
+          },
+          {
+            "name": "budget",
+            "kind": "function",
+            "line": 78,
+            "end_line": 81,
+            "code_start": 78,
+            "documented": true,
+            "actual_primary_thread_calls": 40117
+          },
+          {
+            "name": "metadata",
+            "kind": "function",
+            "line": 84,
+            "end_line": 87,
+            "code_start": 84,
+            "documented": true,
+            "actual_primary_thread_calls": 86
+          },
+          {
+            "name": "object_kind",
+            "kind": "function",
+            "line": 90,
+            "end_line": 95,
+            "code_start": 90,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "reject_object",
+            "kind": "function",
+            "line": 98,
+            "end_line": 117,
+            "code_start": 98,
+            "documented": true,
+            "actual_primary_thread_calls": 9
+          },
+          {
+            "name": "root_trusted",
+            "kind": "function",
+            "line": 120,
+            "end_line": 143,
+            "code_start": 120,
+            "documented": true,
+            "actual_primary_thread_calls": 2
+          },
+          {
+            "name": "administrative_tool",
+            "kind": "function",
+            "line": 146,
+            "end_line": 169,
+            "code_start": 146,
+            "documented": true,
+            "actual_primary_thread_calls": 0
+          },
+          {
+            "name": "command",
+            "kind": "function",
+            "line": 172,
+            "end_line": 267,
+            "code_start": 172,
+            "documented": true,
+            "actual_primary_thread_calls": 8
+          },
+          {
+            "name": "strict_json",
+            "kind": "function",
+            "line": 271,
+            "end_line": 299,
+            "code_start": 271,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "strict_json.pairs",
+            "kind": "function",
+            "line": 275,
+            "end_line": 281,
+            "code_start": 275,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "strict_json.constant",
+            "kind": "function",
+            "line": 282,
+            "end_line": 284,
+            "code_start": 282,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "strict_json.depth",
+            "kind": "function",
+            "line": 291,
+            "end_line": 297,
+            "code_start": 291,
+            "documented": true,
+            "actual_primary_thread_calls": 33
+          },
+          {
+            "name": "probe_paths",
+            "kind": "function",
+            "line": 302,
+            "end_line": 319,
+            "code_start": 302,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "stdlib_walk",
+            "kind": "function",
+            "line": 322,
+            "end_line": 370,
+            "code_start": 322,
+            "documented": true,
+            "actual_primary_thread_calls": 18
+          },
+          {
+            "name": "stdlib_walk.visit",
+            "kind": "function",
+            "line": 340,
+            "end_line": 367,
+            "code_start": 340,
+            "documented": true,
+            "actual_primary_thread_calls": 47
+          },
+          {
+            "name": "read_source",
+            "kind": "function",
+            "line": 373,
+            "end_line": 392,
+            "code_start": 373,
+            "documented": true,
+            "actual_primary_thread_calls": 12
+          },
+          {
+            "name": "capture_identity",
+            "kind": "function",
+            "line": 395,
+            "end_line": 413,
+            "code_start": 395,
+            "documented": true,
+            "actual_primary_thread_calls": 4
+          },
+          {
+            "name": "validate_observation",
+            "kind": "function",
+            "line": 416,
+            "end_line": 446,
+            "code_start": 416,
+            "documented": true,
+            "actual_primary_thread_calls": 41
+          },
+          {
+            "name": "observe",
+            "kind": "function",
+            "line": 449,
+            "end_line": 472,
+            "code_start": 449,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "publish",
+            "kind": "function",
+            "line": 475,
+            "end_line": 486,
+            "code_start": 475,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "main",
+            "kind": "function",
+            "line": 489,
+            "end_line": 503,
+            "code_start": 489,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "16": 0,
+          "17": 0,
+          "18": 0,
+          "19": 0,
+          "20": 0,
+          "21": 0,
+          "22": 0,
+          "23": 0,
+          "24": 0,
+          "26": 0,
+          "27": 0,
+          "28": 0,
+          "30": 0,
+          "31": 0,
+          "33": 0,
+          "34": 0,
+          "36": 0,
+          "37": 0,
+          "39": 0,
+          "40": 0,
+          "41": 0,
+          "42": 0,
+          "44": 0,
+          "46": 0,
+          "47": 0,
+          "48": 0,
+          "49": 0,
+          "53": 0,
+          "54": 0,
+          "56": 0,
+          "58": 43,
+          "59": 43,
+          "62": 0,
+          "64": 36,
+          "67": 0,
+          "69": 378,
+          "70": 1134,
+          "73": 0,
+          "75": 34,
+          "78": 0,
+          "80": 40117,
+          "81": 2,
+          "84": 0,
+          "86": 172,
+          "87": 86,
+          "90": 0,
+          "92": 6,
+          "93": 5,
+          "94": 5,
+          "95": 1,
+          "98": 0,
+          "100": 9,
+          "101": 1,
+          "102": 8,
+          "103": 8,
+          "104": 8,
+          "105": 1,
+          "106": 1,
+          "107": 7,
+          "108": 1,
+          "109": 6,
+          "110": 12,
+          "111": 6,
+          "112": 6,
+          "113": 12,
+          "114": 6,
+          "115": 6,
+          "116": 6,
+          "117": 6,
+          "120": 0,
+          "122": 2,
+          "123": 2,
+          "124": 0,
+          "125": 2,
+          "126": 2,
+          "127": 2,
+          "128": 2,
+          "129": 2,
+          "130": 0,
+          "131": 2,
+          "132": 2,
+          "133": 0,
+          "134": 0,
+          "135": 0,
+          "136": 0,
+          "137": 0,
+          "138": 0,
+          "139": 0,
+          "140": 0,
+          "141": 0,
+          "142": 0,
+          "143": 0,
+          "146": 0,
+          "148": 0,
+          "149": 0,
+          "150": 0,
+          "151": 0,
+          "152": 0,
+          "153": 0,
+          "154": 0,
+          "155": 0,
+          "156": 0,
+          "157": 0,
+          "158": 0,
+          "159": 0,
+          "160": 0,
+          "161": 0,
+          "162": 0,
+          "163": 0,
+          "165": 0,
+          "166": 0,
+          "167": 0,
+          "168": 0,
+          "169": 0,
+          "172": 0,
+          "174": 8,
+          "175": 2,
+          "176": 6,
+          "177": 6,
+          "178": 6,
+          "179": 6,
+          "180": 6,
+          "181": 6,
+          "182": 6,
+          "183": 6,
+          "184": 6,
+          "185": 6,
+          "186": 1,
+          "187": 1,
+          "188": 10,
+          "189": 5,
+          "190": 5,
+          "191": 15,
+          "192": 10,
+          "193": 10,
+          "194": 5,
+          "195": 1,
+          "196": 1,
+          "197": 11,
+          "198": 8,
+          "199": 8,
+          "200": 1,
+          "201": 1,
+          "202": 21,
+          "203": 15,
+          "204": 15,
+          "205": 1,
+          "206": 1,
+          "207": 1,
+          "208": 0,
+          "209": 0,
+          "210": 0,
+          "211": 0,
+          "212": 0,
+          "213": 0,
+          "214": 0,
+          "215": 0,
+          "216": 0,
+          "217": 0,
+          "219": 14,
+          "220": 14,
+          "221": 0,
+          "222": 0,
+          "223": 14,
+          "224": 6,
+          "226": 8,
+          "227": 8,
+          "228": 2,
+          "229": 6,
+          "230": 4,
+          "231": 4,
+          "232": 1,
+          "233": 1,
+          "234": 1,
+          "235": 0,
+          "236": 0,
+          "237": 4,
+          "238": 0,
+          "239": 4,
+          "240": 4,
+          "241": 4,
+          "242": 4,
+          "243": 4,
+          "244": 1,
+          "245": 1,
+          "246": 0,
+          "247": 0,
+          "248": 0,
+          "249": 0,
+          "250": 0,
+          "251": 1,
+          "252": 1,
+          "254": 6,
+          "255": 6,
+          "256": 6,
+          "257": 1,
+          "258": 1,
+          "259": 6,
+          "260": 20,
+          "261": 15,
+          "262": 11,
+          "263": 11,
+          "264": 3,
+          "265": 3,
+          "266": 6,
+          "267": 2,
+          "271": 0,
+          "273": 10,
+          "274": 0,
+          "275": 10,
+          "277": 6,
+          "278": 17,
+          "279": 13,
+          "280": 11,
+          "281": 4,
+          "282": 10,
+          "284": 1,
+          "285": 10,
+          "286": 10,
+          "287": 5,
+          "288": 3,
+          "289": 2,
+          "290": 2,
+          "291": 5,
+          "293": 33,
+          "294": 32,
+          "295": 13,
+          "296": 28,
+          "297": 23,
+          "298": 5,
+          "299": 4,
+          "302": 0,
+          "304": 10,
+          "305": 10,
+          "306": 27,
+          "307": 19,
+          "308": 8,
+          "309": 8,
+          "310": 8,
+          "311": 4,
+          "312": 4,
+          "313": 4,
+          "314": 3,
+          "315": 1,
+          "316": 2,
+          "317": 1,
+          "318": 1,
+          "319": 1,
+          "322": 0,
+          "324": 85,
+          "325": 6,
+          "326": 12,
+          "327": 36,
+          "328": 24,
+          "329": 24,
+          "330": 24,
+          "331": 0,
+          "332": 0,
+          "333": 0,
+          "334": 24,
+          "335": 24,
+          "336": 50,
+          "337": 1,
+          "338": 11,
+          "339": 11,
+          "340": 11,
+          "343": 47,
+          "344": 46,
+          "345": 92,
+          "346": 40047,
+          "347": 40041,
+          "348": 40041,
+          "349": 40041,
+          "350": 40040,
+          "351": 40040,
+          "352": 40040,
+          "353": 1,
+          "354": 1,
+          "355": 40039,
+          "356": 1,
+          "357": 40038,
+          "358": 1,
+          "359": 40037,
+          "360": 1,
+          "361": 40036,
+          "362": 33,
+          "363": 40003,
+          "364": 40002,
+          "365": 40002,
+          "367": 1,
+          "368": 17,
+          "369": 3,
+          "370": 2,
+          "373": 0,
+          "375": 12,
+          "376": 12,
+          "377": 0,
+          "378": 12,
+          "379": 12,
+          "380": 12,
+          "381": 12,
+          "382": 12,
+          "383": 67,
+          "384": 67,
+          "385": 67,
+          "386": 55,
+          "387": 12,
+          "388": 0,
+          "389": 12,
+          "390": 12,
+          "392": 12,
+          "395": 0,
+          "397": 4,
+          "398": 18,
+          "399": 0,
+          "400": 3,
+          "401": 3,
+          "402": 0,
+          "403": 3,
+          "404": 3,
+          "405": 3,
+          "406": 2,
+          "407": 10,
+          "408": 8,
+          "409": 8,
+          "410": 5,
+          "411": 4,
+          "412": 1,
+          "413": 1,
+          "416": 0,
+          "418": 41,
+          "419": 40,
+          "420": 39,
+          "421": 39,
+          "422": 38,
+          "423": 38,
+          "424": 32,
+          "425": 184,
+          "426": 30,
+          "427": 146,
+          "428": 117,
+          "429": 172,
+          "430": 34,
+          "431": 22,
+          "432": 20,
+          "433": 17,
+          "434": 14,
+          "435": 14,
+          "436": 13,
+          "437": 11,
+          "438": 9,
+          "439": 9,
+          "440": 8,
+          "441": 8,
+          "443": 180,
+          "444": 11,
+          "445": 15,
+          "446": 15,
+          "449": 0,
+          "451": 5,
+          "452": 5,
+          "453": 5,
+          "454": 5,
+          "455": 5,
+          "456": 4,
+          "457": 4,
+          "458": 1,
+          "459": 4,
+          "460": 4,
+          "461": 0,
+          "462": 0,
+          "463": 5,
+          "464": 5,
+          "465": 5,
+          "466": 4,
+          "467": 4,
+          "468": 1,
+          "469": 1,
+          "470": 1,
+          "471": 5,
+          "472": 5,
+          "475": 0,
+          "477": 6,
+          "478": 6,
+          "479": 6,
+          "480": 5,
+          "481": 5,
+          "482": 10,
+          "483": 5,
+          "484": 5,
+          "486": 5,
+          "489": 0,
+          "491": 5,
+          "492": 5,
+          "493": 5,
+          "494": 5,
+          "495": 5,
+          "496": 5,
+          "497": 5,
+          "498": 4,
+          "499": 2,
+          "500": 2,
+          "501": 2,
+          "502": 3,
+          "503": 3,
+          "506": 0,
+          "507": 0
+        },
+        "positive_lines": 292,
+        "zero_lines": 128,
+        "calls": [
+          {
+            "line": 56,
+            "name": "ObservationStop.__init__",
+            "count": 43
+          },
+          {
+            "line": 62,
+            "name": "canonical_bytes",
+            "count": 36
+          },
+          {
+            "line": 67,
+            "name": "empty_observation",
+            "count": 126
+          },
+          {
+            "line": 73,
+            "name": "unavailable",
+            "count": 34
+          },
+          {
+            "line": 78,
+            "name": "budget",
+            "count": 40117
+          },
+          {
+            "line": 84,
+            "name": "metadata",
+            "count": 86
+          },
+          {
+            "line": 90,
+            "name": "object_kind",
+            "count": 6
+          },
+          {
+            "line": 98,
+            "name": "reject_object",
+            "count": 9
+          },
+          {
+            "line": 120,
+            "name": "root_trusted",
+            "count": 2
+          },
+          {
+            "line": 172,
+            "name": "command",
+            "count": 8
+          },
+          {
+            "line": 271,
+            "name": "strict_json",
+            "count": 10
+          },
+          {
+            "line": 275,
+            "name": "strict_json.<locals>.pairs",
+            "count": 6
+          },
+          {
+            "line": 282,
+            "name": "strict_json.<locals>.constant",
+            "count": 1
+          },
+          {
+            "line": 291,
+            "name": "strict_json.<locals>.depth",
+            "count": 33
+          },
+          {
+            "line": 302,
+            "name": "probe_paths",
+            "count": 10
+          },
+          {
+            "line": 322,
+            "name": "stdlib_walk",
+            "count": 18
+          },
+          {
+            "line": 324,
+            "name": "stdlib_walk.<locals>.<genexpr>",
+            "count": 43
+          },
+          {
+            "line": 336,
+            "name": "stdlib_walk.<locals>.<genexpr>",
+            "count": 36
+          },
+          {
+            "line": 340,
+            "name": "stdlib_walk.<locals>.visit",
+            "count": 47
+          },
+          {
+            "line": 373,
+            "name": "read_source",
+            "count": 12
+          },
+          {
+            "line": 395,
+            "name": "capture_identity",
+            "count": 4
+          },
+          {
+            "line": 398,
+            "name": "capture_identity.<locals>.<genexpr>",
+            "count": 9
+          },
+          {
+            "line": 416,
+            "name": "validate_observation",
+            "count": 41
+          },
+          {
+            "line": 425,
+            "name": "validate_observation.<locals>.<genexpr>",
+            "count": 93
+          },
+          {
+            "line": 429,
+            "name": "validate_observation.<locals>.<genexpr>",
+            "count": 87
+          },
+          {
+            "line": 443,
+            "name": "validate_observation.<locals>.<genexpr>",
+            "count": 84
+          },
+          {
+            "line": 449,
+            "name": "observe",
+            "count": 5
+          },
+          {
+            "line": 475,
+            "name": "publish",
+            "count": 6
+          },
+          {
+            "line": 489,
+            "name": "main",
+            "count": 5
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_observe_workspace_stdlib_gate.py",
+          "bytes": 36170,
+          "sha256": "4cd046751108319d79a85df53f6ef7d563ff59ae061dbf5ff63368a6e16a8a0b"
+        },
+        "module_documented": true,
+        "declarations": [
+          {
+            "name": "info",
+            "kind": "function",
+            "line": 24,
+            "end_line": 27,
+            "code_start": 24,
+            "documented": true,
+            "actual_primary_thread_calls": 20046
+          },
+          {
+            "name": "identity",
+            "kind": "function",
+            "line": 30,
+            "end_line": 34,
+            "code_start": 30,
+            "documented": true,
+            "actual_primary_thread_calls": 43
+          },
+          {
+            "name": "rejected",
+            "kind": "function",
+            "line": 37,
+            "end_line": 42,
+            "code_start": 37,
+            "documented": true,
+            "actual_primary_thread_calls": 32
+          },
+          {
+            "name": "capture",
+            "kind": "function",
+            "line": 45,
+            "end_line": 47,
+            "code_start": 45,
+            "documented": true,
+            "actual_primary_thread_calls": 9
+          },
+          {
+            "name": "Entry",
+            "kind": "class",
+            "line": 50,
+            "end_line": 65,
+            "code_start": 50,
+            "documented": true
+          },
+          {
+            "name": "Entry.__init__",
+            "kind": "function",
+            "line": 53,
+            "end_line": 58,
+            "code_start": 53,
+            "documented": true,
+            "actual_primary_thread_calls": 20041
+          },
+          {
+            "name": "Entry.stat",
+            "kind": "function",
+            "line": 60,
+            "end_line": 65,
+            "code_start": 60,
+            "documented": true,
+            "actual_primary_thread_calls": 40040
+          },
+          {
+            "name": "Scandir",
+            "kind": "class",
+            "line": 68,
+            "end_line": 81,
+            "code_start": 68,
+            "documented": true
+          },
+          {
+            "name": "Scandir.__init__",
+            "kind": "function",
+            "line": 71,
+            "end_line": 73,
+            "code_start": 71,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "Scandir.__enter__",
+            "kind": "function",
+            "line": 75,
+            "end_line": 77,
+            "code_start": 75,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "Scandir.__exit__",
+            "kind": "function",
+            "line": 79,
+            "end_line": 81,
+            "code_start": 79,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "Stream",
+            "kind": "class",
+            "line": 84,
+            "end_line": 101,
+            "code_start": 84,
+            "documented": true
+          },
+          {
+            "name": "Stream.__init__",
+            "kind": "function",
+            "line": 87,
+            "end_line": 91,
+            "code_start": 87,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "Stream.fileno",
+            "kind": "function",
+            "line": 93,
+            "end_line": 95,
+            "code_start": 93,
+            "documented": true,
+            "actual_primary_thread_calls": 25
+          },
+          {
+            "name": "Stream.close",
+            "kind": "function",
+            "line": 97,
+            "end_line": 101,
+            "code_start": 97,
+            "documented": true,
+            "actual_primary_thread_calls": 12
+          },
+          {
+            "name": "Child",
+            "kind": "class",
+            "line": 104,
+            "end_line": 128,
+            "code_start": 104,
+            "documented": true
+          },
+          {
+            "name": "Child.__init__",
+            "kind": "function",
+            "line": 107,
+            "end_line": 114,
+            "code_start": 107,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "Child.poll",
+            "kind": "function",
+            "line": 116,
+            "end_line": 118,
+            "code_start": 116,
+            "documented": true,
+            "actual_primary_thread_calls": 17
+          },
+          {
+            "name": "Child.kill",
+            "kind": "function",
+            "line": 120,
+            "end_line": 123,
+            "code_start": 120,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "Child.wait",
+            "kind": "function",
+            "line": 125,
+            "end_line": 128,
+            "code_start": 125,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "Selector",
+            "kind": "class",
+            "line": 131,
+            "end_line": 160,
+            "code_start": 131,
+            "documented": true
+          },
+          {
+            "name": "Selector.__init__",
+            "kind": "function",
+            "line": 134,
+            "end_line": 138,
+            "code_start": 134,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "Selector.register",
+            "kind": "function",
+            "line": 140,
+            "end_line": 142,
+            "code_start": 140,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "Selector.unregister",
+            "kind": "function",
+            "line": 144,
+            "end_line": 146,
+            "code_start": 144,
+            "documented": true,
+            "actual_primary_thread_calls": 7
+          },
+          {
+            "name": "Selector.get_map",
+            "kind": "function",
+            "line": 148,
+            "end_line": 150,
+            "code_start": 148,
+            "documented": true,
+            "actual_primary_thread_calls": 11
+          },
+          {
+            "name": "Selector.select",
+            "kind": "function",
+            "line": 152,
+            "end_line": 154,
+            "code_start": 152,
+            "documented": true,
+            "actual_primary_thread_calls": 7
+          },
+          {
+            "name": "Selector.close",
+            "kind": "function",
+            "line": 156,
+            "end_line": 160,
+            "code_start": 156,
+            "documented": true,
+            "actual_primary_thread_calls": 6
+          },
+          {
+            "name": "command_seam",
+            "kind": "function",
+            "line": 164,
+            "end_line": 178,
+            "code_start": 163,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "command_seam.read",
+            "kind": "function",
+            "line": 169,
+            "end_line": 171,
+            "code_start": 169,
+            "documented": true,
+            "actual_primary_thread_calls": 14
+          },
+          {
+            "name": "walk_seam",
+            "kind": "function",
+            "line": 182,
+            "end_line": 197,
+            "code_start": 181,
+            "documented": true,
+            "actual_primary_thread_calls": 24
+          },
+          {
+            "name": "walk_seam.scan",
+            "kind": "function",
+            "line": 185,
+            "end_line": 188,
+            "code_start": 185,
+            "documented": true,
+            "actual_primary_thread_calls": 46
+          },
+          {
+            "name": "observe_seam",
+            "kind": "function",
+            "line": 201,
+            "end_line": 216,
+            "code_start": 200,
+            "documented": true,
+            "actual_primary_thread_calls": 10
+          },
+          {
+            "name": "ObservationControls",
+            "kind": "class",
+            "line": 219,
+            "end_line": 550,
+            "code_start": 219,
+            "documented": true
+          },
+          {
+            "name": "ObservationControls.stop",
+            "kind": "function",
+            "line": 222,
+            "end_line": 226,
+            "code_start": 222,
+            "documented": true,
+            "actual_primary_thread_calls": 39
+          },
+          {
+            "name": "ObservationControls.assert_unavailable",
+            "kind": "function",
+            "line": 228,
+            "end_line": 235,
+            "code_start": 228,
+            "documented": true,
+            "actual_primary_thread_calls": 36
+          },
+          {
+            "name": "ObservationControls.test_closed_rejection_and_size",
+            "kind": "function",
+            "line": 237,
+            "end_line": 244,
+            "code_start": 237,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_record_types_pairs_and_predicates_closed",
+            "kind": "function",
+            "line": 246,
+            "end_line": 269,
+            "code_start": 246,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_source_identity_closed_and_protected",
+            "kind": "function",
+            "line": 271,
+            "end_line": 282,
+            "code_start": 271,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_unavailable_and_no_rejection_are_not_pass",
+            "kind": "function",
+            "line": 284,
+            "end_line": 295,
+            "code_start": 284,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_strict_probe_decoding",
+            "kind": "function",
+            "line": 297,
+            "end_line": 303,
+            "code_start": 297,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_deadline_fences_never_spawn_expired_commands",
+            "kind": "function",
+            "line": 305,
+            "end_line": 316,
+            "code_start": 305,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_stable_recheck_redacts_object_identity",
+            "kind": "function",
+            "line": 318,
+            "end_line": 329,
+            "code_start": 318,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_replaced_or_unobserved_object_revokes_facts",
+            "kind": "function",
+            "line": 331,
+            "end_line": 337,
+            "code_start": 331,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_original_entry_uid_mode_kind_order",
+            "kind": "function",
+            "line": 339,
+            "end_line": 350,
+            "code_start": 339,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_ancestor_mode_precedes_link_and_admin_has_no_object",
+            "kind": "function",
+            "line": 352,
+            "end_line": 359,
+            "code_start": 352,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_size_bound_and_no_content_read",
+            "kind": "function",
+            "line": 361,
+            "end_line": 368,
+            "code_start": 361,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_streamed_entry_bound_before_excess_stat",
+            "kind": "function",
+            "line": 370,
+            "end_line": 377,
+            "code_start": 370,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_root_shape_dynload_empty_and_stat_failure",
+            "kind": "function",
+            "line": 379,
+            "end_line": 388,
+            "code_start": 379,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_depth_bound_before_deeper_scan",
+            "kind": "function",
+            "line": 390,
+            "end_line": 396,
+            "code_start": 390,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo",
+            "kind": "function",
+            "line": 398,
+            "end_line": 407,
+            "code_start": 398,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo.qualified",
+            "kind": "function",
+            "line": 400,
+            "end_line": 402,
+            "code_start": 400,
+            "documented": true,
+            "actual_primary_thread_calls": 3
+          },
+          {
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe",
+            "kind": "function",
+            "line": 409,
+            "end_line": 418,
+            "code_start": 409,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe.qualified",
+            "kind": "function",
+            "line": 412,
+            "end_line": 415,
+            "code_start": 412,
+            "documented": true,
+            "actual_primary_thread_calls": 5
+          },
+          {
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private",
+            "kind": "function",
+            "line": 420,
+            "end_line": 431,
+            "code_start": 420,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_separate_streams_and_full_eof",
+            "kind": "function",
+            "line": 433,
+            "end_line": 441,
+            "code_start": 433,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_stderr_bound_discards_stdout",
+            "kind": "function",
+            "line": 443,
+            "end_line": 446,
+            "code_start": 443,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_independent_close_and_first_fault",
+            "kind": "function",
+            "line": 448,
+            "end_line": 459,
+            "code_start": 448,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_actual_command_timeout_owned_wait_and_discard",
+            "kind": "function",
+            "line": 461,
+            "end_line": 468,
+            "code_start": 461,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_observe_retains_first_rejection_only_with_unchanged_sources",
+            "kind": "function",
+            "line": 470,
+            "end_line": 477,
+            "code_start": 470,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_changed_or_unverified_sources_revoke_object_claims",
+            "kind": "function",
+            "line": 479,
+            "end_line": 486,
+            "code_start": 479,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_no_rejection_and_unsupported_host_remain_unqualified",
+            "kind": "function",
+            "line": 488,
+            "end_line": 496,
+            "code_start": 488,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_real_public_source_hashes_and_tested_head_fence",
+            "kind": "function",
+            "line": 498,
+            "end_line": 514,
+            "code_start": 498,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_identity_expiry_prevents_command",
+            "kind": "function",
+            "line": 516,
+            "end_line": 520,
+            "code_start": 516,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_private_canonical_no_replacement_publication",
+            "kind": "function",
+            "line": 522,
+            "end_line": 532,
+            "code_start": 522,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_main_exit_classes_and_generic_private_fault",
+            "kind": "function",
+            "line": 534,
+            "end_line": 542,
+            "code_start": 534,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          },
+          {
+            "name": "ObservationControls.test_post_link_cleanup_fault_cannot_earn_availability",
+            "kind": "function",
+            "line": 544,
+            "end_line": 550,
+            "code_start": 544,
+            "documented": true,
+            "actual_primary_thread_calls": 1
+          }
+        ],
+        "compiler_mapped_line_counts": {
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0,
+          "17": 0,
+          "18": 0,
+          "19": 0,
+          "20": 0,
+          "21": 0,
+          "24": 0,
+          "26": 40092,
+          "27": 20046,
+          "30": 0,
+          "32": 215,
+          "33": 43,
+          "34": 43,
+          "37": 0,
+          "39": 32,
+          "40": 64,
+          "41": 32,
+          "42": 32,
+          "45": 0,
+          "47": 9,
+          "50": 0,
+          "51": 0,
+          "53": 0,
+          "55": 20041,
+          "56": 20041,
+          "57": 20041,
+          "58": 20041,
+          "60": 0,
+          "62": 40040,
+          "63": 40040,
+          "64": 1,
+          "65": 40039,
+          "68": 0,
+          "69": 0,
+          "71": 0,
+          "73": 46,
+          "75": 0,
+          "77": 46,
+          "79": 0,
+          "81": 46,
+          "84": 0,
+          "85": 0,
+          "87": 0,
+          "89": 11,
+          "90": 11,
+          "91": 11,
+          "93": 0,
+          "95": 25,
+          "97": 0,
+          "99": 12,
+          "100": 12,
+          "101": 4,
+          "104": 0,
+          "105": 0,
+          "107": 0,
+          "109": 5,
+          "110": 5,
+          "111": 5,
+          "112": 5,
+          "113": 5,
+          "114": 5,
+          "116": 0,
+          "118": 17,
+          "120": 0,
+          "122": 1,
+          "123": 1,
+          "125": 0,
+          "127": 5,
+          "128": 5,
+          "131": 0,
+          "132": 0,
+          "134": 0,
+          "136": 6,
+          "137": 6,
+          "138": 6,
+          "140": 0,
+          "142": 11,
+          "144": 0,
+          "146": 7,
+          "148": 0,
+          "150": 11,
+          "152": 0,
+          "154": 22,
+          "156": 0,
+          "158": 6,
+          "159": 6,
+          "160": 1,
+          "163": 0,
+          "164": 0,
+          "166": 5,
+          "167": 5,
+          "168": 5,
+          "169": 5,
+          "171": 14,
+          "172": 10,
+          "173": 5,
+          "174": 5,
+          "175": 5,
+          "176": 5,
+          "177": 5,
+          "178": 5,
+          "181": 0,
+          "182": 0,
+          "184": 12,
+          "185": 12,
+          "187": 46,
+          "188": 46,
+          "189": 24,
+          "190": 12,
+          "191": 12,
+          "192": 12,
+          "193": 12,
+          "194": 12,
+          "195": 12,
+          "196": 4,
+          "197": 12,
+          "200": 0,
+          "201": 0,
+          "203": 5,
+          "204": 5,
+          "205": 10,
+          "206": 5,
+          "207": 5,
+          "208": 5,
+          "209": 5,
+          "210": 5,
+          "211": 5,
+          "212": 5,
+          "213": 5,
+          "214": 5,
+          "215": 5,
+          "216": 5,
+          "219": 0,
+          "220": 0,
+          "222": 0,
+          "224": 78,
+          "225": 39,
+          "226": 39,
+          "228": 0,
+          "230": 36,
+          "231": 288,
+          "232": 252,
+          "233": 216,
+          "234": 36,
+          "235": 26,
+          "237": 0,
+          "239": 1,
+          "240": 1,
+          "241": 1,
+          "242": 1,
+          "243": 1,
+          "244": 1,
+          "246": 0,
+          "248": 1,
+          "251": 11,
+          "252": 20,
+          "253": 10,
+          "254": 20,
+          "255": 10,
+          "256": 1,
+          "257": 1,
+          "258": 1,
+          "259": 1,
+          "260": 1,
+          "261": 1,
+          "262": 6,
+          "267": 5,
+          "268": 10,
+          "269": 5,
+          "271": 0,
+          "273": 7,
+          "274": 12,
+          "275": 6,
+          "276": 6,
+          "277": 5,
+          "278": 4,
+          "279": 3,
+          "280": 2,
+          "281": 1,
+          "282": 6,
+          "284": 0,
+          "286": 1,
+          "287": 1,
+          "288": 1,
+          "289": 1,
+          "290": 1,
+          "291": 1,
+          "292": 1,
+          "293": 1,
+          "294": 1,
+          "295": 1,
+          "297": 0,
+          "299": 6,
+          "300": 10,
+          "301": 5,
+          "302": 5,
+          "303": 1,
+          "305": 0,
+          "307": 3,
+          "308": 4,
+          "309": 2,
+          "310": 2,
+          "311": 2,
+          "312": 1,
+          "313": 1,
+          "314": 1,
+          "315": 2,
+          "316": 1,
+          "318": 0,
+          "320": 1,
+          "321": 2,
+          "322": 1,
+          "323": 1,
+          "324": 1,
+          "325": 1,
+          "326": 1,
+          "327": 1,
+          "328": 1,
+          "329": 1,
+          "331": 0,
+          "333": 3,
+          "334": 4,
+          "335": 2,
+          "336": 2,
+          "337": 2,
+          "339": 0,
+          "341": 2,
+          "342": 1,
+          "343": 1,
+          "344": 1,
+          "345": 5,
+          "346": 4,
+          "347": 8,
+          "348": 4,
+          "349": 4,
+          "350": 4,
+          "352": 0,
+          "354": 1,
+          "355": 2,
+          "356": 1,
+          "357": 1,
+          "358": 1,
+          "359": 1,
+          "361": 0,
+          "363": 3,
+          "364": 2,
+          "365": 4,
+          "366": 2,
+          "367": 1,
+          "368": 2,
+          "370": 0,
+          "372": 20002,
+          "373": 2,
+          "374": 1,
+          "375": 20003,
+          "376": 1,
+          "377": 1,
+          "379": 0,
+          "381": 16,
+          "382": 6,
+          "383": 2,
+          "384": 1,
+          "385": 2,
+          "386": 1,
+          "387": 2,
+          "388": 1,
+          "390": 0,
+          "392": 1,
+          "393": 34,
+          "394": 33,
+          "395": 2,
+          "396": 1,
+          "398": 0,
+          "400": 1,
+          "402": 3,
+          "403": 2,
+          "404": 1,
+          "405": 4,
+          "406": 1,
+          "407": 1,
+          "409": 0,
+          "411": 3,
+          "412": 2,
+          "414": 5,
+          "415": 3,
+          "416": 4,
+          "417": 2,
+          "418": 2,
+          "420": 0,
+          "422": 1,
+          "424": 4,
+          "425": 15,
+          "426": 3,
+          "427": 3,
+          "428": 3,
+          "429": 5,
+          "430": 20,
+          "431": 4,
+          "433": 0,
+          "435": 2,
+          "436": 1,
+          "437": 1,
+          "438": 1,
+          "439": 1,
+          "440": 1,
+          "441": 1,
+          "443": 0,
+          "445": 2,
+          "446": 1,
+          "448": 0,
+          "450": 1,
+          "451": 1,
+          "452": 2,
+          "453": 1,
+          "454": 1,
+          "455": 1,
+          "456": 1,
+          "457": 1,
+          "458": 2,
+          "459": 1,
+          "461": 0,
+          "463": 1,
+          "464": 2,
+          "465": 1,
+          "466": 1,
+          "467": 1,
+          "468": 1,
+          "470": 0,
+          "472": 1,
+          "473": 2,
+          "474": 1,
+          "475": 1,
+          "476": 1,
+          "477": 1,
+          "479": 0,
+          "481": 1,
+          "482": 3,
+          "483": 4,
+          "484": 2,
+          "485": 2,
+          "486": 2,
+          "488": 0,
+          "490": 2,
+          "491": 1,
+          "492": 1,
+          "493": 1,
+          "494": 2,
+          "495": 1,
+          "496": 1,
+          "498": 0,
+          "500": 2,
+          "501": 1,
+          "502": 5,
+          "503": 4,
+          "504": 4,
+          "505": 1,
+          "506": 2,
+          "507": 1,
+          "508": 1,
+          "509": 5,
+          "510": 4,
+          "511": 1,
+          "512": 1,
+          "513": 2,
+          "514": 1,
+          "516": 0,
+          "518": 2,
+          "519": 1,
+          "520": 1,
+          "522": 0,
+          "524": 2,
+          "525": 1,
+          "526": 1,
+          "527": 1,
+          "528": 1,
+          "529": 1,
+          "530": 1,
+          "531": 1,
+          "532": 1,
+          "534": 0,
+          "536": 4,
+          "537": 6,
+          "538": 3,
+          "539": 3,
+          "540": 2,
+          "541": 1,
+          "542": 1,
+          "544": 0,
+          "546": 2,
+          "547": 1,
+          "548": 2,
+          "549": 1,
+          "550": 1,
+          "553": 0,
+          "554": 0
+        },
+        "positive_lines": 316,
+        "zero_lines": 92,
+        "calls": [
+          {
+            "line": 24,
+            "name": "info",
+            "count": 20046
+          },
+          {
+            "line": 30,
+            "name": "identity",
+            "count": 43
+          },
+          {
+            "line": 37,
+            "name": "rejected",
+            "count": 32
+          },
+          {
+            "line": 45,
+            "name": "capture",
+            "count": 9
+          },
+          {
+            "line": 53,
+            "name": "Entry.__init__",
+            "count": 20041
+          },
+          {
+            "line": 60,
+            "name": "Entry.stat",
+            "count": 40040
+          },
+          {
+            "line": 71,
+            "name": "Scandir.__init__",
+            "count": 46
+          },
+          {
+            "line": 75,
+            "name": "Scandir.__enter__",
+            "count": 46
+          },
+          {
+            "line": 79,
+            "name": "Scandir.__exit__",
+            "count": 46
+          },
+          {
+            "line": 87,
+            "name": "Stream.__init__",
+            "count": 11
+          },
+          {
+            "line": 93,
+            "name": "Stream.fileno",
+            "count": 25
+          },
+          {
+            "line": 97,
+            "name": "Stream.close",
+            "count": 12
+          },
+          {
+            "line": 107,
+            "name": "Child.__init__",
+            "count": 5
+          },
+          {
+            "line": 116,
+            "name": "Child.poll",
+            "count": 17
+          },
+          {
+            "line": 120,
+            "name": "Child.kill",
+            "count": 1
+          },
+          {
+            "line": 125,
+            "name": "Child.wait",
+            "count": 5
+          },
+          {
+            "line": 134,
+            "name": "Selector.__init__",
+            "count": 6
+          },
+          {
+            "line": 140,
+            "name": "Selector.register",
+            "count": 11
+          },
+          {
+            "line": 144,
+            "name": "Selector.unregister",
+            "count": 7
+          },
+          {
+            "line": 148,
+            "name": "Selector.get_map",
+            "count": 11
+          },
+          {
+            "line": 152,
+            "name": "Selector.select",
+            "count": 7
+          },
+          {
+            "line": 156,
+            "name": "Selector.close",
+            "count": 6
+          },
+          {
+            "line": 163,
+            "name": "command_seam",
+            "count": 10
+          },
+          {
+            "line": 169,
+            "name": "command_seam.<locals>.read",
+            "count": 14
+          },
+          {
+            "line": 181,
+            "name": "walk_seam",
+            "count": 24
+          },
+          {
+            "line": 185,
+            "name": "walk_seam.<locals>.scan",
+            "count": 46
+          },
+          {
+            "line": 200,
+            "name": "observe_seam",
+            "count": 10
+          },
+          {
+            "line": 222,
+            "name": "ObservationControls.stop",
+            "count": 39
+          },
+          {
+            "line": 228,
+            "name": "ObservationControls.assert_unavailable",
+            "count": 36
+          },
+          {
+            "line": 237,
+            "name": "ObservationControls.test_closed_rejection_and_size",
+            "count": 1
+          },
+          {
+            "line": 246,
+            "name": "ObservationControls.test_record_types_pairs_and_predicates_closed",
+            "count": 1
+          },
+          {
+            "line": 271,
+            "name": "ObservationControls.test_source_identity_closed_and_protected",
+            "count": 1
+          },
+          {
+            "line": 284,
+            "name": "ObservationControls.test_unavailable_and_no_rejection_are_not_pass",
+            "count": 1
+          },
+          {
+            "line": 297,
+            "name": "ObservationControls.test_strict_probe_decoding",
+            "count": 1
+          },
+          {
+            "line": 305,
+            "name": "ObservationControls.test_deadline_fences_never_spawn_expired_commands",
+            "count": 1
+          },
+          {
+            "line": 318,
+            "name": "ObservationControls.test_stable_recheck_redacts_object_identity",
+            "count": 1
+          },
+          {
+            "line": 331,
+            "name": "ObservationControls.test_replaced_or_unobserved_object_revokes_facts",
+            "count": 1
+          },
+          {
+            "line": 339,
+            "name": "ObservationControls.test_original_entry_uid_mode_kind_order",
+            "count": 1
+          },
+          {
+            "line": 352,
+            "name": "ObservationControls.test_ancestor_mode_precedes_link_and_admin_has_no_object",
+            "count": 1
+          },
+          {
+            "line": 361,
+            "name": "ObservationControls.test_size_bound_and_no_content_read",
+            "count": 1
+          },
+          {
+            "line": 370,
+            "name": "ObservationControls.test_streamed_entry_bound_before_excess_stat",
+            "count": 1
+          },
+          {
+            "line": 375,
+            "name": "ObservationControls.test_streamed_entry_bound_before_excess_stat.<locals>.<genexpr>",
+            "count": 20002
+          },
+          {
+            "line": 379,
+            "name": "ObservationControls.test_root_shape_dynload_empty_and_stat_failure",
+            "count": 1
+          },
+          {
+            "line": 390,
+            "name": "ObservationControls.test_depth_bound_before_deeper_scan",
+            "count": 1
+          },
+          {
+            "line": 398,
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo",
+            "count": 1
+          },
+          {
+            "line": 400,
+            "name": "ObservationControls.test_fixed_probe_ignores_path_and_never_executes_ip_sudo.<locals>.qualified",
+            "count": 3
+          },
+          {
+            "line": 409,
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe",
+            "count": 1
+          },
+          {
+            "line": 412,
+            "name": "ObservationControls.test_missing_ip_sudo_stops_before_probe.<locals>.qualified",
+            "count": 5
+          },
+          {
+            "line": 420,
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private",
+            "count": 1
+          },
+          {
+            "line": 425,
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private.<locals>.<lambda>",
+            "count": 9
+          },
+          {
+            "line": 430,
+            "name": "ObservationControls.test_probe_faults_closed_and_output_private.<locals>.<lambda>",
+            "count": 12
+          },
+          {
+            "line": 433,
+            "name": "ObservationControls.test_actual_command_separate_streams_and_full_eof",
+            "count": 1
+          },
+          {
+            "line": 443,
+            "name": "ObservationControls.test_actual_command_stderr_bound_discards_stdout",
+            "count": 1
+          },
+          {
+            "line": 448,
+            "name": "ObservationControls.test_actual_command_independent_close_and_first_fault",
+            "count": 1
+          },
+          {
+            "line": 461,
+            "name": "ObservationControls.test_actual_command_timeout_owned_wait_and_discard",
+            "count": 1
+          },
+          {
+            "line": 470,
+            "name": "ObservationControls.test_observe_retains_first_rejection_only_with_unchanged_sources",
+            "count": 1
+          },
+          {
+            "line": 479,
+            "name": "ObservationControls.test_changed_or_unverified_sources_revoke_object_claims",
+            "count": 1
+          },
+          {
+            "line": 488,
+            "name": "ObservationControls.test_no_rejection_and_unsupported_host_remain_unqualified",
+            "count": 1
+          },
+          {
+            "line": 498,
+            "name": "ObservationControls.test_real_public_source_hashes_and_tested_head_fence",
+            "count": 1
+          },
+          {
+            "line": 516,
+            "name": "ObservationControls.test_identity_expiry_prevents_command",
+            "count": 1
+          },
+          {
+            "line": 522,
+            "name": "ObservationControls.test_private_canonical_no_replacement_publication",
+            "count": 1
+          },
+          {
+            "line": 534,
+            "name": "ObservationControls.test_main_exit_classes_and_generic_private_fault",
+            "count": 1
+          },
+          {
+            "line": 544,
+            "name": "ObservationControls.test_post_link_cleanup_fault_cannot_earn_availability",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "totals": {
+      "functions": 84,
+      "function_docs": 84,
+      "functions_with_primary_thread_calls": 83,
+      "classes": 7,
+      "class_docs": 7,
+      "modules": 2,
+      "module_docs": 2,
+      "positive_lines": 608,
+      "zero_lines": 220
+    },
+    "qualification": [
+      "Imports precede tracing; primary thread only; every physical compiler zero is retained.",
+      "Actual observer bodies consume mocked process/stat/tool/Git seams and synthetic temporary inputs.",
+      "Fixed ip/sudo/Python probe, native denial, Forge, browser and network do not execute.",
+      "Actual named calls, compiler physical line events, whole bodies and branches have different denominators.",
+      "Branch and MC/DC coverage is unmeasured; no complete Linux qualification or cause claim.",
+      "Hosted, matrix, human, D069, release and final integrated documentation gates remain open."
+    ],
+    "native_os_denial_executed": false,
+    "product_executed": false,
+    "attempted_egress_measured": false
+  },
+  "historical_first_run_raw_log_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-observer-root-controls-v1/raw-unittest.log",
+    "bytes": 7773,
+    "sha256": "9f29000b3fc03fbda5bb77ee2a9ed31484e53a87e22e70f69d89032f41e12017"
+  },
+  "root_job_receipts": [
+    {
+      "receipt_pin": {
+        "path": "/private/tmp/forge-f19-browser-stdlib-observer-controls-v1.json",
+        "bytes": 5854,
+        "sha256": "7baa7d681161a4f01022c81f9b992cb9ee133134bd42bb3b26a02e42de1f6c5e"
+      },
+      "job": {
+        "format": "forge.f19-checkpoint-job/1",
+        "label": "stdlib-observer-controls-v1",
+        "started_utc": "2026-10-03T03:18:33.841571+00:00",
+        "finished_utc": "2026-10-03T03:18:35.739614+00:00",
+        "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "head_before": "3594b1c4d3185adbcaaf470b870e7258cc86cf90",
+        "head_after": "3594b1c4d3185adbcaaf470b870e7258cc86cf90",
+        "staged_repository_paths_before": [],
+        "command": [
+          "rtk",
+          "proxy",
+          "python3",
+          "-B",
+          "/private/tmp/forge-f04-stdlib-observer-root-collector-v1.py"
+        ],
+        "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "explicit_extra_environment": {},
+        "exit_code": 0,
+        "source_pins": [
+          {
+            "repository_path": ".github/workflows/workspace-verification.yml",
+            "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e",
+            "bytes": 14919
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation-static-audit-v2.json",
+            "sha256": "7ad5b645016591303175232d1d1bfb78500d6be70b7502bed4cd37f659f7a890",
+            "bytes": 59577
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+            "sha256": "7455cfe22a8b0209f9ece7535238ea5e10e5b62899b549c9970741994e11ffb4",
+            "bytes": 4784
+          },
+          {
+            "repository_path": "docs/workspace-stdlib-gate-observation.md",
+            "sha256": "2cb75697dc1755f060cb6fd35c08b45331c0e9db5e8db284fdf6d11e5b692490",
+            "bytes": 5548
+          },
+          {
+            "repository_path": "schemas/forge.workspace-1.schema.json",
+            "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+            "bytes": 4223
+          },
+          {
+            "repository_path": "scripts/observe_workspace_stdlib_gate.py",
+            "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9",
+            "bytes": 28113
+          },
+          {
+            "repository_path": "scripts/test_observe_workspace_stdlib_gate.py",
+            "sha256": "4cd046751108319d79a85df53f6ef7d563ff59ae061dbf5ff63368a6e16a8a0b",
+            "bytes": 36170
+          },
+          {
+            "repository_path": "src/applicability/mod.rs",
+            "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+            "bytes": 75602
+          },
+          {
+            "repository_path": "src/workspace/index.rs",
+            "sha256": "23c0cbd53284394d7d111c645b71706f52ea93abb1e9b2c5e8882c47c36095fa",
+            "bytes": 5820
+          },
+          {
+            "repository_path": "src/workspace/root.rs",
+            "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+            "bytes": 29123
+          },
+          {
+            "repository_path": "src/workspace/services.rs",
+            "sha256": "3991e1b4e351986f4c8ee774ae2157d786943a05695370452032533091af5429",
+            "bytes": 59945
+          }
+        ],
+        "source_pins_after": [
+          {
+            "repository_path": ".github/workflows/workspace-verification.yml",
+            "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e",
+            "bytes": 14919
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation-static-audit-v2.json",
+            "sha256": "7ad5b645016591303175232d1d1bfb78500d6be70b7502bed4cd37f659f7a890",
+            "bytes": 59577
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+            "sha256": "7455cfe22a8b0209f9ece7535238ea5e10e5b62899b549c9970741994e11ffb4",
+            "bytes": 4784
+          },
+          {
+            "repository_path": "docs/workspace-stdlib-gate-observation.md",
+            "sha256": "2cb75697dc1755f060cb6fd35c08b45331c0e9db5e8db284fdf6d11e5b692490",
+            "bytes": 5548
+          },
+          {
+            "repository_path": "schemas/forge.workspace-1.schema.json",
+            "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+            "bytes": 4223
+          },
+          {
+            "repository_path": "scripts/observe_workspace_stdlib_gate.py",
+            "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9",
+            "bytes": 28113
+          },
+          {
+            "repository_path": "scripts/test_observe_workspace_stdlib_gate.py",
+            "sha256": "4cd046751108319d79a85df53f6ef7d563ff59ae061dbf5ff63368a6e16a8a0b",
+            "bytes": 36170
+          },
+          {
+            "repository_path": "src/applicability/mod.rs",
+            "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+            "bytes": 75602
+          },
+          {
+            "repository_path": "src/workspace/index.rs",
+            "sha256": "23c0cbd53284394d7d111c645b71706f52ea93abb1e9b2c5e8882c47c36095fa",
+            "bytes": 5820
+          },
+          {
+            "repository_path": "src/workspace/root.rs",
+            "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+            "bytes": 29123
+          },
+          {
+            "repository_path": "src/workspace/services.rs",
+            "sha256": "3991e1b4e351986f4c8ee774ae2157d786943a05695370452032533091af5429",
+            "bytes": 59945
+          }
+        ],
+        "source_bytes_unchanged_during_command": true,
+        "test_summaries": {
+          "summaries": 0,
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0
+        },
+        "log": {
+          "path": "/private/tmp/forge-f19-browser-stdlib-observer-controls-v1.log",
+          "sha256": "185d967f0bc15e82096d91bdc079df52b21db00126f2fd68c150f0b5259195b9",
+          "bytes": 330
+        }
+      },
+      "raw_job_log": "{\"output\": \"/private/tmp/forge-f04-stdlib-observer-root-controls-v1\", \"tests\": {\"run\": 29, \"failed\": 0, \"errors\": 0, \"skipped\": 0}, \"totals\": {\"functions\": 84, \"function_docs\": 84, \"functions_with_primary_thread_calls\": 83, \"classes\": 7, \"class_docs\": 7, \"modules\": 2, \"module_docs\": 2, \"positive_lines\": 608, \"zero_lines\": 220}}\n"
+    },
+    {
+      "receipt_pin": {
+        "path": "/private/tmp/forge-f19-browser-stdlib-observer-controls-v2.json",
+        "bytes": 5854,
+        "sha256": "e780ea19702d2c2d37c374175f71626149a6be130e8be04bac79c5b395f837da"
+      },
+      "job": {
+        "format": "forge.f19-checkpoint-job/1",
+        "label": "stdlib-observer-controls-v2",
+        "started_utc": "2026-10-03T03:20:04.679260+00:00",
+        "finished_utc": "2026-10-03T03:20:06.611332+00:00",
+        "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "head_before": "3594b1c4d3185adbcaaf470b870e7258cc86cf90",
+        "head_after": "3594b1c4d3185adbcaaf470b870e7258cc86cf90",
+        "staged_repository_paths_before": [],
+        "command": [
+          "rtk",
+          "proxy",
+          "python3",
+          "-B",
+          "/private/tmp/forge-f04-stdlib-observer-root-collector-v2.py"
+        ],
+        "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+        "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+        "explicit_extra_environment": {},
+        "exit_code": 0,
+        "source_pins": [
+          {
+            "repository_path": ".github/workflows/workspace-verification.yml",
+            "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e",
+            "bytes": 14919
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation-static-audit-v2.json",
+            "sha256": "7ad5b645016591303175232d1d1bfb78500d6be70b7502bed4cd37f659f7a890",
+            "bytes": 59577
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+            "sha256": "7455cfe22a8b0209f9ece7535238ea5e10e5b62899b549c9970741994e11ffb4",
+            "bytes": 4784
+          },
+          {
+            "repository_path": "docs/workspace-stdlib-gate-observation.md",
+            "sha256": "2cb75697dc1755f060cb6fd35c08b45331c0e9db5e8db284fdf6d11e5b692490",
+            "bytes": 5548
+          },
+          {
+            "repository_path": "schemas/forge.workspace-1.schema.json",
+            "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+            "bytes": 4223
+          },
+          {
+            "repository_path": "scripts/observe_workspace_stdlib_gate.py",
+            "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9",
+            "bytes": 28113
+          },
+          {
+            "repository_path": "scripts/test_observe_workspace_stdlib_gate.py",
+            "sha256": "24c1960b4f25100e9c97e3d8ba3e57b6f9f14f6ae08b297361a558dcc92093f2",
+            "bytes": 39679
+          },
+          {
+            "repository_path": "src/applicability/mod.rs",
+            "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+            "bytes": 75602
+          },
+          {
+            "repository_path": "src/workspace/index.rs",
+            "sha256": "23c0cbd53284394d7d111c645b71706f52ea93abb1e9b2c5e8882c47c36095fa",
+            "bytes": 5820
+          },
+          {
+            "repository_path": "src/workspace/root.rs",
+            "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+            "bytes": 29123
+          },
+          {
+            "repository_path": "src/workspace/services.rs",
+            "sha256": "3991e1b4e351986f4c8ee774ae2157d786943a05695370452032533091af5429",
+            "bytes": 59945
+          }
+        ],
+        "source_pins_after": [
+          {
+            "repository_path": ".github/workflows/workspace-verification.yml",
+            "sha256": "cc1c86d483899ddcf2187b087fdf16f22ad2da62cd64a64227430776d7ff177e",
+            "bytes": 14919
+          },
+          {
+            "repository_path": "Cargo.lock",
+            "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+            "bytes": 74338
+          },
+          {
+            "repository_path": "Cargo.toml",
+            "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+            "bytes": 2344
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation-static-audit-v2.json",
+            "sha256": "7ad5b645016591303175232d1d1bfb78500d6be70b7502bed4cd37f659f7a890",
+            "bytes": 59577
+          },
+          {
+            "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+            "sha256": "7455cfe22a8b0209f9ece7535238ea5e10e5b62899b549c9970741994e11ffb4",
+            "bytes": 4784
+          },
+          {
+            "repository_path": "docs/workspace-stdlib-gate-observation.md",
+            "sha256": "2cb75697dc1755f060cb6fd35c08b45331c0e9db5e8db284fdf6d11e5b692490",
+            "bytes": 5548
+          },
+          {
+            "repository_path": "schemas/forge.workspace-1.schema.json",
+            "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+            "bytes": 4223
+          },
+          {
+            "repository_path": "scripts/observe_workspace_stdlib_gate.py",
+            "sha256": "d374e4307eaa0d9c1d987eacde06e833ff9fa05eebfd4d8dfc0d312657a219f9",
+            "bytes": 28113
+          },
+          {
+            "repository_path": "scripts/test_observe_workspace_stdlib_gate.py",
+            "sha256": "24c1960b4f25100e9c97e3d8ba3e57b6f9f14f6ae08b297361a558dcc92093f2",
+            "bytes": 39679
+          },
+          {
+            "repository_path": "src/applicability/mod.rs",
+            "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+            "bytes": 75602
+          },
+          {
+            "repository_path": "src/workspace/index.rs",
+            "sha256": "23c0cbd53284394d7d111c645b71706f52ea93abb1e9b2c5e8882c47c36095fa",
+            "bytes": 5820
+          },
+          {
+            "repository_path": "src/workspace/root.rs",
+            "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+            "bytes": 29123
+          },
+          {
+            "repository_path": "src/workspace/services.rs",
+            "sha256": "3991e1b4e351986f4c8ee774ae2157d786943a05695370452032533091af5429",
+            "bytes": 59945
+          }
+        ],
+        "source_bytes_unchanged_during_command": true,
+        "test_summaries": {
+          "summaries": 0,
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0
+        },
+        "log": {
+          "path": "/private/tmp/forge-f19-browser-stdlib-observer-controls-v2.log",
+          "sha256": "ae06717b0db22a21c8868b6fd41c4a9f518ff882fe7efdb570a7d817c95f6525",
+          "bytes": 330
+        }
+      },
+      "raw_job_log": "{\"output\": \"/private/tmp/forge-f04-stdlib-observer-root-controls-v2\", \"tests\": {\"run\": 30, \"failed\": 0, \"errors\": 0, \"skipped\": 0}, \"totals\": {\"functions\": 86, \"function_docs\": 86, \"functions_with_primary_thread_calls\": 86, \"classes\": 7, \"class_docs\": 7, \"modules\": 2, \"module_docs\": 2, \"positive_lines\": 676, \"zero_lines\": 190}}\n"
+    }
+  ],
+  "proposed_document_pins": [
+    {
+      "repository_path": "docs/workspace-stdlib-gate-observation.md",
+      "proposed_pin": {
+        "path": "/private/tmp/forge-f04-stdlib-observer-root-guide-v2.md",
+        "bytes": 5659,
+        "sha256": "3181455c4001e8819d45eae31320150ecdae01a69a5a1b88ef3be43cec95fddb"
+      }
+    },
+    {
+      "repository_path": "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+      "proposed_pin": {
+        "path": "/private/tmp/forge-f04-stdlib-observer-root-plan-v2.md",
+        "bytes": 4689,
+        "sha256": "15930034803be6cee8b4ef6a980cca6b704e562c00a6012908dba8579dee263c"
+      }
+    }
+  ],
+  "bounded_frozen_source_peer": {
+    "index_pin": {
+      "path": "/private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/index.json",
+      "bytes": 7898,
+      "sha256": "5deca1b1e255260ff64266a066f391eac205f08b452a5fcf343d49e951b75e15"
+    },
+    "packet_pin": {
+      "path": "/private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/packet.json",
+      "bytes": 9853,
+      "sha256": "38703ae5c7a159ed31e4c426ac7cdb4e2808d1fe14b920501ec2bbdabd06c5e2"
+    },
+    "literal_packet": {
+      "schema": "forge.stdlib-observer-rebase-independent-source-review/1",
+      "status": "No unresolved material finding within bounded frozen source/data review.",
+      "role": "Independent review of new Linux observer/control/workflow and rebased docs; historical browser UI authorship disclosed and excluded from correctness approval. Rebase-author static checks are source data, not independent runtime acceptance.",
+      "immutable_basis": "3594b1c4d3185adbcaaf470b870e7258cc86cf90",
+      "ordered_parents": [
+        "e52ae8cc5c52ff6734fb47bc5dc17436b5bd9a55"
+      ],
+      "historical_basis": "3d9345bda6f8c7eb99e69186b6897a874eff4579",
+      "author_index": {
+        "path": "/private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/inputs/v2-index.json",
+        "sha256": "fcae47d642cd83659eadb3be44dbea90a73a1c38b6c21c4a204f9ec54d4b273d",
+        "bytes": 32628
+      },
+      "historical_author_index": {
+        "path": "/private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/inputs/v1-index.json",
+        "sha256": "62974a49eccacdb53439677cdbc9ccb444863b62cc539b97202da478c474a817",
+        "bytes": 9853
+      },
+      "historical_independent_review": {
+        "path": "/private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/inputs/historical-review.json",
+        "sha256": "239df7006d64deb9ad62702cfbb2108a9c50a860be9776c5aca3cba8c8034fb8",
+        "bytes": 17444
+      },
+      "apply_only": [
+        "scripts/observe_workspace_stdlib_gate.py",
+        "scripts/test_observe_workspace_stdlib_gate.py",
+        ".github/workflows/workspace-verification.yml",
+        "docs/workspace-stdlib-gate-observation.md",
+        "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+        "docs/plans/2026-10-02-f04-stdlib-gate-observation-static-audit-v2.json"
+      ],
+      "do_not_apply_protected_snapshots": [
+        "scripts/verify_workspace_os_denial.py",
+        "scripts/test_workspace_os_denial.py",
+        "scripts/verify_workspace.py"
+      ],
+      "source_bound_checks": {
+        "author_internal_pin_rows": 157,
+        "historical_index_rows": 0,
+        "current_foundations_byte_equal_historical": 4,
+        "basis_difference_paths": 55,
+        "introduced_observer_controls_workflow_byte_equal_v1": 3,
+        "relative_doc_link_occurrences_resolved": 10,
+        "whole_named_function_docstrings": "84/84",
+        "classes": "7/7",
+        "modules": "2/2",
+        "authored_registered_controls": 29,
+        "actual_controls_executed_by_reviewer": 0
+      },
+      "assessments": [
+        {
+          "source": "inputs/candidate/scripts/observe_workspace_stdlib_gate.py",
+          "lines": [
+            98,
+            103,
+            107,
+            110,
+            113,
+            120,
+            129,
+            131,
+            133,
+            322,
+            344,
+            347,
+            348,
+            349,
+            352,
+            355,
+            357,
+            359,
+            363,
+            365
+          ],
+          "finding": "Original UID, 0o022-mode, then kind order is preserved for entries/root ancestors; same-instance metadata recheck precedes opaque identifier retention. Changed/unobserved objects revoke identifying fields. Streamed count rejects the 20,001st entry before stat; depth32 and regular stat-size256MiB stay bounded. No regular stdlib content is opened, hashed or retained."
+        },
+        {
+          "source": "inputs/candidate/scripts/observe_workspace_stdlib_gate.py",
+          "lines": [
+            172,
+            174,
+            185,
+            188,
+            197,
+            202,
+            223,
+            226,
+            227,
+            231,
+            241,
+            253,
+            260,
+            267,
+            302,
+            305,
+            307,
+            309,
+            310
+          ],
+          "finding": "command() is byte-identical to the protected wrapper; separate stdout/stderr share262,144-byte accounting, required EOF/actual owner wait/close behavior and failed output clearing. Fixed administrative path checks preserve protected predicates. Only isolated trusted distro-Python probe plus ordinary Git identity commands execute; no ip/sudo/native/product dispatch."
+        },
+        {
+          "source": "inputs/candidate/scripts/observe_workspace_stdlib_gate.py",
+          "lines": [
+            373,
+            378,
+            381,
+            383,
+            387,
+            395,
+            400,
+            403,
+            405,
+            407,
+            410,
+            416,
+            423,
+            428,
+            429,
+            431,
+            435,
+            436,
+            437,
+            441,
+            445,
+            452,
+            463,
+            465,
+            467,
+            469
+          ],
+          "finding": "Identity has exactly four fixed public source rows; wrapper/native hashes are protected, asserted tested commit must equal observed ordinary HEAD, and before/after source/HEAD change revokes object claims. Closed12-field validator retains typed predicates/kinds/stability and71 fixed diagnostic pairs. This does not attest loaded/privileged bytes or authenticate requested head/base/parents."
+        },
+        {
+          "source": "inputs/candidate/scripts/observe_workspace_stdlib_gate.py",
+          "lines": [
+            62,
+            475,
+            477,
+            479,
+            483,
+            484,
+            486,
+            489,
+            495,
+            497,
+            499,
+            501,
+            503
+          ],
+          "finding": "One canonical compact ASCII JSON plus LF is bounded2,048bytes and hardlink-published without replacement in a fresh private directory. Post-link cleanup failure returns generic exit1 even if bytes remain. Rejected exit0 means diagnostic availability only; unavailable/no-rejection exit2 remain incomplete and no passed outcome exists."
+        },
+        {
+          "source": "inputs/candidate/.github/workflows/workspace-verification.yml",
+          "lines": [
+            277,
+            290,
+            291,
+            309,
+            310,
+            320,
+            322,
+            323,
+            329,
+            333,
+            334,
+            337,
+            338
+          ],
+          "finding": "Removing only added control step, verification ID and sidecar appendix reconstructs current/historical workflow exactly. Both observer/upload use failure() && verification.outcome == failure. Existing singleton upload and verification remain intact; original failure cannot be downgraded. Sidecar has separate artifact name/path; no continue-on-error/new trigger/privilege/install/dependency."
+        },
+        {
+          "source": "inputs/candidate/scripts/test_observe_workspace_stdlib_gate.py",
+          "lines": [
+            237,
+            246,
+            271,
+            284,
+            297,
+            305,
+            318,
+            331,
+            339,
+            352,
+            361,
+            370,
+            379,
+            390,
+            398,
+            409,
+            420,
+            433,
+            443,
+            448,
+            461,
+            470,
+            479,
+            488,
+            498,
+            516,
+            522,
+            534,
+            544
+          ],
+          "finding": "Twenty-nine authored controls call real observer functions with bounded fake stat/process/tool seams and isolated public-source/publication fixtures. They include closed predicate/source rejection, expiry, replacement/privacy, streamed/depth/size bounds, no-fallback fixedprobe, duplicate-safe decoding, aggregate-pipe/close/wait/source revocation and real post-link cleanup fault. Read here only; none executed or counted as actual passing/coverage evidence."
+        },
+        {
+          "source": "inputs/candidate/docs",
+          "finding": "Guide/plan/audit correctly separate current3594/e52 lineage and exact unchanged executable foundations from historical3d requested head/4921testedmerge failure. Historical receipt remains incomplete, nativeproducer not-run, toolsnull, cleanupverified-not-created, attempted-egressunmeasured, object/causeunknown. Cause unknown is an explicit semantic summary of retained non-retention prose.84/84named docs,7classes,2modules,29authored tests are independent AST counts; runtime/call/zero-line fields remainnull."
+        }
+      ],
+      "caps": {
+        "MAX_SIDECAR": 2048,
+        "MAX_CAPTURE": 262144,
+        "MAX_ENTRIES": 20000,
+        "MAX_STDLIB_BYTES": 268435456,
+        "SOURCE_LIMIT": 131072,
+        "BUDGET_SECONDS": 600
+      },
+      "remaining_gates": [
+        "Root actual29 controls and authentic call/line/all-zero coverage",
+        "Root six-path integration, mandatory hook/commit/draft/tracker readback",
+        "Separately source-bound hosted diagnostic with actual producer exit; original incomplete receipt immutable",
+        "No original-object attribution, causal proof, native-denial/no-attempt/platform/browser/architecture/AT/human/D069/release or full S3 credit",
+        "Full F04 Must/Should and final integrated documentation review remain open"
+      ],
+      "other_contract_context": "API v2 is root-selected engineering direction under existing compatibility policy; exact launch/session contract is being proposed and has no human acceptance or final source approval. Unexecuted provisional v1 registration tests remain preserved/unapplied.",
+      "execution": {
+        "candidate_imports": 0,
+        "controls_or_units": 0,
+        "Cargo": 0,
+        "native_product_browser": 0,
+        "managed_writes": 0,
+        "Git_mutations": 0,
+        "network": 0,
+        "source_data_operations": "Read-only exact Git blobs/link existence, own static AST/literal and pin replay only."
+      },
+      "own_static_adapter_history": [
+        "first-static-attempt.json: one extra workflow appendix separator blank line; corrected exact reconstruction",
+        "second-static-attempt.json: cause prose vs unknown summary; explicit semantic normalization retained"
+      ],
+      "unresolved_findings": [],
+      "replay": "rtk proxy python3 -B /private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/derive.py --check",
+      "supporting_records": [
+        {
+          "path": "/private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/static-replay.json",
+          "sha256": "5885d259adbd0cffdd4882d4b2837707a89d1457d5aa4a1e23ba4459168d8c0a",
+          "bytes": 66667
+        },
+        {
+          "path": "/private/tmp/forge-f04-stdlib-observer-rebase-independent-review-v1/source-and-history-replay.json",
+          "sha256": "e56dc7f540a210c7385763f9c88dfde99eb66bd3b4bee7eb7db91d84905e7109",
+          "bytes": 8915
+        }
+      ]
+    },
+    "scope": "Original 29-control frozen source and rebased docs; no control execution or review of later root addition."
+  },
+  "coverage_denominators": {
+    "named_functions": 86,
+    "documented_functions": 86,
+    "positive_primary_thread_named_entries": 86,
+    "classes": 7,
+    "modules": 2,
+    "physical_mapped_lines": 866,
+    "positive_lines": 676,
+    "zero_lines": 190,
+    "production": {
+      "named_functions": 24,
+      "mapped": 420,
+      "positive": 323,
+      "zero": 97
+    },
+    "controls": {
+      "named_functions": 62,
+      "mapped": 446,
+      "positive": 353,
+      "zero": 93
+    },
+    "imports_traced": false,
+    "branch": null,
+    "MC_DC": null,
+    "whole_body_complete": null
+  },
+  "historical_hosted_result": "Requested 3d9345b / tested merge 4921c756 / run37087523880 remains incomplete, native-not-run, null tools/exit, cleanup verified-not-created, egress unmeasured, original object/cause unretained.",
+  "required_later_evidence": [
+    "Mandatory enabled commit hook",
+    "Exact-head draft PR and task readbacks",
+    "Source-bound hosted diagnostic with actual producer exit",
+    "Full F04 and S-3",
+    "Every scoped Must/Should and conditional prerequisite",
+    "Supported platform/browser/architecture/AT and human acceptance",
+    "D069 audit approval",
+    "Release candidate/provenance and publication authorization",
+    "Final integrated documentation review"
+  ],
+  "acceptance_credit": false,
+  "native_execution": false,
+  "product_execution": false,
+  "producer_pin": {
+    "path": "/private/tmp/forge-f04-stdlib-observer-root-audit-v4.py",
+    "bytes": 8608,
+    "sha256": "265e162bf0b2a87b612ac18a1f075e43af47aa63b353ba83f3470dd5597307cf"
+  }
+}
