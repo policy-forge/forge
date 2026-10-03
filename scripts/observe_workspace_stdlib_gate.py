@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 
-SCHEMA = "forge.stdlib-gate-observation/1"
+SCHEMA = "forge.stdlib-gate-observation/2"
 OUTPUT = "stdlib-gate-observation.json"
 MAX_SIDECAR = 2048
 MAX_CAPTURE = 262144
@@ -24,7 +24,7 @@ BUDGET_SECONDS = 600
 INPUT_KEYS = ("scripts/observe_workspace_stdlib_gate.py", "scripts/verify_workspace_os_denial.py",
               "scripts/test_workspace_os_denial.py", ".github/workflows/workspace-verification.yml")
 EXPECTED_PROTECTED = {
-    "scripts/verify_workspace_os_denial.py": {"bytes": 44351, "sha256": "1b15a062772ec6b0ac8e584992aa9201ede8e35c4704100d37c4e8e0af9dd30c"},
+    "scripts/verify_workspace_os_denial.py": {"bytes": 44362, "sha256": "5919a15920b60e8dcf4cdb063c1120a4d0b3077ae8099c8de8768651bdf2644d"},
     "scripts/test_workspace_os_denial.py": {"bytes": 68516, "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"},
 }
 ADMINISTRATIVE_PATHS = {"python": "/usr/bin/python3", "ip": "/usr/bin/ip", "sudo": "/usr/bin/sudo"}
@@ -118,7 +118,7 @@ def reject_object(path, info, phase, reason, predicate, root_index, root, deadli
 
 
 def root_trusted(path, directory, phase, root_index=None, root=None, deadline=None):
-    """Mirror root/ancestor UID, write-bit and kind ordering; an administrative failure has no stdlib object claim."""
+    """Mirror root/ancestor UID, link-kind and non-link write checks without inventing administrative object claims."""
     path = Path(path)
     if not path.is_absolute():
         unavailable(phase, "not-absolute" if phase in ("python-path", "ip-path", "sudo-path") else "root-shape-invalid")
@@ -128,10 +128,10 @@ def root_trusted(path, directory, phase, root_index=None, root=None, deadline=No
         info = item.lstat()
         if info.st_uid != 0:
             reject_object(item, info, phase, "not-root-owned", "root-ancestor-uid", root_index, root, deadline)
-        if info.st_mode & 0o022:
-            reject_object(item, info, phase, "worker-writable", "root-ancestor-mode-022", root_index, root, deadline)
         if stat.S_ISLNK(info.st_mode):
             reject_object(item, info, phase, "unsupported-link", "root-ancestor-kind", root_index, root, deadline)
+        if info.st_mode & 0o022:
+            reject_object(item, info, phase, "worker-writable", "root-ancestor-mode-022", root_index, root, deadline)
         if item == path:
             if directory and not stat.S_ISDIR(info.st_mode) or not directory and not stat.S_ISREG(info.st_mode):
                 reject_object(item, info, phase, "not-directory" if directory else "not-regular", "root-ancestor-kind", root_index, root, deadline)
@@ -354,10 +354,10 @@ def stdlib_walk(paths, deadline):
                     unavailable("stdlib-entry", "entry-observation-unverified")
                 if info.st_uid != 0:
                     reject_object(path, info, "stdlib-entry", "not-root-owned", "entry-uid", index, root, deadline)
-                if info.st_mode & 0o022:
-                    reject_object(path, info, "stdlib-entry", "worker-writable", "entry-mode-022", index, root, deadline)
                 if stat.S_ISLNK(info.st_mode):
                     reject_object(path, info, "stdlib-entry", "unsupported-link", "entry-kind", index, root, deadline)
+                if info.st_mode & 0o022:
+                    reject_object(path, info, "stdlib-entry", "worker-writable", "entry-mode-022", index, root, deadline)
                 if stat.S_ISDIR(info.st_mode):
                     visit(root, path, level + 1, index)
                 elif stat.S_ISREG(info.st_mode):
@@ -436,8 +436,8 @@ def validate_observation(value):
         if predicate == "entry-kind" and reason not in ("unsupported-link", "unsupported-kind"): raise ValueError("invalid entry kind")
         if predicate == "root-ancestor-kind" and reason not in ("unsupported-link", "not-directory"): raise ValueError("invalid ancestor kind")
         if predicate.endswith("uid") and (reason != "not-root-owned" or value["uid_is_root"] is not False): raise ValueError("invalid predicate")
-        if predicate.endswith("mode-022") and (reason != "worker-writable" or value["uid_is_root"] is not True or value["mode_022_bits"] == 0): raise ValueError("invalid predicate")
-        if predicate.endswith("kind") and (reason not in ("unsupported-link", "not-directory", "not-regular", "unsupported-kind") or value["uid_is_root"] is not True or value["mode_022_bits"] != 0): raise ValueError("invalid predicate")
+        if predicate.endswith("mode-022") and (reason != "worker-writable" or value["uid_is_root"] is not True or value["mode_022_bits"] == 0 or value["object_kind"] == "symlink"): raise ValueError("invalid predicate")
+        if predicate.endswith("kind") and (reason not in ("unsupported-link", "not-directory", "not-regular", "unsupported-kind") or value["uid_is_root"] is not True or reason != "unsupported-link" and value["mode_022_bits"] != 0): raise ValueError("invalid predicate")
         if predicate.endswith("kind") and ((reason == "unsupported-link" and value["object_kind"] != "symlink") or (reason == "not-directory" and value["object_kind"] not in ("regular", "other")) or (reason == "not-regular" and value["object_kind"] == "regular") or (reason == "unsupported-kind" and value["object_kind"] != "other")): raise ValueError("invalid kind predicate")
     else:
         if any(value[name] is not None for name in OBJECT_FIELDS if name != "object_stat_stable") or value["object_stat_stable"] is not None and value["object_stat_stable"] is not False: raise ValueError("invented object")

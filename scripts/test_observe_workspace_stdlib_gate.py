@@ -268,6 +268,21 @@ class ObservationControls(unittest.TestCase):
             with self.subTest(predicate=predicate, reason=reason), self.assertRaises(ValueError):
                 OBSERVER.validate_observation(value)
 
+    def test_v2_link_kind_mask_roundtrip_and_v1_mode_rejection(self):
+        """Retain masked link metadata under /2 while refusing stale /1 and impossible link-mode rejection facts."""
+        for predicate, phase in (("entry-kind", "stdlib-entry"), ("root-ancestor-kind", "stdlib-roots")):
+            for mask in (0, 2, 16, 18):
+                value = rejected()
+                value.update(source_predicate=predicate, phase=phase, reason="unsupported-link", object_kind="symlink", mode_022_bits=mask)
+                self.assertEqual(OBSERVER.validate_observation(json.loads(OBSERVER.canonical_bytes(value))), value)
+                stale = copy.deepcopy(value); stale["schema_version"] = "forge.stdlib-gate-observation/1"
+                with self.assertRaises(ValueError): OBSERVER.validate_observation(stale)
+                mislabeled = copy.deepcopy(value)
+                mislabeled.update(source_predicate="entry-mode-022" if phase == "stdlib-entry" else "root-ancestor-mode-022", reason="worker-writable")
+                with self.assertRaises(ValueError): OBSERVER.validate_observation(mislabeled)
+                nonlink = copy.deepcopy(value); nonlink["object_kind"] = "regular"
+                with self.assertRaises(ValueError): OBSERVER.validate_observation(nonlink)
+
     def test_source_identity_closed_and_protected(self):
         """Reject malformed hashes/types, source-map extras and changed or missing protected identity before publishing facts."""
         for change in ("extra", "boolean-size", "wrong-native", "head", "changed", "missing"):
@@ -336,11 +351,13 @@ class ObservationControls(unittest.TestCase):
                 self.assert_unavailable(value, "stdlib-entry", "entry-observation-unverified")
                 self.assertIs(value["object_stat_stable"], None if isinstance(replacement, Exception) else False)
 
-    def test_original_entry_uid_mode_kind_order(self):
+    def test_entry_uid_link_kind_nonlink_mode_order(self):
         """Exercise the real streamed predicate order on competing non-root, writable and symlink facts."""
         cases = [(info(stat.S_IFLNK | 0o777, uid=42), "entry-uid", "not-root-owned"),
-            (info(stat.S_IFLNK | 0o777), "entry-mode-022", "worker-writable"),
+            (info(stat.S_IFLNK | 0o777), "entry-kind", "unsupported-link"),
             (info(stat.S_IFLNK | 0o755), "entry-kind", "unsupported-link"),
+            (info(stat.S_IFREG | 0o666), "entry-mode-022", "worker-writable"),
+            (info(stat.S_IFDIR | 0o777), "entry-mode-022", "worker-writable"),
             (info(stat.S_IFIFO | 0o644), "entry-kind", "unsupported-kind")]
         for observed, predicate, reason in cases:
             entry = Entry("/stdlib/base/private", observed)
@@ -349,14 +366,14 @@ class ObservationControls(unittest.TestCase):
                 self.assertEqual((value["source_predicate"], value["reason"]), (predicate, reason))
                 self.assertEqual(entry.calls, [False])
 
-    def test_ancestor_mode_precedes_link_and_admin_has_no_object(self):
+    def test_ancestor_link_precedes_mode_and_admin_has_no_object(self):
         """Keep ancestor ordering identical and prevent an administrative path rejection from inventing a stdlib identifier."""
         observed = info(stat.S_IFLNK | 0o777)
         with mock.patch.object(OBSERVER.Path, "lstat", return_value=observed), mock.patch.object(OBSERVER.time, "monotonic", return_value=0):
             value = self.stop(OBSERVER.root_trusted, Path("/stdlib/root"), True, "stdlib-roots", 0, Path("/stdlib/root"), 10)
-            self.assertEqual((value["reason"], value["source_predicate"]), ("worker-writable", "root-ancestor-mode-022"))
+            self.assertEqual((value["reason"], value["source_predicate"]), ("unsupported-link", "root-ancestor-kind"))
             value = self.stop(OBSERVER.root_trusted, Path("/usr/bin"), True, "python-path", deadline=10)
-            self.assert_unavailable(value, "python-path", "worker-writable")
+            self.assert_unavailable(value, "python-path", "unsupported-link")
 
     def test_size_bound_and_no_content_read(self):
         """Accept the exact aggregate stat-size bound and reject one byte over without opening regular stdlib content."""

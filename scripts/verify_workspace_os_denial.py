@@ -265,7 +265,7 @@ def pin(value):
 
 
 def root_trusted(path, directory=False):
-    """Require the canonical target and every ancestor to be root-owned and not worker-writable."""
+    """Reject unowned objects and links before applying write-bit checks to non-link targets and ancestors."""
     path = Path(path)
     if not path.is_absolute():
         raise GateError("tool-untrusted", tool_reason="not-absolute")
@@ -274,10 +274,10 @@ def root_trusted(path, directory=False):
         info = item.lstat()
         if info.st_uid != 0:
             raise GateError("tool-untrusted", tool_reason="not-root-owned")
-        if info.st_mode & 0o022:
-            raise GateError("tool-untrusted", tool_reason="worker-writable")
         if stat.S_ISLNK(info.st_mode):
             raise GateError("tool-untrusted", tool_reason="unsupported-link")
+        if info.st_mode & 0o022:
+            raise GateError("tool-untrusted", tool_reason="worker-writable")
         if item == path:
             if directory and not stat.S_ISDIR(info.st_mode) or not directory and not stat.S_ISREG(info.st_mode):
                 raise GateError("tool-untrusted", tool_reason="not-directory" if directory else "not-regular")
@@ -453,10 +453,10 @@ def stdlib_inventory(paths, deadline):
                 info = entry.stat(follow_symlinks=False)
                 if info.st_uid != 0:
                     raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "not-root-owned"))
-                if info.st_mode & 0o022:
-                    raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "worker-writable"))
                 if stat.S_ISLNK(info.st_mode):
                     raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "unsupported-link"))
+                if info.st_mode & 0o022:
+                    raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic("stdlib-entry", "worker-writable"))
                 relative = path.relative_to(root).as_posix()
                 if stat.S_ISDIR(info.st_mode):
                     rows.append([index, relative, "directory", info.st_mode & 0o7777, None])

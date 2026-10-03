@@ -1487,11 +1487,11 @@ class ToolDiagnosticControls(unittest.TestCase):
             self.assertTrue(error.__suppress_context__)
 
     def test_actual_root_trust_predicates_keep_fixed_priority(self):
-        """Exercise original root/mode/link/kind gates through synthetic lstat records without reading host ownership."""
+        """Exercise root/link/non-link-mode/kind gates through synthetic lstat records without reading host ownership."""
         good=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFREG|0o755)
         directory=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFDIR|0o755)
         cases=((types.SimpleNamespace(st_uid=1001,st_mode=stat.S_IFLNK|0o777),False,"not-root-owned"),
-               (types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFLNK|0o777),False,"worker-writable"),
+               (types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFLNK|0o777),False,"unsupported-link"),
                (types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFLNK|0o755),False,"unsupported-link"),
                (good,True,"not-directory"),(directory,False,"not-regular"))
         for info,wants_directory,reason in cases:
@@ -1611,16 +1611,31 @@ class ToolDiagnosticControls(unittest.TestCase):
             with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/a","/mock/lib-dynload"],100)
         self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-roots","reason":"not-root-owned","exit_code":None})
 
-    def test_actual_stdlib_entry_predicates_keep_owner_mode_link_kind_priority(self):
+    def test_actual_stdlib_entry_predicates_keep_owner_link_mode_kind_priority(self):
         """Apply real streamed entry checks to synthetic metadata and forbid hashing unqualified private paths."""
-        cases=((1001,stat.S_IFLNK|0o777,"not-root-owned"),(0,stat.S_IFLNK|0o777,"worker-writable"),
-               (0,stat.S_IFLNK|0o755,"unsupported-link"),(0,stat.S_IFIFO|0o600,"unsupported-kind"))
+        cases=((1001,stat.S_IFLNK|0o777,"not-root-owned"),(0,stat.S_IFLNK|0o777,"unsupported-link"),
+               (0,stat.S_IFLNK|0o755,"unsupported-link"),(0,stat.S_IFREG|0o666,"worker-writable"),
+               (0,stat.S_IFDIR|0o777,"worker-writable"),(0,stat.S_IFIFO|0o600,"unsupported-kind"))
         for uid,mode,reason in cases:
             entry=types.SimpleNamespace(path="/mock/stdlib/private.py",stat=mock.Mock(return_value=types.SimpleNamespace(st_uid=uid,st_mode=mode,st_size=1)))
             with self.inventory_context([entry]) as (scan,hashed):
                 with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
             hashed.assert_not_called();entry.stat.assert_called_once_with(follow_symlinks=False)
             self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":reason,"exit_code":None});self.assertTrue(caught.exception.incomplete)
+
+    def test_root_symlinks_are_rejected_without_target_reads_or_execution(self):
+        """Preserve link denial across owner/mask variants without following a target or starting a child."""
+        for uid in (0, 1001):
+            for mode in (0o000, 0o002, 0o020, 0o022, 0o755, 0o777):
+                observed = types.SimpleNamespace(st_uid=uid, st_mode=stat.S_IFLNK | mode)
+                with self.subTest(uid=uid, mode=mode), mock.patch.object(wrapper.Path, "lstat", return_value=observed), \
+                     mock.patch.object(wrapper.Path, "resolve") as resolved, mock.patch.object(wrapper.os, "readlink") as links, \
+                     mock.patch.object(wrapper.shared, "hash_file") as hashed, mock.patch.object(wrapper.subprocess, "Popen") as spawned:
+                    with self.assertRaises(wrapper.GateError) as caught:
+                        wrapper.root_trusted(Path("/mock/link"), True)
+                self.assertEqual((caught.exception.code, caught.exception.incomplete), ("tool-untrusted", False))
+                self.assertEqual(caught.exception.tool_reason, "unsupported-link" if uid == 0 else "not-root-owned")
+                resolved.assert_not_called(); links.assert_not_called(); hashed.assert_not_called(); spawned.assert_not_called()
 
     def test_actual_stdlib_entry_and_byte_bounds_stop_before_hashing(self):
         """Both configured bounds fail before retaining an over-limit file hash or claiming a qualified inventory."""
@@ -1826,14 +1841,14 @@ class FixedAdministrativePathControls(unittest.TestCase):
             self.assertNotIn(b"/usr/bin", raw)
 
     def test_fixed_ip_leaf_still_rejects_untrusted_ancestor_with_original_priority(self):
-        """Actual fixed ip qualification follows the allowed leaf but rejects its ancestor by UID, mode, then link priority."""
+        """Actual fixed ip qualification follows the allowed leaf but rejects ancestor links before their ineffective mode bits."""
         actual_administration = wrapper.administration_tool
         target = Path("/usr/libexec/qualified-ip")
         good_file = types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFREG | 0o755)
         good_directory = types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFDIR | 0o755)
         ip_link = types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o777)
         cases = ((types.SimpleNamespace(st_uid=1001, st_mode=stat.S_IFLNK | 0o777), "not-root-owned"),
-                 (types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o777), "worker-writable"),
+                 (types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o777), "unsupported-link"),
                  (types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o755), "unsupported-link"),
                  (types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFDIR | 0o777), "worker-writable"))
         for bad_ancestor, reason in cases:

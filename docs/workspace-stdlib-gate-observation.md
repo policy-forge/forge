@@ -21,7 +21,9 @@ regular stdlib file content and executes neither ip nor sudo. It starts no
 namespace, Forge, client or browser, and performs no installation or permission
 change. The existing tool trust rules remain in force.
 
-The streamed walk preserves UID, `0o022` mode, then kind predicate order.
+The current `/2` observer checks UID, rejects symlinks by kind, then applies
+the `0o022` mask to non-link entries. The preserved `/1` observer used UID,
+mode, then kind order.
 It accepts two to eight distinct absolute roots and bounds the walk at 20,000
 entries, depth 32 and 256 MiB of aggregate regular-file stat size under one
 600-second monotonic deadline. A missing optional `.zip` root uses the current
@@ -54,6 +56,8 @@ A publication error exits 1. No-replacement hardlink publication can leave a
 canonical-looking sidecar after a later cleanup fault; the actual nonzero
 producer exit prevents diagnostic credit.
 
+## Historical observer /1 controls
+
 Root executed 30 controls over the applied source using fake process/stat/Git
 seams and isolated synthetic fixtures: 30 passed, with no failures, errors or
 skips. All 86 named functions/methods, seven classes and two modules have
@@ -83,8 +87,57 @@ exit and tools, and native producer not run. Cleanup was
 original object and cause were not retained. A new sidecar cannot identify
 that historical object or cause retrospectively.
 
-A source-bound hosted sidecar with its actual producer status still requires
-qualification. Full F04, complete S-3, all Must/Should roadmap requirements,
+The source-parent `/1` sidecar from run `37149736538` has now been read back
+with the successful observer and upload steps. It binds requested head
+`2064e2933844a827e13b9880c8cfefd1cb2184ee` and tested merge
+`8d79c79eb8dc7090e1a99a9274387659e67c4ff7`. Its actual tuple is a stable,
+root-owned symlink at root ordinal 0, with mode-mask decimal 18 and the original
+`entry-mode-022 / worker-writable` predicate. These are historical stat facts,
+not evidence that the target is writable. Its exact target is unobserved.
+The wrapper remained incomplete and the native producer did not run.
+
+## Current observer /2
+
+Linux ordinary symlink permission bits are ignored. A root-owned symlink can
+have mode `0777` without granting write access to its target. The current wrapper
+and observer report `unsupported-link` before testing those ineffective bits;
+every such link remains rejected. Non-root ownership retains first priority.
+The native producer and its admission rules are unchanged. See
+[Linux symlink semantics](https://man7.org/linux/man-pages/man7/symlink.7.html).
+
+Sidecar `/2` retains the actual masked mode on a symlink-kind rejection. It
+rejects stale `/1` records and mode-predicate records that claim a symlink is
+worker-writable. Non-link kind records still require a zero mask. The existing
+source stability, redaction, publication and lifecycle rules remain in force.
+The original `/1` artifacts and source pins are preserved rather than relabelled.
+
+Before drafting this successor, the full synthetic wrapper and observer suites
+passed **107 and 31 tests**, respectively, with no failures, errors or skips.
+All **298 named functions, 17 classes and four modules** have docstrings; all
+**14 selected functions** have observed calls and first executable body lines.
+The whole-file cohort retains one unobserved function, wrapper `capture_identity`.
+Physical compiler lines are **3,004 positive of 3,110**, with all **106 zeros**
+retained. Imports were traced; secondary threads and unselected files are excluded.
+These controls use explicit mock seams and do not run the privileged experiment.
+
+The [source-bound report](plans/2026-10-03-f04-stdlib-link-diagnostic-verification.json)
+retains every function and physical-line record, the failed initial priority
+assertions, the historical sidecar binding and the unchanged native/workflow/
+dependency pins. Two original first-body rows identify `nonlocal` declarations;
+their raw zeros are retained separately from the first executable statement
+metric. The successor derives those statement mappings from the same events;
+it adds no execution. Positive calls or statements do not prove whole-body,
+branch or MC/DC coverage.
+
+Reproduce the mock controls with:
+
+```sh
+python3 -B scripts/test_verify_workspace_os_denial.py
+python3 -B scripts/test_observe_workspace_stdlib_gate.py
+```
+
+Hosted execution of the new diagnostic, any qualified link-target resolution,
+and native OS-denial remain open. Full F04, complete S-3, all Must/Should roadmap requirements,
 the [supported matrix](adr/0004-supported-browser-and-accessibility-matrix.md),
 [PRD 062](PRD/062-prd-local-web-workspace.md),
 [PRD 069](PRD/069-prd-dependency-security-audit.md), human acceptance, release
