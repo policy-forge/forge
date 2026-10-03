@@ -76,3 +76,30 @@ The initial 98-control run and first root 99-control run each failed one new mul
 The original 75-control root method (1,855/2,796/all 941 zeros) and historical author method (1,855/2,784/all 929 zeros) remain separate, byte-preserved evidence in audit v1. Twelve zero class-docstring locations explain that older denominator difference. Its copied Chrome schema/four-campaign labels are disclosed as inaccurate, non-normative historical labels; the diagnostic collector uses an OS-specific schema and 12-probe native denominator.
 
 Applied controls, the enabled commit hook, draft delivery and fresh hosted native outcomes are separately recorded by the root. Authentic Linux qualification, attempted-egress observation, full F04/platform/browser/API/AT/human/audit/pilot/release gates and the full integrated documentation review at the end remain open.
+
+## Fixed-path hosted checkpoint — 2026-10-02
+
+The [fixed-path Linux job](https://github.com/policy-forge/forge/actions/runs/37087523880/job/111100784367)
+at requested head `3d9345bda6f8c7eb99e69186b6897a874eff4579` has a qualified
+incomplete wrapper/2 receipt. Its failure is `tool-untrusted`, with
+`stdlib-entry` / `worker-writable` and no retained diagnostic exit code.
+Tools remain null, the native producer is `not-run`, and cleanup is nonforced
+`verified-not-created`. Attempted egress remains unmeasured with a null count.
+All twenty source hashes match immutable head bytes; tested merge
+`4921c756664882bc458c973720325182d67dfd8c` has authenticated ordered requested base/head
+parents and the same tree. The captured overall run snapshot was still in
+progress; sibling jobs are metadata only.
+
+Source/status reconciliation narrows this incomplete result to the streamed
+entry predicate: root ownership has passed and `st_mode & 0o022` is nonzero.
+The ancestor branch produces a different status. Entry type, name, actual
+effective write authority and underlying cause are unobserved; the mode check
+precedes the link/type checks. No object or ancestor is identified by this
+receipt. The source-defined incomplete exit is separate from a retained raw
+process-exit observation, which this packet does not contain.
+
+The native experiment has not run; ordinary qualification routines precede that
+stage. This checkpoint establishes no native denial/calibration, attempted-egress
+absence, packaged-runtime acceptance or full CI result. Existing trust gates,
+historical failed receipts and final human/audit/owner/release/documentation gates
+remain preserved.

@@ -338,9 +338,9 @@ graph LR
     end
 ```
 
-- **Requires:** [005-prd-domain-model](docs/PRD/005-prd-domain-model.md) (defines PolicyRequirement.stable_id field), [006-prd-requirement-atomization](docs/PRD/006-prd-requirement-atomization.md) (provides atomized requirements to generate IDs for)
-- **Parallel With:** [008-prd-citation-extraction](docs/PRD/008-prd-citation-extraction.md) (no dependency between UUID generation and citation extraction)
-- **Blocks:** [009-prd-catalog-groups-controls](docs/PRD/009-prd-catalog-groups-controls.md) (catalog generation needs stable IDs for controls)
+- **Requires:** [005-prd-domain-model](005-prd-domain-model.md) (defines PolicyRequirement.stable_id field), [006-prd-requirement-atomization](006-prd-requirement-atomization.md) (provides atomized requirements to generate IDs for)
+- **Parallel With:** [008-prd-citation-extraction](008-prd-citation-extraction.md) (no dependency between UUID generation and citation extraction)
+- **Blocks:** [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md) (catalog generation needs stable IDs for controls)
 - **External:** `uuid` crate (MIT/Apache-2.0, stable, widely used)
 
 ---

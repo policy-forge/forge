@@ -30,13 +30,13 @@ Convert the Markdown policy into an OSCAL Catalog (JSON):
 forge convert policy.md --strategy catalog --format json --output output/catalog.json
 ```
 
-**What this does:** FORGE reads `policy.md`, extracts headings as OSCAL groups, list items as controls, and produces a fully structured OSCAL v1.2.0 Catalog. Each control gets a deterministic UUID v5 identifier (e.g., `POL-AC-001`) and source traceability links back to the original Markdown file.
+**What this does:** FORGE reads `policy.md`, extracts headings as OSCAL groups, list items as controls, and produces a fully structured OSCAL v1.2.3 Catalog. Each control gets a deterministic UUID v5 identifier (e.g., `POL-AC-001`) and source traceability links back to the original Markdown file.
 
-**Output:** `output/catalog.json` — an OSCAL Catalog containing 9 atomized controls organized under the "Access Control" group.
+**Output:** `output/catalog.json` — an OSCAL Catalog containing 9 atomized controls organized under the "Access Control" group. A fresh run uses the current generated version; any older declaration in checked-in example output remains historical.
 
 ### Step 2: Validate the Catalog
 
-Verify the generated catalog against the OSCAL v1.2.0 JSON schema:
+Verify the generated catalog against the OSCAL v1.2.3 JSON schema:
 
 ```bash
 forge validate output/catalog.json

@@ -1,6 +1,6 @@
 //! Versioned, content-safe comparison for generated OSCAL drift checks.
 //!
-//! Unlike the human-oriented [`super::diff_artifacts`] report, this comparator
+//! Unlike the human-oriented [`crate::diff::diff_artifacts`] report, this comparator
 //! checks the complete JSON value and never returns policy content. Contract v1
 //! ignores only the fields FORGE currently generates nondeterministically:
 //! the artifact root `uuid` and `metadata.last-modified`.

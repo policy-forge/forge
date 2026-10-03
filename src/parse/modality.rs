@@ -112,7 +112,7 @@ pub(crate) fn detect_modality(requirement: &PolicyRequirement) -> ModalityResult
 /// Annotate all requirements in a document with modality classifications.
 ///
 /// Iterates over every [`PolicyRequirement`] in every section (including nested
-/// children), calls [`detect_modality`] on each, and sets `requirement.modality`.
+/// children), calls `detect_modality` on each, and sets `requirement.modality`.
 ///
 /// Emits `tracing::warn!` for:
 /// - Requirements with no modality verb detected (`ModalityOutcome::Default`)

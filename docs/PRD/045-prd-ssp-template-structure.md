@@ -360,8 +360,8 @@ graph LR
 ```
 
 - **Requires:** [WI-35: Phase 2 Integration Testing](docs/PRD/035-prd-phase2-integration.md) — Phase 2 outputs (Catalog, Profile, Component Definition) must be stable before building SSP templates on top of them
-- **Parallel With:** [WI-43: Diff Report](docs/PRD/043-prd-diff-report.md), [WI-44: Summary Dashboard](docs/PRD/044-prd-summary-dashboard.md), [WI-47: Community Examples](docs/PRD/047-prd-community-examples.md) — runs in the same Phase 3 timeframe
-- **Blocks:** [WI-46: SSP Template — System Placeholders](docs/PRD/046-prd-ssp-template-placeholders.md) — WI-46 extends the template with detailed system-specific placeholder sections
+- **Parallel With:** [WI-43: Diff Report](043-prd-diff-report.md), [WI-44: Summary Dashboard](044-prd-summary-dashboard.md), [WI-47: Community Examples](047-prd-community-examples.md) — runs in the same Phase 3 timeframe
+- **Blocks:** [WI-46: SSP Template — System Placeholders](046-prd-ssp-template-placeholders.md) — WI-46 extends the template with detailed system-specific placeholder sections
 - **External:** OSCAL v1.2.0 SSP JSON schema (published, stable)
 
 ---

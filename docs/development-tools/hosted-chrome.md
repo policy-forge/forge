@@ -65,3 +65,28 @@ The mandatory enabled hook and actual Linux four-campaign hosted receipt remain
 pending at that snapshot. Task #31 is Doing under F04 #6 until draft delivery.
 The introducing PR will preserve the human user's explicit development-tool
 approval and distinguish hosted runtime evidence from these local checks.
+
+## Qualified viewport checkpoint — 2026-10-02
+
+The [installed-Chrome job](https://github.com/policy-forge/forge/actions/runs/37086410737/job/111097541863)
+at requested head `0e2b803836dec2ee603e3593c7475cb515e67c51` has a qualified
+wrapper/5 and producer/4 receipt. All four campaigns pass, including long
+writable. Each records two no-echo checks, zero page errors and non-loopback
+browser requests, natural nonforced Forge and Node zero exits, terminal EOF and
+an empty process tree. All 28 source hashes match immutable head bytes; tested
+merge `ff2d3252e0f6804d8a25a9f57f812de8d4c8471a` has authenticated ordered requested base/head
+parents and the same tree. Input and tool stability are unchanged.
+
+The producer observed installed Chrome 154.0.8037.57, approved Node 24.19.0,
+npm 11.17.0 and Playwright/playwright-core 1.62.1, with optional packages omitted.
+Provisioning used no browser downloads or npm lifecycle scripts. All observation
+rows and zeros remain retained; zero capture counters earn no counter-correlation
+coverage. Tool and release hashes are producer observations, with no independent
+binary download/rehash here. Only the JSON verification receipt was uploaded.
+
+This completes the installed-Chrome prerequisite at this exact checkpoint.
+The earlier screenshot failure's cause remains unknown. Overall workspace run
+failure, sibling metadata, the remaining browser/platform/architecture matrix,
+native external denial/attempted-egress, human/audit/owner, release and final
+integrated documentation gates remain separate. Prior plans and audits retain
+their historical pending/failed snapshots.

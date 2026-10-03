@@ -159,7 +159,7 @@ forge convert pol-*.md --strategy catalog --format json --output out/ --jobs 4
 
 ### 3.2 `export` — Convert Between Formats
 
-Converts an existing OSCAL artifact between JSON, XML, and YAML. Auto-detects the input format from the file extension.
+Converts a supported Catalog or Component Definition between JSON, XML and YAML. The input format is detected from its extension; other OSCAL models are not supported by `export`.
 
 ```bash
 # JSON to XML
@@ -177,11 +177,11 @@ forge export component.json --format xml
 
 File extensions recognized: `.json`, `.xml`, `.yaml`, `.yml`.
 
-Input OSCAL model type (Catalog vs Component Definition) is auto-detected from the document structure. The pipeline validates the artifact against OSCAL JSON schemas before serializing to the target format.
+The Catalog or Component Definition model is detected from the document root. Current export deserializes into a typed model, validates that projection against the pinned OSCAL schemas and serializes it to the target format. Retain the original: native fields outside that typed model can be omitted, so this does not guarantee arbitrary native-tree preservation or fidelity across all three formats.
 
 ### 3.3 `validate` — Schema and Semantic Validation
 
-Validates an OSCAL JSON artifact against the OSCAL v1.2.0 JSON schema with semantic checks.
+Validates supported OSCAL JSON artifacts against the pinned OSCAL v1.2.3 JSON schemas with semantic checks. Supported older declarations use the same pinned baseline; metadata never selects or downloads another schema.
 
 ```bash
 # Basic validation with human-readable output
@@ -826,7 +826,7 @@ EOF
 forge convert my-policy.md --strategy catalog --format json --output my-catalog.json
 ```
 
-Output: `my-catalog.json` — an OSCAL v1.2.0 Catalog with groups for "Access Control" and "Data Protection", each containing atomized controls with stable UUIDs.
+Output: `my-catalog.json` — an OSCAL v1.2.3 Catalog with groups for "Access Control" and "Data Protection", each containing atomized controls with stable UUIDs.
 
 ### Step 3: Validate the output
 

@@ -382,9 +382,9 @@ graph LR
     end
 ```
 
-- **Requires:** [014-prd-component-definition-structure](docs/PRD/014-prd-component-definition-structure.md) (WI-14, component structure), [007-prd-uuid-generation](docs/PRD/007-prd-uuid-generation.md) (WI-7, deterministic UUIDs), [009-prd-catalog-groups-controls](docs/PRD/009-prd-catalog-groups-controls.md) (WI-9, control-id scheme)
-- **Blocks:** [017-prd-traceability-embedding](docs/PRD/017-prd-traceability-embedding.md) (WI-17), [018-prd-component-pipeline](docs/PRD/018-prd-component-pipeline.md) (WI-18)
-- **Parallel With:** [016-prd-traceability-model](docs/PRD/016-prd-traceability-model.md) (WI-16, runs in parallel during Sprint S-16)
+- **Requires:** [014-prd-component-definition-structure](014-prd-component-definition-structure.md) (WI-14, component structure), [007-prd-uuid-generation](007-prd-uuid-generation.md) (WI-7, deterministic UUIDs), [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md) (WI-9, control-id scheme)
+- **Blocks:** [017-prd-traceability-embedding](017-prd-traceability-embedding.md) (WI-17), [018-prd-component-pipeline](018-prd-component-pipeline.md) (WI-18)
+- **Parallel With:** [016-prd-traceability-model](016-prd-traceability-model.md) (WI-16, runs in parallel during Sprint S-16)
 - **External:** None
 
 ---

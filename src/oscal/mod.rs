@@ -1,7 +1,7 @@
 //! OSCAL (Open Security Controls Assessment Language) output generation.
 //!
 //! This module provides types and builders for producing artifacts compliant with
-//! [`OSCAL_VERSION`](metadata::OSCAL_VERSION) (currently v1.2.3).
+//! [`OSCAL_VERSION`](crate::oscal::metadata::OSCAL_VERSION) (currently v1.2.3).
 //! including Catalogs, Component Definitions, Profiles, and Assessment Plans.
 
 /// OSCAL Assessment Plan types and builder functions.

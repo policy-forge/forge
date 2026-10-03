@@ -276,9 +276,9 @@ graph LR
     end
 ```
 
-- **Requires:** [001-prd-project-scaffolding](docs/PRD/001-prd-project-scaffolding.md), [002-prd-markdown-ingestion](docs/PRD/002-prd-markdown-ingestion.md)
-- **Blocks:** [005-prd-domain-model](docs/PRD/005-prd-domain-model.md)
-- **Parallel:** [004-prd-structural-extraction-clauses](docs/PRD/004-prd-structural-extraction-clauses.md)
+- **Requires:** [001-prd-project-scaffolding](001-prd-project-scaffolding.md), [002-prd-markdown-ingestion](002-prd-markdown-ingestion.md)
+- **Blocks:** [005-prd-domain-model](005-prd-domain-model.md)
+- **Parallel:** [004-prd-structural-extraction-clauses](004-prd-structural-extraction-clauses.md)
 - **External:** None
 
 ---
