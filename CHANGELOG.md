@@ -48,7 +48,8 @@ inventory of all post-v1.1.0 changes.
   M-14/M-15 thresholds, usefulness and release gates remain open, and the
   mapping-candidate task stays deferred.
 - PRD-062 draft: a loopback-only `forge workspace` command serves an embedded
-  offline review UI over the closed OpenAPI 1.1.0 contract, with explicit
+  offline review UI over the closed OpenAPI contract (initially 1.1.0; currently
+  unreleased 1.2.0), with explicit
   single-file effects. This is a draft technical implementation; security,
   accessibility, independent-review, supply-chain and release gates remain open.
 - PRD-066 Phase 0 (merged, PR #153, merge `7d0d9f3`): `forge author reuse --manifest <FILE> --corpus <FILE>`

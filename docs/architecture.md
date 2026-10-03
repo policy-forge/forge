@@ -217,7 +217,7 @@ After preparation, the component pipeline:
 
 - **`Strategy`** — Conversion target: `Catalog` or `Component`.
 - **`OutputFormat`** — Serialization format: `Json`, `Xml`, `Yaml`.
-- **`OscalModelType`** — Detected OSCAL model: `Catalog`, `ComponentDefinition`, `Profile`.
+- **`OscalModelType`** — General detected model: `Catalog`, `ComponentDefinition`, `Profile`, `SystemSecurityPlan` or `Mapping`. Assessment Results uses a dedicated builder validator. General validation support does not imply support by the two-model `export` command.
 
 ### Pipeline Output (src/pipeline.rs)
 
@@ -226,12 +226,16 @@ After preparation, the component pipeline:
 
 ## CLI Commands
 
-Defined in `src/cli/mod.rs`:
+The table below highlights conversion utilities. The current command tree also
+includes drift, migration, mapping, assessment, linkage, lifecycle, applicability,
+framework, policy, authoring, suggestions, workspace and configuration commands.
+See `src/cli/mod.rs`, the [usage guide](usage-guide.md) and the
+[domain/workspace codemap](CODEMAPS.md#current-domain-and-workspace-entrypoints).
 
 | Command | Module | Description |
 |---------|--------|-------------|
 | `forge convert` | `cli/convert.rs` | Convert Markdown policy → OSCAL. Supports batch mode with `--jobs` for parallel processing via rayon. |
-| `forge export` | `cli/export.rs` | Convert existing OSCAL artifact between formats (JSON↔XML↔YAML). |
+| `forge export` | `cli/export.rs` | Convert Catalog or Component Definition typed projections between JSON, XML and YAML. |
 | `forge validate` | `cli/validate.rs` | Validate OSCAL JSON against schemas. Supports `--round-trip` for JSON→XML→YAML→JSON fidelity check via oscal-cli. |
 | `forge resolve` | `cli/resolve.rs` | Resolve an OSCAL Profile into a flat Catalog via oscal-cli. |
 | `forge profile` | `cli/profile.rs` | Generate an OSCAL Profile by selecting controls from a source Catalog. |
@@ -322,7 +326,7 @@ Detection is automatic via PATH lookup, or explicit via `--oscal-cli-path`. The 
 
 ### Embedded OSCAL Schemas
 
-FORGE embeds NIST OSCAL v1.2.0 JSON schemas for offline validation (no network required). Schemas are loaded at runtime from embedded resources.
+FORGE embeds pinned NIST OSCAL v1.2.3 JSON schemas for offline validation. Supported older declarations use this same baseline; metadata never selects or downloads another schema. See the [OSCAL compatibility guide](OSCAL_COMPATIBILITY.md) for model support and asset provenance.
 
 ## Testing Strategy
 

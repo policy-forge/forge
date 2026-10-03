@@ -376,8 +376,8 @@ graph LR
     end
 ```
 
-- **Requires:** [WI-45: SSP Template Structure](docs/PRD/045-prd-ssp-template-structure.md) — the foundational SSP template structure must exist before extending it with system placeholders
-- **Parallel With:** [WI-47: Community Examples](docs/PRD/047-prd-community-examples.md), [WI-48: Community Documentation](docs/PRD/048-prd-community-documentation.md), [WI-49: Cross-platform Release](docs/PRD/049-prd-cross-platform-release.md) — runs in the same Phase 3 timeframe
+- **Requires:** [WI-45: SSP Template Structure](045-prd-ssp-template-structure.md) — the foundational SSP template structure must exist before extending it with system placeholders
+- **Parallel With:** [WI-47: Community Examples](047-prd-community-examples.md), [WI-48: Community Documentation](048-prd-community-documentation.md), [WI-49: Cross-platform Release](049-prd-cross-platform-release.md) — runs in the same Phase 3 timeframe
 - **Blocks:** None directly; SSP template is feature-complete after WI-46
 - **External:** OSCAL v1.2.0 SSP JSON schema (published, stable)
 

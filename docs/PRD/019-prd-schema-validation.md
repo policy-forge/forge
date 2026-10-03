@@ -414,7 +414,7 @@ graph LR
 ```
 
 - **Requires:** [016-prd-traceability](docs/PRD/016-prd-traceability.md) (WI-16, internal dependency D-5), OSCAL v1.2.0 JSON schemas (external dependency D-8)
-- **Blocks:** [020-prd-schema-validation-error-reporting](docs/PRD/020-prd-schema-validation-error-reporting.md) (WI-20), [021-prd-golden-file-tests](docs/PRD/021-prd-golden-file-tests.md) (WI-21)
+- **Blocks:** [020-prd-schema-validation-error-reporting](docs/PRD/020-prd-schema-validation-error-reporting.md) (WI-20), [021-prd-golden-file-tests](021-prd-golden-file-tests.md) (WI-21)
 - **External:** OSCAL v1.2.0 JSON schemas from NIST GitHub releases (available, stable — dependency D-8 in roadmap)
 
 ---

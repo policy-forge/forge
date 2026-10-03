@@ -351,9 +351,9 @@ graph LR
     end
 ```
 
-- **Requires:** [025-prd-phase1-release](docs/PRD/025-prd-phase1-release.md) (WI-25) — Phase 1 must be complete with working JSON output before YAML output can be built and validated against it
-- **Parallel With:** [026-prd-xml-output](docs/PRD/026-prd-xml-output.md) (WI-26) — XML and YAML output are independent serialization formats developed in parallel
-- **Blocks:** [028-prd-round-trip-testing](docs/PRD/028-prd-round-trip-testing.md) (WI-28) — Round-trip testing requires both XML and YAML output to be functional
+- **Requires:** [025-prd-phase1-release](025-prd-phase1-release.md) (WI-25) — Phase 1 must be complete with working JSON output before YAML output can be built and validated against it
+- **Parallel With:** [026-prd-xml-output](026-prd-xml-output.md) (WI-26) — XML and YAML output are independent serialization formats developed in parallel
+- **Blocks:** [028-prd-round-trip-testing](028-prd-round-trip-testing.md) (WI-28) — Round-trip testing requires both XML and YAML output to be functional
 - **External:** `serde_yaml` crate (well-established Rust ecosystem crate, MIT/Apache-2.0 licensed)
 
 ---

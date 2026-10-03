@@ -44,7 +44,10 @@ src/
     test_utils.rs          Shared test helpers for OSCAL tests
 
   export/                  Output serialization
-    mod.rs                 JSON export (XML/YAML planned)
+    mod.rs                 XML/YAML module declarations and re-exports
+    xml_serializer.rs      Typed OSCAL model to XML
+    xml_deserializer.rs    XML to typed OSCAL model
+    yaml.rs                Generic serde-based YAML serialization/deserialization
 
   validate/                Validation layer
     mod.rs                 Orchestration (schema + semantic)
@@ -53,6 +56,36 @@ src/
     report.rs              Validation report generation
     semantic.rs            Semantic checks (orphan links, missing fields)
 ```
+
+## Current domain and workspace entrypoints
+
+The diagram below describes conversion. The CLI also exposes domain workflows;
+see `src/cli/mod.rs` for the current command tree. These modules are implemented
+technical surfaces, not claims that their full PRD acceptance gates are complete.
+
+| Module | Purpose |
+|---|---|
+| `applicability/` | Human-reviewed framework applicability and policy-gap analysis |
+| `assessment_results/` | Human-authored Assessment Results and revision review |
+| `authoring/` | Human assignments, drafting plans and traceable skeletons |
+| `framework/` | Read-only framework revision impact |
+| `lifecycle/` | Deterministic local lifecycle records and review queues |
+| `linkage/` | Evidence/implementation indexes and maintenance reports |
+| `mapping/` | Human-reviewed Control Mapping workflows |
+| `migration/` | Read-only source-policy revision analysis |
+| `policy/` | Composition of local, hash-pinned Markdown components |
+| `reuse/` | Read-only retrieval of operator-supplied local corpus excerpts |
+| `suggest/` | Bounded, quarantined offline suggestion artifacts |
+| `workspace/` | Confined API queries and explicit single-file effects |
+
+Within `workspace/`, `services.rs` captures registered inputs; `domain.rs` stages
+private copies for domain engines; `actions.rs` prepares effects without project
+publication; `effects.rs` confirms exact-byte single-file writes; and `http.rs`
+binds the closed API. Bundle queries compare metadata and registered fingerprints,
+not import readiness or authority. See the [workspace guide](local-workspace.md).
+
+POA&M and suggestion-evaluation modules are absent at the reviewed `532c9e8`
+head. Separate draft implementations must not be inferred from this map.
 
 ## Data Flow
 

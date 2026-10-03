@@ -373,9 +373,9 @@ graph LR
     end
 ```
 
-- **Requires:** [009-prd-catalog-groups-controls](docs/PRD/009-prd-catalog-groups-controls.md) (WI-9 — Catalog groups and controls structure)
+- **Requires:** [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md) (WI-9 — Catalog groups and controls structure)
 - **Parallel With:** WI-11 (OSCAL metadata), WI-12 (back matter and link patterns)
-- **Blocks:** [013-prd-catalog-pipeline](docs/PRD/013-prd-catalog-pipeline.md) (WI-13 — end-to-end Catalog pipeline)
+- **Blocks:** [013-prd-catalog-pipeline](013-prd-catalog-pipeline.md) (WI-13 — end-to-end Catalog pipeline)
 - **External:** None
 
 ---

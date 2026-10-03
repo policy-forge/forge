@@ -33,8 +33,8 @@ use crate::config::{self, ConvertCliValues};
     name = "forge",
     about = "FORGE — Framework for OSCAL Risk & Governance Execution",
     long_about = "FORGE — Framework for OSCAL Risk & Governance Execution\n\n\
-        Converts security policy documents (Markdown) into machine-readable OSCAL\n\
-        (Open Security Controls Assessment Language) JSON artifacts.\n\n\
+        Converts policy documents (Markdown, PDF or DOCX) to OSCAL Catalog or\n\
+        Component Definition artifacts in JSON, XML or YAML.\n\n\
         Pipeline: Ingest → Parse → Atomize → Map → Serialize → Validate\n\n\
         Supported output strategies:\n\
          catalog     OSCAL Catalog (groups, controls, statements)\n\
@@ -67,7 +67,7 @@ pub struct Cli {
 pub enum Commands {
     /// Convert a policy document to OSCAL format
     Convert {
-        /// Path(s) to the input Markdown policy document(s) (.md)
+        /// Path(s) to policy documents (.md, .markdown, .pdf, or .docx)
         #[arg(num_args = 1.., required = true)]
         input: Vec<PathBuf>,
 
@@ -128,9 +128,9 @@ pub enum Commands {
         no_summary: bool,
     },
 
-    /// Export an OSCAL artifact to a different format
+    /// Export a Catalog or Component Definition to a different format
     Export {
-        /// Path to the input OSCAL artifact (JSON, XML, or YAML)
+        /// Path to a Catalog or Component Definition (JSON, XML, or YAML)
         input: PathBuf,
 
         /// Target output format
@@ -637,7 +637,7 @@ pub enum LifecycleCommand {
         /// Owner party key; repeat for multiple owners
         #[arg(long = "owner", required = true)]
         owners: Vec<String>,
-        /// Party declaration in KEY=ROLE[,ROLE] form
+        /// Party declaration in `KEY=ROLE[,ROLE]` form
         #[arg(long = "party")]
         parties: Vec<String>,
         /// Explicit next review date (YYYY-MM-DD)

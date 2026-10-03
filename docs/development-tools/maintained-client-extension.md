@@ -34,3 +34,24 @@ The mock and actual profiles have different tracing scopes and are not added tog
 The [workflow](../../.github/workflows/workspace-verification.yml) proposal adds only the standard-library extension-control step after receipt-tooling tests. The new unit-test file is CI-only and bound by the committed checkout; it is deliberately not added to the runtime verifier's unchanged seventeen-input list. The shared verification/client wire contracts remain `/2`, API version remains 1.2.0 and runtime input roles are unchanged.
 
 Read the [plan](../plans/2026-10-02-f04-api-functional-extension.md) and [full raw audit](../plans/2026-10-02-f04-api-extension-control-audit-v1.json) for exact pins, maps and retained failures. Documentation application, required hook, new hosted checkout/artifacts and PR/tracker evidence are pending in this proposal. Complete F04 Must/Should and parity/matrix coverage, [D069 dependency audit and owner disposition](../PRD/069-prd-dependency-security-audit.md), platform/browser/OS-denial and attempted-egress qualification, independent security/manual accessibility/human product acceptance, release provenance and final integrated documentation review remain open. Nothing here alters the [PRD062 requirements](../PRD/062-prd-local-web-workspace.md).
+
+## Qualified hosted checkpoint — 2026-10-02
+
+At requested head `63ab9c2481ac3cfbdc49dbf1435527db566d7373`, the
+[three-platform API run](https://github.com/policy-forge/forge/actions/runs/37085518244)
+has qualified Windows, Ubuntu and macOS API receipts. Each records nine contract
+tests, 22 workflow tests and all sixteen client groups passing, with 37 of 39
+declared operation IDs observed. Cancellation and unlock remain unobserved.
+Windows records 242 requests (224 successes, nine rejections, nine transport
+failures); Ubuntu and macOS each record 238 (220, nine, nine). All seventeen
+source pins match exact immutable LF bytes on every host. The authenticated
+tested merge `7985b011e44922fe0c9d56fc6c28dc032635cc49` has the ordered requested base/head
+parents and the requested head tree.
+
+All failure outcomes and 67 zero outcome cells per host remain retained.
+Executable hashes are producer observations; the default locked/offline release
+build is a workflow assertion. This checkpoint qualifies the three API receipts.
+The overall workspace run failed, and native sibling receipts and full CI are
+outside this checkpoint. Full API parity, contract differences described above,
+matrix, human/audit/owner, release and final integrated documentation gates remain
+open. Earlier audit snapshots keep their original pre-delivery state.

@@ -466,10 +466,10 @@ graph LR
     end
 ```
 
-- **Requires:** [005-prd-domain-model](docs/PRD/005-prd-domain-model.md) — provides `PolicyDocument`, `PolicyRequirement`, `PolicyParameter` structs
+- **Requires:** [005-prd-domain-model](005-prd-domain-model.md) — provides `PolicyDocument`, `PolicyRequirement`, `PolicyParameter` structs
 - **Depends On:** [033-prd-normative-detection](docs/PRD/033-prd-normative-detection.md) (WI-33) — normative detection provides modality tagging that informs parameter extraction context
 - **Parallel With:** [033-prd-normative-detection](docs/PRD/033-prd-normative-detection.md) (WI-33) — can proceed concurrently; consumes modality tags when available
-- **Blocks:** [035-prd-phase2-release](docs/PRD/035-prd-phase2-release.md) (WI-35) — Phase 2 integration testing and v0.2.0 release depends on parameter extraction being complete
+- **Blocks:** [035-prd-phase2-release](035-prd-phase2-release.md) (WI-35) — Phase 2 integration testing and v0.2.0 release depends on parameter extraction being complete
 - **External:** `regex` crate (well-established Rust ecosystem crate)
 
 ---

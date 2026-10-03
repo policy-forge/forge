@@ -325,8 +325,8 @@ graph LR
 ```
 
 - **Requires:** [WI-35: Phase 2 Integration Testing](docs/PRD/035-prd-phase2-integration.md) — the conversion pipeline must be stable and validated before creating reference example outputs
-- **Parallel With:** [WI-45: SSP Template Structure](docs/PRD/045-prd-ssp-template-structure.md), [WI-46: SSP Template Placeholders](docs/PRD/046-prd-ssp-template-placeholders.md), [WI-48: Community Documentation](docs/PRD/048-prd-community-documentation.md), [WI-49: Cross-platform Release](docs/PRD/049-prd-cross-platform-release.md) — runs in the same Phase 3 timeframe
-- **Blocks:** [WI-48: Community Documentation](docs/PRD/048-prd-community-documentation.md) — documentation references examples for usage guide; [WI-49: Cross-platform Release](docs/PRD/049-prd-cross-platform-release.md) — release package should include working examples
+- **Parallel With:** [WI-45: SSP Template Structure](045-prd-ssp-template-structure.md), [WI-46: SSP Template Placeholders](046-prd-ssp-template-placeholders.md), [WI-48: Community Documentation](048-prd-community-documentation.md), [WI-49: Cross-platform Release](049-prd-cross-platform-release.md) — runs in the same Phase 3 timeframe
+- **Blocks:** [WI-48: Community Documentation](048-prd-community-documentation.md) — documentation references examples for usage guide; [WI-49: Cross-platform Release](049-prd-cross-platform-release.md) — release package should include working examples
 - **External:** None
 
 ---

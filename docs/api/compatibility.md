@@ -157,8 +157,11 @@ negotiate the returned contract version when adopting optional provenance fields
 
 Adds `getProjectBundlePreview` and `verifyProjectBundle`, available with the
 existing read capability through the API and maintained headless client. They
-inspect complete metadata and compare current registered fingerprints. No
-bundled UI action, exported file, effect receipt or writable import is added.
+inspect complete metadata and compare current registered fingerprints. The
+unreleased Trace & Reports panel also previews metadata, requires explicit
+sensitivity acknowledgment before a local JSON download, and compares a chosen
+file through these queries. See the [bundle guide](../workspace-index-bundles.md).
+No project-file publication, effect receipt or writable import is added.
 The existing index, roles, request/response limits and operations retain their
 contracts. `forge.workspace-index-bundle/1` is a separate metadata-only wire
 family; label/key/path/hash information can be sensitive. Fingerprint agreement
