@@ -55,6 +55,15 @@ pub(crate) fn validation(valid: bool, resource: Option<&str>) -> Value {
     json!({"state":if valid {"valid"} else {"invalid"},"error_count":diagnostics.len(),"warning_count":0,"diagnostics":diagnostics})
 }
 
+/// Admit ordered inert proposed bytes through native complete-closure validation.
+pub(crate) fn validate_proposed_sources(
+    index: &Index,
+    sources: &[(&str, &[u8])],
+    control: &mut dyn WorkControl,
+) -> WorkResult<()> {
+    super::source_validation::validate_proposed_sources(index, sources, control)
+}
+
 /// Validate captured bytes using intrinsic admission; report structure is not freshness.
 pub(crate) fn validate_bytes(registration: &Resource, bytes: &[u8]) -> bool {
     if registration.role == Role::TraceReport {
@@ -143,7 +152,74 @@ fn admit_effect_paths(index: &Index, present: bool, incoming: Option<&Index>) ->
     Ok(())
 }
 
+/// Admit every planned source-restore path, including an absent index target, before reads.
+fn admit_source_restore_paths(
+    index: &Index,
+    incoming: Option<&Index>,
+    planned_output: Option<&str>,
+) -> Result<()> {
+    let mut paths = vec![super::index::INDEX_PATH];
+    if let Some(output) = planned_output {
+        super::index::validate_path(output)?;
+        if output.eq_ignore_ascii_case(super::index::INDEX_PATH)
+            || index.resources.iter().any(|resource| resource.path.eq_ignore_ascii_case(output))
+        {
+            return Err(Error::containment());
+        }
+        paths.push(output);
+    }
+    for registration in
+        index.resources.iter().chain(incoming.into_iter().flat_map(|incoming| &incoming.resources))
+    {
+        let path = registration.path.as_str();
+        if paths.iter().any(|old| *old != path && old.eq_ignore_ascii_case(path)) {
+            return Err(Error::containment());
+        }
+        if !paths.contains(&path) {
+            if paths.len() >= MAX_EFFECT_FILES {
+                return Err(Error::new(
+                    "payload-too-large",
+                    "The complete source restore plan exceeds its input limit.",
+                    false,
+                ));
+            }
+            paths.push(path);
+        }
+    }
+    Ok(())
+}
+
 impl Snapshot {
+    /// Move every actual registered observation and the optional raw index into a private plan.
+    /// Proposed/new source bytes are supplied separately and never receive these identities.
+    pub(crate) fn into_captured_inputs(self) -> Vec<(String, Captured)> {
+        let mut inputs: Vec<_> =
+            self.items.into_iter().map(|item| (item.registration.path, item.captured)).collect();
+        if let Some(index) = self.captured_index {
+            inputs.push((super::index::INDEX_PATH.to_owned(), index));
+        }
+        inputs
+    }
+
+    /// Capture current inputs after the complete proposed path union is admitted.
+    /// Incoming absent destinations are planned paths, not fabricated physical captures.
+    pub(crate) fn capture_source_bundle_effect_with_control(
+        root: &Root,
+        incoming: Option<&Index>,
+        planned_output: Option<&str>,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<Self> {
+        Self::capture_selected(
+            root,
+            contract::ApiMajor::V2,
+            incoming,
+            true,
+            true,
+            planned_output,
+            control,
+        )
+    }
+
     /// Borrow the already-read raw index without reopening files or changing snapshot identity.
     pub(crate) fn captured_index(&self) -> Option<&Captured> {
         self.captured_index.as_ref()
@@ -182,7 +258,7 @@ impl Snapshot {
         api_major: contract::ApiMajor,
         control: &mut dyn WorkControl,
     ) -> WorkResult<Self> {
-        Self::capture_selected(root, api_major, None, false, control)
+        Self::capture_selected(root, api_major, None, false, false, None, control)
     }
 
     /// Admit the complete bundle-effect path union after raw-index parsing and before resource reads.
@@ -196,7 +272,7 @@ impl Snapshot {
         if api_major != contract::ApiMajor::V2 {
             return Err(Error::invalid().into());
         }
-        Self::capture_selected(root, api_major, incoming, true, control)
+        Self::capture_selected(root, api_major, incoming, true, false, None, control)
     }
 
     /// Preserve one capture implementation; only explicit bundle effects add whole-union preflight.
@@ -205,6 +281,8 @@ impl Snapshot {
         api_major: contract::ApiMajor,
         incoming: Option<&Index>,
         effect_bound: bool,
+        source_bound: bool,
+        planned_output: Option<&str>,
         control: &mut dyn WorkControl,
     ) -> WorkResult<Self> {
         control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
@@ -226,7 +304,11 @@ impl Snapshot {
             .into());
         }
         if effect_bound {
-            admit_effect_paths(&index, index_present, incoming)?;
+            if source_bound {
+                admit_source_restore_paths(&index, incoming, planned_output)?;
+            } else {
+                admit_effect_paths(&index, index_present, incoming)?;
+            }
         }
         let total = index.resources.len();
         control
@@ -1431,5 +1513,162 @@ mod tests {
                 Err(WorkError::Interrupted(Interruption::CancelRequested))
             ));
         }
+    }
+}
+
+#[cfg(test)]
+mod source_plan_capture_controls {
+    use super::super::preparation::test_support::Recorder;
+    use super::*;
+
+    /// Parse explicit index2 paths without creating or claiming their target files.
+    fn registered(paths: &[String]) -> Index {
+        Index::parse(&serde_json::to_vec(&json!({"schema_version":"forge.workspace/2","label":"Synthetic planned source paths",
+            "resources":paths.iter().enumerate().map(|(position,path)|json!({"key":format!("source-{position}"),"role":"lifecycle-source","path":path})).collect::<Vec<_>>()
+        })).unwrap()).unwrap()
+    }
+
+    /// An absent index still consumes one planned restore path, while new files remain uncaptured.
+    #[test]
+    fn source_plan_absent_index_fits_99_and_refuses_100_before_resource_reads() {
+        let project = tempfile::tempdir().unwrap();
+        let root = Root::open(project.path()).unwrap();
+        let paths: Vec<_> = (0..100).map(|position| format!("new-{position}.dat")).collect();
+        let incoming = registered(&paths[..99]);
+        let captured = Snapshot::capture_source_bundle_effect_with_control(
+            &root,
+            Some(&incoming),
+            None,
+            &mut NoopControl,
+        )
+        .unwrap();
+        assert!(!captured.index_present);
+        assert_eq!(captured.items.len(), 0);
+        assert_eq!(captured.into_captured_inputs().len(), 0);
+        let incoming = registered(&paths);
+        let mut control = Recorder::default();
+        assert!(
+            matches!(Snapshot::capture_source_bundle_effect_with_control(&root,Some(&incoming),None,&mut control),Err(WorkError::Failed(error)) if error.code=="payload-too-large")
+        );
+        assert!(!control.events.iter().any(|(stage, _)| *stage == Stage::CaptureResource));
+        assert!(!project.path().join(super::super::index::INDEX_PATH).exists());
+    }
+
+    /// Current registrations plus incoming paths are counted together before a missing current read.
+    #[test]
+    fn source_plan_union_overflow_precedes_registered_byte_reads() {
+        let project = tempfile::tempdir().unwrap();
+        let current = registered(&["missing-current.dat".to_owned()]);
+        std::fs::write(
+            project.path().join(super::super::index::INDEX_PATH),
+            current.bytes().unwrap(),
+        )
+        .unwrap();
+        let root = Root::open(project.path()).unwrap();
+        let incoming = registered(
+            &(0..99).map(|position| format!("incoming-{position}.dat")).collect::<Vec<_>>(),
+        );
+        let mut control = Recorder::default();
+        assert!(
+            matches!(Snapshot::capture_source_bundle_effect_with_control(&root,Some(&incoming),None,&mut control),Err(WorkError::Failed(error)) if error.code=="payload-too-large")
+        );
+        assert!(!control.events.iter().any(|(stage, _)| *stage == Stage::CaptureResource));
+    }
+
+    /// Move extraction preserves actual native identities, binary bytes and present raw index.
+    #[test]
+    fn source_plan_owned_inputs_retain_native_generations_without_proposed_identities() {
+        let project = tempfile::tempdir().unwrap();
+        let index = registered(&["source.dat".to_owned()]);
+        let bytes = b"\0\xff\xef\xbb\xbf\r\n";
+        std::fs::write(project.path().join("source.dat"), bytes).unwrap();
+        std::fs::write(
+            project.path().join(super::super::index::INDEX_PATH),
+            index.bytes().unwrap(),
+        )
+        .unwrap();
+        let root = Root::open(project.path()).unwrap();
+        let original = root.read("source.dat", 1024).unwrap();
+        let captured = Snapshot::capture_source_bundle_effect_with_control(
+            &root,
+            Some(&index),
+            None,
+            &mut NoopControl,
+        )
+        .unwrap();
+        let inputs = captured.into_captured_inputs();
+        assert_eq!(inputs.len(), 2);
+        assert_eq!(inputs[0].0, "source.dat");
+        assert_eq!(inputs[0].1.identity, original.identity);
+        assert_eq!(inputs[0].1.bytes, bytes);
+        assert_eq!(inputs[0].1.sha256, original.sha256);
+        assert_eq!(inputs[1].0, super::super::index::INDEX_PATH);
+        assert_eq!(inputs[1].1.bytes, index.bytes().unwrap());
+    }
+
+    /// An absent distinct export output and index reserve two slots before source reads.
+    #[test]
+    fn source_export_plans_absent_output_before_capture_and_fits_98_sources() {
+        let project = tempfile::tempdir().unwrap();
+        let paths: Vec<_> = (0..98).map(|position| format!("source-{position}.bin")).collect();
+        let current = registered(&paths);
+        for path in &paths {
+            std::fs::write(project.path().join(path), b"binary").unwrap();
+        }
+        std::fs::write(
+            project.path().join(super::super::index::INDEX_PATH),
+            current.bytes().unwrap(),
+        )
+        .unwrap();
+        let root = Root::open(project.path()).unwrap();
+        let snapshot = Snapshot::capture_source_bundle_effect_with_control(
+            &root,
+            None,
+            Some("export.json"),
+            &mut NoopControl,
+        )
+        .unwrap();
+        assert_eq!(snapshot.items.len(), 98);
+        assert!(!project.path().join("export.json").exists());
+        assert_eq!(snapshot.into_captured_inputs().len(), 99);
+    }
+
+    /// A 101st planned output refuses before missing resources or a directory target is opened.
+    #[test]
+    fn source_export_output_slot_overflow_and_alias_refuse_before_resource_io() {
+        let project = tempfile::tempdir().unwrap();
+        let current = registered(
+            &(0..99).map(|position| format!("missing-{position}.bin")).collect::<Vec<_>>(),
+        );
+        std::fs::write(
+            project.path().join(super::super::index::INDEX_PATH),
+            current.bytes().unwrap(),
+        )
+        .unwrap();
+        std::fs::create_dir(project.path().join("export.json")).unwrap();
+        let root = Root::open(project.path()).unwrap();
+        for (output, code) in [
+            ("export.json", "payload-too-large"),
+            ("FORGE.WORKSPACE.JSON", "resource-containment"),
+            ("MISSING-0.BIN", "resource-containment"),
+        ] {
+            let mut control = Recorder::default();
+            assert!(
+                matches!(Snapshot::capture_source_bundle_effect_with_control(&root,None,Some(output),&mut control),Err(WorkError::Failed(error)) if error.code==code)
+            );
+            assert!(!control.events.iter().any(|(stage, _)| *stage == Stage::CaptureResource));
+        }
+        assert!(project.path().join("export.json").is_dir());
+    }
+
+    /// The public producer seam accepts inert supplied bytes without requiring a Root.
+    #[test]
+    fn source_plan_validator_delegate_requires_only_exact_supplied_keys_and_bytes() {
+        let index = registered(&["not-created.dat".to_owned()]);
+        validate_proposed_sources(&index, &[("source-0", b"\0\xff\r\n")], &mut NoopControl)
+            .unwrap();
+        assert!(
+            matches!(validate_proposed_sources(&index,&[("wrong-key",b"bytes")],&mut NoopControl),Err(WorkError::Failed(error)) if error.code=="validation-failed")
+        );
     }
 }

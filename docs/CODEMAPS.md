@@ -76,16 +76,39 @@ technical surfaces, not claims that their full PRD acceptance gates are complete
 | `policy/` | Composition of local, hash-pinned Markdown components |
 | `reuse/` | Read-only retrieval of operator-supplied local corpus excerpts |
 | `suggest/` | Bounded, quarantined offline suggestion artifacts |
-| `workspace/` | Confined API queries and explicit single-file effects |
+| `workspace/` | Confined selected-major queries, single-file receipts and confirmed source restore |
 
 Within `workspace/`, `services.rs` captures registered inputs; `domain.rs` stages
-private copies for domain engines; `actions.rs` prepares effects without project
-publication; `effects.rs` confirms exact-byte single-file writes; and `http.rs`
-binds the closed API. Bundle queries compare metadata and registered fingerprints,
-not import readiness or authority. See the [workspace guide](local-workspace.md).
+private copies for domain engines; and `actions.rs` prepares effects without
+project publication. `inspection.rs`, `lifecycle.rs`, `impact.rs` and
+`provenance.rs` project read-only registered views. `effects.rs` retains session
+receipts and confirms exact-byte single-file writes. Metadata bundle comparison
+does not authorize import; source restore has a separate complete preview and
+batch-confirmation path. See the [workspace guide](local-workspace.md) and
+[workspace runtime architecture](architecture.md#local-workspace-runtime).
 
 POA&M and suggestion-evaluation modules are absent at the reviewed `532c9e8`
 head. Separate draft implementations must not be inferred from this map.
+
+### Workspace source-bundle paths
+
+These are consumed modules in the current source branch, including nested modules
+declared with `#[path]`; the map does not establish platform or PRD acceptance.
+
+| Entry point | Responsibility |
+| --- | --- |
+| [`http.rs`](../src/workspace/http.rs), [`http::source`](../src/workspace/http_source.rs) | Selected-major admission, original deadlines, project leases, six source-route adapters and status/cancellation reads |
+| [`services.rs`](../src/workspace/services.rs), [`root.rs`](../src/workspace/root.rs) | Complete planned-path preflight, captured registered generations and held-object confinement |
+| [`source_bundles.rs`](../src/workspace/source_bundles.rs) | Strict bounded Bundle3 codec with ordered pin/content/index bijection and exact source bytes |
+| [`source_validation.rs`](../src/workspace/source_validation.rs) | Intrinsic role admission and complete proposed registered dependency closure; not universal freshness or human approval |
+| [`source_bundle_effects.rs`](../src/workspace/source_bundle_effects.rs) | Off-Store source export and restore planning, full replacement projection and preallocated nonauthorizing outcome ID |
+| [`effects.rs`](../src/workspace/effects.rs), [`effects::source_receipts`](../src/workspace/source_receipts.rs) | Shared bounded retention, one-time session receipts, exact-request replay and separate private download families |
+| [`root::root_transaction`](../src/workspace/root_transaction.rs), [`root::transaction_state`](../src/workspace/transaction_state.rs) | Qualified Unix durable intent, index-last publication, owned conditional rollback, recovery and safe persisted outcomes |
+
+The [source workflow guide](workspace-source-bundles.md) covers explicit opt-in,
+all six routes, confirmation, known-ID recovery and finite capacity. The native
+Windows restore port is unavailable; larger staged transfers and full
+cross-platform qualification remain open.
 
 ## Data Flow
 

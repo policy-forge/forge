@@ -1,9 +1,9 @@
 # Confirmed metadata bundles and index replacement
 
-This guide describes the metadata receipt prerequisite for a build publishing
-workspace API **2.2.0**. Select API v2 explicitly at launch. API v1 remains
-**1.2.0 / 39 operations**; API v2 2.2.0 adds three operations to the **2.1.0 / 48**
-contract, for **51 operations**. This contract version does not announce a product
+This guide describes metadata receipts introduced in workspace API **2.2.0 / 51
+operations**, also available in **2.3.0 / 57**. Select API v2 explicitly at launch.
+API v1 remains **1.2.0 / 39 operations**. The three metadata operations and their
+existing semantics are distinct from the six opt-in source operations in 2.3.0. This contract version does not announce a product
 release or establish execution, platform, accessibility or human acceptance.
 The initial API v2 foundation and the captured inspection implementation retain
 their historical versions and verification records.
@@ -158,9 +158,8 @@ session-local previews, operation IDs or committed download records.
 ## Use the maintained client
 
 Launch `Workspace` with `api_major=2` and `read_only=False` for preparation. Its
-matching numeric API-major-2 bootstrap negotiation remains in place. The new
-bundle methods require exactly 2.2.0; the nine captured inspection methods admit
-2.1.0 or 2.2.0.
+matching numeric API-major-2 bootstrap negotiation remains in place. Metadata receipt methods require 2.2.0 or 2.3.0; the nine captured inspection
+methods admit 2.1.0, 2.2.0 or 2.3.0. Source methods require exactly 2.3.0.
 
 | Method | Result |
 |---|---|
@@ -176,8 +175,11 @@ decision sends no new request.
 ## Remaining S-6 work
 
 This metadata prerequisite does not complete full S-6 bundle import/export.
-Source-content profiles, source restoration, confirmed multi-file transactions,
-rollback, crash/restart behavior and capacity qualification remain required work.
+The separate [source workflow](workspace-source-bundles.md) describes the finite
+opt-in source profile, complete batch confirmation and durable known-ID recovery.
+Larger staged transfers, complete capacity and cross-platform crash/rollback
+qualification remain required work; source implementation is not full S-6
+acceptance.
 Native browser/platform interoperability, human accessibility and workflow
 acceptance, security/release gates and the final integrated documentation review
 remain open. Historical receipts for query-only bundles, API 2.0 or API 2.1

@@ -5,7 +5,7 @@ use std::io::Write as _;
 use std::net::Ipv4Addr;
 use std::path::Path;
 use std::sync::{
-    Arc, Mutex,
+    Arc, Mutex, RwLock,
     atomic::{AtomicBool, Ordering},
 };
 use std::time::{Duration, Instant};
@@ -21,6 +21,9 @@ use super::root::Root;
 use super::services::{Snapshot, filtered, paginate};
 use super::session::{Mode, Session};
 
+#[path = "http_source.rs"]
+mod source;
+
 const MAX_BODY: usize = 1024 * 1024;
 const MAX_CONNECTIONS: usize = 16;
 const READ_QUERY_BUDGET: Duration = Duration::from_secs(10);
@@ -30,6 +33,10 @@ struct State {
     /// One launch-selected namespace, never inferred from project files or callers.
     api_major: ApiMajor,
     root: Root,
+    /// Participating runtime reads and commits share one project-generation lease.
+    project_io: RwLock<()>,
+    /// Qualified private journal authority; unsupported ports offer no restore.
+    restores: Option<super::root::TransactionState>,
     host: String,
     origin: String,
     session: Mutex<Session>,
@@ -216,6 +223,7 @@ fn bundle_import_response(
     control
         .checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)
         .map_err(bundle_preparation_error)?;
+    let _io = source::project_read(state)?;
     let (nonce, _permit) = {
         let mut store = state.effects.lock().map_err(|_| internal())?;
         control
@@ -421,6 +429,7 @@ fn read_query_response(
     route.validate_query(query)?;
     let mut control = ReadControl { state, deadline, interruption: None };
     let result = (|| {
+        let _io = source::project_read(state)?;
         let snapshot =
             Snapshot::capture_with_control_for_api(&state.root, state.api_major, &mut control)?;
         let value = route.run(&snapshot, query, &mut control)?;
@@ -445,6 +454,19 @@ pub(super) fn launch(
     api_major: ApiMajor,
 ) -> Result<()> {
     let root = Root::open(project)?;
+    // Qualify and settle prior confirmed intent before index reads, prompts, credentials or listening.
+    // Unix qualification/trust failures never hide potentially unresolved state.
+    #[cfg(unix)]
+    let restores = Some(super::root::TransactionState::open_qualified(&root)?);
+    #[cfg(not(unix))]
+    let restores: Option<super::root::TransactionState> = None;
+    if let Some(state) = &restores {
+        state.recover(&root, api_major == ApiMajor::V2 && !read_only)?;
+    }
+    let mut effects = super::effects::Store::default();
+    if let Some(state) = &restores {
+        effects.seed_source_outcomes(state)?;
+    }
     // Validate the index and containment before exposing a listener or credentials.
     Snapshot::capture_for_api(&root, api_major)?;
     let mode = if machine { Mode::Machine } else { Mode::Browser };
@@ -473,7 +495,7 @@ pub(super) fn launch(
             eprintln!("Stop with Ctrl-C. Local unlock does not authenticate reviewer identity.");
             if !no_open { open_browser(&origin)?; }
         }
-        let state = Arc::new(State { api_major, root, host, origin, session:Mutex::new(session), stopped:AtomicBool::new(false), rate:Mutex::new((Instant::now(),0)),effects:Mutex::new(super::effects::Store::default()),work:Arc::new(tokio::sync::Semaphore::new(2)),jobs:Arc::new(tokio::sync::Semaphore::new(1)) });
+        let state = Arc::new(State { api_major, root, project_io:RwLock::new(()), restores, host, origin, session:Mutex::new(session), stopped:AtomicBool::new(false), rate:Mutex::new((Instant::now(),0)),effects:Mutex::new(effects),work:Arc::new(tokio::sync::Semaphore::new(2)),jobs:Arc::new(tokio::sync::Semaphore::new(1)) });
         let stop_state = Arc::clone(&state);
         let signal = tokio::spawn(async move {
             if tokio::signal::ctrl_c().await.is_ok() { stop_state.stopped.store(true, Ordering::Release); }
@@ -659,6 +681,7 @@ fn unlock_response(
     );
     // Everything that can fail before delivery is built first, so a snapshot or
     // session-view failure can never consume a capability the client never sees.
+    let _io = source::project_read(state)?;
     let label = Snapshot::capture_for_api(&state.root, state.api_major)?.index.label;
     let session = session_view(state, &label)?;
     let capability = state.session.lock().map_err(|_| internal())?.unlock(if valid {
@@ -728,10 +751,25 @@ async fn respond(
         }
         let idempotency = single_header(&request, "idempotency-key")?.map(str::to_owned);
         // Direct bundle preparation counts bounded body reading and blocking queue wait.
-        let bundle_deadline = (method == "POST"
+        let private_path = state.api_major.canonical_path(&path)?;
+        let bundle_deadline = if method == "POST"
             && state.api_major == ApiMajor::V2
-            && state.api_major.canonical_path(&path)? == "/api/v1/project/bundle-imports")
-            .then(|| Instant::now().checked_add(READ_QUERY_BUDGET));
+            && (private_path == "/api/v1/project/source-bundle-exports"
+                || private_path.starts_with("/api/v1/project/bundle-restores/")
+                    && private_path.ends_with("/commit"))
+        {
+            Some(Instant::now().checked_add(Duration::from_secs(30)))
+        } else if method == "POST"
+            && state.api_major == ApiMajor::V2
+            && matches!(
+                private_path.as_str(),
+                "/api/v1/project/bundle-imports" | "/api/v1/project/source-bundle-imports"
+            )
+        {
+            Some(Instant::now().checked_add(READ_QUERY_BUDGET))
+        } else {
+            None
+        };
         let body = tokio::time::timeout(
             Duration::from_secs(5),
             Limited::new(request.into_body(), body_limit).collect(),
@@ -773,6 +811,16 @@ fn json_response_for(
     contract::validate_for(api_major, schema, &value).map_err(|_| internal())?;
     let bytes = contract::encode(&value, 4 * 1024 * 1024, false)?;
     Ok(response(200, "application/json", bytes))
+}
+
+/// Encode the immutable generic effect reply without acquiring project I/O authority.
+fn effect_reply_response(
+    api_major: ApiMajor,
+    reply: super::effects::Reply,
+) -> Result<Response<Full<Bytes>>> {
+    let mut response = json_response_for(api_major, reply.value, reply.schema)?;
+    *response.status_mut() = hyper::StatusCode::from_u16(reply.status).map_err(|_| internal())?;
+    Ok(response)
 }
 
 /// Publish exact immutable negotiation metadata without capability material.
@@ -851,7 +899,58 @@ fn dispatch(
             read_deadline,
         );
     }
+    if state.api_major == ApiMajor::V2 {
+        if method == "POST" && path == "/api/v1/project/source-bundle-imports" {
+            return source::import_response(
+                state,
+                idempotency.ok_or_else(Error::invalid)?,
+                wire_path,
+                raw_query,
+                payload.as_ref().ok_or_else(Error::invalid)?,
+                read_deadline,
+            );
+        }
+        if method == "POST" && path == "/api/v1/project/source-bundle-exports" {
+            return source::export_response(
+                state,
+                idempotency.ok_or_else(Error::invalid)?,
+                wire_path,
+                raw_query,
+                payload.as_ref().ok_or_else(Error::invalid)?,
+                read_deadline,
+            );
+        }
+        if let Some(tail) = path.strip_prefix("/api/v1/project/bundle-restores/") {
+            if method == "POST"
+                && let Some(id) = tail.strip_suffix("/commit")
+            {
+                return source::commit_response(
+                    state,
+                    id,
+                    idempotency.ok_or_else(Error::invalid)?,
+                    wire_path,
+                    raw_query,
+                    payload.as_ref().ok_or_else(Error::invalid)?,
+                    read_deadline,
+                );
+            }
+            if method == "POST"
+                && let Some(id) = tail.strip_suffix("/cancel")
+            {
+                return source::outcome_response(state, id, true);
+            }
+            if method == "GET" {
+                return source::outcome_response(state, tail, false);
+            }
+        }
+    }
     if method == "GET" {
+        // Pure status/preview reads remain available during native settlement.
+        // Every subsequent download acquires project data before the Store lock.
+        let pure = path.starts_with("/api/v1/operations/")
+            || path.starts_with("/api/v1/effects/previews/")
+            || path.starts_with("/api/v1/conversions/");
+        let _io = if pure { None } else { Some(source::project_read(state)?) };
         let store = state.effects.lock().map_err(|_| internal())?;
         if let Some(id) = path.strip_prefix("/api/v1/operations/") {
             return json_response(store.operation(id)?, "Operation");
@@ -861,6 +960,21 @@ fn dispatch(
         }
         if let Some(id) = path.strip_prefix("/api/v1/conversions/") {
             return json_response(store.conversion(id)?, "ConversionResult");
+        }
+        if state.api_major == ApiMajor::V2
+            && let Some(id) = path
+                .strip_prefix("/api/v1/project/source-bundle-exports/")
+                .and_then(|tail| tail.strip_suffix("/download"))
+        {
+            let bytes = store.download_source(&state.root, id)?;
+            let mut response = response(200, "application/json", bytes);
+            response.headers_mut().insert(
+                "content-disposition",
+                hyper::header::HeaderValue::from_static(
+                    "attachment; filename=\"forge-workspace-index-and-source-content.json\"",
+                ),
+            );
+            return Ok(response);
         }
         if state.api_major == ApiMajor::V2
             && let Some(id) = path
@@ -906,6 +1020,22 @@ fn dispatch(
     }
     if let Some(key) = idempotency {
         let request = payload.clone().unwrap_or_else(|| json!({}));
+        // Retained replies are pure session observations. Wait only on the short
+        // Store owner, release it, then acquire any new project-data authority.
+        // This also lets a response-loss retry observe the original commit once
+        // its Store-serialized publication has completed.
+        {
+            let store = state.effects.lock().map_err(|_| internal())?;
+            if let Some(reply) = store.replay(key, method, wire_path, raw_query, &request)? {
+                return effect_reply_response(state.api_major, reply);
+            }
+        }
+        let write_lease = if path == "/api/v1/effects/commits" {
+            Some(source::project_write(state)?)
+        } else {
+            None
+        };
+        let _read = if write_lease.is_none() { Some(source::project_read(state)?) } else { None };
         let mut store = state.effects.lock().map_err(|_| internal())?;
         let reply = if let Some(reply) =
             store.replay(key, method, wire_path, raw_query, &request)?
@@ -952,6 +1082,7 @@ fn dispatch(
                     let mut control =
                         OperationControl { state: &shared, id: &id, deadline, interruption: None };
                     let result = (|| {
+                        let _io = source::project_read(&shared)?;
                         let mut local = super::effects::Store::default();
                         let mut snapshot = if shared.api_major == ApiMajor::V2
                             && path == "/api/v1/project/bundle-exports"
@@ -1045,11 +1176,9 @@ fn dispatch(
             store.remember(key, method, wire_path, raw_query, &request, &reply)?;
             reply
         };
-        let mut response = json_response(reply.value, reply.schema)?;
-        *response.status_mut() =
-            hyper::StatusCode::from_u16(reply.status).map_err(|_| internal())?;
-        return Ok(response);
+        return effect_reply_response(state.api_major, reply);
     }
+    let _io = source::project_read(state)?;
     let mut snapshot = Snapshot::capture_for_api(&state.root, state.api_major)?;
     match (method, path) {
         ("GET", "/api/v1/project/bundle-preview") => json_response(
@@ -1225,14 +1354,18 @@ fn error_response(error: &Error) -> Response<Full<Bytes>> {
         | "receipt-reused"
         | "receipt-mismatch"
         | "operation-not-cancellable"
-        | "bundle-preparation-in-progress" => 409,
+        | "bundle-preparation-in-progress"
+        | "bundle-restore-in-progress" => 409,
         "receipt-expired" => 410,
         "payload-too-large" => 413,
         "unsupported-media-type" => 415,
         "validation-failed" => 422,
         "unlock-throttled" => 429,
         "internal-error" => 500,
-        "query-budget-exceeded"
+        "bundle-restore-unavailable"
+        | "bundle-restore-recovery-required"
+        | "bundle-restore-budget-exceeded"
+        | "query-budget-exceeded"
         | "query-interrupted"
         | "bundle-preparation-budget-exceeded"
         | "bundle-preparation-interrupted" => 503,
@@ -1276,6 +1409,8 @@ mod tests {
         State {
             api_major: ApiMajor::V1,
             root,
+            project_io: RwLock::new(()),
+            restores: None,
             host: "127.0.0.1:1".into(),
             origin: "http://127.0.0.1:1".into(),
             session: Mutex::new(
@@ -1291,6 +1426,79 @@ mod tests {
             effects: Mutex::new(super::super::effects::Store::default()),
             work: Arc::new(tokio::sync::Semaphore::new(2)),
             jobs: Arc::new(tokio::sync::Semaphore::new(1)),
+        }
+    }
+
+    /// Retained identical confirmations remain pure reads while a project lease is held.
+    /// Changed keys/bodies cannot acquire a fresh publication authority through replay.
+    #[test]
+    fn generic_commit_replay_precedes_project_lease_for_both_majors() {
+        for major in [ApiMajor::V1, ApiMajor::V2] {
+            let dir = tempfile::tempdir().unwrap();
+            let mut state =
+                browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+            state.api_major = major;
+            let state = Arc::new(state);
+            let path = format!("/api/v{}/effects/commits", major.number());
+            let request = json!({"receipt":"synthetic-immutable-receipt-token", "observed_version":"a".repeat(64),"confirmed":true});
+            let operation = state.effects.lock().unwrap().completed("commit",json!({"write_committed":true,"committed_sha256":"b".repeat(64),"target_path":"result.md","new_version":"b".repeat(64)})).unwrap();
+            let reply = super::super::effects::Reply {
+                value: operation.clone(),
+                schema: "Operation",
+                status: 202,
+            };
+            state
+                .effects
+                .lock()
+                .unwrap()
+                .remember("synthetic-replay-key", "POST", &path, "", &request, &reply)
+                .unwrap();
+            let _busy = state.project_io.write().unwrap();
+            let response = dispatch(
+                &state,
+                "POST",
+                &path,
+                "",
+                Some("synthetic-replay-key"),
+                &serde_json::to_vec(&request).unwrap(),
+                None,
+            )
+            .unwrap();
+            assert_eq!(response.status(), 202);
+            let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
+            let bytes = runtime.block_on(response.into_body().collect()).unwrap().to_bytes();
+            assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap(), operation);
+            let mut changed = request.clone();
+            changed["observed_version"] = json!("c".repeat(64));
+            assert_eq!(
+                dispatch(
+                    &state,
+                    "POST",
+                    &path,
+                    "",
+                    Some("synthetic-replay-key"),
+                    &serde_json::to_vec(&changed).unwrap(),
+                    None
+                )
+                .unwrap_err()
+                .code,
+                "idempotency-key-conflict"
+            );
+            assert_eq!(
+                dispatch(
+                    &state,
+                    "POST",
+                    &path,
+                    "",
+                    Some("synthetic-fresh-key"),
+                    &serde_json::to_vec(&request).unwrap(),
+                    None
+                )
+                .unwrap_err()
+                .code,
+                "invalid-request"
+            );
+            assert!(!dir.path().join("result.md").exists());
         }
     }
 
@@ -1322,7 +1530,7 @@ mod tests {
                 usize::from(major == ApiMajor::V2)
             );
             if major == ApiMajor::V2 {
-                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.2.0\""));
+                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.3.0\""));
             }
             assert!(html.contains("id=\"workspace\" hidden"));
             for (asset_path, expected, media) in [

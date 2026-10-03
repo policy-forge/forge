@@ -1,0 +1,5 @@
+{
+  "target_path": "exports/source.json",
+  "acknowledge_sensitive_metadata": true,
+  "acknowledge_source_content": true
+}

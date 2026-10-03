@@ -2334,7 +2334,7 @@ mod s3_registration_and_bundles {
             let descriptor: Value = serde_json::from_str(&result.unwrap().unwrap())
                 .expect("API2 machine descriptor JSON");
             s3_descriptor_keys(&descriptor);
-            assert!(descriptor["api_version"] == "2.2.0", "API2 descriptor version mismatch");
+            assert!(descriptor["api_version"] == "2.3.0", "API2 descriptor version mismatch");
             assert!(descriptor["api_major"] == 2, "API2 descriptor major mismatch");
             assert!(descriptor["mode"] == "machine", "API2 descriptor mode mismatch");
             assert!(descriptor["read_only"] == read_only, "API2 descriptor scope mismatch");
@@ -2362,7 +2362,7 @@ mod s3_registration_and_bundles {
                 ],
             );
             assert_eq!(session["api_major"], 2);
-            assert_eq!(session["contract_version"], "2.2.0");
+            assert_eq!(session["contract_version"], "2.3.0");
             assert_eq!(session["session_id"], descriptor["session_id"]);
             assert_eq!(session["mode"], "machine");
             assert_eq!(session["read_only"], read_only);

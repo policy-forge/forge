@@ -1,0 +1,5 @@
+{
+  "code": "bundle-restore-unavailable",
+  "message": "A qualified source restore transaction is unavailable for this project.",
+  "retryable": false
+}

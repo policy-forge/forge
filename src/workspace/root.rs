@@ -8,6 +8,15 @@ use std::path::PathBuf;
 use super::contract::{Error, Result};
 use super::index::validate_path;
 
+/// Sealed exact source transaction and native publication boundaries.
+#[path = "root_transaction.rs"]
+mod root_transaction;
+/// Qualified private root-bound accepted intent and recovery state.
+#[path = "transaction_state.rs"]
+mod transaction_state;
+pub(crate) use root_transaction::{AcceptedRestore, RestoreTargetPlan};
+pub(crate) use transaction_state::TransactionState;
+
 #[derive(Debug)]
 pub(crate) struct Root {
     #[cfg(any(unix, windows))]

@@ -1,0 +1,49 @@
+{
+  "preview_id": "prev_111111111111",
+  "operation_type": "project-source-restore",
+  "snapshot_version": "0000000000000000000000000000000000000000000000000000000000000000",
+  "observed_batch_version": "0000000000000000000000000000000000000000000000000000000000000000",
+  "exact_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "targets": [
+    {
+      "path": "forge.workspace.json",
+      "kind": "index",
+      "key": null,
+      "role": null,
+      "status": "create",
+      "base_sha256": null,
+      "base_size": null,
+      "target_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "exact_bytes_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "size": 100,
+      "diff_text": "",
+      "diff_truncated": false,
+      "binary": false
+    }
+  ],
+  "input_bindings": [
+    {
+      "path": "forge.workspace.json",
+      "kind": "index",
+      "current": null,
+      "proposed": {
+        "key": null,
+        "role": null,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "size": 100
+      }
+    }
+  ],
+  "directories": [],
+  "validation": {
+    "state": "valid",
+    "error_count": 0,
+    "warning_count": 0,
+    "diagnostics": []
+  },
+  "semantic_summary": "Synthetic exact index target. Source and metadata are sensitive.",
+  "receipt": {
+    "token": "11111111111111111111111111111111",
+    "expires_at": "2026-10-03T00:00:00Z"
+  }
+}

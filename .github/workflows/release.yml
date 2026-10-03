@@ -118,7 +118,7 @@ jobs:
           mkdir -p "$package_path/docs" "$package_path/schemas"
           cp "$release_path/forge" "$package_path/forge"
           cp -R docs/api "$package_path/docs/"
-          cp schemas/forge.workspace-1.schema.json schemas/forge.workspace-2.schema.json "$package_path/schemas/"
+          cp schemas/forge.workspace-1.schema.json schemas/forge.workspace-2.schema.json schemas/forge.workspace-source-bundle-3.schema.json "$package_path/schemas/"
           tar czf "$GITHUB_WORKSPACE/forge-${TAG_NAME}-${BUILD_TARGET}.tar.gz" -C "$package_path" forge docs/api schemas
 
       - name: Package (Windows)
@@ -136,7 +136,7 @@ jobs:
             New-Item -ItemType Directory -Path "$packagePath/docs", "$packagePath/schemas" | Out-Null
             Copy-Item -LiteralPath "$releasePath/forge.exe" -Destination "$packagePath/forge.exe"
             Copy-Item -Path "docs/api" -Destination "$packagePath/docs" -Recurse -Force
-            Copy-Item -Path "schemas/forge.workspace-1.schema.json", "schemas/forge.workspace-2.schema.json" -Destination "$packagePath/schemas"
+            Copy-Item -Path "schemas/forge.workspace-1.schema.json", "schemas/forge.workspace-2.schema.json", "schemas/forge.workspace-source-bundle-3.schema.json" -Destination "$packagePath/schemas"
             Compress-Archive -Path "$packagePath/forge.exe", "$packagePath/docs", "$packagePath/schemas" -DestinationPath "$env:GITHUB_WORKSPACE/forge-${env:TAG_NAME}-${env:BUILD_TARGET}.zip"
           } finally {
             Remove-Item -LiteralPath $packagePath -Recurse -Force

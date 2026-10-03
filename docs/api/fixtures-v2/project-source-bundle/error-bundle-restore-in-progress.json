@@ -1,0 +1,5 @@
+{
+  "code": "bundle-restore-in-progress",
+  "message": "The original source restore is still in progress. Check its status.",
+  "retryable": true
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "forge.workspace-index-bundle/3",
+  "profile": "index-and-hashes",
+  "source_content_included": true,
+  "index": {
+    "schema_version": "forge.workspace/1",
+    "label": "Synthetic explicit source fixture",
+    "resources": []
+  },
+  "index_sha256": "204cee4c7a410d66d90146f3a31955f6478a98d7f99bcb609b9068107f1c933c",
+  "pins": [],
+  "contents": []
+}

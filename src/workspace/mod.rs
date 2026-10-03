@@ -19,6 +19,10 @@ pub(crate) mod root;
 pub(crate) mod services;
 pub(crate) mod session;
 
+pub(crate) mod source_bundle_effects;
+pub(crate) mod source_bundles;
+pub(crate) mod source_validation;
+
 /// Select a supported major before project capture, prompts, credentials or listening.
 pub(crate) fn launch(
     project: &std::path::Path,

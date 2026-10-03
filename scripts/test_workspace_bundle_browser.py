@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Launch owned POSIX browser fixtures for installed-Chrome metadata-bundle controls."""
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -40,21 +41,81 @@ def fixture(directory):
     return project,supplied
 
 
+def wait_owned(pid, deadline):
+    """Wait only the original never-reaped PTY child; never adopt or signal a scanned PID."""
+    while time.monotonic() < deadline:
+        observed, status = os.waitpid(pid, os.WNOHANG)
+        if observed == pid:
+            return status
+        time.sleep(0.05)
+    return None
+
+
+def drain_owned(pid, terminal, passphrase, deadline, observation):
+    """Drain at most 64 KiB while retaining the original child's actual reap through validation faults."""
+    tail = b""
+    eof = False
+    try:
+        while time.monotonic() < deadline:
+            if observation["wait_status"] is None:
+                try:
+                    observed, status = os.waitpid(pid, os.WNOHANG)
+                except ChildProcessError:
+                    observation["ownership_lost"] = True
+                    raise
+                if observed == pid:
+                    observation["wait_status"] = status
+            if not eof:
+                timeout = (0 if observation["wait_status"] is not None else
+                           min(0.05, max(0, deadline - time.monotonic())))
+                ready, _, _ = select.select([terminal], [], [], timeout)
+                if ready:
+                    available = 65536 - observation["bytes"]
+                    if available <= 0:
+                        raise RuntimeError("terminal-budget")
+                    try:
+                        block = os.read(terminal, min(8192, available))
+                    except OSError as error:
+                        if error.errno != errno.EIO:
+                            raise
+                        block = b""
+                    if not block:
+                        eof = True
+                    else:
+                        observation["bytes"] += len(block)
+                        combined = tail + block
+                        if passphrase and passphrase in combined:
+                            raise RuntimeError("terminal-echo")
+                        tail = combined[-(len(passphrase) - 1):] if len(passphrase) > 1 else b""
+                        continue
+                elif observation["wait_status"] is not None:
+                    return observation["wait_status"]
+            if observation["wait_status"] is not None:
+                return observation["wait_status"]
+            if eof:
+                time.sleep(min(0.05, max(0, deadline - time.monotonic())))
+        return observation["wait_status"]
+    finally:
+        tail = b""
+
+
 def run(args):
     """Launch real browser mode, feed only the synthetic terminal passphrase and retain actual child outcomes."""
     if os.name!="posix":
         raise RuntimeError("This PTY launcher is POSIX-only; no Windows terminal proof")
     import pty
     out=Path(args.out).resolve();out.mkdir(exist_ok=False)
-    forge=Path(args.forge).resolve();node=Path(args.node).resolve();root=Path(args.source_root).resolve();driver=root/"ui"/"tests"/"workspace-bundle-browser.cjs"
-    receipt={"format":"forge.s6-native-browser-launch/1","status":"error","mode":args.mode,"api_major":2,"contract_version":"2.2.0","forge_sha256":digest(forge),"node_sha256":digest(node),"driver_sha256":digest(driver),"launcher_sha256":digest(__file__),"native_driver_exit":None,"normal_server_exit":False,"forced_cleanup":False,"limitations":["POSIX PTY browser launch only; no machine-session capability sharing.","Page request restrictions do not establish OS network denial."]}
+    forge=Path(args.forge).resolve();node=Path(args.node).resolve();root=Path(args.source_root).resolve();driver=Path(args.driver).resolve() if args.driver else root/"ui"/"tests"/"workspace-bundle-browser.cjs"
+    receipt={"format":"forge.s6-native-browser-launch/1","status":"error","mode":args.mode,"api_major":2,"contract_version":None,"forge_sha256":digest(forge),"node_sha256":digest(node),"driver_sha256":digest(driver),"launcher_sha256":digest(__file__),"native_driver_exit":None,"normal_server_exit":False,"forced_cleanup":False,"limitations":["POSIX PTY browser launch only; no machine-session capability sharing.","Page request restrictions do not establish OS network denial."]}
     with tempfile.TemporaryDirectory(prefix="forge-s6-Chrome-fixture-") as temporary:
         project,incoming=fixture(Path(temporary));pid,terminal=pty.fork()
         if pid==0:
             command=[str(forge),"workspace","--project",str(project),"--api-major","2","--no-open"]
             if args.mode=="read-only":command.append("--read-only")
             os.execv(str(forge),command)
+        receipt["owned_child_kind"]="forge";receipt["owned_child_pid"]=pid
         status=None
+        drainage={"wait_status":None,"bytes":0,"ownership_lost":False}
         try:
             output=b"";step=0;deadline=time.monotonic()+30;origin=None
             while time.monotonic()<deadline:
@@ -72,40 +133,55 @@ def run(args):
                 if match:origin=match.group(1).decode();break
             if not origin:raise RuntimeError("Synthetic browser-mode session did not launch")
             if b"synthetic S6 browser bundle passphrase 062" in output:raise RuntimeError("Synthetic passphrase was echoed")
+            output=b""
             result=subprocess.run([str(node),str(driver),origin,args.mode,str(project),str(incoming),str(out/"browser"),str(root)],timeout=360,check=False)
             receipt["native_driver_exit"]=result.returncode
-            # Closing the PTY is explicit and precedes reaping, matching the retained macOS harness seam.
-            os.close(terminal);terminal=None
-            deadline=time.monotonic()+5
-            while time.monotonic()<deadline:
-                reaped,status=os.waitpid(pid,os.WNOHANG)
-                if reaped:break
-                time.sleep(0.05)
-            else:
-                status=None
+            driver_raw=(out/"browser"/"receipt.json").read_bytes()
+            if len(driver_raw)>131072:raise RuntimeError("Browser receipt bound exceeded")
+            observed=json.loads(driver_raw)
+            version=observed.get("contract_version")
+            if version in ("2.2.0","2.3.0") and type(observed.get("api_major")) is int and observed["api_major"]==2:
+                receipt["contract_version"]=version
+            elif result.returncode==0:raise RuntimeError("Browser did not establish a supported metadata contract")
+            # Keep the native PTY open and discard bounded shutdown output until actual reap.
+            status=drain_owned(pid,terminal,b"synthetic S6 browser bundle passphrase 062",
+                               time.monotonic()+5,drainage)
             if status is not None:
                 receipt["server_wait_status"]=status;receipt["normal_server_exit"]=os.waitstatus_to_exitcode(status)==0
-            if result.returncode==0 and receipt["normal_server_exit"]:
+            if result.returncode==0 and receipt["normal_server_exit"] and observed.get("status")=="passed" and receipt["contract_version"] in ("2.2.0","2.3.0"):
                 receipt["status"]="passed"
         except Exception as error:
             receipt["error_class"]=type(error).__name__
         finally:
-            if terminal is not None:os.close(terminal)
+            status=drainage["wait_status"] if drainage["wait_status"] is not None else status
             if status is None:
                 receipt["forced_cleanup"]=True
-                try:os.kill(pid,signal.SIGTERM)
-                except ProcessLookupError:pass
-                deadline=time.monotonic()+3
-                while time.monotonic()<deadline:
-                    try:reaped,cleanup_status=os.waitpid(pid,os.WNOHANG)
-                    except ChildProcessError:reaped=pid;cleanup_status=None
-                    if reaped:break
-                    time.sleep(0.05)
-                else:
-                    try:os.kill(pid,signal.SIGKILL)
-                    except ProcessLookupError:pass
-                    _,cleanup_status=os.waitpid(pid,0)
-                receipt["cleanup_wait_status"]=cleanup_status
+                receipt["status"]="error"
+                for action in [signal.SIGTERM,signal.SIGKILL]:
+                    if drainage["ownership_lost"] or drainage["wait_status"] is not None:break
+                    try:
+                        try:os.kill(pid,action)
+                        except ProcessLookupError:pass
+                        cleanup_deadline=time.monotonic()+3
+                        try:
+                            drain_owned(pid,terminal,b"synthetic S6 browser bundle passphrase 062",
+                                        cleanup_deadline,drainage)
+                        except Exception:
+                            receipt["status"]="error"
+                            if not drainage["ownership_lost"] and drainage["wait_status"] is None:
+                                drainage["wait_status"]=wait_owned(pid,cleanup_deadline)
+                    except ChildProcessError:drainage["ownership_lost"]=True
+                    except Exception:receipt["status"]="error"
+                    status=drainage["wait_status"]
+                    if status is not None:break
+                receipt["cleanup_wait_status"]=status
+            if terminal is not None:
+                try:os.close(terminal)
+                except OSError:receipt["status"]="error"
+            receipt["shutdown_terminal_bytes"]=drainage["bytes"]
+            receipt["owned_child_wait_status"]=status if status is not None else receipt.get("cleanup_wait_status")
+            receipt["direct_children_reaped"]=receipt["owned_child_wait_status"] is not None
+            if receipt["forced_cleanup"] or not receipt["direct_children_reaped"]:receipt["status"]="error"
             (out/"launch-receipt.json").write_text(json.dumps(receipt,indent=2)+"\n")
     print(json.dumps({"status":receipt["status"],"receipt":str(out/"launch-receipt.json")}))
     return 0 if receipt["status"]=="passed" else 1
@@ -113,7 +189,7 @@ def run(args):
 
 def main():
     """Require explicit local binary/runtime/source/output inputs and never install or download tools."""
-    parser=argparse.ArgumentParser();parser.add_argument("--forge",required=True);parser.add_argument("--node",required=True);parser.add_argument("--source-root",required=True);parser.add_argument("--out",required=True);parser.add_argument("--mode",choices=("writable","read-only"),required=True)
+    parser=argparse.ArgumentParser();parser.add_argument("--driver");parser.add_argument("--forge",required=True);parser.add_argument("--node",required=True);parser.add_argument("--source-root",required=True);parser.add_argument("--out",required=True);parser.add_argument("--mode",choices=("writable","read-only"),required=True)
     return run(parser.parse_args())
 
 

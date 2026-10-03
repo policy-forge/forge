@@ -784,7 +784,7 @@
       },
       "Error": {
         "additionalProperties": false,
-        "description": "Closed safe error envelope for the advertised contract revision. Existing code meanings are preserved. API2.1 adds typed cooperative read interruption errors; no capability, absolute path, source excerpt or debug text is retained. API2.2 additionally declares matching pending bundle preparation (409) and direct import deadline/interruption (503). Shutdown retains the existing shutdown-in-progress status; no public import cancellation endpoint.",
+        "description": "Closed safe error envelope for the advertised contract revision. Existing code meanings are preserved. API2.1 adds typed cooperative read interruption errors; no capability, absolute path, source excerpt or debug text is retained. API2.2 additionally declares matching pending bundle preparation (409) and direct import deadline/interruption (503). Shutdown retains the existing shutdown-in-progress status; no public import cancellation endpoint. API2.3 adds the four source-restore availability, progress, budget and recovery codes. The separate batch operation distinguishes committed bytes, rollback outcome and cleanup proof; a timeout or not-found lookup is never proof of no write.",
         "examples": [
           {
             "code": "version-conflict",
@@ -820,7 +820,11 @@
               "query-interrupted",
               "bundle-preparation-in-progress",
               "bundle-preparation-budget-exceeded",
-              "bundle-preparation-interrupted"
+              "bundle-preparation-interrupted",
+              "bundle-restore-unavailable",
+              "bundle-restore-in-progress",
+              "bundle-restore-budget-exceeded",
+              "bundle-restore-recovery-required"
             ],
             "type": "string"
           },
@@ -2246,7 +2250,7 @@
             "maxLength": 32,
             "minLength": 1,
             "type": "string",
-            "const": "2.2.0"
+            "const": "2.3.0"
           },
           "launched_at": {
             "format": "date-time",
@@ -5165,6 +5169,862 @@
           }
         },
         "description": "Direct controlled preparation response. validation equals preview.validation; the existing preview writes only forge.workspace.json using workspace-index-update. Complete replacement membership is never truncated. No Operation/progress/cancel resource or file write is created by preparation."
+      },
+      "RegistrationKey": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+      },
+      "BatchReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "token",
+          "expires_at"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 16
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PriorFile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "role",
+          "resource_id",
+          "sha256",
+          "size"
+        ],
+        "properties": {
+          "key": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationKey"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkspaceRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resource_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResourceId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10485760
+          }
+        }
+      },
+      "ProposedFile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "role",
+          "sha256",
+          "size"
+        ],
+        "properties": {
+          "key": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationKey"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkspaceRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10485760
+          }
+        }
+      },
+      "BatchBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "kind",
+          "current",
+          "proposed"
+        ],
+        "properties": {
+          "path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "kind": {
+            "enum": [
+              "index",
+              "resource"
+            ],
+            "type": "string"
+          },
+          "current": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PriorFile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProposedFile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "BatchTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "kind",
+          "key",
+          "role",
+          "status",
+          "base_sha256",
+          "base_size",
+          "target_version",
+          "exact_bytes_sha256",
+          "size",
+          "diff_text",
+          "diff_truncated",
+          "binary"
+        ],
+        "properties": {
+          "path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "kind": {
+            "enum": [
+              "index",
+              "resource"
+            ],
+            "type": "string"
+          },
+          "key": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationKey"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkspaceRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "create",
+              "overwrite"
+            ],
+            "type": "string"
+          },
+          "base_sha256": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Sha256Hex"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_size": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10485760
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "exact_bytes_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10485760
+          },
+          "diff_text": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 0
+          },
+          "diff_truncated": {
+            "type": "boolean"
+          },
+          "binary": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BatchDirectory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "status",
+          "nearest_existing_parent_version"
+        ],
+        "properties": {
+          "path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "status": {
+            "type": "string",
+            "const": "create"
+          },
+          "nearest_existing_parent_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          }
+        }
+      },
+      "SourceRestorePreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "preview_id",
+          "operation_type",
+          "snapshot_version",
+          "observed_batch_version",
+          "exact_manifest_sha256",
+          "targets",
+          "input_bindings",
+          "directories",
+          "validation",
+          "semantic_summary",
+          "receipt",
+          "operation_id"
+        ],
+        "properties": {
+          "preview_id": {
+            "$ref": "#/components/schemas/PreviewId"
+          },
+          "operation_type": {
+            "type": "string",
+            "const": "project-source-restore"
+          },
+          "snapshot_version": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "observed_batch_version": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "exact_manifest_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchTarget"
+            },
+            "maxItems": 100,
+            "minItems": 1
+          },
+          "input_bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchBinding"
+            },
+            "maxItems": 100,
+            "minItems": 0
+          },
+          "directories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchDirectory"
+            },
+            "maxItems": 100,
+            "minItems": 0
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport"
+          },
+          "semantic_summary": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/BatchReceipt"
+          },
+          "operation_id": {
+            "$ref": "#/components/schemas/OperationId",
+            "description": "Preallocated stable nonauthorizing outcome lookup identifier; retained by the client before confirmation and reused verbatim by accepted operation/journal/result. Before durable acceptance, GET yields not-found. Does not authorize a write or revive session authority."
+          }
+        },
+        "description": "Complete off-Store preparation, not a write or accepted operation. All resource targets are in authorial order with forge.workspace.json last; explicit new directories are unique and parent-before-child, <=100. input_bindings covers the complete deduplicated current/incoming/index path union including absence. Index key/role/resource identity fields are null; resource fields are exact registered values. Shared diff budget <=200000 UTF-8 bytes across all targets; diff truncation never truncates membership, pins or exact bytes. The preallocated nonauthorizing operation_id is retained before confirmation and reused by accepted work and persisted outcomes. Receipt/preview remain same-session one-time capabilities; no receipt is persisted or revived."
+      },
+      "ProjectSourceBundleImportPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "validation",
+          "preview",
+          "replacement"
+        ],
+        "properties": {
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/SourceRestorePreview"
+          },
+          "replacement": {
+            "$ref": "#/components/schemas/SourceBundleIndexReplacement"
+          }
+        },
+        "description": "Direct writable preparation of a complete source restore. validation equals preview.validation. Replacement covers full previous/proposed index objects; removal means index membership removal, not file deletion. No project write or accepted durable intent exists until explicit commit."
+      },
+      "PrepareProjectSourceBundleExportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_path",
+          "acknowledge_sensitive_metadata",
+          "acknowledge_source_content"
+        ],
+        "properties": {
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "acknowledge_sensitive_metadata": {
+            "type": "boolean",
+            "const": true
+          },
+          "acknowledge_source_content": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "PrepareProjectSourceBundleImportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bundle",
+          "target_index_schema_version",
+          "acknowledge_index_replacement",
+          "acknowledge_source_content",
+          "acknowledge_replace_files"
+        ],
+        "properties": {
+          "bundle": {
+            "$ref": "#/components/schemas/WorkspaceSourceBundle3"
+          },
+          "target_index_schema_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "acknowledge_index_replacement": {
+            "type": "boolean",
+            "const": true
+          },
+          "acknowledge_source_content": {
+            "type": "boolean",
+            "const": true
+          },
+          "acknowledge_replace_files": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "bundle": {
+                  "properties": {
+                    "index": {
+                      "properties": {
+                        "schema_version": {
+                          "const": "forge.workspace/2"
+                        }
+                      },
+                      "required": [
+                        "schema_version"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "index"
+                  ]
+                }
+              },
+              "required": [
+                "bundle"
+              ]
+            },
+            "then": {
+              "properties": {
+                "target_index_schema_version": {
+                  "const": 2
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CommitSourceRestoreRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receipt",
+          "observed_batch_version",
+          "acknowledge_exact_restore"
+        ],
+        "properties": {
+          "receipt": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 16
+          },
+          "observed_batch_version": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "acknowledge_exact_restore": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "CommittedBatchTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256",
+          "size"
+        ],
+        "properties": {
+          "path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10485760
+          }
+        }
+      },
+      "SourceRestoreResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "write_committed",
+          "exact_manifest_sha256",
+          "committed_targets",
+          "cleanup_state"
+        ],
+        "properties": {
+          "write_committed": {
+            "type": "boolean",
+            "const": true
+          },
+          "exact_manifest_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex"
+          },
+          "committed_targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommittedBatchTarget"
+            },
+            "maxItems": 100,
+            "minItems": 1
+          },
+          "cleanup_state": {
+            "enum": [
+              "verified",
+              "pending",
+              "unverified"
+            ],
+            "type": "string"
+          }
+        },
+        "description": "Exact committed targets and manifest after a durable commit decision, with independent cleanup state. Index-last publication is individually whole-file, not globally atomic for external readers. Cleanup pending/unverified blocks further project data access/work until qualified reconciliation."
+      },
+      "SourceRestoreProgress": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "completed_files",
+          "total_files"
+        ],
+        "properties": {
+          "completed_files": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "total_files": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "description": "Verified fully staged file facts only, fixed total<=100 and 0<=completed<=total. No percentage or completion prediction. Clear progress before publication, rollback and all terminal states; byte/parser/syscall work is not preempted."
+      },
+      "SourceRestoreOperation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "kind",
+          "state",
+          "created_at",
+          "updated_at",
+          "cancel_requested",
+          "write_outcome",
+          "progress",
+          "result",
+          "error",
+          "cleanup_state"
+        ],
+        "properties": {
+          "operation_id": {
+            "$ref": "#/components/schemas/OperationId"
+          },
+          "kind": {
+            "type": "string",
+            "const": "bundle-restore"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "recovery-required"
+            ],
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancel_requested": {
+            "type": "boolean"
+          },
+          "write_outcome": {
+            "enum": [
+              "unmeasured",
+              "none",
+              "committed",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "progress": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SourceRestoreProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SourceRestoreResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cleanup_state": {
+            "type": "string",
+            "enum": [
+              "unmeasured",
+              "verified",
+              "pending",
+              "unverified"
+            ]
+          }
+        },
+        "description": "Separate batch transaction/outcome DTO; old Operation states/kinds remain unchanged. pending/running have write_outcome unmeasured and null result/error; succeeded means durable committed decision plus result and committed targets. failed/cancelled may claim write_outcome none only after verified rollback. recovery-required records safe errors and independently known none/committed or otherwise unknown outcome; cleanup evidence remains separate. Terminal state/progress cannot resurrect. Before durable accepted intent the preknown lookup returns404. After lost202/restart, fresh same-root/API2 read authority can query sanitized retained outcomes; old capabilities and receipts are not revived. A404/expiry does not establish no write and never authorizes blind replay."
+      },
+      "WorkspaceSourceBundle3": {
+        "title": "Explicit source-containing workspace bundle (forge.workspace-index-bundle/3)",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "profile",
+          "source_content_included",
+          "index",
+          "index_sha256",
+          "pins",
+          "contents"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "forge.workspace-index-bundle/3"
+          },
+          "profile": {
+            "const": "index-and-source-hex"
+          },
+          "source_content_included": {
+            "const": true
+          },
+          "index": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/WorkspaceBundleIndex"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WorkspaceBundleIndexV2"
+                  }
+                ]
+              },
+              {
+                "properties": {
+                  "resources": {
+                    "maxItems": 99
+                  }
+                }
+              }
+            ]
+          },
+          "index_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "pins": {
+            "type": "array",
+            "maxItems": 99,
+            "items": {
+              "$ref": "#/components/schemas/SourceBundlePin"
+            }
+          },
+          "contents": {
+            "type": "array",
+            "maxItems": 99,
+            "items": {
+              "$ref": "#/components/schemas/SourceBundleContent"
+            }
+          }
+        },
+        "$comment": "Pure proposed schema, not compiler/runtime proof. Intrinsic validation additionally requires index/pin/content key bijection in identical authorial order; canonical chunks; decoded size/hash equality; normalized index hash; complete capacity admission before allocation/I/O; raw artifact <=1048429 bytes. Old index schemas are composition inputs, not modified.",
+        "description": "Explicit opt-in complete index, pins and exact source bytes encoded as canonical lowercase hex chunks. The decoder rejects decoded duplicate keys, unknown fields, noncanonical chunks, index/pin/content bijection or order mismatch, wrong exact hash/size, unsupported index and portable alias paths. Source artifact <=1048429 raw UTF-8 bytes; canonical import wrapper overhead147 keeps the complete request <=1MiB. Exact source bytes need not be text or natively valid; source import independently admits the complete proposed domain closure. This bounded first profile does not implement a larger staged-transfer lane."
+      },
+      "SourceBundlePin": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "sha256",
+          "size"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10485760
+          }
+        }
+      },
+      "SourceBundleContent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "encoding",
+          "chunks"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+          },
+          "encoding": {
+            "const": "hex"
+          },
+          "chunks": {
+            "type": "array",
+            "maxItems": 320,
+            "items": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 65536,
+              "pattern": "^(?:[0-9a-f]{2})+$"
+            }
+          }
+        }
+      },
+      "SourceBundleIndexReplacement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "previous_index",
+          "proposed_index",
+          "supplied_index_sha256",
+          "proposed_index_sha256",
+          "removed_resource_keys",
+          "consumed_file_count"
+        ],
+        "properties": {
+          "previous_index": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndex"
+              },
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndexV2"
+              }
+            ],
+            "description": "Complete previous authorial membership and version; null only when the index was absent."
+          },
+          "proposed_index": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndex"
+              },
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndexV2"
+              }
+            ],
+            "description": "Complete index after the explicit numeric selector; label and ordered registrations are preserved from the bundle."
+          },
+          "supplied_index_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex",
+            "description": "SHA256 of the supplied index normalized by exact Index::bytes, including final LF; not raw snapshot bytes."
+          },
+          "proposed_index_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex",
+            "description": "SHA256 of exact proposed Index::bytes after the explicit no-downgrade selector; binds the index BatchTarget exact_bytes_sha256, independent of resource bytes."
+          },
+          "removed_resource_keys": {
+            "type": "array",
+            "maxItems": 1000,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+              "description": "Stable local key (1-64 characters, lowercase alphanumeric with interior hyphens, no leading or trailing hyphen), unique within the index, used by API resource metadata and effect previews."
+            },
+            "description": "Every previous key absent from the proposed index, in previous index order; no truncation."
+          },
+          "consumed_file_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Complete distinct admitted project-file path union: current registrations, incoming resource targets, present target bases and the restore index target including explicit absence. Same path counts once; portable aliases reject. Absent incoming files count as planned targets even though they were not opened. This conservative source-restore count differs from the unchanged metadata-only physical-file projection."
+          }
+        },
+        "description": "Complete source-restore index replacement disclosure. Both full index objects, normalized hashes, every ordered removal and complete admitted path count are disclosed without truncation. Removed registrations do not authorize deletion of their files. Source data and metadata are sensitive; admission is not reviewer or lifecycle authority."
       }
     },
     "securitySchemes": {
@@ -5177,12 +6037,12 @@
     }
   },
   "info": {
-    "description": "Normative, contract-authored OpenAPI 3.1 description of the PRD 062 local web workspace API. Normative contract ownership is independent of handler/UI implementation; this artifact is the single source of truth for /api/v2 product behavior; handlers, fixtures, generated or type-checked clients, and the bundled UI must not drift from it. Contract ownership and drift enforcement are recorded in docs/adr/0001-openapi-contract-ownership.md (authored in parallel; referenced by path only). The governed product contract is docs/PRD/062-prd-local-web-workspace.md, in particular \"Golden Path and Information Architecture\", \"Workspace, Data, and Authority Model\", \"Trust Model and Security Boundaries\", \"API-First Architecture and Shared Application-Service Boundary\", \"Write Preview and Transaction Model\", and the \"MVP API Capability Matrix\" table.\nTransport rules (normative):\n- The server binds exactly one OS-assigned port on 127.0.0.1 only;\n  never 0.0.0.0, ::, a LAN address, or the hostname localhost, with no\n  configurable host flag. Every request must carry the exact Host value\n  127.0.0.1:<assigned-port>; DNS names, alternate ports, forwarded-host\n  headers, and proxy routing are rejected generically before\n  authorization.\n- No CORS. Browser state-changing requests additionally require the\n  exact session Origin, appropriate Fetch Metadata, and a non-simple\n  JSON content type. All API and project-derived responses use no-store.\n- Static bootstrap assets (locked shell and unlock form) are served\n  outside /api/v2, may be unauthenticated, and contain no project data.\n  The machine bootstrap is a one-line sensitive JSON descriptor printed\n  on stdout by `forge workspace --project <DIR> --machine-session --api-major 2`,\n  also outside /api/v2.\n- Exactly one operation is callable without a bearer capability:\n  POST /api/v2/session/unlock. Everything else requires the scoped\n  capability described by the capabilityBearer security scheme.\n- Versioned project files on disk are authoritative. No hidden\n  database, no arbitrary path read/write endpoints, no shell or\n  subprocess endpoints, no remote fetch of any kind.\n\nCross-cutting semantics (normative, enforced per operation below):\n- Strong versioning: every mutable resource response carries an opaque\n  strong `version` (an ETag equivalent conveyed in the body). Every\n  mutation observes a version and fails with the typed version-conflict\n  error, including the current resource_version, on mismatch.\n  Last-write-wins is prohibited.\n- Idempotency: requests that create a preview, an operation, or commit\n  an effect require a client-generated Idempotency-Key header. A retry\n  with the same key and identical content returns the original preview,\n  operation, or commit result without repeating the effect; reuse of a\n  key with different content fails with idempotency-key-conflict.\n- Two-step effects: material writes happen only through a preview\n  (exact target, create/overwrite status, base/target and input hashes,\n  validation diagnostics, semantic summary, escaped text diff) followed\n  by a commit presenting a one-time receipt bound to the session,\n  operation type, destination identity, base hash, input hashes, and\n  exact-byte hash. Commits revalidate every binding.\n- Operations: bounded long-running work is a queryable Operation with a\n  stable ID, a pending|running|succeeded|failed|cancelled state machine,\n  a typed terminal result, safe cancellation, and enough state to\n  determine whether a write committed after a lost response.\n- Pagination: collections use a deterministic opaque-cursor envelope\n  (page.items, page.next_cursor, page.total_matching) with bounded page\n  size and documented stable sort and filter fields; traversal of an\n  unchanged resource version neither duplicates nor omits items.\n- Errors: a closed envelope with a stable machine-readable code, safe\n  message, optional resource/field pointers, retryability, correlation\n  id, and current resource version when relevant. Errors never contain\n  capabilities, absolute paths, raw source excerpts, or Rust debug\n  strings.\n- Read-only sessions: when the session capability is read-only, every\n  mutation returns the typed read-only-session error and no project\n  file changes.\nExplicit --api-major 2 serves only this namespace. API1 remains available by default in a separate launch. Index1/2 are independently closed; launch never migrates files. Lifecycle/impact roles grant intrinsic registration and metadata only; the later captured read services remain separately gated.",
+    "description": "Normative, contract-authored OpenAPI 3.1 description of the PRD 062 local web workspace API. Normative contract ownership is independent of handler/UI implementation; this artifact is the single source of truth for /api/v2 product behavior; handlers, fixtures, generated or type-checked clients, and the bundled UI must not drift from it. Contract ownership and drift enforcement are recorded in docs/adr/0001-openapi-contract-ownership.md (authored in parallel; referenced by path only). The governed product contract is docs/PRD/062-prd-local-web-workspace.md, in particular \"Golden Path and Information Architecture\", \"Workspace, Data, and Authority Model\", \"Trust Model and Security Boundaries\", \"API-First Architecture and Shared Application-Service Boundary\", \"Write Preview and Transaction Model\", and the \"MVP API Capability Matrix\" table.\nTransport rules (normative):\n- The server binds exactly one OS-assigned port on 127.0.0.1 only;\n  never 0.0.0.0, ::, a LAN address, or the hostname localhost, with no\n  configurable host flag. Every request must carry the exact Host value\n  127.0.0.1:<assigned-port>; DNS names, alternate ports, forwarded-host\n  headers, and proxy routing are rejected generically before\n  authorization.\n- No CORS. Browser state-changing requests additionally require the\n  exact session Origin, appropriate Fetch Metadata, and a non-simple\n  JSON content type. All API and project-derived responses use no-store.\n- Static bootstrap assets (locked shell and unlock form) are served\n  outside /api/v2, may be unauthenticated, and contain no project data.\n  The machine bootstrap is a one-line sensitive JSON descriptor printed\n  on stdout by `forge workspace --project <DIR> --machine-session --api-major 2`,\n  also outside /api/v2.\n- Exactly one operation is callable without a bearer capability:\n  POST /api/v2/session/unlock. Everything else requires the scoped\n  capability described by the capabilityBearer security scheme.\n- Versioned project files on disk are authoritative. No hidden\n  database, no arbitrary path read/write endpoints, no shell or\n  subprocess endpoints, no remote fetch of any kind.\n\nCross-cutting semantics (normative, enforced per operation below):\n- Strong versioning: every mutable resource response carries an opaque\n  strong `version` (an ETag equivalent conveyed in the body). Every\n  mutation observes a version and fails with the typed version-conflict\n  error, including the current resource_version, on mismatch.\n  Last-write-wins is prohibited.\n- Idempotency: requests that create a preview, an operation, or commit\n  an effect require a client-generated Idempotency-Key header. A retry\n  with the same key and identical content returns the original preview,\n  operation, or commit result without repeating the effect; reuse of a\n  key with different content fails with idempotency-key-conflict.\n- Two-step effects: material writes happen only through a preview\n  (exact target, create/overwrite status, base/target and input hashes,\n  validation diagnostics, semantic summary, escaped text diff) followed\n  by a commit presenting a one-time receipt bound to the session,\n  operation type, destination identity, base hash, input hashes, and\n  exact-byte hash. Commits revalidate every binding.\n- Operations: bounded long-running work is a queryable Operation with a\n  stable ID, a pending|running|succeeded|failed|cancelled state machine,\n  a typed terminal result, safe cancellation, and enough state to\n  determine whether a write committed after a lost response.\n- Pagination: collections use a deterministic opaque-cursor envelope\n  (page.items, page.next_cursor, page.total_matching) with bounded page\n  size and documented stable sort and filter fields; traversal of an\n  unchanged resource version neither duplicates nor omits items.\n- Errors: a closed envelope with a stable machine-readable code, safe\n  message, optional resource/field pointers, retryability, correlation\n  id, and current resource version when relevant. Errors never contain\n  capabilities, absolute paths, raw source excerpts, or Rust debug\n  strings.\n- Read-only sessions: when the session capability is read-only, every\n  mutation returns the typed read-only-session error and no project\n  file changes.\nExplicit --api-major 2 serves only this namespace. API1 remains available by default in a separate launch. Index1/2 are independently closed; launch never migrates files. Lifecycle/impact roles grant intrinsic registration and metadata only; the later captured read services remain separately gated.\nAPI 2.3 adds six explicitly acknowledged source-containing export and confirmed batch restore operations. The source profile is explicit bundle/3 and does not alter metadata bundle/1 or bundle/2. Batch restore has a separate DTO/state contract and a private durable outcome journal; it is not a domain database or a revived session receipt. All workspace project-data captures and commits are fenced by the same Root transaction barrier. External CLI/editor readers can observe mixed whole-file generations during index-last publication unless an independently implemented and qualified shared barrier is used; no all-CLI participation is implied. No source-containing export occurs by default.",
     "license": {
       "name": "MIT"
     },
     "title": "FORGE Local Workspace API",
-    "version": "2.2.0"
+    "version": "2.3.0"
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "openapi": "3.1.0",
@@ -7025,7 +7885,7 @@
       "get": {
         "operationId": "getLifecycleRecords",
         "summary": "getLifecycleRecords",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
         "tags": [
           "Lifecycle"
         ],
@@ -7123,7 +7983,7 @@
       "get": {
         "operationId": "getLifecycleRecord",
         "summary": "getLifecycleRecord",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
         "tags": [
           "Lifecycle"
         ],
@@ -7197,7 +8057,7 @@
       "get": {
         "operationId": "getLifecycleHistory",
         "summary": "getLifecycleHistory",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
         "tags": [
           "Lifecycle"
         ],
@@ -7265,7 +8125,7 @@
       "get": {
         "operationId": "getLifecycleQueue",
         "summary": "getLifecycleQueue",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Detail and owner queue require an explicit date. Inventory without a date and recorded history do not assert current freshness. Computed status validates the complete portfolio and captured artifacts.",
         "tags": [
           "Lifecycle"
         ],
@@ -7347,7 +8207,7 @@
       "get": {
         "operationId": "getFrameworkImpactComparisons",
         "summary": "getFrameworkImpactComparisons",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
         "tags": [
           "Framework Impact"
         ],
@@ -7406,7 +8266,7 @@
       "get": {
         "operationId": "getFrameworkImpactComparison",
         "summary": "getFrameworkImpactComparison",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
         "tags": [
           "Framework Impact"
         ],
@@ -7468,7 +8328,7 @@
       "get": {
         "operationId": "getFrameworkImpactChanges",
         "summary": "getFrameworkImpactChanges",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
         "tags": [
           "Framework Impact"
         ],
@@ -7552,7 +8412,7 @@
       "get": {
         "operationId": "getFrameworkImpactFindings",
         "summary": "getFrameworkImpactFindings",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
         "tags": [
           "Framework Impact"
         ],
@@ -7676,7 +8536,7 @@
       "get": {
         "operationId": "getFrameworkImpactPriorDispositions",
         "summary": "getFrameworkImpactPriorDispositions",
-        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1\u2013200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
+        "description": "Use one complete immutable registration capture and its preflighted dependency closure. No unregistered reads, effect store or project mutation. One 10-second admission deadline includes blocking-worker wait, capture, domain work and response validation/encoding. Responses are at most 4 MiB, with pages of 1–200 items, complete counts and no hidden prefix. Cursors bind endpoint, selected resource, explicit date, filters, page size and capture; changed inputs return version-conflict. Source excerpts, titles, rationale, party names, private paths and credentials are excluded; declared owner/actor keys and hashes remain sensitive metadata. Current comparisons use the shared analysis engine over captured inputs. Limited prior-report admission does not establish full schema or current freshness. Findings apply all five exact AND filters without changing complete summaries or dispositions.",
         "tags": [
           "Framework Impact"
         ],
@@ -7976,6 +8836,508 @@
             }
           }
         }
+      }
+    },
+    "/api/v2/project/source-bundle-exports": {
+      "post": {
+        "operationId": "prepareProjectSourceBundleExport",
+        "summary": "Prepare an explicitly acknowledged exact source bundle",
+        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable preparation requires both sensitivity and source-content acknowledgments. Uses existing export Operation/ExportResult with report-export preview, removed_categories:[] and a private SourceBundleJson family; source bytes and metadata are intentionally retained. Complete confined registrations are captured once; no native validity/freshness or authority is inferred merely by export. Whole100 admitted files/50MiB union,10MiB file cap,1MiB artifact/147 envelope and20MiB/256-record/600-second shared retention are enforced without prefixing or cap increases. Guarded destination rejects index/registered input before its read. The existing single-file commit publishes this exported artifact only; it does not perform a restore. Source export planning conservatively counts the selected output target even when absent, plus the index target and all current registered paths, before project resource or output reads. A distinct output and present index permit at most 98 registered resources; the codec limit of 99 does not guarantee every export fits. Old metadata export accounting is unchanged.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission. Matching pending preparation uses retryable bundle-preparation-in-progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "description": "Only bounded strict application/json requests are admitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Qualified state/primitive unavailable or cooperative work interruption/recovery failure; no unsafe fallback. Before acceptance failures do not dispatch a native transaction. Accepted settlement status must be queried under the preknown identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Existing export Operation; typed succeeded ExportResult contains the original single-file EffectPreview. No exported artifact is published before its normal receipt commit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareProjectSourceBundleExportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/source-bundle-exports/{operation_id}/download": {
+      "get": {
+        "operationId": "downloadProjectSourceBundleExport",
+        "summary": "Download exact committed opt-in source JSON",
+        "description": "Authenticated API2.3 same-creating-session/major read including read-only capability. No query, body or Idempotency-Key. Only a committed, unchanged SourceBundleJson private-family artifact qualifies; HTML/metadata-family, uncommitted, foreign and drifted artifacts reject. Exact file bytes are returned without reserialization with the fixed safe filename forge-workspace-index-and-source-content.json, no-store/nosniff/security headers. Source content and metadata are sensitive.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission. Matching pending preparation uses retryable bundle-preparation-in-progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "503": {
+            "description": "Qualified state/primitive unavailable or cooperative work interruption/recovery failure; no unsafe fallback. Before acceptance failures do not dispatch a native transaction. Accepted settlement status must be queried under the preknown identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Exact committed source bundle JSON, including intentionally disclosed source content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceSourceBundle3"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "description": "Fixed safe attachment name.",
+                "schema": {
+                  "type": "string",
+                  "const": "attachment; filename=\"forge-workspace-index-and-source-content.json\""
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "const": "nosniff"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ]
+      }
+    },
+    "/api/v2/project/source-bundle-imports": {
+      "post": {
+        "operationId": "prepareProjectSourceBundleImport",
+        "summary": "Inspect complete exact source restore before confirmation",
+        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable direct preparation under one immutable10-second budget admitted before body read/queue/capture; all decode/domain/response/retention fences consume it. No parser/syscall preemption guarantee. bundle/3 raw bytes<=1048429 and147 canonical wrapper bytes keep request<=1MiB; duplicated or escaped duplicate keys reject before reconstruction. Explicit numeric index selector preserves1 or upgrades1to2; current/supplied2 cannot downgrade. Complete current/incoming/base path union<=100 is admitted before resource reads, capture<=50MiB and shared conservative retention<=20MiB; no100-prefix. Incoming bytes are inert until the complete proposed registered dependency closure is independently admitted. Missing/stale/unadmitted closure fails; ApplicabilityReport fallback, if needed, must equal PROPOSED analysis exactly, never current Snapshot.analysis. Existing/new directory intents<=100 are included. Ready idempotent retries replay original receipt without lifetime extension; matching pending uses existing bundle-preparation-in-progress. Preparation returns a preknown nonauthorizing outcome ID but persists no accepted intent. Source-content and metadata sensitivity acknowledgments do not confer reviewer authority.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission. Matching pending preparation uses retryable bundle-preparation-in-progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "description": "Only bounded strict application/json requests are admitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Qualified state/primitive unavailable or cooperative work interruption/recovery failure; no unsafe fallback. Before acceptance failures do not dispatch a native transaction. Accepted settlement status must be queried under the preknown identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete typed response; preparation and lookup do not themselves publish project files.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSourceBundleImportPreview"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareProjectSourceBundleImportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/bundle-restores/{preview_id}/commit": {
+      "post": {
+        "operationId": "commitProjectSourceBundleRestore",
+        "summary": "Confirm an exact bounded multi-file source restore",
+        "description": "Only explicit API2.3; no query parameters. Exact selected namespace, scoped capability, Host/Origin/Fetch Metadata, strict closed request, media and Idempotency-Key admission precede work. Existing API1 and metadata routes preserve their contracts. Writable one-time same-session receipt and observed_batch_version plus explicit exact-restore acknowledgment authorize only the disclosed opaque owned plan. Complete source/input/absence/identity/parent/current snapshot bindings revalidate under exclusive Root project-data barrier. Durable accepted intent and the preknown operation_id/outcome slot exist BEFORE202; matching retry never repeats effects or replaces its deadline. Forward budget30seconds from acceptance; separate settlement30seconds cannot reenable forward work. Qualified private per-user state is checked before credential/listener startup; no public state path, permission weakening or untrusted fallback. Stage exact new bytes and exact old backups; record ownership and explicit directories; publish resources in authorial order,index last; verify whole proposed generations before durable committed decision/result. Before decision failure/cancel/deadline performs conditional rollback of owned instances only; never overwrite a foreign replacement. Only verified rollback can claim none/failed/cancelled. After committed decision report committed with separate cleanup status, never pretend no write. Unknown ownership/durability/rollback or unreconciled cleanup blocks workspace project-data access and reports recovery-required. Captures/commits inside workspace share barrier; external CLI/editor readers may observe mixed whole-file generations, not a globally atomic transaction. Larger transfers and cross-platform crash/rollback qualification remain required follow-through.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission. Matching pending preparation uses retryable bundle-preparation-in-progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "description": "Only bounded strict application/json requests are admitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Qualified state/primitive unavailable or cooperative work interruption/recovery failure; no unsafe fallback. Before acceptance failures do not dispatch a native transaction. Accepted settlement status must be queried under the preknown identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Durably accepted original transaction and stable preknown ID; no claim the writes have already committed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRestoreOperation"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PreviewIdPath"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitSourceRestoreRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/bundle-restores/{operation_id}": {
+      "get": {
+        "operationId": "getProjectSourceBundleRestore",
+        "summary": "Recover a source restore outcome by preknown identifier",
+        "description": "Authenticated selectedAPI2.3 read, including read-only scope. No body,query or Idempotency-Key. Before durable accepted intent the preallocated nonauthorizing ID returns404. Accepted/persisted sanitized outcomes require fresh same-qualified-root and current session read authority after a lost202 or restart. Old receipt/token/session authority is never revived. Pending numeric progress is only fully verified staged files; terminal monotonic state separates write_outcome and cleanup. Verified rollback reports none; durable commit reports committed; ambiguity remains unknown/recovery-required. Finished outcome retention is bounded600seconds/256slots; unresolved cleanup/journal material holds reserved bounded capacity and is never silently evicted. Not-found/expiry cannot prove no write or justify automatic reexecution.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission. Matching pending preparation uses retryable bundle-preparation-in-progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "503": {
+            "description": "Qualified state/primitive unavailable or cooperative work interruption/recovery failure; no unsafe fallback. Before acceptance failures do not dispatch a native transaction. Accepted settlement status must be queried under the preknown identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete typed response; preparation and lookup do not themselves publish project files.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRestoreOperation"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ]
+      }
+    },
+    "/api/v2/project/bundle-restores/{operation_id}/cancel": {
+      "post": {
+        "operationId": "cancelProjectSourceBundleRestore",
+        "summary": "Request safe cancellation before the restore decision",
+        "description": "Authenticated selectedAPI2.3 writable request with no body,query or Idempotency-Key. Cancellation is sticky before the durable committed decision; acknowledgment can remain pending/running and is not terminal no-write proof. Worker clears numeric progress outside measured staging, enters separately bounded settlement and conditionally restores owned old generations. Only verified rollback settles cancelled/write_outcome none. After commit decision return409 operation-not-cancellable; late requests never change committed outcome or terminal state. Unverified rollback/cleanup remains recovery-required with current outcome facts.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission. Matching pending preparation uses retryable bundle-preparation-in-progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "description": "Only bounded strict application/json requests are admitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Qualified state/primitive unavailable or cooperative work interruption/recovery failure; no unsafe fallback. Before acceptance failures do not dispatch a native transaction. Accepted settlement status must be queried under the preknown identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Complete typed response; preparation and lookup do not themselves publish project files.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRestoreOperation"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ]
       }
     }
   },

@@ -25,6 +25,8 @@ pub(crate) enum ArtifactFamily {
     ReportHtml,
     /// Explicit index-and-hashes metadata, including sensitive labels and paths.
     MetadataJson,
+    /// Exact source content, with a distinct fixed JSON download route.
+    SourceBundleJson,
 }
 /// Session-bound proposed bytes and captured inputs for one explicit confirmed write.
 struct Receipt {
@@ -46,7 +48,18 @@ struct Replay {
     status: u16,
 }
 /// One off-lock preparation owner, bound to the same request hash as ready replays.
+/// Pending preparations may drop their reservation; accepted restore attempts cannot.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PendingKind {
+    /// Unaccepted off-lock preparation with no durable intent.
+    Preparation,
+    /// One consumed source confirmation at the durable acceptance boundary.
+    Restore,
+}
+/// In-flight idempotency reservation; its kind controls whether retries may release ownership.
 struct PendingReplay {
+    /// Governs safe retry/drop behavior independently of the canonical request.
+    kind: PendingKind,
     /// Canonical method, public path, query and admitted Value fingerprint.
     request_hash: String,
     /// Unique generation prevents stale workers from removing newer state.
@@ -60,10 +73,14 @@ pub(crate) struct Store {
     replays: BTreeMap<String, Replay>,
     /// Reserved keys share the existing replay capacity with terminal results.
     pending_replays: BTreeMap<String, PendingReplay>,
+    /// Source capabilities/outcomes share all original retention ceilings.
+    sources: source_receipts::SourceStore,
     retained_bytes: usize,
     /// Last complete capture count and immutable denominator for each active job.
     capture_progress: BTreeMap<String, (usize, usize)>,
 }
+#[path = "source_receipts.rs"]
+mod source_receipts;
 fn unavailable() -> Error {
     Error::new("not-found", "The session operation or preview was not found.", false)
 }
@@ -112,6 +129,13 @@ impl Store {
         if let Some(record) = self.pending_replays.get(key) {
             if record.request_hash != request_hash(method, path, query, request)? {
                 return Err(idempotency_conflict());
+            }
+            if record.kind == PendingKind::Restore {
+                return Err(Error::new(
+                    "bundle-restore-in-progress",
+                    "This consumed confirmation is unresolved. Inspect the preallocated operation ID before taking further action.",
+                    false,
+                ));
             }
             return Err(Error::new(
                 "bundle-preparation-in-progress",
@@ -177,14 +201,18 @@ impl Store {
         }
         let nonce = id("prep")?;
         let request_hash = request_hash(method, path, query, request)?;
-        self.pending_replays
-            .insert(key.to_owned(), PendingReplay { request_hash, nonce: nonce.clone() });
+        self.pending_replays.insert(
+            key.to_owned(),
+            PendingReplay { request_hash, nonce: nonce.clone(), kind: PendingKind::Preparation },
+        );
         Ok(nonce)
     }
 
     /// Release only this generation; a late worker never erases newer or ready state.
     pub(crate) fn release_reservation(&mut self, key: &str, nonce: &str) {
-        if self.pending_replays.get(key).is_some_and(|pending| pending.nonce == nonce) {
+        if self.pending_replays.get(key).is_some_and(|pending| {
+            pending.nonce == nonce && pending.kind == PendingKind::Preparation
+        }) {
             self.pending_replays.remove(key);
         }
     }
@@ -218,9 +246,11 @@ impl Store {
         }
         let retained =
             self.retained_bytes.checked_add(local.retained_bytes).ok_or_else(capacity)?;
-        if self.receipts.len().saturating_add(local.receipts.len()) > MAX_RETAINED
+        if self.receipt_count().saturating_add(local.receipt_count()) > MAX_RETAINED
             || retained > MAX_PREVIEW_BYTES
             || !local.operations.is_empty()
+            || local.sources.receipt_count() != 0
+            || local.sources.operation_count() != 0
             || !local.replays.is_empty()
             || !local.pending_replays.is_empty()
             || local.receipts.keys().any(|id| self.receipts.contains_key(id))
@@ -251,7 +281,7 @@ impl Store {
         {
             return Err(too_many_inputs());
         }
-        if self.receipts.len() >= MAX_RETAINED || plan.bytes.len() > 10 * 1024 * 1024 {
+        if self.receipt_count() >= MAX_RETAINED || plan.bytes.len() > 10 * 1024 * 1024 {
             return Err(capacity());
         }
         let preview_id = id("prev")?;
@@ -317,7 +347,7 @@ impl Store {
         if inputs.len() > MAX_CONSUMED_INPUTS {
             return Err(too_many_inputs());
         }
-        if self.receipts.len() >= MAX_RETAINED
+        if self.receipt_count() >= MAX_RETAINED
             || bytes.len() > 10 * 1024 * 1024
             || self.retained_bytes.saturating_add(bytes.len()) > MAX_PREVIEW_BYTES
         {
@@ -423,8 +453,9 @@ impl Store {
         operation["updated_at"] = json!(now());
         Ok(operation.clone())
     }
+    /// Allocate one validated pending operation within the shared metadata/source record quota.
     pub(crate) fn begin(&mut self, kind: &str) -> Result<Value> {
-        if self.operations.len() >= MAX_RETAINED {
+        if self.operation_count() >= MAX_RETAINED {
             return Err(capacity());
         }
         let id = id("op")?;
@@ -499,7 +530,7 @@ impl Store {
             operation["cancel_requested"] = json!(true);
         } else {
             let prepared = prepared.and_then(|(local, reply)| {
-                if self.receipts.len() + local.receipts.len() > MAX_RETAINED
+                if self.receipt_count().saturating_add(local.receipt_count()) > MAX_RETAINED
                     || self.retained_bytes.saturating_add(local.retained_bytes) > MAX_PREVIEW_BYTES
                 {
                     return Err(capacity());
@@ -545,8 +576,9 @@ impl Store {
         }
         Ok(())
     }
+    /// Retain one validated completed operation under the same shared record admission.
     pub(crate) fn completed(&mut self, kind: &str, mut result: Value) -> Result<Value> {
-        if self.operations.len() >= MAX_RETAINED {
+        if self.operation_count() >= MAX_RETAINED {
             return Err(capacity());
         }
         let operation_id = id("op")?;
@@ -576,7 +608,7 @@ impl Store {
         stopped: &std::sync::atomic::AtomicBool,
         api_major: contract::ApiMajor,
     ) -> Result<Value> {
-        if self.operations.len() >= MAX_RETAINED {
+        if self.operation_count() >= MAX_RETAINED {
             return Err(capacity());
         }
         let token = request["receipt"].as_str().ok_or_else(Error::invalid)?;
@@ -657,6 +689,11 @@ impl Store {
     /// Serve only committed metadata bytes through the new fixed JSON route.
     pub(crate) fn download_metadata(&self, root: &Root, operation_id: &str) -> Result<Vec<u8>> {
         self.download_family(root, operation_id, ArtifactFamily::MetadataJson)
+    }
+
+    /// Serve source bytes exclusively through their producer-owned fixed family.
+    pub(crate) fn download_source(&self, root: &Root, operation_id: &str) -> Result<Vec<u8>> {
+        self.download_family(root, operation_id, ArtifactFamily::SourceBundleJson)
     }
 
     /// Select a private producer family before reading exact current committed bytes.

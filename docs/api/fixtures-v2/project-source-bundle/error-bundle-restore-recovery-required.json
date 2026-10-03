@@ -1,0 +1,5 @@
+{
+  "code": "bundle-restore-recovery-required",
+  "message": "Source restore requires recovery before further project access.",
+  "retryable": false
+}
