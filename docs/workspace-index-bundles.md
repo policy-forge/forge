@@ -136,9 +136,11 @@ Malformed/unsupported bundle or request shape, pin-order/bijection errors and an
 ## Remaining workflow and acceptance
 
 This metadata consumer supplies browser preview, an acknowledged local metadata
-download and registered comparison. Receipt-backed server export/publication,
-source-content export, confirmed writable import, reviewed batch input binding
-and retention/capacity qualification remain open. Full PRD 062 S-6 remains open.
+download and registered comparison. Explicit API2 sessions separately support
+[confirmed metadata receipts and index replacement](workspace-bundle-receipts.md),
+and API2.3 adds [opt-in exact-source export and reviewed source restore](workspace-source-bundles.md).
+Full retention/capacity, larger-transfer and cross-platform transaction
+qualification remain open. Full PRD 062 S-6 remains open.
 The 100-consumed-input effect cap and existing dependency/approval boundaries
 are unchanged. API v1 and bundle1 retain their seven-role closed contract.
 
@@ -162,4 +164,4 @@ pin bijection, normalized hashing, sensitivity acknowledgment, download/POST/cap
 bounds and registered-only comparison remain the same. New-role admission profiles
 grant no freshness or approval. See [v2 migration guidance](api/migration-v2.md).
 
-API2 contract 2.2.0 separately offers [confirmed metadata export and complete index replacement](workspace-bundle-receipts.md). Those acknowledged preparations require a writable session and an exact receipt; they use their own whole-effect bounds. These existing queries retain their read-only semantics and do not restore source contents. Full source-content and multi-file import remain required S-6 work.
+API2 contracts 2.2.0 and 2.3.0 separately offer [confirmed metadata export and complete index replacement](workspace-bundle-receipts.md). Those acknowledged preparations require a writable session and an exact receipt; they use their own whole-effect bounds. API2.3 also offers the separate [source workflow](workspace-source-bundles.md), with explicit content opt-in, complete batch review and durable known-ID recovery. The existing metadata queries retain their read-only, source-excluding semantics. Larger transfers, complete capacity and cross-platform crash/rollback qualification remain required S-6 work.

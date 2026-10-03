@@ -854,6 +854,160 @@
       "schema": "openapi:components/schemas/ExportResult",
       "expectation": "valid",
       "description": "Existing export result shape and source-excerpts category; private artifact family is not a public enum."
+    },
+    {
+      "file": "project-source-bundle/bundle-empty-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "valid",
+      "description": "Finite empty grammar example; standalone synthetic schema fixture, not captured or domain-authorized bytes."
+    },
+    {
+      "file": "project-source-bundle/bundle-opaque-grammar-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "valid",
+      "description": "Exact opaque bytes grammar; export does not infer valid Markdown/domain admission from it. Import domain refusal remains native."
+    },
+    {
+      "file": "project-source-bundle/bundle-profile-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Closed fixed source-profile property rejects this valid JSON document."
+    },
+    {
+      "file": "project-source-bundle/bundle-source-flag-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Closed fixed source-profile property rejects this valid JSON document."
+    },
+    {
+      "file": "project-source-bundle/bundle-unknown-field-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Closed fixed source-profile property rejects this valid JSON document."
+    },
+    {
+      "file": "project-source-bundle/bundle-uppercase-hex-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Only lowercase canonical even-length hex is allowed."
+    },
+    {
+      "file": "project-source-bundle/bundle-wrong-hash-native-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "valid",
+      "description": "Schema-shaped but intrinsically invalid exact decoded fingerprint; actual strict decoder must reject. No schema-only validity is native admission."
+    },
+    {
+      "file": "project-source-bundle/import-explicit-upgrade-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareProjectSourceBundleImportRequest",
+      "expectation": "valid",
+      "description": "Explicit incoming1 to target2 selection; current index no-downgrade is separately checked natively."
+    },
+    {
+      "file": "project-source-bundle/import-index2-downgrade-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareProjectSourceBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Closed conditional refuses incoming2 selector1; current2 selector1 remains native refusal."
+    },
+    {
+      "file": "project-source-bundle/export-acknowledgments-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareProjectSourceBundleExportRequest",
+      "expectation": "valid",
+      "description": "Explicit writable source export acknowledgment, not a download or committed export."
+    },
+    {
+      "file": "project-source-bundle/restore-preview-preknown-id-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestorePreview",
+      "expectation": "valid",
+      "description": "Preknown lookup ID exists before confirmation; synthetic token/versions never authorize a real write."
+    },
+    {
+      "file": "project-source-bundle/restore-preview-missing-lookup-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestorePreview",
+      "expectation": "invalid",
+      "description": "Required preknown ID prevents losing lookup authority merely because202 was lost."
+    },
+    {
+      "file": "project-source-bundle/import-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectSourceBundleImportPreview",
+      "expectation": "valid",
+      "description": "Complete wrapped source preparation; native renderer checks all exact preview/index/binding cross-relations."
+    },
+    {
+      "file": "project-source-bundle/restore-commit-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CommitSourceRestoreRequest",
+      "expectation": "valid",
+      "description": "One-time same-session confirmation request, synthetic fixture only."
+    },
+    {
+      "file": "project-source-bundle/restore-pending-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "valid",
+      "description": "Pending accepted outcome has no committed result, progress or cleanup assertion."
+    },
+    {
+      "file": "project-source-bundle/restore-succeeded-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "valid",
+      "description": "Durable committed decision is distinct from exact native journal/cleanup proof, which actual runtime must establish."
+    },
+    {
+      "file": "project-source-bundle/restore-recovery-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "valid",
+      "description": "Unknown outcome and unverified cleanup must remain explicit, without pretending no write."
+    },
+    {
+      "file": "project-source-bundle/restore-legacy-kind-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "invalid",
+      "description": "Separate batch kind leaves old Operation enum unchanged."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-unavailable.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-in-progress.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-budget-exceeded.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-recovery-required.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
     }
   ]
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Proposed real-loopback2.2 companion, root-executed only; no source-content or multifile restoration."""
+"""Real-loopback API2 2.2/2.3 metadata companion; no source-content or multifile restoration."""
 import argparse
 import hashlib
 import http.client
@@ -15,6 +15,13 @@ def require(condition, message):
     """Fail with a static redacted explanation, never a wire capability, payload or filesystem path."""
     if not condition:
         raise RuntimeError(message)
+
+
+def require_metadata_version(client):
+    """Return the observed supported metadata version only for an explicitly selected API2 session."""
+    version=client._contract_version
+    require(client._api_major==2 and version in ("2.2.0", "2.3.0"),"Metadata companion requires selected API2 2.2.0 or 2.3.0")
+    return version
 
 
 def confirm(client, preview):
@@ -41,7 +48,7 @@ def project_bytes(project):
 
 def raw_import(client, body, *, chunked=False, declared_length=None):
     """Send actual bounded loopback bytes, or an oversized declared header, without mocked observations."""
-    require(client._api_major==2 and client._contract_version=="2.2.0","Raw boundary driver requires its owned2.2 session")
+    require_metadata_version(client)
     require(type(body) is bytes,"Raw boundary driver requires original bytes")
     delay=client._next_request_at-time.monotonic()
     if delay>0:
@@ -147,7 +154,7 @@ def campaign(forge):
         (project/"forge.workspace.json").write_text(json.dumps(index,indent=2)+"\n",encoding="utf-8")
         initial_index=(project/"forge.workspace.json").read_bytes()
         with Workspace(forge,project,read_only=False,api_major=2) as client:
-            require(client._contract_version=="2.2.0","This companion requires exact API2 2.2.0")
+            observed_contract_version=require_metadata_version(client)
             bundle=client.bundle_preview()["bundle"]
             require(len(bundle["pins"])==2,"Complete supplied denominator differs")
             checks.append("actual_complete_bundle_query")
@@ -180,6 +187,7 @@ def campaign(forge):
             shutdown(client)
         retained={path.name:path.read_bytes() for path in project.iterdir() if path.is_file()}
         with Workspace(forge,project,read_only=True,api_major=2) as client:
+            require(require_metadata_version(client)==observed_contract_version,"Readonly session negotiated a different metadata contract version")
             require(client.bundle_preview()["bundle"]["index"]["schema_version"]=="forge.workspace/2","Readonly query lost index2 pairing")
             for preparation in (lambda:client.prepare_bundle_export("readonly-output.json",acknowledge_sensitive_metadata=True,idempotency_key=str(uuid.uuid4())),
                                 lambda:client.prepare_bundle_import(downloaded,target_index_schema_version=2,acknowledge_index_replacement=True,idempotency_key=str(uuid.uuid4()))):
@@ -193,7 +201,7 @@ def campaign(forge):
             shutdown(client)
         require({path.name:path.read_bytes() for path in project.iterdir() if path.is_file()}==retained,"Readonly session changed files")
         checks.append("readonly_and_shutdown_preserve_files")
-    return {"format":"forge-s6-native-client-proposed/2","status":"passed","checks":checks}
+    return {"format":"forge-s6-native-client-proposed/3","status":"passed","contract_version":observed_contract_version,"checks":checks}
 
 
 def main():
@@ -202,7 +210,7 @@ def main():
     try:
         result=campaign(args.forge)
     except Exception:
-        print(json.dumps({"format":"forge-s6-native-client-proposed/2","status":"failed","reason":"S6 companion failed; inspect the private root job"}))
+        print(json.dumps({"format":"forge-s6-native-client-proposed/3","status":"failed","reason":"S6 companion failed; inspect the private root job"}))
         return 1
     print(json.dumps(result));return 0
 

@@ -5,7 +5,7 @@
     "mode": "browser",
     "read_only": false,
     "api_major": 2,
-    "contract_version": "2.2.0",
+    "contract_version": "2.3.0",
     "project_label": "Acme ISMS project",
     "launched_at": "2026-09-08T14:02:00Z"
   }

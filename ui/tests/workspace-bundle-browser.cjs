@@ -1,4 +1,4 @@
-/** Exercise actual installed Chrome against one explicitly owned native browser-mode2.2 session. */
+/** Exercise actual installed Chrome against one matching native metadata API2 2.2 or2.3 session. */
 const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const {createHash}=require('node:crypto');
 const [origin,mode,project,incoming,out,root]=process.argv.slice(2);
 assert.match(origin,/^http:\/\/127\.0\.0\.1:[0-9]+$/);assert(['writable','read-only'].includes(mode));
@@ -15,7 +15,7 @@ function files(directory=project,prefix=''){
 }
 const sourceJS=fs.readFileSync(path.join(root,'ui/workspace.js'));const sourceCSS=fs.readFileSync(path.join(root,'ui/workspace.css'));
 const before=files();const indexBefore=fs.readFileSync(path.join(project,'forge.workspace.json'));const supplied=JSON.parse(fs.readFileSync(incoming));
-const receipt={format:'forge.s6-native-browser-development/1',status:'error',mode,api_major:2,contract_version:'2.2.0',phase:'launch',
+const receipt={format:'forge.s6-native-browser-development/1',status:'error',mode,api_major:2,contract_version:null,phase:'launch',
  source_js_sha256:sha(sourceJS),source_css_sha256:sha(sourceCSS),
  script_sha256:sha(fs.readFileSync(__filename)),node_version:process.version,fixture_before:before,chosen_file_sha256:sha(fs.readFileSync(incoming)),
  focus_checks:[],reflow:[],requests:[],page_errors:0,non_loopback_requests:0,screenshots:[],
@@ -54,7 +54,7 @@ const receipt={format:'forge.s6-native-browser-development/1',status:'error',mod
   async function confirmed(target){const button=page.getByRole('button',{name:'Confirm this exact write',exact:true});await button.focus();await button.press('Enter');await page.waitForFunction(value=>document.getElementById('status').textContent==='Saved '+value+'.',target);await page.locator('#preview-dialog[open]').waitFor({state:'hidden'});await focused(page.locator('#view-title'),'verified-saved-heading');}
   const asset=page.waitForResponse(response=>/\/assets\/[a-f0-9]{64}\.js$/.test(new URL(response.url()).pathname));const style=page.waitForResponse(response=>/\/assets\/[a-f0-9]{64}\.css$/.test(new URL(response.url()).pathname));
   await page.goto(origin);assert.deepEqual(await(await asset).body(),sourceJS);assert.deepEqual(await(await style).body(),sourceCSS);
-  assert.equal(await page.locator('meta[name="forge-api-major"]').getAttribute('content'),'2');assert.equal(await page.locator('meta[name="forge-api-contract-version"]').getAttribute('content'),'2.2.0');
+  assert.equal(await page.locator('meta[name="forge-api-major"]').getAttribute('content'),'2');const negotiated=await page.locator('meta[name="forge-api-contract-version"]').getAttribute('content');assert(['2.2.0','2.3.0'].includes(negotiated));receipt.contract_version=negotiated;
   const passphrase=page.getByLabel('Workspace passphrase');await focused(passphrase,'initial-passphrase');await passphrase.fill('synthetic S6 browser bundle passphrase 062');await passphrase.press('Enter');
   await page.waitForFunction(()=>document.getElementById('status').textContent==='Project state loaded.');
   const navigation=page.getByRole('button',{name:'Trace & Reports',exact:true});await navigation.focus();await navigation.press('Enter');await page.waitForFunction(()=>document.getElementById('view-title').textContent==='Trace & Reports');await focused(page.locator('#view-title'),'Trace-heading');

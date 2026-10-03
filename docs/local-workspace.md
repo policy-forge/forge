@@ -33,7 +33,9 @@ terminal. Moving focus elsewhere while waiting does not authorize a late
 throttling response to move it back.
 
 Use **Stop workspace** or Ctrl-C. Stopping discards unconfirmed work and
-invalidates session capabilities. Completed files remain saved. Reloading the
+invalidates session capabilities. Completed files remain saved. For a confirmed
+source restore, retain its public outcome ID and inspect the recorded outcome
+after settlement or restart; stopping is not proof that no files changed. Reloading the
 page loses its capability and unsaved forms; unlock again. Restarting the
 process requires a new passphrase. The workspace never recovers a password or
 persists a verifier. Machine sessions cannot unlock the browser.
@@ -65,8 +67,9 @@ secondary multi-file generation is excluded from this workspace tranche.
 Paths use `/` on every platform, even Windows. Paths must stay under the chosen
 root and use the index's portable ASCII segment grammar. Symlinks, reparse
 points, hard links, aliases, special files, absolute paths, `..`, Windows device
-names, and leading-dot segments are rejected. Destination parent directories
-must already exist. No arbitrary file read, directory listing, or shell route
+names, and leading-dot segments are rejected. Ordinary single-file destination parent directories
+must already exist. The separate source-restore preview explicitly lists any
+new directory intentions before batch confirmation; no hidden mkdir is granted. No arbitrary file read, directory listing, or shell route
 exists. A missing or unsafe registered file fails the snapshot closed; repair
 that explicit file or its index entry outside the workspace before continuing.
 
@@ -184,8 +187,11 @@ process-interruption atomicity.
 Do not run another writer against the same destination during confirmation.
 Ordinary filesystems do not provide a portable compare-and-swap rename against
 an arbitrary uncooperating writer; a final recheck-to-rename race remains for
-external writers. This implementation does not claim isolation against a
-malicious same-user process or interruption-safe multi-file transactions.
+external writers. The ordinary single-file workflow does not claim isolation against a
+malicious same-user process or supply a multi-file transaction. The separate
+[source restore](workspace-source-bundles.md) stages owned generations, publishes
+the index last and records conditional rollback/recovery, with workspace-only IO
+fencing and explicit external-reader limitations.
 Windows runtime behavior must pass hosted Windows tests before platform support
 is claimed; cross-compilation alone is insufficient evidence.
 
@@ -239,8 +245,8 @@ Python cannot guarantee physical zeroization of immutable strings.
 
 The normative contract is [OpenAPI](api/forge-workspace-v1.openapi.yaml), with
 [compatibility policy](api/compatibility.md) and [capability matrix](api/capability-matrix.md).
-Default launches use additive unreleased contract 1.2.0; explicit v2 launches use [contract 2.2.0](api/forge-workspace-v2.openapi.yaml). It includes closed initialization,
-optional provenance references, read-only index-bundle queries, and the nine captured lifecycle and framework-impact reads described in [the inspection guide](workspace-lifecycle-impact.md), plus acknowledged metadata export and complete index-replacement previews described in [the receipt guide](workspace-bundle-receipts.md). Existing domain
+Default launches use additive unreleased contract 1.2.0; explicit v2 launches use [contract 2.3.0](api/forge-workspace-v2.openapi.yaml). It includes closed initialization,
+optional provenance references, read-only index-bundle queries, and the nine captured lifecycle and framework-impact reads described in [the inspection guide](workspace-lifecycle-impact.md), plus acknowledged metadata export and complete index-replacement previews described in [the receipt guide](workspace-bundle-receipts.md), and opt-in exact-source export, complete batch restore confirmation and known-ID recovery in [the source guide](workspace-source-bundles.md). Existing domain
 `/1` meanings remain unchanged.
 The public Rust `Commands::Workspace` variant extends an exhaustive enum and
 requires a release compatibility decision for downstream matches. No release
@@ -288,8 +294,10 @@ The maintained Python client still exposes `bundle_preview()` and
 index hashing, limits and errors. These API1 queries prepare no effects. The
 separate API2.2 [metadata receipt workflow](workspace-bundle-receipts.md) supports
 acknowledged server export and confirmed replacement of the complete index.
-Source-content opt-in, multi-file import, reviewed batch binding, broader
-retention/capacity qualification and full S-6 acceptance remain open.
+API2.3 separately supplies the finite [source restore workflow](workspace-source-bundles.md)
+with explicit source opt-in and complete batch review. Larger transfer, full
+retention/capacity and cross-platform transaction qualification, and full S-6
+acceptance remain open. The read-only metadata queries remain source-excluding.
 
 ## Verification and remaining gates
 

@@ -3551,3 +3551,335 @@ for (const defect of ["unreadable-file", "oversized-file"]) {
     assert.equal(app.byId("error").hidden,true);
   });
 }
+
+
+// Source API2.3 controls execute the complete selected asset with synthetic transport only.
+// They are authored proposals until Root runs Node; none proves native transaction authority.
+
+/** Hash ordered normalized index fields with the published LF encoding for synthetic DTO facts. */
+function source23IndexHash(index) {
+  const ordered={schema_version:index.schema_version,label:index.label,resources:index.resources.map(row=>({key:row.key,role:row.role,path:row.path}))};
+  return createHash("sha256").update(JSON.stringify(ordered,null,2)+"\n").digest("hex");
+}
+
+/** Construct a complete four-path union with overwrite, new directory, removed membership and index last. */
+function source23Reply() {
+  const previous={schema_version:"forge.workspace/1",label:"Previous synthetic source index",resources:[
+    {key:"keep",role:"policy-source",path:"policy.md"},{key:"remove",role:"policy-source",path:"retired.md"}]};
+  const proposed={schema_version:"forge.workspace/2",label:"Proposed <script> literal source index",resources:[
+    {key:"keep",role:"policy-source",path:"policy.md"},{key:"new",role:"policy-source",path:"new/policy.md"}]};
+  const hash=source23IndexHash(proposed);const validation={state:"valid",error_count:0,warning_count:0,diagnostics:[]};
+  /** Retain a current registered or explicitly unregistered generation without inventing proposed identity. */
+  const current=(key,sha,size,id)=>({key,role:key===null?null:"policy-source",sha256:sha,size,resource_id:id});
+  /** Describe exact proposed bytes independently of a current native generation. */
+  const future=(key,sha,size)=>({key,role:key===null?null:"policy-source",sha256:sha,size});
+  /** Keep every target closed and bind its current base and safe literal diff. */
+  const target=(path,key,sha,size,base,baseSize)=>({path,kind:key===null?"index":"resource",key,role:key===null?null:"policy-source",
+    status:base===null?"create":"overwrite",base_sha256:base,base_size:baseSize,target_version:"e".repeat(64),exact_bytes_sha256:sha,size,
+    diff_text:"Synthetic <script> literal diff; no authentic source bytes.",diff_truncated:false,binary:false});
+  const preview={preview_id:"prev_abcdef123456",operation_id:"op_123456abcdef",operation_type:"project-source-restore",
+    snapshot_version:"a".repeat(64),observed_batch_version:"b".repeat(64),exact_manifest_sha256:"c".repeat(64),
+    targets:[target("policy.md","keep","d".repeat(64),12,"1".repeat(64),10),target("new/policy.md","new","f".repeat(64),14,null,null),target("forge.workspace.json",null,hash,400,"2".repeat(64),300)],
+    input_bindings:[{path:"policy.md",kind:"resource",current:current("keep","1".repeat(64),10,"res_aaaaaaaaaaaa"),proposed:future("keep","d".repeat(64),12)},
+      {path:"retired.md",kind:"resource",current:current("remove","3".repeat(64),16,"res_bbbbbbbbbbbb"),proposed:null},
+      {path:"new/policy.md",kind:"resource",current:null,proposed:future("new","f".repeat(64),14)},
+      {path:"forge.workspace.json",kind:"index",current:current(null,"2".repeat(64),300,null),proposed:future(null,hash,400)}],
+    directories:[{path:"new",status:"create",nearest_existing_parent_version:"4".repeat(64)}],validation,
+    semantic_summary:"Synthetic complete source restore; no domain approval.",receipt:{token:"synthetic-private-source-receipt-token",expires_at:"2026-10-03T01:00:00Z"}};
+  return {validation,preview,replacement:{previous_index:previous,proposed_index:proposed,supplied_index_sha256:hash,proposed_index_sha256:hash,removed_resource_keys:["remove"],consumed_file_count:4}};
+}
+
+/** Produce a closed specialized restore outcome with exact ordered committed targets only on commitment. */
+function source23Operation(state="pending", reply=source23Reply(), extra={}) {
+  const committed=state==="succeeded";const rollback=["failed","cancelled"].includes(state);
+  return {operation_id:reply.preview.operation_id,kind:"bundle-restore",state,created_at:"2026-10-03T00:00:00Z",updated_at:"2026-10-03T00:00:01Z",cancel_requested:false,
+    write_outcome:committed?"committed":rollback?"none":state==="recovery-required"?"unknown":"unmeasured",progress:null,
+    result:committed?{write_committed:true,exact_manifest_sha256:reply.preview.exact_manifest_sha256,committed_targets:reply.preview.targets.map(row=>({path:row.path,sha256:row.exact_bytes_sha256,size:row.size})),cleanup_state:"verified"}:null,
+    error:state==="failed"||state==="recovery-required"?{code:"recovery-required",message:"Synthetic safe recovery outcome.",retryable:false}:null,
+    cleanup_state:committed||rollback?"verified":state==="recovery-required"?"unverified":"unmeasured",...extra};
+}
+
+/** Unlock the real selected-major handlers and install both old metadata and new source panels. */
+async function source23App(overrides={},readOnly=false,version="2.3.0") {
+  const reply=source23Reply();
+  return s6App({"/project/source-bundle-imports":()=>reply,"/project/source-bundle-exports":()=>operation("cancelled",{kind:"export"}),
+    ["/project/bundle-restores/"+reply.preview.operation_id]:()=>source23Operation("pending",reply),...overrides},readOnly,version);
+}
+
+/** Resolve only the source panel's actual labeled fields and connected controls. */
+function source23Parts(app) {
+  const panel=app.byId("view").querySelector("[data-source-bundle-effects]");assert(panel,"Missing source API2.3 panel");
+  return {panel,target:app.byLabel("Source export project-relative target"),exportAck:app.byLabel("Include exact source bytes and sensitive metadata in this export"),
+    file:app.byLabel("Choose an exact source bundle JSON file"),schema:app.byLabel("Source restore target index schema"),
+    indexAck:app.byLabel("I acknowledge replacing the complete project index label and registrations"),sourceAck:app.byLabel("I acknowledge including exact source bytes and sensitive metadata"),
+    filesAck:app.byLabel("I understand the complete preview may create or overwrite project files"),lookup:app.byLabel("Source restore outcome operation ID"),
+    prepare:app.byButton("Prepare source restore",panel),export:app.byButton("Prepare source export",panel),lookupButton:app.byButton("Look up source restore outcome",panel),error:panel.querySelector('[role="alert"]')};
+}
+
+/** Choose exact opaque bytes, then make all three acknowledgments after actual selection invalidation. */
+async function source23Choose(app,bytes=Buffer.from("{}"),version=2,read) {
+  const parts=source23Parts(app);const buffer=Buffer.from(bytes);
+  parts.file.files=[{name:"synthetic-source.json",size:buffer.length,
+    /** Return precisely the authored File bytes, or hold this read to test ownership retirement. */
+    async arrayBuffer(){return read?read():buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength);}}];
+  await parts.file.fire("change");parts.schema.value=String(version);await parts.schema.fire("change");
+  for(const ack of [parts.indexAck,parts.sourceAck,parts.filesAck]){ack.checked=true;await ack.fire("change");}
+  return parts;
+}
+
+/** Open the actual complete source dialog through one real preparation request. */
+async function source23Open(app,bytes=Buffer.from("{}")) {
+  const parts=await source23Choose(app,bytes);parts.prepare.focus();await parts.prepare.fire("click");
+  assert.equal(app.byId("preview-dialog").open,true);return parts;
+}
+
+/** Resolve the persistent nonauthorizing row by its preallocated ID, never by a private receipt. */
+function source23RowParts(app,id=source23Reply().preview.operation_id) {
+  const row=app.document.querySelector('[data-source-restore-row="'+id+'"]');assert(row,"Missing retained source outcome row");
+  return {row,status:row.querySelector("[data-source-restore-status]"),error:row.querySelector("[data-source-restore-error]"),
+    check:app.byButton("Check source restore status",row),cancel:app.byButton("Request source restore cancellation",row)};
+}
+
+/** Deliver synthetic facts to the actual full-asset checker/row transition inside its owning realm. */
+function source23Accept(app,value,reply=source23Reply()) {
+  app.run("globalThis.source23Value="+JSON.stringify(value)+";globalThis.source23Expected="+JSON.stringify(reply.preview)+";");
+  return app.run("acceptSourceRestore(sourceRestoreRow(source23Value.operation_id,source23Expected),source23Value)");
+}
+
+/** Acknowledge the complete displayed plan using the real dialog's final field. */
+async function source23Acknowledge(app) {
+  const ack=app.byLabel("I reviewed every target, input binding, directory and index replacement; restore these exact bytes");ack.checked=true;await ack.fire("change");
+  return app.byButton("Confirm this exact source restore",app.byId("preview-dialog"));
+}
+
+/** Restore one synthetic prepared context through the actual dialog function, without sending a new preparation. */
+async function source23Reopen(app,reply=source23Reply()) {
+  app.run("globalThis.source23Context="+JSON.stringify({family:"source-restore",preview:reply.preview,replacement:reply.replacement})+";");
+  return app.run("previewSourceRestore(source23Context,()=>!stopped)");
+}
+
+/** Drive the actual pending-request Review gate, including explicit discard when the real form is dirty. */
+async function source23ReviewReady(app) {
+  const pendingRow=requestParts(app);const action=app.byButton("Review prepared write",pendingRow.row).fire("click");await settle();
+  const openDialog=app.document.querySelector('dialog[open]');
+  const discard=openDialog?.getAttribute("aria-labelledby")==="discard-title"?openDialog:null;
+  if(discard)await app.byButton("Discard edits",discard).fire("click");
+  await action;assert.equal(app.byId("preview-dialog").open,true);return pendingRow;
+}
+
+for(const version of ["2.0.0","2.1.0","2.2.0","2.3.0"]) {
+  test("Source2.3 panel requires exact contract while old metadata remains selected: "+version,async()=>{
+    const app=await source23App({},false,version);
+    assert.equal(!!app.byId("view").querySelector("[data-source-bundle-effects]"),version==="2.3.0");
+    assert.equal(!!app.byId("view").querySelector("[data-bundle-effects]"),["2.2.0","2.3.0"].includes(version));
+    assert.equal(app.requests.some(row=>row.route.startsWith("/project/source-bundle-")),false);
+  });
+}
+
+test("Source2.3 readonly preparation and cancellation abstain while explicit lookup remains available",async()=>{
+  const app=await source23App({},true);const parts=await source23Choose(app);parts.target.value="exports/source.json";parts.exportAck.checked=true;await parts.exportAck.fire("change");
+  await parts.prepare.fire("click");await parts.export.fire("click");assert.equal(app.requests.some(row=>row.route.startsWith("/project/source-bundle-")),false);
+  source23Accept(app,source23Operation());const row=source23RowParts(app);assert.equal(row.cancel.getAttribute("aria-disabled"),"true");await row.cancel.fire("click");await row.check.fire("click");
+  assert.equal(app.requests.filter(item=>item.route.includes("bundle-restores")&&item.options.method==="GET").length,1);assert.equal(app.requests.some(item=>item.route.endsWith("/cancel")),false);
+});
+
+test("Source2.3 all three acknowledgments are independent and file/schema changes clear them before dispatch",async()=>{
+  const app=await source23App();const parts=await source23Choose(app);
+  for(const ack of [parts.indexAck,parts.sourceAck,parts.filesAck]){ack.checked=false;await ack.fire("change");await parts.prepare.fire("click");assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);ack.checked=true;await ack.fire("change");}
+  parts.schema.value="1";await parts.schema.fire("change");assert([parts.indexAck,parts.sourceAck,parts.filesAck].every(ack=>!ack.checked));
+  await parts.prepare.fire("click");assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);
+});
+
+test("Source2.3 raw147 envelope retains BOM Unicode and duplicate keys without parsing chosen bytes",async()=>{
+  const raw=Buffer.from('\ufeff{"key":"π","key":"unchanged duplicate"}');const app=await source23App();const parts=await source23Choose(app,raw);await parts.prepare.fire("click");
+  const sent=app.requests.find(row=>row.route==="/project/source-bundle-imports");assert(sent);const actual=Buffer.from(await sent.options.body.arrayBuffer());
+  const prefix=Buffer.from('{"bundle":');const suffix=Buffer.from(',"target_index_schema_version":2,"acknowledge_index_replacement":true,"acknowledge_source_content":true,"acknowledge_replace_files":true}');
+  assert.equal(prefix.length+suffix.length,147);assert.deepEqual(actual,Buffer.concat([prefix,raw,suffix]));assert.equal(actual.length,raw.length+147);assert.match(sent.options.headers["Idempotency-Key"],/^[a-f0-9-]{36}$/);
+});
+
+for(const excess of [0,1]) {
+  test("Source2.3 raw body cap "+(excess?"rejects excess before read":"permits exact1MiB"),async()=>{
+    const app=await source23App();app.run(`globalThis.source23Reads=0;globalThis.source23File={size:${1048429+excess},arrayBuffer:async()=>{source23Reads++;return new Uint8Array(${1048429+excess}).buffer;}}`);
+    if(excess){await assert.rejects(app.run("sourceBundleImportBody(source23File,2)"),/1048429/);assert.equal(app.run("source23Reads"),0);}
+    else{const body=await app.run("sourceBundleImportBody(source23File,2)");assert.equal(body.size,1048576);assert.equal(app.run("source23Reads"),1);}
+    assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);
+  });
+}
+
+test("Source2.3 late File bytes lose ownership after reselection and never dispatch",async()=>{
+  const read=deferred();const app=await source23App();const parts=await source23Choose(app,Buffer.from("{}"),2,()=>read.promise);parts.prepare.focus();const action=parts.prepare.fire("click");await settle();
+  await source23Choose(app,Buffer.from('{"new":true}'));read.resolve(new Uint8Array([123,125]).buffer);await action;
+  assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);assert.equal(parts.panel.getAttribute("aria-busy"),"false");assert.equal(parts.prepare.getAttribute("aria-disabled"),"false");
+});
+
+test("Source2.3 complete preview renders all bases targets directories and index-last facts without token or HTML injection",async()=>{
+  const app=await source23App();await source23Open(app);const content=app.byId("preview-content");const row=source23RowParts(app);
+  assert.match(content.textContent,/retired.md/);assert.match(content.textContent,/new\/policy.md/);assert.match(content.textContent,/Nearest existing parent version/);assert.match(content.textContent,/Files removed from membership are retained on disk/);
+  assert.match(content.textContent,/Every target in publication order; index last/);assert.match(content.textContent,/Proposed <script> literal source index/);assert.equal(content.querySelectorAll("script").length,0);assert.doesNotMatch(content.textContent,/synthetic-private-source-receipt-token/);
+  assert.equal(row.row.getAttribute("aria-labelledby"),"source-restore-title-op_123456abcdef");assert.equal(row.status.getAttribute("aria-label"),"Source restore op_123456abcdef status");
+  await app.byButton("Keep editing",app.byId("preview-dialog")).fire("click");assert.equal(app.requests.some(item=>item.route.endsWith("/commit")),false);assert(row.row.isConnected);
+});
+
+for(const defect of ["count-low","count-high","binding-dropped","wrong-hash","index-not-last","removed-key-dropped","registered-base-lost","alias-target","diff-union-excess"]) {
+  test("Source2.3 malformed complete preview refuses confirmation: "+defect,async()=>{
+    const reply=source23Reply();if(defect==="count-low")reply.replacement.consumed_file_count=3;if(defect==="count-high")reply.replacement.consumed_file_count=5;
+    if(defect==="binding-dropped")reply.preview.input_bindings.splice(1,1);if(defect==="wrong-hash")reply.replacement.proposed_index_sha256="9".repeat(64);
+    if(defect==="index-not-last")reply.preview.targets.reverse();if(defect==="removed-key-dropped")reply.replacement.removed_resource_keys=[];
+    if(defect==="registered-base-lost")Object.assign(reply.preview.input_bindings[0].current,{key:null,role:null,resource_id:null});
+    if(defect==="alias-target")reply.preview.targets[1].path="POLICY.md";
+    if(defect==="diff-union-excess"){reply.preview.targets[0].diff_text="x".repeat(100001);reply.preview.targets[1].diff_text="y".repeat(100001);}
+    const app=await source23App({"/project/source-bundle-imports":()=>reply});const parts=await source23Choose(app);await parts.prepare.fire("click");
+    assert.equal(app.byId("preview-dialog").open,false);assert.equal(app.requests.some(item=>item.route.endsWith("/commit")||item.route==="/effects/commits"),false);assert(requestParts(app).row.isConnected);
+  });
+}
+
+test("Source2.3 one exact confirmation forwards token batch and acknowledgment then observes only its known ID",async()=>{
+  const reply=source23Reply();const route="/project/bundle-restores/"+reply.preview.operation_id;let reads=0;
+  const app=await source23App({["/project/bundle-restores/"+reply.preview.preview_id+"/commit"]:()=>source23Operation("pending",reply),[route]:()=>{reads++;return source23Operation("succeeded",reply);}});
+  await source23Open(app);const confirm=await source23Acknowledge(app);confirm.focus();await confirm.fire("click");await settle();
+  const sent=app.requests.filter(item=>item.route.endsWith("/commit"));assert.equal(sent.length,1);assert.deepEqual(JSON.parse(sent[0].options.body),{receipt:reply.preview.receipt.token,observed_batch_version:reply.preview.observed_batch_version,acknowledge_exact_restore:true});
+  assert.match(sent[0].options.headers["Idempotency-Key"],/^[a-f0-9-]{36}$/);assert.equal(reads,1);assert(app.requests.filter(item=>item.route===route).every(item=>item.options.method==="GET"));
+  const row=source23RowParts(app);assert.match(row.status.textContent,/Exact source bytes committed.*Cleanup verified/);assert.equal(app.byId("preview-dialog").open,false);assert.equal(app.requests.some(item=>item.route==="/effects/commits"),false);
+});
+
+test("Source2.3 pending Review and lost confirmation retain one attempt across dismissal and reopening",async()=>{
+  const reply=source23Reply();const preparation=deferred();const app=await source23App({"/project/source-bundle-imports":()=>preparation.promise,
+    ["/project/bundle-restores/"+reply.preview.preview_id+"/commit"]:()=>({status:503,body:{code:"recovery-required",message:"Synthetic lost acceptance reply.",retryable:false}})});
+  const parts=await source23Choose(app);const action=parts.prepare.fire("click");await settle();parts.schema.value="1";await parts.schema.fire("change");preparation.resolve(reply);await action;
+  assert.equal(app.byId("preview-dialog").open,false);await source23ReviewReady(app);const confirm=await source23Acknowledge(app);await confirm.fire("click");
+  const row=source23RowParts(app);assert.match(row.status.textContent,/outcome is unverified/);assert.equal(row.row.isConnected,true);await app.byButton("Keep editing",app.byId("preview-dialog")).fire("click");
+  await source23Reopen(app,reply);const second=await source23Acknowledge(app);assert.equal(second.getAttribute("aria-disabled"),"true");await second.fire("click");
+  assert.equal(app.requests.filter(item=>item.route.endsWith("/commit")).length,1);assert.equal(app.requests.filter(item=>item.route==="/project/source-bundle-imports").length,1);
+});
+
+for(const seam of ["GET","cancel","commit"]) {
+  test("Source2.3 late "+seam+" failure cannot erase separately verified committed outcome",async()=>{
+    const reply=source23Reply();const delayed=deferred();const route="/project/bundle-restores/"+reply.preview.operation_id;
+    const app=await source23App({[route]:()=>delayed.promise,[route+"/cancel"]:()=>delayed.promise,["/project/bundle-restores/"+reply.preview.preview_id+"/commit"]:()=>delayed.promise});
+    let action;if(seam==="commit"){await source23Open(app);const confirm=await source23Acknowledge(app);action=confirm.fire("click");}
+    else{source23Accept(app,source23Operation("pending",reply));const row=source23RowParts(app);action=(seam==="GET"?row.check:row.cancel).fire("click");}
+    await settle();source23Accept(app,source23Operation("succeeded",reply));const before=source23RowParts(app).status.textContent;
+    delayed.resolve({status:503,body:{code:"recovery-required",message:"Synthetic stale transport failure.",retryable:false}});await action;
+    assert.equal(source23RowParts(app).status.textContent,before);assert.equal(app.run('sourceRestoreRows.get("op_123456abcdef").last.state'),"succeeded");assert.equal(app.run('sourceRestoreRows.get("op_123456abcdef").last.write_outcome'),"committed");
+  });
+}
+
+test("Source2.3 active counters describe staging and reject regressions or denominator changes",async()=>{
+  const app=await source23App();const pending=source23Operation("running",source23Reply(),{progress:{completed_files:1,total_files:3}});source23Accept(app,pending);const row=source23RowParts(app);
+  assert.match(row.status.textContent,/Staged files: 1 of 3 reported/);assert.doesNotMatch(row.status.textContent,/bytes committed|published/);
+  assert.throws(()=>source23Accept(app,{...pending,progress:{completed_files:0,total_files:3}}),/staging counters/);assert.throws(()=>source23Accept(app,{...pending,progress:{completed_files:1,total_files:4}}),/staging counters/);
+  assert.match(row.status.textContent,/Staged files: 1 of 3 reported/);
+});
+
+test("Source2.3 committed cleanup degradation remains committed and accepts explicit recovery-required",async()=>{
+  const app=await source23App();const succeeded=source23Operation("succeeded");succeeded.cleanup_state="pending";succeeded.result.cleanup_state="pending";source23Accept(app,succeeded);
+  assert.match(source23RowParts(app).status.textContent,/Exact source bytes committed.*Cleanup pending/);
+  const recovery={...succeeded,state:"recovery-required",updated_at:"2026-10-03T00:00:02Z",cleanup_state:"unverified",result:{...succeeded.result,cleanup_state:"unverified"},error:{code:"recovery-required",message:"Synthetic cleanup uncertainty.",retryable:false}};
+  source23Accept(app,recovery);assert.match(source23RowParts(app).status.textContent,/requires recovery.*Write outcome: committed.*Cleanup unverified/);assert.match(source23RowParts(app).row.textContent,/Complete committed source targets/);
+});
+
+test("Source2.3 verified cancellation with null error reports rollback without inventing publication",async()=>{
+  const app=await source23App();source23Accept(app,source23Operation("cancelled",source23Reply(),{cancel_requested:true}));const row=source23RowParts(app);
+  assert.match(row.status.textContent,/cancelled; verified rollback reports no committed write/);assert.equal(row.error.hidden,true);assert.equal(row.cancel.getAttribute("aria-disabled"),"true");
+});
+
+test("Source2.3 result replacement transfers only focus owned by the replaced result subtree",async()=>{
+  const app=await source23App();const success=source23Operation("succeeded");source23Accept(app,success);app.byId("view-title").focus();const outside=app.document.activeElement;
+  const pending={...success,updated_at:"2026-10-03T00:00:02Z",cleanup_state:"pending",result:{...success.result,cleanup_state:"pending"}};source23Accept(app,pending);assert.equal(app.document.activeElement,outside);
+  app.run('globalThis.source23Focus=node("button","Synthetic result focus");sourceRestoreRows.get("op_123456abcdef").result.append(source23Focus);source23Focus.focus();');
+  const verified={...success,updated_at:"2026-10-03T00:00:03Z"};source23Accept(app,verified);assert.equal(app.document.activeElement,source23RowParts(app).status);
+});
+
+test("Source2.3 shutdown retains public lookup ID while suppressing an in-flight check and all old receipts",async()=>{
+  const late=deferred();const reply=source23Reply();const route="/project/bundle-restores/"+reply.preview.operation_id;
+  const app=await source23App({[route]:()=>late.promise,"/session/shutdown":()=>({state:"shutting-down"})});source23Accept(app,source23Operation());const row=source23RowParts(app);const checking=row.check.fire("click");await settle();
+  await app.byId("stop").fire("click");await app.byId("confirm-stop").fire("click");const count=app.requests.length;const status=row.status.textContent;
+  late.resolve(source23Operation("succeeded"));await checking;await row.check.fire("click");await row.cancel.fire("click");
+  assert.equal(row.row.isConnected,true);assert.match(status,/Workspace stopped.*fresh same-project API2 2.3.0.*not-found does not prove no write/);assert.equal(row.status.textContent,status);assert.equal(app.requests.length,count);assert.equal(app.run("capability"),"");
+});
+
+test("Source2.3 fresh readonly lookup404 retains known ID and never dispatches restore or cancellation",async()=>{
+  const reply=source23Reply();const route="/project/bundle-restores/"+reply.preview.operation_id;
+  const app=await source23App({[route]:()=>({status:404,body:{code:"not-found",message:"No retained synthetic outcome.",retryable:false}})},true);const parts=source23Parts(app);parts.lookup.value=reply.preview.operation_id;await parts.lookup.fire("input");parts.lookupButton.focus();await parts.lookupButton.fire("click");
+  const row=source23RowParts(app);assert.match(row.status.textContent,/missing outcome is not proof.*do not resend/);assert.equal(row.row.isConnected,true);assert.equal(app.requests.filter(item=>item.route===route).length,1);
+  assert.equal(app.requests.some(item=>item.route.includes("bundle-restores")&&item.options.method==="POST"||item.route.startsWith("/project/source-bundle-")),false);
+});
+
+test("Source2.3 delayed preview hash cannot open after a newer ordinary preview and Escape",async()=>{
+  const app=await source23App();const old=source23Reply();const ordinary=proposedWrite();app.routes["/effects/previews/"+ordinary.preview_id]=()=>ordinary;
+  app.run('globalThis.source23Subtle=crypto.subtle;globalThis.source23Release=null;crypto.subtle={digest:async(...args)=>{await new Promise(resolve=>{source23Release=resolve;});return source23Subtle.digest(...args);}};');
+  const pending=source23Reopen(app,old);await settle();assert.equal(typeof app.run("source23Release"),"function");
+  app.run("globalThis.source23Ordinary="+JSON.stringify(ordinary)+";");await app.run("preview(source23Ordinary)");assert.equal(app.byId("preview-dialog").open,true);app.byId("preview-dialog").escape();await settle();app.run("source23Release()");
+  assert.equal(await pending,false);assert.equal(app.byId("preview-dialog").open,false);assert.equal(app.requests.some(item=>item.route.endsWith("/commit")),false);
+});
+
+test("Source2.3 older preparation ready after newer preview dismissal requires explicit Review",async()=>{
+  const delayed=deferred();const reply=source23Reply();const ordinary=proposedWrite();const app=await source23App({"/project/source-bundle-imports":()=>delayed.promise,["/effects/previews/"+ordinary.preview_id]:()=>ordinary});
+  const parts=await source23Choose(app);const preparing=parts.prepare.fire("click");await settle();app.run("globalThis.source23Ordinary="+JSON.stringify(ordinary)+";");await app.run("preview(source23Ordinary)");app.byId("preview-dialog").escape();await settle();
+  delayed.resolve(reply);await preparing;assert.equal(app.byId("preview-dialog").open,false);assert.match(requestParts(app).status.textContent,/ready for review/);assert.equal(source23RowParts(app).row.isConnected,true);
+  await source23ReviewReady(app);assert.match(app.byId("preview-content").textContent,/Review complete exact source restore/);assert.equal(app.requests.filter(item=>item.route==="/project/source-bundle-imports").length,1);
+});
+
+/** Prepare and confirm a synthetic source export through unchanged generic effects before exact-byte download. */
+async function source23DownloadApp(override) {
+  const index={schema_version:"forge.workspace/2",label:"Synthetic source export",resources:[]};const bytes=Buffer.from(JSON.stringify({schema_version:"forge.workspace-index-bundle/3",profile:"index-and-source-hex",source_content_included:true,index,index_sha256:source23IndexHash(index),pins:[],contents:[]}));
+  const preview={...proposedWrite(),operation_type:"report-export",target:{status:"create",path:"exports/source.json"},exact_bytes_sha256:createHash("sha256").update(bytes).digest("hex")};
+  const app=await source23App({"/project/source-bundle-exports":()=>operation("succeeded",{kind:"export",result:{preview}}),["/effects/previews/"+preview.preview_id]:()=>preview,
+    "/effects/commits":()=>operation("pending",{kind:"commit"}),[operationRoute]:()=>s6Committed(preview),
+    ["/project/source-bundle-exports/"+operationId+"/download"]:override??(()=>({download_blob:new Blob([bytes]),download_media_type:"application/json; charset=utf-8"}))});
+  const parts=source23Parts(app);parts.target.value="exports/source.json";await parts.target.fire("input");parts.exportAck.checked=true;await parts.exportAck.fire("change");parts.export.focus();await parts.export.fire("click");
+  assert.equal(app.byId("preview-dialog").open,true);await app.byButton("Confirm this exact write",app.byId("preview-dialog")).fire("click");return {app,bytes,download:app.byButton("Download committed source bundle")};
+}
+
+test("Source2.3 committed private JSON download binds family authentication exact hash and fixed filename",async()=>{
+  const {app,bytes,download}=await source23DownloadApp();download.focus();await download.fire("click");const sent=app.requests.find(item=>item.route.endsWith("/download"));
+  assert.equal(sent.route,"/project/source-bundle-exports/"+operationId+"/download");assert.equal(sent.options.credentials,"omit");assert.equal(sent.options.redirect,"error");assert.match(sent.options.headers.Authorization,/^Bearer /);
+  assert.equal(app.document.downloads.length,1);const saved=app.document.downloads[0];assert.equal(saved.filename,"forge-workspace-index-and-source-content.json");assert.deepEqual(Buffer.from(await app.objectURLs.get(saved.url).arrayBuffer()),bytes);oneExactCommit(app);
+  await app.run('dirty=false;navigate("Overview")');assert.equal(app.objectURLs.size,0);
+});
+
+for(const defect of ["media","hash","oversize"]) {
+  test("Source2.3 committed download "+defect+" refuses publication without repeating generic commit",async()=>{
+    const bytes=defect==="oversize"?Buffer.alloc(1048430):Buffer.from("{}");const {app,download}=await source23DownloadApp(()=>({download_blob:new Blob([bytes]),download_media_type:defect==="media"?"text/html":"application/json"}));
+    await download.fire("click");assert.equal(app.document.downloads.length,0);assert.equal(app.objectURLs.size,0);assert.equal(app.document.activeElement,app.byId("error"));oneExactCommit(app);
+  });
+}
+
+
+// These two controls target the recorded V2 ownership repair without replacing old assertions.
+test("Source2.3 newer preview retires a deferred file read before any preparation POST",async()=>{
+  const reading=deferred();const app=await source23App();const parts=await source23Choose(app,Buffer.from("{}"),2,()=>reading.promise);
+  const preparing=parts.prepare.fire("click");await settle();await source23Reopen(app);assert.equal(app.byId("preview-dialog").open,true);
+  app.byId("preview-dialog").escape();await settle();reading.resolve(new Uint8Array([123,125]).buffer);await preparing;
+  assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);assert.equal(app.byId("preview-dialog").open,false);assert.equal(parts.panel.getAttribute("aria-busy"),"false");
+});
+
+test("Source2.3 newer preview during request pacing retires unsent recovery without fetch",async()=>{
+  const app=await source23App();const parts=await source23Choose(app);app.run("nextRequestAt=performance.now()+1200;");
+  const preparing=parts.prepare.fire("click");await settle();assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);assert(app.timers.length>0,"Actual API pacing must be waiting");
+  await source23Reopen(app);app.byId("preview-dialog").escape();await settle();await app.poll();await preparing;
+  assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);assert.equal(app.run("requestRows.size"),0);assert.equal(app.byId("preview-dialog").open,false);assert.equal(parts.panel.getAttribute("aria-busy"),"false");
+});
+
+
+// This final case consumes the separately frozen V3 obsolete-error ownership repair.
+test("Source2.3 rejected dispatched preparation stays in recovery without altering a newer preview or focus",async()=>{
+  const rejected=deferred();const ordinary=proposedWrite();const app=await source23App({"/project/source-bundle-imports":()=>rejected.promise,["/effects/previews/"+ordinary.preview_id]:()=>ordinary});
+  const parts=await source23Choose(app);parts.prepare.focus();const preparing=parts.prepare.fire("click");await settle();
+  assert.equal(app.requests.filter(row=>row.route==="/project/source-bundle-imports").length,1,"The old preparation must already be dispatched");const epoch=app.run("pending");const recovery=requestParts(app);
+  app.run("globalThis.source23Ordinary="+JSON.stringify(ordinary)+";");await app.run("preview(source23Ordinary)");const dialog=app.byId("preview-dialog");assert.equal(dialog.open,true);assert.equal(dialog.querySelector('[role="alert"]'),null);
+  const owned=app.byButton("Confirm this exact write",dialog);owned.focus();const content=app.byId("preview-content").textContent;const focusCount=app.document.focusHistory.length;
+  rejected.resolve({status:503,body:{code:"query-budget-exceeded",message:"Synthetic obsolete dispatched preparation error.",retryable:true}});await preparing;
+  assert.equal(app.run("pending"),epoch);assert.equal(dialog.open,true);assert.equal(dialog.querySelector('[role="alert"]'),null);assert.equal(app.byId("preview-content").textContent,content);assert.equal(app.document.activeElement,owned);assert.equal(app.document.focusHistory.length,focusCount);
+  assert.equal(recovery.row.isConnected,true);assert.match(recovery.error.textContent,/Synthetic obsolete dispatched preparation error/);assert.equal(app.requests.filter(row=>row.route==="/project/source-bundle-imports").length,1);assert.equal(app.requests.some(row=>row.route.endsWith("/commit")||row.route==="/effects/commits"),false);
+});
+
+
+test("Source2.3 selected oversized file refuses before reading or dispatch and preserves explicit retry focus",async()=>{
+  let reads=0;const app=await source23App();const parts=await source23Choose(app,Buffer.alloc(1048430),2,async()=>{reads++;return new ArrayBuffer(0);});
+  parts.prepare.focus();await parts.prepare.fire("click");
+  const alert=parts.panel.querySelector('[role="alert"]');assert(alert);assert.equal(alert.hidden,false);assert.match(alert.textContent,/1048429/);
+  assert.equal(app.document.activeElement,alert);assert.equal(reads,0);assert.equal(parts.panel.getAttribute("aria-busy"),"false");assert.equal(parts.prepare.getAttribute("aria-disabled"),"false");
+  assert.equal(app.requests.some(row=>row.route==="/project/source-bundle-imports"),false);assert.equal(app.byId("preview-dialog").open,false);assert.equal(app.run("requestRows.size"),0);
+  assert.match(parts.panel.textContent,/No source preparation was confirmed.*retry explicitly/);
+});

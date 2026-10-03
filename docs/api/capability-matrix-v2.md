@@ -91,6 +91,11 @@ and the normative API definition is
 | CM-42 | Prepare and download an acknowledged metadata JSON export | cross-cutting | US-7, US-9, US-13 | `prepareProjectBundleExport`, `downloadProjectBundleExport` | browser-write |
 | CM-43 | Inspect and confirm complete acknowledged index replacement | cross-cutting | US-7, US-9, US-10, US-13 | `prepareProjectBundleImport`, `getEffectPreview`, `commitEffectPreview` | browser-write |
 
+| CM-44 | Prepare and download acknowledged exact source content | cross-cutting | US-7, US-9, US-10, US-13 | `prepareProjectSourceBundleExport`, `downloadProjectSourceBundleExport` | browser-write |
+| CM-45 | Inspect and confirm the complete source restore | cross-cutting | US-7, US-9, US-10, US-13 | `prepareProjectSourceBundleImport`, `commitProjectSourceBundleRestore` | browser-write |
+| CM-46 | Recover a source restore outcome after lost reply or restart | cross-cutting | US-7, US-9, US-10, US-13 | `getProjectSourceBundleRestore` | browser-read |
+| CM-47 | Request safe source restore cancellation | cross-cutting | US-7, US-9, US-10, US-13 | `cancelProjectSourceBundleRestore` | browser-write |
+
 Full notes for each entry, including the UX states and acceptance criteria
 each one covers, live in [capability-matrix-v2.json](capability-matrix-v2.json).
 
@@ -129,3 +134,5 @@ is a compatibility change governed by
 API v2 is selected explicitly with `--api-major 2`. The prior contract 2.1.0 declared 48 operations, adding the nine captured lifecycle and impact reads (CM-40 and CM-41) to the initial 2.0.0 foundation. Default API1/1.2.0 remains 39 operations. Native accessibility, platform, independent and human acceptance remain separate gates.
 
 API 2.2.0 declares 51 operations: the 48 API 2.1 reads/effects retain their wire meanings, with three metadata-only preparation/download routes (CM-42/43). API1 remains 1.2.0/39. Index queries can inspect1000 registrations; these effect routes require the complete consumed physical-file union <=100 and 50 MiB without prefix admission. Source-inclusive restore, crash/rollback qualification, native parity and full S6 acceptance remain open.
+
+API 2.3.0 declares57 operations, preserving the51-operation2.2 contract and adding six explicit source-bundle export/restore operations (CM-44 throughCM-47). Metadata bundle1/2 and all existing public Operation/EffectPreview enums retain their interpretation; source bundle3 is separately explicit and opt-in. The finite first profile retains1MiB request,100-file admitted union,50MiB capture and20MiB shared retention limits. Source restore is complete index-last publication with owned rollback/recovery, not globally atomic visibility for external readers. Larger source transfers, platform/native crash/rollback qualification, independent/human acceptance and full integrated documentation remain open. No API2.3 advertisement is allowed until all six routes are consumed and verified.

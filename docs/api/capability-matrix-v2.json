@@ -64,7 +64,7 @@
       "getSession"
     ],
     "authorization": "machine",
-    "notes": "The --machine-session launch prints exactly one sensitive JSON descriptor on stdout (base URL, API version, session ID, capability, mode, process identity) outside /api/v2 with no passphrase prompt; the machine capability then authorizes getSession and the rest of the contract for headless clients (AC-18). Explicit --api-major 2 adds api_major:2 and exact api_version:2.2.0 to the descriptor."
+    "notes": "The --machine-session launch prints exactly one sensitive JSON descriptor on stdout (base URL, API version, session ID, capability, mode, process identity) outside /api/v2 with no passphrase prompt; the machine capability then authorizes getSession and the rest of the contract for headless clients (AC-18). Explicit --api-major 2 adds api_major:2 and exact api_version:2.3.0 to the descriptor."
   },
   {
     "id": "CM-06",
@@ -529,7 +529,13 @@
       "getFrameworkImpactPriorDispositions",
       "prepareProjectBundleExport",
       "downloadProjectBundleExport",
-      "prepareProjectBundleImport"
+      "prepareProjectBundleImport",
+      "prepareProjectSourceBundleExport",
+      "downloadProjectSourceBundleExport",
+      "prepareProjectSourceBundleImport",
+      "commitProjectSourceBundleRestore",
+      "getProjectSourceBundleRestore",
+      "cancelProjectSourceBundleRestore"
     ],
     "authorization": "browser-write",
     "notes": "US-13 completeness entry: a write-capable session (browser or machine) can perform the entire golden path with only these operations (AC-18). This entry intentionally lists every operationId as the exhaustive coverage denominator for CI."
@@ -660,5 +666,71 @@
     ],
     "authorization": "browser-write",
     "notes": "Direct10-second preparation returns validation, existing EffectPreview and complete previous/proposed membership, normalized hashes, ordered removals and consumed count. Explicit1-to-2 only; no downgrade/merge/source restore. Whole100-file/50MiB union and existing retained limits fail closed; idempotent pending/ready reservations transfer only after final fences. Confirmation writes one exact index, without domain approval or multi-file transaction."
+  },
+  {
+    "id": "CM-44",
+    "action": "Prepare and download acknowledged exact source content",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-9",
+      "US-10",
+      "US-13"
+    ],
+    "operations": [
+      "prepareProjectSourceBundleExport",
+      "downloadProjectSourceBundleExport"
+    ],
+    "authorization": "browser-write",
+    "notes": "Explicit API2.3 source acknowledgment. Complete confined exact bytes; existing export preview/commit and private source-JSON download family. Download read scope; no default source inclusion or blanket redaction."
+  },
+  {
+    "id": "CM-45",
+    "action": "Inspect and confirm the complete source restore",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-9",
+      "US-10",
+      "US-13"
+    ],
+    "operations": [
+      "prepareProjectSourceBundleImport",
+      "commitProjectSourceBundleRestore"
+    ],
+    "authorization": "browser-write",
+    "notes": "Direct10s preview, explicit index selector/no downgrade, complete exact target/directory/input plan and preknown nonauthorizing outcome ID. Durable accepted intent precedes202; bounded conditional rollback/cleanup and Root barrier, not external globally atomic visibility."
+  },
+  {
+    "id": "CM-46",
+    "action": "Recover a source restore outcome after lost reply or restart",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-9",
+      "US-10",
+      "US-13"
+    ],
+    "operations": [
+      "getProjectSourceBundleRestore"
+    ],
+    "authorization": "browser-read",
+    "notes": "Fresh same-root/API2.3 read authority; never revive old capability/receipt. Closed sanitized outcome separates commit/rollback/cleanup. Before acceptance404; expiry does not prove no write."
+  },
+  {
+    "id": "CM-47",
+    "action": "Request safe source restore cancellation",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-9",
+      "US-10",
+      "US-13"
+    ],
+    "operations": [
+      "cancelProjectSourceBundleRestore"
+    ],
+    "authorization": "browser-write",
+    "notes": "Sticky before commit decision; acknowledgment is not terminal cancellation. Verified rollback required for none; late decision returns409. Unknown settlement blocks further project access."
   }
 ]

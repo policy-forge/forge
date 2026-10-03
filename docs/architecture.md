@@ -224,6 +224,79 @@ After preparation, the component pipeline:
 - **`PipelineOutput`** — Return value from both pipelines: `content` (serialized string), `format`, `secondary_outputs` (e.g., assessment plans), `statistics` (sections parsed, controls generated, etc.).
 - **`SecondaryOutput`** — Auxiliary artifact with `filename` and `content`.
 
+## Local workspace runtime
+
+`workspace::launch` selects one API major before capture, credentials or listening.
+The current source publishes API v1 **1.2.0 / 39 operations** and API v2
+**2.3.0 / 57 operations**. The source workflow adds six v2 routes to the retained
+metadata and inspection surfaces; it does not move v1 callers to v2. These local
+contract versions are separate from the product release version. See the
+[workspace codemap](CODEMAPS.md#workspace-source-bundle-paths) and
+[API compatibility policy](api/compatibility.md).
+
+| Method and source route | Handoff |
+| --- | --- |
+| POST `/api/v2/project/source-bundle-exports` | 202 ordinary export preparation; later single-file confirmation saves the source JSON |
+| GET `/api/v2/project/source-bundle-exports/{operation_id}/download` | 200 exact committed bytes from the private source-JSON family |
+| POST `/api/v2/project/source-bundle-imports` | 200 complete restore preview, replacement, input bindings and directory intentions |
+| POST `/api/v2/project/bundle-restores/{preview_id}/commit` | 202 only after exact confirmed intent and the original reply are durable |
+| GET `/api/v2/project/bundle-restores/{operation_id}` | 200 safe persisted outcome under current same-root session authority |
+| POST `/api/v2/project/bundle-restores/{operation_id}/cancel` | 200 cancellation acknowledgment/outcome, not proof of rollback |
+
+### Capture and lock ownership
+
+`services::Snapshot` admits the complete source planning union before registered
+resource reads. `source_bundles` preserves exact bytes, `source_validation` admits
+the proposed registered closure, and `source_bundle_effects` builds a complete
+off-Store plan. Session receipt retention is owned by `effects::Store`, with
+`effects::source_receipts` handling source previews and volatile job facts.
+
+Participating workspace capture/download paths acquire the State's project
+`RwLock` read lease before Store or project I/O; ordinary single-file commits and
+confirmed restore workers use its write lease. Source workers use short Store
+sections for admission, replay, cancellation and measured staging progress;
+native journal/staging/publication I/O runs outside that Store lock. Pure restore
+status and cancellation remain reachable without a project lease. A retained
+reply can be read under Store alone; the lock is released before acquiring new
+project authority. The separate journal owner serializes durable replacements.
+
+This fence covers participating workspace paths. External CLI commands and
+editors can observe mixed whole-file generations during index-last publication;
+the runtime does not claim a shared CLI barrier or globally atomic multi-file
+visibility.
+
+### Confirmed restore and restart
+
+The preview supplies a nonauthorizing operation ID before confirmation. Store
+checks the one-time receipt, original observed batch version and complete capacity;
+`Root::accept_restore` durably records accepted intent before worker dispatch and
+HTTP 202. The sealed plan then stages all targets, verifies original generations,
+publishes resources in authorial order with the index last, verifies the complete
+proposed result and records the committed decision.
+
+Before that decision, interruption attempts conditional rollback of verified owned
+objects; foreign replacements are not overwritten. After the decision, settlement
+cannot roll back or relabel a committed write as none. `write_outcome` and
+`cleanup_state` remain separate facts. Uncertain journal, ownership or cleanup
+blocks participating project access; a cancellation acknowledgment or a missing
+outcome does not prove no write. Staging counts are measured files, not publication
+percentages, and cooperative deadlines do not preempt parsers or syscalls.
+
+On Unix, `TransactionState::open_qualified` checks OS-selected private per-user
+state, held no-link ancestry, owner/mode constraints and an exclusive `flock` on
+the root-bound journal lock before index capture, credentials or listening. A
+writable API2 launch may settle accepted state; a read-only launch performs no
+recovery writes and refuses unresolved state. Fresh same-root authenticated reads
+can use the known outcome ID after restart; old tokens and preview authority are
+not revived. The Windows native restore port returns typed unavailable rather
+than using a weaker publication fallback.
+
+The [source workflow guide](workspace-source-bundles.md) defines the finite inline
+profile and whole planning/capture/retention limits. Larger staged transfers,
+cross-platform crash/rollback qualification, human acceptance and the final
+integrated documentation gate remain open; this architectural description supplies
+no execution or acceptance result.
+
 ## CLI Commands
 
 The table below highlights conversion utilities. The current command tree also
@@ -343,8 +416,7 @@ All errors are represented as `ForgeError` (src/error.rs), a `thiserror` enum wi
 | Exit Code | Category | Examples |
 |-----------|----------|----------|
 | 0 | Success | — |
-| 1 | Input/IO | FileNotFound, PermissionDenied, EmptyInput, FileTooLarge |
-| 2 | Parse/Structure | NoStructureDetected, Parse, CatalogBuild, ParameterExtraction |
-| 3 | Validation/Config | Validation, SchemaValidation, MissingDependency |
-| 4 | Serialization | Serialization errors |
-| 5 | Diff changes | DiffHasChanges (diff detected differences) |
+| 1 | Input/IO, observed changes or review required | FileNotFound, Serialization, DiffHasChanges, LifecycleActionRequired |
+| 2 | Parse, domain or usage | Parse, CatalogBuild, Lifecycle, MissingRequiredArgument |
+| 3 | Validation/Config | Validation, SchemaValidation, Config |
+| 4 | External tool unavailable | OscalCliNotFound, OscalCliNotFunctional |
