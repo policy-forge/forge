@@ -1,0 +1,1027 @@
+{
+  "format": "forge.s6-hosted-lint-successor/1",
+  "basis": "f4935f8a8282bc289af6cf374212ef6213015b84",
+  "scope": "One test assertion only; all production behavior, dependencies and line positions preserved. The prior complete source cohorts and measurements remain historical f493 evidence, not re-labelled successor execution.",
+  "source": {
+    "repository_path": "src/workspace/bundle_effects.rs",
+    "sha256": "c7fa350180bb21b960337ed743f9bdcd1857662cb48eee8649b964ebdf8707c6",
+    "size_bytes": 42572
+  },
+  "changed_named_function": "absent_empty_index_projects_null_previous_and_zero_consumed_files",
+  "docstring_census": {
+    "changed_named_functions": 1,
+    "documented": 1,
+    "production_changed": 0
+  },
+  "coverage": {
+    "changed_named_functions": 1,
+    "positive_entries": 1,
+    "raw_selected_records": [
+      {
+        "branches": [],
+        "mcdc_records": [],
+        "count": 1,
+        "filenames": [
+          "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/workspace/bundle_effects.rs"
+        ],
+        "name": "_RNvNtNtNtCsckvLbW5qlsq_5forge9workspace14bundle_effects5testss_65absent_empty_index_projects_null_previous_and_zero_consumed_files",
+        "regions": [
+          [
+            704,
+            5,
+            704,
+            75,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            705,
+            13,
+            705,
+            20,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            705,
+            23,
+            705,
+            30,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            705,
+            41,
+            705,
+            60,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            706,
+            13,
+            706,
+            17,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            706,
+            20,
+            706,
+            34,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            707,
+            13,
+            707,
+            26,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            708,
+            13,
+            708,
+            30,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            709,
+            13,
+            709,
+            69,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            709,
+            14,
+            709,
+            28,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            709,
+            30,
+            709,
+            36,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            710,
+            13,
+            710,
+            29,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            712,
+            10,
+            712,
+            16,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            713,
+            9,
+            713,
+            16,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            713,
+            17,
+            713,
+            33,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            713,
+            34,
+            713,
+            41,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            714,
+            9,
+            714,
+            19,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            715,
+            9,
+            715,
+            16,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            715,
+            17,
+            715,
+            30,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            715,
+            31,
+            715,
+            39,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            716,
+            9,
+            716,
+            19,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            717,
+            13,
+            717,
+            24,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            717,
+            27,
+            717,
+            43,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            717,
+            44,
+            717,
+            50,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            718,
+            9,
+            718,
+            16,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            718,
+            17,
+            718,
+            46,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            718,
+            47,
+            718,
+            54,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            719,
+            9,
+            719,
+            19,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            719,
+            20,
+            719,
+            56,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            719,
+            58,
+            719,
+            63,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            720,
+            9,
+            720,
+            19,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            720,
+            20,
+            720,
+            54,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            721,
+            9,
+            721,
+            16,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            721,
+            17,
+            721,
+            66,
+            1,
+            0,
+            0,
+            0
+          ],
+          [
+            722,
+            5,
+            722,
+            6,
+            1,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      {
+        "branches": [],
+        "mcdc_records": [],
+        "count": 0,
+        "filenames": [
+          "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/src/workspace/bundle_effects.rs"
+        ],
+        "name": "_RNvNtNtNtCsfay7Ftx5ZMb_5forge9workspace14bundle_effects5testss_65absent_empty_index_projects_null_previous_and_zero_consumed_files",
+        "regions": [
+          [
+            704,
+            5,
+            704,
+            75,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            705,
+            13,
+            705,
+            20,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            705,
+            23,
+            705,
+            30,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            705,
+            41,
+            705,
+            60,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            706,
+            13,
+            706,
+            17,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            706,
+            20,
+            706,
+            34,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            707,
+            13,
+            707,
+            26,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            708,
+            13,
+            708,
+            30,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            709,
+            13,
+            709,
+            69,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            709,
+            14,
+            709,
+            28,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            709,
+            30,
+            709,
+            36,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            710,
+            13,
+            710,
+            29,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            712,
+            10,
+            712,
+            16,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            713,
+            9,
+            713,
+            16,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            713,
+            17,
+            713,
+            33,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            713,
+            34,
+            713,
+            41,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            714,
+            9,
+            714,
+            19,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            715,
+            9,
+            715,
+            16,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            715,
+            17,
+            715,
+            30,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            715,
+            31,
+            715,
+            39,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            716,
+            9,
+            716,
+            16,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            716,
+            17,
+            716,
+            34,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            716,
+            35,
+            716,
+            43,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            717,
+            13,
+            717,
+            24,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            717,
+            27,
+            717,
+            43,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            717,
+            44,
+            717,
+            50,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            718,
+            9,
+            718,
+            16,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            718,
+            17,
+            718,
+            46,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            718,
+            47,
+            718,
+            54,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            719,
+            9,
+            719,
+            19,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            719,
+            20,
+            719,
+            56,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            719,
+            58,
+            719,
+            63,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            720,
+            9,
+            720,
+            19,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            720,
+            20,
+            720,
+            54,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            721,
+            9,
+            721,
+            16,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            721,
+            17,
+            721,
+            66,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            722,
+            5,
+            722,
+            6,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      }
+    ],
+    "report": "/private/tmp/forge-f19-s6-hosted-lint-llvm-v2.json",
+    "report_sha256": "8e28a0f0868a19368a73dc8347e42a7a17da8ba837f8b31c865ae2334226a475",
+    "limits": [
+      "Direct function-entry observation; not branch, whole body, platform or whole-project coverage.",
+      "Only this documented changed test was selected; the full enabled hook is a separate successor job."
+    ]
+  },
+  "test_job": {
+    "format": "forge.f19-checkpoint-job/1",
+    "label": "llvm-s6-hosted-lint-assertion-successor-v2",
+    "started_utc": "2026-10-03T11:12:06.381840+00:00",
+    "finished_utc": "2026-10-03T11:13:18.078472+00:00",
+    "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+    "head_before": "f4935f8a8282bc289af6cf374212ef6213015b84",
+    "head_after": "f4935f8a8282bc289af6cf374212ef6213015b84",
+    "staged_repository_paths_before": [],
+    "command": [
+      "rtk",
+      "proxy",
+      "env",
+      "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f19-lifecycle-s3-llvm-v1",
+      "cargo",
+      "llvm-cov",
+      "test",
+      "--no-clean",
+      "--locked",
+      "--lib",
+      "workspace::bundle_effects::tests::absent_empty_index_projects_null_previous_and_zero_consumed_files",
+      "--json",
+      "--output-path",
+      "/private/tmp/forge-f19-s6-hosted-lint-llvm-v2.json"
+    ],
+    "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+    "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+    "explicit_extra_environment": {},
+    "exit_code": 0,
+    "source_pins": [
+      {
+        "repository_path": "Cargo.lock",
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+        "bytes": 74338
+      },
+      {
+        "repository_path": "Cargo.toml",
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+        "bytes": 2344
+      },
+      {
+        "repository_path": "schemas/forge.workspace-1.schema.json",
+        "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+        "bytes": 4223
+      },
+      {
+        "repository_path": "src/applicability/mod.rs",
+        "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+        "bytes": 75602
+      },
+      {
+        "repository_path": "src/workspace/bundle_effects.rs",
+        "sha256": "c7fa350180bb21b960337ed743f9bdcd1857662cb48eee8649b964ebdf8707c6",
+        "bytes": 42572
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+        "bytes": 9787
+      },
+      {
+        "repository_path": "src/workspace/root.rs",
+        "sha256": "a79d8a930bc7b7f1d0b0e228dd91ccf081036c5024183aaf0ec4687d19bd07fb",
+        "bytes": 30692
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "sha256": "5fc2374db7224ed28a928393b9c164873f9498df648790a37a355e080ce3c2f6",
+        "bytes": 68687
+      }
+    ],
+    "source_pins_after": [
+      {
+        "repository_path": "Cargo.lock",
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+        "bytes": 74338
+      },
+      {
+        "repository_path": "Cargo.toml",
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+        "bytes": 2344
+      },
+      {
+        "repository_path": "schemas/forge.workspace-1.schema.json",
+        "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+        "bytes": 4223
+      },
+      {
+        "repository_path": "src/applicability/mod.rs",
+        "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+        "bytes": 75602
+      },
+      {
+        "repository_path": "src/workspace/bundle_effects.rs",
+        "sha256": "c7fa350180bb21b960337ed743f9bdcd1857662cb48eee8649b964ebdf8707c6",
+        "bytes": 42572
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+        "bytes": 9787
+      },
+      {
+        "repository_path": "src/workspace/root.rs",
+        "sha256": "a79d8a930bc7b7f1d0b0e228dd91ccf081036c5024183aaf0ec4687d19bd07fb",
+        "bytes": 30692
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "sha256": "5fc2374db7224ed28a928393b9c164873f9498df648790a37a355e080ce3c2f6",
+        "bytes": 68687
+      }
+    ],
+    "source_bytes_unchanged_during_command": true,
+    "test_summaries": {
+      "summaries": 1,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "log": {
+      "path": "/private/tmp/forge-f19-browser-llvm-s6-hosted-lint-assertion-successor-v2.log",
+      "sha256": "064badab4c807d0dfbba734c79fbd6b2afce649ba321baac123f9f4183d7d662",
+      "bytes": 8849
+    }
+  },
+  "historical_initial_cli_failure": {
+    "format": "forge.f19-checkpoint-job/1",
+    "label": "llvm-s6-hosted-lint-assertion-v1",
+    "started_utc": "2026-10-03T11:11:50.000294+00:00",
+    "finished_utc": "2026-10-03T11:11:50.028959+00:00",
+    "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+    "head_before": "f4935f8a8282bc289af6cf374212ef6213015b84",
+    "head_after": "f4935f8a8282bc289af6cf374212ef6213015b84",
+    "staged_repository_paths_before": [],
+    "command": [
+      "rtk",
+      "proxy",
+      "env",
+      "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f19-lifecycle-s3-llvm-v1",
+      "cargo",
+      "llvm-cov",
+      "--no-clean",
+      "--locked",
+      "--lib",
+      "workspace::bundle_effects::tests::absent_empty_index_projects_null_previous_and_zero_consumed_files",
+      "--json",
+      "--output-path",
+      "/private/tmp/forge-f19-s6-hosted-lint-llvm-v1.json"
+    ],
+    "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+    "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+    "explicit_extra_environment": {},
+    "exit_code": 1,
+    "source_pins": [
+      {
+        "repository_path": "Cargo.lock",
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+        "bytes": 74338
+      },
+      {
+        "repository_path": "Cargo.toml",
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+        "bytes": 2344
+      },
+      {
+        "repository_path": "schemas/forge.workspace-1.schema.json",
+        "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+        "bytes": 4223
+      },
+      {
+        "repository_path": "src/applicability/mod.rs",
+        "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+        "bytes": 75602
+      },
+      {
+        "repository_path": "src/workspace/bundle_effects.rs",
+        "sha256": "c7fa350180bb21b960337ed743f9bdcd1857662cb48eee8649b964ebdf8707c6",
+        "bytes": 42572
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+        "bytes": 9787
+      },
+      {
+        "repository_path": "src/workspace/root.rs",
+        "sha256": "a79d8a930bc7b7f1d0b0e228dd91ccf081036c5024183aaf0ec4687d19bd07fb",
+        "bytes": 30692
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "sha256": "5fc2374db7224ed28a928393b9c164873f9498df648790a37a355e080ce3c2f6",
+        "bytes": 68687
+      }
+    ],
+    "source_pins_after": [
+      {
+        "repository_path": "Cargo.lock",
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+        "bytes": 74338
+      },
+      {
+        "repository_path": "Cargo.toml",
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+        "bytes": 2344
+      },
+      {
+        "repository_path": "schemas/forge.workspace-1.schema.json",
+        "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+        "bytes": 4223
+      },
+      {
+        "repository_path": "src/applicability/mod.rs",
+        "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+        "bytes": 75602
+      },
+      {
+        "repository_path": "src/workspace/bundle_effects.rs",
+        "sha256": "c7fa350180bb21b960337ed743f9bdcd1857662cb48eee8649b964ebdf8707c6",
+        "bytes": 42572
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+        "bytes": 9787
+      },
+      {
+        "repository_path": "src/workspace/root.rs",
+        "sha256": "a79d8a930bc7b7f1d0b0e228dd91ccf081036c5024183aaf0ec4687d19bd07fb",
+        "bytes": 30692
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "sha256": "5fc2374db7224ed28a928393b9c164873f9498df648790a37a355e080ce3c2f6",
+        "bytes": 68687
+      }
+    ],
+    "source_bytes_unchanged_during_command": true,
+    "test_summaries": {
+      "summaries": 0,
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    "log": {
+      "path": "/private/tmp/forge-f19-browser-llvm-s6-hosted-lint-assertion-v1.log",
+      "sha256": "b9ef891fc09af793d696d2133765da79dc4f37b7af6cd6672bf084d7c6ca7fbc",
+      "bytes": 131
+    }
+  },
+  "hosted_failure": {
+    "log": "/private/tmp/forge-f19-s6-hosted-pr195-failed-tests-v1.log",
+    "sha256": "fb5d463ca9d0e340edc1b3ad813d28684baceb260bde1dd14bcd5023c806b37b",
+    "reason": "Rust1.99 Clippy assert_is_empty at bundle_effects.rs716 in the lint step. The workflow runs tests before lint; failed-step output alone supplies no test totals."
+  },
+  "preserved_profile_index": "/private/tmp/forge-f19-s6-llvm-preserved-before-hosted-lint-v1/index.json"
+}

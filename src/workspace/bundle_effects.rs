@@ -713,7 +713,7 @@ mod tests {
         assert!(plan.target.base.is_none());
         assert_eq!(plan.consumed_file_count, 0);
         assert!(plan.external.is_empty());
-        assert!(plan.input_hashes.is_empty());
+        assert_eq!(plan.input_hashes, [] as [Value; 0]);
         let replacement = plan.replacement.unwrap();
         assert!(replacement["previous_index"].is_null());
         assert_eq!(replacement["removed_resource_keys"], json!([]));
