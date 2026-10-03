@@ -1941,6 +1941,7 @@ mod tests {
             super::super::contract::validate("Operation", &terminal).unwrap();
         }
     }
+    #[cfg(unix)]
     /// Fill actual distinct ready reply cells; these inert shutdown DTOs authorize no filesystem work.
     fn shared_retention_replies(store: &mut Store, count: usize) {
         for ordinal in 0..count {

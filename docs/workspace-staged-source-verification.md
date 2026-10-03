@@ -1,5 +1,10 @@
 # Staged source transfer verification
 
+The following initial implementation measurements are preserved from commit
+`9cfc6d0714a4a21b19a11421a7581199899c42cb`. The Windows helper successor below
+has its own source snapshots and narrower whole-suite coverage; the original
+native-augmented report is not relabelled as a new run.
+
 The API 2.4 staged source transfer implementation passed the local checks below against Rust 1.99.0. It adds eight operations to API 2 (65 total) and the explicit `forge.workspace-index-bundle/4` profile. The default inline workflow, its request limit, and API 1/1.2 remain available. The source parent is `2064e2933844a827e13b9880c8cfefd1cb2184ee`; these results describe its staged successor and do not establish a merge or release.
 
 The [machine-readable verification report](plans/2026-10-03-f19-staged-source-verification.json) records exact source, binary, receipt, log, census and coverage identities. Historical source-bundle reports and failed attempts remain separate. A test count, a documented function and a native check are distinct quantities.
@@ -46,8 +51,49 @@ rtk proxy python3 -B scripts/test_workspace_staged_source_browser.py --forge /ab
 
 The report binds the actual commands, toolchain, compiled binary, full raw coverage exports and preserved profile index. Earlier disk-exhaustion runs and the browser driver's inherited inline-filename assertion failure remain retained without pass credit. The filename expectation was corrected to the staged filename; the production UI needed no corresponding change. Subsequent module-documentation cleanup changed nine comment lines and no executable lines; the final suite rebuilt a byte-identical instrumented binary and all native campaigns were rerun.
 
-## Remaining gates
+## Windows test-helper successor
 
-Hosted staged checks are pending on the new draft. Linux/macOS/Windows source-parent CI successes are a separate synthetic-merge result. Its supply-chain job reported 20 cargo-vet gaps, and its Linux OS-denial experiment was incomplete with `tool-untrusted`; neither is waived by these local checks.
+Hosted initial-head CI identified one Windows strict-Clippy failure: test helper
+`shared_retention_replies` was compiled on Windows while both callers were
+already Unix-only. Add the same `#[cfg(unix)]` guard to the documented helper.
+Its body and the shipping code are unchanged; no warning suppression is added.
+
+Fresh exact-source whole-suite coverage passed **2,992 tests**, zero failed,
+three ignored; all thirteen Rust paths have equal before/after snapshots.
+Formatting and strict all-target/all-feature Clippy passed with the same complete
+snapshot scope. Documentation remains **228/228 selected functions**, 26/26 types,
+93/93 fields and 17/17 variants, with the existing 80 whole-file legacy gaps retained.
+The current whole-suite header cohort is **221/228 positive, seven zero and none
+unmapped**: production 124/131, cfg-test 89/89, integration 8/8. All 368 matched
+instances, including 107 zero instances, remain in the report.
+
+This current run includes no native/browser profile merge. Mixed LLVM lines are
+**72,539/79,761 (90.9454%)** and functions **6,535/7,675 (85.1466%)**; branch and
+MC/DC denominators remain unavailable. The earlier augmented 227/228 header
+cohort above has its own native campaigns and remains historical evidence.
+The native instrumented binary was separately observed byte-identical; the
+coverage job does not attest executable bytes before and after execution.
+
+The first guard coverage run passed, but its recorder captured only nine of the
+thirteen Rust paths. Its genuine run, raw profiles and objects are preserved
+with that limitation. The corrected recorder repeated the suite with all thirteen
+paths, rather than inventing missing snapshots. See the
+[successor report](plans/2026-10-03-f19-staged-windows-helper-verification.json).
+
+## Hosted initial-head results and remaining gates
+
+Requested head `9cfc6d0714a4a21b19a11421a7581199899c42cb` was tested as synthetic
+merge `07f271315d08b425d7426d1c6dc344b496d7569c`, ordered parents `2064e293` and
+`9cfc6d07`. Linux/macOS CI and all three API jobs passed. Native staged runs on
+Linux and macOS each passed 29 ordered checks with four normal exits. Hosted
+Chrome export, restore and fresh read-only lookup passed with three normal
+Forge/Node exits, one restore confirmation and eight retained screenshots.
+The native Windows staged step was skipped. These artifacts remain bound to
+the initial head; they do not qualify the helper successor on Windows.
+
+The initial Windows CI failure was the helper lint described above. The
+supply-chain job reported 20 unvetted `safe-to-deploy` dependencies and exit255;
+Linux OS-denial remained incomplete. Those gates are not waived. Fresh hosted
+checks for the guard are pending after push.
 
 Native Windows transaction, platform/crash/rollback, qualified OS confinement, audit/owner decisions, browser/assistive-technology/human evaluation, remaining F01–F22 interoperability and the final integrated goal-wide documentation review remain open. See the [staged workflow](workspace-staged-source-bundles.md), [integrated documentation scope checkpoint](plans/2026-10-03-integrated-documentation-staged-successor.md) and [authoring gate register](authoring-gates.md). No participant judgments, owner approval, merge, tag, release or publication are recorded here.
