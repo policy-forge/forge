@@ -8,14 +8,18 @@ TEMP-before fallback is embedded here. Every child and HTTP response is fake.
 import io
 import json
 import unittest
+import tempfile
+from pathlib import Path
 from collections import defaultdict, deque
 from contextlib import ExitStack
 from unittest import mock
 
 import workspace_client as library
 
-FORGE = "/private/tmp/client-version-fixture/forge"
-PROJECT = "/private/tmp/client-version-fixture/project"
+# Mock launch expectations use the same platform-native absolute spelling on every host.
+FIXTURE_ROOT = (Path(tempfile.gettempdir()) / "client-version-fixture").resolve()
+FORGE = str(FIXTURE_ROOT / "forge")
+PROJECT = str(FIXTURE_ROOT / "project")
 SESSION_ID = "sess_0123456789abcdef"
 CAPABILITY = "c" * 64
 

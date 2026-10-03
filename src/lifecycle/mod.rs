@@ -2,6 +2,8 @@
 
 pub mod record;
 
+/// Shared pure portfolio checks consumed by CLI loading and captured workspace status.
+pub(crate) mod portfolio;
 /// Crate-internal pure status projection over validated captured lifecycle facts.
 pub(crate) mod status;
 
@@ -694,73 +696,10 @@ fn load_record(path: &Path) -> Result<(Vec<u8>, LifecycleRecord), ForgeError> {
     Ok((bytes, record))
 }
 
+/// Feed the ordinary CLI's complete admitted records into the consumed pure portfolio validator.
 fn validate_portfolio(records: &[(PathBuf, LifecycleRecord)]) -> Result<(), ForgeError> {
-    let mut by_key = BTreeMap::new();
-    for (_, record) in records {
-        let key = (record.policy.policy_key.clone(), record.policy.version_key.clone());
-        if by_key.insert(key.clone(), record).is_some() {
-            return Err(error(format!(
-                "portfolio contains duplicate policy version '{}:{}'",
-                key.0, key.1
-            )));
-        }
-    }
-    for (_, record) in records {
-        if let Some(replacement) = &record.replaced_by {
-            let key = (replacement.policy_key.clone(), replacement.version_key.clone());
-            let target = by_key.get(&key).ok_or_else(|| {
-                error(format!(
-                    "supersession replacement '{}:{}' is not in the supplied portfolio",
-                    key.0, key.1
-                ))
-            })?;
-            let superseded_at = record
-                .history
-                .iter()
-                .rfind(|event| event.next_state == LifecycleState::Superseded)
-                .map(|event| event.timestamp.as_str())
-                .ok_or_else(|| error("superseded record lacks transition history"))?;
-            let replacement_approved_at = target
-                .history
-                .iter()
-                .rfind(|event| event.next_state == LifecycleState::Approved)
-                .map(|event| event.timestamp.as_str())
-                .ok_or_else(|| {
-                    error(format!("replacement '{}:{}' was never approved", key.0, key.1))
-                })?;
-            let superseded_at = chrono::DateTime::parse_from_rfc3339(superseded_at)
-                .map_err(|source| error(format!("invalid supersession time: {source}")))?;
-            let approved_at = chrono::DateTime::parse_from_rfc3339(replacement_approved_at)
-                .map_err(|source| error(format!("invalid replacement approval time: {source}")))?;
-            if approved_at > superseded_at {
-                return Err(error("replacement approval must not be later than supersession"));
-            }
-        }
-    }
-    for start in by_key.keys() {
-        let mut seen = BTreeSet::new();
-        let mut current = start.clone();
-        while let Some(next) = by_key.get(&current).and_then(|record| record.replaced_by.as_ref()) {
-            if !seen.insert(current.clone()) {
-                return Err(error(format!(
-                    "supersession cycle includes '{}:{}'",
-                    current.0, current.1
-                )));
-            }
-            let next_key = (next.policy_key.clone(), next.version_key.clone());
-            if next_key == *start {
-                return Err(error(format!(
-                    "supersession cycle includes '{}:{}'",
-                    start.0, start.1
-                )));
-            }
-            current = next_key;
-            if !by_key.contains_key(&current) {
-                break;
-            }
-        }
-    }
-    Ok(())
+    let admitted = records.iter().map(|(_, record)| record).collect::<Vec<_>>();
+    portfolio::validate(&admitted)
 }
 
 fn write_reports(

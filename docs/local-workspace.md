@@ -238,8 +238,8 @@ Python cannot guarantee physical zeroization of immutable strings.
 
 The normative contract is [OpenAPI](api/forge-workspace-v1.openapi.yaml), with
 [compatibility policy](api/compatibility.md) and [capability matrix](api/capability-matrix.md).
-Default launches use additive unreleased contract 1.2.0; explicit v2 launches use [contract 2.0.0](api/forge-workspace-v2.openapi.yaml). It includes closed initialization,
-optional provenance references and read-only index-bundle queries. Existing domain
+Default launches use additive unreleased contract 1.2.0; explicit v2 launches use [contract 2.1.0](api/forge-workspace-v2.openapi.yaml). It includes closed initialization,
+optional provenance references, read-only index-bundle queries, and the nine captured lifecycle and framework-impact reads described in [the inspection guide](workspace-lifecycle-impact.md). Existing domain
 `/1` meanings remain unchanged.
 The public Rust `Commands::Workspace` variant extends an exhaustive enum and
 requires a release compatibility decision for downstream matches. No release
@@ -303,8 +303,8 @@ all OS processes are network-denied.
 
 Current API/client verification is configured separately on Linux, macOS and
 Windows, including ordinary PRs with stacked bases. Versioned `/2` receipts
-retain the current 16 client assertion groups and complete 39-operation
-inventory, exact inputs, requested head/base and tested Git parents. A passed
+retain the current 16 client assertion groups and complete API1/1.2.0
+39-operation inventory, exact inputs, requested head/base and tested Git parents. A passed
 receipt covers the declared three-suite slice only. See the
 [current verification guide](plans/2026-10-02-f04-current-api-verification.md)
 and [development record](workspace-current-api-verification.md) for status,

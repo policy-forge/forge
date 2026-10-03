@@ -1,0 +1,638 @@
+{
+  "format": "forge.f19-s3-portable-fixture-successor/1",
+  "baseline_commit": "fe2fcf3b0baf7ce1e1c235cd120bbe05ba177ae1",
+  "change": "Platform-native absolute mock fixture spelling; production client and Rust/UI/dependencies unchanged.",
+  "coverage": {
+    "format": "forge.f19-portable-fixture-coverage/1",
+    "candidate_base": "fe2fcf3b0baf7ce1e1c235cd120bbe05ba177ae1",
+    "test_exit_code": 0,
+    "registered_mock_tests": 25,
+    "named_functions": 47,
+    "documented_named_functions": 47,
+    "positive_first_body_lines": 46,
+    "zero_first_body_functions": [
+      "readline"
+    ],
+    "source_before": {
+      "scripts/test_workspace_client_versions.py": {
+        "sha256": "01405c22855858efa3e51fa22ce1e23ea6bfc6bdf681a7a9ccd3d8f04cff5086",
+        "size_bytes": 28048
+      },
+      "scripts/workspace_client.py": {
+        "sha256": "bcd592b2579ff79b6a3363a4da7df4dffdd4fe87effffddddfe01e16dfef1745",
+        "size_bytes": 16374
+      }
+    },
+    "source_after": {
+      "scripts/test_workspace_client_versions.py": {
+        "sha256": "01405c22855858efa3e51fa22ce1e23ea6bfc6bdf681a7a9ccd3d8f04cff5086",
+        "size_bytes": 28048
+      },
+      "scripts/workspace_client.py": {
+        "sha256": "bcd592b2579ff79b6a3363a4da7df4dffdd4fe87effffddddfe01e16dfef1745",
+        "size_bytes": 16374
+      }
+    },
+    "source_unchanged": true,
+    "functions": [
+      {
+        "name": "descriptor",
+        "definition_line": 27,
+        "documented": true,
+        "first_body_line": 29,
+        "first_body_line_count": 192
+      },
+      {
+        "name": "session",
+        "definition_line": 37,
+        "documented": true,
+        "first_body_line": 39,
+        "first_body_line_count": 100
+      },
+      {
+        "name": "__init__",
+        "definition_line": 47,
+        "documented": true,
+        "first_body_line": 49,
+        "first_body_line_count": 79
+      },
+      {
+        "name": "read",
+        "definition_line": 53,
+        "documented": true,
+        "first_body_line": 55,
+        "first_body_line_count": 79
+      },
+      {
+        "name": "__init__",
+        "definition_line": 62,
+        "documented": true,
+        "first_body_line": 64,
+        "first_body_line_count": 82
+      },
+      {
+        "name": "readline",
+        "definition_line": 67,
+        "documented": true,
+        "first_body_line": 69,
+        "first_body_line_count": 0
+      },
+      {
+        "name": "__init__",
+        "definition_line": 76,
+        "documented": true,
+        "first_body_line": 78,
+        "first_body_line_count": 82
+      },
+      {
+        "name": "poll",
+        "definition_line": 84,
+        "documented": true,
+        "first_body_line": 86,
+        "first_body_line_count": 116
+      },
+      {
+        "name": "wait",
+        "definition_line": 88,
+        "documented": true,
+        "first_body_line": 90,
+        "first_body_line_count": 75
+      },
+      {
+        "name": "kill",
+        "definition_line": 98,
+        "documented": true,
+        "first_body_line": 100,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "__init__",
+        "definition_line": 107,
+        "documented": true,
+        "first_body_line": 109,
+        "first_body_line_count": 79
+      },
+      {
+        "name": "request",
+        "definition_line": 114,
+        "documented": true,
+        "first_body_line": 116,
+        "first_body_line_count": 158
+      },
+      {
+        "name": "getresponse",
+        "definition_line": 120,
+        "documented": true,
+        "first_body_line": 122,
+        "first_body_line_count": 79
+      },
+      {
+        "name": "close",
+        "definition_line": 126,
+        "documented": true,
+        "first_body_line": 128,
+        "first_body_line_count": 79
+      },
+      {
+        "name": "__init__",
+        "definition_line": 134,
+        "documented": true,
+        "first_body_line": 136,
+        "first_body_line_count": 82
+      },
+      {
+        "name": "spawn",
+        "definition_line": 147,
+        "documented": true,
+        "first_body_line": 149,
+        "first_body_line_count": 74
+      },
+      {
+        "name": "connection",
+        "definition_line": 152,
+        "documented": true,
+        "first_body_line": 154,
+        "first_body_line_count": 79
+      },
+      {
+        "name": "response_for",
+        "definition_line": 158,
+        "documented": true,
+        "first_body_line": 160,
+        "first_body_line_count": 79
+      },
+      {
+        "name": "enqueue",
+        "definition_line": 169,
+        "documented": true,
+        "first_body_line": 171,
+        "first_body_line_count": 12
+      },
+      {
+        "name": "__enter__",
+        "definition_line": 175,
+        "documented": true,
+        "first_body_line": 177,
+        "first_body_line_count": 82
+      },
+      {
+        "name": "launch",
+        "definition_line": 183,
+        "documented": true,
+        "first_body_line": 185,
+        "first_body_line_count": 82
+      },
+      {
+        "name": "__exit__",
+        "definition_line": 191,
+        "documented": true,
+        "first_body_line": 193,
+        "first_body_line_count": 82
+      },
+      {
+        "name": "test_invalid_major_abstains_before_popen",
+        "definition_line": 205,
+        "documented": true,
+        "first_body_line": 207,
+        "first_body_line_count": 9
+      },
+      {
+        "name": "test_default_v1_original_argv_and_no_session_read",
+        "definition_line": 214,
+        "documented": true,
+        "first_body_line": 216,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_explicit_v1_writable_does_not_add_version_flag",
+        "definition_line": 228,
+        "documented": true,
+        "first_body_line": 230,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_matching_v2_bootstrap_and_explicit_argv",
+        "definition_line": 235,
+        "documented": true,
+        "first_body_line": 237,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_v2_writable_scope_bootstrap",
+        "definition_line": 248,
+        "documented": true,
+        "first_body_line": 250,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_unknown_optional_descriptor_and_session_fields_tolerated",
+        "definition_line": 256,
+        "documented": true,
+        "first_body_line": 258,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_v2_missing_required_descriptor_fields_fail_before_http",
+        "definition_line": 267,
+        "documented": true,
+        "first_body_line": 269,
+        "first_body_line_count": 9
+      },
+      {
+        "name": "test_v2_descriptor_major_version_pid_and_session_id_rejected",
+        "definition_line": 279,
+        "documented": true,
+        "first_body_line": 281,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_v2_descriptor_url_capability_mode_and_scope_rejected",
+        "definition_line": 296,
+        "documented": true,
+        "first_body_line": 298,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_descriptor_size_bound_precedes_bootstrap_http",
+        "definition_line": 311,
+        "documented": true,
+        "first_body_line": 313,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_malformed_descriptor_is_safe_and_precedes_http",
+        "definition_line": 322,
+        "documented": true,
+        "first_body_line": 324,
+        "first_body_line_count": 7
+      },
+      {
+        "name": "test_v2_session_mismatch_never_reaches_project_route",
+        "definition_line": 333,
+        "documented": true,
+        "first_body_line": 335,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_v2_session_shape_or_missing_fields_fail_closed",
+        "definition_line": 348,
+        "documented": true,
+        "first_body_line": 350,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_minor_version_requires_matching_session_not_silent_rewrite",
+        "definition_line": 364,
+        "documented": true,
+        "first_body_line": 366,
+        "first_body_line_count": 1
+      },
+      {
+        "name": "test_foreign_prefix_rejected_before_pacing_or_transport",
+        "definition_line": 373,
+        "documented": true,
+        "first_body_line": 375,
+        "first_body_line_count": 3
+      },
+      {
+        "name": "test_relative_api_path_guard_and_selected_prefix",
+        "definition_line": 388,
+        "documented": true,
+        "first_body_line": 390,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_bundle_helpers_use_selected_routes_and_preserve_supplied_value",
+        "definition_line": 397,
+        "documented": true,
+        "first_body_line": 399,
+        "first_body_line_count": 3
+      },
+      {
+        "name": "test_wait_polls_same_selected_operation_id",
+        "definition_line": 412,
+        "documented": true,
+        "first_body_line": 414,
+        "first_body_line_count": 3
+      },
+      {
+        "name": "test_wait_timeout_abstains_from_operation_poll",
+        "definition_line": 425,
+        "documented": true,
+        "first_body_line": 427,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_commit_routes_exact_confirmation_preview_and_key",
+        "definition_line": 434,
+        "documented": true,
+        "first_body_line": 436,
+        "first_body_line_count": 3
+      },
+      {
+        "name": "test_close_selected_shutdown_and_original_owner_cleanup",
+        "definition_line": 453,
+        "documented": true,
+        "first_body_line": 455,
+        "first_body_line_count": 3
+      },
+      {
+        "name": "test_close_retains_original_wait_timeout_fallback",
+        "definition_line": 470,
+        "documented": true,
+        "first_body_line": 472,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_raw_response_ceiling_and_connection_cleanup",
+        "definition_line": 481,
+        "documented": true,
+        "first_body_line": 483,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_typed_error_payload_and_http_close_preserved",
+        "definition_line": 496,
+        "documented": true,
+        "first_body_line": 498,
+        "first_body_line_count": 2
+      },
+      {
+        "name": "test_json_request_bound_and_nonfinite_values_precede_http",
+        "definition_line": 508,
+        "documented": true,
+        "first_body_line": 510,
+        "first_body_line_count": 2
+      }
+    ],
+    "scope": "Real 25 mocked controls on macOS Python; no Windows execution, product process, branch, thread-hook or coverage-completion claim."
+  },
+  "executed_jobs": [
+    {
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "lifecycle-s3-portable-versions-controls-v1",
+      "started_utc": "2026-10-03T08:52:16.277111+00:00",
+      "finished_utc": "2026-10-03T08:52:16.409205+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "fe2fcf3b0baf7ce1e1c235cd120bbe05ba177ae1",
+      "head_after": "fe2fcf3b0baf7ce1e1c235cd120bbe05ba177ae1",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "scripts/test_workspace_client_versions.py"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_pins": [
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "scripts/test_workspace_client_versions.py",
+          "sha256": "01405c22855858efa3e51fa22ce1e23ea6bfc6bdf681a7a9ccd3d8f04cff5086",
+          "bytes": 28048
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+          "bytes": 29123
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf",
+          "bytes": 62397
+        }
+      ],
+      "source_pins_after": [
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "scripts/test_workspace_client_versions.py",
+          "sha256": "01405c22855858efa3e51fa22ce1e23ea6bfc6bdf681a7a9ccd3d8f04cff5086",
+          "bytes": 28048
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+          "bytes": 29123
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf",
+          "bytes": 62397
+        }
+      ],
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-lifecycle-s3-portable-versions-controls-v1.log",
+        "sha256": "8a90d8ebff1487de63ea7b2b5eb4b2803a33ce462a7470cd27b626e94f19dd08",
+        "bytes": 124
+      }
+    },
+    {
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "lifecycle-s3-portable-fixture-trace-v1",
+      "started_utc": "2026-10-03T08:53:28.945626+00:00",
+      "finished_utc": "2026-10-03T08:53:29.235682+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "fe2fcf3b0baf7ce1e1c235cd120bbe05ba177ae1",
+      "head_after": "fe2fcf3b0baf7ce1e1c235cd120bbe05ba177ae1",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "/private/tmp/forge-f19-s3-portable-fixture-coverage-v1.py"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_pins": [
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "scripts/test_workspace_client_versions.py",
+          "sha256": "01405c22855858efa3e51fa22ce1e23ea6bfc6bdf681a7a9ccd3d8f04cff5086",
+          "bytes": 28048
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+          "bytes": 29123
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf",
+          "bytes": 62397
+        }
+      ],
+      "source_pins_after": [
+        {
+          "repository_path": "Cargo.lock",
+          "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+          "bytes": 74338
+        },
+        {
+          "repository_path": "Cargo.toml",
+          "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+          "bytes": 2344
+        },
+        {
+          "repository_path": "schemas/forge.workspace-1.schema.json",
+          "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+          "bytes": 4223
+        },
+        {
+          "repository_path": "scripts/test_workspace_client_versions.py",
+          "sha256": "01405c22855858efa3e51fa22ce1e23ea6bfc6bdf681a7a9ccd3d8f04cff5086",
+          "bytes": 28048
+        },
+        {
+          "repository_path": "src/applicability/mod.rs",
+          "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+          "bytes": 75602
+        },
+        {
+          "repository_path": "src/workspace/index.rs",
+          "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+          "bytes": 9787
+        },
+        {
+          "repository_path": "src/workspace/root.rs",
+          "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+          "bytes": 29123
+        },
+        {
+          "repository_path": "src/workspace/services.rs",
+          "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf",
+          "bytes": 62397
+        }
+      ],
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-lifecycle-s3-portable-fixture-trace-v1.log",
+        "sha256": "179df13c483107b581afda3dda076d13e7d3b7fabc54428999d7a697f296a076",
+        "bytes": 334
+      }
+    }
+  ],
+  "original_hosted_windows_failure": {
+    "format": "forge.f19-job/1",
+    "started_utc": "2026-10-03T08:49:51.716805+00:00",
+    "completed_utc": "2026-10-03T08:49:55.070920+00:00",
+    "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+    "head_before": "fe2fcf3b0baf7ce1e1c235cd120bbe05ba177ae1",
+    "command": [
+      "rtk",
+      "proxy",
+      "gh",
+      "run",
+      "view",
+      "37109011383",
+      "--repo",
+      "policy-forge/forge",
+      "--job",
+      "111163113562",
+      "--log-failed"
+    ],
+    "exit_code": 0,
+    "log": {
+      "path": "/private/tmp/forge-f19-lifecycle-s3-windows-api-failure-log-v1.log",
+      "sha256": "2b5872dc8e4ff7c17d25b692b62dee603e672ae74014bb75d8e7ddbdde4dcd0a",
+      "size_bytes": 21543
+    },
+    "preserved_config_sha256": "c76d551c107bd3c3e56d496c843726643c36e39559c02bd42d8dcc22978c9e5b"
+  },
+  "limits": [
+    "Local Python execution is macOS only; corrected Windows execution needs a later hosted result.",
+    "The readline helper has zero first-body observations because ordinary trace does not install thread hooks.",
+    "No whole-body, branch, release, human, audit or full documentation acceptance is claimed."
+  ]
+}

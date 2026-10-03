@@ -3,7 +3,7 @@
 > **Document Type:** Capability Matrix
 > **Audience:** Product, engineering, LLM agents, human reviewers
 > **Status:** Draft
-> **Last Updated:** 2026-09-08
+> **Last Updated:** 2026-10-02
 > **Owner:** Brian Luby
 
 ---
@@ -79,12 +79,14 @@ and the normative API definition is
 | CM-32 | Render loading, refresh, and empty states from documented reads | cross-cutting | US-1 | `getProjectSummary`, `listResources`, `listReviewQueueItems` | browser-read |
 | CM-33 | Recover from errors, conflicts, and lost responses | cross-cutting | US-10 | `commitEffectPreview`, `getOperation` | browser-write |
 | CM-34 | Expose machine-readable status for accessible announcements | cross-cutting | US-11 | `getOperation`, `listReviewQueueItems` | browser-read |
-| CM-35 | Drive the complete workspace through the published API | cross-cutting | US-13 | all 39 operations: `unlockSession`, `getSession`, `shutdownSession`, `getProjectSummary`, `getProjectConfigStatus`, `listResources`, `getResource`, `registerResource`, `uploadResource`, `preparePolicyConversion`, `getConversion`, `runValidation`, `getResourceValidation`, `listApplicabilityControls`, `getApplicabilityDraft`, `validateApplicabilityDraft`, `putApplicabilityDraft`, `analyzeApplicability`, `getApplicabilityReport`, `listMappingSubjects`, `getMappingDraft`, `validateMappingDraft`, `putMappingDraft`, `checkMapping`, `buildMapping`, `listReviewQueueItems`, `getReviewQueueCounts`, `listProvenanceEntries`, `getProvenanceExcerpt`, `getEffectPreview`, `commitEffectPreview`, `getOperation`, `cancelOperation`, `prepareReportExport`, `downloadExport`, `initializeApplicabilityDraft`, `initializeMappingDraft`, `getProjectBundlePreview`, `verifyProjectBundle` | browser-write |
+| CM-35 | Drive the complete workspace through the published API | cross-cutting | US-13 | `analyzeApplicability`, `buildMapping`, `cancelOperation`, `checkMapping`, `commitEffectPreview`, `downloadExport`, `getApplicabilityDraft`, `getApplicabilityReport`, `getConversion`, `getEffectPreview`, `getMappingDraft`, `getOperation`, `getProjectConfigStatus`, `getProjectSummary`, `getProvenanceExcerpt`, `getResource`, `getResourceValidation`, `getReviewQueueCounts`, `getSession`, `listApplicabilityControls`, `listMappingSubjects`, `listProvenanceEntries`, `listResources`, `listReviewQueueItems`, `preparePolicyConversion`, `prepareReportExport`, `putApplicabilityDraft`, `putMappingDraft`, `registerResource`, `runValidation`, `shutdownSession`, `unlockSession`, `uploadResource`, `validateApplicabilityDraft`, `validateMappingDraft`, `initializeApplicabilityDraft`, `initializeMappingDraft`, `getProjectBundlePreview`, `verifyProjectBundle`, `getLifecycleRecords`, `getLifecycleRecord`, `getLifecycleHistory`, `getLifecycleQueue`, `getFrameworkImpactComparisons`, `getFrameworkImpactComparison`, `getFrameworkImpactChanges`, `getFrameworkImpactFindings`, `getFrameworkImpactPriorDispositions` | browser-write |
 | CM-36 | Initialize scope from a selected registered Catalog | 4 | US-2, US-13 | `initializeApplicabilityDraft` | browser-write |
 | CM-37 | Initialize mapping from explicitly selected Catalogs and supplied review metadata | 5 | US-3, US-13 | `initializeMappingDraft` | browser-write |
 
 | CM-38 | Preview complete metadata and acknowledge a local JSON download | cross-cutting | US-7, US-13 | `getProjectBundlePreview` | browser-read |
 | CM-39 | Compare chosen metadata JSON bytes with registered fingerprints | cross-cutting | US-7, US-13 | `verifyProjectBundle` | browser-read |
+| CM-40 | Inspect lifecycle status, history and owner review queue | cross-cutting | US-1, US-6, US-13 | `getLifecycleRecords`, `getLifecycleRecord`, `getLifecycleHistory`, `getLifecycleQueue` | browser-read |
+| CM-41 | Inspect captured framework comparisons, changes, findings and prior dispositions | cross-cutting | US-1, US-6, US-13 | `getFrameworkImpactComparisons`, `getFrameworkImpactComparison`, `getFrameworkImpactChanges`, `getFrameworkImpactFindings`, `getFrameworkImpactPriorDispositions` | browser-read |
 
 Full notes for each entry, including the UX states and acceptance criteria
 each one covers, live in [capability-matrix-v2.json](capability-matrix-v2.json).
@@ -121,4 +123,4 @@ in both files, and representative fixtures. Removing or narrowing any entry
 is a compatibility change governed by
 [compatibility.md](compatibility.md).
 
-API v2 is selected explicitly with `--api-major 2`. The initial 39 operations include conditional index2 registration/migration and paired metadata bundles. Lifecycle and impact read views remain a subsequent integration gate.
+API v2 is selected explicitly with `--api-major 2`. Contract 2.1.0 declares 48 operations, adding the nine captured lifecycle and impact reads (CM-40 and CM-41) to the initial 2.0.0 foundation. Default API1/1.2.0 remains 39 operations. Native accessibility, platform, independent and human acceptance remain separate gates.

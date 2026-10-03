@@ -187,8 +187,14 @@ registration, role-specific admission profiles and maintained-client examples.
 Both families' declared archive assets are in
 [release-artifacts.json](release-artifacts.json). One normative document per
 major is checked directly by the same offline meta-schema, complete component,
-fixture and bidirectional matrix gates. The v2 Session is exact 2.0.0; its machine
+fixture and bidirectional matrix gates. At the historical foundation checkpoint, the v2 Session was exact 2.0.0; its machine
 descriptor adds `api_major: 2` to the original seven-field descriptor shape.
 V1's descriptor remains unchanged. The existing one-stable-minor support window
 applies. Full lifecycle/impact read views, human/platform/security acceptance and
 product release authorization remain separate gates.
+
+## Unreleased contract 2.1.0
+
+Adds nine authenticated captured reads for lifecycle inventory, explicit-date status, recorded history and owner queues, plus framework comparison inventory, current detail, changes, findings and prior-only dispositions. The current v2 Session, descriptor and bundled assets advertise exact 2.1.0. The default v1/1.2.0 family and its 39 operations retain their bytes and meanings; v2 now declares 48 operations. The maintained client retains matching numeric API2 descriptor/Session version negotiation. Its inspection methods require exact 2.1.0; older sessions retain the foundation surface.
+
+The closed successor DTOs distinguish complete counts, filtered pages, captured snapshot identity and comparison identity. A cooperative ten-second read budget covers worker wait, capture, domain work and response validation/encoding. New typed stops return 503 without partial results; shutdown keeps its existing 400 contract. These queries create no effect or project mutation. See [inspection guidance](../workspace-lifecycle-impact.md) for dates, paging, sensitivity and declared-identity limits. Native accessibility, complete platform/browser parity, independent security, human acceptance, audit and product release remain separate gates.

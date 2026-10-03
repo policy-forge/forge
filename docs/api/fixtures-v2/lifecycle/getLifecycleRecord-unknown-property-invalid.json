@@ -1,0 +1,54 @@
+{
+  "approved_fingerprints": {
+    "generated_artifacts": [
+      {
+        "path": "catalog.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "source_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "artifact_identity_changes": [],
+  "as_of": "2026-10-02",
+  "blockers": [],
+  "current_fingerprints": {
+    "generated_artifacts": [
+      {
+        "path": "catalog.json",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "source_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "derived_status": "approved",
+  "impact_references": [
+    {
+      "binding": "unresolved",
+      "finding_id": "locally-declared-unresolved-id"
+    }
+  ],
+  "next_review_date": "2026-11-02",
+  "owner_keys": [
+    "owner-a"
+  ],
+  "policy_key": "policy-a",
+  "provenance": [
+    {
+      "resource_id": "res_11111111111111111111111111111111",
+      "role": "lifecycle-record",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "size_bytes": 2048,
+      "validation_state": "valid"
+    }
+  ],
+  "record_id": "res_11111111111111111111111111111111",
+  "replaced_by": null,
+  "replacement_record_id": null,
+  "resource_id": "res_11111111111111111111111111111111",
+  "resource_version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "snapshot_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "state": "approved",
+  "trust_boundary": "actor identities and authority are declared locally and are not authenticated by FORGE",
+  "version_key": "v1",
+  "inferred_approval": true
+}

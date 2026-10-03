@@ -2890,3 +2890,454 @@ test("busy registration preserves trigger focus and blocks duplicate preparation
   assert.equal(app.run("dirty"), true);
   assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
 });
+
+// S3 TEMP proposal controls execute the whole selected production asset through the
+// existing fake-DOM transport. They do not validate domain fixtures or prove native
+// keyboard, layout, offline, AT, privacy or human acceptance.
+const s3RecordId = "res_record000001";
+const s3ComparisonId = "res_compare000001";
+const s3Snapshot = "e".repeat(64);
+const s3ComparisonVersion = "f".repeat(64);
+const s3FindingId = "11111111-1111-5111-8111-111111111111";
+const s3OtherFindingId = "22222222-2222-5222-8222-222222222222";
+const s3Bootstrap = {"forge-api-major":"2", "forge-api-contract-version":"2.1.0"};
+
+/** Supply every complete ChangeSummary field, independently from emitted filter matches. */
+function s3Summary(overrides = {}) {
+  return {old_controls:1, new_controls:1, added:0, removed:0, content_changed:1, identity_migrated:0, unchanged:0,
+    findings:2, blocking:1, review_required:1, informational:0, dispositioned_resolved:1,
+    dispositioned_accepted_risk:0, dispositioned_still_open:0, undispositioned:1, ...overrides};
+}
+
+/** Build declared old/new fingerprint metadata, with poisoned prose intentionally outside the allowlist. */
+function s3Fingerprint(id, hash = "a") {
+  return {resource_id:id, resource_type:"catalog", raw_sha256:hash.repeat(64), root_uuid:"11111111-1111-5111-8111-111111111111",
+    document_version:"1", oscal_version:"1.2.3", resolved_catalog_sha256:null, resolved_catalog_resource_id:null,
+    title:"MUST_NOT_RENDER_TITLE", href:"MUST_NOT_RENDER_HREF"};
+}
+
+/** Construct bounded page envelopes with distinct entity counts and explicit capture context. */
+function s3Page(kind, items, extras = {}) {
+  const counts = {records:{registered_records:items.length, matching_records:items.length, unavailable_records:0},
+    history:{total_events:items.length}, queue:{distinct_records:1, total_owner_placements:items.length, matching_owner_placements:items.length, total_groups:1, matching_groups:items.length?1:0},
+    comparisons:{registered_comparisons:items.length, unavailable_comparisons:0}, changes:{total_changes:items.length, matching_changes:items.length},
+    findings:{total_findings:2, matching_findings:items.length}, prior:{total_prior_dispositions:items.length}}[kind];
+  const page = {resource_version:createHash("sha256").update("s3-page-"+kind).digest("hex"), snapshot_version:s3Snapshot, availability:"available", as_of:null,
+    page:{items, total_matching:items.length, next_cursor:null}, counts,
+    ...(["changes", "findings", "prior"].includes(kind) ? {comparison_id:s3ComparisonId, comparison_version:s3ComparisonVersion} : {}),
+    ...(kind === "findings" ? {full_summary:s3Summary(), emitted_dispositions:{resolved:items.some(item=>item.disposition)?1:0, accepted_risk:0, still_open:0, undispositioned:items.filter(item=>!item.disposition).length}} : {}),
+    ...extras};
+  return page;
+}
+
+/** Supply one stored record; derived state remains absent until the authored response receives an explicit date. */
+function s3Record(id = s3RecordId, asOf = null) {
+  return {record_id:id, record_version:"a".repeat(64), resource_id:id, policy_key:"policy-key", version_key:"v1", state:"approved",
+    derived_status:asOf ? "approved" : null, owner_keys:["owner-A", "owner-B"], next_review_date:"2026-10-03",
+    availability:"valid", diagnostic_code:null, validation_state:"valid", title:"MUST_NOT_RENDER_TITLE", rationale:"MUST_NOT_RENDER_RATIONALE"};
+}
+
+/** Provide metadata-only lifecycle detail at the exact date requested by the source consumer. */
+function s3RecordDetail(url, extras = {}) {
+  return {resource_version:"b".repeat(64), snapshot_version:s3Snapshot, record_id:s3RecordId, resource_id:s3RecordId,
+    policy_key:"policy-key", version_key:"v1", as_of:url.searchParams.get("as_of"), state:"approved", derived_status:"approved",
+    owner_keys:["owner-A", "owner-B"], next_review_date:"2026-10-03", blockers:[],
+    current_fingerprints:{source_sha256:"a".repeat(64), generated_artifacts:[{path:"policy.json", sha256:"b".repeat(64)}]},
+    approved_fingerprints:null, artifact_identity_changes:[], replaced_by:null, replacement_record_id:null,
+    impact_references:[{finding_id:s3FindingId, binding:"unresolved"}], provenance:[],
+    trust_boundary:"actor identities and authority are declared locally and are not authenticated by FORGE",
+    title:"MUST_NOT_RENDER_TITLE", rationale:"MUST_NOT_RENDER_RATIONALE", parties:[{name:"MUST_NOT_RENDER_PARTY"}], ...extras};
+}
+
+/** Provide fixed comparison context and complete unfiltered summary for all child pages. */
+function s3ComparisonDetail(extras = {}) {
+  return {resource_version:s3ComparisonVersion, snapshot_version:s3Snapshot, comparison_id:s3ComparisonId, resource_id:s3ComparisonId,
+    freshness:"captured-current", old:s3Fingerprint("res_oldcatalog001"), new:s3Fingerprint("res_newcatalog001", "b"), summary:s3Summary(),
+    provenance:[], prior_report_sha256:"c".repeat(64), prior_report_admission:"limited-structural",
+    trust_boundary:"review dispositions and migration assertions are declared locally; FORGE does not authenticate reviewers or approve risk",
+    rationale:"MUST_NOT_RENDER_RATIONALE", ...extras};
+}
+
+/** Provide pair-scoped findings with different owners/groups and one declared disposition. */
+function s3Findings() {
+  return ["A", "B"].map((suffix, number) => ({finding_id:number ? s3OtherFindingId : s3FindingId, comparison_id:s3ComparisonId,
+    comparison_version:s3ComparisonVersion, priority:number ? "review-required" : "blocking", reason_code:"control_content_changed",
+    required_action:"review-control-change", subject_id:"control-1", change_class:"content-changed", old_sha256:"a".repeat(64), new_sha256:"b".repeat(64),
+    old_subjects:[{id:"control-1", sha256:"a".repeat(64)}], new_subjects:[{id:"control-1", sha256:"b".repeat(64)}], migration:null,
+    framework_groups:[number ? "group-B" : "group-A"], affected_artifact_id:null, dependency_id:null, policy_resource_identity:"policy-key",
+    prior_gap_classification:"applicable-mapped", prior_decision_state:"applicable", owner:"owner-"+suffix, policy_sources:["source-"+suffix],
+    disposition:number ? null : {finding_id:s3FindingId, status:"resolved", decided_by:"declared-reviewer", decided_at:"2026-10-01T00:00:00Z", rationale:"MUST_NOT_RENDER_RATIONALE"},
+    source_excerpt:"MUST_NOT_RENDER_SOURCE"}));
+}
+
+/** Author all nine synthetic query routes; these are renderer controls, not valid domain registrations. */
+function s3Routes() {
+  return {
+    /** Match the new shell contract through the real unlock handler before any authenticated query. */
+    "/session/unlock":()=>lifecycleSession(true, {contract_version:"2.1.0"}),
+    /** Inventory computes derived metadata only when its explicit query date is supplied. */
+    "/lifecycle/records":url=>s3Page("records", [s3Record(s3RecordId, url.searchParams.get("as_of"))], {as_of:url.searchParams.get("as_of")}),
+    /** Echo the explicit date for a selected registered lifecycle record. */
+    ["/lifecycle/records/"+s3RecordId]:url=>s3RecordDetail(url),
+    /** History keeps declared assertion/finding metadata without computed date or prose. */
+    ["/lifecycle/records/"+s3RecordId+"/history"]:()=>s3Page("history", [{event_id:"44444444-4444-5444-8444-444444444444", sequence:1, timestamp:"2026-10-01T00:00:00Z", previous_state:"in-review", next_state:"approved", actor_key:"actor-A", declared_role:"approver", assertions:[{actor_key:"actor-A", declared_role:"approver"}], impact_references:[{finding_id:s3FindingId, binding:"unresolved"}], replacement:null, rationale:"MUST_NOT_RENDER_RATIONALE"}], {record_id:s3RecordId}),
+    /** Owner placements deliberately outnumber distinct records and groups. */
+    "/lifecycle/queue":url=>s3Page("queue", ["owner-A", "owner-B"].map(owner_key=>({record_id:s3RecordId, resource_id:s3RecordId, owner_key, next_review_date:"2026-10-03", policy_key:"policy-key", version_key:"v1", state:"approved", derived_status:"approved", blockers:[]})), {as_of:url.searchParams.get("as_of"), counts:{distinct_records:1, total_owner_placements:2, matching_owner_placements:2, total_groups:2, matching_groups:2}}),
+    /** Comparison inventory declares fingerprints without claiming computed freshness. */
+    "/framework-impact/comparisons":()=>s3Page("comparisons", [{comparison_id:s3ComparisonId, resource_id:s3ComparisonId, manifest_sha256:"d".repeat(64), old:s3Fingerprint("res_oldcatalog001"), new:s3Fingerprint("res_newcatalog001", "b"), availability:"valid", diagnostic_code:null, freshness:"not-computed"}]),
+    /** Detail binds the unfiltered pair version used by every child page/finding. */
+    ["/framework-impact/comparisons/"+s3ComparisonId]:()=>s3ComparisonDetail(),
+    /** Exact class filters alter matching rows/counts, preserving complete change counts. */
+    ["/framework-impact/comparisons/"+s3ComparisonId+"/changes"]:url=>{
+      const items = [{subject_id:"control-1", change_class:"content-changed", old_sha256:"a".repeat(64), new_sha256:"b".repeat(64), old_subjects:[], new_subjects:[], migration:null}];
+      const visible = !url.searchParams.has("change_class") || url.searchParams.get("change_class") === "content-changed" ? items : [];
+      return s3Page("changes", visible, {resource_version:createHash("sha256").update("changes-"+(url.searchParams.get("change_class")||"all")).digest("hex"), counts:{total_changes:1, matching_changes:visible.length}});
+    },
+    /** All five exact filters combine with AND while the complete summary remains unchanged. */
+    ["/framework-impact/comparisons/"+s3ComparisonId+"/findings"]:url=>{
+      const visible = s3Findings().filter(item => (!url.searchParams.has("group") || item.framework_groups.includes(url.searchParams.get("group"))) &&
+        (!url.searchParams.has("decision_state") || item.prior_decision_state === url.searchParams.get("decision_state")) &&
+        (!url.searchParams.has("policy_source") || item.policy_sources.includes(url.searchParams.get("policy_source"))) &&
+        (!url.searchParams.has("priority") || item.priority === url.searchParams.get("priority")) && (!url.searchParams.has("owner") || item.owner === url.searchParams.get("owner")));
+      return s3Page("findings", visible, {resource_version:createHash("sha256").update("findings-"+(url.searchParams.get("owner")||"all")).digest("hex")});
+    },
+    /** Prior-only rows retain declared actor/status metadata without claiming current finding disposition. */
+    ["/framework-impact/comparisons/"+s3ComparisonId+"/prior-dispositions"]:()=>s3Page("prior", [{finding_id:"33333333-3333-5333-8333-333333333333", status:"still-open", decided_by:"actor-prior", decided_at:"2026-09-30T00:00:00Z", rationale:"MUST_NOT_RENDER_RATIONALE"}]),
+  };
+}
+
+/** Unlock and navigate through the complete actual source using the exact additive shell contract. */
+async function s3App(overrides = {}) {
+  const app = harness({...s3Routes(), ...overrides}, s3Bootstrap);
+  await beginUnlock(app).action;
+  await app.run('navigate("Lifecycle & Impact")');
+  return app;
+}
+
+/** Resolve one persistent pager's installed region, live counts and local recovery targets. */
+function s3Parts(app, kind) {
+  const section = app.byId("view").querySelector(`[data-inspection-page="${kind}"]`);
+  assert(section, "Missing S3 pane: "+kind);
+  return {section, display:section.querySelector("[data-page-results]"), status:section.querySelector("[data-page-status]"), error:section.querySelector("[data-page-error]")};
+}
+
+/** Apply only a caller-authored date through the actual local query form. */
+async function s3Date(app, date = "2026-10-02") {
+  app.byLabel("Explicit lifecycle review date").value = date;
+  await app.byButton("Apply lifecycle date and filters").fire("click");
+}
+
+for (const fixture of [{major:1, version:null}, {major:2, version:"2.0.0"}]) {
+  /** Preserved old contracts expose their original six destinations and never emit an S3 read. */
+  test(`S3 remains unavailable on preserved API${fixture.major} contract ${fixture.version || "1.2.0"}`, async()=>{
+    const app = harness({/** Return only the selected old-major Session for the supported old bootstrap. */ "/session/unlock":()=>fixture.major===1?unlockedSession():lifecycleSession()}, fixture.major===1?{"forge-api-major":"1"}:lifecycleBootstrap2);
+    await beginUnlock(app).action;
+    assert.equal(app.byId("navigation").children.length, 6);
+    assert.equal(app.byId("navigation").textContent.includes("Lifecycle & Impact"), false);
+    await app.run('navigate("Lifecycle & Impact")');
+    assert.match(app.byId("view").textContent, /requires negotiated API2 2.1.0/);
+    assert.equal(app.requests.some(request=>/lifecycle|framework-impact/.test(request.route)), false);
+  });
+}
+
+/** The new contract exposes real read paths, explicit dates, distinct owner scopes and unresolved references. */
+test("S3 consumes all nine GET routes without effects, source prose, implicit dates or finding-ID joins", async()=>{
+  const app = await s3App();
+  assert.equal(app.byId("navigation").children.length, 7);
+  assert.equal(app.requests.some(request=>request.route==="/lifecycle/queue"), false);
+  assert.equal(app.requests.some(request=>request.route==="/lifecycle/records/"+s3RecordId), false);
+  assert.match(s3Parts(app,"records").display.textContent, /Not computed without an explicit date/);
+  await app.byButton("Inspect record "+s3RecordId).fire("click");
+  assert.match(app.byId("view").textContent, /recorded transition history only/);
+  assert.equal(app.requests.some(request=>request.route==="/lifecycle/records/"+s3RecordId), false);
+  await s3Date(app);
+  assert.match(s3Parts(app,"queue").status.textContent, /1 distinct records · 2 total owner placements.*2 total owner groups/);
+  assert.match(s3Parts(app,"queue").display.textContent, /Declared owner owner-A.*Declared owner owner-B/);
+  assert.equal(app.requests.some(request=>request.route==="/framework-impact/comparisons/"+s3ComparisonId), false);
+  assert.match(app.byId("view").textContent, /Finding identifiers have no comparison pair/);
+  await app.byButton("Inspect comparison "+s3ComparisonId).fire("click");
+  const expected = ["/lifecycle/records", "/lifecycle/records/"+s3RecordId, "/lifecycle/records/"+s3RecordId+"/history", "/lifecycle/queue",
+    "/framework-impact/comparisons", "/framework-impact/comparisons/"+s3ComparisonId, "/framework-impact/comparisons/"+s3ComparisonId+"/changes",
+    "/framework-impact/comparisons/"+s3ComparisonId+"/findings", "/framework-impact/comparisons/"+s3ComparisonId+"/prior-dispositions"];
+  for (const route of expected) assert(app.requests.some(request=>request.route===route), "Unused route "+route);
+  for (const request of app.requests) assert.equal(request.url.startsWith("/api/v2/"), true);
+  assert.equal(app.requests.filter(request=>/lifecycle|framework-impact/.test(request.route)).every(request=>request.options.method==="GET" && request.options.body===undefined), true);
+  assert.equal(app.requests.some(request=>/effects|exports|operations|resources\/register/.test(request.route)), false);
+  assert.equal(app.byId("view").textContent.includes("MUST_NOT_RENDER"), false);
+  assert.match(s3Parts(app,"findings").status.textContent, /2 complete findings · 2 matching findings/);
+  assert.match(s3Parts(app,"prior").status.textContent, /1 prior-only dispositions/);
+});
+
+/** Applied filters use their own page version and same-response full counts; no forbidden denominator query is made. */
+test("S3 changes and all five finding filters preserve the complete unfiltered summary", async()=>{
+  const app=await s3App(); await app.byButton("Inspect comparison "+s3ComparisonId).fire("click");
+  const initialRequests=app.requests.length;
+  app.byLabel("Impact change class").value="added";
+  await app.byButton("Apply Framework impact changes filters").fire("click");
+  assert.match(s3Parts(app,"changes").status.textContent,/1 complete changes · 0 matching changes/);
+  app.byLabel("Impact framework group").value="group-A";
+  app.byLabel("Impact prior decision state").value="applicable";
+  app.byLabel("Impact policy source identity").value="source-A";
+  app.byLabel("Impact finding priority").value="blocking";
+  app.byLabel("Impact owner key").value="owner-A";
+  await app.byButton("Apply Framework impact findings filters").fire("click");
+  const calls=app.requests.slice(initialRequests);
+  assert.equal(calls.length,2);
+  const url=new URL(calls[1].url,"http://127.0.0.1:1");
+  assert.deepEqual([...url.searchParams.keys()], ["page_size","group","decision_state","policy_source","priority","owner"]);
+  assert.match(s3Parts(app,"findings").status.textContent,/2 complete findings · 1 matching findings/);
+  assert.match(s3Parts(app,"findings").display.textContent,/Complete unfiltered comparison summary/);
+  assert.match(s3Parts(app,"findings").display.textContent,/Filtered emitted disposition scope/);
+  assert.equal(s3Parts(app,"findings").display.textContent.includes(s3OtherFindingId),false);
+  assert.equal(app.run("dirty"),false);
+});
+
+/** Opaque cursor reuse stays on one page/capture; a changed capture preserves verified rows and local restart recovery. */
+test("S3 page two uses its retained cursor and rejects changed capture without replacing counts or rows",async()=>{
+  let changed=false;
+  const app=await s3App({/** Supply 50 then one record under a 51-item page chain, with an optional capture conflict. */ "/lifecycle/records":url=>{
+    const second=url.searchParams.has("cursor");
+    const items=second?[s3Record("res_record000051")]:Array.from({length:50},(_,n)=>s3Record("res_record"+String(n+1).padStart(6,"0")));
+    return s3Page("records",items,{snapshot_version:changed?"d".repeat(64):s3Snapshot, page:{items,total_matching:51,next_cursor:second?null:"opaque-record-page2"}, counts:{registered_records:51,matching_records:51,unavailable_records:0}});
+  }});
+  const first=s3Parts(app,"records");
+  await app.byButton("Next Lifecycle record inventory page").fire("click");
+  assert.match(first.display.textContent,/res_record000051/);
+  assert.match(first.status.textContent,/Page 2/);
+  await app.byButton("Previous Lifecycle record inventory page").fire("click");
+  const retained=first.display.textContent; const prior=first.status.textContent;
+  changed=true; await app.byButton("Next Lifecycle record inventory page").fire("click");
+  assert.equal(first.display.textContent,retained);
+  assert.match(first.error.textContent,/page chain changed/);
+  assert.match(first.status.textContent,/Previous capture/);
+  assert.equal(app.document.activeElement===first.error,true,"Capture error must own focus");
+  assert.equal(app.byButton("Restart Lifecycle record inventory from first page").hidden,false);
+  changed=false;await app.byButton("Restart Lifecycle record inventory from first page").fire("click");
+  assert.match(first.status.textContent,/Page 1/);
+  assert.equal(first.error.hidden,true);
+  assert(prior.includes("51 registered records"));
+});
+
+/** A dated request from an obsolete installed view cannot replace a later date's capture or focus. */
+test("S3 navigation and a newer explicit date fence the older inventory and queue",async()=>{
+  const old=deferred();let hold=false;
+  const app=await s3App({/** Hold only the first dated inventory while a later installed view/date completes normally. */ "/lifecycle/records":url=>hold&&url.searchParams.get("as_of")==="2026-10-02"?old.promise:s3Page("records",[s3Record(s3RecordId,url.searchParams.get("as_of"))],{as_of:url.searchParams.get("as_of")})});
+  hold=true;app.byLabel("Explicit lifecycle review date").value="2026-10-02";
+  const first=app.byButton("Apply lifecycle date and filters").fire("click");await settle();
+  await app.run('navigate("Overview")');await app.run('navigate("Lifecycle & Impact")');
+  await s3Date(app,"2026-10-03");
+  const text=app.byId("view").textContent;const focus=app.document.activeElement;const global=app.byId("status").textContent;
+  old.resolve(s3Page("records",[s3Record(s3RecordId,"2026-10-02")],{as_of:"2026-10-02"}));await first;
+  assert.equal(app.byId("view").textContent,text);assert.equal(app.byId("status").textContent,global);
+  assert.equal(app.document.activeElement===focus,true,"Older date read must not take newer focus");
+  const dated=app.requests.filter(request=>request.route==="/lifecycle/queue");
+  assert.equal(new URL(dated.at(-1).url,"http://127.0.0.1:1").searchParams.get("as_of"),"2026-10-03");
+});
+
+/** Pending Apply keeps its original date/filter tuple and ignores repeated activation until it settles. */
+test("S3 pending lifecycle Apply preserves its captured date and blocks duplicate reads",async()=>{
+  const held=deferred();const app=await s3App({/** Hold one dated inventory while the query form can be edited without altering the sent request. */ "/lifecycle/records":url=>url.searchParams.has("as_of")?held.promise:s3Page("records",[s3Record()])});
+  const apply=app.byButton("Apply lifecycle date and filters");app.byLabel("Explicit lifecycle review date").value="2026-10-02";apply.focus();
+  const pending=apply.fire("click");await settle();app.byLabel("Explicit lifecycle review date").value="2026-10-03";await apply.fire("click");
+  assert.equal(app.document.activeElement===apply,true,"Pending query must retain its focusable trigger");
+  assert.equal(app.requests.filter(request=>request.route==="/lifecycle/records"&&new URL(request.url,"http://127.0.0.1:1").searchParams.has("as_of")).length,1);
+  held.resolve(s3Page("records",[s3Record(s3RecordId,"2026-10-02")],{as_of:"2026-10-02"}));await pending;
+  const queue=app.requests.filter(request=>request.route==="/lifecycle/queue").at(-1);
+  assert.equal(new URL(queue.url,"http://127.0.0.1:1").searchParams.get("as_of"),"2026-10-02");
+  assert.equal(apply.getAttribute("aria-disabled"),"false");
+});
+
+/** Cross-endpoint captures and finding pair context must both match the selected detail before any child group installs. */
+for (const defect of ["snapshot", "comparison", "version", "full-summary", "emitted-counts"]) {
+  /** Reject this concrete capture, pair, full-summary or emitted-count defect before group installation. */
+  test("S3 rejects staged comparison " + defect + " without installing a mixed-context finding",async()=>{
+    const app=await s3App({/** Return one deliberate peer-context defect while leaving the other two subpages authentic to the fixture. */ ["/framework-impact/comparisons/"+s3ComparisonId+"/findings"]:()=>{
+      const result=s3Page("findings",s3Findings());
+      if(defect==="snapshot")result.snapshot_version="d".repeat(64);
+      if(defect==="comparison")result.page.items[0].comparison_id="res_foreign01";
+      if(defect==="version")result.page.items[0].comparison_version="d".repeat(64);
+      if(defect==="full-summary")result.full_summary.blocking=99;
+      if(defect==="emitted-counts")result.emitted_dispositions.undispositioned=99;
+      return result;
+    }});
+    await app.byButton("Inspect comparison "+s3ComparisonId).fire("click");
+    const selected=app.byId("view").querySelector('[data-inspection-selection="Selected framework impact comparison"]');
+    assert.equal(selected.querySelector("[data-page-error]").hidden,false);
+    assert.equal(selected.textContent.includes("Finding "+s3FindingId),false);
+    assert.equal(selected.querySelector('[data-inspection-page="findings"]'),null);
+    assert.equal(app.document.activeElement===selected.querySelector("[data-page-error]"),true,"Selected capture error must keep local focus");
+  });
+}
+
+/** A typed service failure stays local and retries one captured selection, preserving global and dirty states. */
+test("S3 typed query-budget failure keeps local recovery and does not announce Saved",async()=>{
+  let fails=true;
+  const app=await s3App({/** Fail only selected detail, then allow its exact explicit retry to stage all children. */ ["/framework-impact/comparisons/"+s3ComparisonId]:()=>fails?{status:503,body:{code:"query-budget-exceeded",message:"The captured query budget was exhausted.",retryable:true}}:s3ComparisonDetail()});
+  const global=app.byId("status").textContent;
+  await app.byButton("Inspect comparison "+s3ComparisonId).fire("click");
+  const selected=app.byId("view").querySelector('[data-inspection-selection="Selected framework impact comparison"]');
+  assert.match(selected.querySelector("[data-page-error]").textContent,/query-budget-exceeded/);
+  assert.equal(app.byId("status").textContent,global);
+  assert.equal(app.run("dirty"),false);
+  assert.equal(app.byId("status").textContent.includes("Saved"),false);
+  fails=false;await app.byButton("Retry Selected framework impact comparison").fire("click");
+  assert.equal(selected.querySelector("[data-page-error]").hidden,true);
+  assert.match(s3Parts(app,"findings").display.textContent,new RegExp(s3FindingId));
+});
+
+/** Dirty cancellation keeps the connected trigger and prevents a new inspection request. */
+test("S3 Keep editing leaves existing metadata and caller focus without sending a selected read",async()=>{
+  const app=await s3App();app.run("dirty=true");const trigger=app.byButton("Inspect comparison "+s3ComparisonId);trigger.focus();
+  const count=app.requests.length;const action=trigger.fire("click");await settle();
+  await app.byButton("Keep editing").fire("click");await action;
+  assert.equal(app.requests.length,count);
+  assert.equal(app.run("dirty"),true);
+  assert.equal(app.document.activeElement===trigger,true,"Keep editing must preserve the initiating connected trigger");
+});
+
+for(const transition of ["navigate","shutdown"]) {
+  /** A late selected detail cannot publish metadata/error/focus over a newer view or stopped session. */
+  test(`S3 late selected comparison after ${transition} is retired without child queries`,async()=>{
+    const held=deferred();const app=await s3App({/** Hold actual selected detail until a newer UI lifecycle owns the page. */ ["/framework-impact/comparisons/"+s3ComparisonId]:()=>held.promise,
+      /** Acknowledge normal selected-major shutdown so stopped fences can be observed. */ "/session/shutdown":()=>({state:"shutting-down"})});
+    const action=app.byButton("Inspect comparison "+s3ComparisonId).fire("click");await settle();
+    if(transition==="navigate")await app.run('navigate("Overview")');
+    else {await app.byId("stop").fire("click");await app.byId("confirm-stop").fire("click");}
+    const focus=app.document.activeElement;const text=app.byId("view").textContent;const status=app.byId("status").textContent;
+    held.resolve(s3ComparisonDetail());await action;
+    assert.equal(app.byId("view").textContent,text);assert.equal(app.byId("status").textContent,status);
+    assert.equal(app.document.activeElement===focus,true,"Late selection must not steal newer focus");
+    assert.equal(app.requests.some(request=>/\/changes$|\/findings$|\/prior-dispositions$/.test(request.route)),false);
+  });
+}
+
+/** Owner filtering preserves full distinct membership/placements/groups and sends no queue state filter. */
+test("S3 lifecycle owner filter keeps distinct full-scope and matching placement counts separate",async()=>{
+  const app=await s3App({/** Apply the exact authored owner to rows while preserving unfiltered queue counts. */ "/lifecycle/queue":url=>s3Page("queue",[{record_id:s3RecordId,resource_id:s3RecordId,owner_key:url.searchParams.get("owner"),next_review_date:"2026-10-03",policy_key:"policy-key",version_key:"v1",state:"approved",derived_status:"approved",blockers:[]}],{as_of:url.searchParams.get("as_of"),counts:{distinct_records:1,total_owner_placements:2,matching_owner_placements:1,total_groups:2,matching_groups:1}})});
+  app.byLabel("Lifecycle owner key").value="owner-A";app.byLabel("Stored lifecycle state").value="approved";await s3Date(app);
+  const records=new URL(app.requests.filter(request=>request.route==="/lifecycle/records").at(-1).url,"http://127.0.0.1:1");
+  const queue=new URL(app.requests.filter(request=>request.route==="/lifecycle/queue").at(-1).url,"http://127.0.0.1:1");
+  assert.equal(records.searchParams.get("owner"),"owner-A");assert.equal(records.searchParams.get("state"),"approved");
+  assert.equal(queue.searchParams.get("owner"),"owner-A");assert.equal(queue.searchParams.has("state"),false);
+  assert.match(s3Parts(app,"queue").status.textContent,/1 distinct records · 2 total owner placements · 1 matching owner placements · 2 total owner groups · 1 matching owner groups/);
+  assert.equal(s3Parts(app,"queue").display.textContent.includes("owner-B"),false);
+});
+
+/** Failed cross-endpoint date staging keeps the old inventory's usable recorded-history controls and date semantics. */
+test("S3 mixed inventory/queue captures retain the prior date and do not compute a selected record",async()=>{
+  const app=await s3App({/** Supply a foreign queue capture so the dated group cannot replace recorded inventory. */ "/lifecycle/queue":url=>s3Page("queue",[],{snapshot_version:"d".repeat(64),as_of:url.searchParams.get("as_of"),counts:{distinct_records:0,total_owner_placements:0,matching_owner_placements:0,total_groups:0,matching_groups:0}})});
+  const before=s3Parts(app,"records").display.textContent;await s3Date(app);
+  assert.equal(s3Parts(app,"records").display.textContent,before);
+  assert.match(app.byId("view").textContent,/could not be staged at one capture/);
+  await app.byButton("Inspect record "+s3RecordId).fire("click");
+  assert.equal(app.requests.some(request=>request.route==="/lifecycle/records/"+s3RecordId),false);
+  assert.match(app.byId("view").textContent,/recorded transition history only/);
+});
+
+for(const availability of ["absent-index","index-upgrade-required","empty"]) {
+  /** Zero counts retain distinct setup states and never infer approval or query a date-dependent queue. */
+  test(`S3 zero inventory preserves ${availability} separately`,async()=>{
+    const app=await s3App({/** Supply a closed zero record envelope with its actual setup state. */ "/lifecycle/records":()=>s3Page("records",[],{availability}),
+      /** Supply the same explicit comparison setup state independently. */ "/framework-impact/comparisons":()=>s3Page("comparisons",[],{availability})});
+    assert.match(s3Parts(app,"records").status.textContent,new RegExp(availability+": 0 registered records"));
+    assert.match(s3Parts(app,"comparisons").status.textContent,new RegExp(availability+": 0 registered comparisons"));
+    assert.equal(app.requests.some(request=>request.route==="/lifecycle/queue"),false);
+  });
+}
+
+/** An explicit newer focus target is retained when a still-owned earlier detail read completes. */
+test("S3 pending comparison success does not take focus from a later lifecycle date control",async()=>{
+  const held=deferred();const app=await s3App({/** Hold selected detail while the user deliberately moves focus to an independent query lane. */ ["/framework-impact/comparisons/"+s3ComparisonId]:()=>held.promise});
+  const trigger=app.byButton("Inspect comparison "+s3ComparisonId);trigger.focus();const action=trigger.fire("click");await settle();
+  const target=app.byLabel("Explicit lifecycle review date");target.focus();held.resolve(s3ComparisonDetail());await action;
+  assert.equal(app.document.activeElement===target,true,"A later connected focus target must retain focus");
+  assert.match(s3Parts(app,"findings").display.textContent,new RegExp(s3FindingId));
+});
+
+/** A finding page keeps complete filtered counts/dispositions even when only 50 rows are displayed. */
+test("S3 finding pagination retains whole filtered counts and exact comparison context across page two",async()=>{
+  const summary=s3Summary({findings:51,blocking:0,review_required:51,dispositioned_resolved:0,undispositioned:51});
+  const rows=Array.from({length:51},(_,index)=>({...s3Findings()[1],finding_id:"00000000-0000-5000-8000-"+String(index+1).padStart(12,"0")}));
+  const app=await s3App({/** Bind complete unfiltered counts to the fixed comparison detail. */ ["/framework-impact/comparisons/"+s3ComparisonId]:()=>s3ComparisonDetail({summary}),
+    /** Return only bounded selected rows, but retain all 51 filtered findings/dispositions in page metadata. */ ["/framework-impact/comparisons/"+s3ComparisonId+"/findings"]:url=>{
+      const second=url.searchParams.has("cursor");const items=second?rows.slice(50):rows.slice(0,50);
+      return s3Page("findings",items,{page:{items,total_matching:51,next_cursor:second?null:"opaque-finding-page2"},counts:{total_findings:51,matching_findings:51},full_summary:summary,emitted_dispositions:{resolved:0,accepted_risk:0,still_open:0,undispositioned:51}});
+    }});
+  await app.byButton("Inspect comparison "+s3ComparisonId).fire("click");
+  const pane=s3Parts(app,"findings");assert.match(pane.status.textContent,/51 complete findings · 51 matching findings.*Page 1/);
+  await app.byButton("Next Framework impact findings page").fire("click");
+  assert.match(pane.status.textContent,/51 complete findings · 51 matching findings.*Page 2/);
+  assert.equal(pane.display.textContent.includes(rows[50].finding_id),true);assert.equal(pane.display.textContent.includes(rows[0].finding_id),false);
+  const reads=app.requests.filter(request=>request.route.endsWith("/findings"));assert.equal(reads.length,2);
+  assert.equal(new URL(reads[1].url,"http://127.0.0.1:1").searchParams.get("cursor"),"opaque-finding-page2");
+  assert.equal(pane.error.hidden,true);
+});
+
+/** Handled filtered-page errors and failed retries keep the owned local alert rather than the invoking button. */
+test("S3 handled page API failure and retry retain local error focus and verified rows", async()=>{
+  let fails=true;
+  const app=await s3App({/** Fail only the selected changes filter; initial complete comparison remains valid. */ ["/framework-impact/comparisons/"+s3ComparisonId+"/changes"]:url=>url.searchParams.has("change_class")&&fails?{status:503,body:{code:"query-budget-exceeded",message:"The captured query budget was exhausted.",retryable:true}}:s3Page("changes",[{subject_id:"ac-1",change_class:"content-changed",old_sha256:"a".repeat(64),new_sha256:"b".repeat(64),old_subjects:[],new_subjects:[],migration:null}])});
+  await app.byButton("Inspect comparison "+s3ComparisonId).fire("click");
+  const pane=s3Parts(app,"changes");const rows=pane.display.textContent;const global=app.byId("status").textContent;
+  app.byLabel("Impact change class").value="content-changed";
+  const trigger=app.byButton("Apply Framework impact changes filters");trigger.focus();await trigger.fire("click");
+  assert.equal(pane.display.textContent,rows);assert.match(pane.error.textContent,/query-budget-exceeded/);
+  assert.equal(app.document.activeElement===pane.error,true,"Handled page failure must keep the local alert focused");
+  const retry=app.byButton("Retry Framework impact changes");retry.focus();await retry.fire("click");
+  assert.equal(app.document.activeElement===pane.error,true,"Failed page retry must not refocus its trigger");
+  const query=new URL(app.requests.filter(request=>request.route.endsWith("/changes")).at(-1).url,"http://127.0.0.1:1");
+  assert.equal(query.searchParams.get("change_class"),"content-changed");
+  fails=false;retry.focus();await retry.fire("click");assert.equal(pane.error.hidden,true);
+  assert.equal(app.byId("status").textContent,global);assert.equal(app.run("dirty"),false);
+});
+
+/** A selected dated record's ordinary API failure and retry remain local, never requesting history on failed detail. */
+test("S3 handled selected record failure and retry retain local alert focus",async()=>{
+  let fails=true;
+  const app=await s3App({/** Reject only selected record detail, with a normal typed not-found response. */ ["/lifecycle/records/"+s3RecordId]:url=>fails?{status:404,body:{code:"not-found",message:"The registered record is unavailable.",retryable:false}}:s3RecordDetail(url)});
+  await s3Date(app);const trigger=app.byButton("Inspect record "+s3RecordId);trigger.focus();await trigger.fire("click");
+  const selected=app.byId("view").querySelector('[data-inspection-selection="Selected lifecycle record"]');const error=selected.querySelector("[data-page-error]");
+  assert.match(error.textContent,/not-found/);assert.equal(app.document.activeElement===error,true,"Selected record error must remain focused");
+  assert.equal(app.requests.some(request=>request.route.endsWith("/history")),false);
+  const retry=app.byButton("Retry Selected lifecycle record");retry.focus();await retry.fire("click");
+  assert.equal(app.document.activeElement===error,true,"Selected record retry must preserve local error focus");
+  fails=false;await retry.fire("click");assert.equal(error.hidden,true);
+  assert.equal(selected.querySelector('[data-inspection-page="history"]')!==null,true);
+});
+
+/** A comparison detail budget failure and failed selection retry preserve the same owned alert. */
+test("S3 handled selected comparison failure and retry retain local alert focus",async()=>{
+  const app=await s3App({/** Return a typed query budget failure before any comparison child can be staged. */ ["/framework-impact/comparisons/"+s3ComparisonId]:()=>({status:503,body:{code:"query-budget-exceeded",message:"The captured query budget was exhausted.",retryable:true}})});
+  const trigger=app.byButton("Inspect comparison "+s3ComparisonId);trigger.focus();await trigger.fire("click");
+  const selected=app.byId("view").querySelector('[data-inspection-selection="Selected framework impact comparison"]');const error=selected.querySelector("[data-page-error]");
+  assert.equal(app.document.activeElement===error,true,"Comparison detail failure must keep the local alert focused");
+  const retry=app.byButton("Retry Selected framework impact comparison");retry.focus();await retry.fire("click");
+  assert.equal(app.document.activeElement===error,true,"Failed comparison retry must not refocus its trigger");
+  assert.equal(app.requests.some(request=>/\/changes$|\/findings$|\/prior-dispositions$/.test(request.route)),false);
+});
+
+/** Local date validation keeps its alert focused and sends no query or replacement capture. */
+test("S3 invalid explicit date retains local alert focus without invoking a read",async()=>{
+  const app=await s3App();const prior=s3Parts(app,"records").display.textContent;const count=app.requests.length;
+  app.byLabel("Explicit lifecycle review date").value="2026-2-02";
+  const trigger=app.byButton("Apply lifecycle date and filters");trigger.focus();await trigger.fire("click");
+  const error=app.byId("view").querySelectorAll('[role="alert"]').find(item=>!item.hidden);
+  assert(error);assert.match(error.textContent,/explicit valid YYYY-MM-DD/);
+  assert.equal(app.document.activeElement===error,true,"Local date validation must not refocus Apply");
+  assert.equal(app.requests.length,count);assert.equal(s3Parts(app,"records").display.textContent,prior);
+});
+
+/** A failed dated inventory/queue staging retains the old date scope and its local error focus. */
+test("S3 handled lifecycle Apply failure retains local alert focus and prior date scope",async()=>{
+  const app=await s3App({/** Fail only explicitly dated inventory; the initial no-date inventory remains usable. */ "/lifecycle/records":url=>url.searchParams.has("as_of")?{status:503,body:{code:"query-budget-exceeded",message:"The captured query budget was exhausted.",retryable:true}}:s3Page("records",[s3Record()])});
+  const prior=s3Parts(app,"records").display.textContent;
+  app.byLabel("Explicit lifecycle review date").value="2026-10-02";
+  const trigger=app.byButton("Apply lifecycle date and filters");trigger.focus();await trigger.fire("click");
+  const error=app.byId("view").querySelectorAll('[role="alert"]').find(item=>!item.hidden);
+  assert(error);assert.match(error.textContent,/Previous date\/filter results are retained/);
+  assert.equal(app.document.activeElement===error,true,"Failed lifecycle staging must preserve its local alert focus");
+  assert.equal(s3Parts(app,"records").display.textContent,prior);
+  await app.byButton("Inspect record "+s3RecordId).fire("click");
+  assert.equal(app.requests.some(request=>request.route==="/lifecycle/records/"+s3RecordId),false);
+  assert.equal(app.byId("view").textContent.includes("recorded transition history only"),true);
+});

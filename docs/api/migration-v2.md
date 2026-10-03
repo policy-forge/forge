@@ -1,9 +1,9 @@
 # Select workspace API v2
 
 API v2 adds explicit lifecycle and framework-impact registrations and versioned
-metadata bundles. It is selected once at launch. API v1 remains the default, with
+metadata bundles, plus captured lifecycle and framework-impact read views. It is selected once at launch. API v1 remains the default, with
 its original seven roles and contract 1.2.0. These are unreleased implementations;
-the API contract version 2.0.0 does not announce a product release.
+the current API contract version 2.1.0 does not announce a product release. The initial 2.0.0 foundation is retained in PR #193 and its historical verification receipts.
 
 ## Launch and negotiate
 
@@ -16,7 +16,7 @@ python3 scripts/workspace_client.py --forge ./target/debug/forge --project ./exa
 
 A launch serves only its selected `/api/v1/` or `/api/v2/` namespace. Restart to
 select another major; credentials and retained previews belong to the original
-session. API v2 publishes `api_major: 2` and `api_version: "2.0.0"` in the sensitive
+session. API v2 publishes `api_major: 2` and `api_version: "2.1.0"` in the sensitive
 machine descriptor, and the same major and exact `contract_version` in Session.
 Keep the descriptor and capability out of logs. The bundled shell and maintained
 client verify this negotiation before project operations. Foreign-major paths
@@ -89,8 +89,7 @@ Resource responses expose the applicable optional `validation_profile`. A valid
 registration does not establish referenced dependency closure, current domain
 computation, freshness, reviewer identity or human approval. A prior impact report
 is not validated as a complete native/current report. Opaque lifecycle source
-registration grants no source excerpt access. The later captured lifecycle/impact
-read services and views remain a separate S-3 integration gate.
+registration grants no source excerpt access. The captured lifecycle and impact reads perform their own complete dependency and domain checks; see [the inspection guide](../workspace-lifecycle-impact.md).
 
 ## Inspect version-paired bundles
 
@@ -107,7 +106,7 @@ paths are never opened. Source content and import authority are excluded.
 
 See [the bundle guide](../workspace-index-bundles.md) for sensitivity acknowledgment,
 local download, normalized hashing and all bounds. Receipt-backed export/import,
-full S-3/S-6, native accessibility, platform, security, human acceptance and final
+S-6, full S-3 acceptance, native accessibility, platform, security, human acceptance and final
 integrated documentation review remain open where recorded.
 
 ## Contract and packaging artifacts
@@ -115,8 +114,7 @@ integrated documentation review remain open where recorded.
 The [v2 OpenAPI document](forge-workspace-v2.openapi.yaml),
 [v2 capability matrix](capability-matrix-v2.md), [v2 fixtures](fixtures-v2/README.md)
 and [index2 schema](../../schemas/forge.workspace-2.schema.json) are independently
-versioned alongside the unchanged v1 family. Each currently declares 39 operations;
-the nine planned S-3 queries are not credited as implemented.
+versioned alongside the unchanged v1 family. Current API1/1.2.0 declares 39 operations. API2/2.1.0 declares 48, adding nine captured read queries to the initial 39-operation foundation. The maintained client preserves numeric API2 descriptor/Session version negotiation; the inspection methods and navigation require 2.1.0.
 
 [release-artifacts.json](release-artifacts.json) declares both API families and
 the asset paths required in binary archives. Offline contract tests check their

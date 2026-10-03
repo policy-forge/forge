@@ -1017,11 +1017,11 @@ mod s3_api2_contracts {
         let one = load_openapi();
         let two = s3_api2_document();
         assert_eq!(one["info"]["version"], "1.2.0");
-        assert_eq!(two["info"]["version"], "2.0.0");
+        assert_eq!(two["info"]["version"], "2.1.0");
         let first = operations(&one);
         let second = operations(&two);
         assert_eq!(first.len(), 39);
-        assert_eq!(second.len(), 39);
+        assert_eq!(second.len(), 48);
         let mut left: Vec<_> = first
             .iter()
             .map(|operation| {
@@ -1034,6 +1034,7 @@ mod s3_api2_contracts {
             .collect();
         let mut right: Vec<_> = second
             .iter()
+            .filter(|operation| first.iter().any(|original| original.id == operation.id))
             .map(|operation| {
                 (
                     operation.method,
@@ -1047,7 +1048,7 @@ mod s3_api2_contracts {
         assert_eq!(left, right);
         assert_eq!(two["components"]["schemas"]["Session"]["properties"]["api_major"]["const"], 2);
         assert_eq!(one["components"]["schemas"]["Session"]["properties"]["api_major"]["const"], 1);
-        // The normative contract count does not establish implemented/runtime parity or the nine future S3 GETs.
+        // The additive contract retains all39 original operations; execution and full parity are separate evidence.
         assert!(second.iter().all(|operation| !operation.path.starts_with("/api/v1/")));
     }
 
@@ -1614,7 +1615,7 @@ fn release_inventory_contains_both_current_api_families() {
         ]
     );
     for (family, (major, version, index_version)) in
-        families.iter().zip([(1, "1.2.0", "forge.workspace/1"), (2, "2.0.0", "forge.workspace/2")])
+        families.iter().zip([(1, "1.2.0", "forge.workspace/1"), (2, "2.1.0", "forge.workspace/2")])
     {
         assert_eq!(family["api_major"], major);
         assert_eq!(family["contract_version"], version);
@@ -1623,7 +1624,7 @@ fn release_inventory_contains_both_current_api_families() {
         let document = load_yaml_as_json(&repo_path(document_path));
         assert_eq!(document["info"]["version"], version);
         let declared_operations = operations(&document);
-        assert_eq!(declared_operations.len(), 39);
+        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 48 });
         assert!(
             declared_operations
                 .iter()
@@ -1670,4 +1671,140 @@ fn release_inventory_contains_both_current_api_families() {
             );
         }
     }
+}
+
+/// Keep the nine captured reads authenticated, finite and confined to the API2 successor.
+#[test]
+fn lifecycle_impact_routes_have_exact_dates_queries_and_safe_stops() {
+    let one = load_openapi();
+    let two = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+    let routes: [(&str, &str, &[&str], bool); 9] = [
+        (
+            "/lifecycle/records",
+            "LifecycleRecordPage",
+            &["as_of", "owner", "state", "page_size", "cursor"],
+            false,
+        ),
+        ("/lifecycle/records/{record_id}", "LifecycleRecordDetail", &["as_of"], true),
+        (
+            "/lifecycle/records/{record_id}/history",
+            "LifecycleHistoryPage",
+            &["page_size", "cursor"],
+            false,
+        ),
+        (
+            "/lifecycle/queue",
+            "LifecycleQueuePage",
+            &["as_of", "owner", "page_size", "cursor"],
+            true,
+        ),
+        (
+            "/framework-impact/comparisons",
+            "FrameworkImpactComparisonPage",
+            &["page_size", "cursor"],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}",
+            "FrameworkImpactComparisonDetail",
+            &[],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}/changes",
+            "FrameworkImpactChangePage",
+            &["change_class", "page_size", "cursor"],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}/findings",
+            "FrameworkImpactFindingPage",
+            &[
+                "group",
+                "decision_state",
+                "policy_source",
+                "priority",
+                "owner",
+                "page_size",
+                "cursor",
+            ],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}/prior-dispositions",
+            "FrameworkImpactPriorDispositionPage",
+            &["page_size", "cursor"],
+            false,
+        ),
+    ];
+    for (suffix, schema, keys, required_date) in routes {
+        assert!(one["paths"].get(format!("/api/v1{suffix}")).is_none());
+        let operation = &two["paths"][format!("/api/v2{suffix}")]["get"];
+        assert_eq!(operation["security"], json!([{"capabilityBearer": []}]));
+        assert_eq!(
+            operation["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+            format!("#/components/schemas/{schema}")
+        );
+        assert!(operation["responses"].get("503").is_some());
+        let parameters = operation["parameters"].as_array().unwrap();
+        let resolved: Vec<&Value> = parameters
+            .iter()
+            .map(|value| {
+                value.get("$ref").map_or(value, |reference| {
+                    let name = reference
+                        .as_str()
+                        .unwrap()
+                        .strip_prefix("#/components/parameters/")
+                        .unwrap();
+                    &two["components"]["parameters"][name]
+                })
+            })
+            .filter(|value| value["in"] == "query")
+            .collect();
+        let actual: Vec<&str> =
+            resolved.iter().map(|value| value["name"].as_str().unwrap()).collect();
+        assert_eq!(actual, keys);
+        if let Some(date) = resolved.iter().find(|value| value["name"] == "as_of") {
+            assert_eq!(date["required"], required_date);
+            assert_eq!(date["schema"]["maxLength"], 10);
+        }
+        let dto = &two["components"]["schemas"][schema];
+        assert_eq!(dto["additionalProperties"], false);
+        assert!(dto["required"].as_array().unwrap().contains(&json!("snapshot_version")));
+        let _compiled = component_validator(&two, schema);
+    }
+}
+
+/// Admit the retryable inspection stop envelope only in the selected API2 contract.
+#[test]
+fn lifecycle_impact_stop_errors_preserve_the_api1_boundary() {
+    let one = load_openapi();
+    let two = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+    let old_error = component_validator(&one, "Error");
+    let new_error = component_validator(&two, "Error");
+    let mut sample =
+        load_yaml_as_json(&repo_path("docs/api/fixtures-v2/error/unauthorized-401.json"));
+    for code in ["query-budget-exceeded", "query-interrupted"] {
+        sample["code"] = json!(code);
+        sample["retryable"] = json!(true);
+        assert!(new_error.is_valid(&sample));
+        assert!(!old_error.is_valid(&sample));
+    }
+}
+
+/// Preserve actual native recorded dates while explicit query dates retain their narrower grammar.
+#[test]
+fn lifecycle_recorded_date_schema_accepts_native_negative_and_expanded_years() {
+    let two = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+    let recorded = component_validator(&two, "S3RecordedDate");
+    let query = component_validator(&two, "S3Date");
+    for year in [-10_000, -1, 1, 10_000] {
+        let actual = chrono::NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+        let value = serde_json::to_value(actual).unwrap();
+        assert!(recorded.is_valid(&value), "native recorded date excluded: {value}");
+        if !(0..=9999).contains(&year) {
+            assert!(!query.is_valid(&value), "expanded recorded year became a query date");
+        }
+    }
+    assert!(!recorded.is_valid(&json!("-000001-01-01-extra")));
 }

@@ -25,7 +25,9 @@ const requestRows = new Map();
 const retainedPagers = new WeakMap();
 // Installed metadata callbacks retire local disclosure ownership on every view epoch.
 const bundlePanels = new WeakMap();
-const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports"];
+// Captured S3 pane reads retire independently when a parent selection/date changes.
+const inspectionReaders = new WeakMap();
+const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports", ...(inspectionSupported() ? ["Lifecycle & Impact"] : [])];
 
 function node(tag, text, className) {
   const result = document.createElement(tag);
@@ -44,9 +46,9 @@ function showError(error) {
   box.focus();
 }
 
-/** Send only the declared supported major; preserve ordinary JSON and bounded raw-file generation fences. */
+/** Send only declared API1 or exact supported API2 metadata; preserve pacing and raw-file generation fences. */
 async function api(path, method = "GET", body, key, rawBody, rawIsCurrent) {
-  if (![1, 2].includes(apiMajor) || apiMajor === 2 && apiContractVersion !== "2.0.0") throw new Error("This page requires matching supported workspace API assets. Relaunch with the selected API major.");
+  if (![1, 2].includes(apiMajor) || apiMajor === 2 && !["2.0.0", "2.1.0"].includes(apiContractVersion)) throw new Error("This page requires matching supported workspace API assets. Relaunch with the selected API major.");
   if (rawBody !== undefined && (path !== "/project/bundle-verifications" || method !== "POST" || !(rawBody instanceof Blob) || rawBody.size > 1024 * 1024)) throw new Error("Unsupported raw metadata comparison request.");
   const now=performance.now();const reserved=Math.max(now,nextRequestAt);nextRequestAt=reserved+60;
   if(reserved>now)await new Promise(resolve=>setTimeout(resolve,reserved-now));
@@ -190,7 +192,7 @@ async function pagedTable(path, caption, columns, filters = []) {
   await load(0, cursors, applied); return section;
 }
 
-/** Install only an owned live view; dismissed write previews cannot publish a late refresh. */
+/** Install only an owned live view, including gated S3 reads; dismissed write previews cannot publish a late refresh. */
 async function renderView(isCurrent = () => true) {
   if (stopped || !isCurrent()) return false;
   invalidateBundlePanels();
@@ -242,6 +244,8 @@ async function renderView(isCurrent = () => true) {
       try {fragment.append(await pagedTable("/mapping/subjects","Policy and framework subjects",[["Side","side"],["Subject","subject_id"],["Label","label"]],[["side","Side",["policy","framework"]]]));}
       catch(error) {fragment.append(node("p",error.message));}
       fragment.append(await draftEditor("mapping"));
+    } else if (activeView === "Lifecycle & Impact") {
+      fragment.append(await lifecycleImpactView());
     } else {
       const resources = await collection("/resources");
       fragment.append(node("p", "Select a registered resource to inspect its source and decision references."));
@@ -265,6 +269,435 @@ async function renderView(isCurrent = () => true) {
       for (const section of element("view").querySelectorAll("[data-paged-table]")) retainedPagers.get(section)?.();
     }
   } }
+}
+
+/** Require the exact negotiated additive contract before exposing captured S3 reads. */
+function inspectionSupported() {
+  return apiMajor === 2 && apiContractVersion === "2.1.0";
+}
+
+/** Validate only the exact typed identifiers/capture hashes consumed by S3 read controls. */
+function inspectionIdentity(value, hash = false) {
+  return typeof value === "string" && (hash ? /^[0-9a-f]{64}$/.test(value) : /^res_[0-9a-z]{12,80}$/.test(value));
+}
+
+/** Require consumed nullable/metadata fields explicitly rather than treating omission as null. */
+function inspectionRequired(value, fields) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || fields.some(key => !Object.hasOwn(value, key))) throw new Error("The read omitted required captured metadata. Retry this read.");
+}
+
+/** Preserve every subject/hash pair in a bounded response using one escaped text region, not unbounded DOM rows. */
+function inspectionSubjects(caption, values) {
+  if (!Array.isArray(values) || values.length > 100000) throw new Error("The read returned unsupported subject fingerprints.");
+  if (values.some(value => typeof value?.id !== "string" || !inspectionIdentity(value.sha256, true))) throw new Error("The read returned unsupported subject fingerprint types.");
+  const section = node("section"); section.append(node("h4", `${caption}: ${values.length} fingerprints`), node("pre", values.map(value => `${inspectionValue(value.id)} · ${inspectionValue(value.sha256)}`).join("\n") || "None")); return section;
+}
+
+/** Display declared scalar metadata without serializing unknown objects or source-bearing fields. */
+function inspectionValue(value) {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? String(value) : "—";
+}
+
+/** Display only explicit scalar identity tokens from a declared metadata array. */
+function inspectionTokens(values) {
+  return Array.isArray(values) ? values.map(inspectionValue).join(", ") || "None declared" : "—";
+}
+
+/** Build escaped labelled metadata; callers select every visible field explicitly. */
+function inspectionMetadata(caption, entries) {
+  const section = node("section"); section.append(node("h3", caption));
+  const list = node("dl");
+  for (const [label, value] of entries) list.append(node("dt", label), node("dd", inspectionValue(value)));
+  section.append(list); return section;
+}
+
+/** Validate a complete unfiltered ChangeSummary before rendering distinct integer scopes. */
+function inspectionSummary(summary) {
+  const labels = [["old_controls", "Old controls"], ["new_controls", "New controls"], ["added", "Added"], ["removed", "Removed"],
+    ["content_changed", "Content changed"], ["identity_migrated", "Identity migrated"], ["unchanged", "Unchanged"],
+    ["findings", "Findings"], ["blocking", "Blocking"], ["review_required", "Review required"], ["informational", "Informational"],
+    ["dispositioned_resolved", "Resolved dispositions"], ["dispositioned_accepted_risk", "Accepted-risk dispositions"],
+    ["dispositioned_still_open", "Still-open dispositions"], ["undispositioned", "Undispositioned"]];
+  if (!summary || labels.some(([key]) => !Number.isSafeInteger(summary[key]) || summary[key] < 0 || summary[key] > 100000)) throw new Error("The comparison returned unsupported full summary metadata. Retry this capture.");
+  return table("Complete unfiltered comparison summary", [["Measure", "measure"], ["Count", "count"]], labels.map(([key, measure]) => ({measure, count: summary[key]})));
+}
+
+/** Show only redacted captured registration provenance, never source text or parser diagnostics. */
+function inspectionProvenance(rows) {
+  if (!Array.isArray(rows) || rows.length > 1000 || rows.some(row => !inspectionIdentity(row?.resource_id) || !inspectionIdentity(row.sha256, true) || !Number.isSafeInteger(row.size_bytes) || row.size_bytes < 0 || row.size_bytes > 10485760)) throw new Error("The read returned unsupported provenance metadata.");
+  return table("Captured registered provenance", [["Resource", "resource_id"], ["Role", "role"], ["SHA-256", "sha256"], ["Bytes", "size_bytes"], ["Admission", "validation_state"]], rows);
+}
+
+/** Show declared/computed fingerprint identities without href, title, rationale or party prose. */
+function inspectionPair(label, value) {
+  if (value !== null) {
+    inspectionRequired(value, ["resource_id", "resource_type", "raw_sha256", "root_uuid", "document_version", "oscal_version", "resolved_catalog_sha256", "resolved_catalog_resource_id"]);
+    if (!inspectionIdentity(value.resource_id) || !inspectionIdentity(value.raw_sha256, true) || !["catalog", "profile"].includes(value.resource_type) ||
+        value.resource_type === "catalog" && (value.resolved_catalog_sha256 !== null || value.resolved_catalog_resource_id !== null) ||
+        value.resource_type === "profile" && (!inspectionIdentity(value.resolved_catalog_sha256, true) || !inspectionIdentity(value.resolved_catalog_resource_id))) throw new Error("The comparison returned unsupported fingerprint identity types.");
+  }
+  return inspectionMetadata(label, [["Resource", value?.resource_id], ["Type", value?.resource_type], ["Raw SHA-256", value?.raw_sha256],
+    ["Root UUID", value?.root_uuid], ["Document version", value?.document_version], ["OSCAL version", value?.oscal_version],
+    ["Resolved catalog SHA-256", value?.resolved_catalog_sha256], ["Resolved catalog resource", value?.resolved_catalog_resource_id]]);
+}
+
+/** Render only lifecycle fingerprint hashes and captured identity metadata. */
+function inspectionFingerprints(label, value) {
+  if (value === null) return node("p", `${label}: no declared fingerprint set.`);
+  const section = inspectionMetadata(label, [["Source SHA-256", value?.source_sha256]]);
+  if (value && (!inspectionIdentity(value.source_sha256, true) || !Array.isArray(value.generated_artifacts) || value.generated_artifacts.length > 128 || value.generated_artifacts.some(item => typeof item?.path !== "string" || !inspectionIdentity(item.sha256, true)))) throw new Error("The record returned unsupported fingerprint metadata.");
+  section.append(table(`${label}: generated artifacts`, [["Declared relative identity", "path"], ["SHA-256", "sha256"]], value?.generated_artifacts || []));
+  return section;
+}
+
+/** Keep unresolved lifecycle finding tokens separate from any selected impact comparison. */
+function inspectionReferences(values) {
+  if (!Array.isArray(values) || values.some(value => typeof value?.finding_id !== "string" || value.binding !== "unresolved")) throw new Error("The record returned unsupported impact references.");
+  const section = node("section"); section.append(node("h3", "Unresolved impact references"),
+    node("p", "Finding identifiers have no comparison pair here. They are not joined to a comparison or treated as approval."));
+  if (values.length > 131072) throw new Error("The record returned unsupported impact reference counts.");
+  section.append(node("pre", values.map(value => `${inspectionValue(value.finding_id)} · unresolved`).join("\n") || "None declared"));
+  return section;
+}
+
+/** Validate one page's capture/count metadata; filters use this response's complete counts only. */
+function checkedInspectionPage(response, kind, query, context) {
+  const page = checkedPage(response, 50);
+  inspectionRequired(response, ["resource_version", "snapshot_version", "availability", "page", "counts"]);
+  if (!inspectionIdentity(response.snapshot_version, true) || !inspectionIdentity(response.resource_version, true) ||
+      !["absent-index", "index-upgrade-required", "empty", "available", "needs-attention"].includes(response.availability) ||
+      page.next_cursor && page.next_cursor.length > 256) throw new Error("The inspection returned unsupported capture metadata.");
+  if (context?.snapshot_version && response.snapshot_version !== context.snapshot_version) {
+    const error = new Error("The capture changed. Reload the selected record or comparison before continuing."); error.details = {code:"version-conflict"}; throw error;
+  }
+  const ceiling = {records:1000, history:1024, queue:64000, comparisons:1000, changes:100000, findings:100000, prior:100000}[kind];
+  const keys = {records:["registered_records", "matching_records", "unavailable_records"], history:["total_events"],
+    queue:["distinct_records", "total_owner_placements", "matching_owner_placements", "total_groups", "matching_groups"],
+    comparisons:["registered_comparisons", "unavailable_comparisons"], changes:["total_changes", "matching_changes"],
+    findings:["total_findings", "matching_findings"], prior:["total_prior_dispositions"]}[kind];
+  if (!keys || keys.some(key => !Number.isSafeInteger(response.counts?.[key]) || response.counts[key] < 0 || response.counts[key] > (key === "distinct_records" ? 1000 : ceiling))) throw new Error("The inspection returned unsupported whole-scope counts.");
+  const matching = {records:"matching_records", history:"total_events", queue:"matching_owner_placements", comparisons:"registered_comparisons", changes:"matching_changes", findings:"matching_findings", prior:"total_prior_dispositions"}[kind];
+  const total = {records:"registered_records", history:"total_events", queue:"total_owner_placements", comparisons:"registered_comparisons", changes:"total_changes", findings:"total_findings", prior:"total_prior_dispositions"}[kind];
+  if (response.counts[matching] !== page.total_matching || response.counts[total] < page.total_matching ||
+      kind === "records" && response.counts.unavailable_records > response.counts.registered_records ||
+      kind === "comparisons" && response.counts.unavailable_comparisons > response.counts.registered_comparisons ||
+      kind === "queue" && (response.counts.distinct_records > response.counts.total_owner_placements || response.counts.matching_groups > response.counts.total_groups)) throw new Error("The inspection counts could not be reconciled. Retry the read.");
+  if (kind === "history" && (response.record_id !== context.record_id || response.as_of !== null)) throw new Error("The history belongs to a different registered record or date context.");
+  if ((kind === "records" || kind === "queue") && response.as_of !== (query.as_of || null)) throw new Error("The inspection returned a different explicit review date.");
+  if (kind === "records" && !query.as_of && page.items.some(item => item.derived_status !== null)) throw new Error("An inventory without a date cannot report computed lifecycle status.");
+  if (["changes", "findings", "prior"].includes(kind) && (response.comparison_id !== context.comparison_id || response.comparison_version !== context.resource_version)) throw new Error("The inspection returned a foreign comparison context.");
+  if (kind === "findings") {
+    inspectionSummary(response.full_summary);
+    const summaryKeys = ["old_controls", "new_controls", "added", "removed", "content_changed", "identity_migrated", "unchanged", "findings", "blocking", "review_required", "informational", "dispositioned_resolved", "dispositioned_accepted_risk", "dispositioned_still_open", "undispositioned"];
+    const dispositionKeys = ["resolved", "accepted_risk", "still_open", "undispositioned"];
+    if (summaryKeys.some(key => response.full_summary[key] !== context.summary[key]) || response.full_summary.findings !== response.counts.total_findings ||
+        dispositionKeys.some(key => !Number.isSafeInteger(response.emitted_dispositions?.[key]) || response.emitted_dispositions[key] < 0) ||
+        dispositionKeys.reduce((sum, key) => sum + response.emitted_dispositions[key], 0) !== response.counts.matching_findings) throw new Error("The filtered finding scope does not reconcile with the complete comparison summary.");
+    if (page.items.some(item => item.comparison_id !== context.comparison_id || item.comparison_version !== context.resource_version)) throw new Error("A finding belongs to a different comparison pair or capture.");
+  }
+  const rowFields = {records:["record_id", "record_version", "resource_id", "policy_key", "version_key", "state", "derived_status", "owner_keys", "next_review_date", "availability", "diagnostic_code", "validation_state"],
+    history:["event_id", "sequence", "timestamp", "previous_state", "next_state", "actor_key", "declared_role", "assertions", "impact_references", "replacement"],
+    queue:["record_id", "resource_id", "owner_key", "next_review_date", "policy_key", "version_key", "state", "derived_status", "blockers"],
+    comparisons:["comparison_id", "resource_id", "manifest_sha256", "old", "new", "availability", "diagnostic_code", "freshness"],
+    changes:["subject_id", "change_class", "old_sha256", "new_sha256", "old_subjects", "new_subjects", "migration"],
+    findings:["finding_id", "comparison_id", "comparison_version", "priority", "reason_code", "required_action", "subject_id", "change_class", "old_sha256", "new_sha256", "old_subjects", "new_subjects", "migration", "framework_groups", "affected_artifact_id", "dependency_id", "policy_resource_identity", "prior_gap_classification", "prior_decision_state", "owner", "policy_sources", "disposition"],
+    prior:["finding_id", "status", "decided_by", "decided_at"]};
+  for (const item of page.items) {
+    inspectionRequired(item, rowFields[kind]);
+    if (["records", "queue"].includes(kind) && (!inspectionIdentity(item.record_id) || !inspectionIdentity(item.resource_id)) ||
+        kind === "comparisons" && (!inspectionIdentity(item.comparison_id) || !inspectionIdentity(item.resource_id))) throw new Error("The inspection returned an unsupported registered identity.");
+  }
+  return page;
+}
+
+/** Label every entity-specific count without conflating distinct records, placements, groups or filtered findings. */
+function inspectionCounts(response, kind) {
+  const labels = {records:[["registered_records", "registered records"], ["matching_records", "matching records"], ["unavailable_records", "unavailable records"]],
+    history:[["total_events", "recorded events"]], queue:[["distinct_records", "distinct records"], ["total_owner_placements", "total owner placements"], ["matching_owner_placements", "matching owner placements"], ["total_groups", "total owner groups"], ["matching_groups", "matching owner groups"]],
+    comparisons:[["registered_comparisons", "registered comparisons"], ["unavailable_comparisons", "unavailable comparisons"]],
+    changes:[["total_changes", "complete changes"], ["matching_changes", "matching changes"]], findings:[["total_findings", "complete findings"], ["matching_findings", "matching findings"]], prior:[["total_prior_dispositions", "prior-only dispositions"]]};
+  return labels[kind].map(([key, label]) => `${response.counts[key]} ${label}`).join(" · ");
+}
+
+/** Render bounded selected rows from explicit metadata allowlists; all strings use textContent. */
+function inspectionRows(kind, rows, select) {
+  const display = node("div");
+  if (!rows.length) {display.append(node("p", "No matching metadata rows.", "empty")); return display;}
+  if (kind === "queue") {
+    const groups = new Map();
+    for (const row of rows) {if (!groups.has(row.owner_key)) groups.set(row.owner_key, []); groups.get(row.owner_key).push(row);}
+    for (const [owner, items] of groups) {
+      display.append(node("h3", `Declared owner ${inspectionValue(owner)} — this page's placements`),
+        table("Lifecycle owner placements on this page", [["Record", "record_id"], ["Policy", "policy_key"], ["Version", "version_key"], ["Stored state", "state"], ["Computed status", "derived_status"], ["Next review", "next_review_date"], ["Blockers", "blockers"]], items.map(item => ({...item, blockers:inspectionTokens(item.blockers)}))));
+      for (const item of items) display.append(button(`Inspect record ${item.record_id}`, () => select(item.record_id)));
+    }
+    return display;
+  }
+  for (const row of rows) {
+    const article = node("article");
+    if (kind === "records") {
+      article.append(inspectionMetadata(`Recorded lifecycle ${row.record_id}`, [["Registered resource", row.resource_id], ["Record version", row.record_version], ["Policy key", row.policy_key], ["Version key", row.version_key], ["Stored state", row.state], ["Computed status", row.derived_status === null ? "Not computed without an explicit date" : row.derived_status], ["Declared owners", inspectionTokens(row.owner_keys)], ["Next review", row.next_review_date], ["Availability", row.availability], ["Admission", row.validation_state], ["Diagnostic code", row.diagnostic_code]]), button(`Inspect record ${row.record_id}`, () => select(row.record_id)));
+    } else if (kind === "comparisons") {
+      article.append(inspectionMetadata(`Declared comparison ${row.comparison_id}`, [["Registered manifest", row.resource_id], ["Manifest SHA-256", row.manifest_sha256], ["Availability", row.availability], ["Diagnostic code", row.diagnostic_code], ["Freshness", "Not computed from inventory"]]), inspectionPair("Declared old fingerprint", row.old), inspectionPair("Declared new fingerprint", row.new), button(`Inspect comparison ${row.comparison_id}`, () => select(row.comparison_id)));
+    } else if (kind === "history") {
+      article.append(inspectionMetadata(`Recorded transition ${row.event_id}`, [["Sequence", row.sequence], ["Timestamp", row.timestamp], ["Previous state", row.previous_state], ["Next state", row.next_state], ["Declared actor", row.actor_key], ["Declared role", row.declared_role], ["Replacement policy", row.replacement?.policy_key], ["Replacement version", row.replacement?.version_key]]),
+        table("Declared transition assertions", [["Actor key", "actor_key"], ["Declared role", "declared_role"]], row.assertions || []), inspectionReferences(row.impact_references || []));
+    } else if (kind === "changes" || kind === "findings") {
+      article.append(inspectionMetadata(kind === "findings" ? `Finding ${row.finding_id}` : `Change ${row.subject_id}`, [...(kind === "findings" ? [["Comparison", row.comparison_id], ["Comparison version", row.comparison_version]] : []), ["Subject", row.subject_id], ["Change class", row.change_class], ["Old SHA-256", row.old_sha256], ["New SHA-256", row.new_sha256]]),
+        inspectionSubjects("Old subject fingerprints", row.old_subjects), inspectionSubjects("New subject fingerprints", row.new_subjects));
+      if (row.migration) article.append(inspectionMetadata("Declared migration metadata", [["Relationship", row.migration.relationship], ["Declared approver", row.migration.approved_by], ["Recorded approval time", row.migration.approved_at]]));
+      if (kind === "findings") article.append(inspectionMetadata("Finding review metadata", [["Priority", row.priority], ["Reason code", row.reason_code], ["Required action", row.required_action], ["Framework groups", inspectionTokens(row.framework_groups)], ["Affected artifact", row.affected_artifact_id], ["Dependency", row.dependency_id], ["Policy resource identity", row.policy_resource_identity], ["Prior gap classification", row.prior_gap_classification], ["Prior decision state", row.prior_decision_state], ["Declared owner", row.owner], ["Policy source identities", inspectionTokens(row.policy_sources)], ["Disposition", row.disposition?.status], ["Declared decision actor", row.disposition?.decided_by], ["Recorded decision time", row.disposition?.decided_at]]));
+    } else if (kind === "prior") article.append(inspectionMetadata(`Prior-only disposition ${row.finding_id}`, [["Status", row.status], ["Declared decision actor", row.decided_by], ["Recorded decision time", row.decided_at]]));
+    display.append(article);
+  }
+  return display;
+}
+
+/** Retire only in-flight S3 child reads when their parent starts a successor capture. */
+function retireInspectionChildren(container) {
+  for (const section of container.querySelectorAll("[data-inspection-page]")) inspectionReaders.get(section)?.();
+}
+
+/** Own one bounded S3 page chain without changing the legacy pager or its denominator rules. */
+function inspectionPage(path, caption, kind, initialQuery = {}, options = {}) {
+  let owner = pending; let generation = 0; let busy = false; let index = 0; let cursors = [null];
+  let nextCursor = null; let chainVersion = null; let chainSnapshot = null; let summary = "";
+  let applied = {...initialQuery}; let lastRequest = {index:0, cursors:[null], query:{...initialQuery}, fresh:true};
+  const section = node("section"); section.setAttribute("data-paged-table", ""); section.setAttribute("data-inspection-page", kind);
+  const heading = node("h3", caption); heading.tabIndex = -1;
+  const form = node("form"); form.addEventListener("submit", event => event.preventDefault());
+  const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-page-status", "");
+  const error = node("div"); error.hidden = true; error.tabIndex = -1; error.setAttribute("role", "alert"); error.setAttribute("data-page-error", "");
+  const display = node("div"); display.tabIndex = -1; display.setAttribute("role", "region"); display.setAttribute("aria-label", caption); display.setAttribute("data-page-results", "");
+  const actions = []; const pane = {section, response:null, failure:null, ready:Promise.resolve(false), read:load};
+  /** Consume handled read results; preserve false only for an explicit dirty-edit cancellation. */
+  function pageAction(label, action, cancelAware = false) {
+    const control = button(label, async () => {
+      if (!busy && !stopped && owner === pending && options.current?.() !== false && section.isConnected) {
+        const outcome = await action(); if (cancelAware && outcome === false) return false;
+      }
+    });
+    actions.push(control); return control;
+  }
+  const choices = (options.filters || []).map(([key, label, values]) => {
+    const input = fieldInput(form, label, values ? "select" : "text", values ? [["", "All"], ...values.map(value => [value, value])] : undefined);
+    input.required = false; input.value = initialQuery[key] || ""; return [key, input];
+  });
+  const previous = pageAction(`Previous ${caption} page`, () => load(index - 1, cursors, applied, true)); previous.hidden = true;
+  const next = pageAction(`Next ${caption} page`, () => {const target = cursors.slice(); target[index + 1] = nextCursor; return load(index + 1, target, applied, true);}); next.hidden = true;
+  const retry = pageAction(`Retry ${caption}`, () => load(lastRequest.index, lastRequest.cursors, lastRequest.query, true, lastRequest.fresh)); retry.hidden = true;
+  const restart = pageAction(`Restart ${caption} from first page`, () => options.reload ? options.reload() : load(0, [null], lastRequest.query, true, true)); restart.hidden = true;
+  if (choices.length) form.append(pageAction(`Apply ${caption} filters`, async () => {
+    if (!await allowViewChange()) return false;
+    const query = {...initialQuery}; for (const [key, input] of choices) {if (input.value) query[key] = input.value; else delete query[key];}
+    await load(0, [null], query, true, true);
+  }, true));
+  /** Keep previous verified rows on error; obsolete reads cannot reset newer busy state or focus. */
+  async function load(targetIndex, targetCursors, query, focusResults = false, fresh = false) {
+    if (stopped || owner !== pending || options.current?.() === false) return false;
+    const sequence = ++generation; const attached = section.isConnected; const invocationOwner = owner; const invoker = document.activeElement;
+    /** Check local sequence, installed-view epoch and parent selection before every publication. */
+    const current = () => !stopped && owner === pending && invocationOwner === pending && sequence === generation && options.current?.() !== false && (!attached || section.isConnected);
+    lastRequest = {index:targetIndex, cursors:targetCursors.slice(), query:{...query}, fresh}; pane.failure = null;
+    busy = true; actions.forEach(control => control.setAttribute("aria-disabled", "true")); display.setAttribute("aria-busy", "true"); error.hidden = true;
+    status.textContent = `${caption}: Reading captured metadata…${summary ? ` Previous capture: ${summary}` : ""}`;
+    try {
+      const params = new URLSearchParams({page_size:"50"}); for (const [key, value] of Object.entries(query)) if (value) params.set(key, value);
+      if (targetCursors[targetIndex]) params.set("cursor", targetCursors[targetIndex]);
+      const response = await api(`${path}?${params}`); const page = checkedInspectionPage(response, kind, query, options.context);
+      if (!fresh && chainVersion !== null && (response.resource_version !== chainVersion || response.snapshot_version !== chainSnapshot)) {
+        const failure = new Error("The captured page chain changed. Restart this read from its first page."); failure.details = {code:"version-conflict"}; throw failure;
+      }
+      const rendered = inspectionRows(kind, page.items, options.select);
+      if (kind === "findings") rendered.prepend(inspectionSummary(response.full_summary), table("Filtered emitted disposition scope", [["Status", "status"], ["Matching findings", "count"]], ["resolved", "accepted_risk", "still_open", "undispositioned"].map(status => ({status, count:response.emitted_dispositions[status]}))));
+      if (!current()) return false;
+      if (fresh) {chainVersion = response.resource_version; chainSnapshot = response.snapshot_version;}
+      index = targetIndex; cursors = targetCursors.slice(); applied = {...query}; nextCursor = page.next_cursor;
+      const ownedFocus = document.activeElement === invoker;
+      pane.response = response; display.replaceChildren(rendered); summary = `${inspectionCounts(response, kind)} · Page ${index + 1} · Capture ${response.snapshot_version}.`;
+      if (kind === "history") summary += " Recorded events; no current status is inferred.";
+      if (kind === "findings") summary += " All five filters combine with AND. Complete summary and gates remain unfiltered.";
+      status.textContent = `${response.availability}: ${summary}`; retry.hidden = true; restart.hidden = true; previous.hidden = index === 0; next.hidden = !nextCursor;
+      if (focusResults && ownedFocus && section.isConnected) display.focus(); return true;
+    } catch (failure) {
+      if (!current()) return false;
+      pane.failure = failure; error.textContent = `${failure instanceof Error ? failure.message : "This captured metadata could not be read."}${summary ? " Previous capture retained; it does not reflect this failed read." : " No metadata was installed."}`;
+      error.hidden = false; status.textContent = `${caption}: Read failed.${summary ? ` Previous capture: ${summary}` : ""}`;
+      retry.hidden = false; restart.hidden = failure.details?.code !== "version-conflict";
+      if (section.isConnected && document.activeElement === invoker) error.focus(); return false;
+    } finally {
+      if (!stopped && sequence === generation) {busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false"));}
+    }
+  }
+  /** Make an older child read obsolete even when its parent's view epoch stays unchanged. */
+  function retireInspectionPage() {
+    generation++; busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false"));
+    if (summary) status.textContent = `Previous capture retained while its parent reloads: ${summary}`;
+  }
+  inspectionReaders.set(section, retireInspectionPage);
+  /** Recover a retained installed pane after a cancelled guarded refresh, without resurrecting an old read. */
+  function resumeInspectionPage() {
+    if (stopped || !section.isConnected || owner === pending || element("view").inert) return;
+    owner = pending; generation++; busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false"));
+    if (summary) status.textContent = `Previous captured metadata retained after the refresh was cancelled: ${summary}`;
+  }
+  retainedPagers.set(section, resumeInspectionPage);
+  section.append(heading, form, status, error, display, previous, next, retry, restart);
+  pane.ready = load(0, [null], applied, false, true); return pane;
+}
+
+/** Stage a selected record/comparison's whole pane group before replacing an earlier captured view. */
+function inspectionSelection(caption, build, isCurrent) {
+  let owner = pending; let generation = 0; let busy = false; let previousSummary = ""; let last; let installedGroup;
+  const section = node("section"); section.setAttribute("data-paged-table", ""); section.setAttribute("data-inspection-selection", caption);
+  const heading = node("h3", caption); heading.tabIndex = -1;
+  const status = node("p", "Choose a registered item above."); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true");
+  const error = node("div"); error.hidden = true; error.tabIndex = -1; error.setAttribute("role", "alert"); error.setAttribute("data-page-error", "");
+  const display = node("div"); display.tabIndex = -1; display.setAttribute("role", "region"); display.setAttribute("aria-label", caption);
+  const retry = button(`Retry ${caption}`, async () => {if (last && !busy && current()) await read(last);}); retry.hidden = true;
+  /** Gate this installed selection independently from other lifecycle/impact lanes. */
+  function current() {return !stopped && owner === pending && section.isConnected && isCurrent();}
+  /** Invalidate older selection work; errors and retries remain local to this connected region. */
+  async function read(context) {
+    if (!current()) return false;
+    const invocationOwner = owner; const sequence = ++generation; const invoker = document.activeElement; retireInspectionChildren(display); last = {...context}; busy = true;
+    display.setAttribute("aria-busy", "true"); retry.setAttribute("aria-disabled", "true"); error.hidden = true;
+    status.textContent = `Reading ${caption}…${previousSummary ? ` Previous capture: ${previousSummary}` : ""}`;
+    /** Recheck the selection identity after every staged asynchronous read. */
+    const owned = () => current() && invocationOwner === pending && sequence === generation;
+    try {
+      const group = {};
+      /** Retained verified subpages remain usable after a cancelled refresh; only the current staged build can install a successor. */
+      const paneCurrent = () => owned() || current() && !busy && installedGroup === group;
+      const staged = await build(context, owned, () => read({...context}), paneCurrent);
+      if (!owned()) return false;
+      const ownedFocus = document.activeElement === invoker;
+      installedGroup = group; display.replaceChildren(staged); previousSummary = `${context.id}${context.as_of ? ` · as of ${context.as_of}` : context.kind === "comparison" ? " · selected old/new comparison pair" : " · recorded history only"}`;
+      status.textContent = `${caption}: ${previousSummary}. Captured metadata does not authenticate approval.`; retry.hidden = true; if (ownedFocus) heading.focus(); return true;
+    } catch (failure) {
+      if (!owned()) return false;
+      error.textContent = `${failure instanceof Error ? failure.message : "The selected metadata could not be read."}${previousSummary ? " Previous capture retained; it does not reflect this failed read." : " No selected metadata was installed."}`;
+      error.hidden = false; retry.hidden = false; status.textContent = `${caption}: Read failed.`; if (document.activeElement === invoker) error.focus(); return false;
+    } finally {
+      if (!stopped && sequence === generation) {busy = false; display.setAttribute("aria-busy", "false"); retry.setAttribute("aria-disabled", "false");}
+    }
+  }
+  /** Rebind a retained selection and invalidate its former pending build without moving focus. */
+  function resumeInspectionSelection() {
+    if (stopped || !section.isConnected || owner === pending || element("view").inert) return;
+    owner = pending; generation++; busy = false; display.setAttribute("aria-busy", "false"); retry.setAttribute("aria-disabled", "false");
+    if (previousSummary) status.textContent = `Previous capture retained after cancelled refresh: ${previousSummary}.`;
+  }
+  retainedPagers.set(section, resumeInspectionSelection); section.append(heading, status, error, display, retry);
+  return {section, read};
+}
+
+/** Read lifecycle inventory/history/status/owner queues and impact comparisons without effects or implicit dates. */
+async function lifecycleImpactView() {
+  if (!inspectionSupported()) return node("p", "Lifecycle & Impact requires negotiated API2 2.1.0. Relaunch with matching assets.", "empty");
+  let owner = pending; let lifecycleGeneration = 0; let selectedRecord = null; let appliedDate = null; let installedLifecycleGroup; let lifecycleStaging = false;
+  const root = node("section"); root.setAttribute("data-inspection-panel", ""); root.setAttribute("data-paged-table", "");
+  root.append(node("p", "Read-only captured lifecycle and framework-impact metadata. Keys, identities and hashes can be sensitive. Declared actors, owners, states and dispositions are unauthenticated; these views grant no transition, approval, export or write authority.", "muted"));
+  /** Keep the installed view owner separate from per-pane request sequences. */
+  const current = () => !stopped && owner === pending && root.isConnected;
+  /** Recover retained controls after a cancelled guarded view refresh without making former work current. */
+  function resumeInspectionView() {if (!stopped && root.isConnected && owner !== pending && !element("view").inert) owner = pending;}
+  retainedPagers.set(root, resumeInspectionView);
+  const lifecycle = node("section"); lifecycle.append(node("h2", "Lifecycle records and owner queue"));
+  const form = node("form"); form.addEventListener("submit", event => event.preventDefault());
+  const date = fieldInput(form, "Explicit lifecycle review date", "date"); date.required = false;
+  const lifecycleOwner = fieldInput(form, "Lifecycle owner key"); lifecycleOwner.required = false;
+  const lifecycleState = fieldInput(form, "Stored lifecycle state", "select", [["", "All"], ...["draft", "in-review", "approved", "superseded", "retired"].map(state => [state, state])]); lifecycleState.required = false;
+  const dateError = node("div"); dateError.hidden = true; dateError.tabIndex = -1; dateError.setAttribute("role", "alert");
+  const inventories = node("div"); let initialRecords;
+  /** Read the chosen record/history at one date/capture; unresolved finding IDs never select an impact pair. */
+  async function buildRecord(context, owned, reload, paneCurrent) {
+    const stage = node("div"); let detail;
+    if (context.as_of) {
+      detail = await api(`/lifecycle/records/${encodeURIComponent(context.id)}?${new URLSearchParams({as_of:context.as_of})}`);
+      inspectionRequired(detail, ["resource_version", "snapshot_version", "record_id", "resource_id", "policy_key", "version_key", "as_of", "state", "derived_status", "owner_keys", "next_review_date", "blockers", "current_fingerprints", "approved_fingerprints", "artifact_identity_changes", "replaced_by", "replacement_record_id", "impact_references", "provenance", "trust_boundary"]);
+      if (!owned()) throw new Error("The selected record read was superseded.");
+      if (detail.record_id !== context.id || detail.as_of !== context.as_of || !inspectionIdentity(detail.snapshot_version, true) || !inspectionIdentity(detail.resource_version, true)) throw new Error("The record returned a foreign capture or date.");
+      stage.append(inspectionMetadata("Captured lifecycle status", [["Record", detail.record_id], ["Registered resource", detail.resource_id], ["Policy key", detail.policy_key], ["Version key", detail.version_key], ["As of", detail.as_of], ["Stored state", detail.state], ["Computed status", detail.derived_status], ["Declared owners", inspectionTokens(detail.owner_keys)], ["Next review", detail.next_review_date], ["Blockers", inspectionTokens(detail.blockers)], ["Identity changes", inspectionTokens(detail.artifact_identity_changes)], ["Replacement policy", detail.replaced_by?.policy_key], ["Replacement version", detail.replaced_by?.version_key], ["Replacement registered record", detail.replacement_record_id]]),
+        inspectionFingerprints("Current captured fingerprints", detail.current_fingerprints), inspectionFingerprints("Declared approved fingerprints", detail.approved_fingerprints), inspectionReferences(detail.impact_references), inspectionProvenance(detail.provenance));
+    } else stage.append(node("p", "Choose an explicit review date before requesting computed lifecycle status. This selection shows recorded transition history only."));
+    const history = inspectionPage(`/lifecycle/records/${encodeURIComponent(context.id)}/history`, "Lifecycle transition history", "history", {}, {context:detail || {record_id:context.id}, current:paneCurrent, reload});
+    if (!await history.ready) throw history.failure || new Error("The transition history could not be staged at this record's capture. Retry the selected record.");
+    stage.append(history.section); return stage;
+  }
+  const record = inspectionSelection("Selected lifecycle record", buildRecord, current);
+  /** Retain the exact date and local read-error focus; false is reserved for Keep editing. */
+  async function selectRecord(id) {
+    if (!current() || lifecycleStaging) return;
+    if (!await allowViewChange()) return false;
+    selectedRecord = id; await record.read({id, as_of:appliedDate});
+  }
+  /** Replace inventory and queue together under a new explicit date/filter context. */
+  async function installLifecycle(dateValue, ownerValue, stateValue, focus = false) {
+    const generation = ++lifecycleGeneration; const invocationOwner = owner; const invoker = document.activeElement; const group = {};
+    retireInspectionChildren(inventories); lifecycleStaging = true;
+    try {
+    /** Bind new inventory/queue controls to this date/filter context and current installed view epoch. */
+    const owned = () => !stopped && owner === pending && (generation === lifecycleGeneration || !lifecycleStaging && group === installedLifecycleGroup);
+    /** Only this initiating view epoch may install the staged inventory group. */
+    const mayInstall = () => owned() && invocationOwner === pending && generation === lifecycleGeneration;
+    const query = {}; if (dateValue) query.as_of = dateValue; if (ownerValue) query.owner = ownerValue; if (stateValue) query.state = stateValue;
+    const records = inspectionPage("/lifecycle/records", "Lifecycle record inventory", "records", query, {current:owned, select:selectRecord});
+    const stage = node("div"); stage.append(records.section);
+    let queue;
+    if (dateValue) {const queueQuery = {as_of:dateValue}; if (ownerValue) queueQuery.owner = ownerValue;
+      queue = inspectionPage("/lifecycle/queue", "Lifecycle owner queue", "queue", queueQuery, {current:owned, select:selectRecord}); stage.append(queue.section);
+    } else stage.append(node("p", "Owner queue and computed status require an explicit review date. No clock date is selected automatically."));
+    const results = await Promise.all([records.ready, ...(queue ? [queue.ready] : [])]);
+    const sameCapture = !queue || records.response?.snapshot_version === queue.response?.snapshot_version;
+    if (results.some(value => !value) || !sameCapture) {
+      if (mayInstall()) {
+        if (!inventories.children.length) {installedLifecycleGroup = group; inventories.replaceChildren(stage);}
+        else {dateError.textContent = "The lifecycle inventory and owner queue could not be staged at one capture. Previous date/filter results are retained. Retry Apply lifecycle date and filters."; dateError.hidden = false; if (root.isConnected && document.activeElement === invoker) dateError.focus();}
+        if (focus && root.isConnected && !dateError.hidden && document.activeElement === invoker) dateError.focus();
+      }
+      return false;
+    }
+    if (!mayInstall()) return false;
+    installedLifecycleGroup = group; appliedDate = dateValue; inventories.replaceChildren(stage);
+    if (selectedRecord && current()) await record.read({id:selectedRecord, as_of:appliedDate});
+    if (focus && current() && document.activeElement === invoker) records.section.querySelector("[data-page-results]").focus(); return true;
+    } finally {if (generation === lifecycleGeneration) lifecycleStaging = false;}
+  }
+  const apply = button("Apply lifecycle date and filters", async () => {
+    if (!current()) return;
+    if (!await allowViewChange()) return false;
+    dateError.hidden = true;
+    if (date.value && (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date.value) || !date.reportValidity())) {dateError.textContent = "Use an explicit valid YYYY-MM-DD review date."; dateError.hidden = false; dateError.focus(); return;}
+    await installLifecycle(date.value || null, lifecycleOwner.value, lifecycleState.value, true);
+  }); form.append(apply); lifecycle.append(form, dateError, inventories, record.section);
+  const impact = node("section"); impact.append(node("h2", "Framework impact comparisons"), node("p", "Inventory old/new fingerprints are declared, not computed. Select one exact comparison to read captured changes/findings and prior-only dispositions. Unresolved lifecycle finding IDs are not joined here.", "muted"));
+  /** Stage detail and all three bounded subpages from the same capture and exact old/new comparison pair. */
+  async function buildComparison(context, owned, reload, paneCurrent) {
+    const detail = await api(`/framework-impact/comparisons/${encodeURIComponent(context.id)}`);
+    inspectionRequired(detail, ["resource_version", "snapshot_version", "comparison_id", "resource_id", "freshness", "old", "new", "summary", "provenance", "prior_report_sha256", "prior_report_admission", "trust_boundary"]);
+    if (!owned()) throw new Error("The comparison read was superseded.");
+    if (detail.comparison_id !== context.id || !inspectionIdentity(detail.snapshot_version, true) || !inspectionIdentity(detail.resource_version, true) || detail.freshness !== "captured-current") throw new Error("The comparison returned a foreign capture or freshness state.");
+    const stage = node("div"); stage.append(inspectionMetadata("Captured comparison context", [["Comparison", detail.comparison_id], ["Registered manifest", detail.resource_id], ["Comparison version", detail.resource_version], ["Snapshot", detail.snapshot_version], ["Freshness", detail.freshness], ["Prior report SHA-256", detail.prior_report_sha256], ["Prior report admission", detail.prior_report_admission]]), inspectionPair("Captured old resource", detail.old), inspectionPair("Captured new resource", detail.new), inspectionSummary(detail.summary), inspectionProvenance(detail.provenance));
+    const options = {context:detail, current:paneCurrent, reload};
+    const changes = inspectionPage(`/framework-impact/comparisons/${encodeURIComponent(context.id)}/changes`, "Framework impact changes", "changes", {}, {...options, filters:[["change_class", "Impact change class", ["added", "removed", "content-changed", "identity-migrated", "unchanged"]]]});
+    const findings = inspectionPage(`/framework-impact/comparisons/${encodeURIComponent(context.id)}/findings`, "Framework impact findings", "findings", {}, {...options, filters:[["group", "Impact framework group"], ["decision_state", "Impact prior decision state", ["applicable", "not-applicable", "deferred", "under-review"]], ["policy_source", "Impact policy source identity"], ["priority", "Impact finding priority", ["blocking", "review-required", "informational"]], ["owner", "Impact owner key"]]});
+    const prior = inspectionPage(`/framework-impact/comparisons/${encodeURIComponent(context.id)}/prior-dispositions`, "Prior-only impact dispositions", "prior", {}, options);
+    const results = await Promise.all([changes.ready, findings.ready, prior.ready]);
+    if (results.some(value => !value)) throw [changes, findings, prior].find((pane, index) => !results[index])?.failure || new Error("The comparison's changes, findings and prior history could not be staged at one capture. Retry the selected comparison.");
+    stage.append(changes.section, findings.section, prior.section); return stage;
+  }
+  const comparison = inspectionSelection("Selected framework impact comparison", buildComparison, current);
+  /** Preserve local comparison failure focus; only explicit dirty cancellation restores the trigger. */
+  async function selectComparison(id) {
+    if (!current()) return;
+    if (!await allowViewChange()) return false;
+    await comparison.read({id, kind:"comparison"});
+  }
+  const comparisons = inspectionPage("/framework-impact/comparisons", "Framework comparison inventory", "comparisons", {}, {select:selectComparison});
+  impact.append(comparisons.section, comparison.section); root.append(lifecycle, impact);
+  initialRecords = installLifecycle(null, "", ""); await Promise.all([initialRecords, comparisons.ready]);
+  return root;
 }
 
 /** Announce the locked state and place initial keyboard focus on the credential field. */

@@ -2334,7 +2334,7 @@ mod s3_registration_and_bundles {
             let descriptor: Value = serde_json::from_str(&result.unwrap().unwrap())
                 .expect("API2 machine descriptor JSON");
             s3_descriptor_keys(&descriptor);
-            assert!(descriptor["api_version"] == "2.0.0", "API2 descriptor version mismatch");
+            assert!(descriptor["api_version"] == "2.1.0", "API2 descriptor version mismatch");
             assert!(descriptor["api_major"] == 2, "API2 descriptor major mismatch");
             assert!(descriptor["mode"] == "machine", "API2 descriptor mode mismatch");
             assert!(descriptor["read_only"] == read_only, "API2 descriptor scope mismatch");
@@ -2362,7 +2362,7 @@ mod s3_registration_and_bundles {
                 ],
             );
             assert_eq!(session["api_major"], 2);
-            assert_eq!(session["contract_version"], "2.0.0");
+            assert_eq!(session["contract_version"], "2.1.0");
             assert_eq!(session["session_id"], descriptor["session_id"]);
             assert_eq!(session["mode"], "machine");
             assert_eq!(session["read_only"], read_only);
@@ -3031,6 +3031,357 @@ mod s3_registration_and_bundles {
         let result = s3_bundle_verify(&server, &bundle);
         bundle_assert_counts(&result, [5, 0, 5, 0, 0, 0]);
         assert_eq!(result["state"], "mismatched");
+        assert_eq!(bundle_project_files(&server), before);
+    }
+
+    /// A denied index capture distinguishes pre-capture authentication/query/major admission.
+    #[test]
+    fn s3_queries_are_admitted_before_capture_and_never_expand_api1() {
+        let server = Server::start_api2(false, true);
+        std::fs::create_dir(server.project.path().join("forge.workspace.json")).unwrap();
+        let capture = s3_json(&server, "GET", "/api/v2/lifecycle/records", None, &json!({}));
+        assert_eq!(capture.0, 403, "{}", capture.1);
+        bundle_assert_error(&server, &capture.1, "resource-containment");
+        for path in [
+            "/api/v2/lifecycle/records?as_of=2025-02-29",
+            "/api/v2/lifecycle/records?as_of=2026-10-02&as_of=2026-10-03",
+            "/api/v2/lifecycle/records?owner=%20owner",
+            "/api/v2/lifecycle/records?state=ready",
+            "/api/v2/lifecycle/queue",
+            "/api/v2/lifecycle/records/res_11111111111111111111111111111111",
+            "/api/v2/framework-impact/comparisons?page_size=201",
+            "/api/v2/framework-impact/comparisons/res_11111111111111111111111111111111/findings?priority=critical",
+            "/api/v2/framework-impact/comparisons/res_11111111111111111111111111111111/findings?decision_state=satisfied",
+            "/api/v2/framework-impact/comparisons/res_11111111111111111111111111111111?owner=hidden",
+        ] {
+            let (status, value) = s3_json(&server, "GET", path, None, &json!({}));
+            assert_eq!(status, 400, "{path}: {value}");
+            bundle_assert_error(&server, &value, "invalid-request");
+        }
+        let too_long = format!("/api/v2/lifecycle/records?owner={}", "x".repeat(4097));
+        // The existing raw request-target guard is2048bytes, before decoded filter admission.
+        assert_eq!(s3_json(&server, "GET", &too_long, None, &json!({})).0, 401);
+        assert_eq!(server.request("GET", "/api/v2/lifecycle/records", false, None, "", "").0, 401);
+        assert_eq!(server.request("GET", "/api/v1/lifecycle/records", true, None, "", "").0, 404);
+        assert!(server.project.path().join("forge.workspace.json").is_dir());
+        assert_eq!(
+            std::fs::read(server.project.path().join("unregistered.md")).unwrap(),
+            b"PRIVATE UNREGISTERED CONTENT"
+        );
+        let legacy = Server::launch(false);
+        std::fs::create_dir(legacy.project.path().join("forge.workspace.json")).unwrap();
+        for path in [
+            "/api/v1/lifecycle/records",
+            "/api/v1/framework-impact/comparisons",
+            "/api/v2/lifecycle/records",
+        ] {
+            assert_eq!(legacy.request("GET", path, true, None, "", "").0, 404);
+        }
+    }
+    // Source-only appendable integration-test helpers. Parent test module already supplies
+    // bundle_fixture_sha256 (immutable702 tests/workspace_cli_test.rs:853). Root may import
+    // its parent helper; no private production module is exposed for this fixture.
+
+    /// Write native synthetic Catalog bytes using the existing exercised PRD057 fixture shape.
+    fn s3_native_catalog(version: &str, controls: &[(&str, &str)]) -> serde_json::Value {
+        serde_json::json!({"catalog":{"uuid":"77777777-7777-4777-8777-777777777777",
+        "metadata":{"title":"PRIVATE synthetic framework","last-modified":"2026-08-25T12:00:00Z",
+            "version":version,"oscal-version":"1.2.3"},
+        "groups":[{"id":"group-1","title":"PRIVATE group","controls":controls.iter().map(|(id, prose)|
+            serde_json::json!({"id":id,"title":format!("PRIVATE Control {id}"),"parts":[{"id":format!("{id}_smt"),"name":"statement","prose":prose}]})).collect::<Vec<_>>()}]}})
+    }
+
+    /// Write one valid native lifecycle/comparison portfolio for actual authenticated nine-route GETs.
+    /// Direct fixture setup is explicit; queries must preserve these bytes and cannot create effects.
+    fn write_s3_native_http_fixture(root: &std::path::Path) -> serde_json::Value {
+        let old = serde_json::to_vec_pretty(&s3_native_catalog(
+            "1.0.0",
+            &[
+                ("unchanged", "PRIVATE same"),
+                ("changed", "PRIVATE old"),
+                ("removed", "PRIVATE removed"),
+            ],
+        ))
+        .expect("native old bytes");
+        let new = serde_json::to_vec_pretty(&s3_native_catalog(
+            "2.0.0",
+            &[
+                ("unchanged", "PRIVATE same"),
+                ("changed", "PRIVATE revised"),
+                ("added", "PRIVATE added"),
+            ],
+        ))
+        .expect("native new bytes");
+        std::fs::write(root.join("old.json"), &old).expect("owned old fixture");
+        std::fs::write(root.join("new.json"), &new).expect("owned new fixture");
+        let resource = |path: &str, bytes: &[u8], version: &str| {
+            serde_json::json!({"type":"catalog","artifact":path,
+        "expected_sha256":bundle_fixture_sha256(bytes),"root_uuid":"77777777-7777-4777-8777-777777777777",
+        "document_version":version,"oscal_version":"1.2.3"})
+        };
+        let manifest = serde_json::json!({"schema_version":"forge.framework-impact/1",
+        "old":resource("old.json",&old,"1.0.0"),"new":resource("new.json",&new,"2.0.0"),"mapping_collections":[]});
+        std::fs::write(
+            root.join("impact.json"),
+            serde_json::to_vec(&manifest).expect("exact manifest bytes"),
+        )
+        .expect("owned impact fixture");
+        std::fs::write(root.join("unrelated.bin"), b"PRIVATE unrelated sentinel")
+            .expect("owned sentinel");
+        let mut rows = vec![
+            serde_json::json!({"key":"comparison","role":"framework-impact-manifest","path":"impact.json"}),
+            serde_json::json!({"key":"old","role":"oscal-catalog-artifact","path":"old.json"}),
+            serde_json::json!({"key":"new","role":"oscal-catalog-artifact","path":"new.json"}),
+            serde_json::json!({"key":"unrelated","role":"lifecycle-source","path":"unrelated.bin"}),
+        ];
+        rows.extend(write_registered_lifecycle_fixture(root, "new.json", &new));
+        let index = serde_json::json!({"schema_version":"forge.workspace/2","label":"Synthetic S3 HTTP portfolio","resources":rows});
+        std::fs::write(
+            root.join("forge.workspace.json"),
+            serde_json::to_vec(&index).expect("explicit index bytes"),
+        )
+        .expect("owned index fixture");
+        index
+    }
+
+    /// Write explicit synthetic lifecycle registrations bound to supplied native Catalog bytes.
+    ///
+    /// The caller owns the directory and separately writes/registers the supplied Catalog.
+    /// This fixture reads no paths, captures no Root, launches no process, and authenticates
+    /// no declared actor. Real authenticated HTTP tests exercise these native fixture bytes.
+    fn write_registered_lifecycle_fixture(
+        root: &std::path::Path,
+        generated_path: &str,
+        generated_bytes: &[u8],
+    ) -> Vec<serde_json::Value> {
+        use forge::lifecycle::record::{
+            self, DeclaredRole, FingerprintSet, LifecycleRecord, LifecycleState, NamedHash,
+            TransitionEvent,
+        };
+        assert!(!generated_path.starts_with('/') && !generated_path.contains('\\'));
+        assert!(!generated_path.split('/').any(|part| matches!(part, "" | "." | "..")));
+        let native: serde_json::Value =
+            serde_json::from_slice(generated_bytes).expect("actual native fixture bytes");
+        assert_eq!(
+            forge::validate::detect_model_type(&native).expect("native Catalog root"),
+            forge::OscalModelType::Catalog
+        );
+        let uuid = native["catalog"]["uuid"].as_str().expect("actual Catalog UUID");
+        uuid::Uuid::parse_str(uuid).expect("valid native UUID");
+        let source = b"Synthetic lifecycle source fixture.";
+        let source_hash = bundle_fixture_sha256(source);
+        let generated_hash = bundle_fixture_sha256(generated_bytes);
+        let mut record:LifecycleRecord=serde_json::from_value(serde_json::json!({
+        "schema_version":"forge.policy-lifecycle/2",
+        "policy":{"policy_key":"http-policy","version_key":"v1","title":"PRIVATE fixture title",
+            "owner_keys":["fixture-owner"],"source":{"path":"lifecycle-source.bin","sha256":source_hash},
+            "generated_artifacts":[{"path":generated_path,"sha256":generated_hash,"oscal_type":"catalog","root_uuid":uuid}]},
+        "parties":[{"key":"fixture-owner","roles":["owner","reviewer","approver"]}],
+        "approval_policy":{"schema_version":"forge.approval-policy/1",
+            "required_roles":[{"role":"reviewer","count":1},{"role":"approver","count":1}],"separation":{}},
+        "review":{"cadence_days":30,"next_review_date":"2026-10-12","due_soon_days":7,"timezone_policy":"date-only"},
+        "state":"draft","history":[]
+    })).expect("typed lifecycle fixture");
+        record::validate(&record).expect("intrinsic draft");
+        for (next, role, time) in [
+            (LifecycleState::InReview, DeclaredRole::Reviewer, "2026-10-01T00:00:00Z"),
+            (LifecycleState::Approved, DeclaredRole::Approver, "2026-10-02T00:00:00Z"),
+        ] {
+            let mut event = TransitionEvent {
+                sequence: u32::try_from(record.history.len() + 1).expect("small fixture"),
+                event_id: String::new(),
+                legacy_event_id: None,
+                previous_state: record.state,
+                next_state: next,
+                actor_key: "fixture-owner".to_owned(),
+                declared_role: role,
+                timestamp: time.to_owned(),
+                rationale: "PRIVATE recorded rationale".to_owned(),
+                fingerprints: FingerprintSet {
+                    source_sha256: record.policy.source.sha256.clone(),
+                    generated_artifacts: vec![NamedHash {
+                        path: generated_path.to_owned(),
+                        sha256: bundle_fixture_sha256(generated_bytes),
+                    }],
+                },
+                assertions: vec![],
+                impact_finding_ids: vec![],
+                replacement: None,
+            };
+            event.event_id =
+                record::event_id(&record, &event).expect("actual deterministic event ID");
+            record.state = next;
+            record.history.push(event);
+            record::validate(&record).expect("intrinsic declared history");
+        }
+        std::fs::write(root.join("lifecycle-source.bin"), source).expect("owned source fixture");
+        std::fs::write(
+            root.join("lifecycle-record.json"),
+            serde_json::to_vec(&record).expect("typed record bytes"),
+        )
+        .expect("owned record fixture");
+        vec![
+            serde_json::json!({"key":"http-lifecycle-source","role":"lifecycle-source","path":"lifecycle-source.bin"}),
+            serde_json::json!({"key":"http-lifecycle-record","role":"lifecycle-record","path":"lifecycle-record.json"}),
+        ]
+    }
+
+    /// Exercise all nine real authenticated routes over explicit native captured inputs without writes.
+    #[test]
+    fn s3_native_nine_reads_preserve_snapshot_counts_redaction_and_files() {
+        let server = Server::start_api2(false, true);
+        write_s3_native_http_fixture(server.project.path());
+        let before = bundle_project_files(&server);
+        let (status, records) =
+            s3_json(&server, "GET", "/api/v2/lifecycle/records", None, &json!({}));
+        assert_eq!(status, 200, "{records}");
+        assert_eq!(records["counts"]["registered_records"], 1);
+        assert!(records["page"]["items"][0]["derived_status"].is_null());
+        let record = records["page"]["items"][0]["record_id"].as_str().unwrap();
+        let (status, comparisons) =
+            s3_json(&server, "GET", "/api/v2/framework-impact/comparisons", None, &json!({}));
+        assert_eq!(status, 200, "{comparisons}");
+        assert_eq!(comparisons["counts"]["registered_comparisons"], 1);
+        assert_eq!(comparisons["page"]["items"][0]["freshness"], "not-computed");
+        let comparison = comparisons["page"]["items"][0]["comparison_id"].as_str().unwrap();
+        let paths = [
+            "/api/v2/lifecycle/records".to_owned(),
+            format!("/api/v2/lifecycle/records/{record}?as_of=2026-10-02"),
+            format!("/api/v2/lifecycle/records/{record}/history"),
+            "/api/v2/lifecycle/queue?as_of=2026-10-02".to_owned(),
+            "/api/v2/framework-impact/comparisons".to_owned(),
+            format!("/api/v2/framework-impact/comparisons/{comparison}"),
+            format!("/api/v2/framework-impact/comparisons/{comparison}/changes"),
+            format!("/api/v2/framework-impact/comparisons/{comparison}/findings"),
+            format!("/api/v2/framework-impact/comparisons/{comparison}/prior-dispositions"),
+        ];
+        for path in paths {
+            let (status, headers, raw) = server.request("GET", &path, true, None, "", "");
+            assert_eq!(status, 200, "{path}: {}", String::from_utf8_lossy(&raw));
+            assert!(headers.contains("cache-control: no-store"));
+            let value: Value = serde_json::from_slice(&raw).unwrap();
+            assert_eq!(value["snapshot_version"], records["snapshot_version"]);
+            assert_eq!(value["resource_version"].as_str().unwrap().len(), 64);
+            let text = String::from_utf8(raw).unwrap();
+            for secret in [
+                "PRIVATE",
+                "recorded rationale",
+                "Synthetic lifecycle source fixture.",
+                "rationale",
+                "unregistered.md",
+            ] {
+                assert!(!text.contains(secret), "{path}: leaked {secret}");
+            }
+        }
+        let (_, detail) = s3_json(
+            &server,
+            "GET",
+            &format!("/api/v2/lifecycle/records/{record}?as_of=2026-10-02"),
+            None,
+            &json!({}),
+        );
+        assert_eq!(detail["state"], "approved");
+        assert_eq!(detail["derived_status"], "approved");
+        assert!(detail["trust_boundary"].as_str().unwrap().contains("not authenticated"));
+        let (_, history) = s3_json(
+            &server,
+            "GET",
+            &format!("/api/v2/lifecycle/records/{record}/history"),
+            None,
+            &json!({}),
+        );
+        assert_eq!(history["counts"]["total_events"], 2);
+        let (_, comparison_detail) = s3_json(
+            &server,
+            "GET",
+            &format!("/api/v2/framework-impact/comparisons/{comparison}"),
+            None,
+            &json!({}),
+        );
+        assert_eq!(comparison_detail["freshness"], "captured-current");
+        assert_eq!(comparison_detail["summary"]["old_controls"], 3);
+        assert_eq!(comparison_detail["summary"]["new_controls"], 3);
+        let (status, hidden) = s3_json(
+            &server,
+            "GET",
+            &format!(
+                "/api/v2/framework-impact/comparisons/{comparison}/findings?owner=no-such-owner"
+            ),
+            None,
+            &json!({}),
+        );
+        assert_eq!(status, 200, "{hidden}");
+        assert_eq!(hidden["page"]["total_matching"], 0);
+        assert_eq!(hidden["full_summary"], comparison_detail["summary"]);
+        assert_eq!(hidden["counts"]["total_findings"], comparison_detail["summary"]["findings"]);
+        assert_eq!(hidden["comparison_version"], comparison_detail["resource_version"]);
+        assert_ne!(hidden["resource_version"], hidden["comparison_version"]);
+        assert_eq!(bundle_project_files(&server), before);
+    }
+
+    /// Real cursors cannot cross page size, endpoint, filters or changed capture inputs.
+    #[test]
+    fn s3_native_http_cursors_and_missing_closure_fail_completely() {
+        let server = Server::start_api2(false, true);
+        let mut index = write_s3_native_http_fixture(server.project.path());
+        let (_, comparisons) =
+            s3_json(&server, "GET", "/api/v2/framework-impact/comparisons", None, &json!({}));
+        let id = comparisons["page"]["items"][0]["comparison_id"].as_str().unwrap();
+        let base = format!("/api/v2/framework-impact/comparisons/{id}");
+        let (status, first) =
+            s3_json(&server, "GET", &format!("{base}/changes?page_size=1"), None, &json!({}));
+        assert_eq!(status, 200, "{first}");
+        assert_eq!(first["counts"]["total_changes"], 4);
+        let cursor = first["page"]["next_cursor"].as_str().unwrap();
+        let (status, next) = s3_json(
+            &server,
+            "GET",
+            &format!("{base}/changes?page_size=1&cursor={cursor}"),
+            None,
+            &json!({}),
+        );
+        assert_eq!(status, 200, "{next}");
+        assert_eq!(next["counts"], first["counts"]);
+        assert_ne!(next["page"]["items"][0], first["page"]["items"][0]);
+        for path in [
+            format!("{base}/changes?page_size=2&cursor={cursor}"),
+            format!("{base}/changes?page_size=1&change_class=added&cursor={cursor}"),
+            format!("{base}/findings?page_size=1&cursor={cursor}"),
+        ] {
+            let (status, error) = s3_json(&server, "GET", &path, None, &json!({}));
+            assert_eq!(status, 409, "{path}: {error}");
+            bundle_assert_keys(&error, &["code", "message", "retryable", "resource_version"]);
+            assert_eq!(error["resource_version"].as_str().unwrap().len(), 64);
+            let mut safe = error.clone();
+            safe.as_object_mut().unwrap().remove("resource_version");
+            bundle_assert_error(&server, &safe, "version-conflict");
+        }
+        std::fs::write(
+            server.project.path().join("unrelated.bin"),
+            b"changed PRIVATE unrelated sentinel",
+        )
+        .unwrap();
+        assert_eq!(
+            s3_json(
+                &server,
+                "GET",
+                &format!("{base}/changes?page_size=1&cursor={cursor}"),
+                None,
+                &json!({})
+            )
+            .0,
+            409
+        );
+        index["resources"].as_array_mut().unwrap().retain(|row| row["key"] != "new");
+        std::fs::write(
+            server.project.path().join("forge.workspace.json"),
+            serde_json::to_vec(&index).unwrap(),
+        )
+        .unwrap();
+        let before = bundle_project_files(&server);
+        let (status, error) = s3_json(&server, "GET", &base, None, &json!({}));
+        assert_eq!(status, 422, "{error}");
+        bundle_assert_error(&server, &error, "validation-failed");
         assert_eq!(bundle_project_files(&server), before);
     }
 }

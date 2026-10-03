@@ -23,6 +23,7 @@ use super::session::{Mode, Session};
 
 const MAX_BODY: usize = 1024 * 1024;
 const MAX_CONNECTIONS: usize = 16;
+const READ_QUERY_BUDGET: Duration = Duration::from_secs(10);
 
 /// Session-owned transport, immutable API namespace and bounded preparation stores.
 struct State {
@@ -98,6 +99,215 @@ impl WorkControl for OperationControl<'_> {
     fn interruption(&self) -> Option<Interruption> {
         self.interruption
     }
+}
+
+/// Bounded synchronous read control; no operation or effect store is consulted.
+struct ReadControl<'a> {
+    /// Session shutdown is the only externally signalled read interruption.
+    state: &'a State,
+    /// Admission time includes the wait for the blocking worker.
+    deadline: Option<Instant>,
+    /// Preserve the first observed reason through later parser/error boundaries.
+    interruption: Option<Interruption>,
+}
+
+impl ReadControl<'_> {
+    /// Check the immutable budget at a supplied monotonic observation.
+    fn checkpoint_at(&mut self, observed: Instant) -> WorkResult<()> {
+        if let Some(reason) = self.interruption {
+            return Err(WorkError::Interrupted(reason));
+        }
+        let reason = if self.state.stopped.load(Ordering::Acquire) {
+            Some(Interruption::Shutdown)
+        } else if budget_expired(self.deadline, observed) {
+            Some(Interruption::DeadlineExceeded)
+        } else {
+            None
+        };
+        if let Some(reason) = reason {
+            self.interruption = Some(reason);
+            return Err(WorkError::Interrupted(reason));
+        }
+        Ok(())
+    }
+}
+
+impl WorkControl for ReadControl<'_> {
+    /// Check before/after real work without publishing invented numeric progress.
+    fn checkpoint(&mut self, _stage: Stage, _update: ProgressUpdate) -> WorkResult<()> {
+        self.checkpoint_at(Instant::now())
+    }
+
+    /// Return the same latched stop without inspecting files or renewing work.
+    fn interruption(&self) -> Option<Interruption> {
+        self.interruption
+    }
+}
+
+/// Convert a typed query stop at its final boundary, preserving safe failures.
+fn query_error(error: WorkError) -> Error {
+    match error {
+        WorkError::Failed(error) => error,
+        WorkError::Interrupted(Interruption::DeadlineExceeded) => Error::new(
+            "query-budget-exceeded",
+            "The query exceeded its time budget. Narrow the scope and retry.",
+            true,
+        ),
+        WorkError::Interrupted(Interruption::Shutdown) => {
+            Error::new("shutdown-in-progress", "The workspace is stopping.", false)
+        }
+        WorkError::Interrupted(Interruption::CancelRequested) => Error::new(
+            "query-interrupted",
+            "The query stopped before a complete result was available. Retry the read.",
+            true,
+        ),
+    }
+}
+
+/// The nine versioned read services; identities remain exact registered tokens.
+#[derive(Clone, Copy)]
+enum ReadQuery<'a> {
+    LifecycleRecords,
+    LifecycleDetail(&'a str),
+    LifecycleHistory(&'a str),
+    LifecycleQueue,
+    ImpactComparisons,
+    ImpactDetail(&'a str),
+    ImpactChanges(&'a str),
+    ImpactFindings(&'a str),
+    ImpactPriorDispositions(&'a str),
+}
+
+impl<'a> ReadQuery<'a> {
+    /// Resolve only an already-admitted private dispatch path, never an alias.
+    fn route(path: &'a str) -> Option<Self> {
+        match path {
+            "/api/v1/lifecycle/records" => Some(Self::LifecycleRecords),
+            "/api/v1/lifecycle/queue" => Some(Self::LifecycleQueue),
+            "/api/v1/framework-impact/comparisons" => Some(Self::ImpactComparisons),
+            _ => {
+                if let Some(tail) = path.strip_prefix("/api/v1/lifecycle/records/") {
+                    let (id, suffix) = tail.split_once('/').unwrap_or((tail, ""));
+                    match suffix {
+                        "" => Some(Self::LifecycleDetail(id)),
+                        "history" => Some(Self::LifecycleHistory(id)),
+                        _ => None,
+                    }
+                } else if let Some(tail) =
+                    path.strip_prefix("/api/v1/framework-impact/comparisons/")
+                {
+                    let (id, suffix) = tail.split_once('/').unwrap_or((tail, ""));
+                    match suffix {
+                        "" => Some(Self::ImpactDetail(id)),
+                        "changes" => Some(Self::ImpactChanges(id)),
+                        "findings" => Some(Self::ImpactFindings(id)),
+                        "prior-dispositions" => Some(Self::ImpactPriorDispositions(id)),
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    /// Return the exact selected-major schema for this complete result.
+    fn schema(self) -> &'static str {
+        match self {
+            Self::LifecycleRecords => "LifecycleRecordPage",
+            Self::LifecycleDetail(_) => "LifecycleRecordDetail",
+            Self::LifecycleHistory(_) => "LifecycleHistoryPage",
+            Self::LifecycleQueue => "LifecycleQueuePage",
+            Self::ImpactComparisons => "FrameworkImpactComparisonPage",
+            Self::ImpactDetail(_) => "FrameworkImpactComparisonDetail",
+            Self::ImpactChanges(_) => "FrameworkImpactChangePage",
+            Self::ImpactFindings(_) => "FrameworkImpactFindingPage",
+            Self::ImpactPriorDispositions(_) => "FrameworkImpactPriorDispositionPage",
+        }
+    }
+
+    /// Admit closed query keys and real calendar dates before any index capture.
+    fn validate_query(self, query: &[(String, String)]) -> Result<()> {
+        let allowed: &[&str] = match self {
+            Self::LifecycleRecords => &["as_of", "owner", "state", "page_size", "cursor"],
+            Self::LifecycleDetail(_) => &["as_of"],
+            Self::LifecycleHistory(_)
+            | Self::ImpactComparisons
+            | Self::ImpactPriorDispositions(_) => &["page_size", "cursor"],
+            Self::LifecycleQueue => &["as_of", "owner", "page_size", "cursor"],
+            Self::ImpactDetail(_) => &[],
+            Self::ImpactChanges(_) => &["change_class", "page_size", "cursor"],
+            Self::ImpactFindings(_) => &[
+                "group",
+                "decision_state",
+                "policy_source",
+                "priority",
+                "owner",
+                "page_size",
+                "cursor",
+            ],
+        };
+        let parsed = super::inspection::Query::new(query, allowed)?;
+        parsed.date(matches!(self, Self::LifecycleDetail(_) | Self::LifecycleQueue))?;
+        Ok(())
+    }
+
+    /// Consume the same immutable capture and control throughout domain work.
+    fn run(
+        self,
+        snapshot: &Snapshot,
+        query: &[(String, String)],
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<Value> {
+        match self {
+            Self::LifecycleRecords => super::lifecycle::records(snapshot, query, control),
+            Self::LifecycleDetail(id) => super::lifecycle::detail(snapshot, id, query, control),
+            Self::LifecycleHistory(id) => super::lifecycle::history(snapshot, id, query, control),
+            Self::LifecycleQueue => super::lifecycle::queue(snapshot, query, control),
+            Self::ImpactComparisons => super::impact::comparisons(snapshot, query, control),
+            Self::ImpactDetail(id) => super::impact::detail(snapshot, id, query, control),
+            Self::ImpactChanges(id) => super::impact::changes(snapshot, id, query, control),
+            Self::ImpactFindings(id) => super::impact::findings(snapshot, id, query, control),
+            Self::ImpactPriorDispositions(id) => {
+                super::impact::prior_dispositions(snapshot, id, query, control)
+            }
+        }
+    }
+}
+
+/// Validate and encode a complete selected-major response inside the same budget.
+fn controlled_query_response(
+    api_major: ApiMajor,
+    value: &Value,
+    schema: &str,
+    control: &mut dyn WorkControl,
+) -> WorkResult<Response<Full<Bytes>>> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    let validated = contract::validate_for(api_major, schema, value).map_err(|_| internal());
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+    validated?;
+    let encoded = contract::encode(value, 4 * 1024 * 1024, false);
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    let bytes = encoded?;
+    Ok(response(200, "application/json", bytes))
+}
+
+/// Capture once and return no result after an interrupted or incomplete query.
+fn read_query_response(
+    state: &State,
+    route: ReadQuery<'_>,
+    query: &[(String, String)],
+    deadline: Option<Instant>,
+) -> Result<Response<Full<Bytes>>> {
+    route.validate_query(query)?;
+    let mut control = ReadControl { state, deadline, interruption: None };
+    let result = (|| {
+        let snapshot =
+            Snapshot::capture_with_control_for_api(&state.root, state.api_major, &mut control)?;
+        let value = route.run(&snapshot, query, &mut control)?;
+        controlled_query_response(state.api_major, &value, route.schema(), &mut control)
+    })();
+    result.map_err(query_error)
 }
 
 fn internal() -> Error {
@@ -413,9 +623,10 @@ async fn respond(
         })?
         .to_bytes();
         let body = zeroize::Zeroizing::new(body.to_vec());
+        let read_deadline = Instant::now().checked_add(READ_QUERY_BUDGET);
         tokio::task::spawn_blocking(move || {
             let _permit = permit;
-            dispatch(&state, &method, &path, &query, idempotency.as_deref(), &body)
+            dispatch(&state, &method, &path, &query, idempotency.as_deref(), &body, read_deadline)
         })
         .await
         .map_err(|_| internal())?
@@ -456,6 +667,7 @@ fn dispatch(
     raw_query: &str,
     idempotency: Option<&str>,
     bytes: &[u8],
+    read_deadline: Option<Instant>,
 ) -> Result<Response<Full<Bytes>>> {
     let wire_path = path;
     let private_path = state.api_major.canonical_path(wire_path)?;
@@ -494,6 +706,12 @@ fn dispatch(
     if method == "POST" && path == "/api/v1/session/shutdown" {
         state.stopped.store(true, Ordering::Release);
         return json_response(json!({"state":"shutting-down"}), "ShutdownResponse");
+    }
+    if state.api_major == ApiMajor::V2
+        && method == "GET"
+        && let Some(route) = ReadQuery::route(path)
+    {
+        return read_query_response(state, route, &query, read_deadline);
     }
     if method == "GET" {
         let store = state.effects.lock().map_err(|_| internal())?;
@@ -829,6 +1047,7 @@ fn static_response(api_major: ApiMajor, method: &str, path: &str) -> Result<Resp
     }
 }
 
+/// Encode a safe typed error, preserving legacy statuses and the inspection stop codes.
 fn error_response(error: &Error) -> Response<Full<Bytes>> {
     let status = match error.code {
         "unauthorized" | "unlock-failed" => 401,
@@ -845,6 +1064,7 @@ fn error_response(error: &Error) -> Response<Full<Bytes>> {
         "validation-failed" => 422,
         "unlock-throttled" => 429,
         "internal-error" => 500,
+        "query-budget-exceeded" | "query-interrupted" => 503,
         _ => 400,
     };
     let bytes = serde_json::to_vec(&error).unwrap_or_else(|_| b"{\"code\":\"internal-error\",\"message\":\"Response unavailable.\",\"retryable\":false}".to_vec());
@@ -931,7 +1151,7 @@ mod tests {
                 usize::from(major == ApiMajor::V2)
             );
             if major == ApiMajor::V2 {
-                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.0.0\""));
+                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.1.0\""));
             }
             assert!(html.contains("id=\"workspace\" hidden"));
             for (asset_path, expected, media) in [
@@ -1014,6 +1234,59 @@ mod tests {
             );
         }
     }
+    /// Expired read admission prevents capture and remains sticky after later shutdown.
+    #[test]
+    fn read_query_budget_covers_capture_and_keeps_first_stop() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("forge.workspace.json"), b"invalid index").unwrap();
+        let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        let observed = Instant::now();
+        let mut control =
+            ReadControl { state: &state, deadline: Some(observed), interruption: None };
+        assert!(matches!(
+            Snapshot::capture_with_control_for_api(&state.root, ApiMajor::V2, &mut control),
+            Err(WorkError::Interrupted(Interruption::DeadlineExceeded))
+        ));
+        state.stopped.store(true, Ordering::Release);
+        assert!(matches!(
+            control.checkpoint_at(observed),
+            Err(WorkError::Interrupted(Interruption::DeadlineExceeded))
+        ));
+        assert_eq!(control.interruption(), Some(Interruption::DeadlineExceeded));
+        let mut shutdown = ReadControl { state: &state, deadline: None, interruption: None };
+        assert!(matches!(
+            shutdown.checkpoint_at(observed),
+            Err(WorkError::Interrupted(Interruption::Shutdown))
+        ));
+        state.stopped.store(false, Ordering::Release);
+        assert!(matches!(
+            shutdown.checkpoint_at(observed),
+            Err(WorkError::Interrupted(Interruption::Shutdown))
+        ));
+    }
+
+    /// Query interruption has a closed safe envelope instead of an invalid-input error.
+    #[test]
+    fn read_query_interruption_errors_keep_typed_boundary() {
+        for (reason, code, status) in [
+            (Interruption::DeadlineExceeded, "query-budget-exceeded", 503),
+            (Interruption::CancelRequested, "query-interrupted", 503),
+            (Interruption::Shutdown, "shutdown-in-progress", 400),
+        ] {
+            let error = query_error(WorkError::Interrupted(reason));
+            assert_eq!(error.code, code);
+            assert_eq!(error_response(&error).status(), status);
+            let value = serde_json::to_value(&error).unwrap();
+            contract::validate_for(ApiMajor::V2, "Error", &value).unwrap();
+            if reason != Interruption::Shutdown {
+                assert!(contract::validate_for(ApiMajor::V1, "Error", &value).is_err());
+            }
+        }
+        let safe = query_error(Error::containment().into());
+        assert_eq!(safe.code, "resource-containment");
+        assert_eq!(error_response(&safe).status(), 403);
+    }
+
     /// The consumed monotonic fence includes exact equality and fails closed.
     #[test]
     fn budget_expiry_includes_equality_and_unrepresentable_deadline() {
