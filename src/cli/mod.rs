@@ -428,7 +428,9 @@ pub enum AssessmentResultsCommand {
         /// Review report format
         #[arg(long, value_enum, default_value = "text")]
         report_format: AssessmentResultsReportFormat,
-        /// Prior FORGE Assessment Results JSON used for revision impact analysis
+        /// Prior one-result FORGE Assessment Results JSON used for revision impact analysis
+        ///
+        /// Multiple result epochs are invalid input, including with --fail-on never.
         #[arg(long)]
         baseline: Option<PathBuf>,
         /// Whether valid baseline review actions produce exit status 1

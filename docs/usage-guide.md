@@ -744,7 +744,9 @@ The optional `--evidence-index` input is an identity-only PRD 060
 `forge.linkage-index/1` artifact. FORGE copies evidence keys and hashes, not
 content, and does not treat a link as sufficient evidence. Use `--baseline` to
 report stable-identity revision impacts; the default `--fail-on any` exits `1`
-when review actions exist. Static HTML is available with `--report-format html`.
+when review actions exist. The baseline must contain exactly one result epoch;
+a plural baseline exits `2` before publication, including with `--fail-on never`.
+Static HTML is available with `--report-format html`.
 The build remains local, JSON-only, deterministic, and validated against the
 pinned official OSCAL 1.2.3 Assessment Results schema. It records declared
 judgments without authenticating assessors or inferring compliance,

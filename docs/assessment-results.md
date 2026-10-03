@@ -70,6 +70,14 @@ content/rationale/status changes, stale references, and changed upstream
 fingerprints. Text, JSON, and static HTML reports share the same deterministic,
 content-minimizing model.
 
+A baseline must contain exactly one native result epoch. A schema-valid plural
+`results` array is unsupported input and exits `2` before an artifact or report
+is written, or an artifact is published to stdout. Existing output files remain
+unchanged. `--fail-on never` applies only to valid comparison actions; it does
+not permit a plural baseline. This matches the current one-result manifest and
+report identity contract. Multi-epoch authoring and comparison remain pending
+PRD 063 S-4 design and real workflow validation.
+
 `--report-format` controls an explicitly requested `--report` file. When a
 baseline is supplied without `--report`, FORGE writes the review summary to
 stderr in terminal-safe text regardless of that option; builds without a
